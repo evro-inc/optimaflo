@@ -1,0 +1,3 @@
+.filterFeatureLight {
+    filter: invert(99%) sepia(99%) saturate(4766%) hue-rotate(322deg) brightness(102%) contrast(101%) !important;
+}

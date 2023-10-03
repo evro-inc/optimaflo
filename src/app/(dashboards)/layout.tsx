@@ -1,0 +1,50 @@
+export const dynamic = 'force-dynamic';
+import React from 'react';
+import '../../styles/globals.css';
+import NavApp from '@/src/components/client/Navbar/NavApp';
+import { Providers, ReduxProvider } from '../(site)/providers';
+import SideBar from '@/src/components/client/Navbar/SideBar';
+import { Toaster } from 'react-hot-toast';
+
+export default function RootLayout({
+  // Layouts must accept a children prop.
+  // This will be populated with nested layouts or pages
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <body>
+        <Providers>
+          <ReduxProvider>
+            <body className="bg-gray-50">
+              {/* ========== HEADER ========== */}
+              <NavApp />
+              {/* ========== END HEADER ========== */}
+
+              {/* ========== MAIN CONTENT ========== */}
+              <SideBar />
+
+              {/* Content */}
+              <div className="w-full pt-10 px-4 sm:px-6 md:px-8 lg:pl-72">
+                {/* Page Heading */}
+                {children}
+                <Toaster
+                  position="top-right"
+                  reverseOrder={false}
+                  toastOptions={{
+                    className: 'z-50',
+                  }}
+                />
+                {/* End Page Heading */}
+              </div>
+              {/* End Content */}
+              {/* ========== END MAIN CONTENT ========== */}
+            </body>
+          </ReduxProvider>
+        </Providers>
+      </body>
+    </html>
+  );
+}

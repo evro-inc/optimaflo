@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+    color: initial !important;
+}
+
+
+.before\:bg-\[url\(\'\.\.\/svg\/component\/squared-bg-element\.svg\'\)\]::before {
+    content: var(--tw-content);
+}
+
+.custom-h-242{
+    height: 2.40rem !important;
+}

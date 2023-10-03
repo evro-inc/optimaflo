@@ -1,0 +1,38 @@
+# Dependency directories
+node_modules
+.pnpm
+
+# Build output directories
+dist
+build
+out
+public/static
+
+# Next.js specific
+.next
+
+# Cache
+.cache
+
+# Log files
+*.log
+
+# Binary files
+*.ico
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.svg
+
+# Archives
+*.zip
+*.tar.gz
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Configuration files
+.env*

@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "TierLimit" ADD COLUMN     "usage" INTEGER NOT NULL DEFAULT 0;

@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "TierLimit" ADD COLUMN     "deleteLimit" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "deleteUsage" INTEGER NOT NULL DEFAULT 0;
