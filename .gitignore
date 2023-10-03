@@ -44,7 +44,6 @@ cypress.env.json
 # Sanity
 /sanity.json
 /sanity-credentials.json
-/sanity.config.ts
 .gz
 
 # Playwright
