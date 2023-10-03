@@ -25,7 +25,9 @@
       "@testing-library/cypress"
     ],
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": [
+        "./*"
+      ]
     },
     "incremental": true,
     "plugins": [
