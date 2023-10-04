@@ -22,50 +22,44 @@ export async function gtmListContainers() {
     };
 
     const resp = await fetch(url, options);
-
-    // Check if the response is OK
     if (!resp.ok) {
       const responseText = await resp.text();
-      throw new Error(
-        `Error: ${resp.status} ${resp.statusText}. Response: ${responseText}`
-      );
+      throw new Error(`Error: ${resp.status} ${resp.statusText}. Response: ${responseText}`);
     }
 
-    const gtmData = await resp.json(); // Parse the JSON response
-    const accountIds = gtmData.data.map((container) => container.accountId); // Extract accountIds
+    const gtmData = await resp.json();
+    const accountIds = gtmData.data.map((container) => container.accountId);
 
-    // for each account id in accountIds, fetch the containers
-    const containers = await Promise.all(
-      accountIds.map(async (accountId) => {
-        try {
-          const url = `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers`;
-          const resp = await fetch(url, options);
+    const batchSize = 7;  // number of accounts to fetch in each batch
+    let containers = [];
 
-          if (!resp.ok) {
-            const responseText = await resp.text();
-            console.error(
-              `Error fetching containers for account ${accountId}: ${responseText}`
-            );
-            return null; // return null or some default value
-          }
+    for (let i = 0; i < accountIds.length; i += batchSize) {
+      const batch = accountIds.slice(i, i + batchSize);
 
-          const containers = await resp.json();
-          return containers.data;
-        } catch (error) {
-          console.error(
-            `Error fetching containers for account ${accountId}: ${error}`
-          );
-          return null; // return null or some default value
+      const containersPromises = batch.map(async (accountId) => {
+        const containersUrl = `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers`;
+
+        const containersResp = await fetch(containersUrl, options);
+        if (!containersResp.ok) {
+          const responseText = await containersResp.text();
+          console.error(`Error fetching containers for account ${accountId}: ${responseText}`);
+          return [];  // return an empty array on error
         }
-      })
-    );
 
-    // Filter out nulls and flatten the array of arrays
-    const flattenedContainers = containers.filter(Boolean).flat();
+        const containersData = await containersResp.json();
+        return containersData[0]?.data || [];  // ensure an array is returned
+      });
 
-    return flattenedContainers;
+      const containersArrays = await Promise.all(containersPromises);
+      containers = containers.concat(...containersArrays);
+
+      // Optional: introduce a delay between batches to manage rate limits
+      await new Promise(resolve => setTimeout(resolve, 1000));  // 1-second delay
+    }
+
+    return containers;
   } catch (error) {
     console.error('Error fetching GTM containers:', error);
-    throw error; // re-throw the error so it can be caught and handled by the calling function
+    throw error;
   }
 }

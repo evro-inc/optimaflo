@@ -20,7 +20,9 @@ export default function ContainerTable({ accounts, containers }) {
   const [isLimitReached, setIsLimitReached] = useState(false);
 
   const containersPerPage = 10;
-  const totalPages = Math.ceil(containers.length / containersPerPage);
+  const totalPages = Math.ceil(
+    (containers ? containers.length : 0) / containersPerPage
+  );
 
   const nextPage = () => {
     if (currentPage < totalPages) {
@@ -37,7 +39,9 @@ export default function ContainerTable({ accounts, containers }) {
   // Pagination logic
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = containers.slice(indexOfFirstItem, indexOfLastItem);
+  const currentItems = containers
+    ? containers.slice(indexOfFirstItem, indexOfLastItem)
+    : [];    
 
   const handlePageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setCurrentPage(Number(e.target.value));
@@ -54,7 +58,7 @@ export default function ContainerTable({ accounts, containers }) {
       if (container) {
         newSelectedRows.set(containerId, {
           accountId: accountId,
-          containerName: container.name,
+          name: container.name,
           containerId: containerId,
           publicId: container.publicId,
           usageContext: container.usageContext,
@@ -76,7 +80,7 @@ export default function ContainerTable({ accounts, containers }) {
           container;
         newSelectedRows.set(containerId, {
           accountId,
-          containerName: name,
+          name: name,
           containerId,
           publicId,
           usageContext,
@@ -376,7 +380,7 @@ export default function ContainerTable({ accounts, containers }) {
                       </select>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      of {containers.length}
+                      of {(containers && containers.length) || 0}
                     </p>
                   </div>
 

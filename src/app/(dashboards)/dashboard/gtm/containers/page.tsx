@@ -21,8 +21,10 @@ export default async function ContainerPage() {
   }
 
   //fetch all containers from API
-  const accounts = await gtmListAccounts();
-  const containers = await gtmListContainers();
+  const [accounts, containers] = await Promise.all([
+    gtmListAccounts(),
+    gtmListContainers(),
+  ]);
 
   return (
     <>
