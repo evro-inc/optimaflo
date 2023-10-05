@@ -415,8 +415,6 @@ export async function POST(
       limit
     );
 
-    console.log('response', response);
-
     return NextResponse.json(response, {
       headers: {
         'Content-Type': 'application/json',

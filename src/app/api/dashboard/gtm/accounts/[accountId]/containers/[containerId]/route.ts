@@ -88,26 +88,165 @@ async function fetchGtmData(userId: string, accessToken: string, accountId: stri
 }
 
 
+/************************************************************************************
+ * PUT UTILITY FUNCTIONS
+ ************************************************************************************/
+/************************************************************************************
+  Validate the PUT parameters
+************************************************************************************/
+async function validatePutParams(params: any) {
+  const schema = Joi.object({
+      userId: Joi.string().uuid().required(),
+      accountId: Joi.string()
+        .pattern(/^\d{10}$/)
+        .required(),
+      containerId: Joi.string().required(),
+      containerName: Joi.string().required(),
+      usageContext: Joi.string().required(),
+    });
+
+  // Validate the accountId against the schema
+  const { error, value } = schema.validate(params);
+
+  if (error) {
+    return new NextResponse(JSON.stringify({ error: error.message }), {
+      status: 400,
+    });
+  }
+
+  return value;
+}
+
+/************************************************************************************
+  Function to update GTM containers
+************************************************************************************/
+export async function updateGtmData(userId: string, accessToken: string, accountId: string, containerId: string, containerName: string, usageContext: string[]) {
+  let retries = 0;
+  const MAX_RETRIES = 3;
+  let delay = 1000;
+
+  while (retries < MAX_RETRIES) {
+    try {
+      const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
+
+      // Fetch subscription data for the user
+      const subscriptionData = await prisma.subscription.findFirst({
+        where: {
+          userId: userId,
+        },
+      });
+
+      if (!subscriptionData) {
+        return new NextResponse(
+          JSON.stringify({ message: 'Subscription data not found' }),
+          {
+            status: 403,
+          }
+        );
+      }
+
+      const tierLimitRecord = await prisma.tierLimit.findFirst({
+        where: {
+          Feature: {
+            name: 'GTMContainer', // Replace with the actual feature name
+          },
+          Subscription: {
+            userId: userId, // Assuming Subscription model has a userId field
+          },
+        },
+        include: {
+          Feature: true,
+          Subscription: true,
+        },
+      });
+
+      if (
+        !tierLimitRecord ||
+        tierLimitRecord.updateUsage >= tierLimitRecord.updateLimit
+      ) {
+        return new NextResponse(
+          JSON.stringify({ message: 'Feature limit reached' }),
+          {
+            status: 403,
+          }
+        );
+      }
+
+      if (remaining > 0) {
+        let res;
+
+        await limiter.schedule(async () => {
+          const oauth2Client = createOAuth2Client(accessToken);
+          if (!oauth2Client) {
+            throw new Error('OAuth2Client creation failed');
+          }
+
+          const gtm = new tagmanager_v2.Tagmanager({ auth: oauth2Client });
+
+          res = await gtm.accounts.containers.update({
+            path: `accounts/${accountId}/containers/${containerId}`,
+            requestBody: {
+              name: containerName,
+              usageContext: usageContext,
+            },
+          });
+
+          await prisma.tierLimit.update({
+            where: {
+              Feature: {
+                name: 'GTMContainer',
+              },
+              Subscription: {
+                userId: userId,
+              },
+            },
+            data: {
+              updateUsage: {
+                increment: 1,
+              },
+            },
+          });
+        });
+
+        const data = [res.data];
+
+        const response = {
+          data: data,
+          meta: {
+            totalResults: data?.length ?? 0,
+          },
+          errors: null,
+        };
+
+        return response;
+      } else {
+        throw new Error('Rate limit exceeded');
+      }
+    } catch (error: any) {
+      if (error.code === 429 || error.status === 429) {
+        // Log the rate limit error and wait before retrying
+        console.warn('Rate limit exceeded. Retrying...');
+        const jitter = Math.random() * 200;
+        await new Promise((resolve) => setTimeout(resolve, delay + jitter));
+        delay *= 2; // Exponential backoff
+        retries++;
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  throw new Error('Max retries exceeded');  // Throwing an error if max retries are exceeded outside the while loop
+}
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+/************************************************************************************
+ * DELETE UTILITY FUNCTIONS
+ ************************************************************************************/
+/************************************************************************************
+  Validate the DELETE parameters
+************************************************************************************/
 
 
 /************************************************************************************
@@ -193,152 +332,39 @@ export async function PUT(request: NextRequest) {
       usageContext: body.usageContext,
     };
 
-    const schema = Joi.object({
-      userId: Joi.string().uuid().required(),
-      accountId: Joi.string()
-        .pattern(/^\d{10}$/)
-        .required(),
-      containerId: Joi.string().required(),
-      containerName: Joi.string().required(),
-      usageContext: Joi.string().required(),
-    });
-
-    // Validate the accountId against the schema
-    await validateSchema(schema, paramsJOI);
+    const validateParams = await validatePutParams(paramsJOI);
 
     const { accountId, containerId, userId, containerName, usageContext } =
-      paramsJOI;
+      validateParams;
 
     // using userId get accessToken from prisma account table
     const accessToken = await getAccessToken(userId);
 
-    // Fetch subscription data for the user
-    const subscriptionData = await prisma.subscription.findFirst({
-      where: {
-        userId: userId,
-      },
-    });
+    const data = await updateGtmData(
+      userId,
+      accessToken,
+      accountId,
+      containerId,
+      containerName,
+      usageContext
+    );
 
-    if (!subscriptionData) {
-      return new NextResponse(
-        JSON.stringify({ message: 'Subscription data not found' }),
-        {
-          status: 403,
-        }
-      );
-    }
-
-    const tierLimitRecord = await prisma.tierLimit.findFirst({
-      where: {
-        Feature: {
-          name: 'GTMContainer', // Replace with the actual feature name
+    return NextResponse.json(
+      {
+        data: data,
+        meta: {
+          totalResults: 1,
         },
-        Subscription: {
-          userId: userId, // Assuming Subscription model has a userId field
+        errors: null,
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
         },
-      },
-      include: {
-        Feature: true,
-        Subscription: true,
-      },
-    });
-
-    if (
-      !tierLimitRecord ||
-      tierLimitRecord.updateUsage >= tierLimitRecord.updateLimit
-    ) {
-      return new NextResponse(
-        JSON.stringify({ message: 'Feature limit reached' }),
-        {
-          status: 403,
-        }
-      );
-    }
-
-    let retries = 0;
-    const MAX_RETRIES = 3;
-
-    while (retries < MAX_RETRIES) {
-      try {
-        // Check if we've hit the rate limit
-        const { remaining } = await gtmRateLimit.blockUntilReady(
-          `user:${userId}`,
-          1000
-        );
-
-        if (remaining > 0) {
-          let res;
-
-          await limiter.schedule(async () => {
-            // If the data is not in the cache, fetch it from the API
-            const oauth2Client = createOAuth2Client(accessToken);
-            if (!oauth2Client) {
-              // If oauth2Client is null, return an error response or throw an error
-              return NextResponse.error();
-            }
-
-            // Create a Tag Manager service client
-            const gtm = new tagmanager_v2.Tagmanager({
-              auth: oauth2Client,
-            });
-
-            // List GTM built-in variables
-            res = await gtm.accounts.containers.update({
-              path: `accounts/${accountId}/containers/${containerId}`,
-              requestBody: {
-                name: containerName,
-                usageContext: usageContext,
-              },
-            });
-
-            await prisma.tierLimit.update({
-              where: {
-                id: tierLimitRecord.id,
-              },
-              data: {
-                updateUsage: {
-                  increment: 1,
-                },
-              },
-            });
-          });
-
-          const data = [res.data];
-
-          const response = {
-            data: data,
-            meta: {
-              totalResults: data?.length ?? 0,
-            },
-            errors: null,
-          };
-
-          const jsonString = JSON.stringify(response, null, 2);
-
-          logger.debug('DEBUG RESPONSE: ', jsonString);
-
-          return NextResponse.json(response, {
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            status: 200,
-          });
-        } else {
-          // If we've hit the rate limit, throw an error
-          throw new Error('Rate limit exceeded');
-        }
-      } catch (error: unknown) {
-        if (isErrorWithStatus(error) && error.status === 429) {
-          retries++;
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-          if (retries === MAX_RETRIES) {
-            throw new QuotaLimitError();
-          }
-        } else {
-          throw error;
-        }
+        status: 200,
       }
-    }
+    );
+
   } catch (error) {
     console.error('Error: ', error);
 

@@ -75,7 +75,7 @@ export default function ContainerTable({ accounts, containers }) {
     : [];
 
   const handlePageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setCurrentPage(Number(e.target.value));
+    dispatch(setCurrentPage(Number(e.target.value)));
   };
 
   const pageOptions = Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -98,7 +98,7 @@ export default function ContainerTable({ accounts, containers }) {
         });
       }
     }
-    setSelectedRows(newSelectedRows);
+    dispatch(setSelectedRows(newSelectedRows));
   };
 
   const toggleAll = () => {
@@ -117,7 +117,7 @@ export default function ContainerTable({ accounts, containers }) {
           usageContext,
         });
       });
-      setSelectedRows(newSelectedRows);
+      dispatch(setSelectedRows(newSelectedRows));
     }
   };
 
