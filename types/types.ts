@@ -1,3 +1,4 @@
+import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager';
 import Stripe from 'stripe';
 
 export interface PageMeta {
@@ -99,7 +100,7 @@ export interface Form {
 
 export type ContainerType = {
   containerId: string;
-  containerName: string;
+  name: string;
   publicId: string;
   accountId: string;
   usageContext: string;
@@ -120,5 +121,24 @@ export type FormUpdateContainerProps = {
   onClose: () => void;
   accounts: any; // Replace 'any' with the actual type if known
   selectedRows: Map<string, ContainerType>;
-  clearSelectedRows: () => void;
+};
+
+export type ResultType = {
+  data: tagmanager_v2.Schema$Container[] | undefined;
+  meta: {
+    total: number;
+    pageNumber: number;
+    totalPages: number;
+    pageSize: number;
+  };
+  errors: null;
+};
+
+export type PostParams = {
+  userId: string;
+  accountId: string;
+  name: string;
+  usageContext: string[];
+  domainName: string;
+  notes: string;
 };

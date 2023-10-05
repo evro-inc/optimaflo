@@ -22,8 +22,6 @@ export async function gtmListContainers() {
     };
 
     const resp = await fetch(url, options);
-
-    // Check if the response is OK
     if (!resp.ok) {
       const responseText = await resp.text();
       throw new Error(
@@ -31,41 +29,31 @@ export async function gtmListContainers() {
       );
     }
 
-    const gtmData = await resp.json(); // Parse the JSON response
-    const accountIds = gtmData.data.map((container) => container.accountId); // Extract accountIds
+    const gtmData = await resp.json();
+    const accountIds = gtmData.data.map((container) => container.accountId);
 
-    // for each account id in accountIds, fetch the containers
-    const containers = await Promise.all(
-      accountIds.map(async (accountId) => {
-        try {
-          const url = `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers`;
-          const resp = await fetch(url, options);
+    const containersPromises = accountIds.map(async (accountId) => {
+      const containersUrl = `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers`;
 
-          if (!resp.ok) {
-            const responseText = await resp.text();
-            console.error(
-              `Error fetching containers for account ${accountId}: ${responseText}`
-            );
-            return null; // return null or some default value
-          }
+      const containersResp = await fetch(containersUrl, options);
+      if (!containersResp.ok) {
+        const responseText = await containersResp.text();
+        console.error(
+          `Error fetching containers for account ${accountId}: ${responseText}`
+        );
+        return []; // return an empty array on error
+      }
 
-          const containers = await resp.json();
-          return containers.data;
-        } catch (error) {
-          console.error(
-            `Error fetching containers for account ${accountId}: ${error}`
-          );
-          return null; // return null or some default value
-        }
-      })
-    );
+      const containersData = await containersResp.json();
+      return containersData[0]?.data || []; // ensure an array is returned
+    });
 
-    // Filter out nulls and flatten the array of arrays
-    const flattenedContainers = containers.filter(Boolean).flat();
+    const containersArrays = await Promise.all(containersPromises);
+    const containers = containersArrays.flat();
 
-    return flattenedContainers;
+    return containers;
   } catch (error) {
     console.error('Error fetching GTM containers:', error);
-    throw error; // re-throw the error so it can be caught and handled by the calling function
+    throw error;
   }
 }

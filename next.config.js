@@ -1,7 +1,11 @@
 /** @type {import('next').NextConfig} */
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+})
 const nextConfig = {
   experimental: {
     serverActions: true,
+    optimizeCss: true,
   },
   images: {
     domains: [
@@ -18,4 +22,5 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = withBundleAnalyzer(nextConfig)
+ 

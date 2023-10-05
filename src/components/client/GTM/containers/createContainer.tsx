@@ -39,6 +39,7 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
       containerName: '',
       domainName: '',
       notes: '',
+      containerId: '',
     },
   ]);
   const [isLimitReached, setIsLimitReached] = useState(false);
@@ -53,6 +54,7 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
         containerName: '',
         domainName: '',
         notes: '',
+        containerId: '',
       },
     ]);
   };
@@ -157,6 +159,7 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
             containerName: '',
             domainName: '',
             notes: '',
+            containerId: '',
           },
         ]);
 
@@ -169,6 +172,7 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
               containerName: '',
               domainName: '',
               notes: '',
+              containerId: '',
             },
           ]);
         } else if (res && res.limitReached) {
@@ -196,6 +200,7 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
         containerName: '',
         domainName: '',
         notes: '',
+        containerId: '',
       },
     ]);
 
@@ -320,7 +325,7 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
                               }
                               className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
                             >
-                              <option value="WEB">Web</option>
+                              <option value="web">Web</option>
                               <option value="androidSdk5">Android</option>
                               <option value="iosSdk5">IOS</option>
                             </select>

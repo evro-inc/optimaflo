@@ -42,7 +42,7 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
       const initialForms = [...selectedRows.keys()].map((containerId) => {
         const rowData = selectedRows.get(containerId);
         const accountId = rowData?.accountId || '';
-        const containerName = rowData?.containerName || '';
+        const containerName = rowData?.name || '';
         const domainName = rowData?.domainName || '';
         const notes = rowData?.notes || '';
         const usageContext = rowData?.usageContext || '';
