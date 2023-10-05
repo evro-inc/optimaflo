@@ -121,7 +121,6 @@ export type FormUpdateContainerProps = {
   onClose: () => void;
   accounts: any; // Replace 'any' with the actual type if known
   selectedRows: Map<string, ContainerType>;
-  clearSelectedRows: () => void;
 };
 
 export type ResultType = {

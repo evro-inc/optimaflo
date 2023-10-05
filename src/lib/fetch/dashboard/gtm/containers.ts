@@ -24,38 +24,32 @@ export async function gtmListContainers() {
     const resp = await fetch(url, options);
     if (!resp.ok) {
       const responseText = await resp.text();
-      throw new Error(`Error: ${resp.status} ${resp.statusText}. Response: ${responseText}`);
+      throw new Error(
+        `Error: ${resp.status} ${resp.statusText}. Response: ${responseText}`
+      );
     }
 
     const gtmData = await resp.json();
     const accountIds = gtmData.data.map((container) => container.accountId);
 
-    const batchSize = 7;  // number of accounts to fetch in each batch
-    let containers = [];
+    const containersPromises = accountIds.map(async (accountId) => {
+      const containersUrl = `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers`;
 
-    for (let i = 0; i < accountIds.length; i += batchSize) {
-      const batch = accountIds.slice(i, i + batchSize);
+      const containersResp = await fetch(containersUrl, options);
+      if (!containersResp.ok) {
+        const responseText = await containersResp.text();
+        console.error(
+          `Error fetching containers for account ${accountId}: ${responseText}`
+        );
+        return []; // return an empty array on error
+      }
 
-      const containersPromises = batch.map(async (accountId) => {
-        const containersUrl = `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers`;
+      const containersData = await containersResp.json();
+      return containersData[0]?.data || []; // ensure an array is returned
+    });
 
-        const containersResp = await fetch(containersUrl, options);
-        if (!containersResp.ok) {
-          const responseText = await containersResp.text();
-          console.error(`Error fetching containers for account ${accountId}: ${responseText}`);
-          return [];  // return an empty array on error
-        }
-
-        const containersData = await containersResp.json();
-        return containersData[0]?.data || [];  // ensure an array is returned
-      });
-
-      const containersArrays = await Promise.all(containersPromises);
-      containers = containers.concat(...containersArrays);
-
-      // Optional: introduce a delay between batches to manage rate limits
-      await new Promise(resolve => setTimeout(resolve, 1000));  // 1-second delay
-    }
+    const containersArrays = await Promise.all(containersPromises);
+    const containers = containersArrays.flat();
 
     return containers;
   } catch (error) {

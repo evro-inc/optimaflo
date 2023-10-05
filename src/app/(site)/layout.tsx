@@ -2,7 +2,7 @@ import { openSans } from '@/src/lib/fonts';
 import '../../styles/globals.css';
 import '../../styles/tailwind.css';
 
-import { Providers, ReduxProvider } from './providers';
+import { Providers, ReduxProvider } from '../providers';
 import React from 'react';
 import Footer from '@/src/components/server/Footer/Footer';
 export const dynamic = 'force-dynamic';
@@ -30,13 +30,13 @@ export default function RootLayout({
         className={`${openSans.className}`}
       >
         <body>
-          <Providers>
-            <ReduxProvider>
+          <ReduxProvider>
+            <Providers>
               <Navbar />
               {children}
               <Footer />
-            </ReduxProvider>
-          </Providers>
+            </Providers>
+          </ReduxProvider>
         </body>
       </html>
       {/* <Cover /> */}

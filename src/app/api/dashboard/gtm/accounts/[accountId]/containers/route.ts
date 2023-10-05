@@ -381,7 +381,6 @@ export async function POST(
     const limit = Number(request.nextUrl.searchParams.get('limit')) || 10;
     const session = await getServerSession(authOptions);
     const body = JSON.parse(await request.text());
-    
 
     // Extract query parameters from the URL
 
@@ -401,7 +400,6 @@ export async function POST(
     const accessToken = await getAccessToken(userId);
 
     console.log('validatedParams', validatedParams);
-    
 
     const response = await createGtmContainer(
       userId,
@@ -415,7 +413,6 @@ export async function POST(
     );
 
     console.log('response', response);
-    
 
     return NextResponse.json(response, {
       headers: {

@@ -3,7 +3,7 @@
 import { SessionProvider } from 'next-auth/react';
 import { useEffect } from 'react';
 import { Provider } from 'react-redux';
-import { store } from '../redux/store';
+import { store } from './redux/store';
 
 type Props = {
   children: React.ReactNode;
