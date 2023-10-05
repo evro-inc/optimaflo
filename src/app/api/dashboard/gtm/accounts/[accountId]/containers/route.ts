@@ -15,7 +15,6 @@ import { limiter } from '@/src/lib/bottleneck';
 import {
   getAccessToken,
   handleError,
-  validateSchema,
 } from '@/src/lib/fetch/apiUtils';
 import { PostParams, ResultType } from '@/types/types';
 
@@ -37,10 +36,14 @@ async function validateGetParams(params) {
       .required(),
   });
 
-  const { error } = schema.validate(params);
+  const { error, value } = schema.validate(params);
   if (error) {
-    throw new Error(`Validation Error: ${error.message}`);
+    return new NextResponse(JSON.stringify({ error: error.message }), {
+      status: 400,
+    });
   }
+
+  return value;  // return the validated parameters when validation passes
 }
 
 /************************************************************************************
@@ -324,9 +327,9 @@ export async function GET(
     };
 
     // Call validateGetParams to validate the parameters
-    await validateGetParams(paramsJOI);
+    const validatedParams = await validateGetParams(paramsJOI);
 
-    const { userId } = paramsJOI;
+    const { userId } = validatedParams;
 
     if (!userId) {
       logger.error('User ID is undefined');

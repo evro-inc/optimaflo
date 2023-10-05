@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager/v2';
-import { QuotaLimitError } from '@/src/lib/exceptions';
+import { QuotaLimitError, ValidationError } from '@/src/lib/exceptions';
 import { createOAuth2Client } from '@/src/lib/oauth2Client';
 import { getServerSession } from 'next-auth/next';
 import prisma from '@/src/lib/prisma';
@@ -17,7 +17,105 @@ import {
   validateSchema,
 } from '@/src/lib/fetch/apiUtils';
 
-// Get container by containerId
+
+
+/************************************************************************************
+ * GET UTILITY FUNCTIONS
+ ************************************************************************************/
+/************************************************************************************
+  Validate the GET parameters
+************************************************************************************/
+async function validateGetParams(params) {
+    const schema = Joi.object({
+      userId: Joi.string().uuid().required(),
+      accountId: Joi.string()
+        .pattern(/^\d{10}$/)
+        .required(),
+      containerId: Joi.string().required(),
+    });
+
+  // Validate the accountId against the schema
+  const { error, value } = schema.validate(params);
+
+ if (error) {
+    return new NextResponse(JSON.stringify({ error: error.message }), {
+      status: 400,
+    });
+  }
+
+  return value;
+
+}
+
+/************************************************************************************
+  Function to list or get one GTM containers
+************************************************************************************/
+async function fetchGtmData(userId: string, accessToken: string, accountId: string, containerId: string) {
+  let retries = 0;
+  const MAX_RETRIES = 3;
+  
+  while (retries < MAX_RETRIES) {
+    try {
+      const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
+      if (remaining > 0) {
+        let res;
+        await limiter.schedule(async () => {
+          const oauth2Client = createOAuth2Client(accessToken);
+          if (!oauth2Client) {
+            throw new Error('OAuth2Client creation failed');
+          }
+          const gtm = new tagmanager_v2.Tagmanager({ auth: oauth2Client });
+          res = await gtm.accounts.containers.get({
+            path: `accounts/${accountId}/containers/${containerId}`,
+          });
+        });
+        return res.data;
+      } else {
+        throw new Error('Rate limit exceeded');
+      }
+    } catch (error: unknown) {
+      if (isErrorWithStatus(error) && error.status === 429) {
+        retries++;
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        if (retries === MAX_RETRIES) {
+          throw new QuotaLimitError();
+        }
+      } else {
+        throw error;
+      }
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/************************************************************************************
+ * REQUEST HANDLERS
+ ************************************************************************************/
+/************************************************************************************
+  GET request handler
+************************************************************************************/
 export async function GET(
   req: NextRequest,
   {
@@ -37,97 +135,49 @@ export async function GET(
       containerId: params.containerId,
     };
 
-    const schema = Joi.object({
-      userId: Joi.string().uuid().required(),
-      accountId: Joi.string()
-        .pattern(/^\d{10}$/)
-        .required(),
-      containerId: Joi.string().required(),
-    });
-    // Validate the accountId against the schema
-    validateSchema(schema, paramsJOI);
+    const validatedParams = await validateGetParams(paramsJOI);
 
-    const { accountId, containerId, userId } = paramsJOI;
+    const { accountId, containerId, userId } = validatedParams;
 
     // using userId get accessToken from prisma account table
     const accessToken = await getAccessToken(userId);
 
-    let retries = 0;
-    const MAX_RETRIES = 3;
+    
 
-    while (retries < MAX_RETRIES) {
-      try {
-        const { remaining } = await gtmRateLimit.blockUntilReady(
-          `user:${userId}`,
-          1000
-        );
+    const data = fetchGtmData(userId, accessToken, accountId, containerId);
 
-        if (remaining > 0) {
-          let res;
-
-          await limiter.schedule(async () => {
-            // If the data is not in the cache, fetch it from the API
-            const oauth2Client = createOAuth2Client(accessToken);
-
-            if (!oauth2Client) {
-              // If oauth2Client is null, return an error response or throw an error
-              return NextResponse.error();
-            }
-            // Create a Tag Manager service client
-            const gtm = new tagmanager_v2.Tagmanager({
-              auth: oauth2Client,
-            });
-
-            // List GTM built-in variables
-            res = await gtm.accounts.containers.get({
-              path: `accounts/${accountId}/containers/${containerId}`,
-            });
-          });
-
-          const data = [res.data];
-
-          const response = {
-            data: data,
-            meta: {
-              totalResults: data?.length ?? 0,
-            },
-            errors: null,
-          };
-
-          const jsonString = JSON.stringify(response, null, 2);
-
-          logger.debug('DEBUG RESPONSE: ', jsonString);
-
-          return NextResponse.json(response, {
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            status: 200,
-          });
-        } else {
-          // If we've hit the rate limit, throw an error
-          throw new Error('Rate limit exceeded');
-        }
-      } catch (error: unknown) {
-        if (isErrorWithStatus(error) && error.status === 429) {
-          retries++;
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-          if (retries === MAX_RETRIES) {
-            throw new QuotaLimitError();
-          }
-        } else {
-          throw error;
-        }
+    return NextResponse.json(
+      {
+        data: data,
+        meta: {
+          totalResults: 1,
+        },
+        errors: null,
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        status: 200,
       }
-    }
+    );
   } catch (error) {
-    console.error('Error: ', error);
+    if (error instanceof ValidationError) {
+      console.error('Validation Error: ', error.message);
+      return new NextResponse(JSON.stringify({ error: error.message }), {
+        status: 400,
+      });
+    }
 
+    console.error('Error: ', error);
     // Return a 500 status code for internal server error
     return handleError(error);
   }
 }
 
+/************************************************************************************
+  PUT/UPDATE request handler
+************************************************************************************/
 export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -297,6 +347,9 @@ export async function PUT(request: NextRequest) {
   }
 }
 
+/************************************************************************************
+  DELETE request handler
+************************************************************************************/
 export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
