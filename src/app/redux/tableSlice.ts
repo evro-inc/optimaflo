@@ -4,7 +4,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 export const tableSlice = createSlice({
   name: 'table',
   initialState: {
-    selectedRows: new Map<string, ContainerType>(),
+    selectedRows: {},
     currentPage: 1,
     itemsPerPage: 10,
     isLimitReached: false,
@@ -12,7 +12,7 @@ export const tableSlice = createSlice({
   reducers: {
     setSelectedRows: (
       state,
-      action: PayloadAction<Map<string, ContainerType>>
+      action: PayloadAction<{ [key: string]: ContainerType }>
     ) => {
       state.selectedRows = action.payload;
     },
@@ -21,13 +21,22 @@ export const tableSlice = createSlice({
     },
     // Note: For itemsPerPage, since it's a constant, you may not need a reducer unless it's going to change.
     setIsLimitReached: (state, action: PayloadAction<boolean>) => {
+      console.log('state', state);
+      
       state.isLimitReached = action.payload;
+    },
+    clearSelectedRows: (state) => {
+      state.selectedRows = {}; // Clear selectedRows by setting it to an empty object
     },
   },
 });
 
-export const { setSelectedRows, setCurrentPage, setIsLimitReached } =
-  tableSlice.actions;
+export const {
+  setSelectedRows,
+  setCurrentPage,
+  setIsLimitReached,
+  clearSelectedRows,
+} = tableSlice.actions;
 
 export const selectTable = (state) => state.table; // Adjust this if your state structure has changed
 export default tableSlice.reducer;

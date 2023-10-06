@@ -23,4 +23,5 @@ export const globalSlice = createSlice({
 export const { setLoading, toggleUpdateContainer, toggleCreateContainer } =
   globalSlice.actions;
 export const selectGlobal = (state) => state.global;
+export const selectIsLoading = (state) => state.global.isLoading;
 export default globalSlice.reducer;

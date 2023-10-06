@@ -12,10 +12,7 @@ import { isErrorWithStatus } from '@/src/lib/fetch/dashboard';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
 import logger from '@/src/lib/logger';
 import { limiter } from '@/src/lib/bottleneck';
-import {
-  getAccessToken,
-  handleError,
-} from '@/src/lib/fetch/apiUtils';
+import { getAccessToken, handleError } from '@/src/lib/fetch/apiUtils';
 import { PostParams, ResultType } from '@/types/types';
 
 /************************************************************************************
@@ -43,7 +40,7 @@ async function validateGetParams(params) {
     });
   }
 
-  return value;  // return the validated parameters when validation passes
+  return value; // return the validated parameters when validation passes
 }
 
 /************************************************************************************

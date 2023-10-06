@@ -14,6 +14,14 @@ import {
   UpdateContainersResult,
 } from '@/types/types';
 import logger from '@/src/lib/logger';
+import {
+  clearSelectedRows,
+  selectTable,
+  setIsLimitReached,
+} from '@/src/app/redux/tableSlice';
+import { selectIsLoading, setLoading } from '@/src/app/redux/globalSlice';
+
+import { useDispatch, useSelector } from 'react-redux';
 
 const FormsSchema = z.array(UpdateContainerSchema);
 
@@ -23,7 +31,7 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
   selectedRows,
   accounts,
 }) => {
-  const [isLoading, setIsLoading] = useState(false);
+  const dispatch = useDispatch();
   const [forms, setForms] = useState<Form[]>([
     {
       accountId: '',
@@ -34,30 +42,29 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
       containerId: '',
     },
   ]);
-  const [isLimitReached, setIsLimitReached] = useState(false);
   const [showLoadingToast, setShowLoadingToast] = useState(false);
+  const { isLimitReached } = useSelector(selectTable);
+  const isLoading = useSelector(selectIsLoading);
 
   useEffect(() => {
-    if (selectedRows instanceof Map) {
-      const initialForms = [...selectedRows.keys()].map((containerId) => {
-        const rowData = selectedRows.get(containerId);
-        const accountId = rowData?.accountId || '';
-        const containerName = rowData?.name || '';
-        const domainName = rowData?.domainName || '';
-        const notes = rowData?.notes || '';
-        const usageContext = rowData?.usageContext || '';
+    const initialForms = Object.values(selectedRows).map((rowData: any) => {
+      const accountId = rowData?.accountId || '';
+      const containerName = rowData?.name || '';
+      const domainName = rowData?.domainName || '';
+      const notes = rowData?.notes || '';
+      const usageContext = rowData?.usageContext || '';
+      const containerId = rowData?.containerId || ''; // assuming containerId is a property on rowData
 
-        return {
-          accountId,
-          usageContext,
-          containerName,
-          domainName,
-          notes,
-          containerId,
-        };
-      });
-      setForms(initialForms);
-    }
+      return {
+        accountId,
+        usageContext,
+        containerName,
+        domainName,
+        notes,
+        containerId,
+      };
+    });
+    setForms(initialForms);
   }, [selectedRows]);
 
   const handleInputChange = (e, index, field) => {
@@ -77,7 +84,7 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
   }, [showLoadingToast]);
 
   const handleSubmit = async () => {
-    setIsLoading(true); // Set loading to true
+    dispatch(setLoading(true)); // Set loading to true
     setShowLoadingToast(true); // Show the loading toast
 
     try {
@@ -136,6 +143,8 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
           parsedFormDataArray
         )) as UpdateContainersResult;
 
+        dispatch(clearSelectedRows()); // Clear selectedRows
+
         if (res.success) {
           showToast({ variant: 'success', message: 'Container(s) updated.' });
         }
@@ -173,7 +182,7 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
           ]);
         } else if (res && res.limitReached) {
           // Show the LimitReached modal
-          setIsLimitReached(true);
+          dispatch(setIsLimitReached(true));
         }
       }
     } catch (error) {
@@ -182,7 +191,7 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
 
       return { success: false };
     } finally {
-      setIsLoading(false); // Set loading to false
+      dispatch(setLoading(false)); // Set loading to false
       setShowLoadingToast(false); // Hide the loading toast
     }
   };
@@ -200,15 +209,16 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
       },
     ]);
 
-    selectedRows.clear();
+    dispatch(clearSelectedRows()); // Clear selectedRows
 
     // Close the modal
     onClose();
   };
 
-  const selectedAccountIds = Array.from(selectedRows.values()).map(
-    (row) => row.accountId
+  const selectedAccountIds = Object.values(selectedRows).map(
+    (row: any) => row.accountId
   );
+
   const uniqueSelectedAccountIds = Array.from(new Set(selectedAccountIds));
 
   const filteredAccounts = Array.isArray(accounts?.data)
@@ -217,11 +227,9 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
       )
     : [];
 
-  const filteredUsageContexts = Array.from(selectedRows.values()).map(
-    (row) => row.usageContext
+  const filteredUsageContexts = Object.values(selectedRows).map(
+    (row: any) => row.usageContext
   );
-
-  console.log('filteredUsageContexts:', filteredUsageContexts);
 
   return (
     <>
@@ -403,7 +411,7 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
       </AnimatePresence>
 
       {isLimitReached && (
-        <LimitReached onClose={() => setIsLimitReached(false)} />
+        <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
       )}
     </>
   );

@@ -11,13 +11,7 @@ import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
 import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
 import logger from '@/src/lib/logger';
 import { limiter } from '@/src/lib/bottleneck';
-import {
-  getAccessToken,
-  handleError,
-  validateSchema,
-} from '@/src/lib/fetch/apiUtils';
-
-
+import { getAccessToken, handleError } from '@/src/lib/fetch/apiUtils';
 
 /************************************************************************************
  * GET UTILITY FUNCTIONS
@@ -26,37 +20,44 @@ import {
   Validate the GET parameters
 ************************************************************************************/
 async function validateGetParams(params) {
-    const schema = Joi.object({
-      userId: Joi.string().uuid().required(),
-      accountId: Joi.string()
-        .pattern(/^\d{10}$/)
-        .required(),
-      containerId: Joi.string().required(),
-    });
+  const schema = Joi.object({
+    userId: Joi.string().uuid().required(),
+    accountId: Joi.string()
+      .pattern(/^\d{10}$/)
+      .required(),
+    containerId: Joi.string().required(),
+  });
 
   // Validate the accountId against the schema
   const { error, value } = schema.validate(params);
 
- if (error) {
+  if (error) {
     return new NextResponse(JSON.stringify({ error: error.message }), {
       status: 400,
     });
   }
 
   return value;
-
 }
 
 /************************************************************************************
   Function to list or get one GTM containers
 ************************************************************************************/
-async function fetchGtmData(userId: string, accessToken: string, accountId: string, containerId: string) {
+async function fetchGtmData(
+  userId: string,
+  accessToken: string,
+  accountId: string,
+  containerId: string
+) {
   let retries = 0;
   const MAX_RETRIES = 3;
-  
+
   while (retries < MAX_RETRIES) {
     try {
-      const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
+      const { remaining } = await gtmRateLimit.blockUntilReady(
+        `user:${userId}`,
+        1000
+      );
       if (remaining > 0) {
         let res;
         await limiter.schedule(async () => {
@@ -87,7 +88,6 @@ async function fetchGtmData(userId: string, accessToken: string, accountId: stri
   }
 }
 
-
 /************************************************************************************
  * PUT UTILITY FUNCTIONS
  ************************************************************************************/
@@ -96,14 +96,14 @@ async function fetchGtmData(userId: string, accessToken: string, accountId: stri
 ************************************************************************************/
 async function validatePutParams(params: any) {
   const schema = Joi.object({
-      userId: Joi.string().uuid().required(),
-      accountId: Joi.string()
-        .pattern(/^\d{10}$/)
-        .required(),
-      containerId: Joi.string().required(),
-      containerName: Joi.string().required(),
-      usageContext: Joi.string().required(),
-    });
+    userId: Joi.string().uuid().required(),
+    accountId: Joi.string()
+      .pattern(/^\d{10}$/)
+      .required(),
+    containerId: Joi.string().required(),
+    containerName: Joi.string().required(),
+    usageContext: Joi.string().required(),
+  });
 
   // Validate the accountId against the schema
   const { error, value } = schema.validate(params);
@@ -120,14 +120,24 @@ async function validatePutParams(params: any) {
 /************************************************************************************
   Function to update GTM containers
 ************************************************************************************/
-export async function updateGtmData(userId: string, accessToken: string, accountId: string, containerId: string, containerName: string, usageContext: string[]) {
+export async function updateGtmData(
+  userId: string,
+  accessToken: string,
+  accountId: string,
+  containerId: string,
+  containerName: string,
+  usageContext: string[]
+) {
   let retries = 0;
   const MAX_RETRIES = 3;
   let delay = 1000;
 
   while (retries < MAX_RETRIES) {
     try {
-      const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
+      const { remaining } = await gtmRateLimit.blockUntilReady(
+        `user:${userId}`,
+        1000
+      );
 
       // Fetch subscription data for the user
       const subscriptionData = await prisma.subscription.findFirst({
@@ -193,6 +203,7 @@ export async function updateGtmData(userId: string, accessToken: string, account
 
           await prisma.tierLimit.update({
             where: {
+              id: tierLimitRecord.id,
               Feature: {
                 name: 'GTMContainer',
               },
@@ -236,10 +247,8 @@ export async function updateGtmData(userId: string, accessToken: string, account
     }
   }
 
-  throw new Error('Max retries exceeded');  // Throwing an error if max retries are exceeded outside the while loop
+  throw new Error('Max retries exceeded'); // Throwing an error if max retries are exceeded outside the while loop
 }
-
-
 
 /************************************************************************************
  * DELETE UTILITY FUNCTIONS
@@ -247,168 +256,37 @@ export async function updateGtmData(userId: string, accessToken: string, account
 /************************************************************************************
   Validate the DELETE parameters
 ************************************************************************************/
+async function validateDeleteParams(params: any) {
+  const schema = Joi.object({
+    userId: Joi.string().uuid().required(),
+    accountId: Joi.string()
+      .pattern(/^\d{10}$/)
+      .required(),
+    containerId: Joi.string().required(),
+  });
 
+  // Validate the accountId against the schema
+  const { error, value } = schema.validate(params);
 
-/************************************************************************************
- * REQUEST HANDLERS
- ************************************************************************************/
-/************************************************************************************
-  GET request handler
-************************************************************************************/
-export async function GET(
-  req: NextRequest,
-  {
-    params,
-  }: {
-    params: {
-      accountId?: string;
-      containerId?: string;
-    };
+  if (error) {
+    return new NextResponse(JSON.stringify({ error: error.message }), {
+      status: 400,
+    });
   }
+
+  return value;
+}
+
+/************************************************************************************
+  Function to delete GTM containers
+************************************************************************************/
+async function deleteGtmData(
+  userId: string,
+  accessToken: string,
+  accountId: string,
+  containerId: string
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    const paramsJOI = {
-      userId: session?.user?.id,
-      accountId: params.accountId,
-      containerId: params.containerId,
-    };
-
-    const validatedParams = await validateGetParams(paramsJOI);
-
-    const { accountId, containerId, userId } = validatedParams;
-
-    // using userId get accessToken from prisma account table
-    const accessToken = await getAccessToken(userId);
-
-    
-
-    const data = fetchGtmData(userId, accessToken, accountId, containerId);
-
-    return NextResponse.json(
-      {
-        data: data,
-        meta: {
-          totalResults: 1,
-        },
-        errors: null,
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        status: 200,
-      }
-    );
-  } catch (error) {
-    if (error instanceof ValidationError) {
-      console.error('Validation Error: ', error.message);
-      return new NextResponse(JSON.stringify({ error: error.message }), {
-        status: 400,
-      });
-    }
-
-    console.error('Error: ', error);
-    // Return a 500 status code for internal server error
-    return handleError(error);
-  }
-}
-
-/************************************************************************************
-  PUT/UPDATE request handler
-************************************************************************************/
-export async function PUT(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-
-    // Parse the request body
-    const body = JSON.parse(await request.text());
-
-    const paramsJOI = {
-      userId: session?.user?.id,
-      accountId: body.accountId,
-      containerId: body.containerId,
-      containerName: body.containerName,
-      usageContext: body.usageContext,
-    };
-
-    const validateParams = await validatePutParams(paramsJOI);
-
-    const { accountId, containerId, userId, containerName, usageContext } =
-      validateParams;
-
-    // using userId get accessToken from prisma account table
-    const accessToken = await getAccessToken(userId);
-
-    const data = await updateGtmData(
-      userId,
-      accessToken,
-      accountId,
-      containerId,
-      containerName,
-      usageContext
-    );
-
-    return NextResponse.json(
-      {
-        data: data,
-        meta: {
-          totalResults: 1,
-        },
-        errors: null,
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        status: 200,
-      }
-    );
-
-  } catch (error) {
-    console.error('Error: ', error);
-
-    // Return a 500 status code for internal server error
-    return handleError(error);
-  }
-}
-
-/************************************************************************************
-  DELETE request handler
-************************************************************************************/
-export async function DELETE(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-
-    const url = request.url;
-    const regex = /\/accounts\/([^/]+)\/containers\/([^/]+)/;
-    const match = url.match(regex);
-
-    if (!match || match.length < 3) {
-      throw new Error('Invalid URL format');
-    }
-
-    const paramsJOI = {
-      userId: session?.user?.id,
-      accountId: match[1],
-      containerId: match[2],
-    };
-
-    const schema = Joi.object({
-      accountId: Joi.string()
-        .pattern(/^\d{10}$/)
-        .required(),
-      containerId: Joi.string().required(),
-    });
-
-    // Validate the accountId against the schema
-    await validateSchema(schema, paramsJOI);
-
-    const { accountId, containerId, userId } = paramsJOI;
-
-    // using userId get accessToken from prisma account table
-    const accessToken = await getAccessToken(userId);
-
     // Fetch subscription data for the user
     const subscriptionData = await prisma.subscription.findFirst({
       where: {
@@ -428,10 +306,10 @@ export async function DELETE(request: NextRequest) {
     const tierLimitRecord = await prisma.tierLimit.findFirst({
       where: {
         Feature: {
-          name: 'GTMContainer', // Replace with the actual feature name
+          name: 'GTMContainer',
         },
         Subscription: {
-          userId: userId, // Assuming Subscription model has a userId field
+          userId: userId,
         },
       },
       include: {
@@ -538,20 +416,191 @@ export async function DELETE(request: NextRequest) {
         }
       }
     }
-    // Handle the case where the loop exits without reaching max retries
-    if (retries < MAX_RETRIES) {
-      return NextResponse.json(
-        { message: 'Operation completed without reaching max retries.' },
-        { status: 200 }
-      );
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      console.error('Validation Error: ', error.message);
+      return new NextResponse(JSON.stringify({ error: error.message }), {
+        status: 400,
+      });
     }
 
-    if (retries === MAX_RETRIES) {
-      return NextResponse.json(
-        { message: 'Max retries reached from GTM API.' },
-        { status: 429 }
-      );
+    console.error('Error: ', error);
+    // Return a 500 status code for internal server error
+    return handleError(error);
+  }
+}
+
+/************************************************************************************
+ * REQUEST HANDLERS
+ ************************************************************************************/
+/************************************************************************************
+  GET request handler
+************************************************************************************/
+export async function GET(
+  req: NextRequest,
+  {
+    params,
+  }: {
+    params: {
+      accountId?: string;
+      containerId?: string;
+    };
+  }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    const paramsJOI = {
+      userId: session?.user?.id,
+      accountId: params.accountId,
+      containerId: params.containerId,
+    };
+
+    const validatedParams = await validateGetParams(paramsJOI);
+
+    const { accountId, containerId, userId } = validatedParams;
+
+    // using userId get accessToken from prisma account table
+    const accessToken = await getAccessToken(userId);
+
+    const data = fetchGtmData(userId, accessToken, accountId, containerId);
+
+    return NextResponse.json(
+      {
+        data: data,
+        meta: {
+          totalResults: 1,
+        },
+        errors: null,
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        status: 200,
+      }
+    );
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      console.error('Validation Error: ', error.message);
+      return new NextResponse(JSON.stringify({ error: error.message }), {
+        status: 400,
+      });
     }
+
+    console.error('Error: ', error);
+    // Return a 500 status code for internal server error
+    return handleError(error);
+  }
+}
+
+/************************************************************************************
+  PUT/UPDATE request handler
+************************************************************************************/
+export async function PUT(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    // Parse the request body
+    const body = JSON.parse(await request.text());
+
+    const paramsJOI = {
+      userId: session?.user?.id,
+      accountId: body.accountId,
+      containerId: body.containerId,
+      containerName: body.containerName,
+      usageContext: body.usageContext,
+    };
+
+    const validateParams = await validatePutParams(paramsJOI);
+
+    const { accountId, containerId, userId, containerName, usageContext } =
+      validateParams;
+
+    // using userId get accessToken from prisma account table
+    const accessToken = await getAccessToken(userId);
+
+    const data = await updateGtmData(
+      userId,
+      accessToken,
+      accountId,
+      containerId,
+      containerName,
+      usageContext
+    );
+
+    return NextResponse.json(
+      {
+        data: data,
+        meta: {
+          totalResults: 1,
+        },
+        errors: null,
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        status: 200,
+      }
+    );
+  } catch (error) {
+    console.error('Error: ', error);
+
+    // Return a 500 status code for internal server error
+    return handleError(error);
+  }
+}
+
+/************************************************************************************
+  DELETE request handler
+************************************************************************************/
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    const url = request.url;
+    const regex = /\/accounts\/([^/]+)\/containers\/([^/]+)/;
+    const match = url.match(regex);
+
+    if (!match || match.length < 3) {
+      throw new Error('Invalid URL format');
+    }
+
+    const paramsJOI = {
+      userId: session?.user?.id,
+      accountId: match[1],
+      containerId: match[2],
+    };
+
+    const validateParams = await validateDeleteParams(paramsJOI);
+
+    const { accountId, containerId, userId } = validateParams;
+
+    // using userId get accessToken from prisma account table
+    const accessToken = await getAccessToken(userId);
+
+    const data = await deleteGtmData(
+      userId,
+      accessToken,
+      accountId,
+      containerId
+    );
+
+    return NextResponse.json(
+      {
+        data: data,
+        meta: {
+          totalResults: 1,
+        },
+        errors: null,
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        status: 200,
+      }
+    );
   } catch (error) {
     console.error('Error: ', error);
 

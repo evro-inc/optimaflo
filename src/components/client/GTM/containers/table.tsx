@@ -50,6 +50,9 @@ export default function ContainerTable({ accounts, containers }) {
   const { itemsPerPage, selectedRows, currentPage, isLimitReached } =
     useSelector(selectTable);
 
+    console.log("isLimitReached", isLimitReached);
+    
+
   const containersPerPage = 10;
   const totalPages = Math.ceil(
     (containers ? containers.length : 0) / containersPerPage
@@ -81,13 +84,13 @@ export default function ContainerTable({ accounts, containers }) {
   const pageOptions = Array.from({ length: totalPages }, (_, i) => i + 1);
 
   const toggleRow = (containerId, accountId) => {
-    const newSelectedRows: Map<string, ContainerType> = new Map(selectedRows);
-    if (newSelectedRows.has(containerId)) {
-      newSelectedRows.delete(containerId);
+    const newSelectedRows = { ...selectedRows };
+    if (newSelectedRows[containerId]) {
+      delete newSelectedRows[containerId];
     } else {
       const container = containers.find((c) => c.containerId === containerId);
       if (container) {
-        newSelectedRows.set(containerId, {
+        newSelectedRows[containerId] = {
           accountId: accountId,
           name: container.name,
           containerId: containerId,
@@ -95,27 +98,27 @@ export default function ContainerTable({ accounts, containers }) {
           usageContext: container.usageContext,
           domainName: container.domainName,
           notes: container.notes,
-        });
+        };
       }
     }
     dispatch(setSelectedRows(newSelectedRows));
   };
 
   const toggleAll = () => {
-    if (selectedRows.size === containers.length) {
-      setSelectedRows(new Map());
+    if (Object.keys(selectedRows).length === containers.length) {
+      dispatch(setSelectedRows({}));
     } else {
-      const newSelectedRows = new Map();
+      const newSelectedRows = {};
       containers.forEach((container) => {
         const { containerId, accountId, name, publicId, usageContext } =
           container;
-        newSelectedRows.set(containerId, {
+        newSelectedRows[containerId] = {
           accountId,
           name: name,
           containerId,
           publicId,
           usageContext,
-        });
+        };
       });
       dispatch(setSelectedRows(newSelectedRows));
     }
@@ -127,13 +130,15 @@ export default function ContainerTable({ accounts, containers }) {
 
     const uniqueAccountIds = Array.from(
       new Set(
-        Array.from(selectedRows.values()).map((rowData) => rowData.accountId)
+        Object.values(selectedRows).map((rowData: any) => rowData.accountId)
       )
     );
 
     try {
       for (const accountId of uniqueAccountIds) {
-        const containersToDelete = Array.from(selectedRows.entries() as [string, ContainerType][])
+        const containersToDelete = Object.entries(
+          selectedRows as { [key: string]: ContainerType }
+        )
           .filter(([, rowData]) => rowData.accountId === accountId)
           .map(([containerId]) => containerId);
 
@@ -310,9 +315,7 @@ export default function ContainerTable({ accounts, containers }) {
                                 type="checkbox"
                                 className="shrink-0 border-gray-200 rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:checked:bg-blue-500 dark:checked:border-blue-500 dark:focus:ring-offset-gray-800"
                                 id={`checkbox-${container.containerId}`}
-                                checked={selectedRows.has(
-                                  container.containerId
-                                )}
+                                checked={!!selectedRows[container.containerId]}
                                 onChange={() =>
                                   toggleRow(
                                     container.containerId,
@@ -470,7 +473,7 @@ export default function ContainerTable({ accounts, containers }) {
       </div>
       {/* End Table Section */}
       {isLimitReached && (
-        <LimitReached onClose={() => setIsLimitReached(false)} />
+        <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
       )}
       {useSelector(selectGlobal).showCreateContainer && (
         <FormCreateContainer
