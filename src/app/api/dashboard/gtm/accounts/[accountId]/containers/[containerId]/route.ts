@@ -364,7 +364,6 @@ async function deleteGtmData(
             res = await gtm.accounts.containers.delete({
               path: `accounts/${accountId}/containers/${containerId}`,
             });
-            console.log('res: ', res);
           });
 
           await prisma.tierLimit.update({
@@ -578,6 +577,35 @@ export async function DELETE(request: NextRequest) {
 
     // using userId get accessToken from prisma account table
     const accessToken = await getAccessToken(userId);
+
+    // check tier limit
+    const tierLimitRecord = await prisma.tierLimit.findFirst({
+      where: {
+        Feature: {
+          name: 'GTMContainer',
+        },
+        Subscription: {
+          userId: userId,
+        },
+      },
+      include: {
+        Feature: true,
+        Subscription: true,
+      },
+    });
+
+    // if tier limit is reached, return an error
+    if (
+      !tierLimitRecord ||
+      tierLimitRecord.deleteUsage >= tierLimitRecord.deleteLimit
+    ) {
+      return new NextResponse(
+        JSON.stringify({ message: 'Feature limit reached' }),
+        {
+          status: 403,
+        }
+      );
+    }
 
     const data = await deleteGtmData(
       userId,

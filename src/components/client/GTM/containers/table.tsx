@@ -50,9 +50,6 @@ export default function ContainerTable({ accounts, containers }) {
   const { itemsPerPage, selectedRows, currentPage, isLimitReached } =
     useSelector(selectTable);
 
-    console.log("isLimitReached", isLimitReached);
-    
-
   const containersPerPage = 10;
   const totalPages = Math.ceil(
     (containers ? containers.length : 0) / containersPerPage
@@ -151,8 +148,12 @@ export default function ContainerTable({ accounts, containers }) {
         message: 'Container(s) deleted successfully.',
       });
     } catch (error: any) {
+      if (error.message.includes('Feature limit reached')) {
+      dispatch(setIsLimitReached(true));  // Set isLimitReached to true if a feature limit error is thrown
+    } else {
       // Show error toast
       showToast({ variant: 'error', message: 'Failed to delete containers.' });
+    }
     }
   };
 

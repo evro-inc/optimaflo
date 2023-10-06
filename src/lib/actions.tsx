@@ -36,7 +36,7 @@ export async function deleteContainers(
         }
       );
 
-      console.log('response', response);
+      console.log(response);
       
 
       if (response.status === 403) {

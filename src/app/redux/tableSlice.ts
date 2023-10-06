@@ -22,7 +22,7 @@ export const tableSlice = createSlice({
     // Note: For itemsPerPage, since it's a constant, you may not need a reducer unless it's going to change.
     setIsLimitReached: (state, action: PayloadAction<boolean>) => {
       console.log('state', state);
-      
+
       state.isLimitReached = action.payload;
     },
     clearSelectedRows: (state) => {
