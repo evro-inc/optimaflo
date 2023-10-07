@@ -6,7 +6,6 @@ import {
   UpdateContainerSchemaArr,
 } from '@/src/lib/schemas';
 import logger from './logger';
-import { showToast } from '../components/client/Toast/Toast';
 import { getURL } from '@/src/lib/helpers';
 
 // Delete a single or multiple containers
@@ -35,9 +34,6 @@ export async function deleteContainers(
           headers: requestHeaders,
         }
       );
-
-      console.log(response);
-      
 
       if (response.status === 403) {
         const parsedResponse = await response.json();
@@ -231,10 +227,7 @@ export async function createContainers(
         revalidatePath(
           `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers`
         );
-        showToast({
-          variant: 'success',
-          message: 'Containers created',
-        });
+  
       });
       return {
         success: true,
@@ -403,10 +396,6 @@ export async function updateContainers(
         revalidatePath(
           `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers`
         );
-        showToast({
-          variant: 'success',
-          message: 'Containers updated',
-        });
       });
       return {
         success: true,

@@ -9,6 +9,9 @@ import { z } from 'zod';
 import { showToast } from '../../Toast/Toast';
 import { CreateContainerSchema } from '@/src/lib/schemas';
 import { Form } from '@/types/types';
+import { useDispatch, useSelector } from 'react-redux';
+import { selectTable, setIsLimitReached } from '@/src/app/redux/tableSlice';
+import { selectGlobal, setLoading } from '@/src/app/redux/globalSlice';
 
 const FormsSchema = z.array(CreateContainerSchema);
 
@@ -31,7 +34,6 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
   onClose,
   accounts = [],
 }) => {
-  const [isLoading, setIsLoading] = useState(false);
   const [forms, setForms] = useState<Form[]>([
     {
       accountId: '',
@@ -42,8 +44,12 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
       containerId: '',
     },
   ]);
-  const [isLimitReached, setIsLimitReached] = useState(false);
   const [showLoadingToast, setShowLoadingToast] = useState(false);
+  const dispatch = useDispatch();
+const { isLimitReached, loading } = useSelector(state => ({
+  ...selectTable(state),
+  ...selectGlobal(state)
+}));
 
   const addForm = () => {
     setForms([
@@ -82,8 +88,8 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
   }, [showLoadingToast]);
 
   const handleSubmit = async () => {
-    setIsLoading(true); // Set loading to true
-    setShowLoadingToast(true); // Show the loading toast
+     dispatch(setLoading(true))  // Set loading to true using Redux action
+    setShowLoadingToast(true);  // Show the loading toast
 
     try {
       const mappedData = forms.map((form, index) => {
@@ -100,6 +106,7 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
           containerName: formData.get('containerName') as string,
           domainName: formData.get('domainName') as string,
           notes: formData.get('notes') as string,
+          containerId: '',
         };
       });
 
@@ -139,6 +146,11 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
         const res = (await createContainers(
           parsedFormDataArray
         )) as CreateContainersResult;
+
+        if (res.limitReached) {
+          dispatch(setIsLimitReached(true)); // Set limitReached to true using Redux action
+        }
+        
 
         if (res.success) {
           showToast({ variant: 'success', message: 'Container(s) created.' });
@@ -186,7 +198,7 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
 
       return { success: false };
     } finally {
-      setIsLoading(false); // Set loading to false
+      dispatch(setLoading(false)); // Set loading to false
       setShowLoadingToast(false); // Hide the loading toast
     }
   };
@@ -231,7 +243,7 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
                 { text: 'Add Form', onClick: addForm },
                 { text: 'Remove Form', onClick: removeForm },
                 {
-                  text: isLoading ? 'Submitting...' : 'Submit',
+                  text: loading ? 'Submitting...' : 'Submit',
                   type: 'submit',
                   form: 'createContainer',
                 },
@@ -389,7 +401,7 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
       </AnimatePresence>
 
       {isLimitReached && (
-        <LimitReached onClose={() => setIsLimitReached(false)} />
+        <LimitReached onClose={() => dispatch(isLimitReached(false))} />  // Use Redux action for onClose
       )}
     </>
   );

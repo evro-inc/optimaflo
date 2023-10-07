@@ -15,6 +15,8 @@ import {
   setIsLimitReached,
   setSelectedRows,
 } from '@/src/app/redux/tableSlice';
+import logger from '@/src/lib/logger';
+import toast from 'react-hot-toast';
 
 //dynamic import for buttons
 const ButtonDelete = dynamic(
@@ -34,10 +36,6 @@ const FormCreateContainer = dynamic(() => import('./createContainer'), {
   ssr: false,
 });
 
-const showToast = dynamic(
-  () => import('../../Toast/Toast').then((mod) => mod.showToast),
-  { ssr: false }
-);
 const FormUpdateContainer = dynamic(() => import('./updateContainer'), {
   ssr: false,
 });
@@ -121,41 +119,46 @@ export default function ContainerTable({ accounts, containers }) {
     }
   };
 
-  const handleDelete = async () => {
-    // Show loading state toast
-    showToast({ variant: 'info', message: 'Deleting containers...' });
+ const handleDelete = () => {
+  const uniqueAccountIds = Array.from(
+    new Set(
+      Object.values(selectedRows).map((rowData: any) => rowData.accountId)
+    )
+  );
 
-    const uniqueAccountIds = Array.from(
-      new Set(
-        Object.values(selectedRows).map((rowData: any) => rowData.accountId)
-      )
-    );
+  const deleteOperations = uniqueAccountIds.map(async (accountId) => {
+    const containersToDelete = Object.entries(
+      selectedRows as { [key: string]: ContainerType }
+    )
+      .filter(([, rowData]) => rowData.accountId === accountId)
+      .map(([containerId]) => containerId);
 
-    try {
-      for (const accountId of uniqueAccountIds) {
-        const containersToDelete = Object.entries(
-          selectedRows as { [key: string]: ContainerType }
-        )
-          .filter(([, rowData]) => rowData.accountId === accountId)
-          .map(([containerId]) => containerId);
+    return deleteContainers(accountId, new Set(containersToDelete));
+  });
 
-        await deleteContainers(accountId, new Set(containersToDelete));
-      }
+  const deletePromise = Promise.all(deleteOperations);
 
-      // Show completion toast
-      showToast({
-        variant: 'success',
-        message: 'Container(s) deleted successfully.',
-      });
-    } catch (error: any) {
+  toast.promise(
+    deletePromise,
+    {
+      loading: 'Deleting containers...',
+      success: 'Containers deleted successfully',
+      error: 'An error occurred while deleting containers.'
+    },
+    {
+      // Additional toast options if needed
+    }
+  );
+
+  deletePromise
+    .catch((error: any) => {
       if (error.message.includes('Feature limit reached')) {
-      dispatch(setIsLimitReached(true));  // Set isLimitReached to true if a feature limit error is thrown
-    } else {
-      // Show error toast
-      showToast({ variant: 'error', message: 'Failed to delete containers.' });
-    }
-    }
-  };
+        dispatch(setIsLimitReached(true));
+      } else {
+        logger.error(error);
+      }
+    });
+};
 
   return (
     <>
@@ -182,7 +185,7 @@ export default function ContainerTable({ accounts, containers }) {
                         billingInterval={undefined}
                         variant="delete"
                         onClick={handleDelete}
-                        disabled={selectedRows.size === 0}
+                        disabled={Object.keys(selectedRows).length === 0}
                       />
 
                       <ButtonWithIcon
@@ -212,7 +215,7 @@ export default function ContainerTable({ accounts, containers }) {
                       <ButtonWithIcon
                         variant="create"
                         text="Update"
-                        disabled={selectedRows.size === 0}
+                        disabled={Object.keys(selectedRows).length === 0}
                         icon={
                           <svg
                             className="w-3 h-3"

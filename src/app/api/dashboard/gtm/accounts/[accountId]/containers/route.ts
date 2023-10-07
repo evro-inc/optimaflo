@@ -399,7 +399,34 @@ export async function POST(
       validatedParams;
     const accessToken = await getAccessToken(userId);
 
-    console.log('validatedParams', validatedParams);
+    // check tier limit
+    const tierLimitRecord = await prisma.tierLimit.findFirst({
+      where: {
+        Feature: {
+          name: 'GTMContainer',
+        },
+        Subscription: {
+          userId: userId,
+        },
+      },
+      include: {
+        Feature: true,
+        Subscription: true,
+      },
+    });
+
+    // if tier limit is reached, return an error
+    if (
+      !tierLimitRecord ||
+      tierLimitRecord.createUsage >= tierLimitRecord.createLimit
+    ) {
+      return new NextResponse(
+        JSON.stringify({ message: 'Feature limit reached' }),
+        {
+          status: 403,
+        }
+      );
+    }
 
     const response = await createGtmContainer(
       userId,
