@@ -7,13 +7,17 @@ import { ButtonGroup } from '../../ButtonGroup/ButtonGroup';
 import { XMarkIcon } from '@heroicons/react/24/solid';
 import {
   CreateContainersResult,
-  Form,
   FormCreateContainerProps,
 } from '@/types/types';
 import { useDispatch, useSelector } from 'react-redux';
 import { selectTable, setIsLimitReached } from '@/src/app/redux/tableSlice';
 import { selectGlobal, setLoading } from '@/src/app/redux/globalSlice';
 import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
+import { CreateContainerSchema } from '@/src/lib/schemas';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+
+type Forms = z.infer<typeof CreateContainerSchema>;
 
 const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
   showOptions,
@@ -28,19 +32,8 @@ const formRefs = useRef<(HTMLFormElement | null)[]>([]);
     control,
     reset,
     formState: { errors },
-  } = useForm<Form>({
-    defaultValues: {
-      forms: [
-        {
-          accountId: '',
-          usageContext: '',
-          containerName: '',
-          domainName: '',
-          notes: '',
-          containerId: '',
-        },
-      ],
-    },
+  } = useForm<Forms>({
+    resolver: zodResolver(CreateContainerSchema), 
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -71,7 +64,7 @@ const formRefs = useRef<(HTMLFormElement | null)[]>([]);
     }
   };
 
-  const processForm: SubmitHandler<Form> = async (data) => {
+  const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
@@ -222,9 +215,7 @@ const formRefs = useRef<(HTMLFormElement | null)[]>([]);
                               </label>
                               <input
                                 type="text"
-                                {...register(`forms.${index}.containerName`, {
-                                  required: 'Name is required',
-                                })}
+                                {...register(`forms.${index}.containerName`)}
                                 className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
                               />
                               {errors.forms?.[index]?.containerName
@@ -246,9 +237,7 @@ const formRefs = useRef<(HTMLFormElement | null)[]>([]);
                                 Account
                               </label>
                               <select
-                                {...register(`forms.${index}.accountId`, {
-                                  required: 'Account is required',
-                                })}
+                                {...register(`forms.${index}.accountId`)}
                                 className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
                               >
                                 {Array.isArray(accounts?.data) &&
@@ -276,9 +265,7 @@ const formRefs = useRef<(HTMLFormElement | null)[]>([]);
                             </label>
 
                             <select
-                              {...register(`forms.${index}.usageContext`, {
-                                required: 'Usage Context is required',
-                              })}
+                              {...register(`forms.${index}.usageContext`)}
                               className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
                             >
                               <option value="web">Web</option>

@@ -2,7 +2,7 @@
 import { revalidatePath } from 'next/cache';
 import { cookies, headers } from 'next/headers';
 import {
-  CreateContainerSchemaArr,
+  CreateContainerSchema,
   UpdateContainerSchemaArr,
 } from '@/src/lib/schemas';
 import logger from './logger';
@@ -101,7 +101,10 @@ export async function createContainers(
     const forms: any[] = [];
 
     const plainDataArray = formData.map((fd) => Object.fromEntries(fd));
-    const validationResult = CreateContainerSchemaArr.safeParse(plainDataArray);
+    console.log('plainDataArray', plainDataArray);
+    
+    const validationResult = CreateContainerSchema.safeParse({ forms: plainDataArray });
+
 
     console.log('validationResult', validationResult);
 
@@ -125,7 +128,7 @@ export async function createContainers(
       };
     }
 
-    validationResult.data.forEach((formData: any) => {
+    validationResult.data.forms.forEach((formData: any) => {
       forms.push({
         containerName: formData.containerName,
         usageContext: formData.usageContext,

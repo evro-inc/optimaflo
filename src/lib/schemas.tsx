@@ -7,12 +7,12 @@ const isValidDomainName = (domain: string) => {
 };
 
 // Schema for container create form data
-export const CreateContainerSchema = z.object({
-  accountId: z.string().nonempty('accountId is required'),
-  usageContext: z.string().nonempty('usageContext is required'),
-  containerName: z.string().nonempty('containerName is required'),
-  domainName: z
-    .string()
+// Define the schema for a single form
+const SingleFormSchema = z.object({
+  accountId: z.string().nonempty('Account Id is required'),
+  usageContext: z.string().nonempty('Usage Context is required'),
+  containerName: z.string().nonempty('Container Name is required'),
+  domainName: z.string()
     .optional()
     .refine(
       (value) => {
@@ -25,8 +25,7 @@ export const CreateContainerSchema = z.object({
           'Invalid domain name list. Format should be comma-separated list of domains with no protocol (e.g. http/https)',
       }
     ),
-  notes: z
-    .string()
+  notes: z.string()
     .optional()
     .refine(
       (value) => {
@@ -37,11 +36,17 @@ export const CreateContainerSchema = z.object({
         message: 'Notes must be between 1 and 500 characters',
       }
     ),
+    containerId: z.string().optional(),
 });
 
+// Define the schema for the entire form with field array
+export const CreateContainerSchema = z.object({
+  forms: z.array(SingleFormSchema),
+});
+
+// Type for the entire form data
 export type CreateContainerSchemaType = z.infer<typeof CreateContainerSchema>;
 
-export const CreateContainerSchemaArr = z.array(CreateContainerSchema);
 
 // Schema for container update form data
 export const UpdateContainerSchema = CreateContainerSchema.extend({
