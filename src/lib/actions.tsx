@@ -101,9 +101,6 @@ export async function createContainers(
     const forms: any[] = [];
 
     const validationResult = CreateContainerSchemaArr.safeParse(formData);
-    if (!validationResult.success) {
-      logger.error(validationResult.error);
-    }
 
     if (!validationResult.success) {
       let errorMessage = '';
@@ -125,22 +122,18 @@ export async function createContainers(
       };
     }
 
-    if (validationResult.success) {
-      validationResult.data.forEach((formData: any) => {
-        forms.push({
-          containerName: formData.containerName,
-          usageContext: formData.usageContext,
-          accountId: formData.accountId,
-          domainName: formData.domainName
-            ? formData.domainName.split(',')
-            : [''],
-          notes: formData.notes,
-        });
+    validationResult.data.forEach((formData: any) => {
+      forms.push({
+        containerName: formData.containerName,
+        usageContext: formData.usageContext,
+        accountId: formData.accountId,
+        domainName: formData.domainName
+          ? formData.domainName.split(',')
+          : [''],
+        notes: formData.notes,
       });
-    } else {
-      // Handle validation failure
-    }
-
+    });
+   
     const requestHeaders = {
       'Content-Type': 'application/json',
       ...(cookie && { Cookie: cookieHeader }),
@@ -227,7 +220,6 @@ export async function createContainers(
         revalidatePath(
           `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers`
         );
-  
       });
       return {
         success: true,

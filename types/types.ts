@@ -142,3 +142,17 @@ export type PostParams = {
   domainName: string;
   notes: string;
 };
+
+export type CreateContainersResult = {
+  success: boolean;
+  limitReached?: boolean;
+  message?: string;
+  createdContainers?: any[];
+  error?: string;
+};
+
+export type FormCreateContainerProps = {
+  showOptions: boolean;
+  onClose: () => void;
+  accounts: any; // Replace 'any' with the actual type if known
+};

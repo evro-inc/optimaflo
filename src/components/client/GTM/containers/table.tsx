@@ -119,46 +119,45 @@ export default function ContainerTable({ accounts, containers }) {
     }
   };
 
- const handleDelete = () => {
-  const uniqueAccountIds = Array.from(
-    new Set(
-      Object.values(selectedRows).map((rowData: any) => rowData.accountId)
-    )
-  );
+  const handleDelete = () => {
+    const uniqueAccountIds = Array.from(
+      new Set(
+        Object.values(selectedRows).map((rowData: any) => rowData.accountId)
+      )
+    );
 
-  const deleteOperations = uniqueAccountIds.map(async (accountId) => {
-    const containersToDelete = Object.entries(
-      selectedRows as { [key: string]: ContainerType }
-    )
-      .filter(([, rowData]) => rowData.accountId === accountId)
-      .map(([containerId]) => containerId);
+    const deleteOperations = uniqueAccountIds.map(async (accountId) => {
+      const containersToDelete = Object.entries(
+        selectedRows as { [key: string]: ContainerType }
+      )
+        .filter(([, rowData]) => rowData.accountId === accountId)
+        .map(([containerId]) => containerId);
 
-    return deleteContainers(accountId, new Set(containersToDelete));
-  });
+      return deleteContainers(accountId, new Set(containersToDelete));
+    });
 
-  const deletePromise = Promise.all(deleteOperations);
+    const deletePromise = Promise.all(deleteOperations);
 
-  toast.promise(
-    deletePromise,
-    {
-      loading: 'Deleting containers...',
-      success: 'Containers deleted successfully',
-      error: 'An error occurred while deleting containers.'
-    },
-    {
-      // Additional toast options if needed
-    }
-  );
+    toast.promise(
+      deletePromise,
+      {
+        loading: 'Deleting containers...',
+        success: 'Containers deleted successfully',
+        error: 'An error occurred while deleting containers.',
+      },
+      {
+        // Additional toast options if needed
+      }
+    );
 
-  deletePromise
-    .catch((error: any) => {
+    deletePromise.catch((error: any) => {
       if (error.message.includes('Feature limit reached')) {
         dispatch(setIsLimitReached(true));
       } else {
         logger.error(error);
       }
     });
-};
+  };
 
   return (
     <>

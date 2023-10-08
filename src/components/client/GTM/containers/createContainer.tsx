@@ -5,29 +5,15 @@ import { createContainers } from '@/src/lib/actions';
 import { LimitReached } from '../../modals/limitReached';
 import { ButtonGroup } from '../../ButtonGroup/ButtonGroup';
 import { XMarkIcon } from '@heroicons/react/24/solid';
-import { z } from 'zod';
 import { showToast } from '../../Toast/Toast';
-import { CreateContainerSchema } from '@/src/lib/schemas';
-import { Form } from '@/types/types';
+import {
+  CreateContainersResult,
+  Form,
+  FormCreateContainerProps,
+} from '@/types/types';
 import { useDispatch, useSelector } from 'react-redux';
 import { selectTable, setIsLimitReached } from '@/src/app/redux/tableSlice';
 import { selectGlobal, setLoading } from '@/src/app/redux/globalSlice';
-
-const FormsSchema = z.array(CreateContainerSchema);
-
-type CreateContainersResult = {
-  success: boolean;
-  limitReached?: boolean;
-  message?: string;
-  createdContainers?: any[];
-  error?: string;
-};
-
-type FormCreateContainerProps = {
-  showOptions: boolean;
-  onClose: () => void;
-  accounts: any; // Replace 'any' with the actual type if known
-};
 
 const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
   showOptions,
@@ -46,10 +32,10 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
   ]);
   const [showLoadingToast, setShowLoadingToast] = useState(false);
   const dispatch = useDispatch();
-const { isLimitReached, loading } = useSelector(state => ({
-  ...selectTable(state),
-  ...selectGlobal(state)
-}));
+  const { isLimitReached, loading } = useSelector((state) => ({
+    ...selectTable(state),
+    ...selectGlobal(state),
+  }));
 
   const addForm = () => {
     setForms([
@@ -88,8 +74,8 @@ const { isLimitReached, loading } = useSelector(state => ({
   }, [showLoadingToast]);
 
   const handleSubmit = async () => {
-     dispatch(setLoading(true))  // Set loading to true using Redux action
-    setShowLoadingToast(true);  // Show the loading toast
+    dispatch(setLoading(true)); // Set loading to true using Redux action
+    setShowLoadingToast(true); // Show the loading toast
 
     try {
       const mappedData = forms.map((form, index) => {
@@ -110,60 +96,47 @@ const { isLimitReached, loading } = useSelector(state => ({
         };
       });
 
-      // Validate using Zod
-      const validationResult = FormsSchema.safeParse(transformedData);
-      if (!validationResult.success) {
-        let errorMessage = '';
+      const formDataArray = transformedData.map((obj) => {
+        const formData = JSON.stringify(obj);
+        return formData;
+      });
 
-        validationResult.error.format();
+      const parsedFormDataArray = formDataArray.map((item) => JSON.parse(item));
 
-        validationResult.error.issues.forEach((issue) => {
-          errorMessage =
-            errorMessage + issue.path[0] + ': ' + issue.message + '. ';
-        });
-        const formattedErrorMessage = errorMessage
-          .split(':')
-          .slice(1)
-          .join(':')
-          .trim();
+      // If you're here, validation succeeded. Proceed with createContainers.
+      const res = (await createContainers(
+        parsedFormDataArray
+      )) as CreateContainersResult;
 
-        showToast({ variant: 'error', message: formattedErrorMessage });
-
-        return;
+      if (res.limitReached) {
+        dispatch(setIsLimitReached(true)); // Set limitReached to true using Redux action
       }
 
-      if (validationResult.success) {
-        const formDataArray = validationResult.data.map((obj) => {
-          const formData = JSON.stringify(obj);
-          return formData;
-        });
+      if (res.success) {
+        showToast({ variant: 'success', message: 'Container(s) created.' });
+      }
 
-        const parsedFormDataArray = formDataArray.map((item) =>
-          JSON.parse(item)
-        );
+      if (res?.error) {
+        showToast({ variant: 'error', message: res.error });
+      }
 
-        // If you're here, validation succeeded. Proceed with createContainers.
-        const res = (await createContainers(
-          parsedFormDataArray
-        )) as CreateContainersResult;
+      // close the modal
+      onClose();
 
-        if (res.limitReached) {
-          dispatch(setIsLimitReached(true)); // Set limitReached to true using Redux action
-        }
-        
+      // Reset the forms here, regardless of success or limit reached
+      setForms([
+        {
+          accountId: '',
+          usageContext: '',
+          containerName: '',
+          domainName: '',
+          notes: '',
+          containerId: '',
+        },
+      ]);
 
-        if (res.success) {
-          showToast({ variant: 'success', message: 'Container(s) created.' });
-        }
-
-        if (res?.error) {
-          showToast({ variant: 'error', message: res.error });
-        }
-
-        // close the modal
-        onClose();
-
-        // Reset the forms here, regardless of success or limit reached
+      if (res && res.success) {
+        // Reset the forms here
         setForms([
           {
             accountId: '',
@@ -174,23 +147,9 @@ const { isLimitReached, loading } = useSelector(state => ({
             containerId: '',
           },
         ]);
-
-        if (res && res.success) {
-          // Reset the forms here
-          setForms([
-            {
-              accountId: '',
-              usageContext: '',
-              containerName: '',
-              domainName: '',
-              notes: '',
-              containerId: '',
-            },
-          ]);
-        } else if (res && res.limitReached) {
-          // Show the LimitReached modal
-          setIsLimitReached(true);
-        }
+      } else if (res && res.limitReached) {
+        // Show the LimitReached modal
+        setIsLimitReached(true);
       }
     } catch (error) {
       console.error('Error creating containers:', error);
@@ -401,7 +360,7 @@ const { isLimitReached, loading } = useSelector(state => ({
       </AnimatePresence>
 
       {isLimitReached && (
-        <LimitReached onClose={() => dispatch(isLimitReached(false))} />  // Use Redux action for onClose
+        <LimitReached onClose={() => dispatch(isLimitReached(false))} /> // Use Redux action for onClose
       )}
     </>
   );
