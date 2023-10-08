@@ -20,7 +20,7 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
   onClose,
   accounts = [],
 }) => {
-  const formRefs = useRef([]);
+const formRefs = useRef<(HTMLFormElement | null)[]>([]);
 
   const {
     register,
