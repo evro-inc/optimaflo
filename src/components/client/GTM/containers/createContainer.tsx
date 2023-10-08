@@ -84,18 +84,18 @@ const formRefs = useRef<(HTMLFormElement | null)[]>([]);
 
     try {
       const formDataArray = forms.map((formElement) => {
-        const formData = new FormData();
+        const obj = {};
         Object.keys(formElement).forEach((key) => {
-          formData.append(key, formElement[key]);
+          obj[key] = formElement[key];
         });
-        return formData;
+        return obj;
       });
+
 
       console.log('formDataArray', formDataArray);
 
-      const res = (await createContainers(
-        formDataArray
-      )) as CreateContainersResult;
+      const res = (await createContainers({ forms })) as CreateContainersResult;
+
 
       if (res.limitReached) {
         dispatch(setIsLimitReached(true)); // Set limitReached to true using Redux action
