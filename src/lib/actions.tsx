@@ -7,6 +7,9 @@ import {
 } from '@/src/lib/schemas';
 import logger from './logger';
 import { getURL } from '@/src/lib/helpers';
+import z from 'zod';
+
+type FormDataSchema = z.infer<typeof CreateContainerSchema>;
 
 // Delete a single or multiple containers
 export async function deleteContainers(
@@ -89,7 +92,7 @@ export async function deleteContainers(
 
 // Create a single container or multiple containers
 export async function createContainers(
-  formData: FormData[] // Replace 'any' with the actual type if known
+  formData: FormDataSchema // Replace 'any' with the actual type if known
 ) {
   try {
     const cookie: any = cookies();
@@ -100,10 +103,15 @@ export async function createContainers(
     let accountIdsToRevalidate = new Set<string>();
     const forms: any[] = [];
 
-    const plainDataArray = formData.map((fd) => Object.fromEntries(fd));
-    console.log('plainDataArray', plainDataArray);
+    console.log('formData', formData);
     
-    const validationResult = CreateContainerSchema.safeParse({ forms: plainDataArray });
+
+const plainDataArray = formData.map(fd => Object.fromEntries(fd));
+
+// Now pass plainDataArray to CreateContainerSchema.safeParse within an object under the key 'forms'
+const validationResult = CreateContainerSchema.safeParse({ forms: plainDataArray });
+
+console.log('validationResult', validationResult);
 
 
     console.log('validationResult', validationResult);
