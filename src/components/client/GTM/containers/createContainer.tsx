@@ -33,6 +33,18 @@ const formRefs = useRef<(HTMLFormElement | null)[]>([]);
     reset,
     formState: { errors },
   } = useForm<Forms>({
+     defaultValues: {
+        forms: [
+            {
+                accountId: '',
+                usageContext: '',
+                containerName: '',
+                domainName: '',
+                notes: '',
+                containerId: '',
+            }
+        ]
+    },
     resolver: zodResolver(CreateContainerSchema), 
   });
 
