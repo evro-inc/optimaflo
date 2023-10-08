@@ -89,15 +89,18 @@ export interface User {
   Customer: Customer[];
   Subscription: Subscription[];
 }
-export interface Form {
+export type FormElement = {
   accountId: string;
   usageContext: string;
   containerName: string;
   domainName: string;
   notes: string;
   containerId: string;
-}
+};
 
+export type Form = {
+  forms: FormElement[];
+};
 export type ContainerType = {
   containerId: string;
   name: string;

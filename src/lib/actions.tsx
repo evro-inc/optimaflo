@@ -100,7 +100,10 @@ export async function createContainers(
     let accountIdsToRevalidate = new Set<string>();
     const forms: any[] = [];
 
-    const validationResult = CreateContainerSchemaArr.safeParse(formData);
+    const plainDataArray = formData.map((fd) => Object.fromEntries(fd));
+    const validationResult = CreateContainerSchemaArr.safeParse(plainDataArray);
+
+    console.log('validationResult', validationResult);
 
     if (!validationResult.success) {
       let errorMessage = '';
@@ -127,13 +130,11 @@ export async function createContainers(
         containerName: formData.containerName,
         usageContext: formData.usageContext,
         accountId: formData.accountId,
-        domainName: formData.domainName
-          ? formData.domainName.split(',')
-          : [''],
+        domainName: formData.domainName ? formData.domainName.split(',') : [''],
         notes: formData.notes,
       });
     });
-   
+
     const requestHeaders = {
       'Content-Type': 'application/json',
       ...(cookie && { Cookie: cookieHeader }),
@@ -144,6 +145,8 @@ export async function createContainers(
     const createPromises = forms.map(async (containerData) => {
       const { containerName, usageContext, accountId, domainName, notes } =
         containerData; // Destructure from the current object
+
+      console.log('containerData', containerData);
 
       // Initialize payload with a flexible type
       const payload: { [key: string]: any } = {
