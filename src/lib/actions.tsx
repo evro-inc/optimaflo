@@ -9,10 +9,14 @@ import logger from './logger';
 import { getURL } from '@/src/lib/helpers';
 import z from 'zod';
 
+// Define the types for the form data
 type FormCreateSchema = z.infer<typeof CreateContainerSchema>;
 type FormUpdateSchema = z.infer<typeof UpdateContainerSchema>;
 
-// Delete a single or multiple containers
+
+/************************************************************************************
+  Delete a single or multiple containers
+************************************************************************************/
 export async function deleteContainers(
   accountId: string,
   selectedContainers: Set<string>
@@ -90,8 +94,10 @@ export async function deleteContainers(
     };
   }
 }
-
-// Create a single container or multiple containers
+ 
+/************************************************************************************
+  Create a single container or multiple containers
+************************************************************************************/
 export async function createContainers(formData: FormCreateSchema) {
   try {
     const cookie: any = cookies();
@@ -245,8 +251,10 @@ export async function createContainers(formData: FormCreateSchema) {
     };
   }
 }
-
-// Create a single container or multiple containers
+ 
+/************************************************************************************
+  Create a single container or multiple containers
+************************************************************************************/
 export async function updateContainers(
   formData: FormUpdateSchema // Replace 'any' with the actual type if known
 ) {

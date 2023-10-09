@@ -16,7 +16,6 @@ import {
   setSelectedRows,
 } from '@/src/app/redux/tableSlice';
 import logger from '@/src/lib/logger';
-import toast from 'react-hot-toast';
 
 //dynamic import for buttons
 const ButtonDelete = dynamic(
@@ -137,18 +136,6 @@ export default function ContainerTable({ accounts, containers }) {
     });
 
     const deletePromise = Promise.all(deleteOperations);
-
-    toast.promise(
-      deletePromise,
-      {
-        loading: 'Deleting containers...',
-        success: 'Containers deleted successfully',
-        error: 'An error occurred while deleting containers.',
-      },
-      {
-        // Additional toast options if needed
-      }
-    );
 
     deletePromise.catch((error: any) => {
       if (error.message.includes('Feature limit reached')) {
