@@ -16,6 +16,7 @@ import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
 import { CreateContainerSchema } from '@/src/lib/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import logger from '@/src/lib/logger';
 
 type Forms = z.infer<typeof CreateContainerSchema>;
 
@@ -24,7 +25,8 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
   onClose,
   accounts = [],
 }) => {
-const formRefs = useRef<(HTMLFormElement | null)[]>([]);
+  const formRefs = useRef<(HTMLFormElement | null)[]>([]);
+  const dispatch = useDispatch();
 
   const {
     register,
@@ -33,19 +35,19 @@ const formRefs = useRef<(HTMLFormElement | null)[]>([]);
     reset,
     formState: { errors },
   } = useForm<Forms>({
-     defaultValues: {
-        forms: [
-            {
-                accountId: '',
-                usageContext: '',
-                containerName: '',
-                domainName: '',
-                notes: '',
-                containerId: '',
-            }
-        ]
+    defaultValues: {
+      forms: [
+        {
+          accountId: '',
+          usageContext: '',
+          containerName: '',
+          domainName: '',
+          notes: '',
+          containerId: '',
+        },
+      ],
     },
-    resolver: zodResolver(CreateContainerSchema), 
+    resolver: zodResolver(CreateContainerSchema),
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -53,7 +55,6 @@ const formRefs = useRef<(HTMLFormElement | null)[]>([]);
     name: 'forms',
   });
 
-  const dispatch = useDispatch();
   const { isLimitReached, loading } = useSelector((state) => ({
     ...selectTable(state),
     ...selectGlobal(state),
@@ -80,22 +81,8 @@ const formRefs = useRef<(HTMLFormElement | null)[]>([]);
     const { forms } = data;
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
-    console.log('forms', forms);
-
     try {
-      const formDataArray = forms.map((formElement) => {
-        const obj = {};
-        Object.keys(formElement).forEach((key) => {
-          obj[key] = formElement[key];
-        });
-        return obj;
-      });
-
-
-      console.log('formDataArray', formDataArray);
-
       const res = (await createContainers({ forms })) as CreateContainersResult;
-
 
       if (res.limitReached) {
         dispatch(setIsLimitReached(true)); // Set limitReached to true using Redux action
@@ -137,7 +124,7 @@ const formRefs = useRef<(HTMLFormElement | null)[]>([]);
         setIsLimitReached(true);
       }
     } catch (error) {
-      console.error('Error creating containers:', error);
+      logger.error('Error creating containers:', error);
 
       return { success: false };
     } finally {
