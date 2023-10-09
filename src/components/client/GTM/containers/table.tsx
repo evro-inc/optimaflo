@@ -15,6 +15,7 @@ import {
   setIsLimitReached,
   setSelectedRows,
 } from '@/src/app/redux/tableSlice';
+import logger from '@/src/lib/logger';
 
 //dynamic import for buttons
 const ButtonDelete = dynamic(
@@ -34,10 +35,6 @@ const FormCreateContainer = dynamic(() => import('./createContainer'), {
   ssr: false,
 });
 
-const showToast = dynamic(
-  () => import('../../Toast/Toast').then((mod) => mod.showToast),
-  { ssr: false }
-);
 const FormUpdateContainer = dynamic(() => import('./updateContainer'), {
   ssr: false,
 });
@@ -75,19 +72,19 @@ export default function ContainerTable({ accounts, containers }) {
     : [];
 
   const handlePageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setCurrentPage(Number(e.target.value));
+    dispatch(setCurrentPage(Number(e.target.value)));
   };
 
   const pageOptions = Array.from({ length: totalPages }, (_, i) => i + 1);
 
   const toggleRow = (containerId, accountId) => {
-    const newSelectedRows: Map<string, ContainerType> = new Map(selectedRows);
-    if (newSelectedRows.has(containerId)) {
-      newSelectedRows.delete(containerId);
+    const newSelectedRows = { ...selectedRows };
+    if (newSelectedRows[containerId]) {
+      delete newSelectedRows[containerId];
     } else {
       const container = containers.find((c) => c.containerId === containerId);
       if (container) {
-        newSelectedRows.set(containerId, {
+        newSelectedRows[containerId] = {
           accountId: accountId,
           name: container.name,
           containerId: containerId,
@@ -95,60 +92,58 @@ export default function ContainerTable({ accounts, containers }) {
           usageContext: container.usageContext,
           domainName: container.domainName,
           notes: container.notes,
-        });
+        };
       }
     }
-    setSelectedRows(newSelectedRows);
+    dispatch(setSelectedRows(newSelectedRows));
   };
 
   const toggleAll = () => {
-    if (selectedRows.size === containers.length) {
-      setSelectedRows(new Map());
+    if (Object.keys(selectedRows).length === containers.length) {
+      dispatch(setSelectedRows({}));
     } else {
-      const newSelectedRows = new Map();
+      const newSelectedRows = {};
       containers.forEach((container) => {
         const { containerId, accountId, name, publicId, usageContext } =
           container;
-        newSelectedRows.set(containerId, {
+        newSelectedRows[containerId] = {
           accountId,
           name: name,
           containerId,
           publicId,
           usageContext,
-        });
+        };
       });
-      setSelectedRows(newSelectedRows);
+      dispatch(setSelectedRows(newSelectedRows));
     }
   };
 
-  const handleDelete = async () => {
-    // Show loading state toast
-    showToast({ variant: 'info', message: 'Deleting containers...' });
-
+  const handleDelete = () => {
     const uniqueAccountIds = Array.from(
       new Set(
-        Array.from(selectedRows.values()).map((rowData) => rowData.accountId)
+        Object.values(selectedRows).map((rowData: any) => rowData.accountId)
       )
     );
 
-    try {
-      for (const accountId of uniqueAccountIds) {
-        const containersToDelete = Array.from(selectedRows.entries() as [string, ContainerType][])
-          .filter(([, rowData]) => rowData.accountId === accountId)
-          .map(([containerId]) => containerId);
+    const deleteOperations = uniqueAccountIds.map(async (accountId) => {
+      const containersToDelete = Object.entries(
+        selectedRows as { [key: string]: ContainerType }
+      )
+        .filter(([, rowData]) => rowData.accountId === accountId)
+        .map(([containerId]) => containerId);
 
-        await deleteContainers(accountId, new Set(containersToDelete));
+      return deleteContainers(accountId, new Set(containersToDelete));
+    });
+
+    const deletePromise = Promise.all(deleteOperations);
+
+    deletePromise.catch((error: any) => {
+      if (error.message.includes('Feature limit reached')) {
+        dispatch(setIsLimitReached(true));
+      } else {
+        logger.error(error);
       }
-
-      // Show completion toast
-      showToast({
-        variant: 'success',
-        message: 'Container(s) deleted successfully.',
-      });
-    } catch (error: any) {
-      // Show error toast
-      showToast({ variant: 'error', message: 'Failed to delete containers.' });
-    }
+    });
   };
 
   return (
@@ -176,7 +171,7 @@ export default function ContainerTable({ accounts, containers }) {
                         billingInterval={undefined}
                         variant="delete"
                         onClick={handleDelete}
-                        disabled={selectedRows.size === 0}
+                        disabled={Object.keys(selectedRows).length === 0}
                       />
 
                       <ButtonWithIcon
@@ -206,7 +201,7 @@ export default function ContainerTable({ accounts, containers }) {
                       <ButtonWithIcon
                         variant="create"
                         text="Update"
-                        disabled={selectedRows.size === 0}
+                        disabled={Object.keys(selectedRows).length === 0}
                         icon={
                           <svg
                             className="w-3 h-3"
@@ -310,9 +305,7 @@ export default function ContainerTable({ accounts, containers }) {
                                 type="checkbox"
                                 className="shrink-0 border-gray-200 rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:checked:bg-blue-500 dark:checked:border-blue-500 dark:focus:ring-offset-gray-800"
                                 id={`checkbox-${container.containerId}`}
-                                checked={selectedRows.has(
-                                  container.containerId
-                                )}
+                                checked={!!selectedRows[container.containerId]}
                                 onChange={() =>
                                   toggleRow(
                                     container.containerId,
@@ -470,7 +463,7 @@ export default function ContainerTable({ accounts, containers }) {
       </div>
       {/* End Table Section */}
       {isLimitReached && (
-        <LimitReached onClose={() => setIsLimitReached(false)} />
+        <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
       )}
       {useSelector(selectGlobal).showCreateContainer && (
         <FormCreateContainer

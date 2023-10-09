@@ -12,11 +12,7 @@ import { isErrorWithStatus } from '@/src/lib/fetch/dashboard';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
 import logger from '@/src/lib/logger';
 import { limiter } from '@/src/lib/bottleneck';
-import {
-  getAccessToken,
-  handleError,
-  validateSchema,
-} from '@/src/lib/fetch/apiUtils';
+import { getAccessToken, handleError } from '@/src/lib/fetch/apiUtils';
 import { PostParams, ResultType } from '@/types/types';
 
 /************************************************************************************
@@ -37,10 +33,14 @@ async function validateGetParams(params) {
       .required(),
   });
 
-  const { error } = schema.validate(params);
+  const { error, value } = schema.validate(params);
   if (error) {
-    throw new Error(`Validation Error: ${error.message}`);
+    return new NextResponse(JSON.stringify({ error: error.message }), {
+      status: 400,
+    });
   }
+
+  return value; // return the validated parameters when validation passes
 }
 
 /************************************************************************************
@@ -324,9 +324,9 @@ export async function GET(
     };
 
     // Call validateGetParams to validate the parameters
-    await validateGetParams(paramsJOI);
+    const validatedParams = await validateGetParams(paramsJOI);
 
-    const { userId } = paramsJOI;
+    const { userId } = validatedParams;
 
     if (!userId) {
       logger.error('User ID is undefined');
@@ -399,7 +399,34 @@ export async function POST(
       validatedParams;
     const accessToken = await getAccessToken(userId);
 
-    console.log('validatedParams', validatedParams);
+    // check tier limit
+    const tierLimitRecord = await prisma.tierLimit.findFirst({
+      where: {
+        Feature: {
+          name: 'GTMContainer',
+        },
+        Subscription: {
+          userId: userId,
+        },
+      },
+      include: {
+        Feature: true,
+        Subscription: true,
+      },
+    });
+
+    // if tier limit is reached, return an error
+    if (
+      !tierLimitRecord ||
+      tierLimitRecord.createUsage >= tierLimitRecord.createLimit
+    ) {
+      return new NextResponse(
+        JSON.stringify({ message: 'Feature limit reached' }),
+        {
+          status: 403,
+        }
+      );
+    }
 
     const response = await createGtmContainer(
       userId,
@@ -411,8 +438,6 @@ export async function POST(
       notes,
       limit
     );
-
-    console.log('response', response);
 
     return NextResponse.json(response, {
       headers: {

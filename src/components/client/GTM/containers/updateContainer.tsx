@@ -1,154 +1,118 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { updateContainers } from '@/src/lib/actions';
 import { LimitReached } from '../../modals/limitReached';
 import { ButtonGroup } from '../../ButtonGroup/ButtonGroup';
 import { XMarkIcon } from '@heroicons/react/24/solid';
 import { z } from 'zod';
-import { showToast } from '../../Toast/Toast';
 import { UpdateContainerSchema } from '@/src/lib/schemas';
 import {
-  Form,
+  clearSelectedRows,
+  selectTable,
+  setIsLimitReached,
+} from '@/src/app/redux/tableSlice';
+import { selectIsLoading, setLoading } from '@/src/app/redux/globalSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
   FormUpdateContainerProps,
   UpdateContainersResult,
 } from '@/types/types';
 import logger from '@/src/lib/logger';
 
-const FormsSchema = z.array(UpdateContainerSchema);
+// Type for the entire form data
+type Forms = z.infer<typeof UpdateContainerSchema>;
 
+// Component
 const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
   showOptions,
   onClose,
   selectedRows,
   accounts,
 }) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [forms, setForms] = useState<Form[]>([
-    {
-      accountId: '',
-      usageContext: '',
-      containerName: '',
-      domainName: '',
-      notes: '',
-      containerId: '',
+  const dispatch = useDispatch();
+  const { isLimitReached } = useSelector(selectTable);
+  const isLoading = useSelector(selectIsLoading);
+  const formRefs = useRef<(HTMLFormElement | null)[]>([]);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    control,
+    formState: { errors },
+  } = useForm<Forms>({
+    defaultValues: {
+      forms: [
+        {
+          accountId: '',
+          usageContext: '',
+          containerName: '',
+          domainName: '',
+          notes: '',
+          containerId: '',
+        },
+      ],
     },
-  ]);
-  const [isLimitReached, setIsLimitReached] = useState(false);
-  const [showLoadingToast, setShowLoadingToast] = useState(false);
+    resolver: zodResolver(UpdateContainerSchema),
+  });
+
+  const { fields } = useFieldArray({
+    control,
+    name: 'forms',
+  });
 
   useEffect(() => {
-    if (selectedRows instanceof Map) {
-      const initialForms = [...selectedRows.keys()].map((containerId) => {
-        const rowData = selectedRows.get(containerId);
-        const accountId = rowData?.accountId || '';
-        const containerName = rowData?.name || '';
-        const domainName = rowData?.domainName || '';
-        const notes = rowData?.notes || '';
-        const usageContext = rowData?.usageContext || '';
+    const initialForms = Object.values(selectedRows).map((rowData: any) => {
+      const accountId = rowData?.accountId || '';
+      const containerName = rowData?.name || '';
+      const domainName = rowData?.domainName || '';
+      const notes = rowData?.notes || '';
+      const usageContext = rowData?.usageContext ? rowData.usageContext[0] : '';
 
-        return {
-          accountId,
-          usageContext,
-          containerName,
-          domainName,
-          notes,
-          containerId,
-        };
-      });
-      setForms(initialForms);
-    }
-  }, [selectedRows]);
+      const containerId = rowData?.containerId || '';
 
-  const handleInputChange = (e, index, field) => {
-    const newForms = [...forms];
-    newForms[index][field] = e.target.value;
-    setForms(newForms);
-  };
+      return {
+        accountId,
+        usageContext,
+        containerName,
+        domainName,
+        notes,
+        containerId,
+      };
+    });
 
-  useEffect(() => {
-    if (showLoadingToast) {
-      showToast({
-        variant: 'promise',
-        message: 'Updating container(s)...',
-        error: 'An error occurred with container creation',
-      });
-    }
-  }, [showLoadingToast]);
+    reset({ forms: initialForms });
+  }, [selectedRows, reset]);
 
-  const handleSubmit = async () => {
-    setIsLoading(true); // Set loading to true
-    setShowLoadingToast(true); // Show the loading toast
+  const processForm: SubmitHandler<Forms> = async (data) => {
+    const { forms } = data;
+    dispatch(setLoading(true)); // Set loading to true
 
     try {
-      const mappedData = forms.map((form, index) => {
-        const formInstance = new FormData(document.forms[index]);
-        return formInstance;
+      const formDataArray = forms.map((formElement) => {
+        const obj = {};
+        Object.keys(formElement).forEach((key) => {
+          obj[key] = formElement[key];
+        });
+        return obj;
       });
 
-      // Transform FormData to Form shape
-      const transformedData: Form[] = mappedData.map((formData, index) => {
-        // Transform FormData to Form shape
-        return {
-          accountId: formData.get('accountId') as string,
-          usageContext: formData.get('usageContext') as string,
-          containerName: formData.get('containerName') as string,
-          domainName: formData.get('domainName') as string,
-          notes: formData.get('notes') as string,
-          containerId: forms[index].containerId as string,
-        };
-      });
+      console.log('formDataArray', formDataArray);
 
-      // Validate using Zod
-      const validationResult = FormsSchema.safeParse(transformedData);
-      if (!validationResult.success) {
-        let errorMessage = '';
+      // If you're here, validation succeeded. Proceed with updateContainers.
+      const res = (await updateContainers({ forms })) as UpdateContainersResult;
 
-        validationResult.error.format();
+      dispatch(clearSelectedRows()); // Clear selectedRows
 
-        validationResult.error.issues.forEach((issue) => {
-          errorMessage =
-            errorMessage + issue.path[0] + ': ' + issue.message + '. ';
-        });
-        const formattedErrorMessage = errorMessage
-          .split(':')
-          .slice(1)
-          .join(':')
-          .trim();
+      // close the modal
+      onClose();
 
-        showToast({ variant: 'error', message: formattedErrorMessage });
-
-        return;
-      }
-
-      if (validationResult.success) {
-        const formDataArray = validationResult.data.map((obj) => {
-          const formData = JSON.stringify(obj);
-          return formData;
-        });
-
-        const parsedFormDataArray = formDataArray.map((item) =>
-          JSON.parse(item)
-        );
-
-        // If you're here, validation succeeded. Proceed with updateContainers.
-        const res = (await updateContainers(
-          parsedFormDataArray
-        )) as UpdateContainersResult;
-
-        if (res.success) {
-          showToast({ variant: 'success', message: 'Container(s) updated.' });
-        }
-
-        if (res?.error) {
-          showToast({ variant: 'error', message: res.error });
-        }
-
-        // close the modal
-        onClose();
-
-        // Reset the forms here, regardless of success or limit reached
-        setForms([
+      // Reset the forms here, regardless of success or limit reached
+      reset({
+        forms: [
           {
             accountId: '',
             usageContext: '',
@@ -157,11 +121,13 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
             notes: '',
             containerId: '',
           },
-        ]);
+        ],
+      });
 
-        if (res && res.success) {
-          // Reset the forms here
-          setForms([
+      if (res && res.success) {
+        // Reset the forms here
+        reset({
+          forms: [
             {
               accountId: '',
               usageContext: '',
@@ -170,45 +136,46 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
               notes: '',
               containerId: '',
             },
-          ]);
-        } else if (res && res.limitReached) {
-          // Show the LimitReached modal
-          setIsLimitReached(true);
-        }
+          ],
+        });
+      } else if (res && res.limitReached) {
+        // Show the LimitReached modal
+        dispatch(setIsLimitReached(true));
       }
     } catch (error) {
       logger.error('Error creating containers:', error);
-      showToast({ variant: 'error', message: 'An unexpected error occurred.' });
 
       return { success: false };
     } finally {
-      setIsLoading(false); // Set loading to false
-      setShowLoadingToast(false); // Hide the loading toast
+      dispatch(setLoading(false)); // Set loading to false
     }
   };
 
   const handleClose = () => {
     // Reset the forms to their initial state
-    setForms([
-      {
-        accountId: '',
-        usageContext: '',
-        containerName: '',
-        domainName: '',
-        notes: '',
-        containerId: '',
-      },
-    ]);
+    reset({
+      forms: [
+        {
+          accountId: '',
+          usageContext: '',
+          containerName: '',
+          domainName: '',
+          notes: '',
+          containerId: '',
+        },
+      ],
+    });
 
-    selectedRows.clear();
+    dispatch(clearSelectedRows()); // Clear selectedRows
 
     // Close the modal
     onClose();
   };
 
-  const selectedAccountIds = Array.from(selectedRows.values()).map(
-    (row) => row.accountId
+  const selectedAccountIds = Object.values(selectedRows).map(
+    (row: any) => row.accountId
   );
+
   const uniqueSelectedAccountIds = Array.from(new Set(selectedAccountIds));
 
   const filteredAccounts = Array.isArray(accounts?.data)
@@ -217,11 +184,9 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
       )
     : [];
 
-  const filteredUsageContexts = Array.from(selectedRows.values()).map(
-    (row) => row.usageContext
+  const filteredUsageContexts = Object.values(selectedRows).map(
+    (row: any) => row.usageContext[0]
   );
-
-  console.log('filteredUsageContexts:', filteredUsageContexts);
 
   return (
     <>
@@ -253,26 +218,23 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
 
             {/* Hire Us */}
             <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-end">
-              {forms.map((form, index) => (
+              {fields.map((field, index) => (
                 <div
-                  key={index}
+                  key={field.id}
                   className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
                 >
                   <div className="max-w-xl mx-auto">
                     <div className="text-center">
                       <p className="text-3xl font-bold text-gray-800 sm:text-4xl dark:text-white">
-                        {form.containerName || `Container ${index + 1}`}
+                        {field.containerName || `Container ${index + 1}`}
                       </p>
                     </div>
 
                     <div className="mt-12">
                       {/* Form */}
                       <form
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          setShowLoadingToast(true);
-                          handleSubmit();
-                        }}
+                        ref={(el) => (formRefs.current[index] = el)}
+                        onSubmit={handleSubmit(processForm)}
                         id="updateContainer"
                       >
                         <div className="grid gap-4 lg:gap-6">
@@ -287,13 +249,18 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
                               </label>
                               <input
                                 type="text"
-                                name="containerName"
-                                value={form.containerName}
-                                onChange={(e) =>
-                                  handleInputChange(e, index, 'containerName')
-                                }
+                                {...register(`forms.${index}.containerName`)}
+                                defaultValue={field.containerName}
                                 className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
                               />
+                              {errors.forms?.[index]?.containerName && (
+                                <p className="text-red-500 text-xs italic">
+                                  {
+                                    errors.forms?.[index]?.containerName
+                                      ?.message
+                                  }
+                                </p>
+                              )}
                             </div>
 
                             <div>
@@ -304,11 +271,8 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
                                 Account
                               </label>
                               <select
-                                name="accountId"
-                                value={form.accountId}
-                                onChange={(e) =>
-                                  handleInputChange(e, index, 'accountId')
-                                }
+                                {...register(`forms.${index}.accountId`)}
+                                defaultValue={field.accountId}
                                 className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
                               >
                                 {filteredAccounts.map((account: any) => (
@@ -317,6 +281,11 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
                                   </option>
                                 ))}
                               </select>
+                              {errors.forms?.[index]?.accountId && (
+                                <p className="text-red-500 text-xs italic">
+                                  {errors.forms?.[index]?.accountId?.message}
+                                </p>
+                              )}
                             </div>
                           </div>
                           {/* End Grid */}
@@ -330,11 +299,8 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
                             </label>
 
                             <select
-                              value={form.usageContext}
-                              name="usageContext"
-                              onChange={(e) =>
-                                handleInputChange(e, index, 'usageContext')
-                              }
+                              {...register(`forms.${index}.usageContext`)}
+                              defaultValue={field.usageContext[0]}
                               className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
                             >
                               {filteredUsageContexts.map((usageContext) => (
@@ -343,6 +309,11 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
                                 </option>
                               ))}
                             </select>
+                            {errors.forms?.[index]?.usageContext && (
+                              <p className="text-red-500 text-xs italic">
+                                {errors.forms?.[index]?.usageContext?.message}
+                              </p>
+                            )}
                           </div>
 
                           {/* Grid */}
@@ -357,14 +328,16 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
 
                               <input
                                 type="text"
-                                name="domainName"
-                                onChange={(e) =>
-                                  handleInputChange(e, index, 'domainName')
-                                }
-                                value={form.domainName}
+                                {...register(`forms.${index}.domainName`)}
+                                defaultValue={field.domainName}
                                 placeholder="Enter domain names separated by commas"
                                 className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
                               />
+                              {errors.forms?.[index]?.domainName && (
+                                <p className="text-red-500 text-xs italic">
+                                  {errors.forms?.[index]?.domainName?.message}
+                                </p>
+                              )}
                             </div>
 
                             <div>
@@ -377,13 +350,16 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
 
                               <input
                                 type="text"
-                                name="notes"
-                                onChange={(e) =>
-                                  handleInputChange(e, index, 'notes')
-                                }
+                                {...register(`forms.${index}.notes`)}
+                                defaultValue={field.notes}
                                 placeholder="Enter Note"
                                 className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
                               />
+                              {errors.forms?.[index]?.notes && (
+                                <p className="text-red-500 text-xs italic">
+                                  {errors.forms?.[index]?.notes?.message}
+                                </p>
+                              )}
                             </div>
                           </div>
                           {/* End Grid */}
@@ -403,7 +379,7 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
       </AnimatePresence>
 
       {isLimitReached && (
-        <LimitReached onClose={() => setIsLimitReached(false)} />
+        <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
       )}
     </>
   );

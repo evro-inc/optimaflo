@@ -2,14 +2,21 @@
 import { revalidatePath } from 'next/cache';
 import { cookies, headers } from 'next/headers';
 import {
-  CreateContainerSchemaArr,
-  UpdateContainerSchemaArr,
+  CreateContainerSchema,
+  UpdateContainerSchema,
 } from '@/src/lib/schemas';
 import logger from './logger';
-import { showToast } from '../components/client/Toast/Toast';
 import { getURL } from '@/src/lib/helpers';
+import z from 'zod';
 
-// Delete a single or multiple containers
+// Define the types for the form data
+type FormCreateSchema = z.infer<typeof CreateContainerSchema>;
+type FormUpdateSchema = z.infer<typeof UpdateContainerSchema>;
+
+
+/************************************************************************************
+  Delete a single or multiple containers
+************************************************************************************/
 export async function deleteContainers(
   accountId: string,
   selectedContainers: Set<string>
@@ -87,11 +94,11 @@ export async function deleteContainers(
     };
   }
 }
-
-// Create a single container or multiple containers
-export async function createContainers(
-  formData: FormData[] // Replace 'any' with the actual type if known
-) {
+ 
+/************************************************************************************
+  Create a single container or multiple containers
+************************************************************************************/
+export async function createContainers(formData: FormCreateSchema) {
   try {
     const cookie: any = cookies();
     const cookieHeader: any = headers().get('cookie');
@@ -101,10 +108,14 @@ export async function createContainers(
     let accountIdsToRevalidate = new Set<string>();
     const forms: any[] = [];
 
-    const validationResult = CreateContainerSchemaArr.safeParse(formData);
-    if (!validationResult.success) {
-      logger.error(validationResult.error);
-    }
+    const plainDataArray = formData.forms.map((fd) => {
+      return Object.fromEntries(Object.keys(fd).map((key) => [key, fd[key]]));
+    });
+
+    // Now pass plainDataArray to CreateContainerSchema.safeParse within an object under the key 'forms'
+    const validationResult = CreateContainerSchema.safeParse({
+      forms: plainDataArray,
+    });
 
     if (!validationResult.success) {
       let errorMessage = '';
@@ -126,21 +137,15 @@ export async function createContainers(
       };
     }
 
-    if (validationResult.success) {
-      validationResult.data.forEach((formData: any) => {
-        forms.push({
-          containerName: formData.containerName,
-          usageContext: formData.usageContext,
-          accountId: formData.accountId,
-          domainName: formData.domainName
-            ? formData.domainName.split(',')
-            : [''],
-          notes: formData.notes,
-        });
+    validationResult.data.forms.forEach((formData: any) => {
+      forms.push({
+        containerName: formData.containerName,
+        usageContext: formData.usageContext,
+        accountId: formData.accountId,
+        domainName: formData.domainName ? formData.domainName.split(',') : [''],
+        notes: formData.notes,
       });
-    } else {
-      // Handle validation failure
-    }
+    });
 
     const requestHeaders = {
       'Content-Type': 'application/json',
@@ -228,10 +233,6 @@ export async function createContainers(
         revalidatePath(
           `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers`
         );
-        showToast({
-          variant: 'success',
-          message: 'Containers created',
-        });
       });
       return {
         success: true,
@@ -250,10 +251,12 @@ export async function createContainers(
     };
   }
 }
-
-// Create a single container or multiple containers
+ 
+/************************************************************************************
+  Create a single container or multiple containers
+************************************************************************************/
 export async function updateContainers(
-  formData: FormData[] // Replace 'any' with the actual type if known
+  formData: FormUpdateSchema // Replace 'any' with the actual type if known
 ) {
   try {
     const cookie: any = cookies();
@@ -264,11 +267,13 @@ export async function updateContainers(
     let accountIdsToRevalidate = new Set<string>();
     const forms: any[] = [];
 
-    const validationResult = UpdateContainerSchemaArr.safeParse(formData);
+    const plainDataArray = formData.forms.map((fd) => {
+      return Object.fromEntries(Object.keys(fd).map((key) => [key, fd[key]]));
+    });
 
-    if (!validationResult.success) {
-      logger.error(validationResult.error);
-    }
+    const validationResult = UpdateContainerSchema.safeParse({
+      forms: plainDataArray,
+    });
 
     if (!validationResult.success) {
       let errorMessage = '';
@@ -290,22 +295,16 @@ export async function updateContainers(
       };
     }
 
-    if (validationResult.success) {
-      validationResult.data.forEach((formData: any) => {
-        forms.push({
-          containerName: formData.containerName,
-          usageContext: formData.usageContext,
-          accountId: formData.accountId,
-          domainName: formData.domainName
-            ? formData.domainName.split(',')
-            : [''],
-          notes: formData.notes,
-          containerId: formData.containerId,
-        });
+    validationResult.data.forms.forEach((formData: any) => {
+      forms.push({
+        containerName: formData.containerName,
+        usageContext: formData.usageContext,
+        accountId: formData.accountId,
+        domainName: formData.domainName ? formData.domainName.split(',') : [''],
+        notes: formData.notes,
+        containerId: formData.containerId,
       });
-    } else {
-      // Handle validation failure
-    }
+    });
 
     const requestHeaders = {
       'Content-Type': 'application/json',
@@ -400,10 +399,6 @@ export async function updateContainers(
         revalidatePath(
           `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers`
         );
-        showToast({
-          variant: 'success',
-          message: 'Containers updated',
-        });
       });
       return {
         success: true,

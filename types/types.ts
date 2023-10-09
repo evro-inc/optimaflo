@@ -89,15 +89,18 @@ export interface User {
   Customer: Customer[];
   Subscription: Subscription[];
 }
-export interface Form {
+export type FormElement = {
   accountId: string;
   usageContext: string;
   containerName: string;
   domainName: string;
   notes: string;
   containerId: string;
-}
+};
 
+export type Form = {
+  forms: FormElement[];
+};
 export type ContainerType = {
   containerId: string;
   name: string;
@@ -141,4 +144,18 @@ export type PostParams = {
   usageContext: string[];
   domainName: string;
   notes: string;
+};
+
+export type CreateContainersResult = {
+  success: boolean;
+  limitReached?: boolean;
+  message?: string;
+  createdContainers?: any[];
+  error?: string;
+};
+
+export type FormCreateContainerProps = {
+  showOptions: boolean;
+  onClose: () => void;
+  accounts: any; // Replace 'any' with the actual type if known
 };
