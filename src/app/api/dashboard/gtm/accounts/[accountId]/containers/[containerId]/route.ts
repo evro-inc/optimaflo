@@ -1,15 +1,13 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager/v2';
-import { QuotaLimitError, ValidationError } from '@/src/lib/exceptions';
+import { ValidationError } from '@/src/lib/exceptions';
 import { createOAuth2Client } from '@/src/lib/oauth2Client';
 import { getServerSession } from 'next-auth/next';
 import prisma from '@/src/lib/prisma';
 import Joi from 'joi';
-import { isErrorWithStatus } from '@/src/lib/fetch/dashboard';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
 import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
-import logger from '@/src/lib/logger';
 import { limiter } from '@/src/lib/bottleneck';
 import { getAccessToken, handleError } from '@/src/lib/fetch/apiUtils';
 
@@ -51,6 +49,7 @@ async function fetchGtmData(
 ) {
   let retries = 0;
   const MAX_RETRIES = 3;
+  let delay = 1000;
 
   while (retries < MAX_RETRIES) {
     try {
@@ -74,13 +73,14 @@ async function fetchGtmData(
       } else {
         throw new Error('Rate limit exceeded');
       }
-    } catch (error: unknown) {
-      if (isErrorWithStatus(error) && error.status === 429) {
+    } catch (error: any) {
+      if (error.code === 429 || error.status === 429) {
+        // Log the rate limit error and wait before retrying
+        console.warn('Rate limit exceeded. Retrying...');
+        const jitter = Math.random() * 200;
+        await new Promise((resolve) => setTimeout(resolve, delay + jitter));
+        delay *= 2; // Exponential backoff
         retries++;
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        if (retries === MAX_RETRIES) {
-          throw new QuotaLimitError();
-        }
       } else {
         throw error;
       }
@@ -387,9 +387,6 @@ async function deleteGtmData(
             errors: null,
           };
 
-          const jsonString = JSON.stringify(response, null, 2);
-
-          logger.debug('DEBUG RESPONSE: ', jsonString);
           return NextResponse.json(response, {
             headers: {
               'Content-Type': 'application/json',
@@ -461,7 +458,10 @@ export async function GET(
     // using userId get accessToken from prisma account table
     const accessToken = await getAccessToken(userId);
 
-    const data = fetchGtmData(userId, accessToken, accountId, containerId);
+    const data = await fetchGtmData(userId, accessToken, accountId, containerId);
+
+    console.log('data: ', data);
+    
 
     return NextResponse.json(
       {
@@ -517,35 +517,6 @@ export async function PUT(request: NextRequest) {
 
     // using userId get accessToken from prisma account table
     const accessToken = await getAccessToken(userId);
-
-    // check tier limit
-    const tierLimitRecord = await prisma.tierLimit.findFirst({
-      where: {
-        Feature: {
-          name: 'GTMContainer',
-        },
-        Subscription: {
-          userId: userId,
-        },
-      },
-      include: {
-        Feature: true,
-        Subscription: true,
-      },
-    });
-
-    // if tier limit is reached, return an error
-    if (
-      !tierLimitRecord ||
-      tierLimitRecord.deleteUsage >= tierLimitRecord.deleteLimit
-    ) {
-      return new NextResponse(
-        JSON.stringify({ message: 'Feature limit reached' }),
-        {
-          status: 403,
-        }
-      );
-    }
 
     const data = await updateGtmData(
       userId,
@@ -606,35 +577,6 @@ export async function DELETE(request: NextRequest) {
 
     // using userId get accessToken from prisma account table
     const accessToken = await getAccessToken(userId);
-
-    // check tier limit
-    const tierLimitRecord = await prisma.tierLimit.findFirst({
-      where: {
-        Feature: {
-          name: 'GTMContainer',
-        },
-        Subscription: {
-          userId: userId,
-        },
-      },
-      include: {
-        Feature: true,
-        Subscription: true,
-      },
-    });
-
-    // if tier limit is reached, return an error
-    if (
-      !tierLimitRecord ||
-      tierLimitRecord.deleteUsage >= tierLimitRecord.deleteLimit
-    ) {
-      return new NextResponse(
-        JSON.stringify({ message: 'Feature limit reached' }),
-        {
-          status: 403,
-        }
-      );
-    }
 
     const data = await deleteGtmData(
       userId,
