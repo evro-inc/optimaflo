@@ -8,6 +8,7 @@ import {
   selectGlobal,
   toggleCreateContainer,
   toggleUpdateContainer,
+  toggleCombineContainer,
 } from '@/src/app/redux/globalSlice';
 import {
   selectTable,
@@ -16,6 +17,7 @@ import {
   setSelectedRows,
 } from '@/src/app/redux/tableSlice';
 import logger from '@/src/lib/logger';
+import FormCombineContainer from './combineContainer';
 
 //dynamic import for buttons
 const ButtonDelete = dynamic(
@@ -41,7 +43,7 @@ const FormUpdateContainer = dynamic(() => import('./updateContainer'), {
 
 export default function ContainerTable({ accounts, containers }) {
   const dispatch = useDispatch();
-  const { showUpdateContainer, showCreateContainer } =
+  const { showUpdateContainer, showCreateContainer, showCombineContainer } =
     useSelector(selectGlobal);
 
   const { itemsPerPage, selectedRows, currentPage, isLimitReached } =
@@ -221,6 +223,31 @@ export default function ContainerTable({ accounts, containers }) {
                         }
                         billingInterval={undefined}
                         onClick={() => dispatch(toggleUpdateContainer())}
+                      />
+
+                      <ButtonWithIcon
+                        variant="create"
+                        text="Combine"
+                        disabled={Object.keys(selectedRows).length === 0}
+                        icon={
+                          <svg
+                            className="w-3 h-3"
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                          >
+                            <path
+                              d="M2.63452 7.50001L13.6345 7.5M8.13452 13V2"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                        }
+                        billingInterval={undefined}
+                        onClick={() => dispatch(toggleCombineContainer())}
                       />
                     </div>
                   </div>
@@ -477,6 +504,14 @@ export default function ContainerTable({ accounts, containers }) {
         <FormUpdateContainer
           showOptions={showUpdateContainer}
           onClose={() => dispatch(toggleUpdateContainer())}
+          accounts={accounts}
+          selectedRows={selectedRows}
+        />
+      )}
+      {useSelector(selectGlobal).showCombineContainer && (
+        <FormCombineContainer
+          showOptions={showCombineContainer}
+          onClose={() => dispatch(toggleCombineContainer())}
           accounts={accounts}
           selectedRows={selectedRows}
         />
