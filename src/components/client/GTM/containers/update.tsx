@@ -1,38 +1,47 @@
 'use client';
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { createContainers } from '@/src/lib/actions';
+import { updateContainers } from '@/src/lib/actions/containers';
 import { LimitReached } from '../../modals/limitReached';
 import { ButtonGroup } from '../../ButtonGroup/ButtonGroup';
 import { XMarkIcon } from '@heroicons/react/24/solid';
-import {
-  CreateContainersResult,
-  FormCreateContainerProps,
-} from '@/types/types';
-import { useDispatch, useSelector } from 'react-redux';
-import { selectTable, setIsLimitReached } from '@/src/app/redux/tableSlice';
-import { selectGlobal, setLoading } from '@/src/app/redux/globalSlice';
-import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
-import { CreateContainerSchema } from '@/src/lib/schemas';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { UpdateContainerSchema } from '@/src/lib/schemas';
+import {
+  clearSelectedRows,
+  selectTable,
+  setIsLimitReached,
+} from '@/src/app/redux/tableSlice';
+import { selectIsLoading, setLoading } from '@/src/app/redux/globalSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  FormUpdateContainerProps,
+  UpdateContainersResult,
+} from '@/types/types';
 import logger from '@/src/lib/logger';
 
-type Forms = z.infer<typeof CreateContainerSchema>;
+// Type for the entire form data
+type Forms = z.infer<typeof UpdateContainerSchema>;
 
-const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
+// Component
+const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
   showOptions,
   onClose,
-  accounts = [],
+  selectedRows,
+  accounts,
 }) => {
-  const formRefs = useRef<(HTMLFormElement | null)[]>([]);
   const dispatch = useDispatch();
+  const { isLimitReached } = useSelector(selectTable);
+  const isLoading = useSelector(selectIsLoading);
+  const formRefs = useRef<(HTMLFormElement | null)[]>([]);
 
   const {
     register,
     handleSubmit,
-    control,
     reset,
+    control,
     formState: { errors },
   } = useForm<Forms>({
     defaultValues: {
@@ -47,46 +56,56 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
         },
       ],
     },
-    resolver: zodResolver(CreateContainerSchema),
+    resolver: zodResolver(UpdateContainerSchema),
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields } = useFieldArray({
     control,
     name: 'forms',
   });
 
-  const { isLimitReached, loading } = useSelector((state) => ({
-    ...selectTable(state),
-    ...selectGlobal(state),
-  }));
+  useEffect(() => {
+    const initialForms = Object.values(selectedRows).map((rowData: any) => {
+      const accountId = rowData?.accountId || '';
+      const containerName = rowData?.name || '';
+      const domainName = rowData?.domainName || '';
+      const notes = rowData?.notes || '';
+      const usageContext = rowData?.usageContext ? rowData.usageContext[0] : '';
 
-  const addForm = () => {
-    append({
-      accountId: '',
-      usageContext: '',
-      containerName: '',
-      domainName: '',
-      notes: '',
-      containerId: '',
+      const containerId = rowData?.containerId || '';
+
+      return {
+        accountId,
+        usageContext,
+        containerName,
+        domainName,
+        notes,
+        containerId,
+      };
     });
-  };
 
-  const removeForm = () => {
-    if (fields.length > 1) {
-      remove(fields.length - 1);
-    }
-  };
+    reset({ forms: initialForms });
+  }, [selectedRows, reset]);
 
   const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
-    dispatch(setLoading(true)); // Set loading to true using Redux action
+    dispatch(setLoading(true)); // Set loading to true
 
     try {
-      const res = (await createContainers({ forms })) as CreateContainersResult;
+      const formDataArray = forms.map((formElement) => {
+        const obj = {};
+        Object.keys(formElement).forEach((key) => {
+          obj[key] = formElement[key];
+        });
+        return obj;
+      });
 
-      if (res.limitReached) {
-        dispatch(setIsLimitReached(true)); // Set limitReached to true using Redux action
-      }
+      console.log('formDataArray', formDataArray);
+
+      // If you're here, validation succeeded. Proceed with updateContainers.
+      const res = (await updateContainers({ forms })) as UpdateContainersResult;
+
+      dispatch(clearSelectedRows()); // Clear selectedRows
 
       // close the modal
       onClose();
@@ -121,7 +140,7 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
         });
       } else if (res && res.limitReached) {
         // Show the LimitReached modal
-        setIsLimitReached(true);
+        dispatch(setIsLimitReached(true));
       }
     } catch (error) {
       logger.error('Error creating containers:', error);
@@ -147,9 +166,27 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
       ],
     });
 
+    dispatch(clearSelectedRows()); // Clear selectedRows
+
     // Close the modal
     onClose();
   };
+
+  const selectedAccountIds = Object.values(selectedRows).map(
+    (row: any) => row.accountId
+  );
+
+  const uniqueSelectedAccountIds = Array.from(new Set(selectedAccountIds));
+
+  const filteredAccounts = Array.isArray(accounts?.data)
+    ? accounts.data.filter((account) =>
+        uniqueSelectedAccountIds.includes(account.accountId)
+      )
+    : [];
+
+  const filteredUsageContexts = Object.values(selectedRows).map(
+    (row: any) => row.usageContext[0]
+  );
 
   return (
     <>
@@ -171,12 +208,10 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
 
             <ButtonGroup
               buttons={[
-                { text: 'Add Form', onClick: addForm },
-                { text: 'Remove Form', onClick: removeForm },
                 {
-                  text: loading ? 'Submitting...' : 'Submit',
+                  text: isLoading ? 'Submitting...' : 'Submit',
                   type: 'submit',
-                  form: 'createContainer',
+                  form: 'updateContainer',
                 },
               ]}
             />
@@ -191,7 +226,7 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
                   <div className="max-w-xl mx-auto">
                     <div className="text-center">
                       <p className="text-3xl font-bold text-gray-800 sm:text-4xl dark:text-white">
-                        Container {index + 1}
+                        {field.containerName || `Container ${index + 1}`}
                       </p>
                     </div>
 
@@ -200,7 +235,7 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
                       <form
                         ref={(el) => (formRefs.current[index] = el)}
                         onSubmit={handleSubmit(processForm)}
-                        id="createContainer"
+                        id="updateContainer"
                       >
                         <div className="grid gap-4 lg:gap-6">
                           {/* Grid */}
@@ -215,10 +250,10 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
                               <input
                                 type="text"
                                 {...register(`forms.${index}.containerName`)}
+                                defaultValue={field.containerName}
                                 className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
                               />
-                              {errors.forms?.[index]?.containerName
-                                ?.message && (
+                              {errors.forms?.[index]?.containerName && (
                                 <p className="text-red-500 text-xs italic">
                                   {
                                     errors.forms?.[index]?.containerName
@@ -237,16 +272,16 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
                               </label>
                               <select
                                 {...register(`forms.${index}.accountId`)}
+                                defaultValue={field.accountId}
                                 className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
                               >
-                                {Array.isArray(accounts?.data) &&
-                                  accounts.data.map((account: any) => (
-                                    <option key={account.accountId}>
-                                      {account.accountId}
-                                    </option>
-                                  ))}
+                                {filteredAccounts.map((account: any) => (
+                                  <option key={account.accountId}>
+                                    {account.accountId}
+                                  </option>
+                                ))}
                               </select>
-                              {errors.forms?.[index]?.accountId?.message && (
+                              {errors.forms?.[index]?.accountId && (
                                 <p className="text-red-500 text-xs italic">
                                   {errors.forms?.[index]?.accountId?.message}
                                 </p>
@@ -260,18 +295,21 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
                               htmlFor="hs-work-email-hire-us-2"
                               className="block text-sm text-gray-700 font-medium dark:text-white"
                             >
-                              Usage Context:
+                              Usage Context (Immutable):
                             </label>
 
                             <select
                               {...register(`forms.${index}.usageContext`)}
+                              defaultValue={field.usageContext[0]}
                               className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
                             >
-                              <option value="web">Web</option>
-                              <option value="androidSdk5">Android</option>
-                              <option value="iosSdk5">IOS</option>
+                              {filteredUsageContexts.map((usageContext) => (
+                                <option key={usageContext}>
+                                  {usageContext}
+                                </option>
+                              ))}
                             </select>
-                            {errors.forms?.[index]?.usageContext?.message && (
+                            {errors.forms?.[index]?.usageContext && (
                               <p className="text-red-500 text-xs italic">
                                 {errors.forms?.[index]?.usageContext?.message}
                               </p>
@@ -291,10 +329,11 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
                               <input
                                 type="text"
                                 {...register(`forms.${index}.domainName`)}
+                                defaultValue={field.domainName}
                                 placeholder="Enter domain names separated by commas"
                                 className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
                               />
-                              {errors.forms?.[index]?.domainName?.message && (
+                              {errors.forms?.[index]?.domainName && (
                                 <p className="text-red-500 text-xs italic">
                                   {errors.forms?.[index]?.domainName?.message}
                                 </p>
@@ -312,10 +351,11 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
                               <input
                                 type="text"
                                 {...register(`forms.${index}.notes`)}
+                                defaultValue={field.notes}
                                 placeholder="Enter Note"
                                 className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
                               />
-                              {errors.forms?.[index]?.notes?.message && (
+                              {errors.forms?.[index]?.notes && (
                                 <p className="text-red-500 text-xs italic">
                                   {errors.forms?.[index]?.notes?.message}
                                 </p>
@@ -339,10 +379,10 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
       </AnimatePresence>
 
       {isLimitReached && (
-        <LimitReached onClose={() => dispatch(isLimitReached(false))} /> // Use Redux action for onClose
+        <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
       )}
     </>
   );
 };
 
-export default FormCreateContainer;
+export default FormUpdateContainer;

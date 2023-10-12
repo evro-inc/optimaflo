@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { combineContainers } from '@/src/lib/actions';
+import { combineContainers } from '@/src/lib/actions/containers';
 import { LimitReached } from '../../modals/limitReached';
 import { ButtonGroup } from '../../ButtonGroup/ButtonGroup';
 import { XMarkIcon } from '@heroicons/react/24/solid';
@@ -103,7 +103,9 @@ const FormCombineContainer: React.FC<FormUpdateContainerProps> = ({
       console.log('formDataArray', formDataArray);
 
       // If you're here, validation succeeded. Proceed with updateContainers.
-      const res = (await combineContainers({ forms })) as UpdateContainersResult;
+      const res = (await combineContainers({
+        forms,
+      })) as UpdateContainersResult;
 
       dispatch(clearSelectedRows()); // Clear selectedRows
 

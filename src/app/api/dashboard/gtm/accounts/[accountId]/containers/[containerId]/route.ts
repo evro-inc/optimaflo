@@ -10,6 +10,7 @@ import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
 import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
 import { limiter } from '@/src/lib/bottleneck';
 import { getAccessToken, handleError } from '@/src/lib/fetch/apiUtils';
+import { GaxiosResponse } from 'gaxios';
 
 /************************************************************************************
  * GET UTILITY FUNCTIONS
@@ -458,10 +459,14 @@ export async function GET(
     // using userId get accessToken from prisma account table
     const accessToken = await getAccessToken(userId);
 
-    const data = await fetchGtmData(userId, accessToken, accountId, containerId);
+    const data = await fetchGtmData(
+      userId,
+      accessToken,
+      accountId,
+      containerId
+    );
 
     console.log('data: ', data);
-    
 
     return NextResponse.json(
       {

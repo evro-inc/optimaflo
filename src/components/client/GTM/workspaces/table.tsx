@@ -2,14 +2,13 @@
 import dynamic from 'next/dynamic';
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { deleteContainers } from '@/src/lib/actions/containers';
+import { deleteWorkspaces } from '@/src/lib/actions/workspaces';
 import { ContainerType } from '@/types/types';
 import {
-  selectGlobal,
-  toggleCreateContainer,
-  toggleUpdateContainer,
-  toggleCombineContainer,
-} from '@/src/app/redux/globalSlice';
+  selectWorkspace,
+  toggleCreateWorkspace,
+  toggleUpdateWorkspace,
+} from '@/src/app/redux/workspaceSlice';
 import {
   selectTable,
   setCurrentPage,
@@ -17,7 +16,6 @@ import {
   setSelectedRows,
 } from '@/src/app/redux/tableSlice';
 import logger from '@/src/lib/logger';
-import FormCombineContainer from './combineContainer';
 
 //dynamic import for buttons
 const ButtonDelete = dynamic(
@@ -33,25 +31,26 @@ const LimitReached = dynamic(
   () => import('../../modals/limitReached').then((mod) => mod.LimitReached),
   { ssr: false }
 );
-const FormCreateContainer = dynamic(() => import('./create'), {
+const FormCreateWorkspace = dynamic(() => import('./create'), {
   ssr: false,
 });
 
-const FormUpdateContainer = dynamic(() => import('./update'), {
+const FormUpdateWorkspace = dynamic(() => import('./update'), {
   ssr: false,
 });
 
-export default function ContainerTable({ accounts, containers }) {
+export default function WorkspaceTable({ accounts, workspaces }) {
   const dispatch = useDispatch();
-  const { showUpdateContainer, showCreateContainer, showCombineContainer } =
-    useSelector(selectGlobal);
+
+ /*  const {  showUpdateWorkspace, showCreateWorkspace } =
+    useSelector(selectWorkspace); */
 
   const { itemsPerPage, selectedRows, currentPage, isLimitReached } =
     useSelector(selectTable);
 
-  const containersPerPage = 10;
+  const workspacesPerPage = 10;
   const totalPages = Math.ceil(
-    (containers ? containers.length : 0) / containersPerPage
+    (workspaces ? workspaces.length : 0) / workspacesPerPage
   );
 
   const nextPage = () => {
@@ -69,8 +68,8 @@ export default function ContainerTable({ accounts, containers }) {
   // Pagination logic
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = containers
-    ? containers.slice(indexOfFirstItem, indexOfLastItem)
+  const currentItems = workspaces
+    ? workspaces.slice(indexOfFirstItem, indexOfLastItem)
     : [];
 
   const handlePageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -79,21 +78,18 @@ export default function ContainerTable({ accounts, containers }) {
 
   const pageOptions = Array.from({ length: totalPages }, (_, i) => i + 1);
 
-  const toggleRow = (containerId, accountId) => {
+  const toggleRow = (workspaceId, accountId, ) => {
     const newSelectedRows = { ...selectedRows };
-    if (newSelectedRows[containerId]) {
-      delete newSelectedRows[containerId];
+    if (newSelectedRows[workspaceId]) {
+      delete newSelectedRows[workspaceId];
     } else {
-      const container = containers.find((c) => c.containerId === containerId);
-      if (container) {
-        newSelectedRows[containerId] = {
+      const workspace = workspaces.find((w) => w.workspaceId === workspaceId);
+      if (workspace) {
+        newSelectedRows[workspaceId] = {
           accountId: accountId,
-          name: container.name,
-          containerId: containerId,
-          publicId: container.publicId,
-          usageContext: container.usageContext,
-          domainName: container.domainName,
-          notes: container.notes,
+          name: workspace.name,
+          containerId: workspace.containerId,
+          workspaceId: workspaceId,
         };
       }
     }
@@ -101,19 +97,18 @@ export default function ContainerTable({ accounts, containers }) {
   };
 
   const toggleAll = () => {
-    if (Object.keys(selectedRows).length === containers.length) {
+    if (Object.keys(selectedRows).length === workspaces.length) {
       dispatch(setSelectedRows({}));
     } else {
       const newSelectedRows = {};
-      containers.forEach((container) => {
-        const { containerId, accountId, name, publicId, usageContext } =
-          container;
-        newSelectedRows[containerId] = {
+      workspaces.forEach((workspace) => {
+        const { containerId, accountId, name, workspaceId } =
+          workspace;
+        newSelectedRows[workspaceId] = {
           accountId,
-          name: name,
+          name,
           containerId,
-          publicId,
-          usageContext,
+          workspaceId,
         };
       });
       dispatch(setSelectedRows(newSelectedRows));
@@ -134,7 +129,7 @@ export default function ContainerTable({ accounts, containers }) {
         .filter(([, rowData]) => rowData.accountId === accountId)
         .map(([containerId]) => containerId);
 
-      return deleteContainers(accountId, new Set(containersToDelete));
+      return deleteWorkspaces(accountId, new Set(containersToDelete));
     });
 
     const deletePromise = Promise.all(deleteOperations);
@@ -161,7 +156,7 @@ export default function ContainerTable({ accounts, containers }) {
                 <div className="px-6 py-4 grid gap-3 md:flex md:justify-between md:items-center border-b border-gray-200 dark:border-gray-700">
                   <div>
                     <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
-                      Containers
+                      Workspaces
                     </h2>
                   </div>
 
@@ -197,7 +192,7 @@ export default function ContainerTable({ accounts, containers }) {
                           </svg>
                         }
                         billingInterval={undefined}
-                        onClick={() => dispatch(toggleCreateContainer())}
+                        onClick={() => dispatch(toggleCreateWorkspace())}
                       />
 
                       <ButtonWithIcon
@@ -222,32 +217,7 @@ export default function ContainerTable({ accounts, containers }) {
                           </svg>
                         }
                         billingInterval={undefined}
-                        onClick={() => dispatch(toggleUpdateContainer())}
-                      />
-
-                      <ButtonWithIcon
-                        variant="create"
-                        text="Combine"
-                        disabled={Object.keys(selectedRows).length === 0}
-                        icon={
-                          <svg
-                            className="w-3 h-3"
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="16"
-                            height="16"
-                            viewBox="0 0 16 16"
-                            fill="none"
-                          >
-                            <path
-                              d="M2.63452 7.50001L13.6345 7.5M8.13452 13V2"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                            />
-                          </svg>
-                        }
-                        billingInterval={undefined}
-                        onClick={() => dispatch(toggleCombineContainer())}
+                        onClick={() => dispatch(toggleUpdateWorkspace())}
                       />
                     </div>
                   </div>
@@ -276,7 +246,17 @@ export default function ContainerTable({ accounts, containers }) {
                       <th scope="col" className="px-6 py-3 text-left">
                         <div className="flex items-center gap-x-2">
                           <span className="text-xs font-semibold uppercase tracking-wide text-gray-800 dark:text-gray-200">
-                            Container Name
+                            Workspace Name
+                          </span>
+                        </div>
+                      </th>
+
+
+
+                      <th scope="col" className="px-6 py-3 text-left">
+                        <div className="flex items-center gap-x-2">
+                          <span className="text-xs font-semibold uppercase tracking-wide text-gray-800 dark:text-gray-200">
+                            Workspace ID
                           </span>
                         </div>
                       </th>
@@ -289,13 +269,7 @@ export default function ContainerTable({ accounts, containers }) {
                         </div>
                       </th>
 
-                      <th scope="col" className="px-6 py-3 text-left">
-                        <div className="flex items-center gap-x-2">
-                          <span className="text-xs font-semibold uppercase tracking-wide text-gray-800 dark:text-gray-200">
-                            GTM ID
-                          </span>
-                        </div>
-                      </th>
+     
 
                       <th scope="col" className="px-6 py-3 text-left">
                         <div className="flex items-center gap-x-2">
@@ -305,20 +279,14 @@ export default function ContainerTable({ accounts, containers }) {
                         </div>
                       </th>
 
-                      <th scope="col" className="px-6 py-3 text-left">
-                        <div className="flex items-center gap-x-2">
-                          <span className="text-xs font-semibold uppercase tracking-wide text-gray-800 dark:text-gray-200">
-                            Usage Context
-                          </span>
-                        </div>
-                      </th>
+             
                     </tr>
                   </thead>
 
-                  {currentItems.map((container: ContainerType) => (
+                  {currentItems.map((workspace) => (
                     <tbody
                       className="divide-y divide-gray-200 dark:divide-gray-700"
-                      key={container.containerId}
+                      key={workspace.workspaceId}
                     >
                       {/* ROW */}
                       <tr>
@@ -331,12 +299,12 @@ export default function ContainerTable({ accounts, containers }) {
                               <input
                                 type="checkbox"
                                 className="shrink-0 border-gray-200 rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:checked:bg-blue-500 dark:checked:border-blue-500 dark:focus:ring-offset-gray-800"
-                                id={`checkbox-${container.containerId}`}
-                                checked={!!selectedRows[container.containerId]}
+                                id={`checkbox-${workspace.containerId}`}
+                                checked={!!selectedRows[workspace.containerId]}
                                 onChange={() =>
                                   toggleRow(
-                                    container.containerId,
-                                    container.accountId
+                                    workspace.containerId,
+                                    workspace.accountId
                                   )
                                 }
                               />
@@ -375,36 +343,36 @@ export default function ContainerTable({ accounts, containers }) {
                               </svg>
                               <div className="grow">
                                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                                  {container.name}
+                                  {workspace.name}
                                 </span>
                               </div>
                             </div>
                           </div>
                         </td>
+
                         <td className="h-px w-px whitespace-nowrap">
                           <div className="px-6 py-2">
                             <span className="text-sm text-gray-600 dark:text-gray-400">
-                              {container.containerId}
+                              {workspace.workspaceId}
                             </span>
                           </div>
                         </td>
+
+
                         <td className="h-px w-px whitespace-nowrap">
                           <div className="px-6 py-2">
                             <span className="text-sm text-gray-600 dark:text-gray-400">
-                              {container.publicId}
+                              {workspace.containerId}
                             </span>
                           </div>
                         </td>
+           
                         <td className="h-px w-px whitespace-nowrap">
                           <div className="px-6 py-2 flex gap-x-1">
-                            {container.accountId}
+                            {workspace.accountId}
                           </div>
                         </td>
-                        <td className="h-px w-px whitespace-nowrap">
-                          <div className="px-6 py-2 flex gap-x-1">
-                            {container.usageContext}
-                          </div>
-                        </td>
+  
                       </tr>
                     </tbody>
                   ))}
@@ -431,7 +399,7 @@ export default function ContainerTable({ accounts, containers }) {
                       </select>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      of {(containers && containers.length) || 0}
+                      of {(workspaces && workspaces.length) || 0}
                     </p>
                   </div>
 
@@ -492,30 +460,22 @@ export default function ContainerTable({ accounts, containers }) {
       {isLimitReached && (
         <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
       )}
-      {useSelector(selectGlobal).showCreateContainer && (
-        <FormCreateContainer
-          showOptions={showCreateContainer}
-          onClose={() => dispatch(toggleCreateContainer())}
+ {/*      {useSelector(selectWorkspace).showCreateWorkspace && (
+        <FormCreateWorkspace
+          showOptions={showCreateWorkspace}
+          onClose={() => dispatch(toggleCreateWorkspace())}
           accounts={accounts}
         />
-      )}
+      )} */}
 
-      {useSelector(selectGlobal).showUpdateContainer && (
-        <FormUpdateContainer
-          showOptions={showUpdateContainer}
-          onClose={() => dispatch(toggleUpdateContainer())}
+      {/* {useSelector(selectWorkspace).showUpdateWorkspace && (
+        <FormUpdateWorkspace
+          showOptions={showUpdateWorkspace}
+          onClose={() => dispatch(toggleUpdateWorkspace())}
           accounts={accounts}
           selectedRows={selectedRows}
         />
-      )}
-      {useSelector(selectGlobal).showCombineContainer && (
-        <FormCombineContainer
-          showOptions={showCombineContainer}
-          onClose={() => dispatch(toggleCombineContainer())}
-          accounts={accounts}
-          selectedRows={selectedRows}
-        />
-      )}
+      )} */}
     </>
   );
 }

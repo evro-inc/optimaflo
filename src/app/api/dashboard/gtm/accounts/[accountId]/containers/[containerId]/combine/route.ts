@@ -40,7 +40,6 @@ async function validatePostParams(params: {
   }
 }
 
-
 /************************************************************************************
   Function to combine GTM containers
 ************************************************************************************/
@@ -172,7 +171,6 @@ export async function combineGtmData(
   throw new Error('Max retries exceeded'); // Throwing an error if max retries are exceeded outside the while loop
 }
 
-
 /************************************************************************************
  * REQUEST HANDLERS
  ************************************************************************************/
@@ -186,8 +184,6 @@ export async function POST(request: NextRequest) {
     // Parse the request body
     const body = JSON.parse(await request.text());
 
-
-
     const paramsJOI = {
       userId: session?.user?.id,
       accountId: body.accountId,
@@ -197,7 +193,8 @@ export async function POST(request: NextRequest) {
 
     const validateParams = await validatePostParams(paramsJOI);
 
-    const { accountId, containerId, containerIdToCombine, userId } = validateParams;
+    const { accountId, containerId, containerIdToCombine, userId } =
+      validateParams;
 
     const accessToken = await getAccessToken(userId);
 
