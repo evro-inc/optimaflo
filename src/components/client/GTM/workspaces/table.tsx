@@ -39,10 +39,10 @@ const FormUpdateWorkspace = dynamic(() => import('./update'), {
   ssr: false,
 });
 
-export default function WorkspaceTable({ accounts, workspaces }) {
+export default function WorkspaceTable({ accounts, containers, workspaces }) {
   const dispatch = useDispatch();
 
- /*  const {  showUpdateWorkspace, showCreateWorkspace } =
+  /*  const {  showUpdateWorkspace, showCreateWorkspace } =
     useSelector(selectWorkspace); */
 
   const { itemsPerPage, selectedRows, currentPage, isLimitReached } =
@@ -78,7 +78,7 @@ export default function WorkspaceTable({ accounts, workspaces }) {
 
   const pageOptions = Array.from({ length: totalPages }, (_, i) => i + 1);
 
-  const toggleRow = (workspaceId, accountId, ) => {
+  const toggleRow = (workspaceId, accountId) => {
     const newSelectedRows = { ...selectedRows };
     if (newSelectedRows[workspaceId]) {
       delete newSelectedRows[workspaceId];
@@ -102,8 +102,7 @@ export default function WorkspaceTable({ accounts, workspaces }) {
     } else {
       const newSelectedRows = {};
       workspaces.forEach((workspace) => {
-        const { containerId, accountId, name, workspaceId } =
-          workspace;
+        const { containerId, accountId, name, workspaceId } = workspace;
         newSelectedRows[workspaceId] = {
           accountId,
           name,
@@ -251,8 +250,6 @@ export default function WorkspaceTable({ accounts, workspaces }) {
                         </div>
                       </th>
 
-
-
                       <th scope="col" className="px-6 py-3 text-left">
                         <div className="flex items-center gap-x-2">
                           <span className="text-xs font-semibold uppercase tracking-wide text-gray-800 dark:text-gray-200">
@@ -269,8 +266,6 @@ export default function WorkspaceTable({ accounts, workspaces }) {
                         </div>
                       </th>
 
-     
-
                       <th scope="col" className="px-6 py-3 text-left">
                         <div className="flex items-center gap-x-2">
                           <span className="text-xs font-semibold uppercase tracking-wide text-gray-800 dark:text-gray-200">
@@ -278,8 +273,6 @@ export default function WorkspaceTable({ accounts, workspaces }) {
                           </span>
                         </div>
                       </th>
-
-             
                     </tr>
                   </thead>
 
@@ -358,7 +351,6 @@ export default function WorkspaceTable({ accounts, workspaces }) {
                           </div>
                         </td>
 
-
                         <td className="h-px w-px whitespace-nowrap">
                           <div className="px-6 py-2">
                             <span className="text-sm text-gray-600 dark:text-gray-400">
@@ -366,13 +358,12 @@ export default function WorkspaceTable({ accounts, workspaces }) {
                             </span>
                           </div>
                         </td>
-           
+
                         <td className="h-px w-px whitespace-nowrap">
                           <div className="px-6 py-2 flex gap-x-1">
                             {workspace.accountId}
                           </div>
                         </td>
-  
                       </tr>
                     </tbody>
                   ))}
@@ -460,7 +451,7 @@ export default function WorkspaceTable({ accounts, workspaces }) {
       {isLimitReached && (
         <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
       )}
- {/*      {useSelector(selectWorkspace).showCreateWorkspace && (
+      {/*      {useSelector(selectWorkspace).showCreateWorkspace && (
         <FormCreateWorkspace
           showOptions={showCreateWorkspace}
           onClose={() => dispatch(toggleCreateWorkspace())}

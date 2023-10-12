@@ -25,16 +25,15 @@ export async function gtmListWorkspaces() {
       headers: requestHeaders,
     };
 
-
     const gtmData = await prisma.gtm.findMany({
       where: {
         userId: userId,
       },
-    })
-    const collectedData = gtmData.map(entry => ({
+    });
+    const collectedData = gtmData.map((entry) => ({
       accountId: entry.accountId,
       containerId: entry.containerId,
-      workspaceId: entry.workspaceId
+      workspaceId: entry.workspaceId,
     }));
 
     const workspacesPromises = collectedData.map(async (entry) => {
@@ -55,14 +54,10 @@ export async function gtmListWorkspaces() {
       return workspacesData.data || []; // return the whole data array
     });
 
-
-
-
     const workspacesArrays = await Promise.all(workspacesPromises);
     const workspaces = workspacesArrays.flat();
 
     console.log('workspaces', workspaces);
-    
 
     return workspaces;
   } catch (error) {

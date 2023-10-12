@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation';
 import { gtmListAccounts } from '@/src/lib/fetch/dashboard/gtm/accounts';
 import { gtmListWorkspaces } from '@/src/lib/fetch/dashboard/gtm/workspace';
 import WorkspaceTable from '@/src/components/client/GTM/workspaces/table';
+import { gtmListContainers } from '@/src/lib/fetch/dashboard/gtm/containers';
 
 export const metadata: Metadata = {
   title: 'Overview',
@@ -21,14 +22,19 @@ export default async function WorkspacePage() {
   }
 
   //fetch all containers from API
-  const [accounts, workspaces] = await Promise.all([
+  const [accounts, workspaces, containers] = await Promise.all([
     gtmListAccounts(),
     gtmListWorkspaces(),
+    gtmListContainers(),
   ]);
 
   return (
     <>
-      <WorkspaceTable accounts={accounts} workspaces={workspaces} />
+      <WorkspaceTable
+        accounts={accounts}
+        containers={containers}
+        workspaces={workspaces}
+      />
     </>
   );
 }

@@ -52,10 +52,11 @@ async function listGtmContainers(
   accountId: string,
   pageNumber: number,
   limit: number
-): Promise<ResultType[]> {
+) {
   let retries = 0;
   const MAX_RETRIES = 3;
   const allResults: ResultType[] = [];
+  let delay = 1000;
 
   while (retries < MAX_RETRIES) {
     try {
@@ -66,6 +67,7 @@ async function listGtmContainers(
       );
 
       if (remaining > 0) {
+        let res;
         await limiter.schedule(async () => {
           const oauth2Client = createOAuth2Client(accessToken);
           if (!oauth2Client) {
@@ -73,40 +75,38 @@ async function listGtmContainers(
           }
 
           const gtm = new tagmanager_v2.Tagmanager({ auth: oauth2Client });
-          const res = await gtm.accounts.containers.list({
+          res = await gtm.accounts.containers.list({
             parent: `accounts/${accountId}`,
           });
+        });
 
-          const total = res.data.container?.length || 0;
-          allResults.push({
-            data: res.data.container,
-            meta: {
-              total,
-              pageNumber,
-              totalPages: Math.ceil(total / limit),
-              pageSize: limit,
-            },
-            errors: null,
-          });
+        const total = res.data.container?.length || 0;
+        allResults.push({
+          data: res.data.container,
+          meta: {
+            total,
+            pageNumber,
+            totalPages: Math.ceil(total / limit),
+            pageSize: limit,
+          },
+          errors: null,
         });
         return allResults; // Return results if successful
       } else {
         throw new Error('Rate limit exceeded');
       }
-    } catch (error: unknown) {
-      if (isErrorWithStatus(error) && error.status === 429) {
+    } catch (error: any) {
+      if (error.code === 429 || error.status === 429) {
+        console.warn('Rate limit exceeded. Retrying get containers...');
+        const jitter = Math.random() * 200;
+        await new Promise((resolve) => setTimeout(resolve, delay + jitter));
+        delay *= 2;
         retries++;
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        if (retries === MAX_RETRIES) {
-          throw new QuotaLimitError();
-        }
       } else {
         throw error;
       }
     }
   }
-
-  return allResults;
 }
 
 /************************************************************************************
@@ -270,7 +270,7 @@ async function createGtmContainer(
     } catch (error: any) {
       if (error.code === 429 || error.status === 429) {
         // Log the rate limit error and wait before retrying
-        console.warn('Rate limit exceeded. Retrying...');
+        console.warn('Rate limit exceeded. Retrying create container');
         const jitter = Math.random() * 200;
         await new Promise((resolve) => setTimeout(resolve, delay + jitter));
         delay *= 2; // Exponential backoff
@@ -305,8 +305,6 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession(authOptions);
-
-    // Extract query parameters from the URL
     const pageNumber = Number(request.nextUrl.searchParams.get('page')) || 1;
     const limit = Number(request.nextUrl.searchParams.get('limit')) || 10;
     const sort = request.nextUrl.searchParams.get('sort') || 'id';
@@ -325,14 +323,7 @@ export async function GET(
 
     // Call validateGetParams to validate the parameters
     const validatedParams = await validateGetParams(paramsJOI);
-
     const { userId } = validatedParams;
-
-    if (!userId) {
-      logger.error('User ID is undefined');
-      return NextResponse.error();
-    }
-
     const accessToken = await getAccessToken(userId);
 
     // Call listGtmContainers for each accountId
@@ -348,8 +339,11 @@ export async function GET(
       })
     );
 
-    return NextResponse.json(allResults.flat());
-  } catch (error) {
+    return NextResponse.json(allResults.flat(), {
+      headers: { 'Content-Type': 'application/json' },
+      status: 200,
+    });
+  } catch (error: any) {
     if (error instanceof ValidationError) {
       console.error('Validation Error: ', error.message);
       return new NextResponse(JSON.stringify({ error: error.message }), {
@@ -357,9 +351,10 @@ export async function GET(
       });
     }
 
-    console.error('Error: ', error);
-    // Return a 500 status code for internal server error
-    return handleError(error);
+    logger.error('Error: ', error);
+    return new NextResponse(JSON.stringify({ error: error.message }), {
+      status: 500,
+    });
   }
 }
 

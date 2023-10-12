@@ -453,10 +453,7 @@ export async function GET(
     };
 
     const validatedParams = await validateGetParams(paramsJOI);
-
     const { accountId, containerId, userId } = validatedParams;
-
-    // using userId get accessToken from prisma account table
     const accessToken = await getAccessToken(userId);
 
     const data = await fetchGtmData(
@@ -465,8 +462,6 @@ export async function GET(
       accountId,
       containerId
     );
-
-    console.log('data: ', data);
 
     return NextResponse.json(
       {

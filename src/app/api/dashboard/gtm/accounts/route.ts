@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager/v2';
-import { QuotaLimitError } from '@/src/lib/exceptions';
 import { createOAuth2Client } from '@/src/lib/oauth2Client';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../../auth/[...nextauth]/route';
-import prisma from '@/src/lib/prisma';
 import Joi from 'joi';
-import { isErrorWithStatus } from '@/src/lib/fetch/dashboard';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
 import logger from '@/src/lib/logger';
 import { limiter } from '@/src/lib/bottleneck';
 import { getAccessToken } from '@/src/lib/fetch/apiUtils';
+import { ValidationError } from '@/src/lib/exceptions';
 
 // Separate out the validation logic into its own function
 async function validateParams(params) {
@@ -22,10 +20,11 @@ async function validateParams(params) {
     userId: Joi.string().uuid().required(),
   });
 
-  const { error } = schema.validate(params);
+  const { error, value } = schema.validate(params);
   if (error) {
     throw new Error(`Validation Error: ${error.message}`);
   }
+  return value;
 }
 
 // Separate out the logic to list GTM accounts into its own function
@@ -42,39 +41,36 @@ async function listGtmAccounts(userId, accessToken, limit, pageNumber) {
       );
 
       if (remaining > 0) {
-        const result = await limiter.schedule(async () => {
+        let res;
+        await limiter.schedule(async () => {
           const oauth2Client = createOAuth2Client(accessToken);
           if (!oauth2Client) {
             throw new Error('OAuth2 client creation failed');
           }
           const gtm = new tagmanager_v2.Tagmanager({ auth: oauth2Client });
-          const res = await gtm.accounts.list();
-          const total = res.data.account?.length ?? 0;
-          const resAccounts = res.data.account;
-          console.log('resAccounts: ', resAccounts);
-          
-          return {
-            data: resAccounts,
-            meta: {
-              total,
-              pageNumber,
-              totalPages: Math.ceil(total / limit),
-              pageSize: limit,
-            },
-            errors: null,
-          };
+          res = await gtm.accounts.list();
         });
-        
-        // If the result is successful, return the result and exit the loop.
-        if (result && result.data) {
-          return result;
-        }
+
+        const total = res.data.account?.length ?? 0;
+
+        console.log('res.data.account', res.data.account);
+
+        return {
+          data: res.data.account,
+          meta: {
+            total,
+            pageNumber,
+            totalPages: Math.ceil(total / limit),
+            pageSize: limit,
+          },
+          errors: null,
+        };
       } else {
         throw new Error('Rate limit exceeded');
       }
     } catch (error: any) {
       if (error.code === 429 || error.status === 429) {
-        console.warn('Rate limit exceeded. Retrying...');
+        console.warn('Rate limit exceeded. Retrying get accounts...');
         const jitter = Math.random() * 200;
         await new Promise((resolve) => setTimeout(resolve, delay + jitter));
         delay *= 2;
@@ -90,22 +86,22 @@ async function listGtmAccounts(userId, accessToken, limit, pageNumber) {
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    const userId = session?.user?.id;
-
     const pageNumber = Number(request.nextUrl.searchParams.get('page')) || 1;
     const limit = Number(request.nextUrl.searchParams.get('limit')) || 10;
     const sort = request.nextUrl.searchParams.get('sort') || 'id';
     const order = request.nextUrl.searchParams.get('order') || 'asc';
 
-    const params = { pageNumber, limit, sort, order, userId };
+    const paramsJOI = {
+      pageNumber,
+      limit,
+      sort,
+      order,
+      userId: session?.user?.id,
+    };
 
-    await validateParams(params); // Call the separate validation function
-
-     const accessToken = await getAccessToken(userId);
-
-    if (!accessToken) {
-      logger.error('Access token not found');
-    }
+    const validatedParams = await validateParams(paramsJOI);  
+    const { userId } = validatedParams;
+    const accessToken = await getAccessToken(userId);
 
     const response = await listGtmAccounts(
       userId,
@@ -118,7 +114,14 @@ export async function GET(request: NextRequest) {
       headers: { 'Content-Type': 'application/json' },
       status: 200,
     });
-  } catch (error : any) {
+  } catch (error: any) {
+    if (error instanceof ValidationError) {
+      console.error('Validation Error: ', error.message);
+      return new NextResponse(JSON.stringify({ error: error.message }), {
+        status: 400,
+      });
+    }
+
     logger.error('Error: ', error);
     return new NextResponse(JSON.stringify({ error: error.message }), {
       status: 500,
