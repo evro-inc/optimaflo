@@ -159,3 +159,13 @@ export type FormCreateContainerProps = {
   onClose: () => void;
   accounts: any; // Replace 'any' with the actual type if known
 };
+
+export type WorkspaceType = {
+  path: string;
+  accountId: string;
+  containerId: string;
+  workspaceId: string;
+  name: string;
+  fingerprint: string;
+  tagManagerUrl: string;
+};

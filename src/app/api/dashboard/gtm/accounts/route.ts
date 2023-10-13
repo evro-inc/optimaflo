@@ -53,8 +53,6 @@ async function listGtmAccounts(userId, accessToken, limit, pageNumber) {
 
         const total = res.data.account?.length ?? 0;
 
-        console.log('res.data.account', res.data.account);
-
         return {
           data: res.data.account,
           meta: {
@@ -99,7 +97,7 @@ export async function GET(request: NextRequest) {
       userId: session?.user?.id,
     };
 
-    const validatedParams = await validateParams(paramsJOI);  
+    const validatedParams = await validateParams(paramsJOI);
     const { userId } = validatedParams;
     const accessToken = await getAccessToken(userId);
 

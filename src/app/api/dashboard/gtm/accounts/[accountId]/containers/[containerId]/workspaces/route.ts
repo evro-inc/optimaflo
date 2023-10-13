@@ -73,12 +73,11 @@ async function listGtmWorkspaces(
           res = await gtm.accounts.containers.workspaces.list({
             parent: `accounts/${accountId}/containers/${containerId}`,
           });
-
         });
 
         const data = res?.data?.workspace;
 
-        return  {
+        return {
           data: data,
           meta: {
             totalResults: data?.length ?? 0,
@@ -130,7 +129,7 @@ export async function GET(
       userId: session?.user?.id,
     };
 
-    const validateParams = await validateGetParams(paramsJOI);    
+    const validateParams = await validateGetParams(paramsJOI);
     const { accountId, containerId, userId } = validateParams;
     const accessToken = await getAccessToken(userId);
 

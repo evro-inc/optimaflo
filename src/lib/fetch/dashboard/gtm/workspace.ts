@@ -1,16 +1,12 @@
 'use server';
 import { getURL } from '@/src/lib/helpers';
-import prisma from '@/src/lib/prisma';
 import { headers } from 'next/headers';
-import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
-import { getServerSession } from 'next-auth';
+import { gtmListContainers } from './containers';
 
 export async function gtmListWorkspaces() {
   try {
     const cookie = headers().get('cookie');
     const baseUrl = getURL();
-    const session = await getServerSession(authOptions);
-    const userId = session?.user?.id;
 
     const requestHeaders = {
       'Content-Type': 'application/json',
@@ -25,22 +21,15 @@ export async function gtmListWorkspaces() {
       headers: requestHeaders,
     };
 
-    const gtmData = await prisma.gtm.findMany({
-      where: {
-        userId: userId,
-      },
-    });
-    const collectedData = gtmData.map((entry) => ({
-      accountId: entry.accountId,
-      containerId: entry.containerId,
-      workspaceId: entry.workspaceId,
-    }));
 
-    const workspacesPromises = collectedData.map(async (entry) => {
-      const { accountId, containerId } = entry;
-
+    // Fetching unique containers
+    const containersData = await gtmListContainers();
+    
+    const workspacesPromises = containersData.map(async (container) => {
+      const { accountId, containerId } = container;
+      
       const workspaceUrl = `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces`;
-
+      
       const workspacesResp = await fetch(workspaceUrl, options);
       if (!workspacesResp.ok) {
         const responseText = await workspacesResp.text();
@@ -49,16 +38,14 @@ export async function gtmListWorkspaces() {
         );
         return []; // return an empty array on error
       }
-
+      
       const workspacesData = await workspacesResp.json();
-      return workspacesData.data || []; // return the whole data array
+      return workspacesData.data || [];
     });
-
+    
     const workspacesArrays = await Promise.all(workspacesPromises);
     const workspaces = workspacesArrays.flat();
-
-    console.log('workspaces', workspaces);
-
+    
     return workspaces;
   } catch (error) {
     console.error('Error fetching GTM containers:', error);

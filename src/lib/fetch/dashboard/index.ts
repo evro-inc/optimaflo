@@ -32,7 +32,7 @@ export async function grantGtmAccess(customerId: string) {
   const userId = customerRecord.userId;
 
   // Get the product IDs for the GTM products
-  const gtmProductIds = ['prod_OZZrME91D1Tyue', 'prod_OaGCBK8Qe6Vofp'];
+  const gtmProductIds = ['prod_OoCMHi502SCeOH', 'prod_OaGCBK8Qe6Vofp'];
 
   // Iterate over the product IDs
   for (const productId of gtmProductIds) {

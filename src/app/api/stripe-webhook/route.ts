@@ -167,7 +167,7 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
     };
 
     const createFeatureLimitsByTier = {
-      prod_OZZrME91D1Tyue: {
+      prod_OoCMHi502SCeOH: {
         create: {
           GTMContainer: 3,
           GTMTags: 7,
@@ -742,7 +742,7 @@ async function upsertInvoiceRecord(invoice: Stripe.Invoice) {
 
 async function grantAccessToContent(invoice: Stripe.Invoice) {
   const productAccessGranters = {
-    prod_OZZrME91D1Tyue: grantGtmAccess,
+    prod_OoCMHi502SCeOH: grantGtmAccess,
     prod_OQ3TPC9yMxJAeN: grantGAAccess,
     // Add more product IDs and access granters as needed
   };

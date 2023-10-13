@@ -234,5 +234,6 @@ model gtm {
   workspaceId String @map("workspace_id")
   User        User   @relation(fields: [userId], references: [id])
 
+  @@unique([userId, accountId, containerId, workspaceId], name: "unique_gtm_entry")
   @@index([userId], name: "gtmSettingsUserId")
 }

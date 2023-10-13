@@ -3,7 +3,7 @@ import dynamic from 'next/dynamic';
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { deleteWorkspaces } from '@/src/lib/actions/workspaces';
-import { ContainerType } from '@/types/types';
+import { ContainerType, WorkspaceType } from '@/types/types';
 import {
   selectWorkspace,
   toggleCreateWorkspace,
@@ -41,7 +41,10 @@ const FormUpdateWorkspace = dynamic(() => import('./update'), {
 
 export default function WorkspaceTable({ accounts, containers, workspaces }) {
   const dispatch = useDispatch();
-
+  const getContainerName = (containerId) => {
+    const container = containers.find((c) => c.containerId === containerId);
+    return container ? container.name : 'N/A';
+  };
   /*  const {  showUpdateWorkspace, showCreateWorkspace } =
     useSelector(selectWorkspace); */
 
@@ -78,41 +81,46 @@ export default function WorkspaceTable({ accounts, containers, workspaces }) {
 
   const pageOptions = Array.from({ length: totalPages }, (_, i) => i + 1);
 
-  const toggleRow = (workspaceId, accountId) => {
+const toggleRow = (workspaceId, containerId, accountId) => {
+    const uniqueKey = `${workspaceId}-${containerId}`;
     const newSelectedRows = { ...selectedRows };
-    if (newSelectedRows[workspaceId]) {
-      delete newSelectedRows[workspaceId];
+    if (newSelectedRows[uniqueKey]) {
+        delete newSelectedRows[uniqueKey];
     } else {
-      const workspace = workspaces.find((w) => w.workspaceId === workspaceId);
-      if (workspace) {
-        newSelectedRows[workspaceId] = {
-          accountId: accountId,
-          name: workspace.name,
-          containerId: workspace.containerId,
-          workspaceId: workspaceId,
-        };
-      }
+        const workspace = workspaces.find(
+            (w) => w.workspaceId === workspaceId && w.containerId === containerId
+        );
+        if (workspace) {
+            newSelectedRows[uniqueKey] = {
+                accountId: accountId,
+                name: workspace.name,
+                containerId: workspace.containerId,
+                workspaceId: workspaceId,
+            };
+        }
     }
     dispatch(setSelectedRows(newSelectedRows));
-  };
+};
 
-  const toggleAll = () => {
+
+const toggleAll = () => {
     if (Object.keys(selectedRows).length === workspaces.length) {
-      dispatch(setSelectedRows({}));
+        dispatch(setSelectedRows({}));
     } else {
-      const newSelectedRows = {};
-      workspaces.forEach((workspace) => {
-        const { containerId, accountId, name, workspaceId } = workspace;
-        newSelectedRows[workspaceId] = {
-          accountId,
-          name,
-          containerId,
-          workspaceId,
-        };
-      });
-      dispatch(setSelectedRows(newSelectedRows));
+        const newSelectedRows = {};
+        workspaces.forEach((workspace) => {
+            const uniqueKey = `${workspace.workspaceId}-${workspace.containerId}`;
+            newSelectedRows[uniqueKey] = {
+                accountId: workspace.accountId,
+                name: workspace.name,
+                containerId: workspace.containerId,
+                workspaceId: workspace.workspaceId,
+            };
+        });
+        dispatch(setSelectedRows(newSelectedRows));
     }
-  };
+};
+
 
   const handleDelete = () => {
     const uniqueAccountIds = Array.from(
@@ -245,6 +253,14 @@ export default function WorkspaceTable({ accounts, containers, workspaces }) {
                       <th scope="col" className="px-6 py-3 text-left">
                         <div className="flex items-center gap-x-2">
                           <span className="text-xs font-semibold uppercase tracking-wide text-gray-800 dark:text-gray-200">
+                            Container Name
+                          </span>
+                        </div>
+                      </th>
+
+                      <th scope="col" className="px-6 py-3 text-left">
+                        <div className="flex items-center gap-x-2">
+                          <span className="text-xs font-semibold uppercase tracking-wide text-gray-800 dark:text-gray-200">
                             Workspace Name
                           </span>
                         </div>
@@ -276,10 +292,10 @@ export default function WorkspaceTable({ accounts, containers, workspaces }) {
                     </tr>
                   </thead>
 
-                  {currentItems.map((workspace) => (
+                  {currentItems.map((workspace: WorkspaceType) => (
                     <tbody
                       className="divide-y divide-gray-200 dark:divide-gray-700"
-                      key={workspace.workspaceId}
+                      key={`${workspace.workspaceId}-${workspace.containerId}`}
                     >
                       {/* ROW */}
                       <tr>
@@ -293,19 +309,24 @@ export default function WorkspaceTable({ accounts, containers, workspaces }) {
                                 type="checkbox"
                                 className="shrink-0 border-gray-200 rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:checked:bg-blue-500 dark:checked:border-blue-500 dark:focus:ring-offset-gray-800"
                                 id={`checkbox-${workspace.containerId}`}
-                                checked={!!selectedRows[workspace.containerId]}
-                                onChange={() =>
-                                  toggleRow(
-                                    workspace.containerId,
-                                    workspace.accountId
-                                  )
-                                }
+                                    checked={!!selectedRows[`${workspace.workspaceId}-${workspace.containerId}`]}
+
+                                onChange={() => toggleRow(workspace.workspaceId, workspace.containerId, workspace.accountId)}
+
                               />
 
                               <span className="sr-only">Checkbox</span>
                             </label>
                           </div>
                         </td>
+                        <td className="h-px w-px whitespace-nowrap">
+                          <div className="px-6 py-2">
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                              {getContainerName(workspace.containerId)}
+                            </span>
+                          </div>
+                        </td>
+
                         <td className="h-px w-px whitespace-nowrap">
                           <div className="px-6 py-2">
                             <div className="flex items-center gap-x-2">

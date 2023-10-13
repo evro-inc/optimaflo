@@ -25,7 +25,7 @@ export async function middleware(
     '^/dashboard/gtm.*': [
       'prod_OZZrME91D1Tyue',
       'prod_OaGCBK8Qe6Vofp',
-      'prod_OZZrME91D1Tyue',
+      'prod_OoCMHi502SCeOH',
     ],
     '^/dashboard/ga.*': ['prod_OQ3TPC9yMxJAeN'],
   };
