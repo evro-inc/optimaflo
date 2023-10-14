@@ -10,10 +10,12 @@ import {
   toggleUpdateWorkspace,
 } from '@/src/app/redux/workspaceSlice';
 import {
+  clearSelectedRows,
   selectTable,
   setCurrentPage,
   setIsLimitReached,
   setSelectedRows,
+  toggleAllSelected,
 } from '@/src/app/redux/tableSlice';
 import logger from '@/src/lib/logger';
 
@@ -50,6 +52,8 @@ export default function WorkspaceTable({ accounts, containers, workspaces }) {
 
   const { itemsPerPage, selectedRows, currentPage, isLimitReached } =
     useSelector(selectTable);
+
+  const { allSelected } = useSelector(selectTable);
 
   const workspacesPerPage = 10;
   const totalPages = Math.ceil(
@@ -103,23 +107,27 @@ const toggleRow = (workspaceId, containerId, accountId) => {
 };
 
 
-const toggleAll = () => {
-    if (Object.keys(selectedRows).length === workspaces.length) {
-        dispatch(setSelectedRows({}));
+  const toggleAll = () => {
+    if (allSelected) {
+      // If all rows are currently selected, deselect all
+      dispatch(setSelectedRows({}));
+      dispatch(toggleAllSelected());
     } else {
-        const newSelectedRows = {};
-        workspaces.forEach((workspace) => {
-            const uniqueKey = `${workspace.workspaceId}-${workspace.containerId}`;
-            newSelectedRows[uniqueKey] = {
-                accountId: workspace.accountId,
-                name: workspace.name,
-                containerId: workspace.containerId,
-                workspaceId: workspace.workspaceId,
-            };
-        });
-        dispatch(setSelectedRows(newSelectedRows));
+      // If not all rows are currently selected, select all
+      const newSelectedRows = {};
+      workspaces.forEach((workspace) => {
+        const uniqueKey = `${workspace.workspaceId}-${workspace.containerId}`;
+        newSelectedRows[uniqueKey] = {
+          accountId: workspace.accountId,
+          name: workspace.name,
+          containerId: workspace.containerId,
+          workspaceId: workspace.workspaceId,
+        };
+      });
+      dispatch(setSelectedRows(newSelectedRows));
+      dispatch(toggleAllSelected());
     }
-};
+  };
 
 
   const handleDelete = () => {
@@ -244,6 +252,7 @@ const toggleAll = () => {
                             type="checkbox"
                             className="shrink-0 border-gray-200 rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:checked:bg-blue-500 dark:checked:border-blue-500 dark:focus:ring-offset-gray-800"
                             id="hs-at-with-checkboxes-main"
+                            checked={allSelected}
                             onChange={toggleAll}
                           />
                           <span className="sr-only">Checkbox</span>

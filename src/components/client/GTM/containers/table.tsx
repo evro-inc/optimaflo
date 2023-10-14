@@ -15,6 +15,7 @@ import {
   setCurrentPage,
   setIsLimitReached,
   setSelectedRows,
+  toggleAllSelected,
 } from '@/src/app/redux/tableSlice';
 import logger from '@/src/lib/logger';
 import FormCombineContainer from './combineContainer';
@@ -48,6 +49,8 @@ export default function ContainerTable({ accounts, containers }) {
 
   const { itemsPerPage, selectedRows, currentPage, isLimitReached } =
     useSelector(selectTable);
+
+  const { allSelected } = useSelector(selectTable);
 
   const containersPerPage = 10;
   const totalPages = Math.ceil(
@@ -101,8 +104,10 @@ export default function ContainerTable({ accounts, containers }) {
   };
 
   const toggleAll = () => {
-    if (Object.keys(selectedRows).length === containers.length) {
+    if (allSelected) {
+      // If all rows are currently selected, deselect all
       dispatch(setSelectedRows({}));
+      dispatch(toggleAllSelected());
     } else {
       const newSelectedRows = {};
       containers.forEach((container) => {
@@ -117,7 +122,7 @@ export default function ContainerTable({ accounts, containers }) {
         };
       });
       dispatch(setSelectedRows(newSelectedRows));
-    }
+      dispatch(toggleAllSelected());    }
   };
 
   const handleDelete = () => {
@@ -268,6 +273,7 @@ export default function ContainerTable({ accounts, containers }) {
                             className="shrink-0 border-gray-200 rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:checked:bg-blue-500 dark:checked:border-blue-500 dark:focus:ring-offset-gray-800"
                             id="hs-at-with-checkboxes-main"
                             onChange={toggleAll}
+                            checked={allSelected}
                           />
                           <span className="sr-only">Checkbox</span>
                         </label>
