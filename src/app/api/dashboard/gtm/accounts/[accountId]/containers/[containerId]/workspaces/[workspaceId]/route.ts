@@ -457,7 +457,7 @@ export async function DELETE(request: NextRequest) {
     const tierLimitRecord = await prisma.tierLimit.findFirst({
       where: {
         Feature: {
-          name: 'GTMWorkspace', // Replace with the actual feature name
+          name: 'GTMWorkspaces', // Replace with the actual feature name
         },
         Subscription: {
           userId: userId, // Assuming Subscription model has a userId field

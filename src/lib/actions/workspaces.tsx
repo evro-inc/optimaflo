@@ -14,84 +14,47 @@ type FormCreateSchema = z.infer<typeof CreateContainerSchema>;
 type FormUpdateSchema = z.infer<typeof UpdateContainerSchema>;
 
 /************************************************************************************
-  Delete a single or multiple containers
+  Delete a single or multiple workspaces
 ************************************************************************************/
 export async function deleteWorkspaces(
   accountId: string,
-  selectedContainers: Set<string>
+  containerId: string,
+  workspaceId: string
 ) {
   const cookie: any = cookies();
   const cookieHeader: any = headers().get('cookie');
   const baseUrl = getURL();
-  const errors: string[] = [];
 
   const requestHeaders = {
     'Content-Type': 'application/json',
     ...(cookie && { Cookie: cookieHeader }),
   };
 
-  const featureLimitReachedContainers: string[] = [];
-
-  const deletePromises = Array.from(selectedContainers).map(
-    async (containerId) => {
-      const response = await fetch(
-        `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}`,
-        {
-          method: 'DELETE',
-          headers: requestHeaders,
-        }
-      );
-
-      if (response.status === 403) {
-        const parsedResponse = await response.json();
-        if (parsedResponse.message === 'Feature limit reached') {
-          featureLimitReachedContainers.push(containerId);
-          return {
-            success: false,
-            errorCode: 403,
-            message: 'Feature limit reached',
-          };
-        }
-      }
-
-      if (!response.ok) {
-        errors.push(
-          `Failed to delete container with ID ${containerId}: ${response.status}`
-        );
-        return {
-          success: false,
-          errorCode: response.status,
-          message: 'Failed to delete',
-        };
-      }
-
-      return { success: true, containerId };
+  const response = await fetch(
+    `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}`,
+    {
+      method: 'DELETE',
+      headers: requestHeaders,
     }
   );
 
-  const results = await Promise.all(deletePromises);
+  if (response.status === 403) {
+    const parsedResponse = await response.json();
+    if (parsedResponse.message === 'Feature limit reached') {
+      throw new Error('Feature limit reached');
+    }
+  }
 
-  if (featureLimitReachedContainers.length > 0) {
+  if (!response.ok) {
     throw new Error(
-      `Feature limit reached for containers: ${featureLimitReachedContainers.join(
-        ', '
-      )}`
+      `Failed to delete workspace with ID ${workspaceId} in container with ID ${containerId}: ${response.status}`
     );
   }
 
-  if (errors.length > 0) {
-    throw new Error(errors.join(', '));
-  } else {
-    revalidatePath(
-      `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers`
-    );
-    return {
-      success: true,
-      deletedContainers: results
-        .filter((r) => r.success)
-        .map((r) => r.containerId),
-    };
-  }
+  revalidatePath(
+    `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces`
+  );
+  return { success: true, containerId, workspaceId };
 }
 
 /************************************************************************************

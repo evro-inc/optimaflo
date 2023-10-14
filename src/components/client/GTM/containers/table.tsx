@@ -122,7 +122,8 @@ export default function ContainerTable({ accounts, containers }) {
         };
       });
       dispatch(setSelectedRows(newSelectedRows));
-      dispatch(toggleAllSelected());    }
+      dispatch(toggleAllSelected());
+    }
   };
 
   const handleDelete = () => {

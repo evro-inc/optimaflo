@@ -8,7 +8,7 @@ export const tableSlice = createSlice({
     currentPage: 1,
     itemsPerPage: 10,
     isLimitReached: false,
-    allSelected: false,  // Add this line to include the allSelected state
+    allSelected: false, // Add this line to include the allSelected state
   },
   reducers: {
     setSelectedRows: (
@@ -26,7 +26,8 @@ export const tableSlice = createSlice({
     clearSelectedRows: (state) => {
       state.selectedRows = {}; // Clear selectedRows by setting it to an empty object
     },
-    toggleAllSelected: (state) => {  // Add this reducer to toggle the allSelected state
+    toggleAllSelected: (state) => {
+      // Add this reducer to toggle the allSelected state
       state.allSelected = !state.allSelected;
     },
   },
@@ -37,7 +38,7 @@ export const {
   setCurrentPage,
   setIsLimitReached,
   clearSelectedRows,
-  toggleAllSelected,  // Export the new reducer
+  toggleAllSelected, // Export the new reducer
 } = tableSlice.actions;
 
 export const selectTable = (state) => state.table; // Adjust this if your state structure has changed

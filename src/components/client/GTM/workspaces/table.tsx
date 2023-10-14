@@ -3,7 +3,7 @@ import dynamic from 'next/dynamic';
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { deleteWorkspaces } from '@/src/lib/actions/workspaces';
-import { ContainerType, WorkspaceType } from '@/types/types';
+import { WorkspaceType } from '@/types/types';
 import {
   selectWorkspace,
   toggleCreateWorkspace,
@@ -85,27 +85,26 @@ export default function WorkspaceTable({ accounts, containers, workspaces }) {
 
   const pageOptions = Array.from({ length: totalPages }, (_, i) => i + 1);
 
-const toggleRow = (workspaceId, containerId, accountId) => {
+  const toggleRow = (workspaceId, containerId, accountId) => {
     const uniqueKey = `${workspaceId}-${containerId}`;
     const newSelectedRows = { ...selectedRows };
     if (newSelectedRows[uniqueKey]) {
-        delete newSelectedRows[uniqueKey];
+      delete newSelectedRows[uniqueKey];
     } else {
-        const workspace = workspaces.find(
-            (w) => w.workspaceId === workspaceId && w.containerId === containerId
-        );
-        if (workspace) {
-            newSelectedRows[uniqueKey] = {
-                accountId: accountId,
-                name: workspace.name,
-                containerId: workspace.containerId,
-                workspaceId: workspaceId,
-            };
-        }
+      const workspace = workspaces.find(
+        (w) => w.workspaceId === workspaceId && w.containerId === containerId
+      );
+      if (workspace) {
+        newSelectedRows[uniqueKey] = {
+          accountId: accountId,
+          name: workspace.name,
+          containerId: workspace.containerId,
+          workspaceId: workspaceId,
+        };
+      }
     }
     dispatch(setSelectedRows(newSelectedRows));
-};
-
+  };
 
   const toggleAll = () => {
     if (allSelected) {
@@ -129,22 +128,10 @@ const toggleRow = (workspaceId, containerId, accountId) => {
     }
   };
 
-
   const handleDelete = () => {
-    const uniqueAccountIds = Array.from(
-      new Set(
-        Object.values(selectedRows).map((rowData: any) => rowData.accountId)
-      )
-    );
-
-    const deleteOperations = uniqueAccountIds.map(async (accountId) => {
-      const containersToDelete = Object.entries(
-        selectedRows as { [key: string]: ContainerType }
-      )
-        .filter(([, rowData]) => rowData.accountId === accountId)
-        .map(([containerId]) => containerId);
-
-      return deleteWorkspaces(accountId, new Set(containersToDelete));
+    const deleteOperations = Object.values(selectedRows).map((rowData: any) => {
+      const { accountId, containerId, workspaceId } = rowData;
+      return deleteWorkspaces(accountId, containerId, workspaceId);
     });
 
     const deletePromise = Promise.all(deleteOperations);
@@ -318,10 +305,18 @@ const toggleRow = (workspaceId, containerId, accountId) => {
                                 type="checkbox"
                                 className="shrink-0 border-gray-200 rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:checked:bg-blue-500 dark:checked:border-blue-500 dark:focus:ring-offset-gray-800"
                                 id={`checkbox-${workspace.containerId}`}
-                                    checked={!!selectedRows[`${workspace.workspaceId}-${workspace.containerId}`]}
-
-                                onChange={() => toggleRow(workspace.workspaceId, workspace.containerId, workspace.accountId)}
-
+                                checked={
+                                  !!selectedRows[
+                                    `${workspace.workspaceId}-${workspace.containerId}`
+                                  ]
+                                }
+                                onChange={() =>
+                                  toggleRow(
+                                    workspace.workspaceId,
+                                    workspace.containerId,
+                                    workspace.accountId
+                                  )
+                                }
                               />
 
                               <span className="sr-only">Checkbox</span>

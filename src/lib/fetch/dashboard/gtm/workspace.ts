@@ -21,15 +21,14 @@ export async function gtmListWorkspaces() {
       headers: requestHeaders,
     };
 
-
     // Fetching unique containers
     const containersData = await gtmListContainers();
-    
+
     const workspacesPromises = containersData.map(async (container) => {
       const { accountId, containerId } = container;
-      
+
       const workspaceUrl = `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces`;
-      
+
       const workspacesResp = await fetch(workspaceUrl, options);
       if (!workspacesResp.ok) {
         const responseText = await workspacesResp.text();
@@ -38,14 +37,14 @@ export async function gtmListWorkspaces() {
         );
         return []; // return an empty array on error
       }
-      
+
       const workspacesData = await workspacesResp.json();
       return workspacesData.data || [];
     });
-    
+
     const workspacesArrays = await Promise.all(workspacesPromises);
     const workspaces = workspacesArrays.flat();
-    
+
     return workspaces;
   } catch (error) {
     console.error('Error fetching GTM containers:', error);
