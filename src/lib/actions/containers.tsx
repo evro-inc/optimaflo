@@ -4,7 +4,7 @@ import { cookies, headers } from 'next/headers';
 import {
   CreateContainerSchema,
   UpdateContainerSchema,
-} from '@/src/lib/schemas';
+} from '@/src/lib/schemas/containers';
 import logger from '../logger';
 import { getURL } from '@/src/lib/helpers';
 import z from 'zod';

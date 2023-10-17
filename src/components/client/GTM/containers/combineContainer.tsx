@@ -6,7 +6,7 @@ import { LimitReached } from '../../modals/limitReached';
 import { ButtonGroup } from '../../ButtonGroup/ButtonGroup';
 import { XMarkIcon } from '@heroicons/react/24/solid';
 import { z } from 'zod';
-import { UpdateContainerSchema } from '@/src/lib/schemas';
+import { UpdateContainerSchema } from '@/src/lib/schemas/containers';
 import {
   clearSelectedRows,
   selectTable,

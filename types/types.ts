@@ -111,7 +111,7 @@ export type ContainerType = {
   notes: string;
 };
 
-export type UpdateContainersResult = {
+export type UpdateResult = {
   success: boolean;
   limitReached?: boolean;
   message?: string;
@@ -125,6 +125,18 @@ export type FormUpdateContainerProps = {
   accounts: any; // Replace 'any' with the actual type if known
   selectedRows: Map<string, ContainerType>;
 };
+
+
+export type FormUpdateWorkspaceProps = {
+  showOptions: boolean;
+  onClose: () => void;
+  accounts: any; // Replace 'any' with the actual type if known
+  selectedRows: Map<string, ContainerType>;
+  containers: any;
+  workspaces: any;
+};
+
+
 
 export type ResultType = {
   data: tagmanager_v2.Schema$Container[] | undefined;
@@ -146,7 +158,7 @@ export type PostParams = {
   notes: string;
 };
 
-export type CreateContainersResult = {
+export type CreateResult = {
   success: boolean;
   limitReached?: boolean;
   message?: string;
@@ -159,6 +171,15 @@ export type FormCreateContainerProps = {
   onClose: () => void;
   accounts: any; // Replace 'any' with the actual type if known
 };
+
+
+export type FormCreateWorkspaceProps = {
+  showOptions: boolean;
+  onClose: () => void;
+  accounts: any; 
+  containers: any;
+};
+
 
 export type WorkspaceType = {
   path: string;

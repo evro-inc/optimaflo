@@ -2,82 +2,99 @@
 import { revalidatePath } from 'next/cache';
 import { cookies, headers } from 'next/headers';
 import {
-  CreateContainerSchema,
-  UpdateContainerSchema,
-} from '@/src/lib/schemas';
+  CreateWorkspaceSchema,
+  UpdateWorkspaceSchema,
+} from '@/src/lib/schemas/workspaces';
 import logger from '../logger';
 import { getURL } from '@/src/lib/helpers';
 import z from 'zod';
 
 // Define the types for the form data
-type FormCreateSchema = z.infer<typeof CreateContainerSchema>;
-type FormUpdateSchema = z.infer<typeof UpdateContainerSchema>;
+type FormCreateSchema = z.infer<typeof CreateWorkspaceSchema>;
+type FormUpdateSchema = z.infer<typeof UpdateWorkspaceSchema>;
 
 /************************************************************************************
   Delete a single or multiple workspaces
 ************************************************************************************/
 export async function deleteWorkspaces(
   accountId: string,
-  containerId: string,
-  workspaceId: string
+  workspaces: { containerId: string; workspaceId: string }[]
 ) {
   const cookie: any = cookies();
   const cookieHeader: any = headers().get('cookie');
   const baseUrl = getURL();
 
+  console.log('accountId', accountId);
+  console.log('workspaces', workspaces);
+  
+  
+  
   const requestHeaders = {
     'Content-Type': 'application/json',
     ...(cookie && { Cookie: cookieHeader }),
   };
-
-  const response = await fetch(
-    `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}`,
-    {
-      method: 'DELETE',
-      headers: requestHeaders,
-    }
-  );
-
-  if (response.status === 403) {
-    const parsedResponse = await response.json();
-    if (parsedResponse.message === 'Feature limit reached') {
-      throw new Error('Feature limit reached');
-    }
-  }
-
-  if (!response.ok) {
-    throw new Error(
-      `Failed to delete workspace with ID ${workspaceId} in container with ID ${containerId}: ${response.status}`
+  
+  const deletionPromises = workspaces.map(async ({ containerId, workspaceId }) => {
+    const response = await fetch(
+      `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}`,
+      {
+        method: 'DELETE',
+        headers: requestHeaders,
+      }
     );
-  }
 
-  revalidatePath(
-    `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces`
-  );
-  return { success: true, containerId, workspaceId };
+    if (response.status === 403) {
+      const parsedResponse = await response.json();
+      if (parsedResponse.message === 'Feature limit reached') {
+        throw new Error('Feature limit reached');
+      }
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to delete workspace with ID ${workspaceId} in container with ID ${containerId}: ${response.status}`
+      );
+    }
+
+    revalidatePath(
+      `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces`
+    );
+
+    return { success: true, containerId, workspaceId };
+  });
+
+  const results = await Promise.allSettled(deletionPromises);
+  return results;
 }
+
 
 /************************************************************************************
   Create a single container or multiple containers
 ************************************************************************************/
-export async function createContainers(formData: FormCreateSchema) {
+export async function createWorkspaces(formData: FormCreateSchema) {
   try {
     const cookie: any = cookies();
     const cookieHeader: any = headers().get('cookie');
     const baseUrl = getURL();
     const errors: string[] = [];
 
-    let accountIdsToRevalidate = new Set<string>();
-    const forms: any[] = [];
+    let accountIdsToRevalidate = new Map<string, string>();
+
+    const forms: any[] = [];    
 
     const plainDataArray = formData.forms.map((fd) => {
       return Object.fromEntries(Object.keys(fd).map((key) => [key, fd[key]]));
     });
+    console.log('plainDataArray', plainDataArray);
+    
 
-    // Now pass plainDataArray to CreateContainerSchema.safeParse within an object under the key 'forms'
-    const validationResult = CreateContainerSchema.safeParse({
+    // Now pass plainDataArray to CreateWorkspaceSchema.safeParse within an object under the key 'forms'
+    const validationResult = CreateWorkspaceSchema.safeParse({
       forms: plainDataArray,
     });
+
+    console.log('validationResult', validationResult);
+    
 
     if (!validationResult.success) {
       let errorMessage = '';
@@ -101,11 +118,11 @@ export async function createContainers(formData: FormCreateSchema) {
 
     validationResult.data.forms.forEach((formData: any) => {
       forms.push({
-        containerName: formData.containerName,
-        usageContext: formData.usageContext,
         accountId: formData.accountId,
-        domainName: formData.domainName ? formData.domainName.split(',') : [''],
-        notes: formData.notes,
+        workspaceId: formData.workspaceId,
+        name: formData.name,
+        description: formData.description,
+        containerId: formData.containerId,
       });
     });
 
@@ -114,29 +131,25 @@ export async function createContainers(formData: FormCreateSchema) {
       ...(cookie && { Cookie: cookieHeader }),
     };
 
-    const featureLimitReachedContainers: string[] = [];
+    const featureLimitReachedWorkspaces: string[] = [];
 
-    const createPromises = forms.map(async (containerData) => {
-      const { containerName, usageContext, accountId, domainName, notes } =
-        containerData; // Destructure from the current object
+    const createPromises = forms.map(async (workspaceData) => {
+      const { accountId, description, containerId, name } =
+        workspaceData; // Destructure from the current object
 
       // Initialize payload with a flexible type
       const payload: { [key: string]: any } = {
-        name: containerName,
-        usageContext: usageContext,
+        description: description,
+        containerId: containerId,
         accountId: accountId,
-        notes: notes,
+        name: name,
       };
 
-      // Conditionally add domainName if it exists and is not empty
-      if (domainName && domainName.length > 0 && domainName[0] !== '') {
-        payload['domainName'] = domainName;
-      }
+      accountIdsToRevalidate.set(accountId, containerId);
 
-      accountIdsToRevalidate.add(accountId);
 
       const response = await fetch(
-        `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers`,
+        `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces`,
         {
           method: 'POST',
           headers: requestHeaders,
@@ -144,11 +157,11 @@ export async function createContainers(formData: FormCreateSchema) {
         }
       );
 
-      const createdContainer = await response.json();
+      const createdWorkspace = await response.json();
 
       if (response.status === 403) {
-        if (createdContainer.message === 'Feature limit reached') {
-          featureLimitReachedContainers.push(containerData.containerName);
+        if (createdWorkspace.message === 'Feature limit reached') {
+          featureLimitReachedWorkspaces.push(workspaceData.name);
           return {
             success: false,
             errorCode: 403,
@@ -159,7 +172,7 @@ export async function createContainers(formData: FormCreateSchema) {
 
       if (!response.ok) {
         errors.push(
-          `Failed to create container with name ${containerData.containerName} in account ${containerData.accountId}: ${response.status}`
+          `Failed to create workspace(s) with name ${workspaceData.name} in account ${workspaceData.accountId}: ${response.status}`
         );
 
         return {
@@ -169,16 +182,16 @@ export async function createContainers(formData: FormCreateSchema) {
         };
       }
 
-      return { success: true, createdContainer };
+      return { success: true, createdWorkspace };
     });
 
     const results = await Promise.all(createPromises);
 
-    if (featureLimitReachedContainers.length > 0) {
+    if (featureLimitReachedWorkspaces.length > 0) {
       return {
         success: false,
         limitReached: true,
-        message: `Feature limit reached for containers: ${featureLimitReachedContainers.join(
+        message: `Feature limit reached for workspaces: ${featureLimitReachedWorkspaces.join(
           ', '
         )}`,
       };
@@ -191,17 +204,17 @@ export async function createContainers(formData: FormCreateSchema) {
         message: errors.join(', '),
       };
     } else {
-      accountIdsToRevalidate.forEach((accountId) => {
+      accountIdsToRevalidate.forEach((accountId, containerId) => {
         revalidatePath(
-          `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers`
+          `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces`
         );
       });
       return {
         success: true,
         limitReached: false,
-        createdContainers: results
+        createdWorkspaces: results
           .filter((r) => r.success)
-          .map((r) => r.createdContainer),
+          .map((r) => r.createdWorkspace),
       };
     }
   } catch (error: any) {
@@ -215,27 +228,32 @@ export async function createContainers(formData: FormCreateSchema) {
 }
 
 /************************************************************************************
-  Create a single container or multiple containers
+  Udpate a single container or multiple containers
 ************************************************************************************/
-export async function updateContainers(
-  formData: FormUpdateSchema // Replace 'any' with the actual type if known
-) {
+export async function updateWorkspaces(formData: FormUpdateSchema) {
   try {
     const cookie: any = cookies();
     const cookieHeader: any = headers().get('cookie');
     const baseUrl = getURL();
     const errors: string[] = [];
 
-    let accountIdsToRevalidate = new Set<string>();
-    const forms: any[] = [];
+    let accountIdsToRevalidate = new Map<string, string>();
+
+    const forms: any[] = [];    
 
     const plainDataArray = formData.forms.map((fd) => {
       return Object.fromEntries(Object.keys(fd).map((key) => [key, fd[key]]));
     });
+    console.log('plainDataArray', plainDataArray);
+    
 
-    const validationResult = UpdateContainerSchema.safeParse({
+    // Now pass plainDataArray to UpdateWorkspaceSchema.safeParse within an object under the key 'forms'
+    const validationResult = UpdateWorkspaceSchema.safeParse({
       forms: plainDataArray,
     });
+
+    console.log('validationResult', validationResult);
+    
 
     if (!validationResult.success) {
       let errorMessage = '';
@@ -259,11 +277,10 @@ export async function updateContainers(
 
     validationResult.data.forms.forEach((formData: any) => {
       forms.push({
-        containerName: formData.containerName,
-        usageContext: formData.usageContext,
         accountId: formData.accountId,
-        domainName: formData.domainName ? formData.domainName.split(',') : [''],
-        notes: formData.notes,
+        workspaceId: formData.workspaceId,
+        name: formData.name,
+        description: formData.description,
         containerId: formData.containerId,
       });
     });
@@ -273,48 +290,38 @@ export async function updateContainers(
       ...(cookie && { Cookie: cookieHeader }),
     };
 
-    const featureLimitReachedContainers: string[] = [];
+    const featureLimitReachedWorkspaces: string[] = [];
 
-    const updatePromises = forms.map(async (containerData) => {
-      const {
-        containerName,
-        usageContext,
-        accountId,
-        domainName,
-        notes,
-        containerId,
-      } = containerData; // Destructure from the current object
+    const updatePromises = forms.map(async (workspaceData) => {
+      const { accountId, description, containerId, name, workspaceId } =
+        workspaceData; // Destructure from the current object
 
       // Initialize payload with a flexible type
       const payload: { [key: string]: any } = {
-        containerName: containerName,
-        usageContext: usageContext,
-        accountId: accountId,
-        notes: notes,
+        description: description,
         containerId: containerId,
+        accountId: accountId,
+        name: name,
+        workspaceId: workspaceId,
       };
 
-      // Conditionally add domainName if it exists and is not empty
-      if (domainName && domainName.length > 0 && domainName[0] !== '') {
-        payload['domainName'] = domainName;
-      }
+      accountIdsToRevalidate.set(accountId, containerId);
 
-      accountIdsToRevalidate.add(accountId);
 
       const response = await fetch(
-        `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}`,
+        `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}`,
         {
-          method: 'PUT',
+          method: 'PATCH',
           headers: requestHeaders,
           body: JSON.stringify(payload),
         }
       );
 
-      const updateContainer = await response.json();
+      const updatedWorkspace = await response.json();
 
       if (response.status === 403) {
-        if (updateContainer.message === 'Feature limit reached') {
-          featureLimitReachedContainers.push(containerData.containerName);
+        if (updatedWorkspace.message === 'Feature limit reached') {
+          featureLimitReachedWorkspaces.push(workspaceData.name);
           return {
             success: false,
             errorCode: 403,
@@ -325,26 +332,26 @@ export async function updateContainers(
 
       if (!response.ok) {
         errors.push(
-          `Failed to update container with name ${containerData.containerName} in account ${containerData.accountId}: ${response.status}`
+          `Failed to create workspace(s) with name ${workspaceData.name} in account ${workspaceData.accountId}: ${response.status}`
         );
 
         return {
           success: false,
           errorCode: response.status,
-          message: 'Failed to update',
+          message: 'Failed to create',
         };
       }
 
-      return { success: true, updateContainer };
+      return { success: true, updatedWorkspace };
     });
 
     const results = await Promise.all(updatePromises);
 
-    if (featureLimitReachedContainers.length > 0) {
+    if (featureLimitReachedWorkspaces.length > 0) {
       return {
         success: false,
         limitReached: true,
-        message: `Feature limit reached for containers: ${featureLimitReachedContainers.join(
+        message: `Feature limit reached for workspaces: ${featureLimitReachedWorkspaces.join(
           ', '
         )}`,
       };
@@ -357,17 +364,17 @@ export async function updateContainers(
         message: errors.join(', '),
       };
     } else {
-      accountIdsToRevalidate.forEach((accountId) => {
+      accountIdsToRevalidate.forEach((accountId, containerId) => {
         revalidatePath(
-          `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers`
+          `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces`
         );
       });
       return {
         success: true,
         limitReached: false,
-        udpateContainers: results
+        createdWorkspaces: results
           .filter((r) => r.success)
-          .map((r) => r.updateContainer),
+          .map((r) => r.updatedWorkspace),
       };
     }
   } catch (error: any) {

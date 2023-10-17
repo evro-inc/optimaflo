@@ -1,33 +1,33 @@
-'use client';
-import React, { useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { createContainers } from '@/src/lib/actions/containers';
-import { LimitReached } from '../../modals/limitReached';
-import { ButtonGroup } from '../../ButtonGroup/ButtonGroup';
-import { XMarkIcon } from '@heroicons/react/24/solid';
+"use client";
+import React, { useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { LimitReached } from "../../modals/limitReached";
+import { ButtonGroup } from "../../ButtonGroup/ButtonGroup";
+import { XMarkIcon } from "@heroicons/react/24/solid";
 import {
-  CreateContainersResult,
-  FormCreateContainerProps,
-} from '@/types/types';
-import { useDispatch, useSelector } from 'react-redux';
-import { selectTable, setIsLimitReached } from '@/src/app/redux/tableSlice';
-import { selectGlobal, setLoading } from '@/src/app/redux/globalSlice';
-import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
-import { CreateContainerSchema } from '@/src/lib/schemas';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import logger from '@/src/lib/logger';
+  CreateResult,
+  FormCreateWorkspaceProps,
+} from "@/types/types";
+import { useDispatch, useSelector } from "react-redux";
+import { selectTable, setIsLimitReached } from "@/src/app/redux/tableSlice";
+import { selectGlobal, setLoading } from "@/src/app/redux/globalSlice";
+import { useForm, useFieldArray, SubmitHandler } from "react-hook-form";
+import { CreateWorkspaceSchema } from "@/src/lib/schemas/workspaces";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import logger from "@/src/lib/logger";
+import { createWorkspaces } from "@/src/lib/actions/workspaces";
 
-type Forms = z.infer<typeof CreateContainerSchema>;
+type Forms = z.infer<typeof CreateWorkspaceSchema>;
 
-const FormCreateWorkspace: React.FC<FormCreateContainerProps> = ({
+const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
   showOptions,
   onClose,
   accounts = [],
+  containers = [],
 }) => {
   const formRefs = useRef<(HTMLFormElement | null)[]>([]);
   const dispatch = useDispatch();
-
   const {
     register,
     handleSubmit,
@@ -38,21 +38,21 @@ const FormCreateWorkspace: React.FC<FormCreateContainerProps> = ({
     defaultValues: {
       forms: [
         {
-          accountId: '',
-          usageContext: '',
-          containerName: '',
-          domainName: '',
-          notes: '',
-          containerId: '',
+          accountId: "",
+          
+          
+          name: "",
+          description: "",
+          containerId: "",
         },
       ],
     },
-    resolver: zodResolver(CreateContainerSchema),
+    resolver: zodResolver(CreateWorkspaceSchema),
   });
 
   const { fields, append, remove } = useFieldArray({
     control,
-    name: 'forms',
+    name: "forms",
   });
 
   const { isLimitReached, loading } = useSelector((state) => ({
@@ -62,12 +62,12 @@ const FormCreateWorkspace: React.FC<FormCreateContainerProps> = ({
 
   const addForm = () => {
     append({
-      accountId: '',
-      usageContext: '',
-      containerName: '',
-      domainName: '',
-      notes: '',
-      containerId: '',
+          accountId: "",
+          
+          
+          name: "",
+          description: "",
+          containerId: "",
     });
   };
 
@@ -77,12 +77,12 @@ const FormCreateWorkspace: React.FC<FormCreateContainerProps> = ({
     }
   };
 
-  const processForm: SubmitHandler<Forms> = async (data) => {
+  const processForm: SubmitHandler<Forms> = async (data) => {    
     const { forms } = data;
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
     try {
-      const res = (await createContainers({ forms })) as CreateContainersResult;
+      const res = (await createWorkspaces({ forms })) as CreateResult;
 
       if (res.limitReached) {
         dispatch(setIsLimitReached(true)); // Set limitReached to true using Redux action
@@ -95,12 +95,12 @@ const FormCreateWorkspace: React.FC<FormCreateContainerProps> = ({
       reset({
         forms: [
           {
-            accountId: '',
-            usageContext: '',
-            containerName: '',
-            domainName: '',
-            notes: '',
-            containerId: '',
+          accountId: "",
+          
+          
+          name: "",
+          description: "",
+          containerId: "",
           },
         ],
       });
@@ -110,12 +110,12 @@ const FormCreateWorkspace: React.FC<FormCreateContainerProps> = ({
         reset({
           forms: [
             {
-              accountId: '',
-              usageContext: '',
-              containerName: '',
-              domainName: '',
-              notes: '',
-              containerId: '',
+          accountId: "",
+          
+          
+          name: "",
+          description: "",
+          containerId: "",
             },
           ],
         });
@@ -124,7 +124,7 @@ const FormCreateWorkspace: React.FC<FormCreateContainerProps> = ({
         setIsLimitReached(true);
       }
     } catch (error) {
-      logger.error('Error creating containers:', error);
+      logger.error("Error creating containers:", error);
 
       return { success: false };
     } finally {
@@ -137,12 +137,10 @@ const FormCreateWorkspace: React.FC<FormCreateContainerProps> = ({
     reset({
       forms: [
         {
-          accountId: '',
-          usageContext: '',
-          containerName: '',
-          domainName: '',
-          notes: '',
-          containerId: '',
+          accountId: "",
+          name: "",
+          description: "",
+          containerId: "",
         },
       ],
     });
@@ -171,17 +169,16 @@ const FormCreateWorkspace: React.FC<FormCreateContainerProps> = ({
 
             <ButtonGroup
               buttons={[
-                { text: 'Add Form', onClick: addForm },
-                { text: 'Remove Form', onClick: removeForm },
+                { text: "Add Form", onClick: addForm },
+                { text: "Remove Form", onClick: removeForm },
                 {
-                  text: loading ? 'Submitting...' : 'Submit',
-                  type: 'submit',
-                  form: 'createContainer',
+                  text: loading ? "Submitting..." : "Submit",
+                  type: "submit",
+                  form: "createWorkspace",
                 },
               ]}
             />
 
-            {/* Hire Us */}
             <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-end">
               {fields.map((field, index) => (
                 <div
@@ -191,7 +188,7 @@ const FormCreateWorkspace: React.FC<FormCreateContainerProps> = ({
                   <div className="max-w-xl mx-auto">
                     <div className="text-center">
                       <p className="text-3xl font-bold text-gray-800 sm:text-4xl dark:text-white">
-                        Container {index + 1}
+                        Workspace {index + 1}
                       </p>
                     </div>
 
@@ -200,7 +197,7 @@ const FormCreateWorkspace: React.FC<FormCreateContainerProps> = ({
                       <form
                         ref={(el) => (formRefs.current[index] = el)}
                         onSubmit={handleSubmit(processForm)}
-                        id="createContainer"
+                        id="createWorkspace"
                       >
                         <div className="grid gap-4 lg:gap-6">
                           {/* Grid */}
@@ -210,18 +207,18 @@ const FormCreateWorkspace: React.FC<FormCreateContainerProps> = ({
                                 htmlFor="hs-firstname-hire-us-2"
                                 className="block text-sm text-gray-700 font-medium dark:text-white"
                               >
-                                New Container Name:
+                                New Workspace Name:
                               </label>
                               <input
                                 type="text"
-                                {...register(`forms.${index}.containerName`)}
+                                {...register(`forms.${index}.name`)}
                                 className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
                               />
-                              {errors.forms?.[index]?.containerName
+                              {errors.forms?.[index]?.name
                                 ?.message && (
                                 <p className="text-red-500 text-xs italic">
                                   {
-                                    errors.forms?.[index]?.containerName
+                                    errors.forms?.[index]?.name
                                       ?.message
                                   }
                                 </p>
@@ -252,76 +249,59 @@ const FormCreateWorkspace: React.FC<FormCreateContainerProps> = ({
                                 </p>
                               )}
                             </div>
+
+                            <div>
+                              <label
+                                htmlFor="hs-lastname-hire-us-2"
+                                className="block text-sm text-gray-700 font-medium dark:text-white"
+                              >
+                                Container
+                              </label>
+                              <select
+                                {...register(`forms.${index}.containerId`)}
+                                className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
+                              >
+                                {Array.isArray(containers) &&
+                                  containers.map((container: any) => (
+                                    <option key={container.containerId} value={container.containerId}>
+                                      {container.name}
+                                    </option>
+                                  ))}
+                              </select>
+                              {errors.forms?.[index]?.containerId?.message && (
+                                <p className="text-red-500 text-xs italic">
+                                  {errors.forms?.[index]?.containerId?.message}
+                                </p>
+                              )}
+                            </div>
+
+                            <div>
+                              <label
+                                htmlFor="hs-firstname-hire-us-2"
+                                className="block text-sm text-gray-700 font-medium dark:text-white"
+                              >
+                                Description:
+                              </label>
+                              <input
+                                type="text"
+                                {...register(`forms.${index}.description`)}
+                                className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
+                              />
+                              {errors.forms?.[index]?.description
+                                ?.message && (
+                                <p className="text-red-500 text-xs italic">
+                                  {
+                                    errors.forms?.[index]?.description
+                                      ?.message
+                                  }
+                                </p>
+                              )}
+                            </div>
+
                           </div>
                           {/* End Grid */}
 
-                          <div>
-                            <label
-                              htmlFor="hs-work-email-hire-us-2"
-                              className="block text-sm text-gray-700 font-medium dark:text-white"
-                            >
-                              Usage Context:
-                            </label>
 
-                            <select
-                              {...register(`forms.${index}.usageContext`)}
-                              className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
-                            >
-                              <option value="web">Web</option>
-                              <option value="androidSdk5">Android</option>
-                              <option value="iosSdk5">IOS</option>
-                            </select>
-                            {errors.forms?.[index]?.usageContext?.message && (
-                              <p className="text-red-500 text-xs italic">
-                                {errors.forms?.[index]?.usageContext?.message}
-                              </p>
-                            )}
-                          </div>
-
-                          {/* Grid */}
-                          <div className="grid grid-cols-1 gap-4 lg:gap-6">
-                            <div>
-                              <label
-                                htmlFor="hs-company-hire-us-2"
-                                className="block text-sm text-gray-700 font-medium dark:text-white"
-                              >
-                                Domain Name: Optional (Must be comma separated)
-                              </label>
-
-                              <input
-                                type="text"
-                                {...register(`forms.${index}.domainName`)}
-                                placeholder="Enter domain names separated by commas"
-                                className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
-                              />
-                              {errors.forms?.[index]?.domainName?.message && (
-                                <p className="text-red-500 text-xs italic">
-                                  {errors.forms?.[index]?.domainName?.message}
-                                </p>
-                              )}
-                            </div>
-
-                            <div>
-                              <label
-                                htmlFor="hs-company-website-hire-us-2"
-                                className="block text-sm text-gray-700 font-medium dark:text-white"
-                              >
-                                Notes: Optional
-                              </label>
-
-                              <input
-                                type="text"
-                                {...register(`forms.${index}.notes`)}
-                                placeholder="Enter Note"
-                                className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
-                              />
-                              {errors.forms?.[index]?.notes?.message && (
-                                <p className="text-red-500 text-xs italic">
-                                  {errors.forms?.[index]?.notes?.message}
-                                </p>
-                              )}
-                            </div>
-                          </div>
                           {/* End Grid */}
                         </div>
                         {/* End Grid */}

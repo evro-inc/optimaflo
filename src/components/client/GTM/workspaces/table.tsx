@@ -10,7 +10,6 @@ import {
   toggleUpdateWorkspace,
 } from '@/src/app/redux/workspaceSlice';
 import {
-  clearSelectedRows,
   selectTable,
   setCurrentPage,
   setIsLimitReached,
@@ -47,8 +46,8 @@ export default function WorkspaceTable({ accounts, containers, workspaces }) {
     const container = containers.find((c) => c.containerId === containerId);
     return container ? container.name : 'N/A';
   };
-  /*  const {  showUpdateWorkspace, showCreateWorkspace } =
-    useSelector(selectWorkspace); */
+  const {  showUpdateWorkspace, showCreateWorkspace } =
+    useSelector(selectWorkspace);
 
   const { itemsPerPage, selectedRows, currentPage, isLimitReached } =
     useSelector(selectTable);
@@ -128,22 +127,26 @@ export default function WorkspaceTable({ accounts, containers, workspaces }) {
     }
   };
 
-  const handleDelete = () => {
+const handleDelete = async () => {
+  try {
+    // Transform selectedRows object into an array of deletion operations
     const deleteOperations = Object.values(selectedRows).map((rowData: any) => {
       const { accountId, containerId, workspaceId } = rowData;
-      return deleteWorkspaces(accountId, containerId, workspaceId);
+      return deleteWorkspaces(accountId, [{ containerId, workspaceId }]);
     });
 
-    const deletePromise = Promise.all(deleteOperations);
+    // Await the resolution of all deletion operations
+    await Promise.all(deleteOperations);
+  } catch (error: any) {
+    if (error.message.includes('Feature limit reached')) {
+      dispatch(setIsLimitReached(true));
+    } else {
+      logger.error(error);
+    }
+  }
+};
 
-    deletePromise.catch((error: any) => {
-      if (error.message.includes('Feature limit reached')) {
-        dispatch(setIsLimitReached(true));
-      } else {
-        logger.error(error);
-      }
-    });
-  };
+
 
   return (
     <>
@@ -476,22 +479,25 @@ export default function WorkspaceTable({ accounts, containers, workspaces }) {
       {isLimitReached && (
         <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
       )}
-      {/*      {useSelector(selectWorkspace).showCreateWorkspace && (
+      {useSelector(selectWorkspace).showCreateWorkspace && (
         <FormCreateWorkspace
           showOptions={showCreateWorkspace}
           onClose={() => dispatch(toggleCreateWorkspace())}
           accounts={accounts}
+          containers={containers}
         />
-      )} */}
+      )}
 
-      {/* {useSelector(selectWorkspace).showUpdateWorkspace && (
+      {useSelector(selectWorkspace).showUpdateWorkspace && (
         <FormUpdateWorkspace
           showOptions={showUpdateWorkspace}
           onClose={() => dispatch(toggleUpdateWorkspace())}
           accounts={accounts}
           selectedRows={selectedRows}
+          containers={containers}
+          workspaces={workspaces}
         />
-      )} */}
+      )}
     </>
   );
 }
