@@ -12,7 +12,6 @@ export async function gtmListAccounts() {
     // Define headers
     const requestHeaders = {
       'Content-Type': 'application/json',
-      cache: 'no-store',
     };
 
     if (cookie) {

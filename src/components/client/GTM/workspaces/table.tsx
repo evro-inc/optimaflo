@@ -40,13 +40,13 @@ const FormUpdateWorkspace = dynamic(() => import('./update'), {
   ssr: false,
 });
 
-export default function WorkspaceTable({ accounts, containers, workspaces }) {
+function WorkspaceTable({ accounts, containers, workspaces }) {
   const dispatch = useDispatch();
   const getContainerName = (containerId) => {
     const container = containers.find((c) => c.containerId === containerId);
     return container ? container.name : 'N/A';
   };
-  const {  showUpdateWorkspace, showCreateWorkspace } =
+  const { showUpdateWorkspace, showCreateWorkspace } =
     useSelector(selectWorkspace);
 
   const { itemsPerPage, selectedRows, currentPage, isLimitReached } =
@@ -127,26 +127,26 @@ export default function WorkspaceTable({ accounts, containers, workspaces }) {
     }
   };
 
-const handleDelete = async () => {
-  try {
-    // Transform selectedRows object into an array of deletion operations
-    const deleteOperations = Object.values(selectedRows).map((rowData: any) => {
-      const { accountId, containerId, workspaceId } = rowData;
-      return deleteWorkspaces(accountId, [{ containerId, workspaceId }]);
-    });
+  const handleDelete = async () => {
+    try {
+      // Transform selectedRows object into an array of deletion operations
+      const deleteOperations = Object.values(selectedRows).map(
+        (rowData: any) => {
+          const { accountId, containerId, workspaceId } = rowData;
+          return deleteWorkspaces(accountId, [{ containerId, workspaceId }]);
+        }
+      );
 
-    // Await the resolution of all deletion operations
-    await Promise.all(deleteOperations);
-  } catch (error: any) {
-    if (error.message.includes('Feature limit reached')) {
-      dispatch(setIsLimitReached(true));
-    } else {
-      logger.error(error);
+      // Await the resolution of all deletion operations
+      await Promise.all(deleteOperations);
+    } catch (error: any) {
+      if (error.message.includes('Feature limit reached')) {
+        dispatch(setIsLimitReached(true));
+      } else {
+        logger.error(error);
+      }
     }
-  }
-};
-
-
+  };
 
   return (
     <>
@@ -501,3 +501,7 @@ const handleDelete = async () => {
     </>
   );
 }
+
+const WorkspaceTableMemo = React.memo(WorkspaceTable);
+
+export default WorkspaceTableMemo;

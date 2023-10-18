@@ -11,7 +11,6 @@ import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
 import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
 import logger from '@/src/lib/logger';
 import { limiter } from '@/src/lib/bottleneck';
-import { GaxiosResponse } from 'gaxios';
 import { getAccessToken, handleError } from '@/src/lib/fetch/apiUtils';
 
 /************************************************************************************
@@ -177,7 +176,6 @@ export async function PATCH(request: NextRequest) {
     // Parse the request body
     const body = JSON.parse(await request.text());
     console.log('body: ', body);
-    
 
     // Extract the account ID from the body
     const accountId = body.accountId;

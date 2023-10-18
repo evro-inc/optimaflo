@@ -3,10 +3,10 @@ import React from 'react';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
 import { redirect } from 'next/navigation';
-import { gtmListAccounts } from '@/src/lib/fetch/dashboard/gtm/accounts';
-import { gtmListWorkspaces } from '@/src/lib/fetch/dashboard/gtm/workspace';
+import { gtmListAccounts } from '@/src/lib/actions/accounts';
 import WorkspaceTable from '@/src/components/client/GTM/workspaces/table';
-import { gtmListContainers } from '@/src/lib/fetch/dashboard/gtm/containers';
+import { gtmListWorkspaces } from '@/src/lib/actions/workspaces';
+import { gtmListContainers } from '@/src/lib/actions/containers';
 
 export const metadata: Metadata = {
   title: 'Overview',

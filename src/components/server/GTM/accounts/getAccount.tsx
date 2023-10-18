@@ -1,6 +1,6 @@
 // components/GTMListAccounts.server.js
 import React from 'react';
-import { gtmListAccounts } from '@/src/lib/fetch/dashboard/gtm/accounts';
+import { gtmListAccounts } from '@/src/lib/actions/accounts';
 
 export default async function GTMListAccounts() {
   const listAccountData = await gtmListAccounts();

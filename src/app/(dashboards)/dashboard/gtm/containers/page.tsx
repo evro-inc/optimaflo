@@ -3,9 +3,9 @@ import React from 'react';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
 import { redirect } from 'next/navigation';
-import { gtmListContainers } from '@/src/lib/fetch/dashboard/gtm/containers';
 import ContainerTable from '@/src/components/client/GTM/containers/table';
-import { gtmListAccounts } from '@/src/lib/fetch/dashboard/gtm/accounts';
+import { gtmListAccounts } from '@/src/lib/actions/accounts';
+import { gtmListContainers } from '@/src/lib/actions/containers';
 
 export const metadata: Metadata = {
   title: 'Overview',

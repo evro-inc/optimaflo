@@ -10,7 +10,6 @@ import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
 import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
 import { limiter } from '@/src/lib/bottleneck';
 import { getAccessToken, handleError } from '@/src/lib/fetch/apiUtils';
-import { GaxiosResponse } from 'gaxios';
 
 /************************************************************************************
  * GET UTILITY FUNCTIONS

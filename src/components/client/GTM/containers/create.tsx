@@ -5,10 +5,7 @@ import { createContainers } from '@/src/lib/actions/containers';
 import { LimitReached } from '../../modals/limitReached';
 import { ButtonGroup } from '../../ButtonGroup/ButtonGroup';
 import { XMarkIcon } from '@heroicons/react/24/solid';
-import {
-  CreateResult,
-  FormCreateContainerProps,
-} from '@/types/types';
+import { CreateResult, FormCreateContainerProps } from '@/types/types';
 import { useDispatch, useSelector } from 'react-redux';
 import { selectTable, setIsLimitReached } from '@/src/app/redux/tableSlice';
 import { selectGlobal, setLoading } from '@/src/app/redux/globalSlice';

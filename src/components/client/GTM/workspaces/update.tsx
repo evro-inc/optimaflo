@@ -15,10 +15,7 @@ import { selectIsLoading, setLoading } from '@/src/app/redux/globalSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  FormUpdateWorkspaceProps,
-  UpdateResult,
-} from '@/types/types';
+import { FormUpdateWorkspaceProps, UpdateResult } from '@/types/types';
 import logger from '@/src/lib/logger';
 import { updateWorkspaces } from '@/src/lib/actions/workspaces';
 
@@ -30,8 +27,6 @@ const FormUpdateWorkspace: React.FC<FormUpdateWorkspaceProps> = ({
   showOptions,
   onClose,
   selectedRows,
-  accounts = [],
-  workspaces = [],
 }) => {
   const dispatch = useDispatch();
   const { isLimitReached } = useSelector(selectTable);
@@ -48,11 +43,11 @@ const FormUpdateWorkspace: React.FC<FormUpdateWorkspaceProps> = ({
     defaultValues: {
       forms: [
         {
-          accountId: "",
-          workspaceId: "",
-          name: "",
-          description: "",
-          containerId: "",
+          accountId: '',
+          workspaceId: '',
+          name: '',
+          description: '',
+          containerId: '',
         },
       ],
     },
@@ -71,7 +66,6 @@ const FormUpdateWorkspace: React.FC<FormUpdateWorkspaceProps> = ({
       const workspaceId = rowData?.workspaceId || '';
       const name = rowData?.name || '';
       const description = rowData?.description || '';
-
 
       return {
         accountId,
@@ -110,29 +104,29 @@ const FormUpdateWorkspace: React.FC<FormUpdateWorkspaceProps> = ({
 
       // Reset the forms here, regardless of success or limit reached
       reset({
-      forms: [
-        {
-          accountId: "",
-          workspaceId: "",
-          name: "",
-          description: "",
-          containerId: "",
-        },
-      ],
+        forms: [
+          {
+            accountId: '',
+            workspaceId: '',
+            name: '',
+            description: '',
+            containerId: '',
+          },
+        ],
       });
 
       if (res && res.success) {
         // Reset the forms here
         reset({
-      forms: [
-        {
-          accountId: "",
-          workspaceId: "",
-          name: "",
-          description: "",
-          containerId: "",
-        },
-      ],
+          forms: [
+            {
+              accountId: '',
+              workspaceId: '',
+              name: '',
+              description: '',
+              containerId: '',
+            },
+          ],
         });
       } else if (res && res.limitReached) {
         // Show the LimitReached modal
@@ -152,11 +146,11 @@ const FormUpdateWorkspace: React.FC<FormUpdateWorkspaceProps> = ({
     reset({
       forms: [
         {
-          accountId: "",
-          workspaceId: "",
-          name: "",
-          description: "",
-          containerId: "",
+          accountId: '',
+          workspaceId: '',
+          name: '',
+          description: '',
+          containerId: '',
         },
       ],
     });
@@ -234,17 +228,10 @@ const FormUpdateWorkspace: React.FC<FormUpdateWorkspaceProps> = ({
                               />
                               {errors.forms?.[index]?.name && (
                                 <p className="text-red-500 text-xs italic">
-                                  {
-                                    errors.forms?.[index]?.name
-                                      ?.message
-                                  }
+                                  {errors.forms?.[index]?.name?.message}
                                 </p>
                               )}
                             </div>
-                            
-
-
-                            
 
                             <div>
                               <label
@@ -258,26 +245,14 @@ const FormUpdateWorkspace: React.FC<FormUpdateWorkspaceProps> = ({
                                 {...register(`forms.${index}.description`)}
                                 className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
                               />
-                              {errors.forms?.[index]?.description
-                                ?.message && (
+                              {errors.forms?.[index]?.description?.message && (
                                 <p className="text-red-500 text-xs italic">
-                                  {
-                                    errors.forms?.[index]?.description
-                                      ?.message
-                                  }
+                                  {errors.forms?.[index]?.description?.message}
                                 </p>
                               )}
                             </div>
-
-
-
-
-
-
                           </div>
                           {/* End Grid */}
-
-                        
 
                           {/* End Grid */}
                         </div>

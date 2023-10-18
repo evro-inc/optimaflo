@@ -1,22 +1,19 @@
-"use client";
-import React, { useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { LimitReached } from "../../modals/limitReached";
-import { ButtonGroup } from "../../ButtonGroup/ButtonGroup";
-import { XMarkIcon } from "@heroicons/react/24/solid";
-import {
-  CreateResult,
-  FormCreateWorkspaceProps,
-} from "@/types/types";
-import { useDispatch, useSelector } from "react-redux";
-import { selectTable, setIsLimitReached } from "@/src/app/redux/tableSlice";
-import { selectGlobal, setLoading } from "@/src/app/redux/globalSlice";
-import { useForm, useFieldArray, SubmitHandler } from "react-hook-form";
-import { CreateWorkspaceSchema } from "@/src/lib/schemas/workspaces";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import logger from "@/src/lib/logger";
-import { createWorkspaces } from "@/src/lib/actions/workspaces";
+'use client';
+import React, { useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { LimitReached } from '../../modals/limitReached';
+import { ButtonGroup } from '../../ButtonGroup/ButtonGroup';
+import { XMarkIcon } from '@heroicons/react/24/solid';
+import { CreateResult, FormCreateWorkspaceProps } from '@/types/types';
+import { useDispatch, useSelector } from 'react-redux';
+import { selectTable, setIsLimitReached } from '@/src/app/redux/tableSlice';
+import { selectGlobal, setLoading } from '@/src/app/redux/globalSlice';
+import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
+import { CreateWorkspaceSchema } from '@/src/lib/schemas/workspaces';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import logger from '@/src/lib/logger';
+import { createWorkspaces } from '@/src/lib/actions/workspaces';
 
 type Forms = z.infer<typeof CreateWorkspaceSchema>;
 
@@ -38,12 +35,11 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
     defaultValues: {
       forms: [
         {
-          accountId: "",
-          
-          
-          name: "",
-          description: "",
-          containerId: "",
+          accountId: '',
+
+          name: '',
+          description: '',
+          containerId: '',
         },
       ],
     },
@@ -52,7 +48,7 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
 
   const { fields, append, remove } = useFieldArray({
     control,
-    name: "forms",
+    name: 'forms',
   });
 
   const { isLimitReached, loading } = useSelector((state) => ({
@@ -62,12 +58,11 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
 
   const addForm = () => {
     append({
-          accountId: "",
-          
-          
-          name: "",
-          description: "",
-          containerId: "",
+      accountId: '',
+
+      name: '',
+      description: '',
+      containerId: '',
     });
   };
 
@@ -77,7 +72,7 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
     }
   };
 
-  const processForm: SubmitHandler<Forms> = async (data) => {    
+  const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
@@ -95,12 +90,11 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
       reset({
         forms: [
           {
-          accountId: "",
-          
-          
-          name: "",
-          description: "",
-          containerId: "",
+            accountId: '',
+
+            name: '',
+            description: '',
+            containerId: '',
           },
         ],
       });
@@ -110,12 +104,11 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
         reset({
           forms: [
             {
-          accountId: "",
-          
-          
-          name: "",
-          description: "",
-          containerId: "",
+              accountId: '',
+
+              name: '',
+              description: '',
+              containerId: '',
             },
           ],
         });
@@ -124,7 +117,7 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
         setIsLimitReached(true);
       }
     } catch (error) {
-      logger.error("Error creating containers:", error);
+      logger.error('Error creating containers:', error);
 
       return { success: false };
     } finally {
@@ -137,10 +130,10 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
     reset({
       forms: [
         {
-          accountId: "",
-          name: "",
-          description: "",
-          containerId: "",
+          accountId: '',
+          name: '',
+          description: '',
+          containerId: '',
         },
       ],
     });
@@ -169,12 +162,12 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
 
             <ButtonGroup
               buttons={[
-                { text: "Add Form", onClick: addForm },
-                { text: "Remove Form", onClick: removeForm },
+                { text: 'Add Form', onClick: addForm },
+                { text: 'Remove Form', onClick: removeForm },
                 {
-                  text: loading ? "Submitting..." : "Submit",
-                  type: "submit",
-                  form: "createWorkspace",
+                  text: loading ? 'Submitting...' : 'Submit',
+                  type: 'submit',
+                  form: 'createWorkspace',
                 },
               ]}
             />
@@ -214,13 +207,9 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
                                 {...register(`forms.${index}.name`)}
                                 className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
                               />
-                              {errors.forms?.[index]?.name
-                                ?.message && (
+                              {errors.forms?.[index]?.name?.message && (
                                 <p className="text-red-500 text-xs italic">
-                                  {
-                                    errors.forms?.[index]?.name
-                                      ?.message
-                                  }
+                                  {errors.forms?.[index]?.name?.message}
                                 </p>
                               )}
                             </div>
@@ -263,7 +252,10 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
                               >
                                 {Array.isArray(containers) &&
                                   containers.map((container: any) => (
-                                    <option key={container.containerId} value={container.containerId}>
+                                    <option
+                                      key={container.containerId}
+                                      value={container.containerId}
+                                    >
                                       {container.name}
                                     </option>
                                   ))}
@@ -287,20 +279,14 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
                                 {...register(`forms.${index}.description`)}
                                 className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
                               />
-                              {errors.forms?.[index]?.description
-                                ?.message && (
+                              {errors.forms?.[index]?.description?.message && (
                                 <p className="text-red-500 text-xs italic">
-                                  {
-                                    errors.forms?.[index]?.description
-                                      ?.message
-                                  }
+                                  {errors.forms?.[index]?.description?.message}
                                 </p>
                               )}
                             </div>
-
                           </div>
                           {/* End Grid */}
-
 
                           {/* End Grid */}
                         </div>
