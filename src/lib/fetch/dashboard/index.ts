@@ -175,7 +175,9 @@ export async function fetchGtmSettings(userId) {
       }
     }
   }
-} /* GA UTILS */
+} 
+
+/* GA UTILS */
 
 export async function grantGAAccess(customerId: string) {
   // Fetch user ID using the Stripe Customer ID

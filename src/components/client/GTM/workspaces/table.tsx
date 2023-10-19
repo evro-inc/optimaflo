@@ -40,7 +40,7 @@ const FormUpdateWorkspace = dynamic(() => import('./update'), {
   ssr: false,
 });
 
-function WorkspaceTable({ accounts, containers, workspaces }) {
+export default function WorkspaceTable({ accounts, containers, workspaces }) {
   const dispatch = useDispatch();
   const getContainerName = (containerId) => {
     const container = containers.find((c) => c.containerId === containerId);
@@ -501,7 +501,3 @@ function WorkspaceTable({ accounts, containers, workspaces }) {
     </>
   );
 }
-
-const WorkspaceTableMemo = React.memo(WorkspaceTable);
-
-export default WorkspaceTableMemo;

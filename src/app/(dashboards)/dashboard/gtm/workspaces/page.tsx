@@ -1,17 +1,13 @@
-import type { Metadata } from 'next';
+"use server";
 import React from 'react';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
 import { redirect } from 'next/navigation';
 import { gtmListAccounts } from '@/src/lib/actions/accounts';
-import WorkspaceTable from '@/src/components/client/GTM/workspaces/table';
+import WorkspaceTable from '@/src/components/server/GTM/workspaces/table';
 import { gtmListWorkspaces } from '@/src/lib/actions/workspaces';
 import { gtmListContainers } from '@/src/lib/actions/containers';
 
-export const metadata: Metadata = {
-  title: 'Overview',
-  description: 'Overview',
-};
 
 export default async function WorkspacePage() {
   const session = await getServerSession(authOptions);
