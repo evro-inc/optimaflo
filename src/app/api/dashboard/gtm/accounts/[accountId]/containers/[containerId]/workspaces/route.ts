@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager/v2';
 import { QuotaLimitError, ValidationError } from '@/src/lib/exceptions';
@@ -26,7 +26,6 @@ async function validateGetParams(params) {
       .pattern(/^\d{10}$/)
       .required(),
     containerId: Joi.string().required(),
-    userId: Joi.string().uuid().required(),
   });
 
   const { error, value } = schema.validate(params);
@@ -55,6 +54,13 @@ async function listGtmWorkspaces(
         `user:${userId}`,
         1000
       );
+
+      //call all gtm data from prisma table
+      const gtmData = await prisma.gtm.findMany({
+        where: {
+          userId: userId,
+        },
+      });
 
       if (remaining > 0) {
         let res;
@@ -122,15 +128,15 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession(authOptions);
+    const userId = session?.user?.id as string;
 
     const paramsJOI = {
       accountId: params.accountId,
       containerId: params.containerId,
-      userId: session?.user?.id,
     };
 
     const validateParams = await validateGetParams(paramsJOI);
-    const { accountId, containerId, userId } = validateParams;
+    const { accountId, containerId } = validateParams;
     const accessToken = await getAccessToken(userId);
 
     const data = await listGtmWorkspaces(
@@ -173,6 +179,7 @@ export async function POST(
   try {
     const limit = Number(request.nextUrl.searchParams.get('limit')) || 10;
     const session = await getServerSession(authOptions);
+    const userId = session?.user?.id as string;
     const body = JSON.parse(await request.text());
 
     // Extract query parameters from the URL
@@ -183,7 +190,6 @@ export async function POST(
 
     // Create a JavaScript object with the extracted parameters
     const paramsJOI = {
-      userId: session?.user?.id,
       accountId,
       containerId,
       name,
@@ -191,7 +197,6 @@ export async function POST(
     };
 
     const schema = Joi.object({
-      userId: Joi.string().uuid().required(),
       accountId: Joi.string()
         .pattern(/^\d{10}$/)
         .required(),
@@ -209,8 +214,6 @@ export async function POST(
         status: 400,
       });
     }
-
-    const { userId } = paramsJOI;
 
     // using userId get accessToken from prisma account table
     const user = await prisma.account.findFirst({

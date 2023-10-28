@@ -177,11 +177,16 @@ export type FormCreateWorkspaceProps = {
 };
 
 export type WorkspaceType = {
-  path: string;
   accountId: string;
   containerId: string;
   workspaceId: string;
   name: string;
-  fingerprint: string;
-  tagManagerUrl: string;
+  containerName: string;
+};
+
+export type WorkspaceData = {
+  accountId: string;
+  containerId: string;
+  workspaceId: string;
+  workspaceName: string;
 };

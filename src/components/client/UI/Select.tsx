@@ -3,7 +3,8 @@ import { selectTable, setCurrentPage } from '@/src/app/redux/tableSlice';
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
-function Select({ workspaces }) {
+// Updated the prop type to accept both array of numbers and workspaces
+function Select({ workspaces }: { workspaces: number[] }) {
   const dispatch = useDispatch();
 
   const { currentPage } = useSelector(selectTable);
@@ -12,11 +13,27 @@ function Select({ workspaces }) {
     dispatch(setCurrentPage(Number(e.target.value)));
   };
 
-  const workspacesPerPage = 10;
-  const totalPages = Math.ceil(
-    (workspaces ? workspaces.length : 0) / workspacesPerPage
-  );
-  const pageOptions = Array.from({ length: totalPages }, (_, i) => i + 1);
+  let pageOptions: any[] = [];
+
+  console.log("OUT,", workspaces);
+  
+
+  // Check if workspaces is an array of numbers (page options)
+  if (Array.isArray(workspaces) && typeof workspaces[0] === 'number') {
+    pageOptions = workspaces;
+    console.log(" WS,", pageOptions);
+    
+  } else {
+    const workspacesPerPage = 10;
+    const totalPages = Math.ceil(
+      (workspaces ? workspaces.length : 0) / workspacesPerPage
+    );
+    console.log("workspaces,", workspaces);
+    
+    pageOptions = Array.from({ length: totalPages }, (_, i) => i + 1);    
+    console.log("pageOptions,", pageOptions);
+    
+  }
 
   return (
     <select

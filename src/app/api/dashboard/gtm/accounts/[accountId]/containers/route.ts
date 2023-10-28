@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager/v2';
 import { QuotaLimitError, ValidationError } from '@/src/lib/exceptions';
@@ -27,7 +27,6 @@ async function validateGetParams(params) {
     limit: Joi.number().integer().min(1).max(100).required(),
     sort: Joi.string().valid('id', 'unitAmount', 'currency').required(),
     order: Joi.string().valid('asc', 'desc').required(),
-    userId: Joi.string().uuid().required(),
     accountIds: Joi.array()
       .items(Joi.string().pattern(/^\d{10}$/))
       .required(),
@@ -117,7 +116,6 @@ async function listGtmContainers(
 ************************************************************************************/
 async function validatePostParams(params: any): Promise<PostParams> {
   const schema = Joi.object({
-    userId: Joi.string().uuid().required(),
     accountId: Joi.string().required(),
     name: Joi.string().required(),
     usageContext: Joi.array()
@@ -305,6 +303,7 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession(authOptions);
+    const userId = session?.user?.id as string;
     const pageNumber = Number(request.nextUrl.searchParams.get('page')) || 1;
     const limit = Number(request.nextUrl.searchParams.get('limit')) || 10;
     const sort = request.nextUrl.searchParams.get('sort') || 'id';
@@ -317,13 +316,11 @@ export async function GET(
       limit,
       sort,
       order,
-      userId: session?.user?.id,
       accountIds: accountId ? [accountId] : [],
     };
 
     // Call validateGetParams to validate the parameters
-    const validatedParams = await validateGetParams(paramsJOI);
-    const { userId } = validatedParams;
+    await validateGetParams(paramsJOI);
     const accessToken = await getAccessToken(userId);
 
     // Call listGtmContainers for each accountId
@@ -375,13 +372,14 @@ export async function POST(
   try {
     const limit = Number(request.nextUrl.searchParams.get('limit')) || 10;
     const session = await getServerSession(authOptions);
+    const userId = session?.user?.id as string;
+
     const body = JSON.parse(await request.text());
 
     // Extract query parameters from the URL
 
     // Create a JavaScript object with the extracted parameters
     const paramsJOI = {
-      userId: session?.user?.id,
       accountId: params.accountId,
       name: body.name,
       usageContext: [body.usageContext],
@@ -390,7 +388,7 @@ export async function POST(
     };
 
     const validatedParams = await validatePostParams(paramsJOI);
-    const { userId, name, usageContext, domainName, notes, accountId } =
+    const { name, usageContext, domainName, notes, accountId } =
       validatedParams;
     const accessToken = await getAccessToken(userId);
 

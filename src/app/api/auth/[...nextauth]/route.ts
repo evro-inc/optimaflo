@@ -1,4 +1,3 @@
-export const dynamic = 'force-dynamic';
 import NextAuth from 'next-auth';
 import type { NextAuthOptions } from 'next-auth';
 import Google from 'next-auth/providers/google';

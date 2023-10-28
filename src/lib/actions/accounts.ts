@@ -1,28 +1,13 @@
 'use server';
 import { getURL } from '@/src/lib/helpers';
 import logger from '@/src/lib/logger';
-import { headers } from 'next/headers';
 
 export async function gtmListAccounts() {
   try {
-    const cookie = headers().get('cookie');
     const baseUrl = getURL();
     const url = `${baseUrl}api/dashboard/gtm/accounts`;
 
-    // Define headers
-    const requestHeaders = {
-      'Content-Type': 'application/json',
-    };
-
-    if (cookie) {
-      requestHeaders['Cookie'] = cookie;
-    }
-
-    const options = {
-      headers: requestHeaders,
-    };
-
-    const resp = await fetch(url, options);
+    const resp = await fetch(url);
 
     const responseText = await resp.text();
 

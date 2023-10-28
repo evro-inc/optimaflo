@@ -18,23 +18,11 @@ type FormUpdateSchema = z.infer<typeof UpdateContainerSchema>;
 ************************************************************************************/
 export async function gtmListContainers() {
   try {
-    const cookie = headers().get('cookie');
     const baseUrl = getURL();
     const url = `${baseUrl}/api/dashboard/gtm/accounts`;
 
-    const requestHeaders = {
-      'Content-Type': 'application/json',
-    };
+    const resp = await fetch(url, { next: { revalidate: 60 } });
 
-    if (cookie) {
-      requestHeaders['Cookie'] = cookie;
-    }
-
-    const options = {
-      headers: requestHeaders,
-    };
-
-    const resp = await fetch(url, options);
     if (!resp.ok) {
       const responseText = await resp.text();
       throw new Error(
@@ -43,12 +31,14 @@ export async function gtmListContainers() {
     }
 
     const gtmData = await resp.json();
+
     const accountIds = gtmData.data.map((container) => container.accountId);
 
     const containersPromises = accountIds.map(async (accountId) => {
       const containersUrl = `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers`;
 
-      const containersResp = await fetch(containersUrl, options);
+      const containersResp = await fetch(containersUrl);
+
       if (!containersResp.ok) {
         const responseText = await containersResp.text();
         console.error(

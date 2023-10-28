@@ -175,7 +175,7 @@ export async function fetchGtmSettings(userId) {
       }
     }
   }
-} 
+}
 
 /* GA UTILS */
 

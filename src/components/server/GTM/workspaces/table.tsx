@@ -10,19 +10,35 @@ import Select from '@/src/components/client/UI/Select';
 import ButtonPrev from '@/src/components/client/UI/ButtonPrevious';
 import ButtonNext from '@/src/components/client/UI/ButtonNext';
 import WorkspaceForms from '@/src/components/client/UI/WorkspaceForms';
+import { gtmListWorkspaces } from '@/src/lib/actions/workspaces';
+import { gtmListContainers } from '@/src/lib/actions/containers';
+
+export default async function WorkspaceTable({ currentPage = 1, rowsPerPage = 10 }) {
+
+  const workspaceData = gtmListWorkspaces()
+  const containerData = gtmListContainers()
+ 
+  // Wait for the promises to resolve
+  const [workspaces, containers] = await Promise.all([workspaceData, containerData])
+
+  const mergedData = workspaces.map((workspace: WorkspaceType) => {
+    const container = containers.find(
+      (container) => container.containerId === workspace.containerId);
+      return {
+        ... workspace,
+        containerName: container?.name || '',
+      }
+  });
+  // Slice data for current page
+  const startIdx = (currentPage - 1) * rowsPerPage;
+  const endIdx = startIdx + rowsPerPage;
+  const currentData = mergedData.slice(startIdx, endIdx);
 
 
+  // Calculate total pages
+  const totalPages = Math.ceil(mergedData.length / rowsPerPage);
 
-export default async function WorkspaceTable({
-  accounts,
-  containers,
-  workspaces,
-}) {
-
-  const getContainerName = (containerId) => {
-    const container = containers.find((c) => c.containerId === containerId);
-    return container ? container.name : 'N/A';
-  };
+  const pageOptions = Array.from({ length: totalPages }, (_, i) => i + 1);
 
 
 
@@ -62,17 +78,11 @@ export default async function WorkspaceTable({
                           htmlFor="hs-at-with-checkboxes-main"
                           className="flex"
                         >
-                          <ToggleAll workspaces={workspaces} />
+                          <ToggleAll
+                            workspaces={workspaces}
+                          />
                           <span className="sr-only">Checkbox</span>
                         </label>
-                      </th>
-
-                      <th scope="col" className="px-6 py-3 text-left">
-                        <div className="flex items-center gap-x-2">
-                          <span className="text-xs font-semibold uppercase tracking-wide text-gray-800 dark:text-gray-200">
-                            Container Name
-                          </span>
-                        </div>
                       </th>
 
                       <th scope="col" className="px-6 py-3 text-left">
@@ -87,6 +97,14 @@ export default async function WorkspaceTable({
                         <div className="flex items-center gap-x-2">
                           <span className="text-xs font-semibold uppercase tracking-wide text-gray-800 dark:text-gray-200">
                             Workspace ID
+                          </span>
+                        </div>
+                      </th>
+
+                      <th scope="col" className="px-6 py-3 text-left">
+                        <div className="flex items-center gap-x-2">
+                          <span className="text-xs font-semibold uppercase tracking-wide text-gray-800 dark:text-gray-200">
+                            Container Name
                           </span>
                         </div>
                       </th>
@@ -109,7 +127,9 @@ export default async function WorkspaceTable({
                     </tr>
                   </thead>
 
-                  {workspaces.map((workspace: WorkspaceType) => (
+
+
+                  {currentData.map((workspace: WorkspaceType) => (
                     <tbody
                       className="divide-y divide-gray-200 dark:divide-gray-700"
                       key={`${workspace.workspaceId}-${workspace.containerId}`}
@@ -129,13 +149,6 @@ export default async function WorkspaceTable({
 
                               <span className="sr-only">Checkbox</span>
                             </label>
-                          </div>
-                        </td>
-                        <td className="h-px w-px whitespace-nowrap">
-                          <div className="px-6 py-2">
-                            <span className="text-sm text-gray-600 dark:text-gray-400">
-                              {getContainerName(workspace.containerId)}
-                            </span>
                           </div>
                         </td>
 
@@ -187,6 +200,14 @@ export default async function WorkspaceTable({
                         <td className="h-px w-px whitespace-nowrap">
                           <div className="px-6 py-2">
                             <span className="text-sm text-gray-600 dark:text-gray-400">
+                              {workspace.containerName}
+                            </span>
+                          </div>
+                        </td>
+
+                        <td className="h-px w-px whitespace-nowrap">
+                          <div className="px-6 py-2">
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
                               {workspace.containerId}
                             </span>
                           </div>
@@ -200,6 +221,9 @@ export default async function WorkspaceTable({
                       </tr>
                     </tbody>
                   ))}
+
+
+
                 </table>
                 {/* End Table */}
 
@@ -210,17 +234,21 @@ export default async function WorkspaceTable({
                       Showing:
                     </p>
                     <div className="max-w-sm space-y-3">
-                      <Select workspaces={workspaces} />
+                      <Select
+                        workspaces={pageOptions}
+                      />
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      of {(workspaces && workspaces.length) || 0}
+                      of { totalPages }
                     </p>
                   </div>
 
                   <div>
                     <div className="inline-flex gap-x-2">
                       <ButtonPrev />
-                      <ButtonNext workspaces={workspaces} />
+                     <ButtonNext
+                        workspaces={workspaces.map((item) => item.workspaces).flat()}
+                      />
                     </div>
                   </div>
                 </div>
@@ -232,13 +260,7 @@ export default async function WorkspaceTable({
         {/* End Card */}
       </div>
       {/* End Table Section */}
-      <WorkspaceForms
-        accounts={accounts}
-        containers={containers}
-        workspaces={workspaces}
-      />
+      <WorkspaceForms accounts={workspaces} containers={containers} workspaces={workspaces} />
     </>
   );
 }
-
-

@@ -23,6 +23,10 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
   accounts = [],
   containers = [],
 }) => {
+
+  console.log('accounts', accounts);
+  console.log('containers', containers);
+  
   const formRefs = useRef<(HTMLFormElement | null)[]>([]);
   const dispatch = useDispatch();
   const {
@@ -91,7 +95,6 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
         forms: [
           {
             accountId: '',
-
             name: '',
             description: '',
             containerId: '',
@@ -105,7 +108,6 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
           forms: [
             {
               accountId: '',
-
               name: '',
               description: '',
               containerId: '',
@@ -141,6 +143,10 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
     // Close the modal
     onClose();
   };
+
+  const uniqueAccountIds: string[] = Array.from(
+    new Set(accounts.map((account) => account.accountId))
+  );
 
   return (
     <>
@@ -225,12 +231,11 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
                                 {...register(`forms.${index}.accountId`)}
                                 className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
                               >
-                                {Array.isArray(accounts?.data) &&
-                                  accounts.data.map((account: any) => (
-                                    <option key={account.accountId}>
-                                      {account.accountId}
-                                    </option>
-                                  ))}
+                                {uniqueAccountIds.map((accountId: string) => (
+                                  <option key={accountId} value={accountId}>
+                                    {accountId}
+                                  </option>
+                                ))}
                               </select>
                               {errors.forms?.[index]?.accountId?.message && (
                                 <p className="text-red-500 text-xs italic">
@@ -250,15 +255,14 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
                                 {...register(`forms.${index}.containerId`)}
                                 className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
                               >
-                                {Array.isArray(containers) &&
-                                  containers.map((container: any) => (
-                                    <option
-                                      key={container.containerId}
-                                      value={container.containerId}
-                                    >
-                                      {container.name}
-                                    </option>
-                                  ))}
+                                {containers.map((container: any) => (
+                                  <option
+                                    key={container.containerId}
+                                    value={container.containerId}
+                                  >
+                                    {container.name}
+                                  </option>
+                                ))}
                               </select>
                               {errors.forms?.[index]?.containerId?.message && (
                                 <p className="text-red-500 text-xs italic">

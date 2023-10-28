@@ -23,12 +23,12 @@ function ButtonDel() {
       // Await the resolution of all deletion operations
       await Promise.all(deleteOperations);
     } catch (error: any) {
-      if (error.message.includes('Feature limit reached')) {
+      if (error.message && error.message.includes('Feature limit reached')) {
         dispatch(setIsLimitReached(true));
       } else {
         logger.error(
           'Error deleting workspace',
-          error?.message || error?.toString()
+          error?.message || JSON.stringify(error)
         );
       }
     }

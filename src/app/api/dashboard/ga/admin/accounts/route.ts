@@ -1,4 +1,3 @@
-export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { analyticsadmin_v1beta } from 'googleapis';
 import { QuotaLimitError } from '@/src/lib/exceptions';

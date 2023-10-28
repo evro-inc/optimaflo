@@ -1,5 +1,5 @@
 'use server';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { cookies, headers } from 'next/headers';
 import {
   CreateWorkspaceSchema,
@@ -9,6 +9,10 @@ import logger from '../logger';
 import z from 'zod';
 import { getURL } from '@/src/lib/helpers';
 import { gtmListContainers } from './containers';
+import { getAccessToken } from '../fetch/apiUtils';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
+import { NextRequest } from 'next/server';
 
 // Define the types for the form data
 type FormCreateSchema = z.infer<typeof CreateWorkspaceSchema>;
@@ -20,20 +24,7 @@ type FormUpdateSchema = z.infer<typeof UpdateWorkspaceSchema>;
 
 export async function gtmListWorkspaces() {
   try {
-    const cookie = headers().get('cookie');
     const baseUrl = getURL();
-
-    const requestHeaders = {
-      'Content-Type': 'application/json',
-    };
-
-    if (cookie) {
-      requestHeaders['Cookie'] = cookie;
-    }
-
-    const options = {
-      headers: requestHeaders,
-    };
 
     // Fetching unique containers
     const containersData = await gtmListContainers();
@@ -43,7 +34,9 @@ export async function gtmListWorkspaces() {
 
       const workspaceUrl = `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces`;
 
-      const workspacesResp = await fetch(workspaceUrl, options);
+      const workspacesResp = await fetch(workspaceUrl, {
+        next: { revalidate: 60 },
+      });
       if (!workspacesResp.ok) {
         const responseText = await workspacesResp.text();
         console.error(
@@ -77,9 +70,6 @@ export async function deleteWorkspaces(
   const cookieHeader: any = headers().get('cookie');
   const baseUrl = getURL();
 
-  console.log('accountId', accountId);
-  console.log('workspaces', workspaces);
-
   const requestHeaders = {
     'Content-Type': 'application/json',
     ...(cookie && { Cookie: cookieHeader }),
@@ -98,14 +88,14 @@ export async function deleteWorkspaces(
       if (response.status === 403) {
         const parsedResponse = await response.json();
         if (parsedResponse.message === 'Feature limit reached') {
-          throw new Error('Feature limit reached');
+          throw { message: 'Feature limit reached' }; // throw a plain object instead
         }
       }
 
       if (!response.ok) {
-        throw new Error(
-          `Failed to delete workspace with ID ${workspaceId} in container with ID ${containerId}: ${response.status}`
-        );
+        throw {
+          message: `Failed to delete workspace with ID ${workspaceId} in container with ID ${containerId}: ${response.status}`,
+        }; // throw a plain object instead
       }
 
       revalidatePath(
@@ -123,11 +113,19 @@ export async function deleteWorkspaces(
 /************************************************************************************
   Create a single container or multiple containers
 ************************************************************************************/
-export async function createWorkspaces(formData: FormCreateSchema) {
+export async function createWorkspaces(
+  formData: FormCreateSchema,
+  request?: NextRequest
+) {
   try {
-    const cookie: any = cookies();
-    const cookieHeader: any = headers().get('cookie');
+    const session = await getServerSession(authOptions);
+
+    const userId = session?.user?.id;
+
+    const accessToken = await getAccessToken(userId);
+
     const baseUrl = getURL();
+
     const errors: string[] = [];
 
     let accountIdsToRevalidate = new Map<string, string>();
@@ -137,14 +135,11 @@ export async function createWorkspaces(formData: FormCreateSchema) {
     const plainDataArray = formData.forms.map((fd) => {
       return Object.fromEntries(Object.keys(fd).map((key) => [key, fd[key]]));
     });
-    console.log('plainDataArray', plainDataArray);
 
     // Now pass plainDataArray to CreateWorkspaceSchema.safeParse within an object under the key 'forms'
     const validationResult = CreateWorkspaceSchema.safeParse({
       forms: plainDataArray,
     });
-
-    console.log('validationResult', validationResult);
 
     if (!validationResult.success) {
       let errorMessage = '';
@@ -169,7 +164,6 @@ export async function createWorkspaces(formData: FormCreateSchema) {
     validationResult.data.forms.forEach((formData: any) => {
       forms.push({
         accountId: formData.accountId,
-        workspaceId: formData.workspaceId,
         name: formData.name,
         description: formData.description,
         containerId: formData.containerId,
@@ -178,7 +172,7 @@ export async function createWorkspaces(formData: FormCreateSchema) {
 
     const requestHeaders = {
       'Content-Type': 'application/json',
-      ...(cookie && { Cookie: cookieHeader }),
+      Authorization: `Bearer ${accessToken}`,
     };
 
     const featureLimitReachedWorkspaces: string[] = [];
@@ -204,6 +198,11 @@ export async function createWorkspaces(formData: FormCreateSchema) {
           body: JSON.stringify(payload),
         }
       );
+
+      if (response.status === 400) {
+        const parsedResponse = await response.json();
+        console.log('parsedResponse', parsedResponse);
+      }
 
       const createdWorkspace = await response.json();
 
@@ -257,6 +256,7 @@ export async function createWorkspaces(formData: FormCreateSchema) {
           `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces`
         );
       });
+
       return {
         success: true,
         limitReached: false,
@@ -292,14 +292,11 @@ export async function updateWorkspaces(formData: FormUpdateSchema) {
     const plainDataArray = formData.forms.map((fd) => {
       return Object.fromEntries(Object.keys(fd).map((key) => [key, fd[key]]));
     });
-    console.log('plainDataArray', plainDataArray);
 
     // Now pass plainDataArray to UpdateWorkspaceSchema.safeParse within an object under the key 'forms'
     const validationResult = UpdateWorkspaceSchema.safeParse({
       forms: plainDataArray,
     });
-
-    console.log('validationResult', validationResult);
 
     if (!validationResult.success) {
       let errorMessage = '';

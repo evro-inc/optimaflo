@@ -8,6 +8,12 @@ function ButtonNext(workspaces) {
   const { currentPage } = useSelector(selectTable);
   const workspacesPerPage = 10;
 
+  console.log("workspaces,", workspaces);
+  console.log("workspacesPerPage,", workspacesPerPage);
+  console.log("currentPage next,", currentPage);
+  
+  
+
   const totalPages = Math.ceil(
     (workspaces ? workspaces.length : 0) / workspacesPerPage
   );

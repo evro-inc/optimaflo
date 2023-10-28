@@ -18,6 +18,8 @@ export const tableSlice = createSlice({
       state.selectedRows = action.payload;
     },
     setCurrentPage: (state, action: PayloadAction<number>) => {
+      console.log("Setting current page:", action.payload);
+
       state.currentPage = action.payload;
     },
     setIsLimitReached: (state, action: PayloadAction<boolean>) => {

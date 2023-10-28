@@ -1,4 +1,3 @@
-export const dynamic = 'force-dynamic';
 import { getServerSession } from 'next-auth';
 import { stripe } from '@/src/lib/stripe';
 import { getURL } from '@/src/lib/helpers';

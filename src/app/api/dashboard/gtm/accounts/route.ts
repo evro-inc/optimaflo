@@ -17,7 +17,6 @@ async function validateParams(params) {
     limit: Joi.number().integer().min(1).max(100).required(),
     sort: Joi.string().valid('id').required(),
     order: Joi.string().valid('asc', 'desc').required(),
-    userId: Joi.string().uuid().required(),
   });
 
   const { error, value } = schema.validate(params);
@@ -84,6 +83,7 @@ async function listGtmAccounts(userId, accessToken, limit, pageNumber) {
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
+    const userId = session?.user?.id as string;
     const pageNumber = Number(request.nextUrl.searchParams.get('page')) || 1;
     const limit = Number(request.nextUrl.searchParams.get('limit')) || 10;
     const sort = request.nextUrl.searchParams.get('sort') || 'id';
@@ -94,11 +94,9 @@ export async function GET(request: NextRequest) {
       limit,
       sort,
       order,
-      userId: session?.user?.id,
     };
 
-    const validatedParams = await validateParams(paramsJOI);
-    const { userId } = validatedParams;
+    await validateParams(paramsJOI);
     const accessToken = await getAccessToken(userId);
 
     const response = await listGtmAccounts(
