@@ -1,13 +1,18 @@
 import { revalidatePath } from 'next/cache';
-import { cookies, headers } from 'next/headers';
 import { getURL } from '@/src/lib/helpers';
+import { getAccessToken } from '@/src/lib/fetch/apiUtils';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
 
 function AccountFormUpdate() {
   const handleSubmit = async (formData: FormData) => {
     'use server';
     try {
-      const cookie: any = cookies();
-      const cookieHeader: any = headers().get('cookie');
+      const session = await getServerSession(authOptions);
+
+      const userId = session?.user?.id;
+
+      const accessToken = await getAccessToken(userId);
       const baseURL = getURL();
 
       const name = formData.get('name');
@@ -16,12 +21,10 @@ function AccountFormUpdate() {
       // Define headers
       const requestHeaders = {
         'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
       };
 
-      // Add Cookie header if it's not null
-      if (cookie) {
-        requestHeaders['Cookie'] = cookieHeader;
-      }
+
 
       const response = await fetch(
         `${baseURL}/api/dashboard/gtm/accounts/${accountId}`,
