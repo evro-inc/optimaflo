@@ -15,7 +15,7 @@ import { selectTable } from '@/src/app/redux/tableSlice';
 import { useSelector } from 'react-redux';
 
 export default function WorkspaceTable({ containers, workspaces }) {
-  const { currentPage, itemsPerPage } = useSelector(selectTable);
+  const { itemsPerPage } = useSelector(selectTable);
 
   // Check if workspaces exist before mapping
   const mergedData = workspaces
