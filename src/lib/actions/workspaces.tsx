@@ -1,6 +1,5 @@
 'use server';
-import { revalidatePath, revalidateTag } from 'next/cache';
-import { cookies, headers } from 'next/headers';
+import { revalidatePath } from 'next/cache';
 import {
   CreateWorkspaceSchema,
   UpdateWorkspaceSchema,
@@ -12,8 +11,6 @@ import { gtmListContainers } from './containers';
 import { getAccessToken } from '../fetch/apiUtils';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
-import { NextRequest } from 'next/server';
-import { error } from 'console';
 
 // Define the types for the form data
 type FormCreateSchema = z.infer<typeof CreateWorkspaceSchema>;
