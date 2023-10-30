@@ -29,9 +29,14 @@ export default function WorkspaceTable({ containers, workspaces }) {
         };
       })
     : [];
+  const sortedData = [...mergedData].sort((a, b) => {
+    if (a.containerName < b.containerName) return -1;
+    if (a.containerName > b.containerName) return 1;
+    return 0;
+  });
 
   // Use usePaginate for pagination
-  const currentData = usePaginate(mergedData);
+  const currentData = usePaginate(sortedData);
 
   // Calculate total pages
   const totalPages = Math.ceil(
@@ -39,9 +44,6 @@ export default function WorkspaceTable({ containers, workspaces }) {
   );
 
   const pageOptions = Array.from({ length: totalPages }, (_, i) => i + 1);
-  console.log('Current Page:', currentPage);
-  console.log('Items Per Page:', itemsPerPage);
-  console.log('Total Pages:', totalPages);
 
   return (
     <>

@@ -13,6 +13,7 @@ import { getAccessToken } from '../fetch/apiUtils';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
 import { NextRequest } from 'next/server';
+import { error } from 'console';
 
 // Define the types for the form data
 type FormCreateSchema = z.infer<typeof CreateWorkspaceSchema>;
@@ -34,9 +35,7 @@ export async function gtmListWorkspaces() {
 
       const workspaceUrl = `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces`;
 
-      const workspacesResp = await fetch(workspaceUrl, {
-        next: { revalidate: 60 },
-      });
+      const workspacesResp = await fetch(workspaceUrl);
       if (!workspacesResp.ok) {
         const responseText = await workspacesResp.text();
         console.error(
@@ -66,17 +65,27 @@ export async function deleteWorkspaces(
   accountId: string,
   workspaces: { containerId: string; workspaceId: string }[]
 ) {
-  const cookie: any = cookies();
-  const cookieHeader: any = headers().get('cookie');
+  let accountIdsToRevalidate = new Map<string, string>();
+
+  const errors: string[] = [];
+
+  const session = await getServerSession(authOptions);
+
+  const userId = session?.user?.id;
+
+  const accessToken = await getAccessToken(userId);
+
   const baseUrl = getURL();
 
   const requestHeaders = {
     'Content-Type': 'application/json',
-    ...(cookie && { Cookie: cookieHeader }),
+    Authorization: `Bearer ${accessToken}`,
   };
 
   const deletionPromises = workspaces.map(
     async ({ containerId, workspaceId }) => {
+      accountIdsToRevalidate.set(accountId, containerId);
+      
       const response = await fetch(
         `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}`,
         {
@@ -93,30 +102,49 @@ export async function deleteWorkspaces(
       }
 
       if (!response.ok) {
-        throw {
-          message: `Failed to delete workspace with ID ${workspaceId} in container with ID ${containerId}: ${response.status}`,
-        }; // throw a plain object instead
-      }
+        errors.push(
+          `Failed to delete workspace ${workspaceId} in account ${accountId}: ${response.status}`
+        );
 
-      revalidatePath(
-        `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces`
-      );
+        return {
+          success: false,
+          errorCode: response.status,
+          message: 'Failed to delete',
+        };
+      }
 
       return { success: true, containerId, workspaceId };
     }
   );
 
-  const results = await Promise.allSettled(deletionPromises);
-  return results;
+  const results = await Promise.all(deletionPromises);
+
+    if (errors.length > 0) {
+      return {
+        success: false,
+        limitReached: false,
+        message: errors.join(', '),
+      };
+    } else {
+      accountIdsToRevalidate.forEach((accountId, containerId) => {
+        revalidatePath(
+          `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces`
+        );
+      });
+
+      return {
+        success: true,
+        limitReached: false,
+        deletedWorkspaces: results
+      };
+    }
+
 }
 
 /************************************************************************************
   Create a single container or multiple containers
 ************************************************************************************/
-export async function createWorkspaces(
-  formData: FormCreateSchema,
-  request?: NextRequest
-) {
+export async function createWorkspaces(formData: FormCreateSchema) {
   try {
     const session = await getServerSession(authOptions);
 
@@ -280,9 +308,14 @@ export async function createWorkspaces(
 ************************************************************************************/
 export async function updateWorkspaces(formData: FormUpdateSchema) {
   try {
-    const cookie: any = cookies();
-    const cookieHeader: any = headers().get('cookie');
+    const session = await getServerSession(authOptions);
+
+    const userId = session?.user?.id;
+
+    const accessToken = await getAccessToken(userId);
+
     const baseUrl = getURL();
+    
     const errors: string[] = [];
 
     let accountIdsToRevalidate = new Map<string, string>();
@@ -330,9 +363,8 @@ export async function updateWorkspaces(formData: FormUpdateSchema) {
 
     const requestHeaders = {
       'Content-Type': 'application/json',
-      ...(cookie && { Cookie: cookieHeader }),
+      Authorization: `Bearer ${accessToken}`,
     };
-
     const featureLimitReachedWorkspaces: string[] = [];
 
     const updatePromises = forms.map(async (workspaceData) => {

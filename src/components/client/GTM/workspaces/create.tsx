@@ -23,8 +23,6 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
   accounts = [],
   containers = [],
 }) => {
-  console.log('accounts', accounts);
-  console.log('containers', containers);
 
   const formRefs = useRef<(HTMLFormElement | null)[]>([]);
   const dispatch = useDispatch();

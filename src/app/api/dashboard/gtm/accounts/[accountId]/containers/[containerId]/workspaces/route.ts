@@ -55,13 +55,6 @@ async function listGtmWorkspaces(
         1000
       );
 
-      //call all gtm data from prisma table
-      const gtmData = await prisma.gtm.findMany({
-        where: {
-          userId: userId,
-        },
-      });
-
       if (remaining > 0) {
         let res;
         await limiter.schedule(async () => {

@@ -4,7 +4,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { selectTable, setCurrentPage } from '@/src/app/redux/tableSlice';
 
 function ButtonNext({ workspaces }) {
-  console.log('Workspaces next btn:', workspaces);
 
   const dispatch = useDispatch();
   const { currentPage, itemsPerPage } = useSelector(selectTable);
