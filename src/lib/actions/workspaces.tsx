@@ -50,7 +50,7 @@ export async function gtmListWorkspaces() {
 
     return workspaces;
   } catch (error) {
-    console.error('Error fetching GTM containers:', error);
+    console.error('Error fetching GTM workspaces:', error);
     throw error;
   }
 }
