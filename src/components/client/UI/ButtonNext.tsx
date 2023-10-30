@@ -7,11 +7,6 @@ function ButtonNext({ workspaces }) {
 
   const dispatch = useDispatch();
   const { currentPage, itemsPerPage } = useSelector(selectTable);
-
-  // Debugging
-  console.log('Workspaces Type:', typeof workspaces);
-  console.log('Items Per Page Type:', typeof itemsPerPage);
-
   const totalPages = Math.ceil(
     (workspaces ? workspaces.length : 0) / itemsPerPage
   );
