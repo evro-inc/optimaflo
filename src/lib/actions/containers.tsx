@@ -1,6 +1,5 @@
 'use server';
 import { revalidatePath } from 'next/cache';
-import { cookies, headers } from 'next/headers';
 import {
   CreateContainerSchema,
   UpdateContainerSchema,
@@ -8,6 +7,9 @@ import {
 import logger from '../logger';
 import { getURL } from '@/src/lib/helpers';
 import z from 'zod';
+import { getAccessToken } from '../fetch/apiUtils';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
 
 // Define the types for the form data
 type FormCreateSchema = z.infer<typeof CreateContainerSchema>;
@@ -68,16 +70,18 @@ export async function deleteContainers(
   accountId: string,
   selectedContainers: Set<string>
 ) {
-  const cookie: any = cookies();
-  const cookieHeader: any = headers().get('cookie');
+  const session = await getServerSession(authOptions);
+
+  const userId = session?.user?.id;
+
+  const accessToken = await getAccessToken(userId);
   const baseUrl = getURL();
   const errors: string[] = [];
 
   const requestHeaders = {
     'Content-Type': 'application/json',
-    ...(cookie && { Cookie: cookieHeader }),
+    Authorization: `Bearer ${accessToken}`,
   };
-
   const featureLimitReachedContainers: string[] = [];
 
   console.log('selectedContainers', selectedContainers);
@@ -152,8 +156,12 @@ export async function deleteContainers(
 ************************************************************************************/
 export async function createContainers(formData: FormCreateSchema) {
   try {
-    const cookie: any = cookies();
-    const cookieHeader: any = headers().get('cookie');
+    const session = await getServerSession(authOptions);
+
+    const userId = session?.user?.id;
+
+    const accessToken = await getAccessToken(userId);
+
     const baseUrl = getURL();
     const errors: string[] = [];
 
@@ -201,7 +209,7 @@ export async function createContainers(formData: FormCreateSchema) {
 
     const requestHeaders = {
       'Content-Type': 'application/json',
-      ...(cookie && { Cookie: cookieHeader }),
+      Authorization: `Bearer ${accessToken}`,
     };
 
     const featureLimitReachedContainers: string[] = [];
@@ -311,8 +319,12 @@ export async function updateContainers(
   formData: FormUpdateSchema // Replace 'any' with the actual type if known
 ) {
   try {
-    const cookie: any = cookies();
-    const cookieHeader: any = headers().get('cookie');
+    const session = await getServerSession(authOptions);
+
+    const userId = session?.user?.id;
+
+    const accessToken = await getAccessToken(userId);
+
     const baseUrl = getURL();
     const errors: string[] = [];
 
@@ -360,9 +372,8 @@ export async function updateContainers(
 
     const requestHeaders = {
       'Content-Type': 'application/json',
-      ...(cookie && { Cookie: cookieHeader }),
+      Authorization: `Bearer ${accessToken}`,
     };
-
     const featureLimitReachedContainers: string[] = [];
 
     const updatePromises = forms.map(async (containerData) => {
@@ -477,8 +488,12 @@ export async function combineContainers(
   formData: FormUpdateSchema // Replace 'any' with the actual type if known
 ) {
   try {
-    const cookie: any = cookies();
-    const cookieHeader: any = headers().get('cookie');
+    const session = await getServerSession(authOptions);
+
+    const userId = session?.user?.id;
+
+    const accessToken = await getAccessToken(userId);
+
     const baseUrl = getURL();
     const errors: string[] = [];
 
@@ -526,7 +541,7 @@ export async function combineContainers(
 
     const requestHeaders = {
       'Content-Type': 'application/json',
-      ...(cookie && { Cookie: cookieHeader }),
+      Authorization: `Bearer ${accessToken}`,
     };
 
     const featureLimitReachedContainers: string[] = [];

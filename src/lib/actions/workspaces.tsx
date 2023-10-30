@@ -82,7 +82,7 @@ export async function deleteWorkspaces(
   const deletionPromises = workspaces.map(
     async ({ containerId, workspaceId }) => {
       accountIdsToRevalidate.set(accountId, containerId);
-      
+
       const response = await fetch(
         `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}`,
         {
@@ -116,26 +116,25 @@ export async function deleteWorkspaces(
 
   const results = await Promise.all(deletionPromises);
 
-    if (errors.length > 0) {
-      return {
-        success: false,
-        limitReached: false,
-        message: errors.join(', '),
-      };
-    } else {
-      accountIdsToRevalidate.forEach((accountId, containerId) => {
-        revalidatePath(
-          `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces`
-        );
-      });
+  if (errors.length > 0) {
+    return {
+      success: false,
+      limitReached: false,
+      message: errors.join(', '),
+    };
+  } else {
+    accountIdsToRevalidate.forEach((accountId, containerId) => {
+      revalidatePath(
+        `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces`
+      );
+    });
 
-      return {
-        success: true,
-        limitReached: false,
-        deletedWorkspaces: results
-      };
-    }
-
+    return {
+      success: true,
+      limitReached: false,
+      deletedWorkspaces: results,
+    };
+  }
 }
 
 /************************************************************************************
@@ -312,7 +311,7 @@ export async function updateWorkspaces(formData: FormUpdateSchema) {
     const accessToken = await getAccessToken(userId);
 
     const baseUrl = getURL();
-    
+
     const errors: string[] = [];
 
     let accountIdsToRevalidate = new Map<string, string>();

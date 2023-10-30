@@ -24,8 +24,6 @@ function AccountFormUpdate() {
         Authorization: `Bearer ${accessToken}`,
       };
 
-
-
       const response = await fetch(
         `${baseURL}/api/dashboard/gtm/accounts/${accountId}`,
         {
