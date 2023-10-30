@@ -23,7 +23,7 @@ import { limiter } from '@/src/lib/bottleneck';
 async function validateGetParams(params) {
   const schema = Joi.object({
     accountId: Joi.string()
-      .pattern(/^\d{10}$/)
+      .pattern(/^\d{8,10}$/)
       .required(),
     containerId: Joi.string().required(),
   });

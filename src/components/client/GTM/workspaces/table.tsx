@@ -1,4 +1,4 @@
-'use server';
+'use client';
 import React from 'react';
 import { WorkspaceType } from '@/types/types';
 import ButtonCreate from '@/src/components/client/UI/ButtonCreate';
@@ -10,40 +10,38 @@ import Select from '@/src/components/client/UI/Select';
 import ButtonPrev from '@/src/components/client/UI/ButtonPrevious';
 import ButtonNext from '@/src/components/client/UI/ButtonNext';
 import WorkspaceForms from '@/src/components/client/UI/WorkspaceForms';
-import { gtmListWorkspaces } from '@/src/lib/actions/workspaces';
-import { gtmListContainers } from '@/src/lib/actions/containers';
+import { usePaginate } from '@/src/lib/paginate';
+import { selectTable } from '@/src/app/redux/tableSlice';
+import { useSelector } from 'react-redux';
 
-export default async function WorkspaceTable({
-  currentPage = 1,
-  rowsPerPage = 10,
-}) {
-  const workspaceData = gtmListWorkspaces();
-  const containerData = gtmListContainers();
+export default function WorkspaceTable({ containers, workspaces }) {
+  const { currentPage, itemsPerPage } = useSelector(selectTable);
 
-  // Wait for the promises to resolve
-  const [workspaces, containers] = await Promise.all([
-    workspaceData,
-    containerData,
-  ]);
+  // Check if workspaces exist before mapping
+  const mergedData = workspaces
+    ? workspaces.map((workspace: WorkspaceType) => {
+        const container = containers.find(
+          (container) => container.containerId === workspace.containerId
+        );
+        return {
+          ...workspace,
+          containerName: container?.name || '',
+        };
+      })
+    : [];
 
-  const mergedData = workspaces.map((workspace: WorkspaceType) => {
-    const container = containers.find(
-      (container) => container.containerId === workspace.containerId
-    );
-    return {
-      ...workspace,
-      containerName: container?.name || '',
-    };
-  });
-  // Slice data for current page
-  const startIdx = (currentPage - 1) * rowsPerPage;
-  const endIdx = startIdx + rowsPerPage;
-  const currentData = mergedData.slice(startIdx, endIdx);
+  // Use usePaginate for pagination
+  const currentData = usePaginate(mergedData);
 
   // Calculate total pages
-  const totalPages = Math.ceil(mergedData.length / rowsPerPage);
+  const totalPages = Math.ceil(
+    (mergedData ? mergedData.length : 0) / itemsPerPage
+  );
 
   const pageOptions = Array.from({ length: totalPages }, (_, i) => i + 1);
+  console.log('Current Page:', currentPage);
+  console.log('Items Per Page:', itemsPerPage);
+  console.log('Total Pages:', totalPages);
 
   return (
     <>
@@ -240,11 +238,7 @@ export default async function WorkspaceTable({
                   <div>
                     <div className="inline-flex gap-x-2">
                       <ButtonPrev />
-                      <ButtonNext
-                        workspaces={workspaces
-                          .map((item) => item.workspaces)
-                          .flat()}
-                      />
+                      <ButtonNext workspaces={mergedData ? mergedData : []} />
                     </div>
                   </div>
                 </div>

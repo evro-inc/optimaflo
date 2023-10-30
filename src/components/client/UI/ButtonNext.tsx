@@ -3,22 +3,23 @@ import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { selectTable, setCurrentPage } from '@/src/app/redux/tableSlice';
 
-function ButtonNext(workspaces) {
-  const dispatch = useDispatch();
-  const { currentPage } = useSelector(selectTable);
-  const workspacesPerPage = 10;
+function ButtonNext({ workspaces }) {
+  console.log('Workspaces next btn:', workspaces);
 
-  console.log("workspaces,", workspaces);
-  console.log("workspacesPerPage,", workspacesPerPage);
-  console.log("currentPage next,", currentPage);
-  
-  
+  const dispatch = useDispatch();
+  const { currentPage, itemsPerPage } = useSelector(selectTable);
+
+  // Debugging
+  console.log('Workspaces Type:', typeof workspaces);
+  console.log('Items Per Page Type:', typeof itemsPerPage);
 
   const totalPages = Math.ceil(
-    (workspaces ? workspaces.length : 0) / workspacesPerPage
+    (workspaces ? workspaces.length : 0) / itemsPerPage
   );
 
   const nextPage = () => {
+    console.log('Current Page:', currentPage);
+    console.log('Total Pages:', totalPages);
     if (currentPage < totalPages) {
       dispatch(setCurrentPage(currentPage + 1));
     }

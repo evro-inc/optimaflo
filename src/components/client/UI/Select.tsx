@@ -15,24 +15,15 @@ function Select({ workspaces }: { workspaces: number[] }) {
 
   let pageOptions: any[] = [];
 
-  console.log("OUT,", workspaces);
-  
-
   // Check if workspaces is an array of numbers (page options)
   if (Array.isArray(workspaces) && typeof workspaces[0] === 'number') {
     pageOptions = workspaces;
-    console.log(" WS,", pageOptions);
-    
   } else {
     const workspacesPerPage = 10;
     const totalPages = Math.ceil(
       (workspaces ? workspaces.length : 0) / workspacesPerPage
     );
-    console.log("workspaces,", workspaces);
-    
-    pageOptions = Array.from({ length: totalPages }, (_, i) => i + 1);    
-    console.log("pageOptions,", pageOptions);
-    
+    pageOptions = Array.from({ length: totalPages }, (_, i) => i + 1);
   }
 
   return (

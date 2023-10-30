@@ -4,7 +4,6 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 });
 const nextConfig = {
   experimental: {
-    serverActions: true,
     optimizeCss: true,
   },
   images: {
