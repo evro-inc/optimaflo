@@ -26,8 +26,8 @@ export async function middleware(
       'prod_OZZrME91D1Tyue',
       'prod_OaGCBK8Qe6Vofp',
       'prod_OoCMHi502SCeOH',
-    ],
-    '^/dashboard/ga.*': ['prod_OQ3TPC9yMxJAeN'],
+    ], // GTM
+    '^/dashboard/ga.*': ['prod_OQ3TPC9yMxJAeN'], // GA
   };
 
   const url = req.nextUrl.clone();
