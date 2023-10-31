@@ -2,7 +2,10 @@ import { getURL } from '../helpers';
 
 // get subscriptions
 export async function getSubscriptions(userId: string) {
-  const userApi = `${getURL()}/api/users/${userId}`;
+  const userApi = `${getURL()}api/users/${userId}`;
+
+  console.log(`userApi: ${userApi}`);
+  
 
   const options = {
     headers: {
@@ -11,6 +14,9 @@ export async function getSubscriptions(userId: string) {
   };
 
   const user = await fetch(userApi, options);
+  
+  console.log(`user: ${JSON.stringify(user)}`);
+  
 
   if (!user.ok) {
     const responseText = await user.text();

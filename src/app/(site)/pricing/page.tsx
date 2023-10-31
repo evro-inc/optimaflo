@@ -10,6 +10,9 @@ const getActiveProductsWithPrices = async (): Promise<ProductWithPrice[]> => {
 
   const response = await fetch(`${baseUrl}/api/products`);
 
+  console.log('response', response);
+  
+
   if (!response.ok) {
     throw new Error('Failed to fetch products');
   }
