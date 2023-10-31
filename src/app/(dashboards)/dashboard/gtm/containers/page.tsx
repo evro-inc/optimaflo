@@ -20,15 +20,17 @@ export default async function ContainerPage() {
     redirect('/');
   }
 
-  //fetch all containers from API
-  const [accounts, containers] = await Promise.all([
-    gtmListAccounts(),
-    gtmListContainers(),
+  const accountData = gtmListAccounts();
+  const containerData = gtmListContainers();
+
+  const [accountList, containerList] = await Promise.all([
+    accountData,
+    containerData,
   ]);
 
   return (
     <>
-      <ContainerTable containers={containers} accounts={accounts} />
+      <ContainerTable accounts={accountList} containers={containerList} />
     </>
   );
 }
