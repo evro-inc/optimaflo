@@ -92,14 +92,6 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
     dispatch(setLoading(true)); // Set loading to true
 
     try {
-      const formDataArray = forms.map((formElement) => {
-        const obj = {};
-        Object.keys(formElement).forEach((key) => {
-          obj[key] = formElement[key];
-        });
-        return obj;
-      });
-
       // If you're here, validation succeeded. Proceed with updateContainers.
       const res = (await updateContainers({ forms })) as UpdateContainersResult;
 
