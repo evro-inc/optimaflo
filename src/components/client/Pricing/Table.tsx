@@ -28,8 +28,6 @@ export default function PricingTable({ products = [] }: Props) {
   const { subscription } = useSelector(selectUser);
   const { data: session } = useSession();
 
-  console.log('session from table', session);
-
   const [showAlert, setShowAlert] = useState(false);
   const userId = session?.user?.id;
   useUserDetails(userId);

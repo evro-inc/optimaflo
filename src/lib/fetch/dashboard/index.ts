@@ -209,8 +209,6 @@ export async function grantGAAccess(customerId: string) {
 
 /* NEEDS TO BE REFACTORED FOR GA4 */
 export async function fetchGASettings(userId) {
-  console.log('fetchGASettings userId', userId);
-
   // Fetch the user from your database using the Stripe customer ID
   const user = await prisma.account.findFirst({
     where: {

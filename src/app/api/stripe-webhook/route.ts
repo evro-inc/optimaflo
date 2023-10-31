@@ -122,10 +122,6 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
     const userId = customerRecord.userId;
     const productId = subscription.items.data[0].plan.product as string;
 
-    console.log('subscription: ', subscription);
-    console.log('userId: ', userId);
-    console.log('productId: ', productId);
-
     const subscriptionData = {
       subId: subscription.id,
       status: subscription.status,

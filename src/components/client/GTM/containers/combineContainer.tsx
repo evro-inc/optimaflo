@@ -100,8 +100,6 @@ const FormCombineContainer: React.FC<FormUpdateContainerProps> = ({
         return obj;
       });
 
-      console.log('formDataArray', formDataArray);
-
       // If you're here, validation succeeded. Proceed with updateContainers.
       const res = (await combineContainers({
         forms,

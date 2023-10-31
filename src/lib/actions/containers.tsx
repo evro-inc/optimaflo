@@ -84,9 +84,6 @@ export async function deleteContainers(
   };
   const featureLimitReachedContainers: string[] = [];
 
-  console.log('selectedContainers', selectedContainers);
-  console.log('accountId', accountId);
-
   const deletePromises = Array.from(selectedContainers).map(
     async (containerId) => {
       const response = await fetch(
@@ -96,8 +93,6 @@ export async function deleteContainers(
           headers: requestHeaders,
         }
       );
-
-      console.log('response', response);
 
       if (response.status === 403) {
         const parsedResponse = await response.json();

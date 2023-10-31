@@ -174,7 +174,6 @@ export async function PATCH(request: NextRequest) {
 
     // Parse the request body
     const body = JSON.parse(await request.text());
-    console.log('body: ', body);
 
     // Extract the account ID from the body
     const accountId = body.accountId;

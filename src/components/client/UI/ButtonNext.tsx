@@ -11,8 +11,6 @@ function ButtonNext({ workspaces }) {
   );
 
   const nextPage = () => {
-    console.log('Current Page:', currentPage);
-    console.log('Total Pages:', totalPages);
     if (currentPage < totalPages) {
       dispatch(setCurrentPage(currentPage + 1));
     }
