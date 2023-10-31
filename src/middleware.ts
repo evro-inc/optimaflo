@@ -20,11 +20,6 @@ import logger from './lib/logger';
 export async function middleware(
   req: NextRequest
 ): Promise<Response | undefined> {
-  console.log('--- Middleware Triggered ---');
-
-  // Log the incoming request URL
-  console.log(`Incoming request URL: ${req.nextUrl.pathname}`);
-
   // Define a mapping between paths and product IDs
   const regexToProductIds = {
     '^/dashboard/gtm.*': [
@@ -45,13 +40,8 @@ export async function middleware(
       }`,
     },
   };
-  console.log(`Request headers: ${JSON.stringify(reqHeader)}`);
-
-
   // Get the session data
   const session = await getSession({ req: reqHeader });
-  console.log(`Session data: ${JSON.stringify(session)}`);
-
   try {
     let ip = req.ip ?? '127.0.0.1';
 
@@ -77,24 +67,16 @@ export async function middleware(
     // subscription check per regexToProductIds
     for (const [regexString, productIds] of Object.entries(regexToProductIds)) {
       const regex = new RegExp(regexString);
-        console.log(`Testing ${req.nextUrl.pathname} against ${regex}`);
-
-
-
       if (regex.test(req.nextUrl.pathname)) {
         // get subscription Id from api/subscriptions
         const subscriptions = await getSubscriptions(
           (session as any)?.user?.id
         );
-        console.log(`User subscriptions: ${JSON.stringify(subscriptions)}`);
 
         // Filter out the active subscriptions and get their product IDs
         const activeProductIds = subscriptions
           .filter((subscription) => subscription.status === 'active')
           .map((subscription) => subscription.productId);
-        // Log active and required product IDs
-        console.log(`Active product IDs: ${JSON.stringify(activeProductIds)}`);
-        console.log(`Required product IDs: ${JSON.stringify(productIds)}`);
 
         // Check if any of the user's active product IDs match the product IDs required for the page
         if (
@@ -111,8 +93,6 @@ export async function middleware(
 
     // Check the general API rate limit
     const generalRateLimitResult = await generalApiRateLimit.limit(ip);
-      console.log(`General API rate limit remaining: ${generalRateLimitResult.remaining}`);
-
     if (!generalRateLimitResult.success) {
       logger.error(
         `General API rate limit reached for IP ${ip} - ${generalRateLimitResult.remaining} remaining`
@@ -161,7 +141,6 @@ export async function middleware(
     for (const rule of rateLimitRules) {
       if (rule.urlPattern.test(req.nextUrl.pathname)) {
         const rateLimitResult = await rule.rateLimit.limit(ip);
-        console.log(`Feature rate limit remaining for ${rule.urlPattern}: ${rateLimitResult.remaining}`);
 
         if (!rateLimitResult.success) {
           logger.error(
