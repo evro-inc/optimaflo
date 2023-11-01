@@ -4,34 +4,33 @@ import { NextApiRequest } from 'next';
 export const getURL = (req?: NextApiRequest | null) => {
   let url;
 
-  try {
-    const env = process.env.NODE_ENV as string; // Cast to string to allow custom environments like 'sandbox'
-
-    switch (env) {
-      case 'production':
-        url = process.env.PROD_API_URL;
-        break;
-      case 'sandbox':
-        url = process.env.SANDBOX_API_URL;
-        break;
-      default:
-        url = process.env.LOCAL_API_URL || 'http://localhost:3000';
+  // Check for custom environment and set URL accordingly
+  const customEnv = process.env.CUSTOM_ENV;
+  if (customEnv === 'sandbox') {
+    url = process.env.SANDBOX_API_URL;
+  } else {
+    // Fallback to NODE_ENV
+    const env = process.env.NODE_ENV;
+    if (env === 'production') {
+      url = process.env.PROD_API_URL;
+    } else {
+      url = process.env.LOCAL_API_URL;
     }
-
-    if (req && req.headers && env === 'production') {
-      const proto = req.headers['x-forwarded-proto'] || 'http';
-      url = `${proto}://${req.headers.host}`;
-    }
-
-    url = url.includes('http') ? url : `https://${url}`;
-    url = url.charAt(url.length - 1) === '/' ? url : `${url}/`;
-
-    return url;
-  } catch (error) {
-    logger.error('Error determining URL:', error);
-    throw new Error('Could not determine URL');
   }
+
+  // Override with request headers if available
+  if (req && req.headers) {
+    const proto = req.headers['x-forwarded-proto'] || 'http';
+    url = `${proto}://${req.headers.host}`;
+  }
+
+  if (!url) {
+    throw new Error("Could not determine URL");
+  }
+
+  return url;
 };
+
 
 
 
