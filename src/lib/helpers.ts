@@ -5,16 +5,15 @@ export const getURL = (req?: NextApiRequest | null) => {
   let url;
 
   // Check for custom environment and set URL accordingly
-  const customEnv = process.env.CUSTOM_ENV;
+  const customEnv = process.env.NODE_ENV as 'development' | 'production' | 'test' | 'sandbox';
   if (customEnv === 'sandbox') {
     url = process.env.SANDBOX_API_URL;
   } else {
     // Fallback to NODE_ENV
-    const env = process.env.NODE_ENV;
-    if (env === 'production') {
+    if (customEnv === 'production') {
       url = process.env.PROD_API_URL;
     } else {
-      url = process.env.LOCAL_API_URL;
+      url = process.env.NEXT_PUBLIC_API_URL;
     }
   }
 
