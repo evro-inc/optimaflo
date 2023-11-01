@@ -23,9 +23,9 @@ export const getURL = (req?: NextApiRequest | null) => {
     url = `${proto}://${req.headers.host}`;
   }
 
-  if (!url) {
-    throw new Error("Could not determine URL");
-  }
+if (!url) {
+  throw new Error(`Could not determine URL. NODE_ENV is ${process.env.NODE_ENV}`);
+}
 
   return url;
 };
