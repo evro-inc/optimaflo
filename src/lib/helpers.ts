@@ -7,21 +7,20 @@ export const getURL = (req?: NextApiRequest | null) => {
   // If req is available, it means we're on the server
   if (req && req.headers) {
     const proto = req.headers['x-forwarded-proto'] || 'http';
-    url = `${proto}://${req.headers.host}/`;
+    url = `${proto}://${req.headers.host}`;
   } else {
     // If we're on the client, use NEXT_PUBLIC_API_URL or fallback to localhost
-    url = 'http://localhost:3000/';
+    url = 'http://localhost:3000';
   }
 
   // Make sure to include `https://` when not localhost
   url = url.includes('http') ? url : `https://${url}`;
 
   // Make sure to include trailing `/`
-  url = url.charAt(url.length - 1) === '/' ? url : `${url}/`;
-
+  /*   url = url.charAt(url.length - 1) === '/' ? url : `${url}/`;
+   */
   return url;
 };
-
 
 export const postData = async ({ url, data }: { url: string; data?: any }) => {
   const res: Response = await fetch(url, {

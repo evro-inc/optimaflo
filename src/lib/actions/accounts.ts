@@ -5,7 +5,7 @@ import logger from '@/src/lib/logger';
 export async function gtmListAccounts() {
   try {
     const baseUrl = getURL();
-    const url = `${baseUrl}api/dashboard/gtm/accounts`;
+    const url = `${baseUrl}/api/dashboard/gtm/accounts`;
 
     const resp = await fetch(url);
 
@@ -18,7 +18,7 @@ export async function gtmListAccounts() {
       );
     }
 
-    const gtmData = JSON.parse(responseText);
+    const gtmData = JSON.stringify(responseText);
     return gtmData;
   } catch (error) {
     logger.error('Error fetching GTM accounts:', error);

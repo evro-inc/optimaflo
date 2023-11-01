@@ -21,18 +21,46 @@ type FormUpdateSchema = z.infer<typeof UpdateContainerSchema>;
 export async function gtmListContainers() {
   try {
     const baseUrl = getURL();
+    console.log('Base URL:', baseUrl);
+
     const url = `${baseUrl}/api/dashboard/gtm/accounts`;
 
-    const resp = await fetch(url, { next: { revalidate: 60 } });
+    console.log('URL server con:', url);
+
+    const session = await getServerSession(authOptions);
+
+    const userId = session?.user?.id;
+
+    const accessToken = await getAccessToken(userId);
+
+    const requestHeaders = {
+      'Content-Type': 'application/json',
+      "Accept": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    };
+
+    const head = {
+      method: 'GET',
+      headers: requestHeaders,
+    };
+
+    const resp = await fetch(url, head);
+
+    console.log('Response:', resp);
+    console.log('Content-Type:', resp.headers.get('Content-Type'));
 
     if (!resp.ok) {
       const responseText = await resp.text();
+      console.log('Response Text:', responseText);
+
       throw new Error(
         `Error: ${resp.status} ${resp.statusText}. Response: ${responseText}`
       );
     }
 
     const gtmData = await resp.json();
+
+    console.log('GTM Data:', gtmData);
 
     const accountIds = gtmData.data.map((container) => container.accountId);
 
@@ -82,6 +110,8 @@ export async function deleteContainers(
     'Content-Type': 'application/json',
     Authorization: `Bearer ${accessToken}`,
   };
+  console.log('Request Headers:', requestHeaders);
+
   const featureLimitReachedContainers: string[] = [];
 
   const deletePromises = Array.from(selectedContainers).map(

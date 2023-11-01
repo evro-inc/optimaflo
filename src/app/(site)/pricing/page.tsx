@@ -4,11 +4,11 @@ import { ProductWithPrice } from 'types/types';
 import { getURL } from '@/src/lib/helpers';
 
 const getActiveProductsWithPrices = async (): Promise<ProductWithPrice[]> => {
-  "use server";
-  
+  'use server';
+
   const baseUrl = getURL();
 
-  const response = await fetch(`${baseUrl}/api/products`);  
+  const response = await fetch(`${baseUrl}/api/products`);
 
   if (!response.ok) {
     throw new Error('Failed to fetch products');

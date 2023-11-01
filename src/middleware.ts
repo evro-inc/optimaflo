@@ -51,7 +51,7 @@ export async function middleware(
     }
 
     // just let the request pass through without any further checks
-    if (
+   /*  if (
       !req.nextUrl.pathname.startsWith('/api/auth') &&
       !req.nextUrl.pathname.startsWith('/api/products') &&
       !req.nextUrl.pathname.startsWith('/api/prices') &&
@@ -62,7 +62,7 @@ export async function middleware(
       if (!session) {
         return NextResponse.redirect(url);
       }
-    }
+    } */
 
     // subscription check per regexToProductIds
     for (const [regexString, productIds] of Object.entries(regexToProductIds)) {
