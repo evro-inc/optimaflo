@@ -24,7 +24,7 @@ export async function gtmListContainers() {
 
     const url = `${baseUrl}/api/dashboard/gtm/accounts`;
 
-    const resp = await fetch(url, {next: { revalidate: 60 }});
+    const resp = await fetch(url, {next: { revalidate: 0 }});
 
     if (!resp.ok) {
       const responseText = await resp.text();
