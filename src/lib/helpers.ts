@@ -1,40 +1,28 @@
 import logger from './logger';
-import { NextApiRequest } from 'next';
 
-export const getURL = (req?: NextApiRequest | null) => {
+export const getURL = () => {
   let url;
 
-  // Check for custom environment and set URL accordingly
-  const customEnv = process.env.NODE_ENV as
-    | 'development'
-    | 'production'
-    | 'test'
-    | 'sandbox';
-  if (customEnv === 'sandbox') {
+  // Directly use environment variables set in Vercel
+  if (process.env.VERCEL_ENV === 'production') {
+    url = process.env.PROD_API_URL;
+  } else if (process.env.VERCEL_ENV === 'preview') {
+    // Assuming 'preview' is used for sandbox
     url = process.env.SANDBOX_API_URL;
   } else {
-    // Fallback to NODE_ENV
-    if (customEnv === 'production') {
-      url = process.env.PROD_API_URL;
-    } else {
-      url = process.env.NEXT_PUBLIC_API_URL;
-    }
-  }
-
-  // Override with request headers if available
-  if (req && req.headers) {
-    const proto = req.headers['x-forwarded-proto'] || 'http';
-    url = `${proto}://${req.headers.host}`;
+    // Fallback for local development
+    url = process.env.NEXT_PUBLIC_API_URL;
   }
 
   if (!url) {
     throw new Error(
-      `Could not determine URL. NODE_ENV is ${process.env.NODE_ENV}`
+      `Could not determine URL. VERCEL_ENV is ${process.env.VERCEL_ENV}`
     );
   }
 
   return url;
 };
+
 
 export const postData = async ({ url, data }: { url: string; data?: any }) => {
   const res: Response = await fetch(url, {
