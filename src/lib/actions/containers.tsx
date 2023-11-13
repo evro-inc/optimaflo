@@ -24,6 +24,9 @@ export async function gtmListContainers() {
 
     const url = `${baseUrl}/api/dashboard/gtm/accounts`;
 
+    console.log('URL:', url);
+    
+
     const resp = await fetch(url, { next: { revalidate: 10 } });
 
     if (!resp.ok) {
