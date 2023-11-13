@@ -1,27 +1,25 @@
 import logger from './logger';
 
 export const getURL = () => {
-  let url;
+  // Use Vercel's VERCEL_URL environment variable to get the base URL
+  let vercelUrl = process.env.VERCEL_URL;
 
-  // Directly use environment variables set in Vercel
-  if (process.env.VERCEL_ENV === 'production') {
-    url = process.env.PROD_API_URL;
-  } else if (process.env.VERCEL_ENV === 'preview') {
-    // Assuming 'preview' is used for sandbox
-    url = process.env.SANDBOX_API_URL;
+  // Check if we're running locally or in Vercel's environment
+  if (typeof vercelUrl === 'undefined' || vercelUrl.startsWith('localhost')) {
+    // For local development, you might want to specify the local server URL
+    vercelUrl = 'http://localhost:3000'; // Adjust the port if your local server uses a different one
   } else {
-    // Fallback for local development
-    url = process.env.NEXT_PUBLIC_API_URL;
+    // Ensure the URL uses https if deployed on Vercel
+    vercelUrl = `https://${vercelUrl}`;
   }
 
-  if (!url) {
-    throw new Error(
-      `Could not determine URL. VERCEL_ENV is ${process.env.VERCEL_ENV}`
-    );
+  if (!vercelUrl) {
+    throw new Error(`Could not determine URL. VERCEL_URL is undefined`);
   }
 
-  return url;
+  return vercelUrl;
 };
+
 
 
 export const postData = async ({ url, data }: { url: string; data?: any }) => {
