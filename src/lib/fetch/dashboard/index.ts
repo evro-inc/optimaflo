@@ -89,8 +89,6 @@ export async function fetchGtmSettings(userId) {
   });
 
   if (!existingUser) {
-    console.log('user ID', user.id);
-
     // Create the User record if it doesn't exist
     await prisma.User.create({
       data: {

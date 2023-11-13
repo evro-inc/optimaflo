@@ -407,8 +407,6 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
 
     await prisma.$transaction(operations);
   } catch (error) {
-    console.log('error: ', error);
-
     logger.error('error: ', error);
   }
 }

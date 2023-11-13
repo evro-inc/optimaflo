@@ -32,7 +32,9 @@ export async function gtmListWorkspaces() {
 
       const workspaceUrl = `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces`;
 
-      const workspacesResp = await fetch(workspaceUrl);
+      const workspacesResp = await fetch(workspaceUrl, {
+        next: { revalidate: 10 },
+      });
       if (!workspacesResp.ok) {
         const responseText = await workspacesResp.text();
         console.error(
@@ -62,8 +64,6 @@ export async function deleteWorkspaces(
   accountId: string,
   workspaces: { containerId: string; workspaceId: string }[]
 ) {
-  let accountIdsToRevalidate = new Map<string, string>();
-
   const errors: string[] = [];
 
   const session = await getServerSession(authOptions);
@@ -81,8 +81,6 @@ export async function deleteWorkspaces(
 
   const deletionPromises = workspaces.map(
     async ({ containerId, workspaceId }) => {
-      accountIdsToRevalidate.set(accountId, containerId);
-
       const response = await fetch(
         `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}`,
         {
@@ -110,6 +108,9 @@ export async function deleteWorkspaces(
         };
       }
 
+      const workspacePath = `/dashboard/gtm/workspaces`; // Assuming this is the correct path format
+      revalidatePath(workspacePath);
+
       return { success: true, containerId, workspaceId };
     }
   );
@@ -123,12 +124,6 @@ export async function deleteWorkspaces(
       message: errors.join(', '),
     };
   } else {
-    accountIdsToRevalidate.forEach((accountId, containerId) => {
-      revalidatePath(
-        `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces`
-      );
-    });
-
     return {
       success: true,
       limitReached: false,
@@ -151,9 +146,6 @@ export async function createWorkspaces(formData: FormCreateSchema) {
     const baseUrl = getURL();
 
     const errors: string[] = [];
-
-    let accountIdsToRevalidate = new Map<string, string>();
-
     const forms: any[] = [];
 
     const plainDataArray = formData.forms.map((fd) => {
@@ -212,8 +204,6 @@ export async function createWorkspaces(formData: FormCreateSchema) {
         name: name,
       };
 
-      accountIdsToRevalidate.set(accountId, containerId);
-
       const response = await fetch(
         `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces`,
         {
@@ -228,20 +218,24 @@ export async function createWorkspaces(formData: FormCreateSchema) {
         console.log('parsedResponse', parsedResponse);
       }
 
-      const createdWorkspace = await response.json();
-
-      if (response.status === 403) {
-        if (createdWorkspace.message === 'Feature limit reached') {
-          featureLimitReachedWorkspaces.push(workspaceData.name);
-          return {
-            success: false,
-            errorCode: 403,
-            message: 'Feature limit reached',
-          };
-        }
-      }
-
       if (!response.ok) {
+        // Log error details for debugging
+        console.error(`Response Error: Status ${response.status}`);
+
+        // Handle error responses
+        if (response.status === 403) {
+          const parsedResponse = await response.json();
+          if (parsedResponse.message === 'Feature limit reached') {
+            featureLimitReachedWorkspaces.push(workspaceData.name);
+            return {
+              success: false,
+              errorCode: 403,
+              message: 'Feature limit reached',
+            };
+          }
+        }
+
+        // Add error for non-200 responses
         errors.push(
           `Failed to create workspace(s) with name ${workspaceData.name} in account ${workspaceData.accountId}: ${response.status}`
         );
@@ -253,7 +247,15 @@ export async function createWorkspaces(formData: FormCreateSchema) {
         };
       }
 
+      // Parse JSON only for successful responses
+      const createdWorkspace = await response.json();
+
+        // Revalidate path
+      const workspacePath = `/dashboard/gtm/workspaces`;
+      revalidatePath(workspacePath);
+
       return { success: true, createdWorkspace };
+
     });
 
     const results = await Promise.all(createPromises);
@@ -275,12 +277,6 @@ export async function createWorkspaces(formData: FormCreateSchema) {
         message: errors.join(', '),
       };
     } else {
-      accountIdsToRevalidate.forEach((accountId, containerId) => {
-        revalidatePath(
-          `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces`
-        );
-      });
-
       return {
         success: true,
         limitReached: false,
@@ -305,33 +301,22 @@ export async function createWorkspaces(formData: FormCreateSchema) {
 export async function updateWorkspaces(formData: FormUpdateSchema) {
   try {
     const session = await getServerSession(authOptions);
-
     const userId = session?.user?.id;
-
     const accessToken = await getAccessToken(userId);
-
     const baseUrl = getURL();
-
     const errors: string[] = [];
-
-    let accountIdsToRevalidate = new Map<string, string>();
-
     const forms: any[] = [];
-
     const plainDataArray = formData.forms.map((fd) => {
       return Object.fromEntries(Object.keys(fd).map((key) => [key, fd[key]]));
     });
 
-    // Now pass plainDataArray to UpdateWorkspaceSchema.safeParse within an object under the key 'forms'
     const validationResult = UpdateWorkspaceSchema.safeParse({
       forms: plainDataArray,
     });
 
     if (!validationResult.success) {
       let errorMessage = '';
-
       validationResult.error.format();
-
       validationResult.error.issues.forEach((issue) => {
         errorMessage =
           errorMessage + issue.path[0] + ': ' + issue.message + '. ';
@@ -341,10 +326,7 @@ export async function updateWorkspaces(formData: FormUpdateSchema) {
         .slice(1)
         .join(':')
         .trim();
-
-      return {
-        error: formattedErrorMessage,
-      };
+      return { error: formattedErrorMessage };
     }
 
     validationResult.data.forms.forEach((formData: any) => {
@@ -364,22 +346,16 @@ export async function updateWorkspaces(formData: FormUpdateSchema) {
     const featureLimitReachedWorkspaces: string[] = [];
 
     const updatePromises = forms.map(async (workspaceData) => {
-      const { accountId, description, containerId, name, workspaceId } =
-        workspaceData; // Destructure from the current object
-
-      // Initialize payload with a flexible type
-      const payload: { [key: string]: any } = {
-        description: description,
-        containerId: containerId,
-        accountId: accountId,
-        name: name,
-        workspaceId: workspaceId,
+      const payload = {
+        description: workspaceData.description,
+        containerId: workspaceData.containerId,
+        accountId: workspaceData.accountId,
+        name: workspaceData.name,
+        workspaceId: workspaceData.workspaceId,
       };
 
-      accountIdsToRevalidate.set(accountId, containerId);
-
       const response = await fetch(
-        `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}`,
+        `${baseUrl}/api/dashboard/gtm/accounts/${workspaceData.accountId}/containers/${workspaceData.containerId}/workspaces/${workspaceData.workspaceId}`,
         {
           method: 'PATCH',
           headers: requestHeaders,
@@ -387,9 +363,8 @@ export async function updateWorkspaces(formData: FormUpdateSchema) {
         }
       );
 
-      const updatedWorkspace = await response.json();
-
       if (response.status === 403) {
+        const updatedWorkspace = await response.json();
         if (updatedWorkspace.message === 'Feature limit reached') {
           featureLimitReachedWorkspaces.push(workspaceData.name);
           return {
@@ -400,19 +375,23 @@ export async function updateWorkspaces(formData: FormUpdateSchema) {
         }
       }
 
-      if (!response.ok) {
-        errors.push(
-          `Failed to create workspace(s) with name ${workspaceData.name} in account ${workspaceData.accountId}: ${response.status}`
-        );
+      if (response.ok) {
+        // Revalidate the path for the updated workspace
+        const workspacePath = `/dashboard/gtm/workspaces`;
+        revalidatePath(workspacePath);
 
+        const updatedWorkspace = await response.json();
+        return { success: true, updatedWorkspace };
+      } else {
+        errors.push(
+          `Failed to update workspace with name ${workspaceData.name} in account ${workspaceData.accountId}: ${response.status}`
+        );
         return {
           success: false,
           errorCode: response.status,
-          message: 'Failed to create',
+          message: 'Failed to update',
         };
       }
-
-      return { success: true, updatedWorkspace };
     });
 
     const results = await Promise.all(updatePromises);
@@ -434,25 +413,16 @@ export async function updateWorkspaces(formData: FormUpdateSchema) {
         message: errors.join(', '),
       };
     } else {
-      accountIdsToRevalidate.forEach((accountId, containerId) => {
-        revalidatePath(
-          `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces`
-        );
-      });
       return {
         success: true,
         limitReached: false,
-        createdWorkspaces: results
+        updatedWorkspaces: results
           .filter((r) => r.success)
           .map((r) => r.updatedWorkspace),
       };
     }
   } catch (error: any) {
     logger.error(error);
-    return {
-      success: false,
-      limitReached: false,
-      message: error.message,
-    };
+    return { success: false, limitReached: false, message: error.message };
   }
 }

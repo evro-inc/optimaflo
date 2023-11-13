@@ -24,7 +24,7 @@ export async function gtmListContainers() {
 
     const url = `${baseUrl}/api/dashboard/gtm/accounts`;
 
-    const resp = await fetch(url, {next: { revalidate: 0 }});
+    const resp = await fetch(url, { next: { revalidate: 10 } });
 
     if (!resp.ok) {
       const responseText = await resp.text();
@@ -85,8 +85,6 @@ export async function deleteContainers(
     'Content-Type': 'application/json',
     Authorization: `Bearer ${accessToken}`,
   };
-  console.log('Request Headers:', requestHeaders);
-
   const featureLimitReachedContainers: string[] = [];
 
   const deletePromises = Array.from(selectedContainers).map(

@@ -5,7 +5,11 @@ export const getURL = (req?: NextApiRequest | null) => {
   let url;
 
   // Check for custom environment and set URL accordingly
-  const customEnv = process.env.NODE_ENV as 'development' | 'production' | 'test' | 'sandbox';
+  const customEnv = process.env.NODE_ENV as
+    | 'development'
+    | 'production'
+    | 'test'
+    | 'sandbox';
   if (customEnv === 'sandbox') {
     url = process.env.SANDBOX_API_URL;
   } else {
@@ -23,15 +27,14 @@ export const getURL = (req?: NextApiRequest | null) => {
     url = `${proto}://${req.headers.host}`;
   }
 
-if (!url) {
-  throw new Error(`Could not determine URL. NODE_ENV is ${process.env.NODE_ENV}`);
-}
+  if (!url) {
+    throw new Error(
+      `Could not determine URL. NODE_ENV is ${process.env.NODE_ENV}`
+    );
+  }
 
   return url;
 };
-
-
-
 
 export const postData = async ({ url, data }: { url: string; data?: any }) => {
   const res: Response = await fetch(url, {

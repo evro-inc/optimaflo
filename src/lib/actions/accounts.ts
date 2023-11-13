@@ -9,7 +9,7 @@ export async function gtmListAccounts() {
 
     const resp = await fetch(url);
 
-    const responseText = await resp.text();
+    const responseText = await resp.json();
 
     // Check if the response is OK and parse the JSON
     if (!resp.ok) {
@@ -18,8 +18,7 @@ export async function gtmListAccounts() {
       );
     }
 
-    const gtmData = JSON.stringify(responseText);
-    return gtmData;
+    return responseText;
   } catch (error) {
     logger.error('Error fetching GTM accounts:', error);
     throw error; // re-throw the error so it can be caught and handled by the calling function

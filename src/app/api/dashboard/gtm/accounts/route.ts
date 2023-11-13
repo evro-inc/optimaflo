@@ -48,12 +48,6 @@ async function listGtmAccounts(userId, accessToken, limit, pageNumber) {
           }
           const gtm = new tagmanager_v2.Tagmanager({ auth: oauth2Client });
           res = await gtm.accounts.list();
-
-          console.log('res', res);
-
-          console.log('res.data', res.data);
-
-          console.log('res.data.account', res.data.account);
         });
 
         const total = res.data.account?.length ?? 0;
@@ -67,12 +61,9 @@ async function listGtmAccounts(userId, accessToken, limit, pageNumber) {
             pageSize: limit,
           },
           errors: null,
-        }
-        console.log('results', results);
-        
+        };
 
         return results;
-
       } else {
         throw new Error('Rate limit exceeded');
       }
@@ -117,18 +108,12 @@ export async function GET(request: NextRequest) {
       pageNumber
     );
 
-    console.log('response server:', response);
-
     const getResult = NextResponse.json(response, {
       headers: { 'Content-Type': 'application/json' },
       status: 200,
     });
 
-    console.log('getResult', getResult);
-    
-
     return getResult;
-
   } catch (error: any) {
     if (error instanceof ValidationError) {
       console.error('Validation Error: ', error.message);
