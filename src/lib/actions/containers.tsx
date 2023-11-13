@@ -21,10 +21,10 @@ type FormUpdateSchema = z.infer<typeof UpdateContainerSchema>;
 export async function gtmListContainers() {
   try {
     const baseUrl = getURL();
-
     const url = `${baseUrl}/api/dashboard/gtm/accounts`;
-
-    const resp = await fetch(url, { next: { revalidate: 10 } });
+    console.log('url:', url);
+    
+    const resp = await fetch(url, { next: { revalidate: 10 } });       
 
     if (!resp.ok) {
       const responseText = await resp.text();
@@ -36,13 +36,15 @@ export async function gtmListContainers() {
     }
 
     const gtmData = await resp.json();
+    console.log('gtmData:', gtmData);
+    
 
     const accountIds = gtmData.data.map((container) => container.accountId);
 
     const containersPromises = accountIds.map(async (accountId) => {
       const containersUrl = `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers`;
 
-      const containersResp = await fetch(containersUrl);
+      const containersResp = await fetch(containersUrl, { next: { revalidate: 10 } });
 
       if (!containersResp.ok) {
         const responseText = await containersResp.text();
