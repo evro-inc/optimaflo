@@ -7,7 +7,6 @@ import {
 import logger from '../logger';
 import z from 'zod';
 import { getURL } from '@/src/lib/helpers';
-import { gtmListContainers } from './containers';
 import { getAccessToken } from '../fetch/apiUtils';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
