@@ -31,7 +31,7 @@ export async function gtmListContainers() {
 
     const test = await fetch(url, { next: { revalidate: 10 } });
 
-    console.log('Test:', test.text());
+    console.log('Test:', await test.text());
     
 
     if (!resp.ok) {
