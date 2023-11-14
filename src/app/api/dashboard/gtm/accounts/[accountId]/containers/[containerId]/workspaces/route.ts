@@ -38,7 +38,7 @@ async function validateGetParams(params) {
 /************************************************************************************
   Function to list or get one GTM containers
 ************************************************************************************/
-export async function listGtmWorkspaces(
+async function listGtmWorkspaces(
   userId: string,
   accessToken: string,
   accountId: string,

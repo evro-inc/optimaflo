@@ -11,7 +11,7 @@ import { getAccessToken } from '@/src/lib/fetch/apiUtils';
 import { ValidationError } from '@/src/lib/exceptions';
 
 // Separate out the validation logic into its own function
-export async function validateParams(params) {
+async function validateParams(params) {
   const schema = Joi.object({
     pageNumber: Joi.number().integer().min(1).required(),
     limit: Joi.number().integer().min(1).max(100).required(),
@@ -33,6 +33,12 @@ export async function listGtmAccounts(userId, accessToken, limit?, pageNumber?) 
   let delay = 1000;
 
   while (retries < MAX_RETRIES) {
+    const url = `https://www.googleapis.com/tagmanager/v2/accounts`;
+    const headers = {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    };
+
     try {
       const { remaining } = await gtmRateLimit.blockUntilReady(
         `user:${userId}`,
@@ -40,30 +46,33 @@ export async function listGtmAccounts(userId, accessToken, limit?, pageNumber?) 
       );
 
       if (remaining > 0) {
-        let res;
+        let data;
         await limiter.schedule(async () => {
-          const oauth2Client = createOAuth2Client(accessToken);
-          if (!oauth2Client) {
-            throw new Error('OAuth2 client creation failed');
+          const response = await fetch(url, { headers });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
           }
-          const gtm = new tagmanager_v2.Tagmanager({ auth: oauth2Client });
-          res = await gtm.accounts.list();
+
+          data = await response.json();
         });
 
-        const total = res.data.account?.length ?? 0;
+        const startIndex = (pageNumber - 1) * limit;
+        const paginatedAccounts = data.account.slice(
+          startIndex,
+          startIndex + limit
+        );
 
-        const results = {
-          data: res.data.account,
+        return {
+          data: paginatedAccounts,
           meta: {
-            total,
+            total: data.account.length,
             pageNumber,
-            totalPages: Math.ceil(total / limit),
+            totalPages: Math.ceil(data.account.length / limit),
             pageSize: limit,
           },
           errors: null,
         };
-
-        return results;
       } else {
         throw new Error('Rate limit exceeded');
       }

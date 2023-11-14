@@ -10,8 +10,6 @@ import z from 'zod';
 import { getAccessToken } from '../fetch/apiUtils';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
-import { listGtmContainers } from '@/src/app/api/dashboard/gtm/accounts/[accountId]/containers/route';
-import { listGtmAccounts } from '@/src/app/api/dashboard/gtm/accounts/route';
 
 // Define the types for the form data
 type FormCreateSchema = z.infer<typeof CreateContainerSchema>;
@@ -22,36 +20,51 @@ type FormUpdateSchema = z.infer<typeof UpdateContainerSchema>;
 ************************************************************************************/
 export async function gtmListContainers() {
   try {
-    const session = await getServerSession(authOptions);
-    const userId = session?.user?.id as string;
-    const accessToken = await getAccessToken(userId);
+    const baseUrl = getURL();
+    const url = `${baseUrl}/api/dashboard/gtm/accounts`;
+    const resp = await fetch(url, { next: { revalidate: 10 } });
 
-    // Assuming getGtmAccounts and getGtmContainers accept necessary parameters
-    const gtmAccountsResponse = await listGtmAccounts(
-      userId,
-      accessToken
-    );
-    const accountIds = gtmAccountsResponse.data.map(account => account.accountId);    
+    if (!resp.ok) {
+      const responseText = await resp.text();
+      console.log('Response Text:', responseText);
+
+      throw new Error(
+        `Error: ${resp.status} ${resp.statusText}. Response: ${responseText}`
+      );
+    }
+
+    const gtmData = await resp.json();
+
+    const accountIds = gtmData.data.map((container) => container.accountId);
 
     const containersPromises = accountIds.map(async (accountId) => {
-      const containersResponse = await listGtmContainers(
-        userId,
-        accessToken,
-        accountId
-      );
+      const containersUrl = `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers`;
 
-      // Check if containersResponse is not undefined before mapping over it
-      return containersResponse?.map(response => response.data || []).flat() ?? [];
+      const containersResp = await fetch(containersUrl, {
+        next: { revalidate: 10 },
+      });
+
+      if (!containersResp.ok) {
+        const responseText = await containersResp.text();
+        console.error(
+          `Error fetching containers for account ${accountId}: ${responseText}`
+        );
+        return []; // return an empty array on error
+      }
+
+      const containersData = await containersResp.json();
+      return containersData[0]?.data || []; // ensure an array is returned
     });
 
     const containersArrays = await Promise.all(containersPromises);
-    return containersArrays.flat();
+    const containers = containersArrays.flat();
+
+    return containers;
   } catch (error) {
     console.error('Error fetching GTM containers:', error);
     throw error;
   }
 }
-
 
 /************************************************************************************
   Delete a single or multiple containers

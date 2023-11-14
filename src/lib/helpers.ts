@@ -1,7 +1,7 @@
 import logger from './logger';
 
 export const getURL = () => {
-  let vercelUrl = process.env.VERCEL_URL;  // Assign VERCEL_URL to vercelUrl
+  let vercelUrl = process.env.VERCEL_URL; // Assign VERCEL_URL to vercelUrl
 
   // Check if we're running locally or in Vercel's environment
   if (typeof vercelUrl === 'undefined' || vercelUrl.startsWith('localhost')) {
@@ -11,7 +11,6 @@ export const getURL = () => {
     // Ensure the URL uses https if deployed on Vercel
     vercelUrl = `https://${vercelUrl}`;
     console.log('vercelUrl', vercelUrl);
-    
   }
 
   if (!vercelUrl) {
@@ -20,9 +19,6 @@ export const getURL = () => {
 
   return vercelUrl;
 };
-
-
-
 
 export const postData = async ({ url, data }: { url: string; data?: any }) => {
   const res: Response = await fetch(url, {
