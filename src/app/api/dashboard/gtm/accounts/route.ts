@@ -11,7 +11,7 @@ import { getAccessToken } from '@/src/lib/fetch/apiUtils';
 import { ValidationError } from '@/src/lib/exceptions';
 
 // Separate out the validation logic into its own function
-async function validateParams(params) {
+export async function validateParams(params) {
   const schema = Joi.object({
     pageNumber: Joi.number().integer().min(1).required(),
     limit: Joi.number().integer().min(1).max(100).required(),
@@ -27,7 +27,7 @@ async function validateParams(params) {
 }
 
 // Separate out the logic to list GTM accounts into its own function
-async function listGtmAccounts(userId, accessToken, limit, pageNumber) {
+export async function listGtmAccounts(userId, accessToken, limit?, pageNumber?) {
   let retries = 0;
   const MAX_RETRIES = 3;
   let delay = 1000;

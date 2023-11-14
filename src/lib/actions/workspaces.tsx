@@ -11,6 +11,9 @@ import { gtmListContainers } from './containers';
 import { getAccessToken } from '../fetch/apiUtils';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
+import { listGtmContainers } from '@/src/app/api/dashboard/gtm/accounts/[accountId]/containers/route';
+import { listGtmAccounts } from '@/src/app/api/dashboard/gtm/accounts/route';
+import { listGtmWorkspaces } from '@/src/app/api/dashboard/gtm/accounts/[accountId]/containers/[containerId]/workspaces/route';
 
 // Define the types for the form data
 type FormCreateSchema = z.infer<typeof CreateWorkspaceSchema>;
@@ -22,35 +25,48 @@ type FormUpdateSchema = z.infer<typeof UpdateWorkspaceSchema>;
 
 export async function gtmListWorkspaces() {
   try {
-    const baseUrl = getURL();
+    const session = await getServerSession(authOptions);
+    const userId = session?.user?.id as string;
+    const accessToken = await getAccessToken(userId);
 
-    // Fetching unique containers
-    const containersData = await gtmListContainers();
+    // Assuming getGtmAccounts and getGtmContainers accept necessary parameters
+    const gtmAccountsResponse = await listGtmAccounts(
+      userId,
+      accessToken
+    );
+    const accountIds = gtmAccountsResponse.data.map(account => account.accountId);    
+
+    const containersPromises = accountIds.map(async (accountId) => {
+      const containersResponse = await listGtmContainers(
+        userId,
+        accessToken,
+        accountId
+      );
+
+      // Check if containersResponse is not undefined before mapping over it
+      return containersResponse?.map(response => response.data || []).flat() ?? [];
+    });
+
+    const containersArrays = await Promise.all(containersPromises);
+    const containersData =  containersArrays.flat();
 
     const workspacesPromises = containersData.map(async (container) => {
       const { accountId, containerId } = container;
 
-      const workspaceUrl = `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces`;
+      // Use the listGtmWorkspaces function to get workspaces
+      const workspacesResponse = await listGtmWorkspaces(
+        userId,
+        accessToken,
+        accountId,
+        containerId
+      );
 
-      const workspacesResp = await fetch(workspaceUrl, {
-        next: { revalidate: 10 },
-      });
-      if (!workspacesResp.ok) {
-        const responseText = await workspacesResp.text();
-        console.error(
-          `Error fetching workspaces for account ${accountId} ${containerId}: ${responseText}`
-        );
-        return []; // return an empty array on error
-      }
-
-      const workspacesData = await workspacesResp.json();
-      return workspacesData.data || [];
+      // Check if workspacesResponse is not undefined before mapping over it
+      return workspacesResponse?.data || [];
     });
 
     const workspacesArrays = await Promise.all(workspacesPromises);
-    const workspaces = workspacesArrays.flat();
-
-    return workspaces;
+    return workspacesArrays.flat();
   } catch (error) {
     console.error('Error fetching GTM workspaces:', error);
     throw error;

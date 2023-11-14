@@ -45,12 +45,12 @@ async function validateGetParams(params) {
 /************************************************************************************
   Function to list GTM containers
 ************************************************************************************/
-async function listGtmContainers(
+export async function listGtmContainers(
   userId: string,
   accessToken: string,
   accountId: string,
-  pageNumber: number,
-  limit: number
+  pageNumber?: number,
+  limit?: number
 ) {
   let retries = 0;
   const MAX_RETRIES = 3;
