@@ -21,37 +21,47 @@ type FormUpdateSchema = z.infer<typeof UpdateContainerSchema>;
 export async function gtmListContainers() {
   try {
     const baseUrl = getURL();
+
     const url = `${baseUrl}/api/dashboard/gtm/accounts`;
 
-    console.log('Fetching GTM accounts from URL:', url);
-    const resp = await fetch(url);
+    console.log('URL:', url);
+    
 
-    // Check if response is not OK and log detailed information
+    const resp = await fetch(url, { next: { revalidate: 10 } });
+
+    const test = await fetch(url, { next: { revalidate: 10 } });
+
+    console.log('Test:', test.text());
+    
+
     if (!resp.ok) {
       const responseText = await resp.text();
-      console.error(`Error fetching GTM accounts: HTTP status ${resp.status} ${resp.statusText}`);
-      console.error(`Response body: ${responseText}`);
-      throw new Error(`HTTP Error: ${resp.status} ${resp.statusText}`);
+      console.log('Response Text:', responseText);
+
+      throw new Error(
+        `Error: ${resp.status} ${resp.statusText}. Response: ${responseText}`
+      );
     }
 
     const gtmData = await resp.json();
+
     const accountIds = gtmData.data.map((container) => container.accountId);
 
     const containersPromises = accountIds.map(async (accountId) => {
       const containersUrl = `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers`;
-      console.log(`Fetching containers for account ${accountId} from URL: ${containersUrl}`);
-      const containersResp = await fetch(containersUrl);
 
-      // Check if response is not OK and log detailed information
+      const containersResp = await fetch(containersUrl, { next: { revalidate: 10 } });
+
       if (!containersResp.ok) {
         const responseText = await containersResp.text();
-        console.error(`Error fetching containers for account ${accountId}: HTTP status ${containersResp.status} ${containersResp.statusText}`);
-        console.error(`Response body: ${responseText}`);
-        return []; // Return an empty array on error
+        console.error(
+          `Error fetching containers for account ${accountId}: ${responseText}`
+        );
+        return []; // return an empty array on error
       }
 
       const containersData = await containersResp.json();
-      return containersData[0]?.data || []; // Ensure an array is returned
+      return containersData[0]?.data || []; // ensure an array is returned
     });
 
     const containersArrays = await Promise.all(containersPromises);
@@ -59,11 +69,10 @@ export async function gtmListContainers() {
 
     return containers;
   } catch (error) {
-    console.error('Error in gtmListContainers:', error);
+    console.error('Error fetching GTM containers:', error);
     throw error;
   }
 }
-
 
 /************************************************************************************
   Delete a single or multiple containers
