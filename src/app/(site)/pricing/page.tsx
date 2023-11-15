@@ -1,34 +1,27 @@
 import FAQ from '@/src/components/server/FAQ/Faq';
 import PricingTable from '@/src/components/client/Pricing/Table';
 import { ProductWithPrice } from 'types/types';
-import { getURL } from '@/src/lib/helpers';
+import prisma from '@/src/lib/prisma';
 
 const getActiveProductsWithPrices = async (): Promise<ProductWithPrice[]> => {
   'use server';
+  
+  // Query the database to retrieve active products with prices
+  const products = await prisma.product.findMany({
+    where: { active: true },
+    include: {
+      Price: true,
+    },
+  });
 
-  const baseUrl = getURL();
-
-  const response = await fetch(`${baseUrl}/api/products`);
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch products');
-  }
-
-  // Parse the response as JSON
-  const { data: products }: { data: ProductWithPrice[] } =
-    await response.json();
-
-  // Filter only active products
-  const activeProducts = products.filter((product) => product.active);
-
-  // Order the prices for each product
-  activeProducts.forEach((product) => {
+  // Sort the prices for each product
+  products.forEach((product) => {
     if (product.Price && product.Price.length > 0) {
-      product.Price.sort((a: any, b: any) => a.unitAmount - b.unitAmount);
+      product.Price.sort((a, b) => a.unitAmount - b.unitAmount);
     }
   });
 
-  return activeProducts;
+  return products;
 };
 
 export default async function PricingPage() {
