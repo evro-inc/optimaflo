@@ -111,7 +111,7 @@ export type ContainerType = {
   notes: string;
 };
 
-export type UpdateContainersResult = {
+export type UpdateResult = {
   success: boolean;
   limitReached?: boolean;
   message?: string;
@@ -124,6 +124,15 @@ export type FormUpdateContainerProps = {
   onClose: () => void;
   accounts: any; // Replace 'any' with the actual type if known
   selectedRows: Map<string, ContainerType>;
+};
+
+export type FormUpdateWorkspaceProps = {
+  showOptions: boolean;
+  onClose: () => void;
+  accounts: any; // Replace 'any' with the actual type if known
+  selectedRows: Map<string, ContainerType>;
+  containers: any;
+  workspaces: any;
 };
 
 export type ResultType = {
@@ -146,7 +155,7 @@ export type PostParams = {
   notes: string;
 };
 
-export type CreateContainersResult = {
+export type CreateResult = {
   success: boolean;
   limitReached?: boolean;
   message?: string;
@@ -158,4 +167,26 @@ export type FormCreateContainerProps = {
   showOptions: boolean;
   onClose: () => void;
   accounts: any; // Replace 'any' with the actual type if known
+};
+
+export type FormCreateWorkspaceProps = {
+  showOptions: boolean;
+  onClose: () => void;
+  accounts: any;
+  containers: any;
+};
+
+export type WorkspaceType = {
+  accountId: string;
+  containerId: string;
+  workspaceId: string;
+  name: string;
+  containerName: string;
+};
+
+export type WorkspaceData = {
+  accountId: string;
+  containerId: string;
+  workspaceId: string;
+  workspaceName: string;
 };

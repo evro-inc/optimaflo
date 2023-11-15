@@ -1,4 +1,3 @@
-export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager/v2';
 import { ValidationError } from '@/src/lib/exceptions';
@@ -452,16 +451,15 @@ export async function GET(
     };
 
     const validatedParams = await validateGetParams(paramsJOI);
-
     const { accountId, containerId, userId } = validatedParams;
-
-    // using userId get accessToken from prisma account table
     const accessToken = await getAccessToken(userId);
 
-    const data = await fetchGtmData(userId, accessToken, accountId, containerId);
-
-    console.log('data: ', data);
-    
+    const data = await fetchGtmData(
+      userId,
+      accessToken,
+      accountId,
+      containerId
+    );
 
     return NextResponse.json(
       {

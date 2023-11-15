@@ -1,6 +1,6 @@
 import { Button } from '@/src/components/client/Button/Button';
 import AccountFormUpdate from './updateAccount';
-import { gtmListAccounts } from '@/src/lib/fetch/dashboard/gtm/accounts';
+import { gtmListAccounts } from '@/src/lib/actions/accounts';
 
 async function AccountTable() {
   let gtmAccounts;

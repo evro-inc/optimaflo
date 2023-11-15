@@ -1,12 +1,12 @@
 'use client';
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { updateContainers } from '@/src/lib/actions';
+import { updateContainers } from '@/src/lib/actions/containers';
 import { LimitReached } from '../../modals/limitReached';
 import { ButtonGroup } from '../../ButtonGroup/ButtonGroup';
 import { XMarkIcon } from '@heroicons/react/24/solid';
 import { z } from 'zod';
-import { UpdateContainerSchema } from '@/src/lib/schemas';
+import { UpdateContainerSchema } from '@/src/lib/schemas/containers';
 import {
   clearSelectedRows,
   selectTable,
@@ -92,16 +92,6 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
     dispatch(setLoading(true)); // Set loading to true
 
     try {
-      const formDataArray = forms.map((formElement) => {
-        const obj = {};
-        Object.keys(formElement).forEach((key) => {
-          obj[key] = formElement[key];
-        });
-        return obj;
-      });
-
-      console.log('formDataArray', formDataArray);
-
       // If you're here, validation succeeded. Proceed with updateContainers.
       const res = (await updateContainers({ forms })) as UpdateContainersResult;
 

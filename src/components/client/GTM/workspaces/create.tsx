@@ -1,105 +1,314 @@
 'use client';
-import { useState } from 'react';
+import React, { useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { LimitReached } from '../../modals/limitReached';
+import { ButtonGroup } from '../../ButtonGroup/ButtonGroup';
+import { XMarkIcon } from '@heroicons/react/24/solid';
+import { CreateResult, FormCreateWorkspaceProps } from '@/types/types';
+import { useDispatch, useSelector } from 'react-redux';
+import { selectTable, setIsLimitReached } from '@/src/app/redux/tableSlice';
+import { selectGlobal, setLoading } from '@/src/app/redux/globalSlice';
+import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
+import { CreateWorkspaceSchema } from '@/src/lib/schemas/workspaces';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import logger from '@/src/lib/logger';
+import { createWorkspaces } from '@/src/lib/actions/workspaces';
 
-function FormCreateWorkspace() {
-  const [accountId, setAccountId] = useState('');
-  const [containerId, setContainerId] = useState('');
-  const [name, setname] = useState('');
-  const [description, setDescription] = useState('');
-  const [workspaceData, setWorkspaceData] = useState(null);
-  const [error, setError] = useState(null);
+type Forms = z.infer<typeof CreateWorkspaceSchema>;
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-
-    try {
-      const response = await fetch(
-        `/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces`,
+const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
+  showOptions,
+  onClose,
+  accounts = [],
+  containers = [],
+}) => {
+  const formRefs = useRef<(HTMLFormElement | null)[]>([]);
+  const dispatch = useDispatch();
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors },
+  } = useForm<Forms>({
+    defaultValues: {
+      forms: [
         {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            accountId,
-            containerId,
-            name,
-            description,
-          }),
-        }
-      );
+          accountId: '',
 
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status}`);
-      }
+          name: '',
+          description: '',
+          containerId: '',
+        },
+      ],
+    },
+    resolver: zodResolver(CreateWorkspaceSchema),
+  });
 
-      const data = await response.json();
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: 'forms',
+  });
 
-      setWorkspaceData(data);
-      setError(null);
-    } catch (err: any) {
-      setError(err.message);
-      setWorkspaceData(null);
+  const { isLimitReached, loading } = useSelector((state) => ({
+    ...selectTable(state),
+    ...selectGlobal(state),
+  }));
+
+  const addForm = () => {
+    append({
+      accountId: '',
+
+      name: '',
+      description: '',
+      containerId: '',
+    });
+  };
+
+  const removeForm = () => {
+    if (fields.length > 1) {
+      remove(fields.length - 1);
     }
   };
 
-  return (
-    <div>
-      <p>CREATE WORKSPACE call:</p>
-      <form onSubmit={handleSubmit}>
-        <label>
-          Submit Account ID:
-          <input
-            type="text"
-            value={accountId}
-            onChange={(e) => setAccountId(e.target.value)}
-          />
-        </label>
-        <label>
-          Submit Container ID:
-          <input
-            type="text"
-            value={containerId}
-            onChange={(e) => setContainerId(e.target.value)}
-          />
-        </label>
+  const processForm: SubmitHandler<Forms> = async (data) => {
+    const { forms } = data;
+    dispatch(setLoading(true)); // Set loading to true using Redux action
 
-        <label>
-          New name:
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setname(e.target.value)}
-          />
-        </label>
+    try {
+      const res = (await createWorkspaces({ forms })) as CreateResult;
 
-        <label>
-          New Description:
-          <input
-            type="text"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-        </label>
+      if (res.limitReached) {
+        dispatch(setIsLimitReached(true)); // Set limitReached to true using Redux action
+      }
 
-        <button type="submit">Submit</button>
-      </form>
+      // close the modal
+      onClose();
 
-      {workspaceData && (
-        <div>
-          <h2>Workspace Data:</h2>
-          <pre>{JSON.stringify(workspaceData, null, 2)}</pre>
-        </div>
-      )}
+      // Reset the forms here, regardless of success or limit reached
+      reset({
+        forms: [
+          {
+            accountId: '',
+            name: '',
+            description: '',
+            containerId: '',
+          },
+        ],
+      });
 
-      {error && (
-        <div>
-          <h2>Error:</h2>
-          <p>{error}</p>
-        </div>
-      )}
-    </div>
+      if (res && res.success) {
+        // Reset the forms here
+        reset({
+          forms: [
+            {
+              accountId: '',
+              name: '',
+              description: '',
+              containerId: '',
+            },
+          ],
+        });
+      } else if (res && res.limitReached) {
+        // Show the LimitReached modal
+        setIsLimitReached(true);
+      }
+    } catch (error) {
+      logger.error('Error creating containers:', error);
+
+      return { success: false };
+    } finally {
+      dispatch(setLoading(false)); // Set loading to false
+    }
+  };
+
+  const handleClose = () => {
+    // Reset the forms to their initial state
+    reset({
+      forms: [
+        {
+          accountId: '',
+          name: '',
+          description: '',
+          containerId: '',
+        },
+      ],
+    });
+
+    // Close the modal
+    onClose();
+  };
+
+  const uniqueAccountIds: string[] = Array.from(
+    new Set(accounts.map((account) => account.accountId))
   );
-}
+
+  return (
+    <>
+      <AnimatePresence>
+        {showOptions && (
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            className="fixed top-0 left-0 w-full h-full flex flex-col items-center justify-start z-50 bg-white-500 overflow-y-auto"
+          >
+            {/* Close Button */}
+            <button
+              onClick={handleClose}
+              className="absolute top-0 right-0 font-bold py-2 px-4"
+            >
+              <XMarkIcon className="w-14 h-14" />
+            </button>
+
+            <ButtonGroup
+              buttons={[
+                { text: 'Add Form', onClick: addForm },
+                { text: 'Remove Form', onClick: removeForm },
+                {
+                  text: loading ? 'Submitting...' : 'Submit',
+                  type: 'submit',
+                  form: 'createWorkspace',
+                },
+              ]}
+            />
+
+            <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-end">
+              {fields.map((field, index) => (
+                <div
+                  key={field.id}
+                  className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
+                >
+                  <div className="max-w-xl mx-auto">
+                    <div className="text-center">
+                      <p className="text-3xl font-bold text-gray-800 sm:text-4xl dark:text-white">
+                        Workspace {index + 1}
+                      </p>
+                    </div>
+
+                    <div className="mt-12">
+                      {/* Form */}
+                      <form
+                        ref={(el) => (formRefs.current[index] = el)}
+                        onSubmit={handleSubmit(processForm)}
+                        id="createWorkspace"
+                      >
+                        <div className="grid gap-4 lg:gap-6">
+                          {/* Grid */}
+                          <div className="grid grid-cols-1 gap-4 lg:gap-6">
+                            <div>
+                              <label
+                                htmlFor="hs-firstname-hire-us-2"
+                                className="block text-sm text-gray-700 font-medium dark:text-white"
+                              >
+                                New Workspace Name:
+                              </label>
+                              <input
+                                type="text"
+                                {...register(`forms.${index}.name`)}
+                                className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
+                              />
+                              {errors.forms?.[index]?.name?.message && (
+                                <p className="text-red-500 text-xs italic">
+                                  {errors.forms?.[index]?.name?.message}
+                                </p>
+                              )}
+                            </div>
+
+                            <div>
+                              <label
+                                htmlFor="hs-lastname-hire-us-2"
+                                className="block text-sm text-gray-700 font-medium dark:text-white"
+                              >
+                                Account
+                              </label>
+                              <select
+                                {...register(`forms.${index}.accountId`)}
+                                className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
+                              >
+                                {uniqueAccountIds.map((accountId: string) => (
+                                  <option key={accountId} value={accountId}>
+                                    {accountId}
+                                  </option>
+                                ))}
+                              </select>
+                              {errors.forms?.[index]?.accountId?.message && (
+                                <p className="text-red-500 text-xs italic">
+                                  {errors.forms?.[index]?.accountId?.message}
+                                </p>
+                              )}
+                            </div>
+
+                            <div>
+                              <label
+                                htmlFor="hs-lastname-hire-us-2"
+                                className="block text-sm text-gray-700 font-medium dark:text-white"
+                              >
+                                Container
+                              </label>
+                              <select
+                                {...register(`forms.${index}.containerId`)}
+                                className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
+                              >
+                                {containers.map((container: any) => (
+                                  <option
+                                    key={container.containerId}
+                                    value={container.containerId}
+                                  >
+                                    {container.name}
+                                  </option>
+                                ))}
+                              </select>
+                              {errors.forms?.[index]?.containerId?.message && (
+                                <p className="text-red-500 text-xs italic">
+                                  {errors.forms?.[index]?.containerId?.message}
+                                </p>
+                              )}
+                            </div>
+
+                            <div>
+                              <label
+                                htmlFor="hs-firstname-hire-us-2"
+                                className="block text-sm text-gray-700 font-medium dark:text-white"
+                              >
+                                Description:
+                              </label>
+                              <input
+                                type="text"
+                                {...register(`forms.${index}.description`)}
+                                className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
+                              />
+                              {errors.forms?.[index]?.description?.message && (
+                                <p className="text-red-500 text-xs italic">
+                                  {errors.forms?.[index]?.description?.message}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          {/* End Grid */}
+
+                          {/* End Grid */}
+                        </div>
+                        {/* End Grid */}
+                      </form>
+                      {/* End Form */}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* End Hire Us */}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {isLimitReached && (
+        <LimitReached onClose={() => dispatch(isLimitReached(false))} /> // Use Redux action for onClose
+      )}
+    </>
+  );
+};
 
 export default FormCreateWorkspace;

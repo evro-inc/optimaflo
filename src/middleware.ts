@@ -25,7 +25,7 @@ export async function middleware(
     '^/dashboard/gtm.*': [
       'prod_OZZrME91D1Tyue',
       'prod_OaGCBK8Qe6Vofp',
-      'prod_OZZrME91D1Tyue',
+      'prod_OoCMHi502SCeOH',
     ],
     '^/dashboard/ga.*': ['prod_OQ3TPC9yMxJAeN'],
   };
@@ -44,13 +44,14 @@ export async function middleware(
   const session = await getSession({ req: reqHeader });
   try {
     let ip = req.ip ?? '127.0.0.1';
+
     if (req.nextUrl.pathname.startsWith('/api/auth')) {
       // if path is /api/auth/, just let the request pass through without any further checks
       return undefined;
     }
 
     // just let the request pass through without any further checks
-    if (
+    /*  if (
       !req.nextUrl.pathname.startsWith('/api/auth') &&
       !req.nextUrl.pathname.startsWith('/api/products') &&
       !req.nextUrl.pathname.startsWith('/api/prices') &&
@@ -61,7 +62,7 @@ export async function middleware(
       if (!session) {
         return NextResponse.redirect(url);
       }
-    }
+    } */
 
     // subscription check per regexToProductIds
     for (const [regexString, productIds] of Object.entries(regexToProductIds)) {

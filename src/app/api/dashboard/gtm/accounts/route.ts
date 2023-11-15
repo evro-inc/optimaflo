@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager/v2';
-import { QuotaLimitError } from '@/src/lib/exceptions';
-import { createOAuth2Client } from '@/src/lib/oauth2Client';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../../auth/[...nextauth]/route';
-import prisma from '@/src/lib/prisma';
 import Joi from 'joi';
-import { isErrorWithStatus } from '@/src/lib/fetch/dashboard';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
 import logger from '@/src/lib/logger';
+import { limiter } from '@/src/lib/bottleneck';
+import { getAccessToken } from '@/src/lib/fetch/apiUtils';
+import { ValidationError } from '@/src/lib/exceptions';
 
 // Separate out the validation logic into its own function
 async function validateParams(params) {
@@ -17,28 +15,28 @@ async function validateParams(params) {
     limit: Joi.number().integer().min(1).max(100).required(),
     sort: Joi.string().valid('id').required(),
     order: Joi.string().valid('asc', 'desc').required(),
-    userId: Joi.string().uuid().required(),
   });
 
-  const { error } = schema.validate(params);
+  const { error, value } = schema.validate(params);
   if (error) {
     throw new Error(`Validation Error: ${error.message}`);
   }
+  return value;
 }
 
 // Separate out the logic to list GTM accounts into its own function
-async function listGtmAccounts(userId, accessToken, limit, pageNumber) {
-  const oauth2Client = createOAuth2Client(accessToken);
-  if (!oauth2Client) {
-    throw new Error('OAuth2 client creation failed');
-  }
-
-  const gtm = new tagmanager_v2.Tagmanager({ auth: oauth2Client });
-
+export async function listGtmAccounts(userId, accessToken, limit?, pageNumber?) {
   let retries = 0;
   const MAX_RETRIES = 3;
+  let delay = 1000;
 
   while (retries < MAX_RETRIES) {
+    const url = `https://www.googleapis.com/tagmanager/v2/accounts`;
+    const headers = {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    };
+
     try {
       const { remaining } = await gtmRateLimit.blockUntilReady(
         `user:${userId}`,
@@ -46,17 +44,34 @@ async function listGtmAccounts(userId, accessToken, limit, pageNumber) {
       );
 
       if (remaining > 0) {
-        const res = await gtm.accounts.list();
+        let data;
+        await limiter.schedule(async () => {
+          const response = await fetch(url, { headers });
 
-        const total = res.data.account?.length ?? 0;
-        const resAccounts = res.data.account;
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          data = await response.json();
+        });
+
+        pageNumber = pageNumber || 1;
+        limit = limit || 10;  // Default limit value
+
+
+        const startIndex = (pageNumber - 1) * limit;
+        const paginatedAccounts = data.account.slice(
+          startIndex,
+          startIndex + limit
+        );
+        
 
         return {
-          data: resAccounts,
+          data: paginatedAccounts,
           meta: {
-            total,
+            total: data.account.length,
             pageNumber,
-            totalPages: Math.ceil(total / limit),
+            totalPages: Math.ceil(data.account.length / limit),
             pageSize: limit,
           },
           errors: null,
@@ -64,62 +79,61 @@ async function listGtmAccounts(userId, accessToken, limit, pageNumber) {
       } else {
         throw new Error('Rate limit exceeded');
       }
-    } catch (error) {
-      if (isErrorWithStatus(error) && error.status === 429) {
+    } catch (error: any) {
+      if (error.code === 429 || error.status === 429) {
+        console.warn('Rate limit exceeded. Retrying get accounts...');
+        const jitter = Math.random() * 200;
+        await new Promise((resolve) => setTimeout(resolve, delay + jitter));
+        delay *= 2;
         retries++;
-        await new Promise((resolve) => setTimeout(resolve, 60000)); // 60 seconds wait before retrying
-        if (retries === MAX_RETRIES) {
-          throw new QuotaLimitError();
-        }
       } else {
-        throw error; // re-throw the error if it's not a 429 error
+        throw error;
       }
     }
   }
+  throw new Error('Maximum retries reached without a successful response.');
 }
-
 // Refactored GET handler
 export async function GET(request: NextRequest) {
-  logger.info('GET request received');
-
   try {
     const session = await getServerSession(authOptions);
-    const userId = session?.user?.id;
-
-    if (!session || !userId) {
-      logger.warn('Session is undefined or null');
-      throw new Error('Session retrieval failed');
-    }
-
+    const userId = session?.user?.id as string;
     const pageNumber = Number(request.nextUrl.searchParams.get('page')) || 1;
     const limit = Number(request.nextUrl.searchParams.get('limit')) || 10;
     const sort = request.nextUrl.searchParams.get('sort') || 'id';
     const order = request.nextUrl.searchParams.get('order') || 'asc';
 
-    const params = { pageNumber, limit, sort, order, userId };
-    logger.info('Request parameters extracted', params);
+    const paramsJOI = {
+      pageNumber,
+      limit,
+      sort,
+      order,
+    };
 
-    await validateParams(params); // Call the separate validation function
-
-    const user = await prisma.account.findFirst({ where: { userId: userId } });
-    const accessToken = user?.access_token;
-
-    if (!accessToken) {
-      throw new Error('Access token is missing');
-    }
+    await validateParams(paramsJOI);
+    const accessToken = await getAccessToken(userId);
 
     const response = await listGtmAccounts(
       userId,
       accessToken,
       limit,
       pageNumber
-    ); // Call the separate function to list GTM accounts
+    );
 
-    return NextResponse.json(response, {
+    const getResult = NextResponse.json(response, {
       headers: { 'Content-Type': 'application/json' },
       status: 200,
     });
-  } catch (error) {
+
+    return getResult;
+  } catch (error: any) {
+    if (error instanceof ValidationError) {
+      console.error('Validation Error: ', error.message);
+      return new NextResponse(JSON.stringify({ error: error.message }), {
+        status: 400,
+      });
+    }
+
     logger.error('Error: ', error);
     return new NextResponse(JSON.stringify({ error: error.message }), {
       status: 500,

@@ -5,7 +5,6 @@ import '../../styles/tailwind.css';
 import { Providers, ReduxProvider } from '../providers';
 import React from 'react';
 import Footer from '@/src/components/server/Footer/Footer';
-export const dynamic = 'force-dynamic';
 import Navbar from '@/src/components/client/Navbar/Navbar';
 //import Cover from '@/src/components/server/Cover/cover';
 

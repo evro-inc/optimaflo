@@ -215,6 +215,8 @@ export default function SideBar() {
                           <Link
                             className="flex items-center gap-x-3.5 py-2 px-2.5 text-sm text-slate-700 rounded-md hover:bg-gray-100 :text-slate-300"
                             href="/dashboard/gtm/accounts"
+                            rel="prefetch"
+                            prefetch={true}
                           >
                             Accounts
                           </Link>
@@ -223,6 +225,8 @@ export default function SideBar() {
                           <Link
                             className="flex items-center gap-x-3.5 py-2 px-2.5 text-sm text-slate-700 rounded-md hover:bg-gray-100 :text-slate-300"
                             href="/dashboard/gtm/containers"
+                            rel="prefetch"
+                            prefetch={true}
                           >
                             Containers{' '}
                           </Link>
@@ -231,6 +235,8 @@ export default function SideBar() {
                           <Link
                             className="flex items-center gap-x-3.5 py-2 px-2.5 text-sm text-slate-700 rounded-md hover:bg-gray-100 :text-slate-300"
                             href="/dashboard/gtm/workspaces"
+                            rel="prefetch"
+                            prefetch={true}
                           >
                             Workspaces{' '}
                           </Link>

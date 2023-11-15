@@ -3,9 +3,10 @@ import React from 'react';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
 import { redirect } from 'next/navigation';
-import { gtmListContainers } from '@/src/lib/fetch/dashboard/gtm/containers';
 import ContainerTable from '@/src/components/client/GTM/containers/table';
-import { gtmListAccounts } from '@/src/lib/fetch/dashboard/gtm/accounts';
+import { listGtmAccounts } from '@/src/app/api/dashboard/gtm/accounts/route';
+import { listGtmContainers } from '@/src/app/api/dashboard/gtm/accounts/[accountId]/containers/route';
+import { getAccessToken } from '@/src/lib/fetch/apiUtils';
 
 export const metadata: Metadata = {
   title: 'Overview',
@@ -14,21 +15,30 @@ export const metadata: Metadata = {
 
 export default async function ContainerPage() {
   const session = await getServerSession(authOptions);
+  const userId = session?.user?.id as string;
+  const accessToken = await getAccessToken(userId);
 
   // if no session, redirect to home page
   if (!session) {
     redirect('/');
   }
 
-  //fetch all containers from API
-  const [accounts, containers] = await Promise.all([
-    gtmListAccounts(),
-    gtmListContainers(),
-  ]);
+  // Fetch accounts list
+  const accounts = await listGtmAccounts(userId, accessToken);   
+
+  // Fetch containers for each account in parallel
+  const containersPromises = accounts.data.map(account => 
+    listGtmContainers(userId, accessToken, account.accountId)
+  );  
+
+  const containersResults = await Promise.all(containersPromises);
+  
+  // Flatten the results if necessary
+  const containerList = containersResults.map(result => result[0].data).flat();  
 
   return (
     <>
-      <ContainerTable containers={containers} accounts={accounts} />
+      <ContainerTable accounts={accounts.data} containers={containerList} />
     </>
   );
 }

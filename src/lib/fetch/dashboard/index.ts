@@ -32,7 +32,7 @@ export async function grantGtmAccess(customerId: string) {
   const userId = customerRecord.userId;
 
   // Get the product IDs for the GTM products
-  const gtmProductIds = ['prod_OZZrME91D1Tyue', 'prod_OaGCBK8Qe6Vofp'];
+  const gtmProductIds = ['prod_OoCMHi502SCeOH', 'prod_OaGCBK8Qe6Vofp'];
 
   // Iterate over the product IDs
   for (const productId of gtmProductIds) {
@@ -89,8 +89,6 @@ export async function fetchGtmSettings(userId) {
   });
 
   if (!existingUser) {
-    console.log('user ID', user.id);
-
     // Create the User record if it doesn't exist
     await prisma.User.create({
       data: {
@@ -175,7 +173,9 @@ export async function fetchGtmSettings(userId) {
       }
     }
   }
-} /* GA UTILS */
+}
+
+/* GA UTILS */
 
 export async function grantGAAccess(customerId: string) {
   // Fetch user ID using the Stripe Customer ID
@@ -207,8 +207,6 @@ export async function grantGAAccess(customerId: string) {
 
 /* NEEDS TO BE REFACTORED FOR GA4 */
 export async function fetchGASettings(userId) {
-  console.log('fetchGASettings userId', userId);
-
   // Fetch the user from your database using the Stripe customer ID
   const user = await prisma.account.findFirst({
     where: {

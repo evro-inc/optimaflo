@@ -1,4 +1,3 @@
-export const dynamic = 'force-dynamic';
 import React from 'react';
 import '../../styles/globals.css';
 import NavApp from '@/src/components/client/Navbar/NavApp';

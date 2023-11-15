@@ -1,19 +1,16 @@
 'use client';
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { createContainers } from '@/src/lib/actions';
+import { createContainers } from '@/src/lib/actions/containers';
 import { LimitReached } from '../../modals/limitReached';
 import { ButtonGroup } from '../../ButtonGroup/ButtonGroup';
 import { XMarkIcon } from '@heroicons/react/24/solid';
-import {
-  CreateContainersResult,
-  FormCreateContainerProps,
-} from '@/types/types';
+import { CreateResult, FormCreateContainerProps } from '@/types/types';
 import { useDispatch, useSelector } from 'react-redux';
 import { selectTable, setIsLimitReached } from '@/src/app/redux/tableSlice';
 import { selectGlobal, setLoading } from '@/src/app/redux/globalSlice';
 import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
-import { CreateContainerSchema } from '@/src/lib/schemas';
+import { CreateContainerSchema } from '@/src/lib/schemas/containers';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import logger from '@/src/lib/logger';
@@ -82,7 +79,7 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
     try {
-      const res = (await createContainers({ forms })) as CreateContainersResult;
+      const res = (await createContainers({ forms })) as CreateResult;
 
       if (res.limitReached) {
         dispatch(setIsLimitReached(true)); // Set limitReached to true using Redux action

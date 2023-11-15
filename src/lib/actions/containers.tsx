@@ -1,18 +1,70 @@
 'use server';
 import { revalidatePath } from 'next/cache';
-import { cookies, headers } from 'next/headers';
 import {
   CreateContainerSchema,
   UpdateContainerSchema,
-} from '@/src/lib/schemas';
-import logger from './logger';
+} from '@/src/lib/schemas/containers';
+import logger from '../logger';
 import { getURL } from '@/src/lib/helpers';
 import z from 'zod';
+import { getAccessToken } from '../fetch/apiUtils';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
 
 // Define the types for the form data
 type FormCreateSchema = z.infer<typeof CreateContainerSchema>;
 type FormUpdateSchema = z.infer<typeof UpdateContainerSchema>;
 
+/************************************************************************************
+  List containers
+************************************************************************************/
+export async function gtmListContainers() {
+  try {
+    const baseUrl = getURL();
+    const url = `${baseUrl}/api/dashboard/gtm/accounts`;
+    const resp = await fetch(url, { next: { revalidate: 10 } });
+
+    if (!resp.ok) {
+      const responseText = await resp.text();
+      console.log('Response Text:', responseText);
+
+      throw new Error(
+        `Error: ${resp.status} ${resp.statusText}. Response: ${responseText}`
+      );
+    }
+
+    const gtmData = await resp.json();
+
+    const accountIds = gtmData.data.map((container) => container.accountId);
+
+    const containersPromises = accountIds.map(async (accountId) => {
+      const containersUrl = `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers`;
+
+      const containersResp = await fetch(containersUrl, {
+        next: { revalidate: 10 },
+      });
+
+      if (!containersResp.ok) {
+        const responseText = await containersResp.text();
+        console.error(
+          `Error fetching containers for account ${accountId}: ${responseText}`
+        );
+        return []; // return an empty array on error
+      }
+
+      const containersData = await containersResp.json();
+      return containersData[0]?.data || []; // ensure an array is returned
+    });
+
+    const containersArrays = await Promise.all(containersPromises);
+    const containers = containersArrays.flat();
+
+    return containers;
+  } catch (error) {
+    console.error('Error fetching GTM containers:', error);
+    throw error;
+  }
+}
 
 /************************************************************************************
   Delete a single or multiple containers
@@ -21,16 +73,18 @@ export async function deleteContainers(
   accountId: string,
   selectedContainers: Set<string>
 ) {
-  const cookie: any = cookies();
-  const cookieHeader: any = headers().get('cookie');
+  const session = await getServerSession(authOptions);
+
+  const userId = session?.user?.id;
+
+  const accessToken = await getAccessToken(userId);
   const baseUrl = getURL();
   const errors: string[] = [];
 
   const requestHeaders = {
     'Content-Type': 'application/json',
-    ...(cookie && { Cookie: cookieHeader }),
+    Authorization: `Bearer ${accessToken}`,
   };
-
   const featureLimitReachedContainers: string[] = [];
 
   const deletePromises = Array.from(selectedContainers).map(
@@ -94,14 +148,18 @@ export async function deleteContainers(
     };
   }
 }
- 
+
 /************************************************************************************
   Create a single container or multiple containers
 ************************************************************************************/
 export async function createContainers(formData: FormCreateSchema) {
   try {
-    const cookie: any = cookies();
-    const cookieHeader: any = headers().get('cookie');
+    const session = await getServerSession(authOptions);
+
+    const userId = session?.user?.id;
+
+    const accessToken = await getAccessToken(userId);
+
     const baseUrl = getURL();
     const errors: string[] = [];
 
@@ -149,7 +207,7 @@ export async function createContainers(formData: FormCreateSchema) {
 
     const requestHeaders = {
       'Content-Type': 'application/json',
-      ...(cookie && { Cookie: cookieHeader }),
+      Authorization: `Bearer ${accessToken}`,
     };
 
     const featureLimitReachedContainers: string[] = [];
@@ -251,7 +309,7 @@ export async function createContainers(formData: FormCreateSchema) {
     };
   }
 }
- 
+
 /************************************************************************************
   Create a single container or multiple containers
 ************************************************************************************/
@@ -259,8 +317,12 @@ export async function updateContainers(
   formData: FormUpdateSchema // Replace 'any' with the actual type if known
 ) {
   try {
-    const cookie: any = cookies();
-    const cookieHeader: any = headers().get('cookie');
+    const session = await getServerSession(authOptions);
+
+    const userId = session?.user?.id;
+
+    const accessToken = await getAccessToken(userId);
+
     const baseUrl = getURL();
     const errors: string[] = [];
 
@@ -308,9 +370,8 @@ export async function updateContainers(
 
     const requestHeaders = {
       'Content-Type': 'application/json',
-      ...(cookie && { Cookie: cookieHeader }),
+      Authorization: `Bearer ${accessToken}`,
     };
-
     const featureLimitReachedContainers: string[] = [];
 
     const updatePromises = forms.map(async (containerData) => {
@@ -425,8 +486,12 @@ export async function combineContainers(
   formData: FormUpdateSchema // Replace 'any' with the actual type if known
 ) {
   try {
-    const cookie: any = cookies();
-    const cookieHeader: any = headers().get('cookie');
+    const session = await getServerSession(authOptions);
+
+    const userId = session?.user?.id;
+
+    const accessToken = await getAccessToken(userId);
+
     const baseUrl = getURL();
     const errors: string[] = [];
 
@@ -474,7 +539,7 @@ export async function combineContainers(
 
     const requestHeaders = {
       'Content-Type': 'application/json',
-      ...(cookie && { Cookie: cookieHeader }),
+      Authorization: `Bearer ${accessToken}`,
     };
 
     const featureLimitReachedContainers: string[] = [];

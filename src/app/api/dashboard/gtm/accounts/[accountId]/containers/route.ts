@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager/v2';
 import { QuotaLimitError, ValidationError } from '@/src/lib/exceptions';
@@ -27,7 +27,6 @@ async function validateGetParams(params) {
     limit: Joi.number().integer().min(1).max(100).required(),
     sort: Joi.string().valid('id', 'unitAmount', 'currency').required(),
     order: Joi.string().valid('asc', 'desc').required(),
-    userId: Joi.string().uuid().required(),
     accountIds: Joi.array()
       .items(Joi.string().pattern(/^\d{10}$/))
       .required(),
@@ -46,16 +45,17 @@ async function validateGetParams(params) {
 /************************************************************************************
   Function to list GTM containers
 ************************************************************************************/
-async function listGtmContainers(
+export async function listGtmContainers(
   userId: string,
   accessToken: string,
   accountId: string,
-  pageNumber: number,
-  limit: number
-): Promise<ResultType[]> {
+  pageNumber?: number,
+  limit?: number
+) {
   let retries = 0;
   const MAX_RETRIES = 3;
   const allResults: ResultType[] = [];
+  let delay = 1000;
 
   while (retries < MAX_RETRIES) {
     try {
@@ -66,6 +66,7 @@ async function listGtmContainers(
       );
 
       if (remaining > 0) {
+        let res;
         await limiter.schedule(async () => {
           const oauth2Client = createOAuth2Client(accessToken);
           if (!oauth2Client) {
@@ -73,40 +74,38 @@ async function listGtmContainers(
           }
 
           const gtm = new tagmanager_v2.Tagmanager({ auth: oauth2Client });
-          const res = await gtm.accounts.containers.list({
+          res = await gtm.accounts.containers.list({
             parent: `accounts/${accountId}`,
           });
+        });
 
-          const total = res.data.container?.length || 0;
-          allResults.push({
-            data: res.data.container,
-            meta: {
-              total,
-              pageNumber,
-              totalPages: Math.ceil(total / limit),
-              pageSize: limit,
-            },
-            errors: null,
-          });
+        const total = res.data.container?.length || 0;
+        allResults.push({
+          data: res.data.container,
+          meta: {
+            total,
+            pageNumber,
+            totalPages: Math.ceil(total / limit),
+            pageSize: limit,
+          },
+          errors: null,
         });
         return allResults; // Return results if successful
       } else {
         throw new Error('Rate limit exceeded');
       }
-    } catch (error: unknown) {
-      if (isErrorWithStatus(error) && error.status === 429) {
+    } catch (error: any) {
+      if (error.code === 429 || error.status === 429) {
+        console.warn('Rate limit exceeded. Retrying get containers...');
+        const jitter = Math.random() * 200;
+        await new Promise((resolve) => setTimeout(resolve, delay + jitter));
+        delay *= 2;
         retries++;
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        if (retries === MAX_RETRIES) {
-          throw new QuotaLimitError();
-        }
       } else {
         throw error;
       }
     }
   }
-
-  return allResults;
 }
 
 /************************************************************************************
@@ -117,7 +116,6 @@ async function listGtmContainers(
 ************************************************************************************/
 async function validatePostParams(params: any): Promise<PostParams> {
   const schema = Joi.object({
-    userId: Joi.string().uuid().required(),
     accountId: Joi.string().required(),
     name: Joi.string().required(),
     usageContext: Joi.array()
@@ -270,7 +268,7 @@ async function createGtmContainer(
     } catch (error: any) {
       if (error.code === 429 || error.status === 429) {
         // Log the rate limit error and wait before retrying
-        console.warn('Rate limit exceeded. Retrying...');
+        console.warn('Rate limit exceeded. Retrying create container');
         const jitter = Math.random() * 200;
         await new Promise((resolve) => setTimeout(resolve, delay + jitter));
         delay *= 2; // Exponential backoff
@@ -305,8 +303,7 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession(authOptions);
-
-    // Extract query parameters from the URL
+    const userId = session?.user?.id as string;
     const pageNumber = Number(request.nextUrl.searchParams.get('page')) || 1;
     const limit = Number(request.nextUrl.searchParams.get('limit')) || 10;
     const sort = request.nextUrl.searchParams.get('sort') || 'id';
@@ -319,20 +316,11 @@ export async function GET(
       limit,
       sort,
       order,
-      userId: session?.user?.id,
       accountIds: accountId ? [accountId] : [],
     };
 
     // Call validateGetParams to validate the parameters
-    const validatedParams = await validateGetParams(paramsJOI);
-
-    const { userId } = validatedParams;
-
-    if (!userId) {
-      logger.error('User ID is undefined');
-      return NextResponse.error();
-    }
-
+    await validateGetParams(paramsJOI);
     const accessToken = await getAccessToken(userId);
 
     // Call listGtmContainers for each accountId
@@ -348,8 +336,11 @@ export async function GET(
       })
     );
 
-    return NextResponse.json(allResults.flat());
-  } catch (error) {
+    return NextResponse.json(allResults.flat(), {
+      headers: { 'Content-Type': 'application/json' },
+      status: 200,
+    });
+  } catch (error: any) {
     if (error instanceof ValidationError) {
       console.error('Validation Error: ', error.message);
       return new NextResponse(JSON.stringify({ error: error.message }), {
@@ -357,9 +348,10 @@ export async function GET(
       });
     }
 
-    console.error('Error: ', error);
-    // Return a 500 status code for internal server error
-    return handleError(error);
+    logger.error('Error: ', error);
+    return new NextResponse(JSON.stringify({ error: error.message }), {
+      status: 500,
+    });
   }
 }
 
@@ -380,13 +372,14 @@ export async function POST(
   try {
     const limit = Number(request.nextUrl.searchParams.get('limit')) || 10;
     const session = await getServerSession(authOptions);
+    const userId = session?.user?.id as string;
+
     const body = JSON.parse(await request.text());
 
     // Extract query parameters from the URL
 
     // Create a JavaScript object with the extracted parameters
     const paramsJOI = {
-      userId: session?.user?.id,
       accountId: params.accountId,
       name: body.name,
       usageContext: [body.usageContext],
@@ -395,7 +388,7 @@ export async function POST(
     };
 
     const validatedParams = await validatePostParams(paramsJOI);
-    const { userId, name, usageContext, domainName, notes, accountId } =
+    const { name, usageContext, domainName, notes, accountId } =
       validatedParams;
     const accessToken = await getAccessToken(userId);
 

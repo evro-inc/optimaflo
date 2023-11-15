@@ -4,21 +4,26 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 });
 const nextConfig = {
   experimental: {
-    serverActions: true,
     optimizeCss: true,
   },
   images: {
-    domains: [
-      'lh3.googleusercontent.com',
-      'images.unsplash.com',
-      'cdn.sanity.io',
-    ], // splash.com is for testing only
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'cdn.sanity.io',
+      },
+    ],
   },
   typescript: {
     ignoreBuildErrors: true,
-  },
-  env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
   },
 };
 

@@ -2,7 +2,7 @@
 import dynamic from 'next/dynamic';
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { deleteContainers } from '@/src/lib/actions';
+import { deleteContainers } from '@/src/lib/actions/containers';
 import { ContainerType } from '@/types/types';
 import {
   selectGlobal,
@@ -15,6 +15,7 @@ import {
   setCurrentPage,
   setIsLimitReached,
   setSelectedRows,
+  toggleAllSelected,
 } from '@/src/app/redux/tableSlice';
 import logger from '@/src/lib/logger';
 import FormCombineContainer from './combineContainer';
@@ -33,11 +34,11 @@ const LimitReached = dynamic(
   () => import('../../modals/limitReached').then((mod) => mod.LimitReached),
   { ssr: false }
 );
-const FormCreateContainer = dynamic(() => import('./createContainer'), {
+const FormCreateContainer = dynamic(() => import('./create'), {
   ssr: false,
 });
 
-const FormUpdateContainer = dynamic(() => import('./updateContainer'), {
+const FormUpdateContainer = dynamic(() => import('./update'), {
   ssr: false,
 });
 
@@ -48,6 +49,8 @@ export default function ContainerTable({ accounts, containers }) {
 
   const { itemsPerPage, selectedRows, currentPage, isLimitReached } =
     useSelector(selectTable);
+
+  const { allSelected } = useSelector(selectTable);
 
   const containersPerPage = 10;
   const totalPages = Math.ceil(
@@ -101,8 +104,10 @@ export default function ContainerTable({ accounts, containers }) {
   };
 
   const toggleAll = () => {
-    if (Object.keys(selectedRows).length === containers.length) {
+    if (allSelected) {
+      // If all rows are currently selected, deselect all
       dispatch(setSelectedRows({}));
+      dispatch(toggleAllSelected());
     } else {
       const newSelectedRows = {};
       containers.forEach((container) => {
@@ -117,6 +122,7 @@ export default function ContainerTable({ accounts, containers }) {
         };
       });
       dispatch(setSelectedRows(newSelectedRows));
+      dispatch(toggleAllSelected());
     }
   };
 
@@ -268,6 +274,7 @@ export default function ContainerTable({ accounts, containers }) {
                             className="shrink-0 border-gray-200 rounded text-blue-600 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:checked:bg-blue-500 dark:checked:border-blue-500 dark:focus:ring-offset-gray-800"
                             id="hs-at-with-checkboxes-main"
                             onChange={toggleAll}
+                            checked={allSelected}
                           />
                           <span className="sr-only">Checkbox</span>
                         </label>
@@ -315,13 +322,13 @@ export default function ContainerTable({ accounts, containers }) {
                     </tr>
                   </thead>
 
-                  {currentItems.map((container: ContainerType) => (
+                  
                     <tbody
                       className="divide-y divide-gray-200 dark:divide-gray-700"
-                      key={container.containerId}
                     >
                       {/* ROW */}
-                      <tr>
+                    {currentItems.map((container: ContainerType) => (
+                      <tr key={`${container.accountId}-${container.containerId}`}>
                         <td className="h-px w-px whitespace-nowrap">
                           <div className="pl-6 py-2">
                             <label
@@ -406,8 +413,9 @@ export default function ContainerTable({ accounts, containers }) {
                           </div>
                         </td>
                       </tr>
+                    ))}
                     </tbody>
-                  ))}
+
                 </table>
                 {/* End Table */}
 

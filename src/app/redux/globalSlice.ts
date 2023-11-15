@@ -20,12 +20,16 @@ export const globalSlice = createSlice({
     },
     toggleCombineContainer: (state) => {
       state.showCombineContainer = !state.showCombineContainer;
-    }
+    },
   },
 });
 
-export const { setLoading, toggleUpdateContainer, toggleCreateContainer, toggleCombineContainer } =
-  globalSlice.actions;
+export const {
+  setLoading,
+  toggleUpdateContainer,
+  toggleCreateContainer,
+  toggleCombineContainer,
+} = globalSlice.actions;
 export const selectGlobal = (state) => state.global;
 export const selectIsLoading = (state) => state.global.isLoading;
 export default globalSlice.reducer;
