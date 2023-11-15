@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager/v2';
-import { createOAuth2Client } from '@/src/lib/oauth2Client';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../../auth/[...nextauth]/route';
 import Joi from 'joi';
@@ -57,11 +55,16 @@ export async function listGtmAccounts(userId, accessToken, limit?, pageNumber?) 
           data = await response.json();
         });
 
+        pageNumber = pageNumber || 1;
+        limit = limit || 10;  // Default limit value
+
+
         const startIndex = (pageNumber - 1) * limit;
         const paginatedAccounts = data.account.slice(
           startIndex,
           startIndex + limit
         );
+        
 
         return {
           data: paginatedAccounts,

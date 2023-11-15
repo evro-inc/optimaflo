@@ -322,13 +322,13 @@ export default function ContainerTable({ accounts, containers }) {
                     </tr>
                   </thead>
 
-                  {currentItems.map((container: ContainerType) => (
+                  
                     <tbody
                       className="divide-y divide-gray-200 dark:divide-gray-700"
-                      key={container.containerId}
                     >
                       {/* ROW */}
-                      <tr>
+                    {currentItems.map((container: ContainerType) => (
+                      <tr key={`${container.accountId}-${container.containerId}`}>
                         <td className="h-px w-px whitespace-nowrap">
                           <div className="pl-6 py-2">
                             <label
@@ -413,8 +413,9 @@ export default function ContainerTable({ accounts, containers }) {
                           </div>
                         </td>
                       </tr>
+                    ))}
                     </tbody>
-                  ))}
+
                 </table>
                 {/* End Table */}
 
