@@ -4,16 +4,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager/v2';
 import { QuotaLimitError, ValidationError } from '@/src/lib/exceptions';
 import { createOAuth2Client } from '@/src/lib/oauth2Client';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '../../../../../auth/[...nextauth]/route';
 import prisma from '@/src/lib/prisma';
 import Joi from 'joi';
 import { isErrorWithStatus } from '@/src/lib/fetch/dashboard';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
 import logger from '@/src/lib/logger';
 import { limiter } from '@/src/lib/bottleneck';
-import { getAccessToken, handleError } from '@/src/lib/fetch/apiUtils';
+import { handleError } from '@/src/lib/fetch/apiUtils';
 import { PostParams, ResultType } from '@/types/types';
+import { clerkClient, currentUser, useSession } from '@clerk/nextjs';
+import { notFound } from 'next/navigation';
 
 /************************************************************************************
  * GET UTILITY FUNCTIONS
@@ -301,9 +301,11 @@ export async function GET(
     };
   }
 ) {
+  const user = await currentUser()
+  if (!user) return notFound()
+  const userId = user?.id as string;
+
   try {
-    const session = await getServerSession(authOptions);
-    const userId = session?.user?.id as string;
     const pageNumber = Number(request.nextUrl.searchParams.get('page')) || 1;
     const limit = Number(request.nextUrl.searchParams.get('limit')) || 10;
     const sort = request.nextUrl.searchParams.get('sort') || 'id';
@@ -321,14 +323,14 @@ export async function GET(
 
     // Call validateGetParams to validate the parameters
     await validateGetParams(paramsJOI);
-    const accessToken = await getAccessToken(userId);
+    const accessToken = await clerkClient.users.getUserOauthAccessToken(user?.id, "oauth_google")
 
     // Call listGtmContainers for each accountId
     const allResults = await Promise.all(
       (accountId ? [accountId] : []).map(async (accountId) => {
         return await listGtmContainers(
           userId,
-          accessToken,
+          accessToken[0].token,
           accountId,
           pageNumber,
           limit
@@ -369,10 +371,12 @@ export async function POST(
     };
   }
 ) {
+  const user = await currentUser()
+  if (!user) return notFound()
+  const userId = user?.id;
+
   try {
     const limit = Number(request.nextUrl.searchParams.get('limit')) || 10;
-    const session = await getServerSession(authOptions);
-    const userId = session?.user?.id as string;
 
     const body = JSON.parse(await request.text());
 
@@ -390,7 +394,7 @@ export async function POST(
     const validatedParams = await validatePostParams(paramsJOI);
     const { name, usageContext, domainName, notes, accountId } =
       validatedParams;
-    const accessToken = await getAccessToken(userId);
+    const accessToken = await clerkClient.users.getUserOauthAccessToken(user?.id, "oauth_google")
 
     // check tier limit
     const tierLimitRecord = await prisma.tierLimit.findFirst({
@@ -423,7 +427,7 @@ export async function POST(
 
     const response = await createGtmContainer(
       userId,
-      accessToken,
+      accessToken[0].token,
       accountId,
       name,
       usageContext,

@@ -2,7 +2,7 @@
 import dynamic from 'next/dynamic';
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { deleteContainers } from '@/src/lib/actions/containers';
+import { DeleteContainers } from '@/src/lib/actions/containers';
 import { ContainerType } from '@/types/types';
 import {
   selectGlobal,
@@ -140,7 +140,7 @@ export default function ContainerTable({ accounts, containers }) {
         .filter(([, rowData]) => rowData.accountId === accountId)
         .map(([containerId]) => containerId);
 
-      return deleteContainers(accountId, new Set(containersToDelete));
+      return DeleteContainers(accountId, new Set(containersToDelete));
     });
 
     const deletePromise = Promise.all(deleteOperations);
@@ -322,13 +322,12 @@ export default function ContainerTable({ accounts, containers }) {
                     </tr>
                   </thead>
 
-                  
-                    <tbody
-                      className="divide-y divide-gray-200 dark:divide-gray-700"
-                    >
-                      {/* ROW */}
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {/* ROW */}
                     {currentItems.map((container: ContainerType) => (
-                      <tr key={`${container.accountId}-${container.containerId}`}>
+                      <tr
+                        key={`${container.accountId}-${container.containerId}`}
+                      >
                         <td className="h-px w-px whitespace-nowrap">
                           <div className="pl-6 py-2">
                             <label
@@ -414,8 +413,7 @@ export default function ContainerTable({ accounts, containers }) {
                         </td>
                       </tr>
                     ))}
-                    </tbody>
-
+                  </tbody>
                 </table>
                 {/* End Table */}
 

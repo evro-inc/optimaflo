@@ -1,7 +1,7 @@
 'use client';
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { createContainers } from '@/src/lib/actions/containers';
+import { CreateContainers } from '@/src/lib/actions/containers';
 import { LimitReached } from '../../modals/limitReached';
 import { ButtonGroup } from '../../ButtonGroup/ButtonGroup';
 import { XMarkIcon } from '@heroicons/react/24/solid';
@@ -79,7 +79,7 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
     try {
-      const res = (await createContainers({ forms })) as CreateResult;
+      const res = (await CreateContainers({ forms })) as CreateResult;
 
       if (res.limitReached) {
         dispatch(setIsLimitReached(true)); // Set limitReached to true using Redux action

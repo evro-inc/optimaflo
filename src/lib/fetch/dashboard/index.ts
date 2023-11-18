@@ -2,8 +2,8 @@
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager/v2';
 import { OAuth2Client } from 'google-auth-library';
 import prisma from '@/src/lib/prisma';
-import { getServerSession } from 'next-auth/next';
 import logger from '../../logger';
+import { useSession } from '@clerk/nextjs';
 
 export function isErrorWithStatus(error: unknown): error is { status: number } {
   return (error as { status: number }).status !== undefined;
@@ -331,18 +331,4 @@ export async function fetchGASettings(userId) {
       }
     }
   }
-}
-
-export async function getSessionUserId(authOptions) {
-  let session;
-  let userId;
-  try {
-    session = await getServerSession(authOptions);
-    userId = session?.user?.id;
-  } catch (error) {
-    logger.error('Error getting session from request', error);
-    // handle the error appropriately
-    throw error; // or return null, depending on how you want to handle the error
-  }
-  return userId;
 }

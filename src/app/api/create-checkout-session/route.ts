@@ -1,13 +1,12 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { stripe } from '@/src/lib/stripe';
 import { getURL } from '@/src/lib/helpers';
-import { authOptions } from '../auth/[...nextauth]/route';
 import prisma from '@/src/lib/prisma';
 import logger from '@/src/lib/logger';
+import { useSession } from '@clerk/nextjs';
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions);
+    const {session} = useSession();
 
   if (!session || !session.user || !session.user?.id || !session.user?.email) {
     throw new Error('Not authenticated');

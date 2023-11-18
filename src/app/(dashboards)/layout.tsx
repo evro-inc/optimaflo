@@ -13,9 +13,9 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <ReduxProvider>
-        <Providers>
+    <ReduxProvider>
+      <Providers>
+        <html lang="en">
           <body className="bg-gray-50">
             {/* ========== HEADER ========== */}
             <NavApp />
@@ -40,8 +40,8 @@ export default function DashboardLayout({
             {/* End Content */}
             {/* ========== END MAIN CONTENT ========== */}
           </body>
-        </Providers>
-      </ReduxProvider>
-    </html>
+        </html>
+      </Providers>
+    </ReduxProvider>
   );
 }

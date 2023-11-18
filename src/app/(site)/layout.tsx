@@ -23,21 +23,21 @@ export default function RootLayout({
   // added suppressHydrationWarning to html tag to prevent hydration mismatch error
   return (
     <>
-      <html
-        lang="en"
-        suppressHydrationWarning
-        className={`${openSans.className}`}
-      >
-        <body>
-          <ReduxProvider>
-            <Providers>
+      <ReduxProvider>
+        <Providers>
+          <html
+            lang="en"
+            suppressHydrationWarning
+            className={`${openSans.className}`}
+          >
+            <body>
               <Navbar />
               {children}
               <Footer />
-            </Providers>
-          </ReduxProvider>
-        </body>
-      </html>
+            </body>
+          </html>
+        </Providers>
+      </ReduxProvider>
       {/* <Cover /> */}
     </>
   );

@@ -1,9 +1,8 @@
 import type { Metadata } from 'next';
 import React from 'react';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
 import { redirect } from 'next/navigation';
 import AccountTable from '@/src/components/client/GTM/accounts/table';
+import { useAuth } from "@clerk/nextjs";
 
 export const metadata: Metadata = {
   title: 'Overview',
@@ -11,12 +10,6 @@ export const metadata: Metadata = {
 };
 
 export default async function AccountPage() {
-  const session = await getServerSession(authOptions);
-
-  // if no session, redirect to home page
-  if (!session) {
-    redirect('/');
-  }
 
   return (
     <>

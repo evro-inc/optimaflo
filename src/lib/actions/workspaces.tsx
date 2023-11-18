@@ -9,8 +9,7 @@ import z from 'zod';
 import { getURL } from '@/src/lib/helpers';
 import { gtmListContainers } from './containers';
 import { getAccessToken } from '../fetch/apiUtils';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
+import { useSession } from '@clerk/nextjs';
 
 // Define the types for the form data
 type FormCreateSchema = z.infer<typeof CreateWorkspaceSchema>;
@@ -60,18 +59,14 @@ export async function gtmListWorkspaces() {
 /************************************************************************************
   Delete a single or multiple workspaces
 ************************************************************************************/
-export async function deleteWorkspaces(
+export async function DeleteWorkspaces(
   accountId: string,
   workspaces: { containerId: string; workspaceId: string }[]
 ) {
   const errors: string[] = [];
-
-  const session = await getServerSession(authOptions);
-
+  const { session } = useSession();
   const userId = session?.user?.id;
-
   const accessToken = await getAccessToken(userId);
-
   const baseUrl = getURL();
 
   const requestHeaders = {
@@ -137,7 +132,7 @@ export async function deleteWorkspaces(
 ************************************************************************************/
 export async function createWorkspaces(formData: FormCreateSchema) {
   try {
-    const session = await getServerSession(authOptions);
+      const {session} = useSession();
 
     const userId = session?.user?.id;
 
@@ -299,7 +294,7 @@ export async function createWorkspaces(formData: FormCreateSchema) {
 ************************************************************************************/
 export async function updateWorkspaces(formData: FormUpdateSchema) {
   try {
-    const session = await getServerSession(authOptions);
+      const {session} = useSession();
     const userId = session?.user?.id;
     const accessToken = await getAccessToken(userId);
     const baseUrl = getURL();

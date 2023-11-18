@@ -1,9 +1,8 @@
-import { getServerSession } from 'next-auth/next';
 import { NextResponse } from 'next/server';
-import { authOptions } from './auth/[...nextauth]/route';
+import { useSession } from '@clerk/nextjs';
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
+    const {session} = useSession();
 
   if (!session) {
     return new NextResponse(JSON.stringify({ error: 'unauthorized' }), {

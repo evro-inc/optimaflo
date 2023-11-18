@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '../../../auth/[...nextauth]/route';
 import Joi from 'joi';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
 import logger from '@/src/lib/logger';
 import { limiter } from '@/src/lib/bottleneck';
-import { getAccessToken } from '@/src/lib/fetch/apiUtils';
 import { ValidationError } from '@/src/lib/exceptions';
+import { clerkClient, currentUser } from '@clerk/nextjs';
+import { notFound } from 'next/navigation';
+
 
 // Separate out the validation logic into its own function
 async function validateParams(params) {
@@ -25,7 +25,12 @@ async function validateParams(params) {
 }
 
 // Separate out the logic to list GTM accounts into its own function
-export async function listGtmAccounts(userId, accessToken, limit?, pageNumber?) {
+export async function listGtmAccounts(
+  userId,
+  accessToken,
+  limit?,
+  pageNumber?
+) {
   let retries = 0;
   const MAX_RETRIES = 3;
   let delay = 1000;
@@ -46,25 +51,23 @@ export async function listGtmAccounts(userId, accessToken, limit?, pageNumber?) 
       if (remaining > 0) {
         let data;
         await limiter.schedule(async () => {
-          const response = await fetch(url, { headers });
+          const response = await fetch(url, { headers });          
 
           if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}. ${response.url}. ${response.json()}`);
           }
 
           data = await response.json();
         });
 
         pageNumber = pageNumber || 1;
-        limit = limit || 10;  // Default limit value
-
+        limit = limit || 10; // Default limit value
 
         const startIndex = (pageNumber - 1) * limit;
         const paginatedAccounts = data.account.slice(
           startIndex,
           startIndex + limit
         );
-        
 
         return {
           data: paginatedAccounts,
@@ -95,9 +98,10 @@ export async function listGtmAccounts(userId, accessToken, limit?, pageNumber?) 
 }
 // Refactored GET handler
 export async function GET(request: NextRequest) {
+  const user = await currentUser()
+  if (!user) return notFound()
+
   try {
-    const session = await getServerSession(authOptions);
-    const userId = session?.user?.id as string;
     const pageNumber = Number(request.nextUrl.searchParams.get('page')) || 1;
     const limit = Number(request.nextUrl.searchParams.get('limit')) || 10;
     const sort = request.nextUrl.searchParams.get('sort') || 'id';
@@ -111,11 +115,12 @@ export async function GET(request: NextRequest) {
     };
 
     await validateParams(paramsJOI);
-    const accessToken = await getAccessToken(userId);
+    const accessToken = await clerkClient.users.getUserOauthAccessToken(user?.id, "oauth_google")   
+        
 
     const response = await listGtmAccounts(
-      userId,
-      accessToken,
+      user?.id,
+      accessToken[0].token,
       limit,
       pageNumber
     );
@@ -124,6 +129,9 @@ export async function GET(request: NextRequest) {
       headers: { 'Content-Type': 'application/json' },
       status: 200,
     });
+
+    console.log('getResult', getResult);
+    
 
     return getResult;
   } catch (error: any) {

@@ -8,8 +8,7 @@ import logger from '../logger';
 import { getURL } from '@/src/lib/helpers';
 import z from 'zod';
 import { getAccessToken } from '../fetch/apiUtils';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
+import { useSession } from '@clerk/nextjs';
 
 // Define the types for the form data
 type FormCreateSchema = z.infer<typeof CreateContainerSchema>;
@@ -69,11 +68,11 @@ export async function gtmListContainers() {
 /************************************************************************************
   Delete a single or multiple containers
 ************************************************************************************/
-export async function deleteContainers(
+export async function DeleteContainers(
   accountId: string,
   selectedContainers: Set<string>
 ) {
-  const session = await getServerSession(authOptions);
+    const {session} = useSession();
 
   const userId = session?.user?.id;
 
@@ -152,9 +151,10 @@ export async function deleteContainers(
 /************************************************************************************
   Create a single container or multiple containers
 ************************************************************************************/
-export async function createContainers(formData: FormCreateSchema) {
+export async function CreateContainers(formData: FormCreateSchema) {
+        const {session} = useSession();
+
   try {
-    const session = await getServerSession(authOptions);
 
     const userId = session?.user?.id;
 
@@ -317,7 +317,7 @@ export async function updateContainers(
   formData: FormUpdateSchema // Replace 'any' with the actual type if known
 ) {
   try {
-    const session = await getServerSession(authOptions);
+      const {session} = useSession();
 
     const userId = session?.user?.id;
 
@@ -486,7 +486,7 @@ export async function combineContainers(
   formData: FormUpdateSchema // Replace 'any' with the actual type if known
 ) {
   try {
-    const session = await getServerSession(authOptions);
+      const {session} = useSession();
 
     const userId = session?.user?.id;
 

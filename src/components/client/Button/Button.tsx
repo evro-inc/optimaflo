@@ -7,9 +7,8 @@ import {
   Bars3BottomRightIcon,
   XMarkIcon,
 } from '@heroicons/react/24/solid';
-import { signOut } from 'next-auth/react';
-import router from 'next/router';
 import Link from 'next/link';
+import { SignInButton, SignOutButton } from '@clerk/nextjs';
 
 const getModeClasses = (variant, billingInterval) => {
   let baseClasses = '';
@@ -208,13 +207,13 @@ export const ButtonSignIn = ({
   }, [variant, billingInterval]);
 
   return (
-    <Link
-      href="/api/auth/signin"
-      aria-label="Sign Up with Google"
-      className={`${BASE_BUTTON_CLASSES} ${computedClasses} w-36 mx-5 lg:mx-0`}
-    >
-      <button {...props}>{text}</button>
-    </Link>
+    <SignInButton>
+      <div
+        className={`${BASE_BUTTON_CLASSES} ${computedClasses} w-36 mx-5 lg:mx-0`}
+      >
+        <button {...props}>{text}</button>
+      </div>
+    </SignInButton>
   );
 };
 
@@ -227,10 +226,6 @@ export const ButtonSignOut = ({
   billingInterval,
   ...props
 }) => {
-  const handleSignOut = async () => {
-    await signOut();
-    router.push('/');
-  };
 
   const computedClasses = useMemo(() => {
     const modeClass = getModeClasses(variant, billingInterval);
@@ -239,13 +234,14 @@ export const ButtonSignOut = ({
   }, [variant, billingInterval]);
 
   return (
-    <button
-      className={`${BASE_BUTTON_CLASSES} ${computedClasses}`}
-      onClick={handleSignOut} // And this line
-      {...props}
-    >
-      {text}
-    </button>
+    <SignOutButton>
+      <button
+        className={`${BASE_BUTTON_CLASSES} ${computedClasses}`}
+        {...props}
+      >
+        {text}
+      </button>
+    </SignOutButton>
   );
 };
 

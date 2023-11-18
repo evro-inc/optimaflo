@@ -4,12 +4,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager/v2';
 import { QuotaLimitError } from '@/src/lib/exceptions';
 import { createOAuth2Client } from '@/src/lib/oauth2Client';
-import { getServerSession } from 'next-auth/next';
 import prisma from '@/src/lib/prisma';
 import Joi from 'joi';
 import { isErrorWithStatus } from '@/src/lib/fetch/dashboard';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
-import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
 import { RequestParams } from '@/types/gtm';
 import {
   firstPartyCookie,
@@ -21,6 +19,7 @@ import {
   firstPartyCookieValidationSchema,
 } from '@/src/lib/fetch/dashboard/gtm/validation';
 import logger from '@/src/lib/logger';
+import { useSession } from '@clerk/nextjs';
 
 export async function GET(
   req: NextRequest,
@@ -34,8 +33,9 @@ export async function GET(
     };
   }
 ) {
+        const {session} = useSession();
+
   try {
-    const session = await getServerSession(authOptions);
 
     const accountId = params.accountId;
     const containerId = params.containerId;
@@ -173,7 +173,7 @@ export async function POST(
   }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+      const {session} = useSession();
     const body = await request.json();
 
     // Extract query parameters from the URL

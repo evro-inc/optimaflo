@@ -9,8 +9,8 @@ generator client {
 }
 
 model Account {
-  id                String  @id @default(uuid())
-  userId            String  @db.Uuid
+  id                String  @id @default(cuid())
+  userId            String? @map("user_id")
   type              String
   provider          String
   providerAccountId String
@@ -22,7 +22,7 @@ model Account {
   id_token          String? @db.Text
   session_state     String?
 
-  user User @relation(fields: [userId], references: [id])
+  user User? @relation(fields: [userId], references: [id])
 
   @@unique([provider, providerAccountId])
 }
@@ -30,9 +30,9 @@ model Account {
 model Session {
   id           String   @id @default(cuid())
   sessionToken String   @unique
-  userId       String   @map("user_id") @db.Uuid
+  userId       String?  @map("user_id")
   expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model CheckoutSession {
@@ -40,7 +40,7 @@ model CheckoutSession {
   paymentStatus  String // or some suitable enum type if there's a limited set of possible statuses
   amountTotal    Int
   currency       String
-  userId         String       @map("user_id") @db.Uuid
+  userId         String       @map("user_id")
   subscriptionId String       @map("subscription_id")
   User           User         @relation(fields: [userId], references: [id])
   Subscription   Subscription @relation(fields: [subscriptionId], references: [id])
@@ -55,7 +55,7 @@ enum Role {
 }
 
 model User {
-  id                 String            @id @default(uuid()) @db.Uuid
+  id                 String            @id @default(cuid())
   stripeCustomerId   String?           @unique
   subscriptionId     String?           @unique
   subscriptionStatus String?
@@ -83,9 +83,9 @@ model VerificationToken {
 }
 
 model Customer {
-  id               String    @id @default(uuid()) @map("id") @db.Uuid
+  id               String    @id @default(cuid()) @map("id") @db.Uuid
   stripeCustomerId String    @unique @map("stripe_customer_id")
-  userId           String    @map("user_id") @db.Uuid
+  userId           String    @map("user_id")
   User             User      @relation(fields: [userId], references: [id])
   Invoices         Invoice[]
 }
@@ -146,9 +146,9 @@ enum SubscriptionStatus {
 }
 
 model Subscription {
-  id                 String             @id @default(uuid())
+  id                 String             @id @default(cuid())
   subId              String             @unique
-  userId             String             @map("user_id") @db.Uuid
+  userId             String             @map("user_id")
   status             SubscriptionStatus @default(trialing)
   metadata           Json?              @map("metadata")
   priceId            String             @map("price_id")
@@ -174,14 +174,14 @@ model Subscription {
 }
 
 model Feature {
-  id          String      @id @default(uuid())
+  id          String      @id @default(cuid())
   name        String      @unique
   description String?     @map("description")
   TierLimits  TierLimit[]
 }
 
 model TierLimit {
-  id             String        @id @default(uuid())
+  id             String        @id @default(cuid())
   subscriptionId String?
   createLimit    Int           @default(0)
   createUsage    Int           @default(0)
@@ -212,23 +212,23 @@ model Invoice {
   Customer       Customer     @relation(fields: [customerId], references: [stripeCustomerId])
   Subscription   Subscription @relation(fields: [subscriptionId], references: [id])
   User           User?        @relation(fields: [userId], references: [id])
-  userId         String?      @db.Uuid
+  userId         String?      @map("user_id")
 }
 
 model ProductAccess {
-  id        String  @id @default(uuid())
-  userId    String  @db.Uuid
+  id        String  @id @default(cuid())
+  userId    String? @map("user_id")
   productId String
   granted   Boolean @default(false)
-  User      User    @relation(fields: [userId], references: [id])
+  User      User?   @relation(fields: [userId], references: [id])
   Product   Product @relation(fields: [productId], references: [id])
 
   @@unique([userId, productId])
 }
 
 model gtm {
-  id          String @id @default(uuid())
-  userId      String @map("user_id") @db.Uuid
+  id          String @id @default(cuid())
+  userId      String @map("user_id")
   accountId   String @map("account_id")
   containerId String @map("container_id")
   workspaceId String @map("workspace_id")

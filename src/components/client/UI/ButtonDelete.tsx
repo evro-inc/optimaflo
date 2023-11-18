@@ -3,7 +3,7 @@ import React from 'react';
 import { ButtonDelete } from '../Button/Button';
 import { useDispatch, useSelector } from 'react-redux';
 import { selectTable, setIsLimitReached } from '@/src/app/redux/tableSlice';
-import { deleteWorkspaces } from '@/src/lib/actions/workspaces';
+import { DeleteWorkspaces } from '@/src/lib/actions/workspaces';
 import logger from '@/src/lib/logger';
 
 function ButtonDel() {
@@ -16,7 +16,7 @@ function ButtonDel() {
       const deleteOperations = Object.values(selectedRows).map(
         (rowData: any) => {
           const { accountId, containerId, workspaceId } = rowData;
-          return deleteWorkspaces(accountId, [{ containerId, workspaceId }]);
+          return DeleteWorkspaces(accountId, [{ containerId, workspaceId }]);
         }
       );
 

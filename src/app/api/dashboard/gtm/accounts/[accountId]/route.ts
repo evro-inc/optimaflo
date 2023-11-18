@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager/v2';
 import { QuotaLimitError } from '@/src/lib/exceptions';
 import { createOAuth2Client } from '@/src/lib/oauth2Client';
-import { getServerSession } from 'next-auth/next';
 import prisma from '@/src/lib/prisma';
 import Joi from 'joi';
 import { isErrorWithStatus } from '@/src/lib/fetch/dashboard';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
-import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
 import logger from '@/src/lib/logger';
+import { clerkClient, currentUser } from '@clerk/nextjs';
+import { notFound } from 'next/navigation';
 
 // Get Account by ID
 export async function GET(
@@ -21,8 +21,11 @@ export async function GET(
     };
   }
 ) {
+  const user = await currentUser()
+  if (!user) return notFound()
+  const userId = user?.id;
+
   try {
-    const session = await getServerSession(authOptions);
     const { accountId: accountId } = params;
     const schema = Joi.object({
       accountId: Joi.string()
@@ -39,16 +42,7 @@ export async function GET(
       });
     }
 
-    const userId = session?.user?.id;
-
-    // using userId get accessToken from prisma account table
-    const user = await prisma.account.findFirst({
-      where: {
-        userId: userId,
-      },
-    });
-
-    const accessToken = user?.access_token;
+    const accessToken = await clerkClient.users.getUserOauthAccessToken(user?.id, "oauth_google")   
 
     if (!accessToken) {
       // If the access token is null or undefined, return an error response
@@ -72,7 +66,7 @@ export async function GET(
 
         if (remaining > 0) {
           // If the data is not in the cache, fetch it from the API
-          const oauth2Client = createOAuth2Client(accessToken);
+          const oauth2Client = createOAuth2Client(accessToken[0].token);
           if (!oauth2Client) {
             // If oauth2Client is null, return an error response or throw an error
             return NextResponse.error();
@@ -134,9 +128,12 @@ export async function GET(
 
 // Update Account by ID
 export async function PATCH(request: NextRequest) {
+  const user = await currentUser()
+  if (!user) return notFound()
+
+  const userId = user?.id;
+
   try {
-    const session = await getServerSession(authOptions);
-    const userId = session?.user?.id;
 
     // Parse the request body
     const body = JSON.parse(await request.text());
@@ -166,7 +163,7 @@ export async function PATCH(request: NextRequest) {
       },
     });
 
-    const accessToken = user?.access_token;
+    const accessToken = await clerkClient.users.getUserOauthAccessToken(user?.id, "oauth_google")
 
     if (!accessToken) {
       // If the access token is null or undefined, return an error response
@@ -193,7 +190,7 @@ export async function PATCH(request: NextRequest) {
           // If we haven't hit the rate limit, proceed with the API request
 
           // If the data is not in the cache, fetch it from the API
-          const oauth2Client = createOAuth2Client(accessToken);
+          const oauth2Client = createOAuth2Client(accessToken[0].token);
           if (!oauth2Client) {
             // If oauth2Client is null, return an error response or throw an error
             return NextResponse.error();

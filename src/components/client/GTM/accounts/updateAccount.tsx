@@ -1,14 +1,15 @@
 import { revalidatePath } from 'next/cache';
 import { getURL } from '@/src/lib/helpers';
 import { getAccessToken } from '@/src/lib/fetch/apiUtils';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
+import { useSession } from '@clerk/nextjs';
+
 
 function AccountFormUpdate() {
-  const handleSubmit = async (formData: FormData) => {
+  const HandleSubmit = async (formData: FormData) => {
     'use server';
+            const {session} = useSession();
+
     try {
-      const session = await getServerSession(authOptions);
 
       const userId = session?.user?.id;
 
@@ -45,7 +46,7 @@ function AccountFormUpdate() {
 
   return (
     <div>
-      <form action={handleSubmit}>
+      <form action={HandleSubmit}>
         <label>
           Account ID:
           <input type="text" name="accountId" />

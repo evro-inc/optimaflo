@@ -1,6 +1,7 @@
 'use client';
-import Link from 'next/link';
 import { useMemo } from 'react';
+import { SignUpButton } from '@clerk/nextjs';
+import Link from 'next/link';
 
 const getLinkModeClasses = (variant) => {
   switch (variant) {
@@ -23,7 +24,23 @@ const getLinkModeClasses = (variant) => {
 
 const BASE_LINK_CLASSES = 'cursor-pointer';
 
-export const LinkBody = ({ variant, text, href, ariaLabel, ...props }) => {
+export const LinkBody = ({ variant, text, ariaLabel, ...props }) => {
+  const computedClasses = useMemo(() => {
+    const modeClass = getLinkModeClasses(variant);
+    return [BASE_LINK_CLASSES, modeClass].join(' ');
+  }, [variant]);
+
+  return (
+    <SignUpButton>
+      <div className={computedClasses} {...props} aria-label={ariaLabel}>
+        <button {...props}>{text}</button>
+      </div>
+    </SignUpButton>
+  );
+};
+
+
+export const LinkNav = ({ variant, text, href, ariaLabel, ...props }) => {
   const computedClasses = useMemo(() => {
     const modeClass = getLinkModeClasses(variant);
     return [BASE_LINK_CLASSES, modeClass].join(' ');
