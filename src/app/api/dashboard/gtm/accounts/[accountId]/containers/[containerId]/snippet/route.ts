@@ -20,9 +20,8 @@ export async function GET(
     };
   }
 ) {
-        const {session} = useSession();
+  const { session } = useSession();
   try {
-
     const accountId = params.accountId;
     const containerId = params.containerId;
 

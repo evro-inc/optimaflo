@@ -6,10 +6,9 @@ import logger from '@/src/lib/logger';
 import { useSession } from '@clerk/nextjs';
 
 export async function POST() {
-        const {session} = useSession();
+  const { session } = useSession();
 
   try {
-
     if (
       !session ||
       !session.user ||

@@ -3,14 +3,14 @@ import { stripe } from '@/src/lib/stripe';
 import { getURL } from '@/src/lib/helpers';
 import prisma from '@/src/lib/prisma';
 import logger from '@/src/lib/logger';
-import { useSession } from '@clerk/nextjs';
+import { auth, currentUser } from '@clerk/nextjs';
+import { notFound } from 'next/navigation';
 
 export async function POST(request: NextRequest) {
-    const {session} = useSession();
+  const user = await currentUser();
+  const { userId } = auth();
 
-  if (!session || !session.user || !session.user?.id || !session.user?.email) {
-    throw new Error('Not authenticated');
-  }
+  if (!user) return notFound();
 
   const { price, quantity = 1, metadata = {} } = await request.json();
 
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     // Query the customer from the Prisma customer table using the user's ID
     const customerRecord = await prisma.customer.findFirst({
       where: {
-        userId: session.user?.id,
+        userId: userId,
       },
     });
 
@@ -33,12 +33,12 @@ export async function POST(request: NextRequest) {
       } catch (error) {
         logger.error({
           message: 'Customer not found in Stripe',
-          userId: session.user?.id,
+          userId: userId,
           error,
         });
 
         customer = await stripe.customers.create({
-          email: session.user?.email,
+          email: user?.emailAddresses[0].emailAddress,
         });
 
         // Update the customer record in Prisma with the new Stripe Customer ID
@@ -50,13 +50,13 @@ export async function POST(request: NextRequest) {
     } else {
       // If the customer record was not found, create a new one
       customer = await stripe.customers.create({
-        email: session.user?.email,
+        email: user?.emailAddresses[0].emailAddress,
       });
 
       // Create a new customer record in Prisma with the Stripe Customer ID
       await prisma.customer.create({
         data: {
-          userId: session.user?.id,
+          userId: userId,
           stripeCustomerId: customer.id,
         },
       });
@@ -75,7 +75,6 @@ export async function POST(request: NextRequest) {
       mode: 'subscription',
       allow_promotion_codes: true,
       subscription_data: {
-        trial_from_plan: true,
         metadata,
       },
       success_url: `${getURL()}/profile`,
@@ -88,7 +87,7 @@ export async function POST(request: NextRequest) {
   } catch (err: any) {
     logger.error({
       message: 'Error creating checkout session',
-      userId: session.user?.id,
+      userId: userId,
       error: err,
     });
     return new NextResponse(err.message, { status: 500 });

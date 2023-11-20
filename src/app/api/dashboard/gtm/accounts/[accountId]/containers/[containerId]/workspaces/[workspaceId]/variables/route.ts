@@ -33,10 +33,9 @@ export async function GET(
     };
   }
 ) {
-        const {session} = useSession();
+  const { session } = useSession();
 
   try {
-
     const accountId = params.accountId;
     const containerId = params.containerId;
     const workspaceId = params.workspaceId;
@@ -173,7 +172,7 @@ export async function POST(
   }
 ) {
   try {
-      const {session} = useSession();
+    const { session } = useSession();
     const body = await request.json();
 
     // Extract query parameters from the URL
@@ -234,7 +233,7 @@ export async function POST(
     };
 
     const schema = Joi.object({
-      userId: Joi.string().uuid().required(),
+      userId: Joi.string().required(),
       accountId: Joi.string()
         .pattern(/^\d{10}$/)
         .required(),

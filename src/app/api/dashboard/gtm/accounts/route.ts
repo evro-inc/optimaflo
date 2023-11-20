@@ -7,7 +7,6 @@ import { ValidationError } from '@/src/lib/exceptions';
 import { clerkClient, currentUser } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
 
-
 // Separate out the validation logic into its own function
 async function validateParams(params) {
   const schema = Joi.object({
@@ -51,10 +50,14 @@ export async function listGtmAccounts(
       if (remaining > 0) {
         let data;
         await limiter.schedule(async () => {
-          const response = await fetch(url, { headers });          
+          const response = await fetch(url, { headers });
 
           if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}. ${response.url}. ${response.json()}`);
+            throw new Error(
+              `HTTP error! status: ${response.status}. ${
+                response.statusText
+              }. ${response.url}. ${response.json()}`
+            );
           }
 
           data = await response.json();
@@ -98,8 +101,8 @@ export async function listGtmAccounts(
 }
 // Refactored GET handler
 export async function GET(request: NextRequest) {
-  const user = await currentUser()
-  if (!user) return notFound()
+  const user = await currentUser();
+  if (!user) return notFound();
 
   try {
     const pageNumber = Number(request.nextUrl.searchParams.get('page')) || 1;
@@ -115,8 +118,10 @@ export async function GET(request: NextRequest) {
     };
 
     await validateParams(paramsJOI);
-    const accessToken = await clerkClient.users.getUserOauthAccessToken(user?.id, "oauth_google")   
-        
+    const accessToken = await clerkClient.users.getUserOauthAccessToken(
+      user?.id,
+      'oauth_google'
+    );
 
     const response = await listGtmAccounts(
       user?.id,
@@ -129,9 +134,6 @@ export async function GET(request: NextRequest) {
       headers: { 'Content-Type': 'application/json' },
       status: 200,
     });
-
-    console.log('getResult', getResult);
-    
 
     return getResult;
   } catch (error: any) {

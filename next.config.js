@@ -23,7 +23,7 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'img.clerk.com',
-      }
+      },
     ],
   },
   typescript: {

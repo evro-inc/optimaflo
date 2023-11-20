@@ -82,7 +82,7 @@ export default function Navbar() {
                         <Image
                           className="object-cover rounded-full"
                           layout="fill"
-                          src={session?.user.image}
+                          src={session?.user?.imageUrl}
                           alt="Picture of the author"
                         />
                       </ButtonProfile>

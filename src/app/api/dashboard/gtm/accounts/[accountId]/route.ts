@@ -21,8 +21,8 @@ export async function GET(
     };
   }
 ) {
-  const user = await currentUser()
-  if (!user) return notFound()
+  const user = await currentUser();
+  if (!user) return notFound();
   const userId = user?.id;
 
   try {
@@ -42,7 +42,10 @@ export async function GET(
       });
     }
 
-    const accessToken = await clerkClient.users.getUserOauthAccessToken(user?.id, "oauth_google")   
+    const accessToken = await clerkClient.users.getUserOauthAccessToken(
+      user?.id,
+      'oauth_google'
+    );
 
     if (!accessToken) {
       // If the access token is null or undefined, return an error response
@@ -128,13 +131,12 @@ export async function GET(
 
 // Update Account by ID
 export async function PATCH(request: NextRequest) {
-  const user = await currentUser()
-  if (!user) return notFound()
+  const user = await currentUser();
+  if (!user) return notFound();
 
   const userId = user?.id;
 
   try {
-
     // Parse the request body
     const body = JSON.parse(await request.text());
 
@@ -163,7 +165,10 @@ export async function PATCH(request: NextRequest) {
       },
     });
 
-    const accessToken = await clerkClient.users.getUserOauthAccessToken(user?.id, "oauth_google")
+    const accessToken = await clerkClient.users.getUserOauthAccessToken(
+      user?.id,
+      'oauth_google'
+    );
 
     if (!accessToken) {
       // If the access token is null or undefined, return an error response

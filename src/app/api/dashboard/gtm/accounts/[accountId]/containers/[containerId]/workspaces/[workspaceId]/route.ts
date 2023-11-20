@@ -74,7 +74,9 @@ async function getWorkspace(
           const response = await fetch(url, { headers });
 
           if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
+            throw new Error(
+              `HTTP error! status: ${response.status}. ${response.statusText}`
+            );
           }
 
           data = await response.json();
@@ -99,7 +101,6 @@ async function getWorkspace(
   throw new Error('Maximum retries reached without a successful response.');
 }
 
-
 /************************************************************************************
  * REQUEST HANDLERS
  ************************************************************************************/
@@ -118,12 +119,11 @@ export async function GET(
     };
   }
 ) {
-  const user = await currentUser()
-  if (!user) return notFound()
-  const userId = user?.id;  
+  const user = await currentUser();
+  if (!user) return notFound();
+  const userId = user?.id;
 
   try {
-
     const paramsJOI = {
       accountId: params.accountId,
       containerId: params.containerId,
@@ -134,7 +134,10 @@ export async function GET(
 
     const { accountId, containerId, workspaceId } = validateParams;
 
-    const accessToken = await clerkClient.users.getUserOauthAccessToken(user?.id, "oauth_google")
+    const accessToken = await clerkClient.users.getUserOauthAccessToken(
+      user?.id,
+      'oauth_google'
+    );
 
     const data = await getWorkspace(
       userId,
@@ -177,12 +180,11 @@ export async function GET(
   UPDATE/PATCH request handler
 ************************************************************************************/
 export async function PATCH(request: NextRequest) {
-  const user = await currentUser()
-  if (!user) return notFound()
-  const userId = user?.id;  
+  const user = await currentUser();
+  if (!user) return notFound();
+  const userId = user?.id;
 
   try {
-
     // Parse the request body
     const body = JSON.parse(await request.text());
 
@@ -221,7 +223,10 @@ export async function PATCH(request: NextRequest) {
       });
     }
 
-    const accessToken = await clerkClient.users.getUserOauthAccessToken(user?.id, "oauth_google")
+    const accessToken = await clerkClient.users.getUserOauthAccessToken(
+      user?.id,
+      'oauth_google'
+    );
 
     if (!accessToken) {
       // If the access token is null or undefined, return an error response
@@ -370,12 +375,11 @@ export async function PATCH(request: NextRequest) {
   DELETE request handler
 ************************************************************************************/
 export async function DELETE(request: NextRequest) {
-  const user = await currentUser()
-  if (!user) return notFound()
-  const userId = user?.id;  
+  const user = await currentUser();
+  if (!user) return notFound();
+  const userId = user?.id;
 
   try {
-
     const url = request.url;
     const regex =
       /\/accounts\/([^/]+)\/containers\/([^/]+)\/workspaces\/([^/]+)/;
@@ -420,7 +424,10 @@ export async function DELETE(request: NextRequest) {
       });
     }
 
-    const accessToken = await clerkClient.users.getUserOauthAccessToken(user?.id, "oauth_google")
+    const accessToken = await clerkClient.users.getUserOauthAccessToken(
+      user?.id,
+      'oauth_google'
+    );
 
     if (!accessToken) {
       // If the access token is null or undefined, return an error response

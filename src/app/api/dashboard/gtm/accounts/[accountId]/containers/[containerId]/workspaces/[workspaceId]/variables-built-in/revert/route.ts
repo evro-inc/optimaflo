@@ -25,7 +25,7 @@ export async function POST(
     };
   }
 ) {
-        const {session} = useSession();
+  const { session } = useSession();
 
   try {
     const body = JSON.parse(await request.text());
@@ -46,7 +46,7 @@ export async function POST(
     };
 
     const schema = Joi.object({
-      userId: Joi.string().uuid().required(),
+      userId: Joi.string().required(),
       accountId: Joi.string()
         .pattern(/^\d{10}$/)
         .required(),

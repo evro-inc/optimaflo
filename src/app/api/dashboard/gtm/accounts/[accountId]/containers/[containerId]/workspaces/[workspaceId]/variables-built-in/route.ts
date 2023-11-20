@@ -24,10 +24,9 @@ export async function GET(
     };
   }
 ) {
-        const {session} = useSession();
+  const { session } = useSession();
 
   try {
-
     const accountId = params.accountId;
     const containerId = params.containerId;
     const workspaceId = params.workspaceId;
@@ -168,7 +167,7 @@ export async function POST(
     };
   }
 ) {
-        const {session} = useSession();
+  const { session } = useSession();
 
   try {
     const limit = Number(request.nextUrl.searchParams.get('limit')) || 10;
@@ -190,7 +189,7 @@ export async function POST(
     };
 
     const schema = Joi.object({
-      userId: Joi.string().uuid().required(),
+      userId: Joi.string().required(),
       accountId: Joi.string()
         .pattern(/^\d{10}$/)
         .required(),
@@ -382,7 +381,7 @@ export async function DELETE(
     };
   }
 ) {
-        const {session} = useSession();
+  const { session } = useSession();
 
   try {
     const limit = Number(request.nextUrl.searchParams.get('limit')) || 10;
@@ -404,7 +403,7 @@ export async function DELETE(
     };
 
     const schema = Joi.object({
-      userId: Joi.string().uuid().required(),
+      userId: Joi.string().required(),
       accountId: Joi.string()
         .pattern(/^\d{10}$/)
         .required(),

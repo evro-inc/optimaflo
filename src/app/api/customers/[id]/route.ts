@@ -14,7 +14,7 @@ export async function GET(
 ) {
   try {
     // Define a Joi schema for the customer ID
-    const schema = Joi.string().uuid().required();
+    const schema = Joi.string().required();
 
     // Validate the customer ID against the schema
     const { error } = schema.validate(params.id);
@@ -74,7 +74,7 @@ export async function PATCH(
     // Validate the incoming data
     const schema = Joi.object({
       stripeCustomerId: Joi.string().optional(),
-      userId: Joi.string().uuid().optional(),
+      userId: Joi.string().optional(),
     });
 
     const { error } = schema.validate(json);

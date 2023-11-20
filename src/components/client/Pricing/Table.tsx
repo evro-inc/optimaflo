@@ -11,7 +11,7 @@ import { LinkBody } from '../Links/Links';
 import { useSelector } from 'react-redux';
 import { selectUser } from '@/src/app/redux/userSlice';
 import { useUserDetails, useSubscription } from '@/src/lib/hooks/user';
-import { useSession } from '@clerk/clerk-react';
+import { useAuth } from '@clerk/nextjs';
 
 interface Props {
   products: ProductWithPrice[];
@@ -26,17 +26,14 @@ export default function PricingTable({ products = [] }: Props) {
 
   const [, /* priceIdLoading */ setPriceIdLoading] = useState<string>();
   const { subscription } = useSelector(selectUser);
-  const { session } = useSession();
 
   const [showAlert, setShowAlert] = useState(false);
-  const userId = session?.user?.id;
-  useUserDetails(userId);
-  useSubscription(userId);
+  const { userId } = useAuth();
 
   const handleCheckout = async (price: Price, product: ProductWithPrice) => {
     try {
       setPriceIdLoading(price.id);
-      if (!session) {
+      if (!userId) {
         setShowAlert(true); // Show the alert if there's no session
         return;
       } else {

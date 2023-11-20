@@ -22,8 +22,7 @@ export async function GET(
     };
   }
 ) {
-
-      const {session} = useSession();
+  const { session } = useSession();
   try {
     const accountId = params.accountId;
     const containerId = params.containerId;
@@ -155,7 +154,7 @@ export async function GET(
 // Update Version
 export async function PATCH(request: NextRequest) {
   try {
-      const {session} = useSession();
+    const { session } = useSession();
 
     // Parse the request body
     const body = JSON.parse(await request.text());
@@ -354,7 +353,7 @@ export async function PATCH(request: NextRequest) {
 // Delete Version
 export async function DELETE(request: NextRequest) {
   try {
-      const {session} = useSession();
+    const { session } = useSession();
 
     const url = request.url;
     const regex = /\/accounts\/([^/]+)\/containers\/([^/]+)\/versions\/([^/]+)/;
@@ -555,7 +554,7 @@ export async function DELETE(request: NextRequest) {
 // Delete Version
 export async function POST(request: NextRequest) {
   try {
-      const {session} = useSession();
+    const { session } = useSession();
 
     const url = request.url;
     const regex = /\/accounts\/([^/]+)\/containers\/([^/]+)\/versions\/([^/]+)/;

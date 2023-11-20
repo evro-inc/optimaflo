@@ -3,14 +3,12 @@ import { getURL } from '@/src/lib/helpers';
 import { getAccessToken } from '@/src/lib/fetch/apiUtils';
 import { useSession } from '@clerk/nextjs';
 
-
 function AccountFormUpdate() {
   const HandleSubmit = async (formData: FormData) => {
     'use server';
-            const {session} = useSession();
+    const { session } = useSession();
 
     try {
-
       const userId = session?.user?.id;
 
       const accessToken = await getAccessToken(userId);

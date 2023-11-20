@@ -39,7 +39,6 @@ export const LinkBody = ({ variant, text, ariaLabel, ...props }) => {
   );
 };
 
-
 export const LinkNav = ({ variant, text, href, ariaLabel, ...props }) => {
   const computedClasses = useMemo(() => {
     const modeClass = getLinkModeClasses(variant);

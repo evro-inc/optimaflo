@@ -176,10 +176,9 @@ export async function combineGtmData(
   POST request handler
 ************************************************************************************/
 export async function POST(request: NextRequest) {
-  const {session} = useSession();
+  const { session } = useSession();
 
   try {
-
     // Parse the request body
     const body = JSON.parse(await request.text());
 

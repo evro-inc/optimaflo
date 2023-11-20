@@ -20,10 +20,9 @@ export async function GET(
     };
   }
 ) {
-      const {session} = useSession();
+  const { session } = useSession();
 
   try {
-
     // Create a JavaScript object with the extracted parameters
     const paramsJOI = {
       userId: session?.user?.id,
@@ -32,7 +31,7 @@ export async function GET(
     };
 
     const schema = Joi.object({
-      userId: Joi.string().uuid().required(),
+      userId: Joi.string().required(),
       accountId: Joi.string()
         .pattern(/^\d{10}$/)
         .required(),

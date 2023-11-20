@@ -72,7 +72,7 @@ export async function DeleteContainers(
   accountId: string,
   selectedContainers: Set<string>
 ) {
-    const {session} = useSession();
+  const { session } = useSession();
 
   const userId = session?.user?.id;
 
@@ -152,10 +152,9 @@ export async function DeleteContainers(
   Create a single container or multiple containers
 ************************************************************************************/
 export async function CreateContainers(formData: FormCreateSchema) {
-        const {session} = useSession();
+  const { session } = useSession();
 
   try {
-
     const userId = session?.user?.id;
 
     const accessToken = await getAccessToken(userId);
@@ -317,7 +316,7 @@ export async function updateContainers(
   formData: FormUpdateSchema // Replace 'any' with the actual type if known
 ) {
   try {
-      const {session} = useSession();
+    const { session } = useSession();
 
     const userId = session?.user?.id;
 
@@ -486,7 +485,7 @@ export async function combineContainers(
   formData: FormUpdateSchema // Replace 'any' with the actual type if known
 ) {
   try {
-      const {session} = useSession();
+    const { session } = useSession();
 
     const userId = session?.user?.id;
 

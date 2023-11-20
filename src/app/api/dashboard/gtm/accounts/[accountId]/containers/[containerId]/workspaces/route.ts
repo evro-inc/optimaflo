@@ -63,7 +63,9 @@ export async function listGtmWorkspaces(
           const response = await fetch(url, { headers });
 
           if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
+            throw new Error(
+              `HTTP error! status: ${response.status}. ${response.statusText}`
+            );
           }
 
           const responseBody = await response.json();
@@ -103,7 +105,9 @@ export async function listGtmWorkspaces(
 ************************************************************************************/
 async function validatePostParams(params) {
   const schema = Joi.object({
-    accountId: Joi.string().pattern(/^\d{10}$/).required(),
+    accountId: Joi.string()
+      .pattern(/^\d{10}$/)
+      .required(),
     containerId: Joi.string().required(),
     name: Joi.string().required(),
     description: Joi.string().optional(),
@@ -116,11 +120,16 @@ async function validatePostParams(params) {
   return value;
 }
 
-
 /************************************************************************************
   Function to create GTM containers
 ************************************************************************************/
-async function createGtmWorkspace(accessToken, accountId, containerId, name, description) {
+async function createGtmWorkspace(
+  accessToken,
+  accountId,
+  containerId,
+  name,
+  description
+) {
   const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces`;
   const headers = {
     Authorization: `Bearer ${accessToken}`,
@@ -137,7 +146,9 @@ async function createGtmWorkspace(accessToken, accountId, containerId, name, des
   });
 
   if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
+    throw new Error(
+      `HTTP error! status: ${response.status}. ${response.statusText}`
+    );
   }
 
   return await response.json();
@@ -159,12 +170,11 @@ export async function GET(
     };
   }
 ) {
-  const user = await currentUser()
-  if (!user) return notFound()
-  const userId = user?.id;  
-  
-  try {
+  const user = await currentUser();
+  if (!user) return notFound();
+  const userId = user?.id;
 
+  try {
     const paramsJOI = {
       accountId: params.accountId,
       containerId: params.containerId,
@@ -172,7 +182,10 @@ export async function GET(
 
     const validateParams = await validateGetParams(paramsJOI);
     const { accountId, containerId } = validateParams;
-    const accessToken = await clerkClient.users.getUserOauthAccessToken(user?.id, "oauth_google")
+    const accessToken = await clerkClient.users.getUserOauthAccessToken(
+      user?.id,
+      'oauth_google'
+    );
 
     const data = await listGtmWorkspaces(
       userId,
@@ -214,10 +227,10 @@ export async function POST(
     };
   }
 ) {
-  const user = await currentUser()
-  if (!user) return notFound()
+  const user = await currentUser();
+  if (!user) return notFound();
   const userId = user?.id;
-  
+
   try {
     const body = JSON.parse(await request.text());
     const postParams = {
@@ -228,11 +241,17 @@ export async function POST(
     };
 
     const validatedParams = await validatePostParams(postParams);
-    const accessToken = await clerkClient.users.getUserOauthAccessToken(userId, "oauth_google")
+    const accessToken = await clerkClient.users.getUserOauthAccessToken(
+      userId,
+      'oauth_google'
+    );
     if (!accessToken) {
-      return new NextResponse(JSON.stringify({ message: 'Access token is missing' }), {
-        status: 401,
-      });
+      return new NextResponse(
+        JSON.stringify({ message: 'Access token is missing' }),
+        {
+          status: 401,
+        }
+      );
     }
 
     // Call the function to create a GTM workspace

@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
 
     // Define a Joi schema for validation
     const schema = Joi.object({
-      id: Joi.string().uuid().required(),
+      id: Joi.string().required(),
       email: Joi.string().email().required(),
     });
 

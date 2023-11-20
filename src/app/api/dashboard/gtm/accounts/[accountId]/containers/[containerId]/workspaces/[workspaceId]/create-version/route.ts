@@ -23,7 +23,7 @@ export async function POST(
     };
   }
 ) {
-        const {session} = useSession();
+  const { session } = useSession();
 
   try {
     const limit = Number(request.nextUrl.searchParams.get('limit')) || 10;
@@ -47,7 +47,7 @@ export async function POST(
     };
 
     const schema = Joi.object({
-      userId: Joi.string().uuid().required(),
+      userId: Joi.string().required(),
       accountId: Joi.string()
         .pattern(/^\d{10}$/)
         .required(),

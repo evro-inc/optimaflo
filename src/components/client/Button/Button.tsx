@@ -226,7 +226,6 @@ export const ButtonSignOut = ({
   billingInterval,
   ...props
 }) => {
-
   const computedClasses = useMemo(() => {
     const modeClass = getModeClasses(variant, billingInterval);
 

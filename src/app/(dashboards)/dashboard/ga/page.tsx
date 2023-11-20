@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default async function GAPage() {
-  const {session} = useSession();
+  const { session } = useSession();
 
   // if no session, redirect to home page
   if (!session) {

@@ -4,6 +4,8 @@ import { OAuth2Client } from 'google-auth-library';
 import prisma from '@/src/lib/prisma';
 import logger from '../../logger';
 import { useSession } from '@clerk/nextjs';
+import { clerkClient, currentUser } from '@clerk/nextjs';
+import { notFound } from 'next/navigation';
 
 export function isErrorWithStatus(error: unknown): error is { status: number } {
   return (error as { status: number }).status !== undefined;
@@ -45,15 +47,27 @@ export async function grantGtmAccess(customerId: string) {
   }
 }
 
-export async function fetchGtmSettings(userId) {
+export async function fetchGtmSettings() {
   // Fetch the user from your database using the Stripe customer ID
-  const user = await prisma.account.findFirst({
+  /*   const user = await prisma.User.findFirst({
     where: {
-      userId: userId,
-    },
+      id: userId,
+    }
   });
+  if (!user) {
+    throw new Error("User not found");
+  }
+  const { access_token: accessToken, refresh_token: refreshToken } = user; */
 
-  const { access_token: accessToken, refresh_token: refreshToken } = user;
+  const user = await currentUser();
+  if (!user) return notFound();
+  const userId = user?.id;
+  const accessToken = await clerkClient.users.getUserOauthAccessToken(
+    userId,
+    'oauth_google'
+  );
+
+  console.log('accessToken: ', accessToken);
 
   // Create an OAuth2 client
   const oauth2Client = new OAuth2Client(
@@ -63,8 +77,8 @@ export async function fetchGtmSettings(userId) {
   );
 
   oauth2Client.setCredentials({
-    access_token: accessToken,
-    refresh_token: refreshToken,
+    access_token: accessToken[0].token,
+    refresh_token: null,
   });
 
   // This will refresh the access token if it's expired

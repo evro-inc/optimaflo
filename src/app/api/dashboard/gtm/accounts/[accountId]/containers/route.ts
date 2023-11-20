@@ -301,8 +301,8 @@ export async function GET(
     };
   }
 ) {
-  const user = await currentUser()
-  if (!user) return notFound()
+  const user = await currentUser();
+  if (!user) return notFound();
   const userId = user?.id as string;
 
   try {
@@ -323,7 +323,10 @@ export async function GET(
 
     // Call validateGetParams to validate the parameters
     await validateGetParams(paramsJOI);
-    const accessToken = await clerkClient.users.getUserOauthAccessToken(user?.id, "oauth_google")
+    const accessToken = await clerkClient.users.getUserOauthAccessToken(
+      user?.id,
+      'oauth_google'
+    );
 
     // Call listGtmContainers for each accountId
     const allResults = await Promise.all(
@@ -371,8 +374,8 @@ export async function POST(
     };
   }
 ) {
-  const user = await currentUser()
-  if (!user) return notFound()
+  const user = await currentUser();
+  if (!user) return notFound();
   const userId = user?.id;
 
   try {
@@ -394,7 +397,10 @@ export async function POST(
     const validatedParams = await validatePostParams(paramsJOI);
     const { name, usageContext, domainName, notes, accountId } =
       validatedParams;
-    const accessToken = await clerkClient.users.getUserOauthAccessToken(user?.id, "oauth_google")
+    const accessToken = await clerkClient.users.getUserOauthAccessToken(
+      user?.id,
+      'oauth_google'
+    );
 
     // check tier limit
     const tierLimitRecord = await prisma.tierLimit.findFirst({

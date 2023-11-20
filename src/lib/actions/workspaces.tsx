@@ -8,8 +8,8 @@ import logger from '../logger';
 import z from 'zod';
 import { getURL } from '@/src/lib/helpers';
 import { gtmListContainers } from './containers';
-import { getAccessToken } from '../fetch/apiUtils';
-import { useSession } from '@clerk/nextjs';
+import { auth, currentUser } from '@clerk/nextjs';
+import { notFound } from 'next/navigation';
 
 // Define the types for the form data
 type FormCreateSchema = z.infer<typeof CreateWorkspaceSchema>;
@@ -18,7 +18,6 @@ type FormUpdateSchema = z.infer<typeof UpdateWorkspaceSchema>;
 /************************************************************************************
   List all workspaces
 ************************************************************************************/
-
 export async function gtmListWorkspaces() {
   try {
     const baseUrl = getURL();
@@ -64,14 +63,13 @@ export async function DeleteWorkspaces(
   workspaces: { containerId: string; workspaceId: string }[]
 ) {
   const errors: string[] = [];
-  const { session } = useSession();
-  const userId = session?.user?.id;
-  const accessToken = await getAccessToken(userId);
+  const { getToken } = auth();
+  const token = await getToken();
   const baseUrl = getURL();
 
   const requestHeaders = {
     'Content-Type': 'application/json',
-    Authorization: `Bearer ${accessToken}`,
+    Authorization: `Bearer ${token}`,
   };
 
   const deletionPromises = workspaces.map(
@@ -131,15 +129,14 @@ export async function DeleteWorkspaces(
   Create a single container or multiple containers
 ************************************************************************************/
 export async function createWorkspaces(formData: FormCreateSchema) {
+  const user = await currentUser();
+  if (!user) return notFound();
+
+  const { getToken } = auth();
+  const token = await getToken();
+
   try {
-      const {session} = useSession();
-
-    const userId = session?.user?.id;
-
-    const accessToken = await getAccessToken(userId);
-
     const baseUrl = getURL();
-
     const errors: string[] = [];
     const forms: any[] = [];
 
@@ -183,7 +180,7 @@ export async function createWorkspaces(formData: FormCreateSchema) {
 
     const requestHeaders = {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken}`,
+      Authorization: `Bearer ${token}`,
     };
 
     const featureLimitReachedWorkspaces: string[] = [];
@@ -294,9 +291,8 @@ export async function createWorkspaces(formData: FormCreateSchema) {
 ************************************************************************************/
 export async function updateWorkspaces(formData: FormUpdateSchema) {
   try {
-      const {session} = useSession();
-    const userId = session?.user?.id;
-    const accessToken = await getAccessToken(userId);
+    const { getToken } = auth();
+    const token = await getToken();
     const baseUrl = getURL();
     const errors: string[] = [];
     const forms: any[] = [];
@@ -335,7 +331,7 @@ export async function updateWorkspaces(formData: FormUpdateSchema) {
 
     const requestHeaders = {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken}`,
+      Authorization: `Bearer ${token}`,
     };
     const featureLimitReachedWorkspaces: string[] = [];
 
@@ -356,6 +352,8 @@ export async function updateWorkspaces(formData: FormUpdateSchema) {
           body: JSON.stringify(payload),
         }
       );
+
+      console.log('response', response);
 
       if (response.status === 403) {
         const updatedWorkspace = await response.json();

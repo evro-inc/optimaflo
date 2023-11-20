@@ -67,7 +67,9 @@ async function fetchGtmData(
           const response = await fetch(url, { headers });
 
           if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}. ${response.url}`);
+            throw new Error(
+              `HTTP error! status: ${response.status}. ${response.statusText}. ${response.url}`
+            );
           }
 
           return await response.json();
@@ -91,7 +93,6 @@ async function fetchGtmData(
   }
   throw new Error('Maximum retries reached without a successful response.');
 }
-
 
 /************************************************************************************
  * PUT UTILITY FUNCTIONS
@@ -446,13 +447,12 @@ export async function GET(
     };
   }
 ) {
-  const user = await currentUser()
-  if (!user) return notFound()
+  const user = await currentUser();
+  if (!user) return notFound();
 
   const userId = user?.id;
 
-  console.log("params", params);
-  
+  console.log('params', params);
 
   try {
     const paramsJOI = {
@@ -461,16 +461,17 @@ export async function GET(
     };
 
     console.log('paramsJOI', paramsJOI);
-    
 
     const validatedParams = await validateGetParams(paramsJOI);
     const { accountId, containerId } = validatedParams;
 
     console.log('accountId', accountId);
     console.log('containerId', containerId);
-    
 
-    const accessToken = await clerkClient.users.getUserOauthAccessToken(user?.id, "oauth_google")  
+    const accessToken = await clerkClient.users.getUserOauthAccessToken(
+      user?.id,
+      'oauth_google'
+    );
 
     const data = await fetchGtmData(
       userId,
@@ -512,8 +513,8 @@ export async function GET(
   PUT/UPDATE request handler
 ************************************************************************************/
 export async function PUT(request: NextRequest) {
-  const user = await currentUser()
-  if (!user) return notFound()
+  const user = await currentUser();
+  if (!user) return notFound();
 
   const userId = user?.id;
 
@@ -535,8 +536,10 @@ export async function PUT(request: NextRequest) {
       validateParams;
 
     // using userId get accessToken from prisma account table
-    const accessToken = await clerkClient.users.getUserOauthAccessToken(user?.id, "oauth_google")  
-
+    const accessToken = await clerkClient.users.getUserOauthAccessToken(
+      user?.id,
+      'oauth_google'
+    );
 
     const data = await updateGtmData(
       userId,
@@ -574,8 +577,8 @@ export async function PUT(request: NextRequest) {
   DELETE request handler
 ************************************************************************************/
 export async function DELETE(request: NextRequest) {
-  const user = await currentUser()
-  if (!user) return notFound()
+  const user = await currentUser();
+  if (!user) return notFound();
   const userId = user?.id;
 
   try {
@@ -598,7 +601,10 @@ export async function DELETE(request: NextRequest) {
     const { accountId, containerId } = validateParams;
 
     // using userId get accessToken from prisma account table
-    const accessToken = await clerkClient.users.getUserOauthAccessToken(user?.id, "oauth_google")  
+    const accessToken = await clerkClient.users.getUserOauthAccessToken(
+      user?.id,
+      'oauth_google'
+    );
 
     const data = await deleteGtmData(
       userId,

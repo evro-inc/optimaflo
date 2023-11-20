@@ -12,12 +12,13 @@ export const metadata: Metadata = {
 };
 
 export default async function ContainerPage() {
-  const user = await currentUser()
-  if (!user) return notFound()
-  const userId = user?.id;  
-  const accessToken = await clerkClient.users.getUserOauthAccessToken(userId, "oauth_google")
-
-
+  const user = await currentUser();
+  if (!user) return notFound();
+  const userId = user?.id;
+  const accessToken = await clerkClient.users.getUserOauthAccessToken(
+    userId,
+    'oauth_google'
+  );
 
   // Fetch accounts list
   const accounts = await listGtmAccounts(userId, accessToken[0].token);

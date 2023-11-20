@@ -21,10 +21,9 @@ export async function POST(
     };
   }
 ) {
-        const {session} = useSession();
+  const { session } = useSession();
 
   try {
-
     const accountId = params.accountId;
     const containerId = params.containerId;
     const workspaceId = params.workspaceId;
