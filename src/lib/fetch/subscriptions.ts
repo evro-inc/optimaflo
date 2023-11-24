@@ -20,8 +20,7 @@ export async function getSubscriptions(userId: string) {
   }
 
   const userText = await user.json();
-
-  const userSubscriptions = userText.data.Subscription;
+  const userSubscriptions = userText.data.Subscription; 
 
   return userSubscriptions;
 }

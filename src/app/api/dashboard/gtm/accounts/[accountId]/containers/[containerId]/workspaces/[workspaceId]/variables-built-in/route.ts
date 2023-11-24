@@ -121,9 +121,9 @@ export async function GET(
 
           // Return the response as JSON
 
-          const jsonString = JSON.stringify(response, null, 2);
+          
 
-          logger.debug('DEBUG RESPONSE: ', jsonString);
+          
 
           return NextResponse.json(response, {
             headers: {
@@ -335,9 +335,9 @@ export async function POST(
 
           // Return the response as JSON
 
-          const jsonString = JSON.stringify(response, null, 2);
+          
 
-          logger.debug('DEBUG RESPONSE: ', jsonString);
+          
 
           return NextResponse.json(response, {
             headers: {
@@ -549,9 +549,9 @@ export async function DELETE(
 
           // Return the response as JSON
 
-          const jsonString = JSON.stringify(response, null, 2);
+          
 
-          logger.debug('DEBUG RESPONSE: ', jsonString);
+          
 
           return NextResponse.json(response, {
             headers: {

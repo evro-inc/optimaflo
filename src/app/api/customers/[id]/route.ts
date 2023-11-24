@@ -40,7 +40,7 @@ export async function GET(
     // Return the customer as JSON
     const jsonString = JSON.stringify(customer, null, 2);
 
-    logger.debug('DEBUG RESPONSE: ', jsonString);
+    
 
     return NextResponse.json(customer, {
       headers: {

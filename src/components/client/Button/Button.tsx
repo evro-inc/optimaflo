@@ -195,19 +195,22 @@ export const ButtonProfile = ({
  */
 export const ButtonSignIn = ({
   variant = 'signup',
-
   text,
   billingInterval,
+  userHasSubscription,
   ...props
 }) => {
+
   const computedClasses = useMemo(() => {
     const modeClass = getModeClasses(variant, billingInterval);
-
     return [modeClass].join(' ');
   }, [variant, billingInterval]);
 
+  const redirectUrl = userHasSubscription ? '/profile' : '/pricing';
+
+
   return (
-    <SignInButton>
+    <SignInButton mode='modal' redirectUrl={redirectUrl} afterSignUpUrl={redirectUrl}>
       <div
         className={`${BASE_BUTTON_CLASSES} ${computedClasses} w-36 mx-5 lg:mx-0`}
       >
@@ -291,7 +294,7 @@ export const ButtonNull = ({
 export const ButtonSubscribe = ({
   variant = 'primary',
   text,
-  isSelected, // New prop
+  isselected, // New prop
   billingInterval,
   ...props
 }) => {
@@ -300,7 +303,7 @@ export const ButtonSubscribe = ({
     return [modeClass].join(' ');
   }, [variant, billingInterval]);
 
-  const selectedClasses = isSelected ? 'bg-blue-500 text-white-500' : '';
+  const selectedClasses = isselected ? 'bg-blue-500 text-white-500' : '';
 
   return (
     <button

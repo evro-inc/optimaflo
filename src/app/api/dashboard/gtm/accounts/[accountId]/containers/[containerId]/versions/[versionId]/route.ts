@@ -117,9 +117,9 @@ export async function GET(
 
           // Return the response as JSON
 
-          const jsonString = JSON.stringify(response, null, 2);
+          
 
-          logger.debug('DEBUG RESPONSE: ', jsonString);
+          
 
           return NextResponse.json(response, {
             headers: {
@@ -316,9 +316,9 @@ export async function PATCH(request: NextRequest) {
 
           // Return the response as JSON
 
-          const jsonString = JSON.stringify(response, null, 2);
+          
 
-          logger.debug('DEBUG RESPONSE: ', jsonString);
+          
 
           return NextResponse.json(response, {
             headers: {
@@ -516,9 +516,9 @@ export async function DELETE(request: NextRequest) {
 
           // Return the response as JSON
 
-          const jsonString = JSON.stringify(response, null, 2);
+          
 
-          logger.debug('DEBUG RESPONSE: ', jsonString);
+          
 
           return NextResponse.json(response, {
             headers: {
@@ -663,9 +663,9 @@ export async function POST(request: NextRequest) {
 
           // Return the response as JSON
 
-          const jsonString = JSON.stringify(response, null, 2);
+          
 
-          logger.debug('DEBUG RESPONSE: ', jsonString);
+          
 
           return NextResponse.json(response, {
             headers: {

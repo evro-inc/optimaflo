@@ -1,7 +1,7 @@
 <svg width="968" height="614" viewBox="0 0 968 614" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <path d="M940 6H28C16.6248 6 6 14.2317 6 26.0059V587.994C6 599.768 16.6249 608 28 608H940C951.375 608 962 599.768 962 587.994V26.0059C962 14.2317 951.375 6 940 6Z" fill="#FCF7FF" stroke="black" strokeWidth="12"/>
 <mask id="mask0_0_4845" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="12" y="12" width="944" height="590">
-<path fillRule="evenodd" clip-rule="evenodd" d="M28 12L940 12C948.837 12 956 18.2707 956 26.0059V587.994C956 595.729 948.837 602 940 602H28C19.1634 602 12 595.729 12 587.994L12 26.0059C12 18.2707 19.1634 12 28 12Z" fill="white"/>
+<path fillRule="evenodd" clipRule="evenodd" d="M28 12L940 12C948.837 12 956 18.2707 956 26.0059V587.994C956 595.729 948.837 602 940 602H28C19.1634 602 12 595.729 12 587.994L12 26.0059C12 18.2707 19.1634 12 28 12Z" fill="white"/>
 </mask>
 <g mask="url(#mask0_0_4845)">
 <rect x="10" y="11" width="946" height="1524.61" fill="url(#pattern0)"/>

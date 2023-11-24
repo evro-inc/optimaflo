@@ -337,9 +337,9 @@ export async function PATCH(request: NextRequest) {
             errors: null,
           };
 
-          const jsonString = JSON.stringify(response, null, 2);
+          
 
-          logger.debug('DEBUG RESPONSE: ', jsonString);
+          
 
           return NextResponse.json(response, {
             headers: {
@@ -534,9 +534,9 @@ export async function DELETE(request: NextRequest) {
             errors: null,
           };
 
-          const jsonString = JSON.stringify(response, null, 2);
+          
 
-          logger.debug('DEBUG RESPONSE: ', jsonString);
+          
 
           return NextResponse.json(response, {
             headers: {

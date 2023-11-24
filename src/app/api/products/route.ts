@@ -63,12 +63,7 @@ export async function GET(req: NextRequest) {
         pageSize: limit,
       },
       errors: null,
-    };
-
-    // Return the response as JSON
-    const jsonString = JSON.stringify(response, null, 2);
-
-    logger.info('DEBUG RESPONSE: ', jsonString);
+    };    
 
     return NextResponse.json(response, {
       headers: {
@@ -111,9 +106,9 @@ export async function POST(request: NextRequest) {
     });
 
     // Return the created product as JSON
-    const jsonString = JSON.stringify(response, null, 2);
+    
 
-    logger.debug('DEBUG RESPONSE: ', jsonString);
+    
 
     return NextResponse.json(response, {
       headers: {

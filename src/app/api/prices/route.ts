@@ -59,9 +59,9 @@ export async function GET(request: NextRequest) {
     };
 
     // Return the response as JSON
-    const jsonString = JSON.stringify(response, null, 2);
+    
 
-    logger.debug('DEBUG RESPONSE: ', jsonString);
+    
 
     return NextResponse.json(response, {
       headers: {

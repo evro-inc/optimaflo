@@ -59,8 +59,6 @@ export async function GET(
       errors: null,
     };
 
-    console.log('DEBUG RESPONSE: ', response);
-
     return NextResponse.json(response, {
       headers: {
         'Content-Type': 'application/json',

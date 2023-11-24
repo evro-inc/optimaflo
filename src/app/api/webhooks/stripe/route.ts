@@ -17,10 +17,12 @@ const relevantEvents = new Set([
   'price.created',
   'price.updated',
   'checkout.session.completed',
+  'customer.created',
+  'customer.updated',
+  'customer.deleted',
   'customer.subscription.created',
   'customer.subscription.updated',
   'customer.subscription.deleted',
-
   'invoice.created',
   'invoice.updated',
   'invoice.payment_succeeded',
@@ -758,6 +760,7 @@ async function grantAccessToContent(invoice: Stripe.Invoice) {
   }
 }
 
+// Fetch GTM Settings
 async function fetchGTM(invoice: Stripe.Invoice) {
   // Fetch user ID using the Stripe Customer ID
   const customerRecord = await prisma.customer.findFirst({
@@ -776,11 +779,11 @@ async function fetchGTM(invoice: Stripe.Invoice) {
     throw new Error('User ID not found');
   }
   if (customerRecord) {
-    const userId = customerRecord.userId;
-    fetchGtmSettings(userId);
+    await fetchGtmSettings(userId);
   }
 }
 
+// Reset Usage for Subscription
 async function resetUsageForSubscription(subscriptionId: string) {
   await prisma.tierLimit.updateMany({
     where: {
@@ -792,6 +795,44 @@ async function resetUsageForSubscription(subscriptionId: string) {
     },
   });
 }
+
+// Customer deleted
+async function deleteCustomerAndRelatedRecords(stripeCustomerId: string) {
+  try {
+    // Start a transaction
+    await prisma.$transaction(async (prisma) => {
+      // Delete related sessions
+      await prisma.session.deleteMany({ where: { userId: stripeCustomerId } });
+
+      // Delete related invoices
+      await prisma.invoice.deleteMany({ where: { customerId: stripeCustomerId } });
+
+      // Delete related checkout sessions
+      await prisma.checkoutSession.deleteMany({ where: { userId: stripeCustomerId } });
+
+      // Delete related subscriptions
+      await prisma.subscription.deleteMany({ where: { userId: stripeCustomerId } });
+
+      // Delete related product access records
+      await prisma.productAccess.deleteMany({ where: { userId: stripeCustomerId } });
+
+      // Delete related gtm records
+      await prisma.gtm.deleteMany({ where: { userId: stripeCustomerId } });
+
+      await prisma.tierLimit.deleteMany({ where: { subscriptionId: stripeCustomerId } });
+
+      // Finally, delete the customer record
+      await prisma.customer.delete({ where: { stripeCustomerId } });
+    });
+
+    logger.info(`Successfully deleted customer and related records for Stripe Customer ID: ${stripeCustomerId}`);
+  } catch (error) {
+    logger.error(`Error deleting customer and related records: ${error}`);
+    // Handle the error appropriately
+  }
+}
+
+
 
 // Handle Stripe Webhook Events
 export async function POST(req: NextRequest) {
@@ -825,6 +866,9 @@ export async function POST(req: NextRequest) {
         case 'price.created':
         case 'price.updated':
           await upsertPriceRecord(event.data.object as Stripe.Price);
+          break;
+        case 'customer.deleted':
+          await deleteCustomerAndRelatedRecords(event.data.object.id);
           break;
         case 'customer.subscription.created':
         case 'customer.subscription.updated':

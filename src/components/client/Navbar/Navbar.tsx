@@ -1,18 +1,17 @@
 'use client';
 import Link from 'next/link';
-import Image from 'next/image';
 
 import { useState, useEffect, useRef } from 'react';
 import React from 'react';
 import Logo from '../../icons/Logo';
 import {
-  ButtonProfile,
   ButtonSignIn,
   ButtonToggle,
 } from '../../client/Button/Button';
-import { LinkBody, LinkNav } from '../Links/Links';
+import { LinkSignUp, LinkNav } from '../Links/Links';
 import { UserButton } from '@clerk/nextjs';
 import { useSession } from '@clerk/clerk-react';
+import { getSubscriptions } from '@/src/lib/fetch/subscriptions';
 
 const navigation = [
   { name: 'About', href: '/about' },
@@ -23,26 +22,39 @@ const navigation = [
 
 export default function Navbar() {
   const menuRef = useRef<HTMLDivElement | null>(null);
-
-  const [showMenu, setShowMenu] = useState(false);
-
   const { session } = useSession();
+  const [hasSubscription, setHasSubscription] = useState(false); // State to track subscription status
 
-  // This function checks if the clicked area is outside the menu
-  const handleClickOutside = (event) => {
-    if (menuRef.current && !menuRef.current.contains(event.target)) {
-      setShowMenu(false);
-    }
-  };
+  
+  useEffect(() => {
+    const fetchSubscriptions = async () => {
+      if (session?.user?.id) {
+        try {
+          const subscriptions = await getSubscriptions(session.user.id);
+
+          if (subscriptions.length > 0) {
+            // Check if the first subscription is active
+            const isActiveSubscription = subscriptions[0].status === 'active';
+            setHasSubscription(isActiveSubscription);
+          } else {
+            // No subscriptions found
+            setHasSubscription(false);
+          }
+        } catch (error) {
+          console.error("Error fetching subscriptions:", error);
+          setHasSubscription(false); // Set to false in case of error
+        }
+      } else {
+        setHasSubscription(false); // Set to false if no user session
+      }
+    };
+
+    fetchSubscriptions();
+  }, [session?.user?.id]);
 
   useEffect(() => {
-    // When the component is mounted, it adds the "click" event listener
-    document.addEventListener('click', handleClickOutside);
-    return () => {
-      // When the component is unmounted, it removes the "click" event listener
-      document.removeEventListener('click', handleClickOutside);
-    };
-  }, []);
+    console.log("Has Subscription:", hasSubscription);
+  }, [hasSubscription]);
 
   return (
     <div className="relative">
@@ -71,21 +83,7 @@ export default function Navbar() {
                 {session?.user && (
                   <div className="ml-3 relative">
                     <div className="block lg:hidden">
-                      <ButtonProfile
-                        variant="circle"
-                        onClick={() => setShowMenu(!showMenu)}
-                        id="user-menu"
-                        aria-label="User menu"
-                        aria-haspopup="true"
-                        billingInterval={''}
-                      >
-                        <Image
-                          className="object-cover rounded-full"
-                          layout="fill"
-                          src={session?.user?.imageUrl}
-                          alt="Picture of the author"
-                        />
-                      </ButtonProfile>
+                      <UserButton  afterSignOutUrl='/' />
                     </div>
                   </div>
                 )}
@@ -97,15 +95,6 @@ export default function Navbar() {
                   aria-controls="navbar-collapse-with-animation"
                   aria-label="Toggle navigation"
                 />
-                {/* <ButtonTheme
-                  className={`${THEME_BUTTON_CLASSES}`}
-                  variant="primary"
-                  size="small"
-                  text=""
-                  billingInterval={''}
-                  type="button"
-                  aria-label="Toggle Dark Mode"
-                /> */}
               </div>
             </div>
           </div>
@@ -137,35 +126,30 @@ export default function Navbar() {
 
               <div className="lg:py-2">
                 <div className="flex lg:flex-row items-center font-medium text-gray-500 hover:text-blue-600 lg:border-l p-0 sm:p-[10px] lg:border-gray-300 w-full lg:w-auto">
-                  {session?.user && <UserButton />}
+                  {session?.user && (
+                    <div className="hidden lg:flex items-center font-medium text-gray-500 hover:text-blue-600 p-0 sm:p-[10px] lg:border-gray-300 w-full lg:w-auto">
+                      <UserButton  afterSignOutUrl='/' />
+                    </div>
+                  )}
                   {!session?.user && (
                     // Sign in Button
                     <div className="flex lg:flex-row items-center font-medium text-gray-500 hover:text-blue-600 p-0 sm:p-[10px] lg:border-gray-300 w-full lg:w-auto">
                       <ButtonSignIn
                         variant="signupNav"
                         billingInterval={''}
-                        aria-label="Get Started with Google Sign In"
+                        aria-label="Log in with Google Sign In"
                         text="Log In"
+                        userHasSubscription={hasSubscription}
                       />
-                      <LinkBody
+                      <LinkSignUp
                         variant="login"
-                        ariaLabel="Log in with Google"
+                        ariaLabel="Get Started with Google"
                         text="Get Started"
+                        userHasSubscription={hasSubscription}
                       />
                     </div>
                   )}
 
-                  <div className="space-x-8 hidden lg:block">
-                    {/* <ButtonTheme
-                      className={`${THEME_BUTTON_CLASSES}`}
-                      variant="primary"
-                      size="small"
-                      text=""
-                      billingInterval={''}
-                      type="button"
-                      aria-label="Toggle Dark Mode"
-                    /> */}
-                  </div>
                 </div>
               </div>
             </div>

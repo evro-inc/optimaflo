@@ -79,9 +79,9 @@ export async function GET(req: NextRequest) {
     };
 
     // Return the response as JSON
-    const jsonString = JSON.stringify(response, null, 2);
+    
 
-    logger.debug('DEBUG RESPONSE: ', jsonString);
+    
 
     return NextResponse.json(response, {
       headers: {
@@ -140,9 +140,9 @@ export async function POST(req: NextRequest) {
     });
 
     // Return the created subscription as JSON
-    const jsonString = JSON.stringify(response, null, 2);
+    
 
-    logger.debug('DEBUG RESPONSE: ', jsonString);
+    
 
     return NextResponse.json(response, {
       headers: {
