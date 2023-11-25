@@ -2,10 +2,7 @@
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager/v2';
 import { OAuth2Client } from 'google-auth-library';
 import prisma from '@/src/lib/prisma';
-import logger from '../../logger';
-import { useSession } from '@clerk/nextjs';
-import { clerkClient, currentUser } from '@clerk/nextjs';
-import { notFound } from 'next/navigation';
+import { clerkClient } from '@clerk/nextjs';
 
 export function isErrorWithStatus(error: unknown): error is { status: number } {
   return (error as { status: number }).status !== undefined;
@@ -83,35 +80,11 @@ export async function fetchGtmSettings(userId: string) {
 
         for (const containerId of containerIds) {
 
-          console.log('containerId', containerId);
-          
-
           // Fetch workspaces for each container
           const workspacesResponse = await fetch(`https://tagmanager.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces`, { headers });
           const workspacesData = await workspacesResponse.json();
           const workspaceIds = workspacesData.workspace?.map(workspace => workspace.workspaceId) || [];
-
-          console.log('workspaceIds', workspaceIds);
-
-          // for each container and workspace combo, store the account, container, and workspace IDs in the database
-          // inside each workspace within each container, store the account, container, and workspace IDs in the database
-
-          const existingWorkspaceIds = new Set((await prisma.gtm.findMany({
-            where: {
-              userId: userId,
-              accountId: accountId,
-              containerId: containerId,
-            },
-          })).map(rec => rec.workspaceId));
-
-          // Store the account, container, and workspace IDs in the database
-          for (const workspaceId of workspaceIds) {
-
-            console.log('workspaceId inside FOR LOOP', workspaceId);
-            console.log('existingWorkspaceIds', existingWorkspaceIds);
-            
-            
-
+  
           // Inside the loop for workspaceIds
           for (const workspaceId of workspaceIds) {
               if (!existingCompositeKeySet.has(`${accountId}-${containerId}-${workspaceId}`)) {
@@ -126,7 +99,7 @@ export async function fetchGtmSettings(userId: string) {
               }
           }
 
-          }
+          
         }
       }
       success = true;

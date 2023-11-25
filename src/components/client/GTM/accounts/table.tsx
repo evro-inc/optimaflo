@@ -1,11 +1,20 @@
 import { Button } from '@/src/components/client/Button/Button';
 import AccountFormUpdate from './updateAccount';
-import { gtmListAccounts } from '@/src/lib/actions/accounts';
+import { listGtmAccounts } from '@/src/app/api/dashboard/gtm/accounts/route';
+import { clerkClient, currentUser } from '@clerk/nextjs';
+import { notFound } from 'next/navigation';
 
 async function AccountTable() {
   let gtmAccounts;
+  const user = await currentUser();
+  if (!user) return notFound();
+  const userId = user?.id;
+  const accessToken = await clerkClient.users.getUserOauthAccessToken(
+    userId,
+    'oauth_google'
+  );
+  const Accounts = await listGtmAccounts(userId, accessToken[0].token);
 
-  const Accounts = await gtmListAccounts();
   gtmAccounts = Accounts.data || []; // Provide a default value
 
   return (

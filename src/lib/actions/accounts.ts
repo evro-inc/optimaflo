@@ -5,18 +5,24 @@ import logger from '@/src/lib/logger';
 export async function gtmListAccounts() {
   try {
     const baseUrl = getURL();
-    const url = `${baseUrl}/api/dashboard/gtm/accounts`;
+    const url = `${baseUrl}/api/dashboard/gtm/accounts`;    
 
-    const resp = await fetch(url);
+    const resp = await fetch(url, {
+        next: { revalidate: 10 },
+      });
+
+    console.log('resp', resp);
+    
+    if (!resp.ok) {
+      const rawResponse = await resp.text();
+      console.error('Raw response:', rawResponse);
+      // Handle non-OK responses here
+    }    
 
     const responseText = await resp.json();
-
-    // Check if the response is OK and parse the JSON
-    if (!resp.ok) {
-      throw new Error(
-        `${resp.status} ${resp.statusText}. Response: ${responseText}. Request: ${url}`
-      );
-    }
+    
+    console.log('responseText', responseText);
+    
 
     return responseText;
   } catch (error) {

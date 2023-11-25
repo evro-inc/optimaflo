@@ -1,13 +1,10 @@
-/* eslint-disable no-unused-vars */
-
 import { NextRequest, NextResponse } from 'next/server';
-import { QuotaLimitError, ValidationError } from '@/src/lib/exceptions';
+import { ValidationError } from '@/src/lib/exceptions';
 import Joi from 'joi';
-import { isErrorWithStatus } from '@/src/lib/fetch/dashboard';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
 import logger from '@/src/lib/logger';
 import { limiter } from '@/src/lib/bottleneck';
-import { clerkClient, currentUser, useSession } from '@clerk/nextjs';
+import { clerkClient, currentUser } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
 
 /************************************************************************************
