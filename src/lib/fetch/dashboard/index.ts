@@ -53,13 +53,19 @@ export async function fetchGtmSettings(userId: string) {
     await prisma.User.create({ data: { id: userId } });
   }
 
-  const token = await clerkClient.users.getUserOauthAccessToken(userId, 'oauth_google');  
+  const token = await clerkClient.users.getUserOauthAccessToken(
+    userId,
+    'oauth_google'
+  );
   const tokenValue = token[0].token;
   const headers = { Authorization: `Bearer ${tokenValue}` };
 
   const existingRecords = await prisma.gtm.findMany({ where: { userId } });
-  const existingCompositeKeySet = new Set(existingRecords.map(rec => `${rec.accountId}-${rec.containerId}-${rec.workspaceId}`));
-
+  const existingCompositeKeySet = new Set(
+    existingRecords.map(
+      (rec) => `${rec.accountId}-${rec.containerId}-${rec.workspaceId}`
+    )
+  );
 
   let retries = 0;
   const MAX_RETRIES = 3;
@@ -68,44 +74,62 @@ export async function fetchGtmSettings(userId: string) {
   while (retries < MAX_RETRIES && !success) {
     try {
       // Fetch the list of accounts
-      const accountsResponse = await fetch('https://tagmanager.googleapis.com/tagmanager/v2/accounts', { headers });
+      const accountsResponse = await fetch(
+        'https://tagmanager.googleapis.com/tagmanager/v2/accounts',
+        { headers }
+      );
       const accountsData = await accountsResponse.json();
-      const accountIds = accountsData.account?.map(account => account.accountId) || [];
+      const accountIds =
+        accountsData.account?.map((account) => account.accountId) || [];
 
       for (const accountId of accountIds) {
         // Fetch containers for each account
-        const containersResponse = await fetch(`https://tagmanager.googleapis.com/tagmanager/v2/accounts/${accountId}/containers`, { headers });
+        const containersResponse = await fetch(
+          `https://tagmanager.googleapis.com/tagmanager/v2/accounts/${accountId}/containers`,
+          { headers }
+        );
         const containersData = await containersResponse.json();
-        const containerIds = containersData.container?.map(container => container.containerId) || [];
+        const containerIds =
+          containersData.container?.map((container) => container.containerId) ||
+          [];
 
         for (const containerId of containerIds) {
-
           // Fetch workspaces for each container
-          const workspacesResponse = await fetch(`https://tagmanager.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces`, { headers });
+          const workspacesResponse = await fetch(
+            `https://tagmanager.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces`,
+            { headers }
+          );
           const workspacesData = await workspacesResponse.json();
-          const workspaceIds = workspacesData.workspace?.map(workspace => workspace.workspaceId) || [];
-  
+          const workspaceIds =
+            workspacesData.workspace?.map(
+              (workspace) => workspace.workspaceId
+            ) || [];
+
           // Inside the loop for workspaceIds
           for (const workspaceId of workspaceIds) {
-              if (!existingCompositeKeySet.has(`${accountId}-${containerId}-${workspaceId}`)) {
-                  await prisma.gtm.create({
-                      data: {
-                          accountId: accountId,
-                          containerId: containerId,
-                          workspaceId: workspaceId,
-                          User: { connect: { id: userId } },
-                      },
-                  });
-              }
+            if (
+              !existingCompositeKeySet.has(
+                `${accountId}-${containerId}-${workspaceId}`
+              )
+            ) {
+              await prisma.gtm.create({
+                data: {
+                  accountId: accountId,
+                  containerId: containerId,
+                  workspaceId: workspaceId,
+                  User: { connect: { id: userId } },
+                },
+              });
+            }
           }
-
-          
         }
       }
       success = true;
     } catch (error: any) {
       if (error.message.includes('Quota exceeded')) {
-        await new Promise(resolve => setTimeout(resolve, Math.pow(2, retries) * 1000));
+        await new Promise((resolve) =>
+          setTimeout(resolve, Math.pow(2, retries) * 1000)
+        );
         retries++;
       } else {
         throw error;
@@ -113,7 +137,6 @@ export async function fetchGtmSettings(userId: string) {
     }
   }
 }
-
 
 /* GA UTILS */
 

@@ -53,31 +53,29 @@ export async function handler(req: Request) {
 
   // Handle the event with a switch statement
   switch (eventType) {
-    
     // USER EVENTS
     case 'user.created':
-    case 'user.updated':
-      {
-        const clerkUser = evt.data; // Clerk user data
+    case 'user.updated': {
+      const clerkUser = evt.data; // Clerk user data
 
-        await prisma.User.upsert({
-          where: { id: clerkUser.id },
-          update: {
-            email: clerkUser.email_addresses[0]?.email_address,
-            name: clerkUser.first_name + ' ' + clerkUser.last_name,
-            image: clerkUser.image_url,
-          },
-          create: {
-            id: clerkUser.id,
-            stripeCustomerId: null, // or appropriate initial value
-            subscriptionId: null, // or appropriate initial value
-            name: clerkUser.first_name + ' ' + clerkUser.last_name,
-            email: clerkUser.email_addresses[0]?.email_address,
-            image: clerkUser.image_url,
-          },
-        });
-        break;
-      }
+      await prisma.User.upsert({
+        where: { id: clerkUser.id },
+        update: {
+          email: clerkUser.email_addresses[0]?.email_address,
+          name: clerkUser.first_name + ' ' + clerkUser.last_name,
+          image: clerkUser.image_url,
+        },
+        create: {
+          id: clerkUser.id,
+          stripeCustomerId: null, // or appropriate initial value
+          subscriptionId: null, // or appropriate initial value
+          name: clerkUser.first_name + ' ' + clerkUser.last_name,
+          email: clerkUser.email_addresses[0]?.email_address,
+          image: clerkUser.image_url,
+        },
+      });
+      break;
+    }
     case 'user.deleted':
       {
         const clerkUser = evt.data; // Clerk user data
@@ -101,69 +99,68 @@ export async function handler(req: Request) {
     case 'session.ended':
     case 'session.removed':
     case 'session.revoked':
-    {
-      const clerkSession = evt.data; // Clerk session data
+      {
+        const clerkSession = evt.data; // Clerk session data
 
-      // Check if user exists
-      const existingUser = await prisma.User.findUnique({
-        where: { id: clerkSession.id },
-      });
+        // Check if user exists
+        const existingUser = await prisma.User.findUnique({
+          where: { id: clerkSession.id },
+        });
 
-      // If the user does not exist, you might create it here or handle the error
-      if (!existingUser) {
-        const clerkUserData = await clerkClient.users.getUser(clerkSession.user_id);   
-        await prisma.User.upsert({
-          where: { email: clerkUserData.emailAddresses[0]?.emailAddress},
+        // If the user does not exist, you might create it here or handle the error
+        if (!existingUser) {
+          const clerkUserData = await clerkClient.users.getUser(
+            clerkSession.user_id
+          );
+          await prisma.User.upsert({
+            where: { email: clerkUserData.emailAddresses[0]?.emailAddress },
+            update: {
+              email: clerkUserData.emailAddresses[0]?.emailAddress,
+              name: clerkUserData.firstName + ' ' + clerkUserData.lastName,
+              image: clerkUserData.imageUrl,
+              // Add other fields as needed
+            },
+            create: {
+              id: clerkUserData.id,
+              stripeCustomerId: null, // or appropriate initial value
+              subscriptionId: null, // or appropriate initial value
+              name: clerkUserData.firstName + ' ' + clerkUserData.lastName,
+              email: clerkUserData.emailAddresses[0]?.emailAddress,
+              image: clerkUserData.imageUrl,
+              // Add other fields as needed
+            },
+          });
+        }
+
+        await prisma.Session.upsert({
+          where: { id: clerkSession.id },
           update: {
-            email: clerkUserData.emailAddresses[0]?.emailAddress,
-            name: clerkUserData.firstName + ' ' + clerkUserData.lastName,
-            image: clerkUserData.imageUrl,
-            // Add other fields as needed
+            abandonAt: clerkSession.abandon_at,
+            clientId: clerkSession.client_id,
+            createdAt: clerkSession.created_at,
+            expireAt: clerkSession.expire_at,
+            lastActiveAt: clerkSession.last_active_at,
+            status: clerkSession.status,
+            updatedAt: clerkSession.updated_at,
+            userId: clerkSession.user_id,
           },
           create: {
-            id: clerkUserData.id,
-            stripeCustomerId: null, // or appropriate initial value
-            subscriptionId: null, // or appropriate initial value
-            name: clerkUserData.firstName + ' ' + clerkUserData.lastName,
-            email: clerkUserData.emailAddresses[0]?.emailAddress,
-            image: clerkUserData.imageUrl,
-            // Add other fields as needed
+            id: clerkSession.id,
+            abandonAt: clerkSession.abandon_at,
+            clientId: clerkSession.client_id,
+            createdAt: clerkSession.created_at,
+            expireAt: clerkSession.expire_at,
+            lastActiveAt: clerkSession.last_active_at,
+            status: clerkSession.status,
+            updatedAt: clerkSession.updated_at,
+            userId: clerkSession.user_id,
           },
         });
       }
-
-
-      await prisma.Session.upsert({
-        where: { id: clerkSession.id },
-        update: {
-          abandonAt: clerkSession.abandon_at,
-          clientId: clerkSession.client_id,
-          createdAt: clerkSession.created_at,
-          expireAt: clerkSession.expire_at,
-          lastActiveAt: clerkSession.last_active_at,
-          status: clerkSession.status,
-          updatedAt: clerkSession.updated_at,
-          userId: clerkSession.user_id,
-        },
-        create: {
-          id: clerkSession.id,
-          abandonAt: clerkSession.abandon_at,
-          clientId: clerkSession.client_id,
-          createdAt: clerkSession.created_at,
-          expireAt: clerkSession.expire_at,
-          lastActiveAt: clerkSession.last_active_at,
-          status: clerkSession.status,
-          updatedAt: clerkSession.updated_at,
-          userId: clerkSession.user_id,
-        },
-      });
-    }
       break;
     default:
       console.log('Unknown event type');
   }
-
-
 
   return new Response('', { status: 200 });
 }

@@ -40,8 +40,6 @@ export async function GET(
     // Return the customer as JSON
     const jsonString = JSON.stringify(customer, null, 2);
 
-    
-
     return NextResponse.json(customer, {
       headers: {
         'Content-Type': 'application/json',

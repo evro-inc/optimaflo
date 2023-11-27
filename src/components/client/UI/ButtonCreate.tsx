@@ -2,7 +2,7 @@
 import React from 'react';
 import { ButtonWithIcon } from '../Button/Button';
 import { useDispatch } from 'react-redux';
-import { toggleCreateWorkspace } from '@/src/app/redux/workspaceSlice';
+import { toggleCreate } from '@/src/app/redux/sharedSlice';
 
 function ButtonCreate() {
   const dispatch = useDispatch();
@@ -28,7 +28,7 @@ function ButtonCreate() {
         </svg>
       }
       billingInterval={undefined}
-      onClick={() => dispatch(toggleCreateWorkspace())}
+      onClick={() => dispatch(toggleCreate())}
     />
   );
 }

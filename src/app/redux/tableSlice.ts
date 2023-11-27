@@ -1,4 +1,4 @@
-import { ContainerType } from '@/types/types';
+import { ContainerType } from '@/src/lib/types/types';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export const tableSlice = createSlice({

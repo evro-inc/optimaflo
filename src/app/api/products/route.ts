@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
         pageSize: limit,
       },
       errors: null,
-    };    
+    };
 
     return NextResponse.json(response, {
       headers: {
@@ -106,9 +106,6 @@ export async function POST(request: NextRequest) {
     });
 
     // Return the created product as JSON
-    
-
-    
 
     return NextResponse.json(response, {
       headers: {

@@ -61,10 +61,6 @@ export async function GET(req: NextRequest) {
       errors: null,
     };
 
-    
-
-    
-
     return NextResponse.json(response, {
       headers: {
         'Content-Type': 'application/json',

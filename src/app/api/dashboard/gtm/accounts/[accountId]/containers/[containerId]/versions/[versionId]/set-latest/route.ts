@@ -116,10 +116,6 @@ export async function POST(
 
           // Return the response as JSON
 
-          
-
-          
-
           return NextResponse.json(response, {
             headers: {
               'Content-Type': 'application/json',

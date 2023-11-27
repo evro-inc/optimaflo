@@ -12,13 +12,13 @@ import { SignInButton, SignOutButton } from '@clerk/nextjs';
 
 const getModeClasses = (variant, billingInterval) => {
   let baseClasses = '';
-  let activeClasses = 'relative w-1/2 shadow-sm';
-  let inactiveClasses = 'relative w-1/2';
+  let activeClasses = 'relative shadow-sm';
+  let inactiveClasses = 'relative';
 
   switch (variant) {
     case 'primary':
       baseClasses =
-        'cursor-pointer bg-blue-500  border border-blue-700 rounded-full text-white-500 inline-flex justify-center items-center gap-x-3 text-center hover:bg-blue-300 text-sm lg:text-base font-medium focus:outline-none focus:ring-2 focus:ring-yellow-600 focus:ring-offset-2 focus:ring-offset-white transition px-6 w-7/12 sm:w-auto';
+        'cursor-pointer bg-blue-500 border border-blue-700 rounded-full text-white-500 inline-flex justify-center items-center gap-x-3 text-center hover:bg-blue-300 text-sm lg:text-base font-medium focus:outline-none focus:ring-2 focus:ring-yellow-600 focus:ring-offset-2 focus:ring-offset-white transition px-6 w-7/12 sm:w-auto';
       break;
     case 'signup':
       baseClasses =
@@ -200,7 +200,6 @@ export const ButtonSignIn = ({
   userHasSubscription,
   ...props
 }) => {
-
   const computedClasses = useMemo(() => {
     const modeClass = getModeClasses(variant, billingInterval);
     return [modeClass].join(' ');
@@ -208,9 +207,12 @@ export const ButtonSignIn = ({
 
   const redirectUrl = userHasSubscription ? '/profile' : '/pricing';
 
-
   return (
-    <SignInButton mode='modal' redirectUrl={redirectUrl} afterSignUpUrl={redirectUrl}>
+    <SignInButton
+      mode="modal"
+      redirectUrl={redirectUrl}
+      afterSignUpUrl={redirectUrl}
+    >
       <div
         className={`${BASE_BUTTON_CLASSES} ${computedClasses} w-36 mx-5 lg:mx-0`}
       >

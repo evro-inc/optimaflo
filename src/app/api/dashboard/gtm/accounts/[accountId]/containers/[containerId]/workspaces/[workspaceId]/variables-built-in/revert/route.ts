@@ -8,7 +8,7 @@ import prisma from '@/src/lib/prisma';
 import Joi from 'joi';
 import { isErrorWithStatus } from '@/src/lib/fetch/dashboard';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
-import { BuiltInVariableType } from '@/types/gtm';
+import { BuiltInVariableType } from '@/src/lib/types/gtm';
 import logger from '@/src/lib/logger';
 import { useSession } from '@clerk/nextjs';
 
@@ -177,10 +177,6 @@ export async function POST(
           };
 
           // Return the response as JSON
-
-          
-
-          
 
           return NextResponse.json(response, {
             headers: {

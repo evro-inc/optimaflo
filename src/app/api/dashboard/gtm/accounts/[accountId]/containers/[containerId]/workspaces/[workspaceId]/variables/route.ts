@@ -8,7 +8,7 @@ import prisma from '@/src/lib/prisma';
 import Joi from 'joi';
 import { isErrorWithStatus } from '@/src/lib/fetch/dashboard';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
-import { RequestParams } from '@/types/gtm';
+import { RequestParams } from '@/src/lib/types/gtm';
 import {
   firstPartyCookie,
   aev,
@@ -128,10 +128,6 @@ export async function GET(
           };
 
           // Return the response as JSON
-
-          
-
-          
 
           return NextResponse.json(response, {
             headers: {
@@ -390,10 +386,6 @@ export async function POST(
           };
 
           // Return the response as JSON
-
-          
-
-          
 
           return NextResponse.json(response, {
             headers: {

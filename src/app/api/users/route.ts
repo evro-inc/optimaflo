@@ -68,9 +68,6 @@ export async function GET(req: NextRequest) {
     };
 
     // Return the response as JSON
-    
-
-    
 
     return NextResponse.json(response, {
       headers: {
@@ -113,9 +110,6 @@ export async function POST(request: Request) {
     });
 
     // Return the created user as JSON with status code 201 (Created)
-    
-
-    
 
     return NextResponse.json(response, {
       headers: {

@@ -6,10 +6,7 @@ import { auth, clerkClient } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
 
 // Separate out the logic to list GTM accounts into its own function
-export async function listGtmAccounts(
-  userId: string,
-  accessToken: string
-) {
+export async function listGtmAccounts(userId: string, accessToken: string) {
   let retries = 0;
   const MAX_RETRIES = 3;
   let delay = 1000;
@@ -29,24 +26,24 @@ export async function listGtmAccounts(
         const response = await fetch(url, { headers });
 
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
+          throw new Error(
+            `HTTP error! status: ${response.status}. ${response.statusText}`
+          );
         }
 
         const responseBody = await response.json();
         data = responseBody.account;
       });
 
-
       return {
         data: data,
         errors: null,
       };
-
     } catch (error: any) {
       if (error.code === 429 || error.status === 429) {
         console.warn('Rate limit exceeded. Retrying get accounts...');
         const jitter = Math.random() * 200;
-        await new Promise(resolve => setTimeout(resolve, delay + jitter));
+        await new Promise((resolve) => setTimeout(resolve, delay + jitter));
         delay *= 2;
         retries++;
       } else {
@@ -57,31 +54,30 @@ export async function listGtmAccounts(
   throw new Error('Maximum retries reached without a successful response.');
 }
 
-
 // Refactored GET handler
 export async function GET() {
-  const { userId } : { userId: string | null, getToken: any } = auth();
+  const { userId }: { userId: string | null; getToken: any } = auth();
 
   if (!userId) return notFound();
-  
+
   try {
     const accessToken = await clerkClient.users.getUserOauthAccessToken(
       userId,
       'oauth_google'
-    );    
+    );
 
     if (!accessToken) {
       // Handle the case where accessToken is null
       // e.g., return an error response or prompt re-authentication
-      return new NextResponse(JSON.stringify({ error: 'Access token not found' }), {
-        status: 401, // Unauthorized
-      });
-    }    
+      return new NextResponse(
+        JSON.stringify({ error: 'Access token not found' }),
+        {
+          status: 401, // Unauthorized
+        }
+      );
+    }
 
-    const response = await listGtmAccounts(
-      userId,
-      accessToken[0].token
-    );        
+    const response = await listGtmAccounts(userId, accessToken[0].token);
 
     const getResult = NextResponse.json(response, {
       headers: { 'Content-Type': 'application/json' },

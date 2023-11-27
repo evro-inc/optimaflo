@@ -24,7 +24,13 @@ const getLinkModeClasses = (variant) => {
 
 const BASE_LINK_CLASSES = 'cursor-pointer';
 
-export const LinkSignUp = ({ variant, text, ariaLabel, userHasSubscription, ...props }) => {
+export const LinkSignUp = ({
+  variant,
+  text,
+  ariaLabel,
+  userHasSubscription,
+  ...props
+}) => {
   const computedClasses = useMemo(() => {
     const modeClass = getLinkModeClasses(variant);
     return [BASE_LINK_CLASSES, modeClass].join(' ');
@@ -34,14 +40,17 @@ export const LinkSignUp = ({ variant, text, ariaLabel, userHasSubscription, ...p
   const redirectUrl = userHasSubscription == true ? '/profile' : '/pricing';
 
   return (
-    <SignUpButton mode='modal' redirectUrl={redirectUrl} afterSignUpUrl={redirectUrl}>
+    <SignUpButton
+      mode="modal"
+      redirectUrl={redirectUrl}
+      afterSignUpUrl={redirectUrl}
+    >
       <div className={computedClasses} {...props} aria-label={ariaLabel}>
         <button {...props}>{text}</button>
       </div>
     </SignUpButton>
   );
 };
-
 
 export const LinkNav = ({ variant, text, href, ariaLabel, ...props }) => {
   const computedClasses = useMemo(() => {
@@ -61,7 +70,6 @@ export const LinkNav = ({ variant, text, href, ariaLabel, ...props }) => {
     </Link>
   );
 };
-
 
 export const LinkBody = ({ variant, text, href, ariaLabel, ...props }) => {
   const computedClasses = useMemo(() => {

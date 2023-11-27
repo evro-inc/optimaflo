@@ -117,10 +117,6 @@ export async function GET(
 
           // Return the response as JSON
 
-          
-
-          
-
           return NextResponse.json(response, {
             headers: {
               'Content-Type': 'application/json',
@@ -315,10 +311,6 @@ export async function PATCH(request: NextRequest) {
           };
 
           // Return the response as JSON
-
-          
-
-          
 
           return NextResponse.json(response, {
             headers: {
@@ -516,10 +508,6 @@ export async function DELETE(request: NextRequest) {
 
           // Return the response as JSON
 
-          
-
-          
-
           return NextResponse.json(response, {
             headers: {
               'Content-Type': 'application/json',
@@ -662,10 +650,6 @@ export async function POST(request: NextRequest) {
           };
 
           // Return the response as JSON
-
-          
-
-          
 
           return NextResponse.json(response, {
             headers: {

@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { WorkspaceType } from '@/types/types';
+import { WorkspaceType } from '@/src/lib/types/types';
 import ButtonCreate from '@/src/components/client/UI/ButtonCreate';
 import ButtonUpdate from '@/src/components/client/UI/ButtonUpdate';
 import ButtonDel from '@/src/components/client/UI/ButtonDelete';
@@ -81,7 +81,10 @@ export default function WorkspaceTable({ containers, workspaces }) {
                           htmlFor="hs-at-with-checkboxes-main"
                           className="flex"
                         >
-                          <ToggleAll workspaces={workspaces} />
+                          <ToggleAll
+                            items={workspaces}
+                            uniqueKeys={['workspaceId', 'containerId']}
+                          />
                           <span className="sr-only">Checkbox</span>
                         </label>
                       </th>
@@ -142,8 +145,9 @@ export default function WorkspaceTable({ containers, workspaces }) {
                               className="flex"
                             >
                               <ToggleRow
-                                workspace={workspace}
-                                workspaces={workspaces}
+                                item={workspace}
+                                items={workspaces}
+                                uniqueKeys={['workspaceId', 'containerId']}
                               />
 
                               <span className="sr-only">Checkbox</span>

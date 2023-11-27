@@ -337,10 +337,6 @@ export async function PATCH(request: NextRequest) {
             errors: null,
           };
 
-          
-
-          
-
           return NextResponse.json(response, {
             headers: {
               'Content-Type': 'application/json',
@@ -533,10 +529,6 @@ export async function DELETE(request: NextRequest) {
             },
             errors: null,
           };
-
-          
-
-          
 
           return NextResponse.json(response, {
             headers: {

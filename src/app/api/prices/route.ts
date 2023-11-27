@@ -59,9 +59,6 @@ export async function GET(request: NextRequest) {
     };
 
     // Return the response as JSON
-    
-
-    
 
     return NextResponse.json(response, {
       headers: {

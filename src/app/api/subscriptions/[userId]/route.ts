@@ -157,9 +157,6 @@ export async function DELETE(
     await stripe.subscriptions.del(userId);
 
     // Return the canceled subscription as JSON
-    
-
-    
 
     return NextResponse.json(response, {
       headers: {

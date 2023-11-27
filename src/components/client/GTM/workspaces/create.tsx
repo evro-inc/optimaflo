@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LimitReached } from '../../modals/limitReached';
 import { ButtonGroup } from '../../ButtonGroup/ButtonGroup';
 import { XMarkIcon } from '@heroicons/react/24/solid';
-import { CreateResult, FormCreateWorkspaceProps } from '@/types/types';
+import { CreateResult, FormCreateWorkspaceProps } from '@/src/lib/types/types';
 import { useDispatch, useSelector } from 'react-redux';
 import { selectTable, setIsLimitReached } from '@/src/app/redux/tableSlice';
 import { selectGlobal, setLoading } from '@/src/app/redux/globalSlice';

@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Price } from '@prisma/client';
-import { ProductWithPrice } from 'types/types';
+import { ProductWithPrice } from '@/src/lib/types/types';
 import { postData } from '@/src/lib/helpers';
 import { getStripe } from '@/src/lib/stripe-client';
 import { Button, ButtonSubscribe } from '../Button/Button';

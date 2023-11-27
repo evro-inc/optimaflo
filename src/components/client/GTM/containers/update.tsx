@@ -19,7 +19,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   FormUpdateContainerProps,
   UpdateContainersResult,
-} from '@/types/types';
+} from '@/src/lib/types/types';
 import logger from '@/src/lib/logger';
 
 // Type for the entire form data

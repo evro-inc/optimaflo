@@ -805,34 +805,44 @@ async function deleteCustomerAndRelatedRecords(stripeCustomerId: string) {
       await prisma.session.deleteMany({ where: { userId: stripeCustomerId } });
 
       // Delete related invoices
-      await prisma.invoice.deleteMany({ where: { customerId: stripeCustomerId } });
+      await prisma.invoice.deleteMany({
+        where: { customerId: stripeCustomerId },
+      });
 
       // Delete related checkout sessions
-      await prisma.checkoutSession.deleteMany({ where: { userId: stripeCustomerId } });
+      await prisma.checkoutSession.deleteMany({
+        where: { userId: stripeCustomerId },
+      });
 
       // Delete related subscriptions
-      await prisma.subscription.deleteMany({ where: { userId: stripeCustomerId } });
+      await prisma.subscription.deleteMany({
+        where: { userId: stripeCustomerId },
+      });
 
       // Delete related product access records
-      await prisma.productAccess.deleteMany({ where: { userId: stripeCustomerId } });
+      await prisma.productAccess.deleteMany({
+        where: { userId: stripeCustomerId },
+      });
 
       // Delete related gtm records
       await prisma.gtm.deleteMany({ where: { userId: stripeCustomerId } });
 
-      await prisma.tierLimit.deleteMany({ where: { subscriptionId: stripeCustomerId } });
+      await prisma.tierLimit.deleteMany({
+        where: { subscriptionId: stripeCustomerId },
+      });
 
       // Finally, delete the customer record
       await prisma.customer.delete({ where: { stripeCustomerId } });
     });
 
-    logger.info(`Successfully deleted customer and related records for Stripe Customer ID: ${stripeCustomerId}`);
+    logger.info(
+      `Successfully deleted customer and related records for Stripe Customer ID: ${stripeCustomerId}`
+    );
   } catch (error) {
     logger.error(`Error deleting customer and related records: ${error}`);
     // Handle the error appropriately
   }
 }
-
-
 
 // Handle Stripe Webhook Events
 export async function POST(req: NextRequest) {

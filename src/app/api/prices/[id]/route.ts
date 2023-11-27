@@ -42,8 +42,6 @@ export async function GET(
     // Return the price as JSON
     const jsonString = JSON.stringify(price, null, 2);
 
-    
-
     return NextResponse.json(price, {
       headers: {
         'Content-Type': 'application/json',
@@ -102,8 +100,6 @@ export async function PATCH(
     // Return the updated price as JSON
     const jsonString = JSON.stringify(updated, null, 2);
 
-    
-
     return NextResponse.json(updated, {
       headers: {
         'Content-Type': 'application/json',
@@ -139,8 +135,6 @@ export async function DELETE(
 
     // Return the deleted price as JSON
     const jsonString = JSON.stringify(deleted, null, 2);
-
-    
 
     return NextResponse.json(deleted, {
       headers: {

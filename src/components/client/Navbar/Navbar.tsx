@@ -4,10 +4,7 @@ import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
 import React from 'react';
 import Logo from '../../icons/Logo';
-import {
-  ButtonSignIn,
-  ButtonToggle,
-} from '../../client/Button/Button';
+import { ButtonSignIn, ButtonToggle } from '../../client/Button/Button';
 import { LinkSignUp, LinkNav } from '../Links/Links';
 import { UserButton } from '@clerk/nextjs';
 import { useSession } from '@clerk/clerk-react';
@@ -25,7 +22,6 @@ export default function Navbar() {
   const { session } = useSession();
   const [hasSubscription, setHasSubscription] = useState(false); // State to track subscription status
 
-  
   useEffect(() => {
     const fetchSubscriptions = async () => {
       if (session?.user?.id) {
@@ -41,7 +37,7 @@ export default function Navbar() {
             setHasSubscription(false);
           }
         } catch (error) {
-          console.error("Error fetching subscriptions:", error);
+          console.error('Error fetching subscriptions:', error);
           setHasSubscription(false); // Set to false in case of error
         }
       } else {
@@ -53,7 +49,7 @@ export default function Navbar() {
   }, [session?.user?.id]);
 
   useEffect(() => {
-    console.log("Has Subscription:", hasSubscription);
+    console.log('Has Subscription:', hasSubscription);
   }, [hasSubscription]);
 
   return (
@@ -83,7 +79,7 @@ export default function Navbar() {
                 {session?.user && (
                   <div className="ml-3 relative">
                     <div className="block lg:hidden">
-                      <UserButton  afterSignOutUrl='/' />
+                      <UserButton afterSignOutUrl="/" />
                     </div>
                   </div>
                 )}
@@ -128,7 +124,7 @@ export default function Navbar() {
                 <div className="flex lg:flex-row items-center font-medium text-gray-500 hover:text-blue-600 lg:border-l p-0 sm:p-[10px] lg:border-gray-300 w-full lg:w-auto">
                   {session?.user && (
                     <div className="hidden lg:flex items-center font-medium text-gray-500 hover:text-blue-600 p-0 sm:p-[10px] lg:border-gray-300 w-full lg:w-auto">
-                      <UserButton  afterSignOutUrl='/' />
+                      <UserButton afterSignOutUrl="/" />
                     </div>
                   )}
                   {!session?.user && (
@@ -149,7 +145,6 @@ export default function Navbar() {
                       />
                     </div>
                   )}
-
                 </div>
               </div>
             </div>

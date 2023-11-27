@@ -3,7 +3,7 @@ import dynamic from 'next/dynamic';
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { DeleteContainers } from '@/src/lib/actions/containers';
-import { ContainerType } from '@/types/types';
+import { ContainerType } from '@/src/lib/types/types';
 import {
   selectGlobal,
   toggleCreateContainer,

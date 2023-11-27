@@ -11,7 +11,7 @@ import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
 import logger from '@/src/lib/logger';
 import { limiter } from '@/src/lib/bottleneck';
 import { handleError } from '@/src/lib/fetch/apiUtils';
-import { PostParams, ResultType } from '@/types/types';
+import { PostParams, ResultType } from '@/src/lib/types/types';
 import { clerkClient, currentUser, useSession } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
 

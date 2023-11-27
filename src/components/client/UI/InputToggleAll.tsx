@@ -7,31 +7,25 @@ import {
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
-function ToggleAll({ workspaces }) {
+function ToggleAll({ items, uniqueKeys }) {
   const dispatch = useDispatch();
-
   const { allSelected } = useSelector(selectTable);
 
   const toggleAll = () => {
     if (allSelected) {
-      // If all rows are currently selected, deselect all
       dispatch(setSelectedRows({}));
-      dispatch(toggleAllSelected());
     } else {
-      // If not all rows are currently selected, select all
       const newSelectedRows = {};
-      workspaces.forEach((workspace) => {
-        const uniqueKey = `${workspace.workspaceId}-${workspace.containerId}`;
-        newSelectedRows[uniqueKey] = {
-          accountId: workspace.accountId,
-          name: workspace.name,
-          containerId: workspace.containerId,
-          workspaceId: workspace.workspaceId,
-        };
+      items.forEach((item) => {
+        const uniqueKey = uniqueKeys.map((key) => item[key]).join('-');
+        newSelectedRows[uniqueKey] = uniqueKeys.reduce(
+          (acc, key) => ({ ...acc, [key]: item[key] }),
+          {}
+        );
       });
       dispatch(setSelectedRows(newSelectedRows));
-      dispatch(toggleAllSelected());
     }
+    dispatch(toggleAllSelected());
   };
 
   return (

@@ -353,8 +353,6 @@ export async function updateWorkspaces(formData: FormUpdateSchema) {
         }
       );
 
-      console.log('response', response);
-
       if (response.status === 403) {
         const updatedWorkspace = await response.json();
         if (updatedWorkspace.message === 'Feature limit reached') {
