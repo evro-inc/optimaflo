@@ -43,6 +43,8 @@ const FormUpdateContainer = dynamic(() => import('./update'), {
 });
 
 export default function ContainerTable({ accounts, containers }) {
+  const flattenedContainers = containers.flat();
+
   const dispatch = useDispatch();
   const { showUpdateContainer, showCreateContainer, showCombineContainer } =
     useSelector(selectGlobal);
@@ -54,9 +56,9 @@ export default function ContainerTable({ accounts, containers }) {
 
   const containersPerPage = 10;
   const totalPages = Math.ceil(
-    (containers ? containers.length : 0) / containersPerPage
+    (flattenedContainers ? flattenedContainers.length : 0) / containersPerPage
   );
-
+  
   const nextPage = () => {
     if (currentPage < totalPages) {
       dispatch(setCurrentPage(currentPage + 1));
@@ -72,8 +74,8 @@ export default function ContainerTable({ accounts, containers }) {
   // Pagination logic
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = containers
-    ? containers.slice(indexOfFirstItem, indexOfLastItem)
+  const currentItems = flattenedContainers
+    ? flattenedContainers.slice(indexOfFirstItem, indexOfLastItem)
     : [];
 
   const handlePageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {

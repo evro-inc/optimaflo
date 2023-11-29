@@ -1,58 +1,10 @@
 import { NextResponse } from 'next/server';
-import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
-import { limiter } from '@/src/lib/bottleneck';
 import { ValidationError } from '@/src/lib/exceptions';
 import { auth, clerkClient } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
+import { listGtmAccounts } from '@/src/lib/actions/accounts';
 
-// Separate out the logic to list GTM accounts into its own function
-export async function listGtmAccounts(userId: string, accessToken: string) {
-  let retries = 0;
-  const MAX_RETRIES = 3;
-  let delay = 1000;
 
-  while (retries < MAX_RETRIES) {
-    try {
-      await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
-
-      let data;
-      await limiter.schedule(async () => {
-        const url = `https://www.googleapis.com/tagmanager/v2/accounts`;
-        const headers = {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        };
-
-        const response = await fetch(url, { headers });
-
-        if (!response.ok) {
-          throw new Error(
-            `HTTP error! status: ${response.status}. ${response.statusText}`
-          );
-        }
-
-        const responseBody = await response.json();
-        data = responseBody.account;
-      });
-
-      return {
-        data: data,
-        errors: null,
-      };
-    } catch (error: any) {
-      if (error.code === 429 || error.status === 429) {
-        console.warn('Rate limit exceeded. Retrying get accounts...');
-        const jitter = Math.random() * 200;
-        await new Promise((resolve) => setTimeout(resolve, delay + jitter));
-        delay *= 2;
-        retries++;
-      } else {
-        throw error;
-      }
-    }
-  }
-  throw new Error('Maximum retries reached without a successful response.');
-}
 
 // Refactored GET handler
 export async function GET() {
@@ -79,12 +31,10 @@ export async function GET() {
 
     const response = await listGtmAccounts(userId, accessToken[0].token);
 
-    const getResult = NextResponse.json(response, {
-      headers: { 'Content-Type': 'application/json' },
-      status: 200,
-    });
-
-    return getResult;
+    return NextResponse.json(response, {
+        headers: { 'Content-Type': 'application/json' },
+        status: 200,
+      });;
   } catch (error: any) {
     if (error instanceof ValidationError) {
       console.error('Validation Error: ', error.message);

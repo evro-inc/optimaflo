@@ -1,6 +1,4 @@
-/* eslint-disable no-unused-vars */
-
-import { NextRequest, NextResponse } from 'next/server';
+/* import { NextRequest, NextResponse } from 'next/server';
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager/v2';
 import { QuotaLimitError } from '@/src/lib/exceptions';
 import { createOAuth2Client } from '@/src/lib/oauth2Client';
@@ -18,10 +16,9 @@ import {
   aevValidationSchema,
   firstPartyCookieValidationSchema,
 } from '@/src/lib/fetch/dashboard/gtm/validation';
-import logger from '@/src/lib/logger';
-import { useSession } from '@clerk/nextjs';
+import { useSession } from '@clerk/nextjs'; */
 
-export async function GET(
+/* export async function GET(
   req: NextRequest,
   {
     params,
@@ -250,7 +247,6 @@ export async function POST(
           {
             is: 'c',
             then: Joi.object({
-              /* Define validation for 'c' type */
             }),
           },
         ],
@@ -416,3 +412,4 @@ export async function POST(
     return NextResponse.error();
   }
 }
+ */

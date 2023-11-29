@@ -48,10 +48,6 @@ export default function Navbar() {
     fetchSubscriptions();
   }, [session?.user?.id]);
 
-  useEffect(() => {
-    console.log('Has Subscription:', hasSubscription);
-  }, [hasSubscription]);
-
   return (
     <div className="relative">
       <header

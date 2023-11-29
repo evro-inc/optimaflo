@@ -19,20 +19,15 @@ const AccountFormUpdate = dynamic(
   }
 );
 
-type Props = {
-  accounts: any;
-};
 
-function AccountForms({ accounts }: Props) {
+function AccountForms() {
   const dispatch = useDispatch();
   const { selectedRows, isLimitReached } = useSelector(selectTable);
-  const { showUpdate } = useSelector(selectEntity);
+  const { showUpdate } = useSelector(selectEntity); 
 
   return (
     <>
-      {isLimitReached && (
-        <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
-      )}
+      {isLimitReached && <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />}
       {showUpdate && (
         <AccountFormUpdate
           showOptions={showUpdate}

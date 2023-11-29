@@ -21,7 +21,13 @@ type FormUpdateSchema = z.infer<typeof UpdateWorkspaceSchema>;
 export async function gtmListWorkspaces() {
   try {
     const baseUrl = getURL();
+    const { getToken } = auth();
+    const accessToken = await getToken();
 
+    const requestHeaders = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    };  
     // Fetching unique containers
     const containersData = await gtmListContainers();
 
@@ -31,8 +37,9 @@ export async function gtmListWorkspaces() {
       const workspaceUrl = `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces`;
 
       const workspacesResp = await fetch(workspaceUrl, {
-        next: { revalidate: 10 },
-      });
+        headers: requestHeaders,
+      }); 
+      
       if (!workspacesResp.ok) {
         const responseText = await workspacesResp.text();
         console.error(

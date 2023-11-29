@@ -1,4 +1,3 @@
-import logger from '@/src/lib/logger';
 import prisma from '@/src/lib/prisma';
 import { stripe } from '@/src/lib/stripe';
 import Joi from 'joi';

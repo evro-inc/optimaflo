@@ -174,12 +174,7 @@ export interface Database {
         };
       };
     };
-    Views: {
-      [_ in never]: never;
-    };
-    Functions: {
-      [_ in never]: never;
-    };
+
     Enums: {
       pricing_plan_interval: 'day' | 'week' | 'month' | 'year';
       pricing_type: 'one_time' | 'recurring';
@@ -193,8 +188,6 @@ export interface Database {
         | 'unpaid'
         | 'paused';
     };
-    CompositeTypes: {
-      [_ in never]: never;
-    };
+
   };
 }

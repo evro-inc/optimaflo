@@ -57,6 +57,9 @@ export async function listGtmContainers(
   const allResults: ResultType[] = [];
   let delay = 1000;
 
+  pageNumber = pageNumber || 1;
+  limit = limit || 10;
+
   while (retries < MAX_RETRIES) {
     try {
       // Check if we've hit the rate limit

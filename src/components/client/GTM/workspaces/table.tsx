@@ -29,6 +29,7 @@ export default function WorkspaceTable({ containers, workspaces }) {
         };
       })
     : [];
+    
   const sortedData = [...mergedData].sort((a, b) => {
     if (a.containerName < b.containerName) return -1;
     if (a.containerName > b.containerName) return 1;

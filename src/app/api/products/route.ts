@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/src/lib/prisma';
 import Joi from 'joi';
-import logger from '@/src/lib/logger';
 
 export async function GET(req: NextRequest) {
   try {

@@ -1,7 +1,6 @@
 import prisma from '@/src/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import Joi from 'joi';
-import logger from '@/src/lib/logger';
 
 // This function handles an HTTP GET request
 export async function GET(req: NextRequest) {

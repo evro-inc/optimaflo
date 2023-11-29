@@ -1,3 +1,4 @@
+"use server";
 import React from 'react';
 import '../../styles/globals.css';
 import NavApp from '@/src/components/client/Navbar/NavApp';
@@ -5,13 +6,15 @@ import { Providers, ReduxProvider } from '../providers';
 import SideBar from '@/src/components/client/Navbar/SideBar';
 import { Toaster } from 'react-hot-toast';
 
-export default function DashboardLayout({
+
+export default async function DashboardLayout({
   // Layouts must accept a children prop.
   // This will be populated with nested layouts or pages
   children,
 }: {
   children: React.ReactNode;
 }) {
+
   return (
     <ReduxProvider>
       <Providers>

@@ -2,17 +2,16 @@
 import { revalidatePath } from 'next/cache';
 import {
   CreateContainerSchema,
-  UpdateContainerSchema,
 } from '@/src/lib/schemas/containers';
 import logger from '../logger';
 import { getURL } from '@/src/lib/helpers';
 import z from 'zod';
 import { getAccessToken } from '../fetch/apiUtils';
-import { useSession } from '@clerk/nextjs';
+import { clerkClient, currentUser, useSession } from '@clerk/nextjs';
+import { listGtmAccounts } from './accounts';
 
 // Define the types for the form data
 type FormCreateSchema = z.infer<typeof CreateContainerSchema>;
-type FormUpdateSchema = z.infer<typeof UpdateContainerSchema>;
 
 /************************************************************************************
   List containers
@@ -20,27 +19,29 @@ type FormUpdateSchema = z.infer<typeof UpdateContainerSchema>;
 export async function gtmListContainers() {
   try {
     const baseUrl = getURL();
-    const url = `${baseUrl}/api/dashboard/gtm/accounts`;
-    const resp = await fetch(url, { next: { revalidate: 10 } });
+    const user = await currentUser();
 
-    if (!resp.ok) {
-      const responseText = await resp.text();
-      console.log('Response Text:', responseText);
+    const userId = user?.id as string;
+    const accessToken = await clerkClient.users.getUserOauthAccessToken(
+      userId,
+      'oauth_google'
+    );
 
-      throw new Error(
-        `Error: ${resp.status} ${resp.statusText}. Response: ${responseText}`
-      );
-    }
 
-    const gtmData = await resp.json();
+    const requestHeaders = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    };  
 
-    const accountIds = gtmData.data.map((container) => container.accountId);
+    const respAccounts = await listGtmAccounts(userId, accessToken[0].token);   
+
+    const accountIds = respAccounts.map((container) => container.accountId);
 
     const containersPromises = accountIds.map(async (accountId) => {
       const containersUrl = `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers`;
 
       const containersResp = await fetch(containersUrl, {
-        next: { revalidate: 10 },
+        headers: requestHeaders,
       });
 
       if (!containersResp.ok) {
@@ -312,7 +313,7 @@ export async function CreateContainers(formData: FormCreateSchema) {
 /************************************************************************************
   Create a single container or multiple containers
 ************************************************************************************/
-export async function updateContainers(
+/* export async function updateContainers(
   formData: FormUpdateSchema // Replace 'any' with the actual type if known
 ) {
   try {
@@ -476,12 +477,12 @@ export async function updateContainers(
       message: error.message,
     };
   }
-}
+} */
 
 /************************************************************************************
   Combine containers
 ************************************************************************************/
-export async function combineContainers(
+/* export async function combineContainers(
   formData: FormUpdateSchema // Replace 'any' with the actual type if known
 ) {
   try {
@@ -646,4 +647,4 @@ export async function combineContainers(
       message: error.message,
     };
   }
-}
+} */

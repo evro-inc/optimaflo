@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/src/lib/prisma';
 import Joi from 'joi';
-import logger from '@/src/lib/logger';
-// adjust the path based on your project structure
 
 export async function GET(
   request: NextRequest,
@@ -36,10 +34,7 @@ export async function GET(
         { status: 404 }
       );
     }
-
-    // Return the customer as JSON
-    const jsonString = JSON.stringify(customer, null, 2);
-
+    
     return NextResponse.json(customer, {
       headers: {
         'Content-Type': 'application/json',

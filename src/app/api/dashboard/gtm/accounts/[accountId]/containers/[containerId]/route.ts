@@ -452,21 +452,14 @@ export async function GET(
 
   const userId = user?.id;
 
-  console.log('params', params);
-
   try {
     const paramsJOI = {
       accountId: params.accountId,
       containerId: params.containerId,
     };
 
-    console.log('paramsJOI', paramsJOI);
-
     const validatedParams = await validateGetParams(paramsJOI);
     const { accountId, containerId } = validatedParams;
-
-    console.log('accountId', accountId);
-    console.log('containerId', containerId);
 
     const accessToken = await clerkClient.users.getUserOauthAccessToken(
       user?.id,

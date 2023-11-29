@@ -5,10 +5,22 @@ import ButtonPrev from '../../UI/ButtonPrevious';
 import ButtonNext from '../../UI/ButtonNext';
 import ButtonUpdate from '../../UI/ButtonUpdate';
 import AccountForms from '../../UI/AccountForms';
+import { clerkClient, currentUser } from '@clerk/nextjs';
+import { listGtmAccounts } from '@/src/lib/actions/accounts';
 
-async function AccountTable({ accounts }) {
-  const totalPages = Math.ceil(accounts.length / 10);
-  const pageOptions = Array.from({ length: totalPages }, (_, i) => i + 1);
+async function AccountTable() {
+    const user = await currentUser();
+
+  const userId = user?.id as string;
+  const accessToken = await clerkClient.users.getUserOauthAccessToken(
+    userId,
+    'oauth_google'
+  );
+
+  const accounts = await listGtmAccounts(userId, accessToken[0].token); 
+
+  const totalPages = Math.ceil(accounts.length / 10)
+  const pageOptions = Array.from({ length: totalPages }, (_, i) => i + 1); 
 
   return (
     <>
@@ -68,7 +80,7 @@ async function AccountTable({ accounts }) {
                     </tr>
                   </thead>
 
-                  {accounts.map((account: any) => (
+                  {accounts && accounts.map((account: any) => (
                     <tbody
                       className="divide-y divide-gray-200 dark:divide-gray-700"
                       key={account.accountId}
@@ -171,7 +183,7 @@ async function AccountTable({ accounts }) {
         {/* End Card */}
       </div>
       {/* End Table Section */}
-      <AccountForms accounts={accounts} />
+      <AccountForms />
     </>
   );
 }

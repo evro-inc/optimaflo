@@ -214,15 +214,7 @@ export async function GET(
   POST request handler
 ************************************************************************************/
 export async function POST(
-  request: NextRequest,
-  {
-    params,
-  }: {
-    params: {
-      accountId?: string;
-      containerId?: string;
-    };
-  }
+  request: NextRequest
 ) {
   const user = await currentUser();
   if (!user) return notFound();

@@ -3,7 +3,6 @@ import prisma from '@/src/lib/prisma';
 
 import { stripe } from '@/src/lib/stripe';
 import Joi from 'joi';
-import logger from '@/src/lib/logger';
 
 // Get a subscription by ID
 export async function GET(

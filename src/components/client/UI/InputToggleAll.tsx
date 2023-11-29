@@ -18,15 +18,13 @@ function ToggleAll({ items, uniqueKeys }) {
       const newSelectedRows = {};
       items.forEach((item) => {
         const uniqueKey = uniqueKeys.map((key) => item[key]).join('-');
-        newSelectedRows[uniqueKey] = uniqueKeys.reduce(
-          (acc, key) => ({ ...acc, [key]: item[key] }),
-          {}
-        );
+        newSelectedRows[uniqueKey] = item; // Store the entire item data
       });
       dispatch(setSelectedRows(newSelectedRows));
     }
     dispatch(toggleAllSelected());
   };
+
 
   return (
     <input

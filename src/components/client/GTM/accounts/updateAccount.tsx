@@ -26,7 +26,7 @@ function AccountFormUpdate({ showOptions, onClose, selectedRows }) {
   const { isLimitReached } = useSelector(selectTable);
   const isLoading = useSelector(selectIsLoading);
   const formRefs = useRef<(HTMLFormElement | null)[]>([]);
-
+  
   const {
     register,
     handleSubmit,
@@ -40,10 +40,7 @@ function AccountFormUpdate({ showOptions, onClose, selectedRows }) {
     resolver: zodResolver(UpdateAccountSchema),
   });
 
-  const { fields } = useFieldArray({ control, name: 'forms' });
-
-  console.log('fields', fields);
-  
+  const { fields } = useFieldArray({ control, name: 'forms' }); 
 
   useEffect(() => {
     const initialForms = Object.values(selectedRows).map((account: any) => ({
@@ -133,12 +130,11 @@ function AccountFormUpdate({ showOptions, onClose, selectedRows }) {
                           htmlFor="accountId"
                           className="block text-sm text-gray-700 font-medium dark:text-white"
                         >
-                          Current Account Name: {field.accountId}
+                          Current Account Name: {field.name}
                         </label>
                         <input
                           type="text"
                           {...register(`forms.${index}.name`)}
-                          defaultValue={field.name}
                           placeholder="New Account Name"
                           className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
                         />

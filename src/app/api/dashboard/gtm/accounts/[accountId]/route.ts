@@ -2,11 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager/v2';
 import { QuotaLimitError } from '@/src/lib/exceptions';
 import { createOAuth2Client } from '@/src/lib/oauth2Client';
-import prisma from '@/src/lib/prisma';
 import Joi from 'joi';
 import { isErrorWithStatus } from '@/src/lib/fetch/dashboard';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
-import logger from '@/src/lib/logger';
 import { clerkClient, currentUser } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
 
@@ -58,10 +56,7 @@ async function PatchGtmAccount(accessToken, accountId, name, userId) {
           body: JSON.stringify({
             name: name,
           }),
-        });
-
-        console.log('response: ', response);
-        
+        });        
 
         if (!response.ok) {
           throw new Error(
@@ -226,9 +221,6 @@ export async function PATCH(request: NextRequest) {
   try {
     // Parse the request body
     const body = JSON.parse(await request.text());
-
-    // Extract the account ID from the body
-    const { accountId, name } = body;
 
     const params = {
       accountId: body.accountId,
