@@ -9,27 +9,18 @@ import ToggleAll from '@/src/components/client/UI/InputToggleAll';
 import Select from '@/src/components/client/UI/Select';
 import ButtonPrev from '@/src/components/client/UI/ButtonPrevious';
 import ButtonNext from '@/src/components/client/UI/ButtonNext';
-import WorkspaceForms from '@/src/components/client/UI/WorkspaceForms';
 import { usePaginate } from '@/src/lib/paginate';
 import { selectTable } from '@/src/app/redux/tableSlice';
 import { useSelector } from 'react-redux';
+import WorkspaceForms from '../../UI/WorkspaceForms';
 
-export default function WorkspaceTable({ containers, workspaces }) {
+export default function WorkspaceTable(
+  { workspaces }
+) {
   const { itemsPerPage } = useSelector(selectTable);
 
-  // Check if workspaces exist before mapping
-  const mergedData = workspaces
-    ? workspaces.map((workspace: WorkspaceType) => {
-        const container = containers.find(
-          (container) => container.containerId === workspace.containerId
-        );
-        return {
-          ...workspace,
-          containerName: container?.name || '',
-        };
-      })
-    : [];
-    
+  const mergedData = Array.isArray(workspaces) ? workspaces : [];
+
   const sortedData = [...mergedData].sort((a, b) => {
     if (a.containerName < b.containerName) return -1;
     if (a.containerName > b.containerName) return 1;
@@ -257,11 +248,7 @@ export default function WorkspaceTable({ containers, workspaces }) {
         {/* End Card */}
       </div>
       {/* End Table Section */}
-      <WorkspaceForms
-        accounts={workspaces}
-        containers={containers}
-        workspaces={workspaces}
-      />
+      <WorkspaceForms accounts={workspaces} workspaces={workspaces} />
     </>
   );
 }

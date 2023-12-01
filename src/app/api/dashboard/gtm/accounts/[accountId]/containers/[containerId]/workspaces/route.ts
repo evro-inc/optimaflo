@@ -6,6 +6,8 @@ import logger from '@/src/lib/logger';
 import { limiter } from '@/src/lib/bottleneck';
 import { clerkClient, currentUser } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
+import { listGtmWorkspaces } from '@/src/lib/actions/workspaces';
+import { redis } from '@/src/lib/redis/cache';
 
 /************************************************************************************
  * GET UTILITY FUNCTIONS
@@ -28,71 +30,7 @@ async function validateGetParams(params) {
   return value;
 }
 
-/************************************************************************************
-  Function to list or get one GTM containers
-************************************************************************************/
-export async function listGtmWorkspaces(
-  userId: string,
-  accessToken: string,
-  accountId: string,
-  containerId: string
-) {
-  let retries = 0;
-  const MAX_RETRIES = 3;
-  let delay = 1000;
 
-  while (retries < MAX_RETRIES) {
-    try {
-      const { remaining } = await gtmRateLimit.blockUntilReady(
-        `user:${userId}`,
-        1000
-      );
-
-      if (remaining > 0) {
-        let data;
-        await limiter.schedule(async () => {
-          const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces`;
-          const headers = {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          };
-
-          const response = await fetch(url, { headers });
-
-          if (!response.ok) {
-            throw new Error(
-              `HTTP error! status: ${response.status}. ${response.statusText}`
-            );
-          }
-
-          const responseBody = await response.json();
-          data = responseBody.workspace;
-        });
-
-        return {
-          data: data,
-          meta: {
-            totalResults: data?.length ?? 0,
-          },
-          errors: null,
-        };
-      } else {
-        throw new Error('Rate limit exceeded');
-      }
-    } catch (error: any) {
-      if (error.code === 429 || error.status === 429) {
-        console.warn('Rate limit exceeded. Retrying get workspaces...');
-        const jitter = Math.random() * 200;
-        await new Promise((resolve) => setTimeout(resolve, delay + jitter));
-        delay *= 2;
-        retries++;
-      } else {
-        throw error;
-      }
-    }
-  }
-  throw new Error('Maximum retries reached without a successful response.');
-}
 
 /************************************************************************************
  * POST UTILITY FUNCTIONS
@@ -169,26 +107,36 @@ export async function GET(
 ) {
   const user = await currentUser();
   if (!user) return notFound();
-  const userId = user?.id;
 
   try {
     const paramsJOI = {
       accountId: params.accountId,
       containerId: params.containerId,
     };
-
     const validateParams = await validateGetParams(paramsJOI);
     const { accountId, containerId } = validateParams;
-    const accessToken = await clerkClient.users.getUserOauthAccessToken(
-      user?.id,
-      'oauth_google'
+
+    const cachedValue = await redis.get(
+      `gtm:workspaces:${accountId}:${containerId}`
     );
 
+    if (cachedValue) {
+      return NextResponse.json(JSON.parse(cachedValue), {
+        headers: { 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+
     const data = await listGtmWorkspaces(
-      userId,
-      accessToken[0].token,
       accountId,
       containerId
+    );
+
+    redis.set(
+      `gtm:workspaces:${accountId}:${containerId}`,
+      JSON.stringify(data),
+      'EX',
+      60 * 60 * 24 * 7
     );
 
     return NextResponse.json(data, {

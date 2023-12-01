@@ -131,7 +131,6 @@ export type FormUpdateWorkspaceProps = {
   onClose: () => void;
   accounts: any; // Replace 'any' with the actual type if known
   selectedRows: Map<string, ContainerType>;
-  containers: any;
   workspaces: any;
 };
 
@@ -173,7 +172,7 @@ export type FormCreateWorkspaceProps = {
   showOptions: boolean;
   onClose: () => void;
   accounts: any;
-  containers: any;
+  workspaces: any;
 };
 
 export type WorkspaceType = {

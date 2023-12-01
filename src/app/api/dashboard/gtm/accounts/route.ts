@@ -4,8 +4,6 @@ import { auth, clerkClient } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
 import { listGtmAccounts } from '@/src/lib/actions/accounts';
 
-
-
 // Refactored GET handler
 export async function GET() {
   const { userId }: { userId: string | null; getToken: any } = auth();
@@ -29,12 +27,12 @@ export async function GET() {
       );
     }
 
-    const response = await listGtmAccounts(userId, accessToken[0].token);
+    const response = await listGtmAccounts();
 
     return NextResponse.json(response, {
-        headers: { 'Content-Type': 'application/json' },
-        status: 200,
-      });;
+      headers: { 'Content-Type': 'application/json' },
+      status: 200,
+    });
   } catch (error: any) {
     if (error instanceof ValidationError) {
       console.error('Validation Error: ', error.message);

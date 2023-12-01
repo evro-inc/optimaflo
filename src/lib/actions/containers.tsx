@@ -1,8 +1,6 @@
 'use server';
 import { revalidatePath } from 'next/cache';
-import {
-  CreateContainerSchema,
-} from '@/src/lib/schemas/containers';
+import { CreateContainerSchema } from '@/src/lib/schemas/containers';
 import logger from '../logger';
 import { getURL } from '@/src/lib/helpers';
 import z from 'zod';
@@ -16,54 +14,60 @@ type FormCreateSchema = z.infer<typeof CreateContainerSchema>;
 /************************************************************************************
   List containers
 ************************************************************************************/
-export async function gtmListContainers() {
-  try {
-    const baseUrl = getURL();
-    const user = await currentUser();
+/************************************************************************************
+  Function to list GTM containers
+************************************************************************************/
+export async function listGtmContainers(
+  accountId: string,
+  pageNumber?: number,
+  limit?: number
+) {
+  let retries = 0;
+  const MAX_RETRIES = 3;
+  let delay = 1000;
 
-    const userId = user?.id as string;
-    const accessToken = await clerkClient.users.getUserOauthAccessToken(
-      userId,
-      'oauth_google'
-    );
+  const user = await currentUser();
+  const userId = user?.id as string;
+  const accessToken = await clerkClient.users.getUserOauthAccessToken(
+    userId,
+    'oauth_google'
+  );
 
+  while (retries < MAX_RETRIES) {
+    try {
+      // URL for the Google Tag Manager API
+      const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers`;
 
-    const requestHeaders = {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken}`,
-    };  
+      const headers = {
+        Authorization: `Bearer ${accessToken[0].token}`,
+        'Content-Type': 'application/json',
+      };
 
-    const respAccounts = await listGtmAccounts(userId, accessToken[0].token);   
+      const response = await fetch(url, { headers });
 
-    const accountIds = respAccounts.map((container) => container.accountId);
-
-    const containersPromises = accountIds.map(async (accountId) => {
-      const containersUrl = `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers`;
-
-      const containersResp = await fetch(containersUrl, {
-        headers: requestHeaders,
-      });
-
-      if (!containersResp.ok) {
-        const responseText = await containersResp.text();
-        console.error(
-          `Error fetching containers for account ${accountId}: ${responseText}`
+      if (!response.ok) {
+        throw new Error(
+          `HTTP error! status: ${response.status}. ${response.statusText}`
         );
-        return []; // return an empty array on error
       }
 
-      const containersData = await containersResp.json();
-      return containersData[0]?.data || []; // ensure an array is returned
-    });
-
-    const containersArrays = await Promise.all(containersPromises);
-    const containers = containersArrays.flat();
-
-    return containers;
-  } catch (error) {
-    console.error('Error fetching GTM containers:', error);
-    throw error;
+      const data = await response.json();
+      return data.container || []; // Assuming the containers are in the 'container' field of the response
+    } catch (error: any) {
+      if (error.code === 429 || error.status === 429) {
+        console.warn('Rate limit exceeded. Retrying get containers...');
+        await new Promise((resolve) =>
+          setTimeout(resolve, delay + Math.random() * 200)
+        );
+        delay *= 2;
+        retries++;
+      } else {
+        throw error;
+      }
+    }
   }
+
+  throw new Error('Maximum retries reached without a successful response.');
 }
 
 /************************************************************************************

@@ -188,6 +188,5 @@ export interface Database {
         | 'unpaid'
         | 'paused';
     };
-
   };
 }

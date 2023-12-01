@@ -7,59 +7,81 @@ import {
 import logger from '../logger';
 import z from 'zod';
 import { getURL } from '@/src/lib/helpers';
-import { gtmListContainers } from './containers';
-import { auth, currentUser } from '@clerk/nextjs';
+import { auth, clerkClient, currentUser } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
+import { limiter } from '../bottleneck';
+import { gtmRateLimit } from '../redis/rateLimits';
+import { listGtmAccounts } from './accounts';
+import { listGtmContainers } from './containers';
+import { redis } from '../redis/cache';
 
 // Define the types for the form data
 type FormCreateSchema = z.infer<typeof CreateWorkspaceSchema>;
 type FormUpdateSchema = z.infer<typeof UpdateWorkspaceSchema>;
 
 /************************************************************************************
-  List all workspaces
+  Function to list or get one GTM workspaces
 ************************************************************************************/
-export async function gtmListWorkspaces() {
-  try {
-    const baseUrl = getURL();
-    const { getToken } = auth();
-    const accessToken = await getToken();
+export async function listGtmWorkspaces(
+  accountId: string,
+  containerId: string
+) {
+  let retries = 0;
+  const MAX_RETRIES = 3;
+  let delay = 1000;
 
-    const requestHeaders = {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken}`,
-    };  
-    // Fetching unique containers
-    const containersData = await gtmListContainers();
+  const user = await currentUser();
+  const userId = user?.id as string;
+  const accessToken = await clerkClient.users.getUserOauthAccessToken(
+    userId,
+    'oauth_google'
+  );
 
-    const workspacesPromises = containersData.map(async (container) => {
-      const { accountId, containerId } = container;
+  while (retries < MAX_RETRIES) {
+    try {
+      const { remaining } = await gtmRateLimit.blockUntilReady(
+        `user:${userId}`,
+        1000
+      );
 
-      const workspaceUrl = `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces`;
+      if (remaining > 0) {
+        let data;
+        await limiter.schedule(async () => {
+          const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces`;
+          const headers = {
+            Authorization: `Bearer ${accessToken[0].token}`,
+            'Content-Type': 'application/json',
+          };
 
-      const workspacesResp = await fetch(workspaceUrl, {
-        headers: requestHeaders,
-      }); 
-      
-      if (!workspacesResp.ok) {
-        const responseText = await workspacesResp.text();
-        console.error(
-          `Error fetching workspaces for account ${accountId} ${containerId}: ${responseText}`
-        );
-        return []; // return an empty array on error
+          const response = await fetch(url, { headers });
+
+          if (!response.ok) {
+            throw new Error(
+              `HTTP error! status: ${response.status}. ${response.statusText}`
+            );
+          }
+
+          const responseBody = await response.json();
+          data = responseBody.workspace;
+        });
+
+        return data;
+      } else {
+        throw new Error('Rate limit exceeded');
       }
-
-      const workspacesData = await workspacesResp.json();
-      return workspacesData.data || [];
-    });
-
-    const workspacesArrays = await Promise.all(workspacesPromises);
-    const workspaces = workspacesArrays.flat();
-
-    return workspaces;
-  } catch (error) {
-    console.error('Error fetching GTM workspaces:', error);
-    throw error;
+    } catch (error: any) {
+      if (error.code === 429 || error.status === 429) {
+        console.warn('Rate limit exceeded. Retrying get workspaces...');
+        const jitter = Math.random() * 200;
+        await new Promise((resolve) => setTimeout(resolve, delay + jitter));
+        delay *= 2;
+        retries++;
+      } else {
+        throw error;
+      }
+    }
   }
+  throw new Error('Maximum retries reached without a successful response.');
 }
 
 /************************************************************************************
@@ -138,6 +160,7 @@ export async function DeleteWorkspaces(
 export async function createWorkspaces(formData: FormCreateSchema) {
   const user = await currentUser();
   if (!user) return notFound();
+  const userId = user?.id;
 
   const { getToken } = auth();
   const token = await getToken();
@@ -145,11 +168,11 @@ export async function createWorkspaces(formData: FormCreateSchema) {
   try {
     const baseUrl = getURL();
     const errors: string[] = [];
-    const forms: any[] = [];
+    const forms: any[] = [];    
 
-    const plainDataArray = formData.forms.map((fd) => {
+    const plainDataArray = formData.forms?.map((fd) => {
       return Object.fromEntries(Object.keys(fd).map((key) => [key, fd[key]]));
-    });
+    }) || [];
 
     // Now pass plainDataArray to CreateWorkspaceSchema.safeParse within an object under the key 'forms'
     const validationResult = CreateWorkspaceSchema.safeParse({
@@ -192,7 +215,7 @@ export async function createWorkspaces(formData: FormCreateSchema) {
 
     const featureLimitReachedWorkspaces: string[] = [];
 
-    const createPromises = forms.map(async (workspaceData) => {
+    const createPromises = forms.map(async (workspaceData) => {      
       const { accountId, description, containerId, name } = workspaceData; // Destructure from the current object
 
       // Initialize payload with a flexible type
@@ -203,6 +226,9 @@ export async function createWorkspaces(formData: FormCreateSchema) {
         name: name,
       };
 
+      console.log('payload', payload);
+      
+
       const response = await fetch(
         `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces`,
         {
@@ -211,6 +237,9 @@ export async function createWorkspaces(formData: FormCreateSchema) {
           body: JSON.stringify(payload),
         }
       );
+
+      console.log('response', await response.json());
+      
 
       if (response.status === 400) {
         const parsedResponse = await response.json();
@@ -245,15 +274,25 @@ export async function createWorkspaces(formData: FormCreateSchema) {
           message: 'Failed to create',
         };
       }
+     
 
-      // Parse JSON only for successful responses
-      const createdWorkspace = await response.json();
+      const cacheKey = `user:${userId}-gtm:all_workspaces`;
+      await redis.del(cacheKey);
+
+      // Optionally, fetch and cache the updated list of workspaces
+      const updatedWorkspaces = await fetchAllWorkspaces(); // A function to fetch all workspaces
+      await redis.set(
+        cacheKey,
+        JSON.stringify(updatedWorkspaces),
+        'EX',
+        60 * 60 * 24 * 7
+      );
 
       // Revalidate path
       const workspacePath = `/dashboard/gtm/workspaces`;
       revalidatePath(workspacePath);
 
-      return { success: true, createdWorkspace };
+      return { success: true, updatedWorkspaces };
     });
 
     const results = await Promise.all(createPromises);
@@ -421,5 +460,48 @@ export async function updateWorkspaces(formData: FormUpdateSchema) {
   } catch (error: any) {
     logger.error(error);
     return { success: false, limitReached: false, message: error.message };
+  }
+}
+
+/************************************************************************************
+  Function to list all GTM workspaces in all containers in all accounts
+************************************************************************************/
+// Assuming WorkspaceType is the type for each workspace
+interface WorkspaceType {
+  containerId: string;
+  containerName?: string;
+}
+
+export async function fetchAllWorkspaces(): Promise<WorkspaceType[]> {
+  try {
+    const allAccounts = await listGtmAccounts();
+    let allWorkspaces: WorkspaceType[] = []; // Explicitly declare the type here
+
+    for (const account of allAccounts) {
+      const containers = await listGtmContainers(account.accountId);
+
+      const containerMap = new Map<string, string>(
+        containers.map((c) => [c.containerId, c.name])
+      );
+
+      for (const container of containers) {
+        const workspaces = await listGtmWorkspaces(
+          account.accountId,
+          container.containerId
+        );
+
+        const enhancedWorkspaces = workspaces.map((workspace) => ({
+          ...workspace,
+          containerName: containerMap.get(workspace.containerId),
+        }));
+
+        allWorkspaces = [...allWorkspaces, ...enhancedWorkspaces];
+      }
+    }
+
+    return allWorkspaces;
+  } catch (error: any) {
+    console.error('Error in fetchAllWorkspaces: ', error.message);
+    throw error;
   }
 }

@@ -38,7 +38,6 @@ export async function GET(
       return NextResponse.json({ error: 'Price not found' }, { status: 404 });
     }
 
-
     return NextResponse.json(price, {
       headers: {
         'Content-Type': 'application/json',
@@ -93,7 +92,6 @@ export async function PATCH(
       where: { id },
       data: json,
     });
-
 
     return NextResponse.json(updated, {
       headers: {

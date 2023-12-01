@@ -58,7 +58,7 @@ export default function ContainerTable({ accounts, containers }) {
   const totalPages = Math.ceil(
     (flattenedContainers ? flattenedContainers.length : 0) / containersPerPage
   );
-  
+
   const nextPage = () => {
     if (currentPage < totalPages) {
       dispatch(setCurrentPage(currentPage + 1));

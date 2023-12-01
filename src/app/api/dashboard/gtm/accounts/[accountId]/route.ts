@@ -56,7 +56,7 @@ async function PatchGtmAccount(accessToken, accountId, name, userId) {
           body: JSON.stringify({
             name: name,
           }),
-        });        
+        });
 
         if (!response.ok) {
           throw new Error(
@@ -87,7 +87,6 @@ async function PatchGtmAccount(accessToken, accountId, name, userId) {
     }
   }
 }
-
 
 /************************************************************************************
  * REQUEST HANDLERS

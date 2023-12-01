@@ -14,6 +14,7 @@ import { handleError } from '@/src/lib/fetch/apiUtils';
 import { PostParams, ResultType } from '@/src/lib/types/types';
 import { clerkClient, currentUser, useSession } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
+import { listGtmContainers } from '@/src/lib/actions/containers';
 
 /************************************************************************************
  * GET UTILITY FUNCTIONS
@@ -40,75 +41,6 @@ async function validateGetParams(params) {
   }
 
   return value; // return the validated parameters when validation passes
-}
-
-/************************************************************************************
-  Function to list GTM containers
-************************************************************************************/
-export async function listGtmContainers(
-  userId: string,
-  accessToken: string,
-  accountId: string,
-  pageNumber?: number,
-  limit?: number
-) {
-  let retries = 0;
-  const MAX_RETRIES = 3;
-  const allResults: ResultType[] = [];
-  let delay = 1000;
-
-  pageNumber = pageNumber || 1;
-  limit = limit || 10;
-
-  while (retries < MAX_RETRIES) {
-    try {
-      // Check if we've hit the rate limit
-      const { remaining } = await gtmRateLimit.blockUntilReady(
-        `user:${userId}`,
-        1000
-      );
-
-      if (remaining > 0) {
-        let res;
-        await limiter.schedule(async () => {
-          const oauth2Client = createOAuth2Client(accessToken);
-          if (!oauth2Client) {
-            throw new Error('OAuth2Client creation failed');
-          }
-
-          const gtm = new tagmanager_v2.Tagmanager({ auth: oauth2Client });
-          res = await gtm.accounts.containers.list({
-            parent: `accounts/${accountId}`,
-          });
-        });
-
-        const total = res.data.container?.length || 0;
-        allResults.push({
-          data: res.data.container,
-          meta: {
-            total,
-            pageNumber,
-            totalPages: Math.ceil(total / limit),
-            pageSize: limit,
-          },
-          errors: null,
-        });
-        return allResults; // Return results if successful
-      } else {
-        throw new Error('Rate limit exceeded');
-      }
-    } catch (error: any) {
-      if (error.code === 429 || error.status === 429) {
-        console.warn('Rate limit exceeded. Retrying get containers...');
-        const jitter = Math.random() * 200;
-        await new Promise((resolve) => setTimeout(resolve, delay + jitter));
-        delay *= 2;
-        retries++;
-      } else {
-        throw error;
-      }
-    }
-  }
 }
 
 /************************************************************************************
@@ -306,7 +238,6 @@ export async function GET(
 ) {
   const user = await currentUser();
   if (!user) return notFound();
-  const userId = user?.id as string;
 
   try {
     const pageNumber = Number(request.nextUrl.searchParams.get('page')) || 1;
@@ -326,21 +257,11 @@ export async function GET(
 
     // Call validateGetParams to validate the parameters
     await validateGetParams(paramsJOI);
-    const accessToken = await clerkClient.users.getUserOauthAccessToken(
-      user?.id,
-      'oauth_google'
-    );
 
     // Call listGtmContainers for each accountId
     const allResults = await Promise.all(
       (accountId ? [accountId] : []).map(async (accountId) => {
-        return await listGtmContainers(
-          userId,
-          accessToken[0].token,
-          accountId,
-          pageNumber,
-          limit
-        );
+        return await listGtmContainers(accountId, pageNumber, limit);
       })
     );
 

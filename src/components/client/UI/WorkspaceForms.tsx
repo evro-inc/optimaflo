@@ -21,13 +21,9 @@ const FormUpdate = dynamic(() => import('../GTM/workspaces/update'), {
   ssr: false,
 });
 
-type Props = {
-  accounts: any;
-  containers: any;
-  workspaces: any;
-};
 
-function WorkspaceForms({ accounts, containers, workspaces }: Props) {
+
+function WorkspaceForms({ accounts, workspaces }) {
   const dispatch = useDispatch();
   const { selectedRows, isLimitReached } = useSelector(selectTable);
   const { showUpdate, showCreate } = useSelector(selectEntity);
@@ -42,7 +38,7 @@ function WorkspaceForms({ accounts, containers, workspaces }: Props) {
           showOptions={showCreate}
           onClose={() => dispatch(toggleCreate())}
           accounts={accounts}
-          containers={containers}
+          workspaces={workspaces}
         />
       )}
       {showUpdate && (
@@ -51,7 +47,6 @@ function WorkspaceForms({ accounts, containers, workspaces }: Props) {
           onClose={() => dispatch(toggleUpdate())}
           accounts={accounts}
           selectedRows={selectedRows}
-          containers={containers}
           workspaces={workspaces} // or any other entities
         />
       )}

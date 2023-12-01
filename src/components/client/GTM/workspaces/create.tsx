@@ -1,5 +1,5 @@
 'use client';
-import React, { useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LimitReached } from '../../modals/limitReached';
 import { ButtonGroup } from '../../ButtonGroup/ButtonGroup';
@@ -21,8 +21,9 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
   showOptions,
   onClose,
   accounts = [],
-  containers = [],
+  workspaces = [],
 }) => {
+  const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
   const formRefs = useRef<(HTMLFormElement | null)[]>([]);
   const dispatch = useDispatch();
   const {
@@ -71,6 +72,16 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
       remove(fields.length - 1);
     }
   };
+  useEffect(() => {
+    // Initialize selectedAccounts array with empty strings for each field
+    setSelectedAccounts(fields.map(() => ''));
+  }, [fields]);
+
+  const handleAccountChange = (accountId: string, index: number) => {
+    const updatedAccounts = [...selectedAccounts];
+    updatedAccounts[index] = accountId;
+    setSelectedAccounts(updatedAccounts);
+  };
 
   const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
@@ -78,6 +89,9 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
 
     try {
       const res = (await createWorkspaces({ forms })) as CreateResult;
+
+      console.log('res from createWorkspaces', res);
+      
 
       if (res.limitReached) {
         dispatch(setIsLimitReached(true)); // Set limitReached to true using Redux action
@@ -115,7 +129,7 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
         setIsLimitReached(true);
       }
     } catch (error) {
-      logger.error('Error creating containers:', error);
+      logger.error('Error creating workspaces:', error);
 
       return { success: false };
     } finally {
@@ -226,7 +240,11 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
                               <select
                                 {...register(`forms.${index}.accountId`)}
                                 className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
+                                onChange={(e) =>
+                                  handleAccountChange(e.target.value, index)
+                                }
                               >
+                                <option value="">Select an account</option>
                                 {uniqueAccountIds.map((accountId: string) => (
                                   <option key={accountId} value={accountId}>
                                     {accountId}
@@ -250,15 +268,35 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
                               <select
                                 {...register(`forms.${index}.containerId`)}
                                 className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
+                                disabled={!selectedAccounts[index]}
                               >
-                                {containers.map((container: any) => (
-                                  <option
-                                    key={container.containerId}
-                                    value={container.containerId}
-                                  >
-                                    {container.name}
-                                  </option>
-                                ))}
+                                {!selectedAccounts[index] ? (
+                                  <option value="">Select a container</option>
+                                ) : (
+                                  workspaces
+                                    .filter(
+                                      (workspace) =>
+                                        workspace.accountId ===
+                                        selectedAccounts[index]
+                                    )
+                                    .map((workspace) => workspace.containerId)
+                                    .filter(
+                                      (value, idx, self) =>
+                                        self.indexOf(value) === idx
+                                    )
+                                    .map((containerId) => (
+                                      <option
+                                        key={containerId}
+                                        value={containerId}
+                                      >
+                                        {
+                                          workspaces.find(
+                                            (w) => w.containerId === containerId
+                                          )?.containerName
+                                        }
+                                      </option>
+                                    ))
+                                )}
                               </select>
                               {errors.forms?.[index]?.containerId?.message && (
                                 <p className="text-red-500 text-xs italic">

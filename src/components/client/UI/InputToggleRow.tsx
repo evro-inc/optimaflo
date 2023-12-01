@@ -8,7 +8,6 @@ function ToggleRow({ item, uniqueKeys }) {
   const { selectedRows } = useSelector(selectTable);
 
   const toggleRow = () => {
-
     //This line creates a unique identifier (uniqueKey) for each row in the table. It uses the uniqueKeys prop to get the keys that make up the unique identifier. It then joins the values of those keys with a dash (-) to create a unique string.
     const uniqueKey = uniqueKeys.map((key) => item[key]).join('-');
 
@@ -25,7 +24,8 @@ function ToggleRow({ item, uniqueKeys }) {
   };
 
   // Checks if the current row is selected. It uses the unique identifier to see if this row's data exists in selectedRows. The double exclamation mark (!!) converts the value to a boolean, indicating true if the row is selected and false if not.
-  const isChecked = !!selectedRows[uniqueKeys.map((key) => item[key]).join('-')];
+  const isChecked =
+    !!selectedRows[uniqueKeys.map((key) => item[key]).join('-')];
 
   return (
     <input
@@ -39,4 +39,3 @@ function ToggleRow({ item, uniqueKeys }) {
 }
 
 export default ToggleRow;
-

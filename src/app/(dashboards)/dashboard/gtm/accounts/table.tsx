@@ -1,23 +1,14 @@
 import ToggleAll from '@/src/components/client/UI/InputToggleAll';
 import ToggleRow from '@/src/components/client/UI/InputToggleRow';
-import Select from '../../UI/Select';
-import ButtonPrev from '../../UI/ButtonPrevious';
-import ButtonNext from '../../UI/ButtonNext';
-import ButtonUpdate from '../../UI/ButtonUpdate';
-import AccountForms from '../../UI/AccountForms';
-import { clerkClient, currentUser } from '@clerk/nextjs';
 import { listGtmAccounts } from '@/src/lib/actions/accounts';
+import AccountForms from '@/src/components/client/UI/AccountForms';
+import ButtonNext from '@/src/components/client/UI/ButtonNext';
+import ButtonPrev from '@/src/components/client/UI/ButtonPrevious';
+import ButtonUpdate from '@/src/components/client/UI/ButtonUpdate';
+import Select from '@/src/components/client/UI/Select';
 
 async function AccountTable() {
-  const user = await currentUser();
-
-  const userId = user?.id as string;
-  const accessToken = await clerkClient.users.getUserOauthAccessToken(
-    userId,
-    'oauth_google'
-  );
-
-  const accounts = await listGtmAccounts(userId, accessToken[0].token);
+  const accounts = await listGtmAccounts();
 
   const totalPages = Math.ceil(accounts.length / 10);
   const pageOptions = Array.from({ length: totalPages }, (_, i) => i + 1);

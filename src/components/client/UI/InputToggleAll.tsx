@@ -25,7 +25,6 @@ function ToggleAll({ items, uniqueKeys }) {
     dispatch(toggleAllSelected());
   };
 
-
   return (
     <input
       type="checkbox"

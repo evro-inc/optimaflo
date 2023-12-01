@@ -1,9 +1,6 @@
 'use client';
 import { selectTable, setIsLimitReached } from '@/src/app/redux/tableSlice';
-import {
-  selectEntity,
-  toggleUpdate,
-} from '@/src/app/redux/sharedSlice';
+import { selectEntity, toggleUpdate } from '@/src/app/redux/sharedSlice';
 import dynamic from 'next/dynamic';
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -19,15 +16,16 @@ const AccountFormUpdate = dynamic(
   }
 );
 
-
 function AccountForms() {
   const dispatch = useDispatch();
   const { selectedRows, isLimitReached } = useSelector(selectTable);
-  const { showUpdate } = useSelector(selectEntity); 
+  const { showUpdate } = useSelector(selectEntity);
 
   return (
     <>
-      {isLimitReached && <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />}
+      {isLimitReached && (
+        <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
+      )}
       {showUpdate && (
         <AccountFormUpdate
           showOptions={showUpdate}

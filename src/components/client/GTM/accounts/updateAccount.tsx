@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   clearSelectedRows,
@@ -26,7 +26,7 @@ function AccountFormUpdate({ showOptions, onClose, selectedRows }) {
   const { isLimitReached } = useSelector(selectTable);
   const isLoading = useSelector(selectIsLoading);
   const formRefs = useRef<(HTMLFormElement | null)[]>([]);
-  
+
   const {
     register,
     handleSubmit,
@@ -40,7 +40,7 @@ function AccountFormUpdate({ showOptions, onClose, selectedRows }) {
     resolver: zodResolver(UpdateAccountSchema),
   });
 
-  const { fields } = useFieldArray({ control, name: 'forms' }); 
+  const { fields } = useFieldArray({ control, name: 'forms' });
 
   useEffect(() => {
     const initialForms = Object.values(selectedRows).map((account: any) => ({
@@ -89,19 +89,19 @@ function AccountFormUpdate({ showOptions, onClose, selectedRows }) {
   return (
     <AnimatePresence>
       {showOptions && (
-          <motion.div
-            initial={{ opacity: 0, y: -50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -50 }}
-            className="fixed top-0 left-0 w-full h-full flex flex-col items-center justify-start z-50 bg-white-500 overflow-y-auto"
+        <motion.div
+          initial={{ opacity: 0, y: -50 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -50 }}
+          className="fixed top-0 left-0 w-full h-full flex flex-col items-center justify-start z-50 bg-white-500 overflow-y-auto"
+        >
+          {/* Close Button */}
+          <button
+            onClick={handleClose}
+            className="absolute top-0 right-0 font-bold py-2 px-4"
           >
-            {/* Close Button */}
-            <button
-              onClick={handleClose}
-              className="absolute top-0 right-0 font-bold py-2 px-4"
-            >
-              <XMarkIcon className="w-14 h-14" />
-            </button>
+            <XMarkIcon className="w-14 h-14" />
+          </button>
 
           <ButtonGroup
             buttons={[
@@ -125,7 +125,7 @@ function AccountFormUpdate({ showOptions, onClose, selectedRows }) {
                   <div className="grid gap-4 lg:gap-6">
                     {/* Grid */}
                     <div className="grid grid-cols-1 gap-4 lg:gap-6">
-                      <div className='pb-10'>
+                      <div className="pb-10">
                         <label
                           htmlFor="accountId"
                           className="block text-sm text-gray-700 font-medium dark:text-white"
