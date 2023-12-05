@@ -140,6 +140,16 @@ export default authMiddleware({
     '/contact',
     '/api/webhooks(.*)',
   ],
+  apiRoutes: [
+    '/api/dashboard/(.*)',
+    '/api/users/(.*)',
+    '/api/customers/(.*)',
+    '/api/subscriptions/(.*)',
+    '/api/products/(.*)',
+    '/api/prices/(.*)',
+    '/api/create-checkout-session',
+    '/api/create-portal-link',
+  ],
 });
 
 export const config = {

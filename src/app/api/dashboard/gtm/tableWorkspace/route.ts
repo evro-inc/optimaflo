@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ValidationError } from '@/src/lib/exceptions';
 import Joi from 'joi';
 import logger from '@/src/lib/logger';
-import { clerkClient, currentUser } from '@clerk/nextjs';
+import { auth, currentUser } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
 import {
   createWorkspaces,
@@ -10,28 +10,8 @@ import {
 } from '@/src/lib/actions/workspaces';
 import { redis } from '@/src/lib/redis/cache';
 
-import { WorkspaceType } from '@/src/lib/types/types';
-
-/************************************************************************************
- * GET UTILITY FUNCTIONS
- ************************************************************************************/
-/************************************************************************************
-  Validate the GET parameters
-************************************************************************************/
-async function validateGetParams(params) {
-  const schema = Joi.object({
-    accountId: Joi.string()
-      .pattern(/^\d{8,10}$/)
-      .required(),
-    containerId: Joi.string().required(),
-  });
-
-  const { error, value } = schema.validate(params);
-  if (error) {
-    throw new Error(`Validation Error: ${error.message}`);
-  }
-  return value;
-}
+import { currentUserOauthAccessToken } from '@/src/lib/clerk';
+import { revalidatePath } from 'next/cache';
 
 /************************************************************************************
  * REQUEST HANDLERS
@@ -39,11 +19,11 @@ async function validateGetParams(params) {
 /************************************************************************************
   GET request handler
 ************************************************************************************/
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
-    const user = await currentUser();
-    const userId = user?.id;
-
+    const { userId } = auth()
+    if(!userId) return notFound();
+    const token = await currentUserOauthAccessToken(userId);
     const cacheKey = `user:${userId}-gtm:all_workspaces`;
     const cachedWorkspaces = await redis.get(cacheKey);
 
@@ -54,7 +34,7 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    const allWorkspaces = await fetchAllWorkspaces();
+    const allWorkspaces = await fetchAllWorkspaces(token[0].token);
 
     // Cache the combined workspaces
     await redis.set(
@@ -76,7 +56,6 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    logger.error('Error: ', error);
     return new NextResponse(JSON.stringify({ error: error.message }), {
       status: 500,
     });
@@ -112,7 +91,6 @@ async function validatePostParams(params) {
 export async function POST(request: NextRequest) {
   const user = await currentUser();
   if (!user) return notFound();
-  const userId = user?.id;
 
   try {
     const body = JSON.parse(await request.text());
@@ -123,14 +101,14 @@ export async function POST(request: NextRequest) {
       description: body.description,
     };
 
-    const validatedParams = await validatePostParams(postParams);
-    
-
-    console.log('validatedParams table: ', validatedParams);
-    
+    const validatedParams = await validatePostParams(postParams);    
 
     // Call the function to create a GTM workspace
     const workspaceData = await createWorkspaces(validatedParams);
+
+    const path = request.nextUrl.searchParams.get('path') || '/'; // should it fall back on the layout?    
+
+    revalidatePath(path);
 
     return NextResponse.json(workspaceData, {
       headers: { 'Content-Type': 'application/json' },

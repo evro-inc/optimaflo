@@ -1,4 +1,3 @@
-'use client';
 import React from 'react';
 import { WorkspaceType } from '@/src/lib/types/types';
 import ButtonCreate from '@/src/components/client/UI/ButtonCreate';
@@ -12,28 +11,32 @@ import ButtonNext from '@/src/components/client/UI/ButtonNext';
 import { usePaginate } from '@/src/lib/paginate';
 import { selectTable } from '@/src/app/redux/tableSlice';
 import { useSelector } from 'react-redux';
-import WorkspaceForms from '../../UI/WorkspaceForms';
+import WorkspaceForms from '../../../../../components/client/UI/WorkspaceForms';
+import { listGtmAccounts } from '@/src/lib/actions/accounts';
+import { currentUserOauthAccessToken } from '@/src/lib/clerk';
+import { auth } from '@clerk/nextjs';
+import { notFound } from 'next/navigation';
+import { fetchAllWorkspaces } from '@/src/lib/actions/workspaces';
 
-export default function WorkspaceTable(
-  { workspaces }
-) {
-  const { itemsPerPage } = useSelector(selectTable);
+export default async function WorkspaceTable({workspaces}) {
+  //const { itemsPerPage } = useSelector(selectTable);
 
   const mergedData = Array.isArray(workspaces) ? workspaces : [];
 
-  const sortedData = [...mergedData].sort((a, b) => {
+/*   const sortedData = [...mergedData].sort((a, b) => {
     if (a.containerName < b.containerName) return -1;
     if (a.containerName > b.containerName) return 1;
     return 0;
-  });
+  }); */
 
   // Use usePaginate for pagination
-  const currentData = usePaginate(sortedData);
+  //const currentData = usePaginate(sortedData);
 
   // Calculate total pages
-  const totalPages = Math.ceil(
+ /*  const totalPages = Math.ceil(
     (mergedData ? mergedData.length : 0) / itemsPerPage
-  );
+  ); */
+  const totalPages = Math.ceil(mergedData.length / 10);
 
   const pageOptions = Array.from({ length: totalPages }, (_, i) => i + 1);
 
@@ -123,7 +126,7 @@ export default function WorkspaceTable(
                     </tr>
                   </thead>
 
-                  {currentData.map((workspace: WorkspaceType) => (
+                  {workspaces.map((workspace) => (
                     <tbody
                       className="divide-y divide-gray-200 dark:divide-gray-700"
                       key={`${workspace.workspaceId}-${workspace.containerId}`}

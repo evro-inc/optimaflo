@@ -5,8 +5,9 @@ import logger from '../logger';
 import { getURL } from '@/src/lib/helpers';
 import z from 'zod';
 import { getAccessToken } from '../fetch/apiUtils';
-import { clerkClient, currentUser, useSession } from '@clerk/nextjs';
-import { listGtmAccounts } from './accounts';
+import { currentUser, useSession } from '@clerk/nextjs';
+import { gtmRateLimit } from '../redis/rateLimits';
+import { limiter } from '../bottleneck';
 
 // Define the types for the form data
 type FormCreateSchema = z.infer<typeof CreateContainerSchema>;
@@ -18,9 +19,8 @@ type FormCreateSchema = z.infer<typeof CreateContainerSchema>;
   Function to list GTM containers
 ************************************************************************************/
 export async function listGtmContainers(
-  accountId: string,
-  pageNumber?: number,
-  limit?: number
+  accessToken: string,
+  accountId: string
 ) {
   let retries = 0;
   const MAX_RETRIES = 3;
@@ -28,18 +28,55 @@ export async function listGtmContainers(
 
   const user = await currentUser();
   const userId = user?.id as string;
-  const accessToken = await clerkClient.users.getUserOauthAccessToken(
-    userId,
-    'oauth_google'
-  );
 
   while (retries < MAX_RETRIES) {
     try {
+      await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);      
+
+      let data;
+      await limiter.schedule(async () => {
+        const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers`;
+        const headers = {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        };
+
+        const response = await fetch(url, { headers });
+
+        if (!response.ok) {
+          throw new Error(
+            `HTTP error! status: ${response.status}. ${response.statusText}`
+          );
+        }
+
+        const responseBody = await response.json();
+        
+        data = responseBody.container || [];
+      });
+
+      return data;
+    } catch (error: any) {
+      if (error.code === 429 || error.status === 429) {
+        console.warn('Rate limit exceeded. Retrying get accounts...');
+        const jitter = Math.random() * 200;
+        await new Promise((resolve) => setTimeout(resolve, delay + jitter));
+        delay *= 2;
+        retries++;
+      } else {
+        throw error;
+      }
+    }
+  }
+  
+
+/*   while (retries < MAX_RETRIES) {
+    try {
+      await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
+      
       // URL for the Google Tag Manager API
       const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers`;
-
       const headers = {
-        Authorization: `Bearer ${accessToken[0].token}`,
+        Authorization: `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       };
 
@@ -52,7 +89,7 @@ export async function listGtmContainers(
       }
 
       const data = await response.json();
-      return data.container || []; // Assuming the containers are in the 'container' field of the response
+      return data.container || []; 
     } catch (error: any) {
       if (error.code === 429 || error.status === 429) {
         console.warn('Rate limit exceeded. Retrying get containers...');
@@ -65,7 +102,7 @@ export async function listGtmContainers(
         throw error;
       }
     }
-  }
+  } */
 
   throw new Error('Maximum retries reached without a successful response.');
 }

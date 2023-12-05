@@ -4,10 +4,12 @@ import Joi from 'joi';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
 import logger from '@/src/lib/logger';
 import { limiter } from '@/src/lib/bottleneck';
-import { clerkClient, currentUser } from '@clerk/nextjs';
+import { auth, clerkClient, currentUser } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
 import { listGtmWorkspaces } from '@/src/lib/actions/workspaces';
 import { redis } from '@/src/lib/redis/cache';
+import { currentUserOauthAccessToken } from '@/src/lib/clerk';
+import { revalidatePath } from 'next/cache';
 
 /************************************************************************************
  * GET UTILITY FUNCTIONS
@@ -105,8 +107,8 @@ export async function GET(
     };
   }
 ) {
-  const user = await currentUser();
-  if (!user) return notFound();
+  const { userId } = auth()
+  if (!userId) return notFound();
 
   try {
     const paramsJOI = {
@@ -126,8 +128,9 @@ export async function GET(
         status: 200,
       });
     }
-
+    const token = await currentUserOauthAccessToken(userId);
     const data = await listGtmWorkspaces(
+      token[0].token,
       accountId,
       containerId
     );
@@ -164,9 +167,9 @@ export async function GET(
 export async function POST(
   request: NextRequest
 ) {
-  const user = await currentUser();
-  if (!user) return notFound();
-  const userId = user?.id;
+  const { userId } = auth()
+  if (!userId) return notFound();
+  const accessToken = await currentUserOauthAccessToken(userId);  
 
   try {
     const body = JSON.parse(await request.text());
@@ -178,10 +181,8 @@ export async function POST(
     };
 
     const validatedParams = await validatePostParams(postParams);
-    const accessToken = await clerkClient.users.getUserOauthAccessToken(
-      userId,
-      'oauth_google'
-    );
+
+
     if (!accessToken) {
       return new NextResponse(
         JSON.stringify({ message: 'Access token is missing' }),
@@ -199,6 +200,10 @@ export async function POST(
       validatedParams.name,
       validatedParams.description
     );
+
+    const path = request.nextUrl.searchParams.get('path') || '/'; // should it fall back on the layout?    
+
+    revalidatePath(path);
 
     return NextResponse.json(workspaceData, {
       headers: { 'Content-Type': 'application/json' },

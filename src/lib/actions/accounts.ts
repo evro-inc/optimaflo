@@ -1,27 +1,25 @@
 'use server';
-import { auth, clerkClient, currentUser } from '@clerk/nextjs';
+import { currentUser } from '@clerk/nextjs';
 import { limiter } from '../bottleneck';
 import { gtmRateLimit } from '../redis/rateLimits';
 import { UpdateAccountSchema } from '../schemas/accounts';
 import { z } from 'zod';
 import { getURL } from '../helpers';
 import { revalidatePath } from 'next/cache';
+import { NextResponse } from 'next/server';
 
 type FormUpdateSchema = z.infer<typeof UpdateAccountSchema>;
 
 // Separate out the logic to list GTM accounts into its own function
-export async function listGtmAccounts() {
+export async function listGtmAccounts(accessToken: string) {
   let retries = 0;
   const MAX_RETRIES = 3;
   let delay = 1000;
 
   const user = await currentUser();
-
   const userId = user?.id as string;
-  const accessToken = await clerkClient.users.getUserOauthAccessToken(
-    userId,
-    'oauth_google'
-  );
+
+  if (!user) return NextResponse.json({ error: 'User not found' });
 
   while (retries < MAX_RETRIES) {
     try {
@@ -31,7 +29,7 @@ export async function listGtmAccounts() {
       await limiter.schedule(async () => {
         const url = `https://www.googleapis.com/tagmanager/v2/accounts`;
         const headers = {
-          Authorization: `Bearer ${accessToken[0].token}`,
+          Authorization: `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         };
 
@@ -63,13 +61,11 @@ export async function listGtmAccounts() {
   throw new Error('Maximum retries reached without a successful response.');
 }
 
-export async function updateAccounts(formData: FormUpdateSchema) {
+export async function updateAccounts(formData: FormUpdateSchema, accessToken: string) {
   try {
     const user = await currentUser();
-    if (!user) throw new Error('User not found');
+    if (!user) return NextResponse.json({ error: 'User not found' });
 
-    const { getToken } = auth();
-    const accessToken = await getToken();
     const baseUrl = getURL();
     const errors: string[] = [];
     const forms: any[] = [];

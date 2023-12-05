@@ -12,9 +12,11 @@ import logger from '@/src/lib/logger';
 import { limiter } from '@/src/lib/bottleneck';
 import { handleError } from '@/src/lib/fetch/apiUtils';
 import { PostParams, ResultType } from '@/src/lib/types/types';
-import { clerkClient, currentUser, useSession } from '@clerk/nextjs';
+import { auth, clerkClient, currentUser, useSession } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
 import { listGtmContainers } from '@/src/lib/actions/containers';
+import { currentUserOauthAccessToken } from '@/src/lib/clerk';
+import { revalidatePath } from 'next/cache';
 
 /************************************************************************************
  * GET UTILITY FUNCTIONS
@@ -236,32 +238,18 @@ export async function GET(
     };
   }
 ) {
-  const user = await currentUser();
-  if (!user) return notFound();
-
   try {
-    const pageNumber = Number(request.nextUrl.searchParams.get('page')) || 1;
-    const limit = Number(request.nextUrl.searchParams.get('limit')) || 10;
-    const sort = request.nextUrl.searchParams.get('sort') || 'id';
-    const order = request.nextUrl.searchParams.get('order') || 'asc';
+    const { userId } = auth()   
     const accountId = params.accountId;
 
-    // Create a JavaScript object with the extracted parameters
-    const paramsJOI = {
-      pageNumber,
-      limit,
-      sort,
-      order,
-      accountIds: accountId ? [accountId] : [],
-    };
-
     // Call validateGetParams to validate the parameters
-    await validateGetParams(paramsJOI);
-
+    await validateGetParams(accountId);
+    const token = await currentUserOauthAccessToken(userId);           
+    
     // Call listGtmContainers for each accountId
     const allResults = await Promise.all(
       (accountId ? [accountId] : []).map(async (accountId) => {
-        return await listGtmContainers(accountId, pageNumber, limit);
+        return await listGtmContainers(token[0].token, accountId);
       })
     );
 
@@ -277,7 +265,7 @@ export async function GET(
       });
     }
 
-    logger.error('Error: ', error);
+    logger.error('Error: ', error.message);
     return new NextResponse(JSON.stringify({ error: error.message }), {
       status: 500,
     });
@@ -298,9 +286,9 @@ export async function POST(
     };
   }
 ) {
-  const user = await currentUser();
-  if (!user) return notFound();
-  const userId = user?.id;
+  const { userId } = auth()
+  if (!userId) return notFound();
+
 
   try {
     const limit = Number(request.nextUrl.searchParams.get('limit')) || 10;
@@ -321,10 +309,7 @@ export async function POST(
     const validatedParams = await validatePostParams(paramsJOI);
     const { name, usageContext, domainName, notes, accountId } =
       validatedParams;
-    const accessToken = await clerkClient.users.getUserOauthAccessToken(
-      user?.id,
-      'oauth_google'
-    );
+    const token = await currentUserOauthAccessToken(userId);  
 
     // check tier limit
     const tierLimitRecord = await prisma.tierLimit.findFirst({
@@ -357,7 +342,7 @@ export async function POST(
 
     const response = await createGtmContainer(
       userId,
-      accessToken[0].token,
+      token[0].token,
       accountId,
       name,
       usageContext,
@@ -365,6 +350,10 @@ export async function POST(
       notes,
       limit
     );
+
+    const path = request.nextUrl.searchParams.get('path') || '/'; // should it fall back on the layout?    
+
+    revalidatePath(path);
 
     return NextResponse.json(response, {
       headers: {

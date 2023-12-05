@@ -1,46 +1,38 @@
 import React from 'react';
-import WorkspaceTable from '@/src/components/client/GTM/workspaces/table';
+import WorkspaceTable from '@/src/app/(dashboards)/dashboard/gtm/workspaces/table';
 import { notFound } from 'next/navigation';
-import { auth, currentUser } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs';
+import { currentUserOauthAccessToken } from '@/src/lib/clerk';
+import { fetchAllWorkspaces } from '@/src/lib/actions/workspaces';
 
 async function getWorkspaces() {
-  const user = await currentUser();
-  if (!user) return notFound();
 
-  const { getToken } = auth();
-  const accessToken = await getToken();
-
-  const headers = {
-    Authorization: `Bearer ${accessToken}`,
-    'Content-Type': 'application/json',
-  };
-
-  const res = await fetch(
-    `http://localhost:3000/api/dashboard/gtm/tableWorkspace`,
-    {
-      method: 'GET',
-      headers: headers,
-    }
-  );
-
-  if (!res.ok) {
-    console.log("res from page", res);
-    
-    throw new Error(`HTTP error! status: ${res.status}. ${res.statusText}`);
+  try {
+    const { userId } = auth()   
+    if(!userId) return notFound();
+    const token = await currentUserOauthAccessToken(userId);    
+    const workspaces = await fetchAllWorkspaces(token[0].token);
+    return workspaces;
+  } catch (error: any) {
+    console.error('Error fetching workspaces:', error.message);
   }
-
-  return await res.json();
 }
 
+
 export default async function WorkspacePage() {
-  const user = await currentUser();
-  if (!user) return notFound();
+  const { userId } = auth()
+  if (!userId) return notFound();
 
   const data = await getWorkspaces();
 
+  console.log('data', data);
+  
+
   return (
     <>
-      <WorkspaceTable workspaces={data} />
+       <WorkspaceTable workspaces={data} />
     </>
   );
 }
+
+

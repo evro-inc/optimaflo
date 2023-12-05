@@ -5,19 +5,15 @@ import ButtonPrev from '../../UI/ButtonPrevious';
 import ButtonNext from '../../UI/ButtonNext';
 import ButtonUpdate from '../../UI/ButtonUpdate';
 import AccountForms from '../../UI/AccountForms';
-import { clerkClient, currentUser } from '@clerk/nextjs';
+import { currentUser } from '@clerk/nextjs';
 import { listGtmAccounts } from '@/src/lib/actions/accounts';
 
 async function AccountTable() {
   const user = await currentUser();
 
   const userId = user?.id as string;
-  const accessToken = await clerkClient.users.getUserOauthAccessToken(
-    userId,
-    'oauth_google'
-  );
 
-  const accounts = await listGtmAccounts(userId, accessToken[0].token);
+  const accounts = await listGtmAccounts(userId);
 
   const totalPages = Math.ceil(accounts.length / 10);
   const pageOptions = Array.from({ length: totalPages }, (_, i) => i + 1);

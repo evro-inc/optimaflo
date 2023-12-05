@@ -7,22 +7,30 @@ import {
 import logger from '../logger';
 import z from 'zod';
 import { getURL } from '@/src/lib/helpers';
-import { auth, clerkClient, currentUser } from '@clerk/nextjs';
+import { auth, currentUser } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
 import { limiter } from '../bottleneck';
 import { gtmRateLimit } from '../redis/rateLimits';
 import { listGtmAccounts } from './accounts';
 import { listGtmContainers } from './containers';
 import { redis } from '../redis/cache';
+import { currentUserOauthAccessToken } from '../clerk';
 
 // Define the types for the form data
 type FormCreateSchema = z.infer<typeof CreateWorkspaceSchema>;
 type FormUpdateSchema = z.infer<typeof UpdateWorkspaceSchema>;
 
+// Assuming WorkspaceType is the type for each workspace
+interface WorkspaceType {
+  containerId: string;
+  containerName?: string;
+}
+
 /************************************************************************************
   Function to list or get one GTM workspaces
 ************************************************************************************/
 export async function listGtmWorkspaces(
+  accessToken: string,
   accountId: string,
   containerId: string
 ) {
@@ -32,10 +40,6 @@ export async function listGtmWorkspaces(
 
   const user = await currentUser();
   const userId = user?.id as string;
-  const accessToken = await clerkClient.users.getUserOauthAccessToken(
-    userId,
-    'oauth_google'
-  );
 
   while (retries < MAX_RETRIES) {
     try {
@@ -49,7 +53,7 @@ export async function listGtmWorkspaces(
         await limiter.schedule(async () => {
           const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces`;
           const headers = {
-            Authorization: `Bearer ${accessToken[0].token}`,
+            Authorization: `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
           };
 
@@ -91,14 +95,15 @@ export async function DeleteWorkspaces(
   accountId: string,
   workspaces: { containerId: string; workspaceId: string }[]
 ) {
+  const { userId } = auth()
+  if (!userId) return notFound();
   const errors: string[] = [];
-  const { getToken } = auth();
-  const token = await getToken();
+  const token = await currentUserOauthAccessToken(userId);  
   const baseUrl = getURL();
 
   const requestHeaders = {
     'Content-Type': 'application/json',
-    Authorization: `Bearer ${token}`,
+    Authorization: `Bearer ${token[0].token}`,
   };
 
   const deletionPromises = workspaces.map(
@@ -157,19 +162,16 @@ export async function DeleteWorkspaces(
 /************************************************************************************
   Create a single container or multiple containers
 ************************************************************************************/
-export async function createWorkspaces(formData: FormCreateSchema) {
-  const user = await currentUser();
-  if (!user) return notFound();
-  const userId = user?.id;
+export async function createWorkspaces(formData: FormCreateSchema, token: string) {
+  const { userId } = auth()
+  if (!userId) return notFound();
 
-  const { getToken } = auth();
-  const token = await getToken();
 
   try {
     const baseUrl = getURL();
     const errors: string[] = [];
     const forms: any[] = [];    
-
+    
     const plainDataArray = formData.forms?.map((fd) => {
       return Object.fromEntries(Object.keys(fd).map((key) => [key, fd[key]]));
     }) || [];
@@ -224,10 +226,7 @@ export async function createWorkspaces(formData: FormCreateSchema) {
         containerId: containerId,
         accountId: accountId,
         name: name,
-      };
-
-      console.log('payload', payload);
-      
+      };      
 
       const response = await fetch(
         `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces`,
@@ -236,10 +235,7 @@ export async function createWorkspaces(formData: FormCreateSchema) {
           headers: requestHeaders,
           body: JSON.stringify(payload),
         }
-      );
-
-      console.log('response', await response.json());
-      
+      );      
 
       if (response.status === 400) {
         const parsedResponse = await response.json();
@@ -274,25 +270,10 @@ export async function createWorkspaces(formData: FormCreateSchema) {
           message: 'Failed to create',
         };
       }
-     
 
-      const cacheKey = `user:${userId}-gtm:all_workspaces`;
-      await redis.del(cacheKey);
+      const createdWorkspace = await response.json();
 
-      // Optionally, fetch and cache the updated list of workspaces
-      const updatedWorkspaces = await fetchAllWorkspaces(); // A function to fetch all workspaces
-      await redis.set(
-        cacheKey,
-        JSON.stringify(updatedWorkspaces),
-        'EX',
-        60 * 60 * 24 * 7
-      );
-
-      // Revalidate path
-      const workspacePath = `/dashboard/gtm/workspaces`;
-      revalidatePath(workspacePath);
-
-      return { success: true, updatedWorkspaces };
+      return { success: true, createdWorkspace };
     });
 
     const results = await Promise.all(createPromises);
@@ -314,6 +295,27 @@ export async function createWorkspaces(formData: FormCreateSchema) {
         message: errors.join(', '),
       };
     } else {
+      const token = await currentUserOauthAccessToken(userId);  
+
+      const cacheKey = `user:${userId}-gtm:all_workspaces`;
+      await redis.del(cacheKey);
+
+      // Optionally, fetch and cache the updated list of workspaces
+      const updatedWorkspaces = await fetchAllWorkspaces(token[0].token); // A function to fetch all workspaces
+      await redis.set(
+        cacheKey,
+        JSON.stringify(updatedWorkspaces),
+        'EX',
+        60 * 60 * 24 * 7
+      );
+
+      /* const path = request.nextUrl.searchParams.get('path') || '/'; // should it fall back on the layout?  */   
+
+      const path = `/dashboard/gtm/workspaces`;
+
+      revalidatePath(path);
+
+
       return {
         success: true,
         limitReached: false,
@@ -337,8 +339,9 @@ export async function createWorkspaces(formData: FormCreateSchema) {
 ************************************************************************************/
 export async function updateWorkspaces(formData: FormUpdateSchema) {
   try {
-    const { getToken } = auth();
-    const token = await getToken();
+    const { userId } = auth()
+    if(!userId) return notFound();
+    const token = await currentUserOauthAccessToken(userId);  
     const baseUrl = getURL();
     const errors: string[] = [];
     const forms: any[] = [];
@@ -377,7 +380,7 @@ export async function updateWorkspaces(formData: FormUpdateSchema) {
 
     const requestHeaders = {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${token[0].token}`,
     };
     const featureLimitReachedWorkspaces: string[] = [];
 
@@ -466,26 +469,30 @@ export async function updateWorkspaces(formData: FormUpdateSchema) {
 /************************************************************************************
   Function to list all GTM workspaces in all containers in all accounts
 ************************************************************************************/
-// Assuming WorkspaceType is the type for each workspace
-interface WorkspaceType {
-  containerId: string;
-  containerName?: string;
-}
+export async function fetchAllWorkspaces(accessToken: string): Promise<WorkspaceType[]> {
+  const { userId } = auth()
+  const cacheKey = `user:${userId}-gtm:all_workspaces`;
 
-export async function fetchAllWorkspaces(): Promise<WorkspaceType[]> {
   try {
-    const allAccounts = await listGtmAccounts();
-    let allWorkspaces: WorkspaceType[] = []; // Explicitly declare the type here
+    // Check Redis cache first
+    const cachedWorkspaces = await redis.get(cacheKey);
+    if (cachedWorkspaces) {
+      return JSON.parse(cachedWorkspaces);
+    }
+
+    // If not in cache, fetch from source
+    const allAccounts = await listGtmAccounts(accessToken);
+    let allWorkspaces: WorkspaceType[] = [];
 
     for (const account of allAccounts) {
-      const containers = await listGtmContainers(account.accountId);
-
+      const containers = await listGtmContainers(accessToken, account.accountId);
       const containerMap = new Map<string, string>(
         containers.map((c) => [c.containerId, c.name])
       );
 
       for (const container of containers) {
         const workspaces = await listGtmWorkspaces(
+          accessToken,
           account.accountId,
           container.containerId
         );
@@ -498,6 +505,14 @@ export async function fetchAllWorkspaces(): Promise<WorkspaceType[]> {
         allWorkspaces = [...allWorkspaces, ...enhancedWorkspaces];
       }
     }
+
+    // Cache the result in Redis
+    await redis.set(
+      cacheKey,
+      JSON.stringify(allWorkspaces),
+      'EX',
+      60 * 60 * 24 * 7 // Cache for 7 days
+    );
 
     return allWorkspaces;
   } catch (error: any) {

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import React from 'react';
 import ContainerTable from '@/src/components/client/GTM/containers/table';
-import { clerkClient, currentUser } from '@clerk/nextjs';
+import { currentUser } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
 import { listGtmAccounts } from '@/src/lib/actions/accounts';
 import { listGtmContainers } from '@/src/lib/actions/containers';
