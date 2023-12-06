@@ -21,8 +21,6 @@ const FormUpdate = dynamic(() => import('../GTM/workspaces/update'), {
   ssr: false,
 });
 
-
-
 function WorkspaceForms({ accounts, workspaces }) {
   const dispatch = useDispatch();
   const { selectedRows, isLimitReached } = useSelector(selectTable);

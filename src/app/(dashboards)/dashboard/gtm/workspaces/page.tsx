@@ -8,7 +8,7 @@ import { fetchAllWorkspaces } from '@/src/lib/actions/workspaces';
 async function getWorkspaces() {
   try {
     const { userId } = auth();
-    if (!userId) return { props: { workspaces: [], totalPages: 0 } };
+    if (!userId) return notFound();
     const token = await currentUserOauthAccessToken(userId);
     const workspaces = await fetchAllWorkspaces(token[0].token);
 
@@ -22,13 +22,11 @@ async function getWorkspaces() {
   }
 }
 
-
-
 export default async function WorkspacePage() {
-  const user = await currentUser();
-  if (!user) return notFound();
+    const { userId } = auth();
+    if (!userId) return notFound();
 
-  const data = await getWorkspaces(); 
+  const data = await getWorkspaces();
 
   return (
     <>

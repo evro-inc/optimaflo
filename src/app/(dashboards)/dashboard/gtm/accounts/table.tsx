@@ -1,21 +1,13 @@
 import ToggleAll from '@/src/components/client/UI/InputToggleAll';
 import ToggleRow from '@/src/components/client/UI/InputToggleRow';
-import { listGtmAccounts } from '@/src/lib/actions/accounts';
 import AccountForms from '@/src/components/client/UI/AccountForms';
 import ButtonNext from '@/src/components/client/UI/ButtonNext';
 import ButtonPrev from '@/src/components/client/UI/ButtonPrevious';
 import ButtonUpdate from '@/src/components/client/UI/ButtonUpdate';
 import Select from '@/src/components/client/UI/Select';
-import { auth } from '@clerk/nextjs';
-import { notFound } from 'next/navigation';
-import { currentUserOauthAccessToken } from '@/src/lib/clerk';
 
-async function AccountTable() {
-  const { userId } = auth()   
-  if(!userId) return notFound();
-  const token = await currentUserOauthAccessToken(userId);    
-  const accounts = await listGtmAccounts(token[0].token);
 
+async function AccountTable({accounts}) {
   const totalPages = Math.ceil(accounts.length / 10);
   const pageOptions = Array.from({ length: totalPages }, (_, i) => i + 1);
 

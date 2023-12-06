@@ -14,9 +14,7 @@ import { selectTable } from '@/src/app/redux/tableSlice';
 import { useSelector } from 'react-redux';
 import WorkspaceForms from '@/src/components/client/UI/WorkspaceForms';
 
-export default function WorkspaceTable(
-  { workspaces }
-) {
+export default function WorkspaceTable({ workspaces }) {
   const { itemsPerPage } = useSelector(selectTable);
 
   const mergedData = Array.isArray(workspaces) ? workspaces : [];

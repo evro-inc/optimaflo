@@ -8,9 +8,9 @@ import { notFound } from 'next/navigation';
 // Refactored GET handler
 export async function GET() {
   try {
-    const { userId } = auth()   
-    if(!userId) return notFound();
-    const token = await currentUserOauthAccessToken(userId);    
+    const { userId } = auth();
+    if (!userId) return notFound();
+    const token = await currentUserOauthAccessToken(userId);
     const response = await listGtmAccounts(token[0].token);
 
     return NextResponse.json(response, {

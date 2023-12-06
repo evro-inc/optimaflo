@@ -31,7 +31,7 @@ export async function listGtmContainers(
 
   while (retries < MAX_RETRIES) {
     try {
-      await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);      
+      await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
 
       let data;
       await limiter.schedule(async () => {
@@ -50,7 +50,7 @@ export async function listGtmContainers(
         }
 
         const responseBody = await response.json();
-        
+
         data = responseBody.container || [];
       });
 
@@ -67,9 +67,8 @@ export async function listGtmContainers(
       }
     }
   }
-  
 
-/*   while (retries < MAX_RETRIES) {
+  /*   while (retries < MAX_RETRIES) {
     try {
       await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
       

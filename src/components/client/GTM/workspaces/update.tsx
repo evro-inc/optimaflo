@@ -33,7 +33,7 @@ const FormUpdateWorkspace: React.FC<FormUpdateWorkspaceProps> = ({
   const { isLimitReached } = useSelector(selectTable);
   const isLoading = useSelector(selectIsLoading);
   const formRefs = useRef<(HTMLFormElement | null)[]>([]);
-
+  const { getToken } = useAuth();
   const {
     register,
     handleSubmit,
@@ -80,13 +80,11 @@ const FormUpdateWorkspace: React.FC<FormUpdateWorkspaceProps> = ({
     reset({ forms: initialForms });
   }, [selectedRows, reset]);
 
-  const {getToken} = useAuth();
-
   const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
     dispatch(setLoading(true)); // Set loading to true
 
-    const token = await getToken() as string;
+    const token = (await getToken()) as string;
 
     try {
       // If you're here, validation succeeded. Proceed with updateContainers.

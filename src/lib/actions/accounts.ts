@@ -61,7 +61,10 @@ export async function listGtmAccounts(accessToken: string) {
   throw new Error('Maximum retries reached without a successful response.');
 }
 
-export async function updateAccounts(formData: FormUpdateSchema, accessToken: string) {
+export async function updateAccounts(
+  formData: FormUpdateSchema,
+  accessToken: string
+) {
   try {
     const user = await currentUser();
     if (!user) return NextResponse.json({ error: 'User not found' });

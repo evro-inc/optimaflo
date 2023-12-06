@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ValidationError } from '@/src/lib/exceptions';
 import Joi from 'joi';
 import logger from '@/src/lib/logger';
-import { auth, currentUser } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
 import {
   createWorkspaces,
@@ -21,8 +21,8 @@ import { revalidatePath } from 'next/cache';
 ************************************************************************************/
 export async function GET() {
   try {
-    const { userId } = auth()
-    if(!userId) return notFound();
+    const { userId } = auth();
+    if (!userId) return notFound();
     const token = await currentUserOauthAccessToken(userId);
     const cacheKey = `user:${userId}-gtm:all_workspaces`;
     const cachedWorkspaces = await redis.get(cacheKey);
@@ -89,9 +89,9 @@ async function validatePostParams(params) {
   POST request handler
 ************************************************************************************/
 export async function POST(request: NextRequest) {
-  const user = await currentUser();
-  if (!user) return notFound();
-
+  const { userId } = auth();
+  if (!userId) return notFound();
+  const token = await currentUserOauthAccessToken(userId);  
   try {
     const body = JSON.parse(await request.text());
     const postParams = {
@@ -101,12 +101,15 @@ export async function POST(request: NextRequest) {
       description: body.description,
     };
 
-    const validatedParams = await validatePostParams(postParams);    
+    const validatedParams = await validatePostParams(postParams);
 
     // Call the function to create a GTM workspace
-    const workspaceData = await createWorkspaces(validatedParams);
+    const workspaceData = await createWorkspaces(
+      validatedParams,
+      token[0].token
+    );
 
-    const path = request.nextUrl.searchParams.get('path') || '/'; // should it fall back on the layout?    
+    const path = request.nextUrl.searchParams.get('path') || '/'; // should it fall back on the layout?
 
     revalidatePath(path);
 

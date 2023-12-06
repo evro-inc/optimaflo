@@ -32,8 +32,6 @@ async function validateGetParams(params) {
   return value;
 }
 
-
-
 /************************************************************************************
  * POST UTILITY FUNCTIONS
  ************************************************************************************/
@@ -107,7 +105,7 @@ export async function GET(
     };
   }
 ) {
-  const { userId } = auth()
+  const { userId } = auth();
   if (!userId) return notFound();
 
   try {
@@ -164,12 +162,10 @@ export async function GET(
 /************************************************************************************
   POST request handler
 ************************************************************************************/
-export async function POST(
-  request: NextRequest
-) {
-  const { userId } = auth()
+export async function POST(request: NextRequest) {
+  const { userId } = auth();
   if (!userId) return notFound();
-  const accessToken = await currentUserOauthAccessToken(userId);  
+  const accessToken = await currentUserOauthAccessToken(userId);
 
   try {
     const body = JSON.parse(await request.text());
@@ -181,7 +177,6 @@ export async function POST(
     };
 
     const validatedParams = await validatePostParams(postParams);
-
 
     if (!accessToken) {
       return new NextResponse(
@@ -201,7 +196,7 @@ export async function POST(
       validatedParams.description
     );
 
-    const path = request.nextUrl.searchParams.get('path') || '/'; // should it fall back on the layout?    
+    const path = request.nextUrl.searchParams.get('path') || '/'; // should it fall back on the layout?
 
     revalidatePath(path);
 

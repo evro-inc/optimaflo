@@ -336,8 +336,8 @@ export async function PATCH(request: NextRequest) {
             },
             errors: null,
           };
-          
-          const path = request.nextUrl.searchParams.get('path') || '/'; // should it fall back on the layout?    
+
+          const path = request.nextUrl.searchParams.get('path') || '/'; // should it fall back on the layout?
 
           revalidatePath(path);
 

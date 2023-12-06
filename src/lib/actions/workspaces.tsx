@@ -96,86 +96,85 @@ export async function DeleteWorkspaces(
   workspaces: { containerId: string; workspaceId: string }[],
   token: string
 ) {
-  const { userId } = auth()
+  const { userId } = auth();
   if (!userId) return notFound();
 
-
   try {
-      const errors: string[] = [];
-  const baseUrl = getURL();
+    const errors: string[] = [];
+    const baseUrl = getURL();
 
-  const requestHeaders = {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${token}`,
-  };
+    const requestHeaders = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    };
 
-  const deletionPromises = workspaces.map(
-    async ({ containerId, workspaceId }) => {
-      const response = await fetch(
-        `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}`,
-        {
-          method: 'DELETE',
-          headers: requestHeaders,
-        }
-      );
-
-      if (response.status === 403) {
-        const parsedResponse = await response.json();
-        if (parsedResponse.message === 'Feature limit reached') {
-          throw { message: 'Feature limit reached' }; // throw a plain object instead
-        }
-      }
-
-      if (!response.ok) {
-        errors.push(
-          `Failed to delete workspace ${workspaceId} in account ${accountId}: ${response.status}`
+    const deletionPromises = workspaces.map(
+      async ({ containerId, workspaceId }) => {
+        const response = await fetch(
+          `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}`,
+          {
+            method: 'DELETE',
+            headers: requestHeaders,
+          }
         );
 
-        return {
-          success: false,
-          errorCode: response.status,
-          message: 'Failed to delete',
-        };
+        if (response.status === 403) {
+          const parsedResponse = await response.json();
+          if (parsedResponse.message === 'Feature limit reached') {
+            throw { message: 'Feature limit reached' }; // throw a plain object instead
+          }
+        }
+
+        if (!response.ok) {
+          errors.push(
+            `Failed to delete workspace ${workspaceId} in account ${accountId}: ${response.status}`
+          );
+
+          return {
+            success: false,
+            errorCode: response.status,
+            message: 'Failed to delete',
+          };
+        }
+        const accessToken = await currentUserOauthAccessToken(userId);
+        const cacheKey = `user:${userId}-gtm:all_workspaces`;
+        await redis.del(cacheKey);
+
+        // Optionally, fetch and cache the updated list of workspaces
+        const deletedWorkspaces = await fetchAllWorkspaces(
+          accessToken[0].token
+        ); // A function to fetch all workspaces
+        await redis.set(
+          cacheKey,
+          JSON.stringify(deletedWorkspaces),
+          'EX',
+          60 * 60 * 24 * 7
+        );
+
+        /* const path = request.nextUrl.searchParams.get('path') || '/'; // should it fall back on the layout?  */
+
+        const path = `/dashboard/gtm/workspaces`;
+
+        revalidatePath(path);
+
+        return { success: true, containerId, workspaceId };
       }
-      const accessToken = await currentUserOauthAccessToken(userId);
-      const cacheKey = `user:${userId}-gtm:all_workspaces`;
-      await redis.del(cacheKey);
-
-      // Optionally, fetch and cache the updated list of workspaces
-      const deletedWorkspaces = await fetchAllWorkspaces(accessToken[0].token); // A function to fetch all workspaces
-      await redis.set(
-        cacheKey,
-        JSON.stringify(deletedWorkspaces),
-        'EX',
-        60 * 60 * 24 * 7
-      );
-
-      /* const path = request.nextUrl.searchParams.get('path') || '/'; // should it fall back on the layout?  */   
-
-      const path = `/dashboard/gtm/workspaces`;
-
-      revalidatePath(path);
-
-      return { success: true, containerId, workspaceId };
-    }
-  );
+    );
     const results = await Promise.all(deletionPromises);
 
-  if (errors.length > 0) {
-    return {
-      success: false,
-      limitReached: false,
-      message: errors.join(', '),
-    };
-  } else {
-    return {
-      success: true,
-      limitReached: false,
-      deletedWorkspaces: results,
-    };
-  }
-
-
+    if (errors.length > 0) {
+      return {
+        success: false,
+        limitReached: false,
+        message: errors.join(', '),
+      };
+    } else {
+      return {
+        success: true,
+        limitReached: false,
+        deletedWorkspaces: results,
+      };
+    }
   } catch (error: any) {
     logger.error(error);
     return {
@@ -184,28 +183,27 @@ export async function DeleteWorkspaces(
       message: error.message,
     };
   }
-
-
-
-
 }
 
 /************************************************************************************
   Create a single container or multiple containers
 ************************************************************************************/
-export async function createWorkspaces(formData: FormCreateSchema, token: string) {
-  const { userId } = auth()
+export async function createWorkspaces(
+  formData: FormCreateSchema,
+  token: string
+) {
+  const { userId } = auth();
   if (!userId) return notFound();
-
 
   try {
     const baseUrl = getURL();
     const errors: string[] = [];
-    const forms: any[] = [];    
-    
-    const plainDataArray = formData.forms?.map((fd) => {
-      return Object.fromEntries(Object.keys(fd).map((key) => [key, fd[key]]));
-    }) || [];
+    const forms: any[] = [];
+
+    const plainDataArray =
+      formData.forms?.map((fd) => {
+        return Object.fromEntries(Object.keys(fd).map((key) => [key, fd[key]]));
+      }) || [];
 
     // Now pass plainDataArray to CreateWorkspaceSchema.safeParse within an object under the key 'forms'
     const validationResult = CreateWorkspaceSchema.safeParse({
@@ -248,7 +246,7 @@ export async function createWorkspaces(formData: FormCreateSchema, token: string
 
     const featureLimitReachedWorkspaces: string[] = [];
 
-    const createPromises = forms.map(async (workspaceData) => {      
+    const createPromises = forms.map(async (workspaceData) => {
       const { accountId, description, containerId, name } = workspaceData; // Destructure from the current object
 
       // Initialize payload with a flexible type
@@ -257,7 +255,7 @@ export async function createWorkspaces(formData: FormCreateSchema, token: string
         containerId: containerId,
         accountId: accountId,
         name: name,
-      };      
+      };
 
       const response = await fetch(
         `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}/workspaces`,
@@ -266,7 +264,7 @@ export async function createWorkspaces(formData: FormCreateSchema, token: string
           headers: requestHeaders,
           body: JSON.stringify(payload),
         }
-      );      
+      );
 
       if (response.status === 400) {
         const parsedResponse = await response.json();
@@ -339,12 +337,11 @@ export async function createWorkspaces(formData: FormCreateSchema, token: string
         60 * 60 * 24 * 7
       );
 
-      /* const path = request.nextUrl.searchParams.get('path') || '/'; // should it fall back on the layout?  */   
+      /* const path = request.nextUrl.searchParams.get('path') || '/'; // should it fall back on the layout?  */
 
       const path = `/dashboard/gtm/workspaces`;
 
       revalidatePath(path);
-
 
       return {
         success: true,
@@ -367,8 +364,11 @@ export async function createWorkspaces(formData: FormCreateSchema, token: string
 /************************************************************************************
   Udpate a single container or multiple containers
 ************************************************************************************/
-export async function updateWorkspaces(formData: FormUpdateSchema, token: string) {
-  const { userId } = auth()
+export async function updateWorkspaces(
+  formData: FormUpdateSchema,
+  token: string
+) {
+  const { userId } = auth();
   if (!userId) return notFound();
 
   try {
@@ -496,12 +496,11 @@ export async function updateWorkspaces(formData: FormUpdateSchema, token: string
         60 * 60 * 24 * 7
       );
 
-      /* const path = request.nextUrl.searchParams.get('path') || '/'; // should it fall back on the layout?  */   
+      /* const path = request.nextUrl.searchParams.get('path') || '/'; // should it fall back on the layout?  */
 
       const path = `/dashboard/gtm/workspaces`;
 
       revalidatePath(path);
-
 
       return {
         success: true,
@@ -520,8 +519,10 @@ export async function updateWorkspaces(formData: FormUpdateSchema, token: string
 /************************************************************************************
   Function to list all GTM workspaces in all containers in all accounts
 ************************************************************************************/
-export async function fetchAllWorkspaces(accessToken: string): Promise<WorkspaceType[]> {
-  const { userId } = auth()
+export async function fetchAllWorkspaces(
+  accessToken: string
+): Promise<WorkspaceType[]> {
+  const { userId } = auth();
   const cacheKey = `user:${userId}-gtm:all_workspaces`;
 
   try {
@@ -537,7 +538,10 @@ export async function fetchAllWorkspaces(accessToken: string): Promise<Workspace
 
     // Create an array of promises for fetching containers
     const containerPromises = allAccounts.map(async (account) => {
-      const containers = await listGtmContainers(accessToken, account.accountId);
+      const containers = await listGtmContainers(
+        accessToken,
+        account.accountId
+      );
       const containerMap = new Map<string, string>(
         containers.map((c) => [c.containerId, c.name])
       );

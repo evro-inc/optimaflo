@@ -15,7 +15,6 @@ import { z } from 'zod';
 import logger from '@/src/lib/logger';
 import { createWorkspaces } from '@/src/lib/actions/workspaces';
 import { useAuth } from '@clerk/nextjs';
-import { notFound } from 'next/navigation';
 
 type Forms = z.infer<typeof CreateWorkspaceSchema>;
 
@@ -28,6 +27,7 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
   const formRefs = useRef<(HTMLFormElement | null)[]>([]);
   const dispatch = useDispatch();
+  const { getToken } = useAuth();
   const {
     register,
     handleSubmit,
@@ -84,13 +84,12 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
     updatedAccounts[index] = accountId;
     setSelectedAccounts(updatedAccounts);
   };
-  const {getToken} = useAuth();
 
   const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
-    const token = await getToken() as string;    
+    const token = (await getToken()) as string;
 
     try {
       const res = (await createWorkspaces({ forms }, token)) as CreateResult;

@@ -239,14 +239,14 @@ export async function GET(
   }
 ) {
   try {
-    const { userId } = auth()   
+    const { userId } = auth();
     if (!userId) return notFound();
     const accountId = params.accountId;
 
     // Call validateGetParams to validate the parameters
     await validateGetParams(accountId);
-    const token = await currentUserOauthAccessToken(userId);           
-    
+    const token = await currentUserOauthAccessToken(userId);
+
     // Call listGtmContainers for each accountId
     const allResults = await Promise.all(
       (accountId ? [accountId] : []).map(async (accountId) => {
@@ -287,9 +287,8 @@ export async function POST(
     };
   }
 ) {
-  const { userId } = auth()
+  const { userId } = auth();
   if (!userId) return notFound();
-
 
   try {
     const limit = Number(request.nextUrl.searchParams.get('limit')) || 10;
@@ -310,7 +309,7 @@ export async function POST(
     const validatedParams = await validatePostParams(paramsJOI);
     const { name, usageContext, domainName, notes, accountId } =
       validatedParams;
-    const token = await currentUserOauthAccessToken(userId);  
+    const token = await currentUserOauthAccessToken(userId);
 
     // check tier limit
     const tierLimitRecord = await prisma.tierLimit.findFirst({
@@ -352,7 +351,7 @@ export async function POST(
       limit
     );
 
-    const path = request.nextUrl.searchParams.get('path') || '/'; // should it fall back on the layout?    
+    const path = request.nextUrl.searchParams.get('path') || '/'; // should it fall back on the layout?
 
     revalidatePath(path);
 

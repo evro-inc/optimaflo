@@ -1,21 +1,38 @@
 import type { Metadata } from 'next';
 import React from 'react';
-import { currentUser } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
 import AccountTable from './table';
+import { auth } from '@clerk/nextjs';
+import { currentUserOauthAccessToken } from '@/src/lib/clerk';
+import { listGtmAccounts } from '@/src/lib/actions/accounts';
 
 export const metadata: Metadata = {
   title: 'Overview',
   description: 'Overview',
 };
 
-export default async function AccountPage() {
-  const user = await currentUser();
-  if (!user) return notFound();
+async function getAccounts() {
+  try {
+    const { userId } = auth();
+    if (!userId) return notFound();
+    const token = await currentUserOauthAccessToken(userId);
+    const accounts = await listGtmAccounts(token[0].token);
+    
 
+    return { props: { accounts } };
+  } catch (error: any) {
+    console.error('Error fetching accounts:', error.message);
+    return { props: { accounts: [], totalPages: 0 } }; // Return empty array and 0 totalPages in case of error
+  }
+}
+
+export default async function AccountPage() {
+    const { userId } = auth();
+    if (!userId) return notFound();
+    const data = await getAccounts();
   return (
     <>
-      <AccountTable />
+      <AccountTable accounts={data.props.accounts} />
     </>
   );
 }
