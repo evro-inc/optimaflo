@@ -480,17 +480,19 @@ export async function fetchAllWorkspaces(accessToken: string): Promise<Workspace
       return JSON.parse(cachedWorkspaces);
     }
 
-    // If not in cache, fetch from source
+    // If not in cache, fetch from source in parallel
     const allAccounts = await listGtmAccounts(accessToken);
-    let allWorkspaces: WorkspaceType[] = [];
+    const allWorkspaces: WorkspaceType[] = [];
 
-    for (const account of allAccounts) {
+    // Create an array of promises for fetching containers
+    const containerPromises = allAccounts.map(async (account) => {
       const containers = await listGtmContainers(accessToken, account.accountId);
       const containerMap = new Map<string, string>(
         containers.map((c) => [c.containerId, c.name])
       );
 
-      for (const container of containers) {
+      // Create an array of promises for fetching workspaces within each container
+      const workspacePromises = containers.map(async (container) => {
         const workspaces = await listGtmWorkspaces(
           accessToken,
           account.accountId,
@@ -502,9 +504,15 @@ export async function fetchAllWorkspaces(accessToken: string): Promise<Workspace
           containerName: containerMap.get(workspace.containerId),
         }));
 
-        allWorkspaces = [...allWorkspaces, ...enhancedWorkspaces];
-      }
-    }
+        return enhancedWorkspaces;
+      });
+
+      const workspaceArrays = await Promise.all(workspacePromises);
+      const flattenedWorkspaces = workspaceArrays.flat();
+      allWorkspaces.push(...flattenedWorkspaces);
+    });
+
+    await Promise.all(containerPromises);
 
     // Cache the result in Redis
     await redis.set(
