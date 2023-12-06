@@ -1,3 +1,4 @@
+'use client';
 import React from 'react';
 import { WorkspaceType } from '@/src/lib/types/types';
 import ButtonCreate from '@/src/components/client/UI/ButtonCreate';
@@ -11,23 +12,28 @@ import ButtonNext from '@/src/components/client/UI/ButtonNext';
 import { usePaginate } from '@/src/lib/paginate';
 import { selectTable } from '@/src/app/redux/tableSlice';
 import { useSelector } from 'react-redux';
-import WorkspaceForms from '../../../../../../components/client/UI/WorkspaceForms';
-import { listGtmAccounts } from '@/src/lib/actions/accounts';
-import { currentUserOauthAccessToken } from '@/src/lib/clerk';
-import { auth } from '@clerk/nextjs';
-import { notFound } from 'next/navigation';
-import { fetchAllWorkspaces } from '@/src/lib/actions/workspaces';
-import Pagination from '@/src/components/client/UI/pagination';
+import WorkspaceForms from '@/src/components/client/UI/WorkspaceForms';
 
-export default async function WorkspaceTable({workspaces, totalPages}: {workspaces: any[], totalPages: number}) {
-  
-const mergedData = Array.isArray(workspaces) ? workspaces : [];
+export default function WorkspaceTable(
+  { workspaces }
+) {
+  const { itemsPerPage } = useSelector(selectTable);
 
-const sortedData = [...mergedData].sort((a, b) => {
+  const mergedData = Array.isArray(workspaces) ? workspaces : [];
+
+  const sortedData = [...mergedData].sort((a, b) => {
     if (a.containerName < b.containerName) return -1;
     if (a.containerName > b.containerName) return 1;
     return 0;
-  }); 
+  });
+
+  // Use usePaginate for pagination
+  const currentData = usePaginate(sortedData);
+
+  // Calculate total pages
+  const totalPages = Math.ceil(
+    (mergedData ? mergedData.length : 0) / itemsPerPage
+  );
 
   const pageOptions = Array.from({ length: totalPages }, (_, i) => i + 1);
 
@@ -117,7 +123,7 @@ const sortedData = [...mergedData].sort((a, b) => {
                     </tr>
                   </thead>
 
-                  {sortedData.map((workspace) => (
+                  {currentData.map((workspace: WorkspaceType) => (
                     <tbody
                       className="divide-y divide-gray-200 dark:divide-gray-700"
                       key={`${workspace.workspaceId}-${workspace.containerId}`}
@@ -229,9 +235,8 @@ const sortedData = [...mergedData].sort((a, b) => {
 
                   <div>
                     <div className="inline-flex gap-x-2">
-                      {/* <ButtonPrev />
-                      <ButtonNext workspaces={mergedData ? mergedData : []} /> */}
-                      <Pagination totalPages={totalPages} />
+                      <ButtonPrev />
+                      <ButtonNext workspaces={mergedData ? mergedData : []} />
                     </div>
                   </div>
                 </div>

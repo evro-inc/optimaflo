@@ -1,7 +1,7 @@
 import React from 'react';
-import WorkspaceTable from '@/src/app/(dashboards)/dashboard/gtm/workspaces/server/table';
 import { notFound } from 'next/navigation';
-import { auth } from '@clerk/nextjs';
+import { auth, currentUser } from '@clerk/nextjs';
+import WorkspaceTable from './server/table';
 import { currentUserOauthAccessToken } from '@/src/lib/clerk';
 import { fetchAllWorkspaces } from '@/src/lib/actions/workspaces';
 
@@ -23,22 +23,16 @@ async function getWorkspaces() {
 }
 
 
+
 export default async function WorkspacePage() {
-  const { userId } = auth();
-  if (!userId) return notFound();
+  const user = await currentUser();
+  if (!user) return notFound();
 
-  const data = await getWorkspaces();
-
-  // Provide default values in case of undefined
-  const workspaces = data?.props.workspaces || [];
-  const totalPages = data?.props.totalPages || 0;
+  const data = await getWorkspaces(); 
 
   return (
     <>
-      <WorkspaceTable workspaces={workspaces} totalPages={totalPages} />
+      <WorkspaceTable workspaces={data.props.workspaces} />
     </>
   );
 }
-
-
-

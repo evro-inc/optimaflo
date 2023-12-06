@@ -93,17 +93,20 @@ export async function listGtmWorkspaces(
 ************************************************************************************/
 export async function DeleteWorkspaces(
   accountId: string,
-  workspaces: { containerId: string; workspaceId: string }[]
+  workspaces: { containerId: string; workspaceId: string }[],
+  token: string
 ) {
   const { userId } = auth()
   if (!userId) return notFound();
-  const errors: string[] = [];
-  const token = await currentUserOauthAccessToken(userId);  
+
+
+  try {
+      const errors: string[] = [];
   const baseUrl = getURL();
 
   const requestHeaders = {
     'Content-Type': 'application/json',
-    Authorization: `Bearer ${token[0].token}`,
+    Authorization: `Bearer ${token}`,
   };
 
   const deletionPromises = workspaces.map(
@@ -134,15 +137,29 @@ export async function DeleteWorkspaces(
           message: 'Failed to delete',
         };
       }
+      const accessToken = await currentUserOauthAccessToken(userId);
+      const cacheKey = `user:${userId}-gtm:all_workspaces`;
+      await redis.del(cacheKey);
 
-      const workspacePath = `/dashboard/gtm/workspaces`; // Assuming this is the correct path format
-      revalidatePath(workspacePath);
+      // Optionally, fetch and cache the updated list of workspaces
+      const deletedWorkspaces = await fetchAllWorkspaces(accessToken[0].token); // A function to fetch all workspaces
+      await redis.set(
+        cacheKey,
+        JSON.stringify(deletedWorkspaces),
+        'EX',
+        60 * 60 * 24 * 7
+      );
+
+      /* const path = request.nextUrl.searchParams.get('path') || '/'; // should it fall back on the layout?  */   
+
+      const path = `/dashboard/gtm/workspaces`;
+
+      revalidatePath(path);
 
       return { success: true, containerId, workspaceId };
     }
   );
-
-  const results = await Promise.all(deletionPromises);
+    const results = await Promise.all(deletionPromises);
 
   if (errors.length > 0) {
     return {
@@ -157,6 +174,20 @@ export async function DeleteWorkspaces(
       deletedWorkspaces: results,
     };
   }
+
+
+  } catch (error: any) {
+    logger.error(error);
+    return {
+      success: false,
+      limitReached: false,
+      message: error.message,
+    };
+  }
+
+
+
+
 }
 
 /************************************************************************************
@@ -295,13 +326,12 @@ export async function createWorkspaces(formData: FormCreateSchema, token: string
         message: errors.join(', '),
       };
     } else {
-      const token = await currentUserOauthAccessToken(userId);  
-
+      const accessToken = await currentUserOauthAccessToken(userId);
       const cacheKey = `user:${userId}-gtm:all_workspaces`;
       await redis.del(cacheKey);
 
       // Optionally, fetch and cache the updated list of workspaces
-      const updatedWorkspaces = await fetchAllWorkspaces(token[0].token); // A function to fetch all workspaces
+      const updatedWorkspaces = await fetchAllWorkspaces(accessToken[0].token); // A function to fetch all workspaces
       await redis.set(
         cacheKey,
         JSON.stringify(updatedWorkspaces),
@@ -337,14 +367,15 @@ export async function createWorkspaces(formData: FormCreateSchema, token: string
 /************************************************************************************
   Udpate a single container or multiple containers
 ************************************************************************************/
-export async function updateWorkspaces(formData: FormUpdateSchema) {
+export async function updateWorkspaces(formData: FormUpdateSchema, token: string) {
+  const { userId } = auth()
+  if (!userId) return notFound();
+
   try {
-    const { userId } = auth()
-    if(!userId) return notFound();
-    const token = await currentUserOauthAccessToken(userId);  
     const baseUrl = getURL();
     const errors: string[] = [];
     const forms: any[] = [];
+
     const plainDataArray = formData.forms.map((fd) => {
       return Object.fromEntries(Object.keys(fd).map((key) => [key, fd[key]]));
     });
@@ -380,7 +411,7 @@ export async function updateWorkspaces(formData: FormUpdateSchema) {
 
     const requestHeaders = {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token[0].token}`,
+      Authorization: `Bearer ${token}`,
     };
     const featureLimitReachedWorkspaces: string[] = [];
 
@@ -452,6 +483,26 @@ export async function updateWorkspaces(formData: FormUpdateSchema) {
         message: errors.join(', '),
       };
     } else {
+      const accessToken = await currentUserOauthAccessToken(userId);
+      const cacheKey = `user:${userId}-gtm:all_workspaces`;
+      await redis.del(cacheKey);
+
+      // Optionally, fetch and cache the updated list of workspaces
+      const updatedWorkspaces = await fetchAllWorkspaces(accessToken[0].token); // A function to fetch all workspaces
+      await redis.set(
+        cacheKey,
+        JSON.stringify(updatedWorkspaces),
+        'EX',
+        60 * 60 * 24 * 7
+      );
+
+      /* const path = request.nextUrl.searchParams.get('path') || '/'; // should it fall back on the layout?  */   
+
+      const path = `/dashboard/gtm/workspaces`;
+
+      revalidatePath(path);
+
+
       return {
         success: true,
         limitReached: false,

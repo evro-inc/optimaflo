@@ -240,6 +240,7 @@ export async function GET(
 ) {
   try {
     const { userId } = auth()   
+    if (!userId) return notFound();
     const accountId = params.accountId;
 
     // Call validateGetParams to validate the parameters

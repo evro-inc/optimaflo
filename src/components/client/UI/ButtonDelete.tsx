@@ -5,18 +5,21 @@ import { useDispatch, useSelector } from 'react-redux';
 import { selectTable, setIsLimitReached } from '@/src/app/redux/tableSlice';
 import { DeleteWorkspaces } from '@/src/lib/actions/workspaces';
 import logger from '@/src/lib/logger';
+import { useAuth } from '@clerk/nextjs';
 
 function ButtonDel() {
   const dispatch = useDispatch();
   const { selectedRows } = useSelector(selectTable);
+  const {getToken} = useAuth();
 
   const handleDelete = async () => {
+  const token = await getToken() as string;
     try {
       // Transform selectedRows object into an array of deletion operations
       const deleteOperations = Object.values(selectedRows).map(
         (rowData: any) => {
           const { accountId, containerId, workspaceId } = rowData;
-          return DeleteWorkspaces(accountId, [{ containerId, workspaceId }]);
+          return DeleteWorkspaces(accountId, [{ containerId, workspaceId }],token);
         }
       );
 

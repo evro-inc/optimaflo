@@ -10,6 +10,7 @@ import { limiter } from '@/src/lib/bottleneck';
 import { handleError } from '@/src/lib/fetch/apiUtils';
 import { clerkClient, currentUser } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
 
 /************************************************************************************
  * GET UTILITY FUNCTIONS
@@ -335,6 +336,10 @@ export async function PATCH(request: NextRequest) {
             },
             errors: null,
           };
+          
+          const path = request.nextUrl.searchParams.get('path') || '/'; // should it fall back on the layout?    
+
+          revalidatePath(path);
 
           return NextResponse.json(response, {
             headers: {
