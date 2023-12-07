@@ -3,7 +3,7 @@ import React from 'react';
 import { ButtonDelete } from '../Button/Button';
 import { useDispatch, useSelector } from 'react-redux';
 import { selectTable, setIsLimitReached } from '@/src/app/redux/tableSlice';
-import { DeleteWorkspaces } from '@/src/lib/actions/workspaces';
+import { DeleteWorkspaces } from '@/src/lib/fetch/dashboard/gtm/actions/workspaces';
 import logger from '@/src/lib/logger';
 import { useAuth } from '@clerk/nextjs';
 

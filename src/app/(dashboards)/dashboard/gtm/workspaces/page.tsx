@@ -1,9 +1,9 @@
 import React from 'react';
 import { notFound } from 'next/navigation';
-import { auth, currentUser } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs';
 import WorkspaceTable from './server/table';
 import { currentUserOauthAccessToken } from '@/src/lib/clerk';
-import { fetchAllWorkspaces } from '@/src/lib/actions/workspaces';
+import { fetchAllWorkspaces } from '@/src/lib/fetch/dashboard/gtm/actions/workspaces';
 
 async function getWorkspaces() {
   try {
@@ -23,8 +23,8 @@ async function getWorkspaces() {
 }
 
 export default async function WorkspacePage() {
-    const { userId } = auth();
-    if (!userId) return notFound();
+  const { userId } = auth();
+  if (!userId) return notFound();
 
   const data = await getWorkspaces();
 

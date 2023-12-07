@@ -4,17 +4,17 @@ import {
   CreateWorkspaceSchema,
   UpdateWorkspaceSchema,
 } from '@/src/lib/schemas/workspaces';
-import logger from '../logger';
+import logger from '../../../../logger';
 import z from 'zod';
 import { getURL } from '@/src/lib/helpers';
-import { auth, currentUser } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
-import { limiter } from '../bottleneck';
-import { gtmRateLimit } from '../redis/rateLimits';
+import { limiter } from '../../../../bottleneck';
+import { gtmRateLimit } from '../../../../redis/rateLimits';
 import { listGtmAccounts } from './accounts';
 import { listGtmContainers } from './containers';
-import { redis } from '../redis/cache';
-import { currentUserOauthAccessToken } from '../clerk';
+import { redis } from '../../../../redis/cache';
+import { currentUserOauthAccessToken } from '../../../../clerk';
 
 // Define the types for the form data
 type FormCreateSchema = z.infer<typeof CreateWorkspaceSchema>;
@@ -38,8 +38,17 @@ export async function listGtmWorkspaces(
   const MAX_RETRIES = 3;
   let delay = 1000;
 
-  const user = await currentUser();
-  const userId = user?.id as string;
+  // Authenticating the user and getting the user ID
+  const { userId } = await auth();
+  // If user ID is not found, return a 'not found' error
+  if (!userId) return notFound();
+
+  const cacheKey = `gtm:workspaces-containerId:${containerId}-userId:${userId}`;
+  const cachedValue = await redis.get(cacheKey);
+
+  if (cachedValue) {
+    return JSON.parse(cachedValue);
+  }
 
   while (retries < MAX_RETRIES) {
     try {
@@ -68,6 +77,9 @@ export async function listGtmWorkspaces(
           const responseBody = await response.json();
           data = responseBody.workspace;
         });
+
+        // Caching the data in Redis with a 2 hour expiration time
+        redis.set(cacheKey, JSON.stringify(data), 'EX', 60 * 60 * 2);
 
         return data;
       } else {

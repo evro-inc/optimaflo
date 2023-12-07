@@ -17,7 +17,7 @@ import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { FormUpdateWorkspaceProps, UpdateResult } from '@/src/lib/types/types';
 import logger from '@/src/lib/logger';
-import { updateWorkspaces } from '@/src/lib/actions/workspaces';
+import { updateWorkspaces } from '@/src/lib/fetch/dashboard/gtm/actions/workspaces';
 import { useAuth } from '@clerk/nextjs';
 
 // Type for the entire form data

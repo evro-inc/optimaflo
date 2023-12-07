@@ -7,7 +7,7 @@ import { notFound } from 'next/navigation';
 import {
   createWorkspaces,
   fetchAllWorkspaces,
-} from '@/src/lib/actions/workspaces';
+} from '@/src/lib/fetch/dashboard/gtm/actions/workspaces';
 import { redis } from '@/src/lib/redis/cache';
 
 import { currentUserOauthAccessToken } from '@/src/lib/clerk';
@@ -91,7 +91,7 @@ async function validatePostParams(params) {
 export async function POST(request: NextRequest) {
   const { userId } = auth();
   if (!userId) return notFound();
-  const token = await currentUserOauthAccessToken(userId);  
+  const token = await currentUserOauthAccessToken(userId);
   try {
     const body = JSON.parse(await request.text());
     const postParams = {

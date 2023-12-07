@@ -1,9 +1,9 @@
 'use client';
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CreateContainers } from '@/src/lib/actions/containers';
-import { LimitReached } from '../../modals/limitReached';
-import { ButtonGroup } from '../../ButtonGroup/ButtonGroup';
+import { CreateContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containers';
+import { LimitReached } from '../../../../../components/client/modals/limitReached';
+import { ButtonGroup } from '../../../../../components/client/ButtonGroup/ButtonGroup';
 import { XMarkIcon } from '@heroicons/react/24/solid';
 import { CreateResult, FormCreateContainerProps } from '@/src/lib/types/types';
 import { useDispatch, useSelector } from 'react-redux';
@@ -24,6 +24,8 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
 }) => {
   const formRefs = useRef<(HTMLFormElement | null)[]>([]);
   const dispatch = useDispatch();
+
+  console.log('accounts', accounts);
 
   const {
     register,
@@ -236,8 +238,8 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
                                 {...register(`forms.${index}.accountId`)}
                                 className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
                               >
-                                {Array.isArray(accounts?.data) &&
-                                  accounts.data.map((account: any) => (
+                                {Array.isArray(accounts) &&
+                                  accounts.map((account: any) => (
                                     <option key={account.accountId}>
                                       {account.accountId}
                                     </option>

@@ -1,9 +1,9 @@
 'use client';
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { updateContainers } from '@/src/lib/actions/containers';
-import { LimitReached } from '../../modals/limitReached';
-import { ButtonGroup } from '../../ButtonGroup/ButtonGroup';
+import { updateContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containers';
+import { LimitReached } from '../../../../../components/client/modals/limitReached';
+import { ButtonGroup } from '../../../../../components/client/ButtonGroup/ButtonGroup';
 import { XMarkIcon } from '@heroicons/react/24/solid';
 import { z } from 'zod';
 import { UpdateContainerSchema } from '@/src/lib/schemas/containers';

@@ -13,7 +13,7 @@ import { CreateWorkspaceSchema } from '@/src/lib/schemas/workspaces';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import logger from '@/src/lib/logger';
-import { createWorkspaces } from '@/src/lib/actions/workspaces';
+import { createWorkspaces } from '@/src/lib/fetch/dashboard/gtm/actions/workspaces';
 import { useAuth } from '@clerk/nextjs';
 
 type Forms = z.infer<typeof CreateWorkspaceSchema>;

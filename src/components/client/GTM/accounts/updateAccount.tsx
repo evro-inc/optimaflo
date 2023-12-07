@@ -1,4 +1,6 @@
-'use client';
+'use client'; // Ensures that this file is only used in a client-side environment
+
+// Importing necessary hooks and functions from Redux and other libraries
 import { useDispatch, useSelector } from 'react-redux';
 import {
   clearSelectedRows,
@@ -9,7 +11,7 @@ import { selectIsLoading, setLoading } from '@/src/app/redux/globalSlice';
 import { useEffect, useRef } from 'react';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { updateAccounts } from '@/src/lib/actions/accounts';
+import { updateAccounts } from '@/src/lib/fetch/dashboard/gtm/actions/accounts';
 import logger from '@/src/lib/logger';
 import { z } from 'zod';
 import { UpdateAccountSchema } from '@/src/lib/schemas/accounts';
@@ -19,14 +21,20 @@ import { ButtonGroup } from '../../ButtonGroup/ButtonGroup';
 import { LimitReached } from '../../modals/limitReached';
 import { UpdateResult } from '@/src/lib/types/types';
 
+// Defining the type for form data using Zod
 type Forms = z.infer<typeof UpdateAccountSchema>;
 
+// Functional component for updating account forms
 function AccountFormUpdate({ showOptions, onClose, selectedRows }) {
+  // Using Redux hooks for dispatching actions and selecting state
   const dispatch = useDispatch();
   const { isLimitReached } = useSelector(selectTable);
   const isLoading = useSelector(selectIsLoading);
+
+  // useRef to keep track of form elements
   const formRefs = useRef<(HTMLFormElement | null)[]>([]);
 
+  // Setting up form handling using react-hook-form with Zod for validation
   const {
     register,
     handleSubmit,
@@ -40,8 +48,10 @@ function AccountFormUpdate({ showOptions, onClose, selectedRows }) {
     resolver: zodResolver(UpdateAccountSchema),
   });
 
+  // Managing dynamic form fields using react-hook-form
   const { fields } = useFieldArray({ control, name: 'forms' });
 
+  // useEffect to reset form values based on selected rows
   useEffect(() => {
     const initialForms = Object.values(selectedRows).map((account: any) => ({
       accountId: account?.accountId || '',
@@ -50,15 +60,23 @@ function AccountFormUpdate({ showOptions, onClose, selectedRows }) {
     reset({ forms: initialForms });
   }, [selectedRows, reset]);
 
+  // Function to process form submission
   const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
+
+    // Dispatching loading state
     dispatch(setLoading(true));
+
     try {
-      const res = (await updateAccounts({ forms })) as UpdateResult; // Implement this function
+      // Updating accounts with the API call
+      const res = (await updateAccounts({ forms })) as UpdateResult;
+
+      // Clearing selected rows and closing the form on success
       dispatch(clearSelectedRows());
       onClose();
       reset({ forms: [{ accountId: '', name: '' }] });
 
+      // Handling response based on success or limit reached
       if (res && res.success) {
         // Reset the forms here
         reset({
@@ -74,12 +92,14 @@ function AccountFormUpdate({ showOptions, onClose, selectedRows }) {
         dispatch(setIsLimitReached(true));
       }
     } catch (error) {
+      // Logging errors
       logger.error('Error updating accounts:', error);
     } finally {
       dispatch(setLoading(false));
     }
   };
 
+  // Function to handle form close
   const handleClose = () => {
     reset({ forms: [{ accountId: '', name: '' }] });
     dispatch(clearSelectedRows());

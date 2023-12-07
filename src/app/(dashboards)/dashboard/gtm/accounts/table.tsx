@@ -6,8 +6,7 @@ import ButtonPrev from '@/src/components/client/UI/ButtonPrevious';
 import ButtonUpdate from '@/src/components/client/UI/ButtonUpdate';
 import Select from '@/src/components/client/UI/Select';
 
-
-async function AccountTable({accounts}) {
+async function AccountTable({ accounts }) {
   const totalPages = Math.ceil(accounts.length / 10);
   const pageOptions = Array.from({ length: totalPages }, (_, i) => i + 1);
 

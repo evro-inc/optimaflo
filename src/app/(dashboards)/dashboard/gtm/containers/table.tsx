@@ -2,7 +2,7 @@
 import dynamic from 'next/dynamic';
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { DeleteContainers } from '@/src/lib/actions/containers';
+import { DeleteContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containers';
 import { ContainerType } from '@/src/lib/types/types';
 import {
   selectGlobal,
@@ -18,20 +18,29 @@ import {
   toggleAllSelected,
 } from '@/src/app/redux/tableSlice';
 import logger from '@/src/lib/logger';
-import FormCombineContainer from './combineContainer';
+import FormCombineContainer from '../../../../../components/client/GTM/containers/combineContainer';
 
 //dynamic import for buttons
 const ButtonDelete = dynamic(
-  () => import('../../Button/Button').then((mod) => mod.ButtonDelete),
+  () =>
+    import('../../../../../components/client/Button/Button').then(
+      (mod) => mod.ButtonDelete
+    ),
   { ssr: false }
 );
 const ButtonWithIcon = dynamic(
-  () => import('../../Button/Button').then((mod) => mod.ButtonWithIcon),
+  () =>
+    import('../../../../../components/client/Button/Button').then(
+      (mod) => mod.ButtonWithIcon
+    ),
   { ssr: false }
 );
 
 const LimitReached = dynamic(
-  () => import('../../modals/limitReached').then((mod) => mod.LimitReached),
+  () =>
+    import('../../../../../components/client/modals/limitReached').then(
+      (mod) => mod.LimitReached
+    ),
   { ssr: false }
 );
 const FormCreateContainer = dynamic(() => import('./create'), {
@@ -44,7 +53,6 @@ const FormUpdateContainer = dynamic(() => import('./update'), {
 
 export default function ContainerTable({ accounts, containers }) {
   const flattenedContainers = containers.flat();
-
   const dispatch = useDispatch();
   const { showUpdateContainer, showCreateContainer, showCombineContainer } =
     useSelector(selectGlobal);
@@ -128,7 +136,7 @@ export default function ContainerTable({ accounts, containers }) {
     }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     const uniqueAccountIds = Array.from(
       new Set(
         Object.values(selectedRows).map((rowData: any) => rowData.accountId)
@@ -145,15 +153,12 @@ export default function ContainerTable({ accounts, containers }) {
       return DeleteContainers(accountId, new Set(containersToDelete));
     });
 
-    const deletePromise = Promise.all(deleteOperations);
+    const responses = await Promise.all(deleteOperations);
+    const limitReached = responses.some(response => response.limitReached);
 
-    deletePromise.catch((error: any) => {
-      if (error.message.includes('Feature limit reached')) {
-        dispatch(setIsLimitReached(true));
-      } else {
-        logger.error(error);
-      }
-    });
+    if (limitReached) {
+      dispatch(setIsLimitReached(true));
+    }
   };
 
   return (

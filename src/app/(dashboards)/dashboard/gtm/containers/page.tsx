@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
 import React from 'react';
-import ContainerTable from '@/src/components/client/GTM/containers/table';
-import { currentUser } from '@clerk/nextjs';
+import ContainerTable from '@/src/app/(dashboards)/dashboard/gtm/containers/table';
+import { auth } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
-import { listGtmAccounts } from '@/src/lib/actions/accounts';
-import { listGtmContainers } from '@/src/lib/actions/containers';
+import { listAllGtmContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containers';
+import { currentUserOauthAccessToken } from '@/src/lib/clerk';
+import { listGtmAccounts } from '@/src/lib/fetch/dashboard/gtm/actions/accounts';
 
 export const metadata: Metadata = {
   title: 'Overview',
@@ -12,22 +13,17 @@ export const metadata: Metadata = {
 };
 
 export default async function ContainerPage() {
-  const user = await currentUser();
-  if (!user) return notFound();
+  const { userId } = auth();
+  if (!userId) return notFound();
+  const token = await currentUserOauthAccessToken(userId);
 
-  // Fetch accounts list
-  const accounts = await listGtmAccounts();
-
-  // Fetch containers for each account in parallel
-  const containersPromises = accounts.map((account) =>
-    listGtmContainers(account.accountId)
-  );
-
-  const containersResults = await Promise.all(containersPromises);
+  // Fetch
+  const combinedContainers = await listAllGtmContainers(token[0].token);
+  const allAccounts = await listGtmAccounts(token[0].token);
 
   return (
     <>
-      <ContainerTable accounts={accounts.data} containers={containersResults} />
+      <ContainerTable accounts={allAccounts} containers={combinedContainers} />
     </>
   );
 }

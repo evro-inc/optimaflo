@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ValidationError } from '@/src/lib/exceptions';
 import Joi from 'joi';
-import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
 import logger from '@/src/lib/logger';
-import { limiter } from '@/src/lib/bottleneck';
-import { auth, clerkClient, currentUser } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
-import { listGtmWorkspaces } from '@/src/lib/actions/workspaces';
+import { listGtmWorkspaces } from '@/src/lib/fetch/dashboard/gtm/actions/workspaces';
 import { redis } from '@/src/lib/redis/cache';
 import { currentUserOauthAccessToken } from '@/src/lib/clerk';
 import { revalidatePath } from 'next/cache';
