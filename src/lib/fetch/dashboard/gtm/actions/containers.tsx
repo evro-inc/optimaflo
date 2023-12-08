@@ -229,6 +229,9 @@ export async function DeleteContainers(
                   headers,
                 });
 
+                console.log('response', response);
+                
+
                 if (response.status === 403) {
                   const parsedResponse = await response.json();
                   if (parsedResponse.message === 'Feature limit reached') {
