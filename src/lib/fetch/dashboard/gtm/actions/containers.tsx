@@ -1,19 +1,16 @@
 'use server';
 import { revalidatePath } from 'next/cache';
 import { CreateContainerSchema } from '@/src/lib/schemas/containers';
-import logger from '../../../../logger';
-import { getURL } from '@/src/lib/helpers';
 import z from 'zod';
-import { getAccessToken } from '../../../apiUtils';
-import { auth, useSession } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs';
 import { gtmRateLimit } from '../../../../redis/rateLimits';
 import { limiter } from '../../../../bottleneck';
 import { redis } from '@/src/lib/redis/cache';
 import { notFound } from 'next/navigation';
-import { NextResponse } from 'next/server';
 import { listGtmAccounts } from './accounts';
 import { currentUserOauthAccessToken } from '@/src/lib/clerk';
 import prisma from '@/src/lib/prisma';
+import { DeleteContainersResponse } from '@/src/lib/types/types';
 
 // Define the types for the form data
 type FormCreateSchema = z.infer<typeof CreateContainerSchema>;
@@ -166,13 +163,15 @@ export async function listAllGtmContainers(accessToken: string) {
 export async function DeleteContainers(
   accountId: string,
   selectedContainers: Set<string>
-) {
+): Promise<DeleteContainersResponse> {
   let retries = 0;
   const MAX_RETRIES = 3;
   let delay = 1000;
   const errors: string[] = [];
   const successfulDeletions: string[] = [];
   const featureLimitReachedContainers: string[] = [];
+  const notFoundLimit: string[] = [];
+  const toDeleteContainers = new Set(selectedContainers);
 
   const { userId } = await auth();
   // If user ID is not found, return a 'not found' error
@@ -203,10 +202,11 @@ export async function DeleteContainers(
       success: false,
       limitReached: true,
       message: 'Feature limit reached',
+      results: [],
     };
   }
 
-  while (retries < MAX_RETRIES) {
+  while (retries < MAX_RETRIES && toDeleteContainers.size > 0) {
     try {
       const { remaining } = await gtmRateLimit.blockUntilReady(
         `user:${userId}`,
@@ -215,7 +215,7 @@ export async function DeleteContainers(
 
       if (remaining > 0) {
         await limiter.schedule(async () => {
-          const deletePromises = Array.from(selectedContainers).map(
+          const deletePromises = Array.from(toDeleteContainers).map(
             async (containerId) => {
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}`;
               const headers = {
@@ -226,53 +226,60 @@ export async function DeleteContainers(
               try {
                 const response = await fetch(url, {
                   method: 'DELETE',
-                  headers,
+                  headers: headers,
                 });
 
-                console.log('response', response);
-                
+                const parsedResponse = await response.json();
 
-                if (response.status === 403) {
-                  const parsedResponse = await response.json();
-                  if (parsedResponse.message === 'Feature limit reached') {
-                    featureLimitReachedContainers.push(containerId);
-                    return {
-                      success: false,
-                      errorCode: 403,
-                      message: 'Feature limit reached',
-                    };
-                  }
-                }
-
-                if (!response.ok && response.status !== 404) {
-                  // Ignore not found errors (already deleted)
+                if (response.ok) {
+                  successfulDeletions.push(containerId);
+                  return { containerId, success: true };
+                } else if (response.status === 404) {                
+                    if (parsedResponse.message === 'Not found or permission denied') {
+                      notFoundLimit.push(containerId);
+                      return {
+                        success: false,
+                        errorCode: 403,
+                        message: 'Feature limit reached',
+                      };
+                    }
                   errors.push(
-                    `Failed to delete container ${containerId}: ${response.status}`
+                    `Not found or permission denied for container ${containerId}`
                   );
-                  return { containerId, success: false };
+                } else if (response.status === 403) {
+                    if (parsedResponse.message === 'Feature limit reached') {
+                      featureLimitReachedContainers.push(containerId);
+                      return {
+                        success: false,
+                        errorCode: 403,
+                        message: 'Feature limit reached',
+                      };
+                    }
+                } else {
+                  errors.push(
+                    `Error deleting container ${containerId}: ${response.status}`
+                  );
                 }
-                return { containerId, success: true };
               } catch (error: any) {
                 errors.push(
                   `Error deleting container ${containerId}: ${error.message}`
                 );
-                return { containerId, success: false };
               }
+              toDeleteContainers.delete(containerId); // Remove from the retry set regardless of success or failure
+              return { containerId, success: false };
             }
           );
 
-          await prisma.tierLimit.update({
-            where: {
-              id: tierLimitRecord.id,
-            },
-            data: {
-              deleteUsage: {
-                increment: 1,
-              },
-            },
-          });
-
           const results = await Promise.all(deletePromises);
+
+          results.forEach((result) => {
+            if (result.success && typeof result.containerId === 'string') {
+              successfulDeletions.push(result.containerId);
+            } else {
+              // Handle the case where containerId is not a string or result is not successful
+              errors.push(`Failed to delete container ${result.containerId}`);
+            }
+          });
 
           if (featureLimitReachedContainers.length > 0) {
             throw new Error(
@@ -281,15 +288,22 @@ export async function DeleteContainers(
               )}`
             );
           }
-
-          successfulDeletions.push(
-            ...results
-              .filter(
-                (result) => result.success && result.containerId !== undefined
-              )
-              .map((result) => result.containerId as string) // TypeScript needs assurance that containerId is a string here
-          );
         });
+
+        if (notFoundLimit.length > 0) {
+          return {
+            success: false,
+            limitReached: true,
+            message: `Data/premissions not found: ${notFoundLimit.join(
+              ', '
+            )}`,
+            results: notFoundLimit.map(containerId => ({
+              containerId,
+              success: false,
+              notFound: true
+            })),
+          };
+        }
 
         // Update tier limit usage as before
 
@@ -312,30 +326,45 @@ export async function DeleteContainers(
       }
     }
   }
+  // If there are successful deletions, update the deleteUsage
+  if (successfulDeletions.length > 0) {
+    await prisma.tierLimit.update({
+      where: { id: tierLimitRecord.id },
+      data: { deleteUsage: { increment: successfulDeletions.length } },
+    });
+  }
+  if (successfulDeletions.length > 0) {
+    const cacheKey = `gtm:containers-userId:${userId}`;
+    const cachedContainersString = await redis.get(cacheKey);
+    let cachedContainers = cachedContainersString
+      ? JSON.parse(cachedContainersString)
+      : [];
 
-  // Update the Redis cache
-  const cacheKey = `gtm:containers-userId:${userId}`;
-  const cachedContainersString = await redis.get(cacheKey);
-  let cachedContainers = cachedContainersString
-    ? JSON.parse(cachedContainersString)
-    : [];
-  cachedContainers = cachedContainers.filter(
-    (container) => !successfulDeletions.includes(container.containerId)
-  );
-  await redis.set(
-    cacheKey,
-    JSON.stringify(cachedContainers),
-    'EX',
-    60 * 60 * 2
-  );
+    // Filter out the successfully deleted containers
+    cachedContainers = cachedContainers.filter(
+      (container) => !successfulDeletions.includes(container.containerId)
+    );
 
-  // Optionally, revalidate paths if needed
-  revalidatePath(`/dashboard/gtm/containers`);
+    // Update the Redis cache
+    await redis.set(
+      cacheKey,
+      JSON.stringify(cachedContainers),
+      'EX',
+      60 * 60 * 2 // Cache expiration time
+    );
+
+    // Revalidate paths if needed
+    revalidatePath(`/dashboard/gtm/containers`);
+  }
 
   return {
     success: errors.length === 0,
     deletedContainers: successfulDeletions,
     errors: errors,
+    results: successfulDeletions.map((containerId) => ({
+      containerId,
+      success: true,
+    })),
   };
 }
 
@@ -465,13 +494,11 @@ export async function CreateContainers(formData: FormCreateSchema) {
             accountIdsToRevalidate.add(accountId);
             const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/`;
 
-            const response = await fetch(url,
-              {
-                method: 'POST',
-                headers: requestHeaders,
-                body: JSON.stringify(payload),
-              }
-            );
+            const response = await fetch(url, {
+              method: 'POST',
+              headers: requestHeaders,
+              body: JSON.stringify(payload),
+            });
 
             const createdContainer = await response.json();
 

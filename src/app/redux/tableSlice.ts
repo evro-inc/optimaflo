@@ -8,7 +8,8 @@ export const tableSlice = createSlice({
     currentPage: 1,
     itemsPerPage: 10,
     isLimitReached: false,
-    allSelected: false, // Add this line to include the allSelected state
+    allSelected: false,
+    notFoundError: false,
   },
   reducers: {
     setSelectedRows: (
@@ -30,6 +31,9 @@ export const tableSlice = createSlice({
       // Add this reducer to toggle the allSelected state
       state.allSelected = !state.allSelected;
     },
+    setNotFoundError: (state, action: PayloadAction<boolean>) => {
+      state.notFoundError = action.payload;
+    },
   },
 });
 
@@ -38,7 +42,8 @@ export const {
   setCurrentPage,
   setIsLimitReached,
   clearSelectedRows,
-  toggleAllSelected, // Export the new reducer
+  toggleAllSelected,
+  setNotFoundError,
 } = tableSlice.actions;
 
 export const selectTable = (state) => state.table; // Adjust this if your state structure has changed

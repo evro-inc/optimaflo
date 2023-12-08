@@ -3,7 +3,7 @@ import dynamic from 'next/dynamic';
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { DeleteContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containers';
-import { ContainerType } from '@/src/lib/types/types';
+import { ContainerType, DeleteContainersResponse } from '@/src/lib/types/types';
 import {
   selectGlobal,
   toggleCreateContainer,
@@ -14,10 +14,10 @@ import {
   selectTable,
   setCurrentPage,
   setIsLimitReached,
+  setNotFoundError,
   setSelectedRows,
   toggleAllSelected,
 } from '@/src/app/redux/tableSlice';
-import logger from '@/src/lib/logger';
 import FormCombineContainer from '../../../../../components/client/GTM/containers/combineContainer';
 
 //dynamic import for buttons
@@ -36,13 +36,22 @@ const ButtonWithIcon = dynamic(
   { ssr: false }
 );
 
-const LimitReached = dynamic(
+const LimitReachedModal = dynamic(
   () =>
     import('../../../../../components/client/modals/limitReached').then(
       (mod) => mod.LimitReached
     ),
   { ssr: false }
 );
+
+const NotFoundErrorModal = dynamic(
+  () =>
+    import('../../../../../components/client/modals/notFoundError').then(
+      (mod) => mod.NotFoundError
+    ),
+  { ssr: false }
+);
+
 const FormCreateContainer = dynamic(() => import('./create'), {
   ssr: false,
 });
@@ -50,6 +59,8 @@ const FormCreateContainer = dynamic(() => import('./create'), {
 const FormUpdateContainer = dynamic(() => import('./update'), {
   ssr: false,
 });
+
+// In the component render method
 
 export default function ContainerTable({ accounts, containers }) {
   const flattenedContainers = containers.flat();
@@ -61,6 +72,7 @@ export default function ContainerTable({ accounts, containers }) {
     useSelector(selectTable);
 
   const { allSelected } = useSelector(selectTable);
+  const { notFoundError } = useSelector(selectTable);
 
   const containersPerPage = 10;
   const totalPages = Math.ceil(
@@ -153,12 +165,18 @@ export default function ContainerTable({ accounts, containers }) {
       return DeleteContainers(accountId, new Set(containersToDelete));
     });
 
-    const responses = await Promise.all(deleteOperations);
-    const limitReached = responses.some(response => response.limitReached);
 
-    if (limitReached) {
-      dispatch(setIsLimitReached(true));
-    }
+    const responses: DeleteContainersResponse[] = await Promise.all(deleteOperations);
+
+    const limitReached = responses.some(response => response.limitReached);
+    const notFoundErrorOccurred = responses.some(response => 
+      response.results.some(result => result.notFound)
+    );
+
+    dispatch(setIsLimitReached(limitReached));
+    dispatch(setNotFoundError(notFoundErrorOccurred));
+
+
   };
 
   return (
@@ -503,7 +521,10 @@ export default function ContainerTable({ accounts, containers }) {
       </div>
       {/* End Table Section */}
       {isLimitReached && (
-        <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
+        <LimitReachedModal onClose={() => dispatch(setIsLimitReached(false))} />
+      )}
+      {notFoundError && (
+        <NotFoundErrorModal onClose={() => dispatch(setNotFoundError(false))} />
       )}
       {useSelector(selectGlobal).showCreateContainer && (
         <FormCreateContainer

@@ -112,12 +112,12 @@ export async function updateAccounts(
   let delay = 1000;
 
   // Authenticating the user and getting the user ID
-  const { userId,  } = await auth();
+  const { userId } = await auth();
   // If user ID is not found, return a 'not found' error
   if (!userId) return notFound();
 
   // Getting the current user's OAuth access token
-  const token = await currentUserOauthAccessToken(userId); 
+  const token = await currentUserOauthAccessToken(userId);
 
   // Not including tier limits on accounts for now
 
@@ -188,7 +188,7 @@ export async function updateAccounts(
               method: 'PUT',
               body: JSON.stringify(payload),
               headers: headers,
-            });            
+            });
 
             // Handling specific 403 error (feature limit reached)
             if (response.status === 403) {
