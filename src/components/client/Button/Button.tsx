@@ -369,3 +369,21 @@ export const ButtonWithIcon = ({
     </button>
   );
 };
+
+export const Icon = ({
+  variant = 'primary',
+  icon,
+  billingInterval,
+  ...props
+}) => {
+  const computedClasses = useMemo(() => {
+    const modeClass = getModeClasses(variant, billingInterval);
+    return [modeClass].join(' ');
+  }, [variant, billingInterval]);
+
+  return (
+    <button className={`${BASE_BUTTON_CLASSES} ${computedClasses}`} {...props}>
+      {icon && <span>{icon}</span>}{' '}
+    </button>
+  );
+};

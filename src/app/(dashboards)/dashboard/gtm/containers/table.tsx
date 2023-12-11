@@ -19,6 +19,8 @@ import {
   toggleAllSelected,
 } from '@/src/app/redux/tableSlice';
 import FormCombineContainer from '../../../../../components/client/GTM/containers/combineContainer';
+import { useAuth } from '@clerk/nextjs';
+import { Icon } from '../../../../../components/client/Button/Button';
 
 //dynamic import for buttons
 const ButtonDelete = dynamic(
@@ -63,6 +65,8 @@ const FormUpdateContainer = dynamic(() => import('./update'), {
 // In the component render method
 
 export default function ContainerTable({ accounts, containers }) {
+  const auth = useAuth();
+  const userId = auth?.userId;
   const flattenedContainers = containers.flat();
   const dispatch = useDispatch();
   const { showUpdateContainer, showCreateContainer, showCombineContainer } =
@@ -165,18 +169,35 @@ export default function ContainerTable({ accounts, containers }) {
       return DeleteContainers(accountId, new Set(containersToDelete));
     });
 
+    const responses: DeleteContainersResponse[] = await Promise.all(
+      deleteOperations
+    );
 
-    const responses: DeleteContainersResponse[] = await Promise.all(deleteOperations);
-
-    const limitReached = responses.some(response => response.limitReached);
-    const notFoundErrorOccurred = responses.some(response => 
-      response.results.some(result => result.notFound)
+    const limitReached = responses.some((response) => response.limitReached);
+    const notFoundErrorOccurred = responses.some((response) =>
+      response.results.some((result) => result.notFound)
     );
 
     dispatch(setIsLimitReached(limitReached));
     dispatch(setNotFoundError(notFoundErrorOccurred));
+  };
+  const key = `gtm:containers-userId:${userId}`; // Adjust based on your cache key
 
+  const handleRefreshCache = async (key: string) => {
+    try {
+      const response = await fetch('/api/dashboard/refresh', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ key }),
+      });
 
+      const data = await response.json();
+      console.log(data.message);
+    } catch (error) {
+      console.error('Error refreshing cache:', error);
+    }
   };
 
   return (
@@ -198,11 +219,33 @@ export default function ContainerTable({ accounts, containers }) {
 
                   <div>
                     <div className="inline-flex gap-x-2">
+                      <Icon
+                        text={''}
+                        icon={
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth={1.5}
+                            stroke="currentColor"
+                            className="w-6 h-6"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"
+                            />
+                          </svg>
+                        }
+                        variant="create"
+                        billingInterval={undefined}
+                        onClick={handleRefreshCache(key)}
+                      />
                       <ButtonDelete
                         href="#"
                         text="Delete"
                         billingInterval={undefined}
-                        variant="delete"
+                        variant="create"
                         onClick={handleDelete}
                         disabled={Object.keys(selectedRows).length === 0}
                       />
