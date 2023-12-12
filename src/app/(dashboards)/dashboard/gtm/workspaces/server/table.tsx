@@ -13,13 +13,14 @@ import { usePaginate } from '@/src/lib/paginate';
 import { selectTable } from '@/src/app/redux/tableSlice';
 import { useSelector } from 'react-redux';
 import WorkspaceForms from '@/src/components/client/UI/WorkspaceForms';
-import { handleRefreshCache } from '@/src/lib/fetch/dashboard/refresh';
 import { Icon } from '@/src/components/client/Button/Button';
 import { useAuth } from '@clerk/clerk-react';
+import { useRouter } from 'next/navigation';
 
 export default function WorkspaceTable({ workspaces }) {
   const { userId } = useAuth();
   const { itemsPerPage } = useSelector(selectTable);
+  const router = useRouter();
 
   const mergedData = Array.isArray(workspaces) ? workspaces : [];
 
@@ -38,8 +39,37 @@ export default function WorkspaceTable({ workspaces }) {
   );
 
   const pageOptions = Array.from({ length: totalPages }, (_, i) => i + 1);
-  const key = `gtm:workspaces-userId:${userId}`;
-  const path = '/dashboard/gtm/workspaces';
+
+  const handleRefreshCache = async () => {
+    try {
+      const paths = workspaces.map(workspace => ({
+        key: `gtm:workspaces-containerId:${workspace.containerId}-userId:${userId}`,
+        path: `/dashboard/gtm/workspaces/`,
+      }));
+
+      // Add a path for the entire workspaces list
+      paths.push({
+        key: `gtm:workspaces-userId:${userId}`,
+        path: '/dashboard/gtm/workspaces',
+      });      
+
+      // Perform the refresh requests
+      await Promise.all(paths.map(({ key, path }) =>
+        fetch('/api/dashboard/refresh', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key, path }),
+        }).then(response => response.json())
+      ));
+      router.refresh();
+
+    } catch (error) {
+      console.error('Error refreshing cache:', error);
+    }
+  };
+
+
+
   return (
     <>
       {/* Table Section */}
@@ -79,7 +109,7 @@ export default function WorkspaceTable({ workspaces }) {
                         }
                         variant="create"
                         billingInterval={undefined}
-                        onClick={() => handleRefreshCache(key, path)}
+                        onClick={() => handleRefreshCache()}
                       />
 
                       <ButtonCreate />

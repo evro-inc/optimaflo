@@ -5,10 +5,12 @@ import { revalidatePath } from 'next/cache';
 
 export async function POST(req: NextRequest) {
   const body = JSON.parse(await req.text());
-  const { key, path } = body;
-  
-  redis.del(key);
-  revalidatePath(path);
+  const { path } = body;
 
+  for (const key of await redis.keys('*')) {
+      redis.del(key);
+      revalidatePath(path);
+  }
+  
   return NextResponse.json({ revalidated: true, now: Date.now() });
 }
