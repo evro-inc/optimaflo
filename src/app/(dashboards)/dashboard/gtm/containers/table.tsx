@@ -8,7 +8,7 @@ import {
   selectGlobal,
   toggleCreateContainer,
   toggleUpdateContainer,
-  toggleCombineContainer,
+  /* toggleCombineContainer, */
 } from '@/src/app/redux/globalSlice';
 import {
   selectTable,
@@ -18,7 +18,7 @@ import {
   setSelectedRows,
   toggleAllSelected,
 } from '@/src/app/redux/tableSlice';
-import FormCombineContainer from '../../../../../components/client/GTM/containers/combineContainer';
+/* import FormCombineContainer from '../../../../../components/client/GTM/containers/combineContainer'; */
 import { useAuth } from '@clerk/nextjs';
 import { Icon } from '../../../../../components/client/Button/Button';
 
@@ -69,7 +69,7 @@ export default function ContainerTable({ accounts, containers }) {
   const userId = auth?.userId;
   const flattenedContainers = containers.flat();
   const dispatch = useDispatch();
-  const { showUpdateContainer, showCreateContainer, showCombineContainer } =
+  const { showUpdateContainer, showCreateContainer, /* showCombineContainer */ } =
     useSelector(selectGlobal);
 
   const { itemsPerPage, selectedRows, currentPage, isLimitReached } =
@@ -181,20 +181,21 @@ export default function ContainerTable({ accounts, containers }) {
     dispatch(setIsLimitReached(limitReached));
     dispatch(setNotFoundError(notFoundErrorOccurred));
   };
-  const key = `gtm:containers-userId:${userId}`; // Adjust based on your cache key
 
-  const handleRefreshCache = async (key: string) => {
+  const handleRefreshCache = async () => {
     try {
       const response = await fetch('/api/dashboard/refresh', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ key }),
+      body: JSON.stringify({
+        key: `gtm:containers-userId:${userId}`,
+        path: '/dashboard/gtm/containers',
+      }),
       });
 
-      const data = await response.json();
-      console.log(data.message);
+      await response.json();
     } catch (error) {
       console.error('Error refreshing cache:', error);
     }
@@ -239,7 +240,7 @@ export default function ContainerTable({ accounts, containers }) {
                         }
                         variant="create"
                         billingInterval={undefined}
-                        onClick={handleRefreshCache(key)}
+                        onClick={() => handleRefreshCache()}
                       />
                       <ButtonDelete
                         href="#"
@@ -299,7 +300,7 @@ export default function ContainerTable({ accounts, containers }) {
                         onClick={() => dispatch(toggleUpdateContainer())}
                       />
 
-                      <ButtonWithIcon
+                     {/*  <ButtonWithIcon
                         variant="create"
                         text="Combine"
                         disabled={Object.keys(selectedRows).length === 0}
@@ -322,7 +323,7 @@ export default function ContainerTable({ accounts, containers }) {
                         }
                         billingInterval={undefined}
                         onClick={() => dispatch(toggleCombineContainer())}
-                      />
+                      /> */}
                     </div>
                   </div>
                 </div>
@@ -585,14 +586,14 @@ export default function ContainerTable({ accounts, containers }) {
           selectedRows={selectedRows}
         />
       )}
-      {useSelector(selectGlobal).showCombineContainer && (
+      {/* {useSelector(selectGlobal).showCombineContainer && (
         <FormCombineContainer
           showOptions={showCombineContainer}
           onClose={() => dispatch(toggleCombineContainer())}
           accounts={accounts}
           selectedRows={selectedRows}
         />
-      )}
+      )} */}
     </>
   );
 }

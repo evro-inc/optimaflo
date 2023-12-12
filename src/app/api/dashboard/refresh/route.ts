@@ -5,8 +5,7 @@ import { revalidatePath } from 'next/cache';
 
 export async function POST(req: NextRequest) {
   const body = JSON.parse(await req.text());
-  const { key } = body;
-  const path = req.nextUrl.searchParams.get('path') || '/'; // should it fall back on the layout?
+  const { key, path } = body;
   redis.del(key);
   revalidatePath(path);
 

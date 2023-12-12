@@ -1,6 +1,9 @@
 'use server';
 import { revalidatePath } from 'next/cache';
-import { CreateContainerSchema, UpdateContainerSchema } from '@/src/lib/schemas/containers';
+import {
+  CreateContainerSchema,
+  UpdateContainerSchema,
+} from '@/src/lib/schemas/containers';
 import z from 'zod';
 import { auth } from '@clerk/nextjs';
 import { gtmRateLimit } from '../../../../redis/rateLimits';
@@ -474,30 +477,32 @@ export async function CreateContainers(formData: FormCreateSchema) {
                 if (response.ok) {
                   successfulCreations.push(containerName);
                   toCreateContainers.delete(identifier);
-                }else if (response.status === 404) {    
-                    // Handling 'not found' error            
-                    if (parsedResponse.message === 'Not found or permission denied') {
-                      notFoundLimit.push(containerName);
-                      return {
-                        success: false,
-                        errorCode: 404,
-                        message: 'Feature limit reached',
-                      };
-                    }
+                } else if (response.status === 404) {
+                  // Handling 'not found' error
+                  if (
+                    parsedResponse.message === 'Not found or permission denied'
+                  ) {
+                    notFoundLimit.push(containerName);
+                    return {
+                      success: false,
+                      errorCode: 404,
+                      message: 'Feature limit reached',
+                    };
+                  }
                   errors.push(
                     `Not found or permission denied for container ${containerName}`
                   );
                 } else if (response.status === 403) {
-                    // Handling feature limit error
-                    if (parsedResponse.message === 'Feature limit reached') {
-                      featureLimitReachedContainers.push(containerName);
-                      return {
-                        success: false,
-                        errorCode: 403,
-                        message: 'Feature limit reached',
-                      };
-                    }
-                }else {
+                  // Handling feature limit error
+                  if (parsedResponse.message === 'Feature limit reached') {
+                    featureLimitReachedContainers.push(containerName);
+                    return {
+                      success: false,
+                      errorCode: 403,
+                      message: 'Feature limit reached',
+                    };
+                  }
+                } else {
                   errors.push(
                     `Error ${response.status} for container ${containerName}: ${parsedResponse.message}`
                   );
@@ -694,30 +699,32 @@ export async function updateContainers(formData) {
                 if (response.ok) {
                   successfulCreations.push(containerName);
                   toupdateContainers.delete(identifier);
-                }else if (response.status === 404) {    
-                    // Handling 'not found' error            
-                    if (parsedResponse.message === 'Not found or permission denied') {
-                      notFoundLimit.push(containerName);
-                      return {
-                        success: false,
-                        errorCode: 404,
-                        message: 'Feature limit reached',
-                      };
-                    }
+                } else if (response.status === 404) {
+                  // Handling 'not found' error
+                  if (
+                    parsedResponse.message === 'Not found or permission denied'
+                  ) {
+                    notFoundLimit.push(containerName);
+                    return {
+                      success: false,
+                      errorCode: 404,
+                      message: 'Feature limit reached',
+                    };
+                  }
                   errors.push(
                     `Not found or permission denied for container ${containerName}`
                   );
                 } else if (response.status === 403) {
-                    // Handling feature limit error
-                    if (parsedResponse.message === 'Feature limit reached') {
-                      featureLimitReachedContainers.push(containerName);
-                      return {
-                        success: false,
-                        errorCode: 403,
-                        message: 'Feature limit reached',
-                      };
-                    }
-                }else {
+                  // Handling feature limit error
+                  if (parsedResponse.message === 'Feature limit reached') {
+                    featureLimitReachedContainers.push(containerName);
+                    return {
+                      success: false,
+                      errorCode: 403,
+                      message: 'Feature limit reached',
+                    };
+                  }
+                } else {
                   errors.push(
                     `Error ${response.status} for container ${containerName}: ${parsedResponse.message}`
                   );

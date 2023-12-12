@@ -16,10 +16,7 @@ import { selectIsLoading, setLoading } from '@/src/app/redux/globalSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  CreateResult,
-  FormUpdateContainerProps
-} from '@/src/lib/types/types';
+import { CreateResult, FormUpdateContainerProps } from '@/src/lib/types/types';
 import logger from '@/src/lib/logger';
 
 // Type for the entire form data
@@ -67,7 +64,9 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
     const initialForms = Object.values(selectedRows).map((rowData: any) => {
       const accountId = rowData?.accountId || '';
       const containerName = rowData?.name || '';
-      const domainName = Array.isArray(rowData?.domainName) ? rowData?.domainName.join(', ') : rowData?.domainName || '';
+      const domainName = Array.isArray(rowData?.domainName)
+        ? rowData?.domainName.join(', ')
+        : rowData?.domainName || '';
       const notes = rowData?.notes || '';
       const usageContext = rowData?.usageContext ? rowData.usageContext[0] : '';
 
@@ -92,7 +91,7 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
 
     try {
       // If you're here, validation succeeded. Proceed with updateContainers.
-      const res = (await updateContainers({ forms }) as CreateResult);
+      const res = (await updateContainers({ forms })) as CreateResult;
 
       dispatch(clearSelectedRows()); // Clear selectedRows
 
@@ -243,13 +242,13 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
                               >
                                 Account (Immutable):
                               </label>
-                                <input
-                                  type="text"
-                                  id={`account-id-${index}`}
-                                  readOnly
-                                  defaultValue={field.accountId}
-                                  className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
-                                />
+                              <input
+                                type="text"
+                                id={`account-id-${index}`}
+                                readOnly
+                                defaultValue={field.accountId}
+                                className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
+                              />
                               {errors.forms?.[index]?.accountId && (
                                 <p className="text-red-500 text-xs italic">
                                   {errors.forms?.[index]?.accountId?.message}
@@ -272,7 +271,8 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
                               id={`usage-context-${index}`}
                               readOnly
                               defaultValue={field.usageContext}
-                              className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"/>
+                              className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
+                            />
 
                             {errors.forms?.[index]?.usageContext && (
                               <p className="text-red-500 text-xs italic">
