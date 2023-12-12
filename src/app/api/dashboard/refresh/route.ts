@@ -6,8 +6,9 @@ import { revalidatePath } from 'next/cache';
 export async function POST(req: NextRequest) {
   const body = JSON.parse(await req.text());
   const { key, path } = body;
+  
   redis.del(key);
   revalidatePath(path);
 
-  return NextResponse.json({ success: true }, { status: 200 });
+  return NextResponse.json({ revalidated: true, now: Date.now() });
 }

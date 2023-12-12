@@ -6,7 +6,6 @@ import { limiter } from '../../../../bottleneck'; // Importing rate limiter conf
 import { gtmRateLimit } from '../../../../redis/rateLimits'; // Importing rate limiting utility for Google Tag Manager
 import { UpdateAccountSchema } from '../../../../schemas/accounts'; // Importing schema for account updates
 import { z } from 'zod'; // Importing Zod for schema validation
-import { getURL } from '../../../../helpers'; // Importing helper function for URL retrieval
 import { revalidatePath } from 'next/cache'; // Importing function to revalidate cached paths in Next.js
 import { currentUserOauthAccessToken } from '@/src/lib/clerk'; // Importing function to get the current user's OAuth access token
 import { redis } from '@/src/lib/redis/cache'; // Importing Redis cache instance

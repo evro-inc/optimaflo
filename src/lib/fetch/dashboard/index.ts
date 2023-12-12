@@ -2,8 +2,7 @@
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager/v2';
 import { OAuth2Client } from 'google-auth-library';
 import prisma from '@/src/lib/prisma';
-import { auth, clerkClient } from '@clerk/nextjs';
-import { redis } from '../../redis/cache';
+import { clerkClient } from '@clerk/nextjs';
 
 export function isErrorWithStatus(error: unknown): error is { status: number } {
   return (error as { status: number }).status !== undefined;

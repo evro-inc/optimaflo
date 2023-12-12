@@ -21,6 +21,7 @@ import {
 /* import FormCombineContainer from '../../../../../components/client/GTM/containers/combineContainer'; */
 import { useAuth } from '@clerk/nextjs';
 import { Icon } from '../../../../../components/client/Button/Button';
+import { useRouter } from 'next/navigation';
 
 //dynamic import for buttons
 const ButtonDelete = dynamic(
@@ -66,6 +67,7 @@ const FormUpdateContainer = dynamic(() => import('./update'), {
 
 export default function ContainerTable({ accounts, containers }) {
   const auth = useAuth();
+  const router = useRouter();
   const userId = auth?.userId;
   const flattenedContainers = containers.flat();
   const dispatch = useDispatch();
@@ -196,6 +198,8 @@ export default function ContainerTable({ accounts, containers }) {
       });
 
       await response.json();
+      router.refresh();
+
     } catch (error) {
       console.error('Error refreshing cache:', error);
     }
@@ -242,15 +246,6 @@ export default function ContainerTable({ accounts, containers }) {
                         billingInterval={undefined}
                         onClick={() => handleRefreshCache()}
                       />
-                      <ButtonDelete
-                        href="#"
-                        text="Delete"
-                        billingInterval={undefined}
-                        variant="create"
-                        onClick={handleDelete}
-                        disabled={Object.keys(selectedRows).length === 0}
-                      />
-
                       <ButtonWithIcon
                         variant="create"
                         text="Create"
@@ -299,6 +294,15 @@ export default function ContainerTable({ accounts, containers }) {
                         billingInterval={undefined}
                         onClick={() => dispatch(toggleUpdateContainer())}
                       />
+                      <ButtonDelete
+                        href="#"
+                        text="Delete"
+                        billingInterval={undefined}
+                        variant="create"
+                        onClick={handleDelete}
+                        disabled={Object.keys(selectedRows).length === 0}
+                      />
+
 
                      {/*  <ButtonWithIcon
                         variant="create"
