@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import React from 'react';
 
 import { redirect } from 'next/navigation';
-import { useSession } from '@clerk/nextjs';
 
 export const metadata: Metadata = {
   title: 'Overview',
@@ -10,12 +9,7 @@ export const metadata: Metadata = {
 };
 
 export default async function GAPage() {
-  const { session } = useSession();
 
-  // if no session, redirect to home page
-  if (!session) {
-    redirect('/');
-  }
 
   try {
     const content = (
