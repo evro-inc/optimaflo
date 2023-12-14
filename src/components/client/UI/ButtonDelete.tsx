@@ -66,7 +66,7 @@ function ButtonDel() {
       href="#"
       text="Delete"
       billingInterval={undefined}
-      variant="delete"
+      variant="create"
       onClick={handleDelete}
       disabled={Object.keys(selectedRows).length === 0}
     />
