@@ -5,7 +5,7 @@ import logger from '@/src/lib/logger';
 import { auth } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
 import {
-  createWorkspaces,
+  CreateWorkspaces,
   fetchAllWorkspaces,
 } from '@/src/lib/fetch/dashboard/gtm/actions/workspaces';
 import { redis } from '@/src/lib/redis/cache';
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
     const validatedParams = await validatePostParams(postParams);
 
     // Call the function to create a GTM workspace
-    const workspaceData = await createWorkspaces(
+    const workspaceData = await CreateWorkspaces(
       validatedParams,
       token[0].token
     );

@@ -17,7 +17,7 @@ import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { FormUpdateWorkspaceProps, UpdateResult } from '@/src/lib/types/types';
 import logger from '@/src/lib/logger';
-import { updateWorkspaces } from '@/src/lib/fetch/dashboard/gtm/actions/workspaces';
+import { UpdateWorkspaces } from '@/src/lib/fetch/dashboard/gtm/actions/workspaces';
 import { useAuth } from '@clerk/nextjs';
 
 // Type for the entire form data
@@ -84,11 +84,9 @@ const FormUpdateWorkspace: React.FC<FormUpdateWorkspaceProps> = ({
     const { forms } = data;
     dispatch(setLoading(true)); // Set loading to true
 
-    const token = (await getToken()) as string;
-
     try {
       // If you're here, validation succeeded. Proceed with updateContainers.
-      const res = (await updateWorkspaces({ forms }, token)) as UpdateResult;
+      const res = (await UpdateWorkspaces({ forms })) as UpdateResult;
 
       dispatch(clearSelectedRows()); // Clear selectedRows
 

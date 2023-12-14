@@ -13,7 +13,7 @@ import { CreateWorkspaceSchema } from '@/src/lib/schemas/workspaces';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import logger from '@/src/lib/logger';
-import { createWorkspaces } from '@/src/lib/fetch/dashboard/gtm/actions/workspaces';
+import { CreateWorkspaces } from '@/src/lib/fetch/dashboard/gtm/actions/workspaces';
 import { useAuth } from '@clerk/nextjs';
 
 type Forms = z.infer<typeof CreateWorkspaceSchema>;
@@ -89,10 +89,8 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
     const { forms } = data;
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
-    const token = (await getToken()) as string;
-
     try {
-      const res = (await createWorkspaces({ forms }, token)) as CreateResult;
+      const res = (await CreateWorkspaces({ forms })) as CreateResult;
 
       if (res.limitReached) {
         dispatch(setIsLimitReached(true)); // Set limitReached to true using Redux action
