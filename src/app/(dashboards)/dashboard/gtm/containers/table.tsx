@@ -11,6 +11,7 @@ import {
   /* toggleCombineContainer, */
 } from '@/src/app/redux/globalSlice';
 import {
+  clearSelectedRows,
   selectTable,
   setCurrentPage,
   setIsLimitReached,
@@ -71,8 +72,10 @@ export default function ContainerTable({ accounts, containers }) {
   const userId = auth?.userId;
   const flattenedContainers = containers.flat();
   const dispatch = useDispatch();
-  const { showUpdateContainer, showCreateContainer, /* showCombineContainer */ } =
-    useSelector(selectGlobal);
+  const {
+    showUpdateContainer,
+    showCreateContainer /* showCombineContainer */,
+  } = useSelector(selectGlobal);
 
   const { itemsPerPage, selectedRows, currentPage, isLimitReached } =
     useSelector(selectTable);
@@ -182,6 +185,7 @@ export default function ContainerTable({ accounts, containers }) {
 
     dispatch(setIsLimitReached(limitReached));
     dispatch(setNotFoundError(notFoundErrorOccurred));
+    dispatch(clearSelectedRows());
   };
 
   const handleRefreshCache = async () => {
@@ -191,15 +195,14 @@ export default function ContainerTable({ accounts, containers }) {
         headers: {
           'Content-Type': 'application/json',
         },
-      body: JSON.stringify({
-        key: `gtm:containers-userId:${userId}`,
-        path: '/dashboard/gtm/containers',
-      }),
+        body: JSON.stringify({
+          key: `gtm:containers-userId:${userId}`,
+          path: '/dashboard/gtm/containers',
+        }),
       });
 
       await response.json();
       router.refresh();
-
     } catch (error) {
       console.error('Error refreshing cache:', error);
     }
@@ -303,8 +306,7 @@ export default function ContainerTable({ accounts, containers }) {
                         disabled={Object.keys(selectedRows).length === 0}
                       />
 
-
-                     {/*  <ButtonWithIcon
+                      {/*  <ButtonWithIcon
                         variant="create"
                         text="Combine"
                         disabled={Object.keys(selectedRows).length === 0}

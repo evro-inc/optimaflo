@@ -254,7 +254,7 @@ export async function DeleteContainers(
                     notFoundLimit.push(containerId);
                     return {
                       success: false,
-                      errorCode: 403,
+                      errorCode: 404,
                       message: 'Feature limit reached',
                     };
                   }

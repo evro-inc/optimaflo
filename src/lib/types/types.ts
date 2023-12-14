@@ -205,3 +205,22 @@ export interface DeleteContainersResponse {
   message?: string;
   results: DeleteContainerResult[];
 }
+
+export interface DeleteWorkspaceResult {
+  containerId: string;
+  workspaceId?: string; // Make workspaceId optional
+  success: boolean;
+  errorCode?: number;
+  message?: string;
+  notFound?: boolean;
+}
+export interface DeleteWorkspacesResponse {
+  success: boolean;
+  deletedWorkspaces?: Array<{ containerId: string; workspaceId: string }>;
+  errors?: string[];
+  limitReached?: boolean;
+  errorCode?: number;
+  message?: string;
+  results: DeleteWorkspaceResult[];
+  remainingWorkspaces?: Set<string>; // Add this line
+}

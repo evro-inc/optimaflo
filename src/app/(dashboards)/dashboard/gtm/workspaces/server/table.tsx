@@ -42,7 +42,7 @@ export default function WorkspaceTable({ workspaces }) {
 
   const handleRefreshCache = async () => {
     try {
-      const paths = workspaces.map(workspace => ({
+      const paths = workspaces.map((workspace) => ({
         key: `gtm:workspaces-containerId:${workspace.containerId}-userId:${userId}`,
         path: `/dashboard/gtm/workspaces/`,
       }));
@@ -51,24 +51,23 @@ export default function WorkspaceTable({ workspaces }) {
       paths.push({
         key: `gtm:workspaces-userId:${userId}`,
         path: '/dashboard/gtm/workspaces',
-      });      
+      });
 
       // Perform the refresh requests
-      await Promise.all(paths.map(({ key, path }) =>
-        fetch('/api/dashboard/refresh', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ key, path }),
-        }).then(response => response.json())
-      ));
+      await Promise.all(
+        paths.map(({ key, path }) =>
+          fetch('/api/dashboard/refresh', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ key, path }),
+          }).then((response) => response.json())
+        )
+      );
       router.refresh();
-
     } catch (error) {
       console.error('Error refreshing cache:', error);
     }
   };
-
-
 
   return (
     <>

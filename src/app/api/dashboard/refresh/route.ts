@@ -8,9 +8,9 @@ export async function POST(req: NextRequest) {
   const { path } = body;
 
   for (const key of await redis.keys('*')) {
-      redis.del(key);
-      revalidatePath(path);
+    redis.del(key);
+    revalidatePath(path);
   }
-  
+
   return NextResponse.json({ revalidated: true, now: Date.now() });
 }
