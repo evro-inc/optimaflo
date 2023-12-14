@@ -14,7 +14,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import logger from '@/src/lib/logger';
 import { CreateWorkspaces } from '@/src/lib/fetch/dashboard/gtm/actions/workspaces';
-import { useAuth } from '@clerk/nextjs';
 
 type Forms = z.infer<typeof CreateWorkspaceSchema>;
 
@@ -27,7 +26,6 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
   const formRefs = useRef<(HTMLFormElement | null)[]>([]);
   const dispatch = useDispatch();
-  const { getToken } = useAuth();
   const {
     register,
     handleSubmit,

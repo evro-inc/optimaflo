@@ -18,7 +18,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { FormUpdateWorkspaceProps, UpdateResult } from '@/src/lib/types/types';
 import logger from '@/src/lib/logger';
 import { UpdateWorkspaces } from '@/src/lib/fetch/dashboard/gtm/actions/workspaces';
-import { useAuth } from '@clerk/nextjs';
 
 // Type for the entire form data
 type Forms = z.infer<typeof UpdateWorkspaceSchema>;
@@ -33,7 +32,6 @@ const FormUpdateWorkspace: React.FC<FormUpdateWorkspaceProps> = ({
   const { isLimitReached } = useSelector(selectTable);
   const isLoading = useSelector(selectIsLoading);
   const formRefs = useRef<(HTMLFormElement | null)[]>([]);
-  const { getToken } = useAuth();
   const {
     register,
     handleSubmit,
