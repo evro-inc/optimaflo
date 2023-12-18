@@ -66,12 +66,11 @@ export default function ContainerTable({ accounts, containers }) {
   const dispatch = useDispatch();
   const { showUpdateContainer, showCreateContainer } =
     useSelector(selectGlobal);
-  const { itemsPerPage, currentPage, isLimitReached } =
+  const { itemsPerPage, currentPage, isLimitReached, notFoundError } =
     useSelector(selectTable);
   const { toggleRow, selectedRows, allSelected } = useRowSelection(
     (container) => container.containerId
   );
-  const { isModalOpen, closeModal } = useModal();
   const { error, setErrorState, clearError } = useError();
 
   const currentItems = containers.slice(
@@ -100,12 +99,12 @@ export default function ContainerTable({ accounts, containers }) {
     const responses: DeleteContainersResponse[] = await Promise.all(
       deleteOperations
     );
-
+   
     const limitReached = responses.some((response) => response.limitReached);
 
-    const notFoundErrorOccurred = responses.some((response) =>
-      response.results.some((result) => result.notFound)
-    );
+    const notFoundErrorOccurred = responses.some((response: any) =>
+      response.errors.some((error) => error.includes("Not found or permission denied"))
+    );    
 
     dispatch(setIsLimitReached(limitReached));
     dispatch(setNotFoundError(notFoundErrorOccurred));
@@ -213,10 +212,12 @@ export default function ContainerTable({ accounts, containers }) {
       {isLimitReached && (
         <LimitReachedModal onClose={() => dispatch(setIsLimitReached(false))} />
       )}
+      {console.log('NotFoundError:', notFoundError) }
 
-      {isModalOpen && (
+      {notFoundError && (
         <NotFoundErrorModal onClose={() => dispatch(setNotFoundError(false))} />
       )}
+      
       {error && <ErrorMessage onClose={clearError} />}
 
       {/* Forms */}

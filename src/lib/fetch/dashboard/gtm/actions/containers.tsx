@@ -14,7 +14,7 @@ import { listGtmAccounts } from './accounts';
 import { currentUserOauthAccessToken } from '@/src/lib/clerk';
 import prisma from '@/src/lib/prisma';
 import { DeleteContainersResponse } from '@/src/lib/types/types';
-import { tierDeleteLimit } from '@/src/lib/helpers/server';
+import { tierCreateLimit, tierDeleteLimit, tierUpdateLimit } from '@/src/lib/helpers/server';
 
 // Define the types for the form data
 type FormCreateSchema = z.infer<typeof CreateContainerSchema>;
@@ -187,17 +187,14 @@ export async function DeleteContainers(
   const token = await currentUserOauthAccessToken(userId);
 
   // Check for feature limit using Prisma ORM
-  // Replace this section with tierDeleteLimit function
   const tierLimitResponse: any = await tierDeleteLimit(userId, 'GTMContainer');
 
-  console.log('tierLimitResponse', tierLimitResponse);
-
   // Handling feature limit
-  if (tierLimitResponse.limitReached) {
+  if (tierLimitResponse && tierLimitResponse.limitReached) {
     return {
       success: false,
       limitReached: true,
-      message: 'Feature limit reached',
+      message: 'Feature limit reached for Deleting Containers',
       results: [],
     };
   }
@@ -379,22 +376,15 @@ export async function CreateContainers(formData: FormCreateSchema) {
     formData.forms.map((cd) => `${cd.accountId}-${cd.containerName}`)
   );
 
-  const tierLimitRecord = await prisma.tierLimit.findFirst({
-    where: {
-      Feature: { name: 'GTMContainer' },
-      Subscription: { userId: userId },
-    },
-    include: { Feature: true, Subscription: true },
-  });
+  const tierLimitResponse: any = await tierCreateLimit(userId, 'GTMContainer');
 
-  if (
-    !tierLimitRecord ||
-    tierLimitRecord.createUsage >= tierLimitRecord.createLimit
-  ) {
+  // Handling feature limit
+  if (tierLimitResponse && tierLimitResponse.limitReached) {
     return {
       success: false,
       limitReached: true,
-      message: 'Feature limit reached',
+      message: 'Feature limit reached for Creating Containers',
+      results: [],
     };
   }
 
@@ -559,7 +549,7 @@ export async function CreateContainers(formData: FormCreateSchema) {
 
   if (successfulCreations.length > 0) {
     await prisma.tierLimit.update({
-      where: { id: tierLimitRecord.id },
+      where: { id: tierLimitResponse.id },
       data: { createUsage: { increment: successfulCreations.length } },
     });
 
@@ -601,22 +591,18 @@ export async function updateContainers(formData) {
     formData.forms.map((cd) => `${cd.accountId}-${cd.containerName}`)
   );
 
-  const tierLimitRecord = await prisma.tierLimit.findFirst({
-    where: {
-      Feature: { name: 'GTMContainer' },
-      Subscription: { userId: userId },
-    },
-    include: { Feature: true, Subscription: true },
-  });
+  const tierLimitResponse: any = await tierUpdateLimit(userId, 'GTMContainer');
 
-  if (
-    !tierLimitRecord ||
-    tierLimitRecord.updateUsage >= tierLimitRecord.updateLimit
-  ) {
+  console.log('tierLimitResponse', tierLimitResponse);
+  
+
+  // Handling feature limit
+  if (tierLimitResponse && tierLimitResponse.limitReached) {
     return {
       success: false,
       limitReached: true,
-      message: 'Feature limit reached',
+      message: 'Feature limit reached for Updating Containers',
+      results: [],
     };
   }
 
@@ -667,8 +653,6 @@ export async function updateContainers(formData) {
 
                 // Accessing the validated container data
                 const validatedContainerData = validationResult.data.forms[0];
-
-                console.log('validatedContainerData', validatedContainerData);
 
                 const response = await fetch(url, {
                   method: 'PUT',
@@ -781,7 +765,9 @@ export async function updateContainers(formData) {
 
   if (successfulCreations.length > 0) {
     await prisma.tierLimit.update({
-      where: { id: tierLimitRecord.id },
+      where: { 
+        id: tierLimitResponse.id
+       },
       data: { updateUsage: { increment: successfulCreations.length } },
     });
 

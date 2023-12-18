@@ -151,6 +151,8 @@ export const tierUpdateLimit = async (userId: string, featureName: string) => {
       },
     });
 
+    console.log('tierLimitRecord update', tierLimitRecord);
+    
     // Handling feature limit
     if (
       !tierLimitRecord ||
@@ -163,7 +165,17 @@ export const tierUpdateLimit = async (userId: string, featureName: string) => {
         results: [],
       };
     }
+
+    // Return the tierLimitRecord object
+    return tierLimitRecord;
   } catch (error) {
     console.error('Error in tierLimits:', error);
+    // Handle the error or return an appropriate response
+    return {
+      success: false,
+      limitReached: true,
+      message: 'An error occurred',
+      results: [],
+    };
   }
 };
