@@ -10,6 +10,8 @@ export const tableSlice = createSlice({
     isLimitReached: false,
     allSelected: false,
     notFoundError: false,
+    isModalOpen: false,
+    error: null as string | null,
   },
   reducers: {
     setSelectedRows: (
@@ -34,6 +36,15 @@ export const tableSlice = createSlice({
     setNotFoundError: (state, action: PayloadAction<boolean>) => {
       state.notFoundError = action.payload;
     },
+    openModal: (state) => {
+      state.isModalOpen = true;
+    },
+    closeModal: (state) => {
+      state.isModalOpen = false;
+    },
+    setError: (state, action: PayloadAction<string | null>) => {
+      state.error = action.payload; // Handle setting error state
+    },
   },
 });
 
@@ -44,6 +55,9 @@ export const {
   clearSelectedRows,
   toggleAllSelected,
   setNotFoundError,
+  openModal,
+  closeModal,
+  setError,
 } = tableSlice.actions;
 
 export const selectTable = (state) => state.table; // Adjust this if your state structure has changed

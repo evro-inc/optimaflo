@@ -25,8 +25,6 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
   const formRefs = useRef<(HTMLFormElement | null)[]>([]);
   const dispatch = useDispatch();
 
-  console.log('accounts', accounts);
-
   const {
     register,
     handleSubmit,
@@ -53,11 +51,9 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
     control,
     name: 'forms',
   });
+  const { loading } = useSelector(selectGlobal);
 
-  const { isLimitReached, loading } = useSelector((state) => ({
-    ...selectTable(state),
-    ...selectGlobal(state),
-  }));
+  const isLimitReached = useSelector(selectTable).isLimitReached;
 
   const addForm = () => {
     append({
@@ -83,8 +79,12 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
     try {
       const res = (await CreateContainers({ forms })) as CreateResult;
 
+      console.log('res', res);
+
       if (res.limitReached) {
-        dispatch(setIsLimitReached(true)); // Set limitReached to true using Redux action
+        dispatch(setIsLimitReached(true)); // Immediately set limitReached
+        onClose(); // Close the form
+        return; // Exit the function to prevent further execution
       }
 
       // close the modal
@@ -338,7 +338,7 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
       </AnimatePresence>
 
       {isLimitReached && (
-        <LimitReached onClose={() => dispatch(isLimitReached(false))} /> // Use Redux action for onClose
+        <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
       )}
     </>
   );

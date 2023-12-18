@@ -14,6 +14,7 @@ import { listGtmAccounts } from './accounts';
 import { currentUserOauthAccessToken } from '@/src/lib/clerk';
 import prisma from '@/src/lib/prisma';
 import { DeleteContainersResponse } from '@/src/lib/types/types';
+import { tierDeleteLimit } from '@/src/lib/helpers/server';
 
 // Define the types for the form data
 type FormCreateSchema = z.infer<typeof CreateContainerSchema>;
@@ -186,26 +187,13 @@ export async function DeleteContainers(
   const token = await currentUserOauthAccessToken(userId);
 
   // Check for feature limit using Prisma ORM
-  const tierLimitRecord = await prisma.tierLimit.findFirst({
-    where: {
-      Feature: {
-        name: 'GTMContainer',
-      },
-      Subscription: {
-        userId: userId,
-      },
-    },
-    include: {
-      Feature: true,
-      Subscription: true,
-    },
-  });
+  // Replace this section with tierDeleteLimit function
+  const tierLimitResponse: any = await tierDeleteLimit(userId, 'GTMContainer');
+
+  console.log('tierLimitResponse', tierLimitResponse);
 
   // Handling feature limit
-  if (
-    !tierLimitRecord ||
-    tierLimitRecord.deleteUsage >= tierLimitRecord.deleteLimit
-  ) {
+  if (tierLimitResponse.limitReached) {
     return {
       success: false,
       limitReached: true,
@@ -346,7 +334,7 @@ export async function DeleteContainers(
   // If there are successful deletions, update the deleteUsage
   if (successfulDeletions.length > 0) {
     await prisma.tierLimit.update({
-      where: { id: tierLimitRecord.id },
+      where: { id: tierLimitResponse.id },
       data: { deleteUsage: { increment: successfulDeletions.length } },
     });
 

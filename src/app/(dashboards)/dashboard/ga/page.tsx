@@ -9,8 +9,6 @@ export const metadata: Metadata = {
 };
 
 export default async function GAPage() {
-
-
   try {
     const content = (
       <div>
