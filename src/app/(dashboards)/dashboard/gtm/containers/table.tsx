@@ -31,6 +31,7 @@ import { handleRefreshCache } from '@/src/lib/helpers/client';
 import TableHeader from '@/src/components/server/UI/Tableheader';
 import TablePagination from '@/src/components/client/UI/TablePagination';
 import { ErrorMessage } from '@/src/components/client/modals/Error';
+import toast from 'react-hot-toast';
 
 //dynamic import for buttons
 const LimitReachedModal = dynamic(
@@ -96,18 +97,53 @@ export default function ContainerTable({ accounts, containers }) {
       return DeleteContainers(accountId, new Set(containersToDelete));
     });
 
+    // Wait for all delete operations to complete
     const responses: DeleteContainersResponse[] = await Promise.all(
       deleteOperations
     );
-   
+
+    let notFoundContainers: any = [];
+
+    responses.forEach((response, index) => {
+      if (!response.success && response.errors) {
+        response.errors.forEach((error) => {
+          if (error.includes('Not found or permission denied')) {
+            // Find the container ID and name associated with this error
+            const containerId = Object.keys(selectedRows)[index];
+            const containerName = selectedRows[containerId]?.name;
+            notFoundContainers.push(`${containerName} (ID: ${containerId})`);
+          }
+        });
+      }
+    });
+
+    // Check if any of the responses contains errors
+    const hasErrors = responses.some(
+      (response) =>
+        !response.success || (response.errors && response.errors.length > 0)
+    );
+
+    if (hasErrors) {
+      // Handle error case
+      toast.error('Error deleting containers');
+    } else {
+      // If no errors, show success toast
+      toast.success(
+        'Successfully deleted containers. It may take a minute to refresh.'
+      );
+    }
+
+    // Dispatch actions based on the responses
     const limitReached = responses.some((response) => response.limitReached);
-
-    const notFoundErrorOccurred = responses.some((response: any) =>
-      response.errors.some((error) => error.includes("Not found or permission denied"))
-    );    
-
     dispatch(setIsLimitReached(limitReached));
-    dispatch(setNotFoundError(notFoundErrorOccurred));
+
+    if (notFoundContainers.length > 0) {
+      const errorMessage = `Not found or permission denied for ${notFoundContainers.join(
+        ', '
+      )}. Check your permissions and try again.`;
+      toast.error(errorMessage);
+    }
+
     dispatch(clearSelectedRows());
   };
 
@@ -212,12 +248,11 @@ export default function ContainerTable({ accounts, containers }) {
       {isLimitReached && (
         <LimitReachedModal onClose={() => dispatch(setIsLimitReached(false))} />
       )}
-      {console.log('NotFoundError:', notFoundError) }
 
       {notFoundError && (
         <NotFoundErrorModal onClose={() => dispatch(setNotFoundError(false))} />
       )}
-      
+
       {error && <ErrorMessage onClose={clearError} />}
 
       {/* Forms */}

@@ -2,6 +2,13 @@
 import logger from '../logger';
 import prisma from '../prisma';
 
+// API Error Handling Types
+type ApiResponseError = {
+  success: boolean;
+  errorCode: number;
+  message: string;
+};
+
 export const getURL = () => {
   let vercelUrl = process.env.VERCEL_URL; // Assign VERCEL_URL to vercelUrl
 
@@ -95,8 +102,18 @@ export const tierDeleteLimit = async (userId: string, featureName: string) => {
         results: [],
       };
     }
+
+    // Return the tierLimitRecord object
+    return tierLimitRecord;
   } catch (error) {
     console.error('Error in tierLimits:', error);
+    // Handle the error or return an appropriate response
+    return {
+      success: false,
+      limitReached: true,
+      message: 'An error occurred',
+      results: [],
+    };
   }
 };
 
@@ -117,6 +134,8 @@ export const tierCreateLimit = async (userId: string, featureName: string) => {
       },
     });
 
+    console.log('tierLimitRecord create', tierLimitRecord);
+
     // Handling feature limit
     if (
       !tierLimitRecord ||
@@ -129,8 +148,18 @@ export const tierCreateLimit = async (userId: string, featureName: string) => {
         results: [],
       };
     }
+
+    // Return the tierLimitRecord object
+    return tierLimitRecord;
   } catch (error) {
     console.error('Error in tierLimits:', error);
+    // Handle the error or return an appropriate response
+    return {
+      success: false,
+      limitReached: true,
+      message: 'An error occurred',
+      results: [],
+    };
   }
 };
 
@@ -152,7 +181,7 @@ export const tierUpdateLimit = async (userId: string, featureName: string) => {
     });
 
     console.log('tierLimitRecord update', tierLimitRecord);
-    
+
     // Handling feature limit
     if (
       !tierLimitRecord ||
@@ -179,3 +208,57 @@ export const tierUpdateLimit = async (userId: string, featureName: string) => {
     };
   }
 };
+
+// Function to Handle API Errors
+export async function handleApiResponseError(
+  response: Response,
+  parsedResponse: any,
+  feature: string
+) {
+  switch (response.status) {
+    case 400:
+      if (
+        parsedResponse.error &&
+        parsedResponse.error.message.includes(
+          'Returned an error response for your request'
+        )
+      ) {
+        return {
+          success: false,
+          errorCode: 400,
+          message: `${feature} not found`,
+        };
+      }
+      return {
+        success: false,
+        errorCode: 400,
+        message: 'Unknown error occurred',
+      };
+
+    case 404:
+      return {
+        success: false,
+        errorCode: 404,
+        message:
+          'Not found or permission denied for container. Check if you have account permissions.',
+      };
+
+    case 403:
+      if (parsedResponse.message === 'Feature limit reached') {
+        return {
+          success: false,
+          errorCode: 403,
+          message: 'Feature limit reached',
+        };
+      }
+      break;
+
+    default:
+      return {
+        success: false,
+        errorCode: response.status,
+        message: `Error deleting container: ${response.status}`,
+      };
+  }
+  return null;
+}

@@ -9,6 +9,7 @@ import {
   setSelectedRows,
   toggleAllSelected,
 } from '@/src/app/redux/tableSlice';
+import toast from 'react-hot-toast';
 import { useDispatch, useSelector } from 'react-redux';
 
 export const handleGenericDelete = async (
@@ -123,6 +124,7 @@ export const useToggleAll = (items, getIdFromItem, dispatch, allSelected) => {
 
 export const handleRefreshCache = async (router, key, path) => {
   try {
+    const toastId = toast.loading('Refreshing cache...');
     const response = await fetch('/api/dashboard/refresh', {
       method: 'POST',
       headers: {
@@ -134,9 +136,10 @@ export const handleRefreshCache = async (router, key, path) => {
       }),
     });
 
-    console.log('response', response);
-
     await response.json();
+    toast.success('This worked', {
+      id: toastId,
+    });
     router.refresh();
   } catch (error) {
     console.error('Error refreshing cache:', error);

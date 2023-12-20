@@ -159,7 +159,7 @@ export type CreateResult = {
   limitReached?: boolean;
   message?: string;
   createdContainers?: any[];
-  error?: string;
+  errors?: string;
 };
 
 export type FormCreateContainerProps = {
@@ -204,6 +204,7 @@ export interface DeleteContainersResponse {
   errorCode?: number;
   message?: string;
   results: DeleteContainerResult[];
+  notFoundError?: boolean;
 }
 
 export interface DeleteWorkspaceResult {

@@ -7,13 +7,18 @@ import { ButtonGroup } from '../../../../../components/client/ButtonGroup/Button
 import { XMarkIcon } from '@heroicons/react/24/solid';
 import { CreateResult, FormCreateContainerProps } from '@/src/lib/types/types';
 import { useDispatch, useSelector } from 'react-redux';
-import { selectTable, setIsLimitReached } from '@/src/app/redux/tableSlice';
+import {
+  selectTable,
+  setIsLimitReached,
+  setNotFoundError,
+} from '@/src/app/redux/tableSlice';
 import { selectGlobal, setLoading } from '@/src/app/redux/globalSlice';
 import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
 import { CreateContainerSchema } from '@/src/lib/schemas/containers';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import logger from '@/src/lib/logger';
+import toast from 'react-hot-toast';
 
 type Forms = z.infer<typeof CreateContainerSchema>;
 
@@ -77,16 +82,43 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
     try {
-      const res = (await CreateContainers({ forms })) as CreateResult;
-
-      console.log('res', res);
+      const res: any = (await CreateContainers({ forms })) as CreateResult;
 
       if (res.limitReached) {
         dispatch(setIsLimitReached(true)); // Immediately set limitReached
         onClose(); // Close the form
         return; // Exit the function to prevent further execution
+      } else if (res.errors && res.errors.length > 0) {
+        // Iterate over each error and display a toast
+        res.errors.forEach((error) => {
+          if (error.includes('Not Found')) {
+            // Assuming you want to display a toast for 'Not Found' errors
+            toast.error(
+              `Access Denied. Check your account persmissions for ${error}`
+            );
+          } else {
+            // Handle other types of errors as needed
+            toast.error(error);
+          }
+        });
+      } else if (res.success) {
+        toast.success(
+          'Successfully created containers. It may take a minute to refresh.'
+        );
+        // Handle successful creation
+        reset({
+          forms: [
+            {
+              accountId: '',
+              usageContext: '',
+              containerName: '',
+              domainName: '',
+              notes: '',
+              containerId: '',
+            },
+          ],
+        }); // Reset form with initial values
       }
-
       // close the modal
       onClose();
 
