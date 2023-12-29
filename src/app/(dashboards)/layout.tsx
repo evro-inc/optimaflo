@@ -27,7 +27,7 @@ export default async function DashboardLayout({
             <NavApp />
             {/* ========== END HEADER ========== */}
 
-            {/* ========== MAIN CONTENT ========== */}
+            {/* ========== MAIN  ========== */}
             <SideBar />
 
             {/* Content */}
