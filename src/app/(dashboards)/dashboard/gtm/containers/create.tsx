@@ -7,11 +7,7 @@ import { ButtonGroup } from '../../../../../components/client/ButtonGroup/Button
 import { XMarkIcon } from '@heroicons/react/24/solid';
 import { CreateResult, FormCreateContainerProps } from '@/src/lib/types/types';
 import { useDispatch, useSelector } from 'react-redux';
-import {
-  selectTable,
-  setIsLimitReached,
-  setNotFoundError,
-} from '@/src/app/redux/tableSlice';
+import { selectTable, setIsLimitReached } from '@/src/app/redux/tableSlice';
 import { selectGlobal, setLoading } from '@/src/app/redux/globalSlice';
 import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
 import { CreateContainerSchema } from '@/src/lib/schemas/containers';
@@ -81,25 +77,32 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
     const { forms } = data;
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
+    // Check for duplicate container names for the same account
+    const uniqueContainers = new Set();
+    for (const form of forms) {
+      const identifier = `${form.accountId}-${form.containerName}`;
+      if (uniqueContainers.has(identifier)) {
+        toast.error(
+          `Duplicate container name found: ${form.containerName} for account ${form.accountId}`
+        );
+        dispatch(setLoading(false));
+        return; // Stop the function if a duplicate is found
+      }
+      uniqueContainers.add(identifier);
+    }
+
     try {
       const res: any = (await CreateContainers({ forms })) as CreateResult;
 
       if (res.limitReached) {
+        toast.error(res.message);
         dispatch(setIsLimitReached(true)); // Immediately set limitReached
         onClose(); // Close the form
         return; // Exit the function to prevent further execution
       } else if (res.errors && res.errors.length > 0) {
         // Iterate over each error and display a toast
         res.errors.forEach((error) => {
-          if (error.includes('Not Found')) {
-            // Assuming you want to display a toast for 'Not Found' errors
-            toast.error(
-              `Access Denied. Check your account persmissions for ${error}`
-            );
-          } else {
-            // Handle other types of errors as needed
-            toast.error(error);
-          }
+          toast.error(error);
         });
       } else if (res.success) {
         toast.success(

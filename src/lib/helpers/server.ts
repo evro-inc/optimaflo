@@ -2,13 +2,6 @@
 import logger from '../logger';
 import prisma from '../prisma';
 
-// API Error Handling Types
-type ApiResponseError = {
-  success: boolean;
-  errorCode: number;
-  message: string;
-};
-
 export const getURL = () => {
   let vercelUrl = process.env.VERCEL_URL; // Assign VERCEL_URL to vercelUrl
 
@@ -226,7 +219,7 @@ export async function handleApiResponseError(
         return {
           success: false,
           errorCode: 400,
-          message: `${feature} not found`,
+          message: `${feature} was not created. Please try again. Make sure you're not creating a duplicate ${feature}.`,
         };
       }
       return {
@@ -239,8 +232,9 @@ export async function handleApiResponseError(
       return {
         success: false,
         errorCode: 404,
+        LimitReached: false,
         message:
-          'Not found or permission denied for container. Check if you have account permissions.',
+          'Permission denied for container. Check if you have account permissions or refresh the data.',
       };
 
     case 403:
@@ -252,6 +246,13 @@ export async function handleApiResponseError(
         };
       }
       break;
+
+    case 429:
+      return {
+        success: false,
+        errorCode: 429,
+        message: 'Rate limit exceeded. Please try again later.',
+      };
 
     default:
       return {

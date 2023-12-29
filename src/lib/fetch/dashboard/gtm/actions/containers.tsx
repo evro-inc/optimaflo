@@ -20,7 +20,6 @@ import {
   tierDeleteLimit,
   tierUpdateLimit,
 } from '@/src/lib/helpers/server';
-import { res } from 'pino-std-serializers';
 
 // Define the types for the form data
 type FormCreateSchema = z.infer<typeof CreateContainerSchema>;
@@ -198,25 +197,41 @@ export async function DeleteContainers(
   const deleteUsage = Number(tierLimitResponse.deleteUsage);
   const availableDeleteUsage = limit - deleteUsage;
 
-  console.log('tierLimitResponse', tierLimitResponse);
-
-  console.log('Limit:', limit, 'Type:', typeof limit);
-  console.log('Delete Usage:', deleteUsage, 'Type:', typeof deleteUsage);
-  console.log('Available Delete Usage:', availableDeleteUsage);
-
   // Handling feature limit
   if (tierLimitResponse && tierLimitResponse.limitReached) {
     return {
       success: false,
       limitReached: true,
+      errors: [],
       message: 'Feature limit reached for Deleting Containers',
       results: [],
     };
   }
 
+  if (toDeleteContainers.size > availableDeleteUsage) {
+    // If the deletion request exceeds the available limit
+    return {
+      success: false,
+      deletedContainers: [],
+      errors: [
+        `Cannot delete ${toDeleteContainers.size} containers as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
+      ],
+      results: [],
+      limitReached: true,
+      message: `Cannot delete ${toDeleteContainers.size} containers as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
+    };
+  }
+  let permissionDenied = false;
+
   if (toDeleteContainers.size <= availableDeleteUsage) {
     // Retry loop for deletion requests
-    while (retries < MAX_RETRIES && toDeleteContainers.size > 0) {
+    while (
+      retries < MAX_RETRIES &&
+      toDeleteContainers.size > 0 &&
+      !permissionDenied
+    ) {
+      console.log('permissionDenied', permissionDenied);
+
       try {
         // Enforcing rate limit
         const { remaining } = await gtmRateLimit.blockUntilReady(
@@ -251,22 +266,23 @@ export async function DeleteContainers(
                   }
 
                   if (!response.ok) {
-                    const errorResponse = await handleApiResponseError(
+                    const errorResponse: any = await handleApiResponseError(
                       response,
                       parsedResponse,
                       'Container'
                     );
 
-                    if (errorResponse) {
-                      if (
-                        errorResponse.errorCode === 403 &&
-                        errorResponse.message === 'Feature limit reached'
-                      ) {
-                        featureLimitReachedContainers.push(containerId);
-                      } else {
-                        errors.push(errorResponse.message);
-                      }
+                    console.log('Inside !response.ok');
+                    console.log('errorResponse: ', errorResponse);
+
+                    if (errorResponse && errorResponse.message) {
+                      console.log(
+                        'errorResponse.message: ',
+                        errorResponse.message
+                      );
+                      errors.push(errorResponse.message);
                     }
+                    errors.push(errorResponse.message);
                   } else {
                     successfulDeletions.push(containerId);
                     toDeleteContainers.delete(containerId);
@@ -313,6 +329,9 @@ export async function DeleteContainers(
           if (successfulDeletions.length === selectedContainers.size) {
             break; // Exit loop if all containers are processed successfully
           }
+          if (permissionDenied) {
+            break; // Exit the loop if a permission error was encountered
+          }
         } else {
           throw new Error('Rate limit exceeded');
         }
@@ -331,7 +350,27 @@ export async function DeleteContainers(
       }
     }
   }
+  if (permissionDenied) {
+    return {
+      success: false,
+      errors: errors,
+      results: [],
+    };
+  }
 
+  if (errors.length > 0) {
+    return {
+      success: false,
+      deletedContainers: successfulDeletions,
+      errors: errors,
+      results: successfulDeletions.map((containerId) => ({
+        containerId,
+        success: true,
+      })),
+      // Add a general message if needed
+      message: errors.join(', '),
+    };
+  }
   // If there are successful deletions, update the deleteUsage
   if (successfulDeletions.length > 0) {
     await prisma.tierLimit.update({
@@ -350,6 +389,7 @@ export async function DeleteContainers(
   // Returning the result of the deletion process
   return {
     success: errors.length === 0,
+    message: `Successfully deleted ${successfulDeletions.length} container(s)`,
     deletedContainers: successfulDeletions,
     errors: errors,
     results: successfulDeletions.map((containerId) => ({

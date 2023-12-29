@@ -11,6 +11,7 @@ import {
 } from '@/src/app/redux/tableSlice';
 import toast from 'react-hot-toast';
 import { useDispatch, useSelector } from 'react-redux';
+import { usePaginate } from '../paginate';
 
 export const handleGenericDelete = async (
   selectedRows,
@@ -104,13 +105,15 @@ export const useError = () => {
 };
 
 export const useToggleAll = (items, getIdFromItem, dispatch, allSelected) => {
+  const currentItems = usePaginate(items); // Get the current items for the page
+
   const toggleAll = () => {
     if (allSelected) {
       dispatch(setSelectedRows({}));
       dispatch(toggleAllSelected());
     } else {
       const newSelectedRows = {};
-      items.forEach((item) => {
+      currentItems.forEach((item) => { // Use currentItems instead of items
         const itemId = getIdFromItem(item);
         newSelectedRows[itemId] = item;
       });
@@ -121,7 +124,6 @@ export const useToggleAll = (items, getIdFromItem, dispatch, allSelected) => {
 
   return toggleAll;
 };
-
 export const handleRefreshCache = async (router, key, path) => {
   try {
     const toastId = toast.loading('Refreshing cache...');
@@ -137,10 +139,10 @@ export const handleRefreshCache = async (router, key, path) => {
     });
 
     await response.json();
-    toast.success('This worked', {
+    router.refresh();
+    toast.success('Cache Refreshed', {
       id: toastId,
     });
-    router.refresh();
   } catch (error) {
     console.error('Error refreshing cache:', error);
   }

@@ -22,7 +22,6 @@ import { useRouter } from 'next/navigation';
 import TableRow from '@/src/components/server/UI/TableRow';
 import {
   useError,
-  useModal,
   useRowSelection,
   useToggleAll,
 } from '@/src/lib/helpers/client';
@@ -72,7 +71,7 @@ export default function ContainerTable({ accounts, containers }) {
   const { toggleRow, selectedRows, allSelected } = useRowSelection(
     (container) => container.containerId
   );
-  const { error, setErrorState, clearError } = useError();
+  const { error, clearError } = useError();
 
   const currentItems = containers.slice(
     (currentPage - 1) * itemsPerPage,
@@ -81,6 +80,7 @@ export default function ContainerTable({ accounts, containers }) {
   const totalPages = Math.ceil(containers.length / itemsPerPage);
 
   const handleDelete = async () => {
+    toast('Deleting containers...');
     const uniqueAccountIds = Array.from(
       new Set(
         Object.values(selectedRows).map((rowData: any) => rowData.accountId)
@@ -120,29 +120,32 @@ export default function ContainerTable({ accounts, containers }) {
     // Check if any of the responses contains errors
     const hasErrors = responses.some(
       (response) =>
-        !response.success || (response.errors && response.errors.length > 0)
+        !response.success ||
+        response.limitReached ||
+        (response.errors && response.errors.length > 0)
     );
 
     if (hasErrors) {
-      // Handle error case
-      toast.error('Error deleting containers');
+      // Display the message from each response if it exists
+      responses.forEach((response) => {
+        if (response.message) {
+          toast.error(response.message, { duration: 5000 });
+        }
+      });
     } else {
       // If no errors, show success toast
-      toast.success(
-        'Successfully deleted containers. It may take a minute to refresh.'
-      );
+      responses.forEach((response) => {
+        if (response.message) {
+          toast.success(response.message + 'The table will update shortly.', {
+            duration: 5000,
+          });
+        }
+      });
     }
 
     // Dispatch actions based on the responses
     const limitReached = responses.some((response) => response.limitReached);
     dispatch(setIsLimitReached(limitReached));
-
-    if (notFoundContainers.length > 0) {
-      const errorMessage = `Not found or permission denied for ${notFoundContainers.join(
-        ', '
-      )}. Check your permissions and try again.`;
-      toast.error(errorMessage);
-    }
 
     dispatch(clearSelectedRows());
   };
