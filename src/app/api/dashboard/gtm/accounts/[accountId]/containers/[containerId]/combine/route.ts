@@ -2,13 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager/v2';
 import { ValidationError } from '@/src/lib/exceptions';
 import { createOAuth2Client } from '@/src/lib/oauth2Client';
-import { getServerSession } from 'next-auth/next';
 import prisma from '@/src/lib/prisma';
 import Joi from 'joi';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
-import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
 import { getAccessToken, handleError } from '@/src/lib/fetch/apiUtils';
 import { limiter } from '@/src/lib/bottleneck';
+import { useSession } from '@clerk/nextjs';
 
 /************************************************************************************
  * POST UTILITY FUNCTIONS
@@ -177,9 +176,9 @@ export async function combineGtmData(
   POST request handler
 ************************************************************************************/
 export async function POST(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
+  const { session } = useSession();
 
+  try {
     // Parse the request body
     const body = JSON.parse(await request.text());
 

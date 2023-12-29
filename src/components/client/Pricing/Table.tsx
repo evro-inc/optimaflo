@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Price } from '@prisma/client';
-import { ProductWithPrice } from 'types/types';
+import { ProductWithPrice } from '@/src/lib/types/types';
 import { postData } from '@/src/lib/helpers';
 import { getStripe } from '@/src/lib/stripe-client';
 import { Button, ButtonSubscribe } from '../Button/Button';
@@ -10,8 +10,7 @@ import logger from '@/src/lib/logger';
 import { LinkBody } from '../Links/Links';
 import { useSelector } from 'react-redux';
 import { selectUser } from '@/src/app/redux/userSlice';
-import { useUserDetails, useSubscription } from '@/src/lib/hooks/user';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '@clerk/nextjs';
 
 interface Props {
   products: ProductWithPrice[];
@@ -26,17 +25,14 @@ export default function PricingTable({ products = [] }: Props) {
 
   const [, /* priceIdLoading */ setPriceIdLoading] = useState<string>();
   const { subscription } = useSelector(selectUser);
-  const { data: session } = useSession();
 
   const [showAlert, setShowAlert] = useState(false);
-  const userId = session?.user?.id;
-  useUserDetails(userId);
-  useSubscription(userId);
+  const { userId } = useAuth();
 
   const handleCheckout = async (price: Price, product: ProductWithPrice) => {
     try {
       setPriceIdLoading(price.id);
-      if (!session) {
+      if (!userId) {
         setShowAlert(true); // Show the alert if there's no session
         return;
       } else {
@@ -113,7 +109,7 @@ export default function PricingTable({ products = [] }: Props) {
                 <ButtonSubscribe
                   variant="subscribe"
                   text="Monthly"
-                  isSelected={billingInterval === 'month'}
+                  isselected={billingInterval === 'month'}
                   onClick={() => setBillingInterval('month')}
                   type="button"
                   billingInterval={undefined}
@@ -122,7 +118,7 @@ export default function PricingTable({ products = [] }: Props) {
                 <ButtonSubscribe
                   variant="subscribe"
                   text="Yearly"
-                  isSelected={billingInterval === 'year'}
+                  isselected={billingInterval === 'year'}
                   onClick={() => setBillingInterval('year')}
                   type="button"
                   billingInterval={undefined}
@@ -130,7 +126,7 @@ export default function PricingTable({ products = [] }: Props) {
                 <ButtonSubscribe
                   variant="subscribe"
                   text="daily"
-                  isSelected={billingInterval === 'day'}
+                  isselected={billingInterval === 'day'}
                   onClick={() => setBillingInterval('day')}
                   type="button"
                   billingInterval={undefined}
@@ -237,7 +233,7 @@ export default function PricingTable({ products = [] }: Props) {
                             ? 'Manage'
                             : 'Subscribe'
                         }
-                        isSelected={billingInterval === 'month'}
+                        isselected={billingInterval === 'month'}
                         onClick={() => handleCheckout(price as any, product)}
                         type="button"
                         billingInterval={undefined}
@@ -329,7 +325,7 @@ export default function PricingTable({ products = [] }: Props) {
                       >
                         <path
                           fillRule="evenodd"
-                          clip-rule="evenodd"
+                          clipRule="evenodd"
                           d="M4.5 9.00005C4.5 8.8807 4.56773 8.76624 4.68829 8.68185C4.80885 8.59746 4.97236 8.55005 5.14286 8.55005H12.8571C13.0276 8.55005 13.1912 8.59746 13.3117 8.68185C13.4323 8.76624 13.5 8.8807 13.5 9.00005C13.5 9.1194 13.4323 9.23386 13.3117 9.31825C13.1912 9.40264 13.0276 9.45005 12.8571 9.45005H5.14286C4.97236 9.45005 4.80885 9.40264 4.68829 9.31825C4.56773 9.23386 4.5 9.1194 4.5 9.00005Z"
                           fill="currentColor"
                         />
@@ -375,7 +371,7 @@ export default function PricingTable({ products = [] }: Props) {
                       >
                         <path
                           fillRule="evenodd"
-                          clip-rule="evenodd"
+                          clipRule="evenodd"
                           d="M4.5 9.00005C4.5 8.8807 4.56773 8.76624 4.68829 8.68185C4.80885 8.59746 4.97236 8.55005 5.14286 8.55005H12.8571C13.0276 8.55005 13.1912 8.59746 13.3117 8.68185C13.4323 8.76624 13.5 8.8807 13.5 9.00005C13.5 9.1194 13.4323 9.23386 13.3117 9.31825C13.1912 9.40264 13.0276 9.45005 12.8571 9.45005H5.14286C4.97236 9.45005 4.80885 9.40264 4.68829 9.31825C4.56773 9.23386 4.5 9.1194 4.5 9.00005Z"
                           fill="currentColor"
                         />
@@ -431,7 +427,7 @@ export default function PricingTable({ products = [] }: Props) {
                       >
                         <path
                           fillRule="evenodd"
-                          clip-rule="evenodd"
+                          clipRule="evenodd"
                           d="M4.5 9.00005C4.5 8.8807 4.56773 8.76624 4.68829 8.68185C4.80885 8.59746 4.97236 8.55005 5.14286 8.55005H12.8571C13.0276 8.55005 13.1912 8.59746 13.3117 8.68185C13.4323 8.76624 13.5 8.8807 13.5 9.00005C13.5 9.1194 13.4323 9.23386 13.3117 9.31825C13.1912 9.40264 13.0276 9.45005 12.8571 9.45005H5.14286C4.97236 9.45005 4.80885 9.40264 4.68829 9.31825C4.56773 9.23386 4.5 9.1194 4.5 9.00005Z"
                           fill="currentColor"
                         />
@@ -460,7 +456,7 @@ export default function PricingTable({ products = [] }: Props) {
                       >
                         <path
                           fillRule="evenodd"
-                          clip-rule="evenodd"
+                          clipRule="evenodd"
                           d="M4.5 9.00005C4.5 8.8807 4.56773 8.76624 4.68829 8.68185C4.80885 8.59746 4.97236 8.55005 5.14286 8.55005H12.8571C13.0276 8.55005 13.1912 8.59746 13.3117 8.68185C13.4323 8.76624 13.5 8.8807 13.5 9.00005C13.5 9.1194 13.4323 9.23386 13.3117 9.31825C13.1912 9.40264 13.0276 9.45005 12.8571 9.45005H5.14286C4.97236 9.45005 4.80885 9.40264 4.68829 9.31825C4.56773 9.23386 4.5 9.1194 4.5 9.00005Z"
                           fill="currentColor"
                         />
@@ -516,7 +512,7 @@ export default function PricingTable({ products = [] }: Props) {
                       >
                         <path
                           fillRule="evenodd"
-                          clip-rule="evenodd"
+                          clipRule="evenodd"
                           d="M4.5 9.00005C4.5 8.8807 4.56773 8.76624 4.68829 8.68185C4.80885 8.59746 4.97236 8.55005 5.14286 8.55005H12.8571C13.0276 8.55005 13.1912 8.59746 13.3117 8.68185C13.4323 8.76624 13.5 8.8807 13.5 9.00005C13.5 9.1194 13.4323 9.23386 13.3117 9.31825C13.1912 9.40264 13.0276 9.45005 12.8571 9.45005H5.14286C4.97236 9.45005 4.80885 9.40264 4.68829 9.31825C4.56773 9.23386 4.5 9.1194 4.5 9.00005Z"
                           fill="currentColor"
                         />
@@ -572,7 +568,7 @@ export default function PricingTable({ products = [] }: Props) {
                       >
                         <path
                           fillRule="evenodd"
-                          clip-rule="evenodd"
+                          clipRule="evenodd"
                           d="M4.5 9.00005C4.5 8.8807 4.56773 8.76624 4.68829 8.68185C4.80885 8.59746 4.97236 8.55005 5.14286 8.55005H12.8571C13.0276 8.55005 13.1912 8.59746 13.3117 8.68185C13.4323 8.76624 13.5 8.8807 13.5 9.00005C13.5 9.1194 13.4323 9.23386 13.3117 9.31825C13.1912 9.40264 13.0276 9.45005 12.8571 9.45005H5.14286C4.97236 9.45005 4.80885 9.40264 4.68829 9.31825C4.56773 9.23386 4.5 9.1194 4.5 9.00005Z"
                           fill="currentColor"
                         />
@@ -618,7 +614,7 @@ export default function PricingTable({ products = [] }: Props) {
                       >
                         <path
                           fillRule="evenodd"
-                          clip-rule="evenodd"
+                          clipRule="evenodd"
                           d="M4.5 9.00005C4.5 8.8807 4.56773 8.76624 4.68829 8.68185C4.80885 8.59746 4.97236 8.55005 5.14286 8.55005H12.8571C13.0276 8.55005 13.1912 8.59746 13.3117 8.68185C13.4323 8.76624 13.5 8.8807 13.5 9.00005C13.5 9.1194 13.4323 9.23386 13.3117 9.31825C13.1912 9.40264 13.0276 9.45005 12.8571 9.45005H5.14286C4.97236 9.45005 4.80885 9.40264 4.68829 9.31825C4.56773 9.23386 4.5 9.1194 4.5 9.00005Z"
                           fill="currentColor"
                         />
@@ -674,7 +670,7 @@ export default function PricingTable({ products = [] }: Props) {
                       >
                         <path
                           fillRule="evenodd"
-                          clip-rule="evenodd"
+                          clipRule="evenodd"
                           d="M4.5 9.00005C4.5 8.8807 4.56773 8.76624 4.68829 8.68185C4.80885 8.59746 4.97236 8.55005 5.14286 8.55005H12.8571C13.0276 8.55005 13.1912 8.59746 13.3117 8.68185C13.4323 8.76624 13.5 8.8807 13.5 9.00005C13.5 9.1194 13.4323 9.23386 13.3117 9.31825C13.1912 9.40264 13.0276 9.45005 12.8571 9.45005H5.14286C4.97236 9.45005 4.80885 9.40264 4.68829 9.31825C4.56773 9.23386 4.5 9.1194 4.5 9.00005Z"
                           fill="currentColor"
                         />
@@ -703,7 +699,7 @@ export default function PricingTable({ products = [] }: Props) {
                       >
                         <path
                           fillRule="evenodd"
-                          clip-rule="evenodd"
+                          clipRule="evenodd"
                           d="M4.5 9.00005C4.5 8.8807 4.56773 8.76624 4.68829 8.68185C4.80885 8.59746 4.97236 8.55005 5.14286 8.55005H12.8571C13.0276 8.55005 13.1912 8.59746 13.3117 8.68185C13.4323 8.76624 13.5 8.8807 13.5 9.00005C13.5 9.1194 13.4323 9.23386 13.3117 9.31825C13.1912 9.40264 13.0276 9.45005 12.8571 9.45005H5.14286C4.97236 9.45005 4.80885 9.40264 4.68829 9.31825C4.56773 9.23386 4.5 9.1194 4.5 9.00005Z"
                           fill="currentColor"
                         />
@@ -827,7 +823,7 @@ export default function PricingTable({ products = [] }: Props) {
                       >
                         <path
                           fillRule="evenodd"
-                          clip-rule="evenodd"
+                          clipRule="evenodd"
                           d="M4.5 9.00005C4.5 8.8807 4.56773 8.76624 4.68829 8.68185C4.80885 8.59746 4.97236 8.55005 5.14286 8.55005H12.8571C13.0276 8.55005 13.1912 8.59746 13.3117 8.68185C13.4323 8.76624 13.5 8.8807 13.5 9.00005C13.5 9.1194 13.4323 9.23386 13.3117 9.31825C13.1912 9.40264 13.0276 9.45005 12.8571 9.45005H5.14286C4.97236 9.45005 4.80885 9.40264 4.68829 9.31825C4.56773 9.23386 4.5 9.1194 4.5 9.00005Z"
                           fill="currentColor"
                         />
@@ -856,7 +852,7 @@ export default function PricingTable({ products = [] }: Props) {
                       >
                         <path
                           fillRule="evenodd"
-                          clip-rule="evenodd"
+                          clipRule="evenodd"
                           d="M4.5 9.00005C4.5 8.8807 4.56773 8.76624 4.68829 8.68185C4.80885 8.59746 4.97236 8.55005 5.14286 8.55005H12.8571C13.0276 8.55005 13.1912 8.59746 13.3117 8.68185C13.4323 8.76624 13.5 8.8807 13.5 9.00005C13.5 9.1194 13.4323 9.23386 13.3117 9.31825C13.1912 9.40264 13.0276 9.45005 12.8571 9.45005H5.14286C4.97236 9.45005 4.80885 9.40264 4.68829 9.31825C4.56773 9.23386 4.5 9.1194 4.5 9.00005Z"
                           fill="currentColor"
                         />
@@ -885,7 +881,7 @@ export default function PricingTable({ products = [] }: Props) {
                       >
                         <path
                           fillRule="evenodd"
-                          clip-rule="evenodd"
+                          clipRule="evenodd"
                           d="M4.5 9.00005C4.5 8.8807 4.56773 8.76624 4.68829 8.68185C4.80885 8.59746 4.97236 8.55005 5.14286 8.55005H12.8571C13.0276 8.55005 13.1912 8.59746 13.3117 8.68185C13.4323 8.76624 13.5 8.8807 13.5 9.00005C13.5 9.1194 13.4323 9.23386 13.3117 9.31825C13.1912 9.40264 13.0276 9.45005 12.8571 9.45005H5.14286C4.97236 9.45005 4.80885 9.40264 4.68829 9.31825C4.56773 9.23386 4.5 9.1194 4.5 9.00005Z"
                           fill="currentColor"
                         />
@@ -914,7 +910,7 @@ export default function PricingTable({ products = [] }: Props) {
                       >
                         <path
                           fillRule="evenodd"
-                          clip-rule="evenodd"
+                          clipRule="evenodd"
                           d="M4.5 9.00005C4.5 8.8807 4.56773 8.76624 4.68829 8.68185C4.80885 8.59746 4.97236 8.55005 5.14286 8.55005H12.8571C13.0276 8.55005 13.1912 8.59746 13.3117 8.68185C13.4323 8.76624 13.5 8.8807 13.5 9.00005C13.5 9.1194 13.4323 9.23386 13.3117 9.31825C13.1912 9.40264 13.0276 9.45005 12.8571 9.45005H5.14286C4.97236 9.45005 4.80885 9.40264 4.68829 9.31825C4.56773 9.23386 4.5 9.1194 4.5 9.00005Z"
                           fill="currentColor"
                         />
@@ -1122,7 +1118,7 @@ export default function PricingTable({ products = [] }: Props) {
                       >
                         <path
                           fillRule="evenodd"
-                          clip-rule="evenodd"
+                          clipRule="evenodd"
                           d="M4.5 9.00005C4.5 8.8807 4.56773 8.76624 4.68829 8.68185C4.80885 8.59746 4.97236 8.55005 5.14286 8.55005H12.8571C13.0276 8.55005 13.1912 8.59746 13.3117 8.68185C13.4323 8.76624 13.5 8.8807 13.5 9.00005C13.5 9.1194 13.4323 9.23386 13.3117 9.31825C13.1912 9.40264 13.0276 9.45005 12.8571 9.45005H5.14286C4.97236 9.45005 4.80885 9.40264 4.68829 9.31825C4.56773 9.23386 4.5 9.1194 4.5 9.00005Z"
                           fill="currentColor"
                         />
@@ -1435,7 +1431,7 @@ export default function PricingTable({ products = [] }: Props) {
                       >
                         <path
                           fillRule="evenodd"
-                          clip-rule="evenodd"
+                          clipRule="evenodd"
                           d="M4.5 9.00005C4.5 8.8807 4.56773 8.76624 4.68829 8.68185C4.80885 8.59746 4.97236 8.55005 5.14286 8.55005H12.8571C13.0276 8.55005 13.1912 8.59746 13.3117 8.68185C13.4323 8.76624 13.5 8.8807 13.5 9.00005C13.5 9.1194 13.4323 9.23386 13.3117 9.31825C13.1912 9.40264 13.0276 9.45005 12.8571 9.45005H5.14286C4.97236 9.45005 4.80885 9.40264 4.68829 9.31825C4.56773 9.23386 4.5 9.1194 4.5 9.00005Z"
                           fill="currentColor"
                         />
@@ -1508,7 +1504,7 @@ export default function PricingTable({ products = [] }: Props) {
                       >
                         <path
                           fillRule="evenodd"
-                          clip-rule="evenodd"
+                          clipRule="evenodd"
                           d="M4.5 9.00005C4.5 8.8807 4.56773 8.76624 4.68829 8.68185C4.80885 8.59746 4.97236 8.55005 5.14286 8.55005H12.8571C13.0276 8.55005 13.1912 8.59746 13.3117 8.68185C13.4323 8.76624 13.5 8.8807 13.5 9.00005C13.5 9.1194 13.4323 9.23386 13.3117 9.31825C13.1912 9.40264 13.0276 9.45005 12.8571 9.45005H5.14286C4.97236 9.45005 4.80885 9.40264 4.68829 9.31825C4.56773 9.23386 4.5 9.1194 4.5 9.00005Z"
                           fill="currentColor"
                         />
@@ -1591,7 +1587,7 @@ export default function PricingTable({ products = [] }: Props) {
                       >
                         <path
                           fillRule="evenodd"
-                          clip-rule="evenodd"
+                          clipRule="evenodd"
                           d="M4.5 9.00005C4.5 8.8807 4.56773 8.76624 4.68829 8.68185C4.80885 8.59746 4.97236 8.55005 5.14286 8.55005H12.8571C13.0276 8.55005 13.1912 8.59746 13.3117 8.68185C13.4323 8.76624 13.5 8.8807 13.5 9.00005C13.5 9.1194 13.4323 9.23386 13.3117 9.31825C13.1912 9.40264 13.0276 9.45005 12.8571 9.45005H5.14286C4.97236 9.45005 4.80885 9.40264 4.68829 9.31825C4.56773 9.23386 4.5 9.1194 4.5 9.00005Z"
                           fill="currentColor"
                         />
@@ -2086,7 +2082,7 @@ export default function PricingTable({ products = [] }: Props) {
                 <tr>
                   <th
                     className="py-3 pl-6 bg-gray-50 font-bold text-gray-800 text-left "
-                    colspan="5"
+                    colSpan="5"
                     scope="colgroup"
                   >
                     Google Tag Manager
@@ -2198,7 +2194,7 @@ export default function PricingTable({ products = [] }: Props) {
                     >
                       <path
                         fillRule="evenodd"
-                        clip-rule="evenodd"
+                        clipRule="evenodd"
                         d="M4.5 9.00005C4.5 8.8807 4.56773 8.76624 4.68829 8.68185C4.80885 8.59746 4.97236 8.55005 5.14286 8.55005H12.8571C13.0276 8.55005 13.1912 8.59746 13.3117 8.68185C13.4323 8.76624 13.5 8.8807 13.5 9.00005C13.5 9.1194 13.4323 9.23386 13.3117 9.31825C13.1912 9.40264 13.0276 9.45005 12.8571 9.45005H5.14286C4.97236 9.45005 4.80885 9.40264 4.68829 9.31825C4.56773 9.23386 4.5 9.1194 4.5 9.00005Z"
                         fill="currentColor"
                       />
@@ -2268,7 +2264,7 @@ export default function PricingTable({ products = [] }: Props) {
                 <tr>
                   <th
                     className="py-3 pl-6 bg-gray-50 font-bold text-gray-800 text-left "
-                    colspan="5"
+                    colSpan="5"
                     scope="colgroup"
                   >
                     Google Analytics 4
@@ -2314,7 +2310,7 @@ export default function PricingTable({ products = [] }: Props) {
                     >
                       <path
                         fillRule="evenodd"
-                        clip-rule="evenodd"
+                        clipRule="evenodd"
                         d="M4.5 9.00005C4.5 8.8807 4.56773 8.76624 4.68829 8.68185C4.80885 8.59746 4.97236 8.55005 5.14286 8.55005H12.8571C13.0276 8.55005 13.1912 8.59746 13.3117 8.68185C13.4323 8.76624 13.5 8.8807 13.5 9.00005C13.5 9.1194 13.4323 9.23386 13.3117 9.31825C13.1912 9.40264 13.0276 9.45005 12.8571 9.45005H5.14286C4.97236 9.45005 4.80885 9.40264 4.68829 9.31825C4.56773 9.23386 4.5 9.1194 4.5 9.00005Z"
                         fill="currentColor"
                       />
@@ -2401,7 +2397,7 @@ export default function PricingTable({ products = [] }: Props) {
                     >
                       <path
                         fillRule="evenodd"
-                        clip-rule="evenodd"
+                        clipRule="evenodd"
                         d="M4.5 9.00005C4.5 8.8807 4.56773 8.76624 4.68829 8.68185C4.80885 8.59746 4.97236 8.55005 5.14286 8.55005H12.8571C13.0276 8.55005 13.1912 8.59746 13.3117 8.68185C13.4323 8.76624 13.5 8.8807 13.5 9.00005C13.5 9.1194 13.4323 9.23386 13.3117 9.31825C13.1912 9.40264 13.0276 9.45005 12.8571 9.45005H5.14286C4.97236 9.45005 4.80885 9.40264 4.68829 9.31825C4.56773 9.23386 4.5 9.1194 4.5 9.00005Z"
                         fill="currentColor"
                       />
@@ -2469,7 +2465,7 @@ export default function PricingTable({ products = [] }: Props) {
                     >
                       <path
                         fillRule="evenodd"
-                        clip-rule="evenodd"
+                        clipRule="evenodd"
                         d="M4.5 9.00005C4.5 8.8807 4.56773 8.76624 4.68829 8.68185C4.80885 8.59746 4.97236 8.55005 5.14286 8.55005H12.8571C13.0276 8.55005 13.1912 8.59746 13.3117 8.68185C13.4323 8.76624 13.5 8.8807 13.5 9.00005C13.5 9.1194 13.4323 9.23386 13.3117 9.31825C13.1912 9.40264 13.0276 9.45005 12.8571 9.45005H5.14286C4.97236 9.45005 4.80885 9.40264 4.68829 9.31825C4.56773 9.23386 4.5 9.1194 4.5 9.00005Z"
                         fill="currentColor"
                       />
@@ -2490,7 +2486,7 @@ export default function PricingTable({ products = [] }: Props) {
                     >
                       <path
                         fillRule="evenodd"
-                        clip-rule="evenodd"
+                        clipRule="evenodd"
                         d="M4.5 9.00005C4.5 8.8807 4.56773 8.76624 4.68829 8.68185C4.80885 8.59746 4.97236 8.55005 5.14286 8.55005H12.8571C13.0276 8.55005 13.1912 8.59746 13.3117 8.68185C13.4323 8.76624 13.5 8.8807 13.5 9.00005C13.5 9.1194 13.4323 9.23386 13.3117 9.31825C13.1912 9.40264 13.0276 9.45005 12.8571 9.45005H5.14286C4.97236 9.45005 4.80885 9.40264 4.68829 9.31825C4.56773 9.23386 4.5 9.1194 4.5 9.00005Z"
                         fill="currentColor"
                       />
@@ -2558,7 +2554,7 @@ export default function PricingTable({ products = [] }: Props) {
                     >
                       <path
                         fillRule="evenodd"
-                        clip-rule="evenodd"
+                        clipRule="evenodd"
                         d="M4.5 9.00005C4.5 8.8807 4.56773 8.76624 4.68829 8.68185C4.80885 8.59746 4.97236 8.55005 5.14286 8.55005H12.8571C13.0276 8.55005 13.1912 8.59746 13.3117 8.68185C13.4323 8.76624 13.5 8.8807 13.5 9.00005C13.5 9.1194 13.4323 9.23386 13.3117 9.31825C13.1912 9.40264 13.0276 9.45005 12.8571 9.45005H5.14286C4.97236 9.45005 4.80885 9.40264 4.68829 9.31825C4.56773 9.23386 4.5 9.1194 4.5 9.00005Z"
                         fill="currentColor"
                       />
@@ -2579,7 +2575,7 @@ export default function PricingTable({ products = [] }: Props) {
                     >
                       <path
                         fillRule="evenodd"
-                        clip-rule="evenodd"
+                        clipRule="evenodd"
                         d="M4.5 9.00005C4.5 8.8807 4.56773 8.76624 4.68829 8.68185C4.80885 8.59746 4.97236 8.55005 5.14286 8.55005H12.8571C13.0276 8.55005 13.1912 8.59746 13.3117 8.68185C13.4323 8.76624 13.5 8.8807 13.5 9.00005C13.5 9.1194 13.4323 9.23386 13.3117 9.31825C13.1912 9.40264 13.0276 9.45005 12.8571 9.45005H5.14286C4.97236 9.45005 4.80885 9.40264 4.68829 9.31825C4.56773 9.23386 4.5 9.1194 4.5 9.00005Z"
                         fill="currentColor"
                       />
@@ -2732,7 +2728,7 @@ export default function PricingTable({ products = [] }: Props) {
                     >
                       <path
                         fillRule="evenodd"
-                        clip-rule="evenodd"
+                        clipRule="evenodd"
                         d="M4.5 9.00005C4.5 8.8807 4.56773 8.76624 4.68829 8.68185C4.80885 8.59746 4.97236 8.55005 5.14286 8.55005H12.8571C13.0276 8.55005 13.1912 8.59746 13.3117 8.68185C13.4323 8.76624 13.5 8.8807 13.5 9.00005C13.5 9.1194 13.4323 9.23386 13.3117 9.31825C13.1912 9.40264 13.0276 9.45005 12.8571 9.45005H5.14286C4.97236 9.45005 4.80885 9.40264 4.68829 9.31825C4.56773 9.23386 4.5 9.1194 4.5 9.00005Z"
                         fill="currentColor"
                       />
@@ -2857,7 +2853,7 @@ export default function PricingTable({ products = [] }: Props) {
                     >
                       <path
                         fillRule="evenodd"
-                        clip-rule="evenodd"
+                        clipRule="evenodd"
                         d="M4.5 9.00005C4.5 8.8807 4.56773 8.76624 4.68829 8.68185C4.80885 8.59746 4.97236 8.55005 5.14286 8.55005H12.8571C13.0276 8.55005 13.1912 8.59746 13.3117 8.68185C13.4323 8.76624 13.5 8.8807 13.5 9.00005C13.5 9.1194 13.4323 9.23386 13.3117 9.31825C13.1912 9.40264 13.0276 9.45005 12.8571 9.45005H5.14286C4.97236 9.45005 4.80885 9.40264 4.68829 9.31825C4.56773 9.23386 4.5 9.1194 4.5 9.00005Z"
                         fill="currentColor"
                       />
@@ -2906,7 +2902,7 @@ export default function PricingTable({ products = [] }: Props) {
                     >
                       <path
                         fillRule="evenodd"
-                        clip-rule="evenodd"
+                        clipRule="evenodd"
                         d="M4.5 9.00005C4.5 8.8807 4.56773 8.76624 4.68829 8.68185C4.80885 8.59746 4.97236 8.55005 5.14286 8.55005H12.8571C13.0276 8.55005 13.1912 8.59746 13.3117 8.68185C13.4323 8.76624 13.5 8.8807 13.5 9.00005C13.5 9.1194 13.4323 9.23386 13.3117 9.31825C13.1912 9.40264 13.0276 9.45005 12.8571 9.45005H5.14286C4.97236 9.45005 4.80885 9.40264 4.68829 9.31825C4.56773 9.23386 4.5 9.1194 4.5 9.00005Z"
                         fill="currentColor"
                       />
@@ -2976,7 +2972,7 @@ export default function PricingTable({ products = [] }: Props) {
                 <tr>
                   <th
                     className="py-3 pl-6 bg-gray-50 font-bold text-gray-800 text-left "
-                    colspan="5"
+                    colSpan="5"
                     scope="colgroup"
                   >
                     AI
@@ -3003,7 +2999,7 @@ export default function PricingTable({ products = [] }: Props) {
                     >
                       <path
                         fillRule="evenodd"
-                        clip-rule="evenodd"
+                        clipRule="evenodd"
                         d="M4.5 9.00005C4.5 8.8807 4.56773 8.76624 4.68829 8.68185C4.80885 8.59746 4.97236 8.55005 5.14286 8.55005H12.8571C13.0276 8.55005 13.1912 8.59746 13.3117 8.68185C13.4323 8.76624 13.5 8.8807 13.5 9.00005C13.5 9.1194 13.4323 9.23386 13.3117 9.31825C13.1912 9.40264 13.0276 9.45005 12.8571 9.45005H5.14286C4.97236 9.45005 4.80885 9.40264 4.68829 9.31825C4.56773 9.23386 4.5 9.1194 4.5 9.00005Z"
                         fill="currentColor"
                       />
@@ -3043,7 +3039,7 @@ export default function PricingTable({ products = [] }: Props) {
                     >
                       <path
                         fillRule="evenodd"
-                        clip-rule="evenodd"
+                        clipRule="evenodd"
                         d="M4.5 9.00005C4.5 8.8807 4.56773 8.76624 4.68829 8.68185C4.80885 8.59746 4.97236 8.55005 5.14286 8.55005H12.8571C13.0276 8.55005 13.1912 8.59746 13.3117 8.68185C13.4323 8.76624 13.5 8.8807 13.5 9.00005C13.5 9.1194 13.4323 9.23386 13.3117 9.31825C13.1912 9.40264 13.0276 9.45005 12.8571 9.45005H5.14286C4.97236 9.45005 4.80885 9.40264 4.68829 9.31825C4.56773 9.23386 4.5 9.1194 4.5 9.00005Z"
                         fill="currentColor"
                       />
@@ -3177,7 +3173,7 @@ export default function PricingTable({ products = [] }: Props) {
                     >
                       <path
                         fillRule="evenodd"
-                        clip-rule="evenodd"
+                        clipRule="evenodd"
                         d="M4.5 9.00005C4.5 8.8807 4.56773 8.76624 4.68829 8.68185C4.80885 8.59746 4.97236 8.55005 5.14286 8.55005H12.8571C13.0276 8.55005 13.1912 8.59746 13.3117 8.68185C13.4323 8.76624 13.5 8.8807 13.5 9.00005C13.5 9.1194 13.4323 9.23386 13.3117 9.31825C13.1912 9.40264 13.0276 9.45005 12.8571 9.45005H5.14286C4.97236 9.45005 4.80885 9.40264 4.68829 9.31825C4.56773 9.23386 4.5 9.1194 4.5 9.00005Z"
                         fill="currentColor"
                       />
@@ -3198,7 +3194,7 @@ export default function PricingTable({ products = [] }: Props) {
                     >
                       <path
                         fillRule="evenodd"
-                        clip-rule="evenodd"
+                        clipRule="evenodd"
                         d="M4.5 9.00005C4.5 8.8807 4.56773 8.76624 4.68829 8.68185C4.80885 8.59746 4.97236 8.55005 5.14286 8.55005H12.8571C13.0276 8.55005 13.1912 8.59746 13.3117 8.68185C13.4323 8.76624 13.5 8.8807 13.5 9.00005C13.5 9.1194 13.4323 9.23386 13.3117 9.31825C13.1912 9.40264 13.0276 9.45005 12.8571 9.45005H5.14286C4.97236 9.45005 4.80885 9.40264 4.68829 9.31825C4.56773 9.23386 4.5 9.1194 4.5 9.00005Z"
                         fill="currentColor"
                       />
@@ -3271,7 +3267,7 @@ export default function PricingTable({ products = [] }: Props) {
                                 ? 'Manage'
                                 : 'Subscribe'
                             }
-                            isSelected={billingInterval === 'month'}
+                            isselected={billingInterval === 'month'}
                             onClick={() =>
                               handleCheckout(price as any, product)
                             }

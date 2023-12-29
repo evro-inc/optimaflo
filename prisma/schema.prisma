@@ -8,31 +8,17 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model Account {
-  id                String  @id @default(uuid())
-  userId            String  @db.Uuid
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
-
-  user User @relation(fields: [userId], references: [id])
-
-  @@unique([provider, providerAccountId])
-}
-
 model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String   @map("user_id") @db.Uuid
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String  @id @default(cuid())
+  userId       String? @map("user_id")
+  user         User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  abandonAt    BigInt?
+  clientId     String?
+  createdAt    BigInt
+  expireAt     BigInt
+  lastActiveAt BigInt
+  status       String?
+  updatedAt    BigInt
 }
 
 model CheckoutSession {
@@ -40,7 +26,7 @@ model CheckoutSession {
   paymentStatus  String // or some suitable enum type if there's a limited set of possible statuses
   amountTotal    Int
   currency       String
-  userId         String       @map("user_id") @db.Uuid
+  userId         String       @map("user_id")
   subscriptionId String       @map("subscription_id")
   User           User         @relation(fields: [userId], references: [id])
   Subscription   Subscription @relation(fields: [subscriptionId], references: [id])
@@ -55,7 +41,7 @@ enum Role {
 }
 
 model User {
-  id                 String            @id @default(uuid()) @db.Uuid
+  id                 String            @id @default(cuid())
   stripeCustomerId   String?           @unique
   subscriptionId     String?           @unique
   subscriptionStatus String?
@@ -64,7 +50,6 @@ model User {
   emailVerified      DateTime?
   image              String?
   role               Role              @default(USER)
-  accounts           Account[]
   sessions           Session[]
   Customer           Customer[]
   Subscription       Subscription[]
@@ -74,18 +59,10 @@ model User {
   gtm                gtm[]
 }
 
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
-}
-
 model Customer {
-  id               String    @id @default(uuid()) @map("id") @db.Uuid
+  id               String    @id @default(cuid()) @map("id")
   stripeCustomerId String    @unique @map("stripe_customer_id")
-  userId           String    @map("user_id") @db.Uuid
+  userId           String    @map("user_id")
   User             User      @relation(fields: [userId], references: [id])
   Invoices         Invoice[]
 }
@@ -146,9 +123,9 @@ enum SubscriptionStatus {
 }
 
 model Subscription {
-  id                 String             @id @default(uuid())
+  id                 String             @id @default(cuid())
   subId              String             @unique
-  userId             String             @map("user_id") @db.Uuid
+  userId             String             @map("user_id")
   status             SubscriptionStatus @default(trialing)
   metadata           Json?              @map("metadata")
   priceId            String             @map("price_id")
@@ -174,14 +151,14 @@ model Subscription {
 }
 
 model Feature {
-  id          String      @id @default(uuid())
+  id          String      @id @default(cuid())
   name        String      @unique
   description String?     @map("description")
   TierLimits  TierLimit[]
 }
 
 model TierLimit {
-  id             String        @id @default(uuid())
+  id             String        @id @default(cuid())
   subscriptionId String?
   createLimit    Int           @default(0)
   createUsage    Int           @default(0)
@@ -212,28 +189,28 @@ model Invoice {
   Customer       Customer     @relation(fields: [customerId], references: [stripeCustomerId])
   Subscription   Subscription @relation(fields: [subscriptionId], references: [id])
   User           User?        @relation(fields: [userId], references: [id])
-  userId         String?      @db.Uuid
+  userId         String?      @map("user_id")
 }
 
 model ProductAccess {
-  id        String  @id @default(uuid())
-  userId    String  @db.Uuid
+  id        String  @id @default(cuid())
+  userId    String? @map("user_id")
   productId String
   granted   Boolean @default(false)
-  User      User    @relation(fields: [userId], references: [id])
+  User      User?   @relation(fields: [userId], references: [id])
   Product   Product @relation(fields: [productId], references: [id])
 
   @@unique([userId, productId])
 }
 
 model gtm {
-  id          String @id @default(uuid())
-  userId      String @map("user_id") @db.Uuid
+  id          String @id @default(cuid())
+  userId      String @map("user_id")
   accountId   String @map("account_id")
   containerId String @map("container_id")
   workspaceId String @map("workspace_id")
   User        User   @relation(fields: [userId], references: [id])
 
-  @@unique([userId, accountId, containerId, workspaceId], name: "unique_gtm_entry")
+  @@unique([userId, accountId, containerId, workspaceId], name: "userId_accountId_containerId_workspaceId")
   @@index([userId], name: "gtmSettingsUserId")
 }

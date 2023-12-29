@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/src/lib/prisma';
 import Joi from 'joi';
-import logger from '@/src/lib/logger';
 
 // GET a specific price
 export async function GET(
@@ -38,11 +37,6 @@ export async function GET(
       // If the price is not found, return a 404 Not Found response
       return NextResponse.json({ error: 'Price not found' }, { status: 404 });
     }
-
-    // Return the price as JSON
-    const jsonString = JSON.stringify(price, null, 2);
-
-    logger.debug('DEBUG RESPONSE: ', jsonString);
 
     return NextResponse.json(price, {
       headers: {
@@ -99,11 +93,6 @@ export async function PATCH(
       data: json,
     });
 
-    // Return the updated price as JSON
-    const jsonString = JSON.stringify(updated, null, 2);
-
-    logger.debug('DEBUG RESPONSE: ', jsonString);
-
     return NextResponse.json(updated, {
       headers: {
         'Content-Type': 'application/json',
@@ -136,11 +125,6 @@ export async function DELETE(
     const deleted = await prisma.price.delete({
       where: { id },
     });
-
-    // Return the deleted price as JSON
-    const jsonString = JSON.stringify(deleted, null, 2);
-
-    logger.debug('DEBUG RESPONSE: ', jsonString);
 
     return NextResponse.json(deleted, {
       headers: {

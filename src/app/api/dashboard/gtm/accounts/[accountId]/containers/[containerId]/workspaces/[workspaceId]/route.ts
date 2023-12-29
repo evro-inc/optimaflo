@@ -2,15 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager/v2';
 import { QuotaLimitError, ValidationError } from '@/src/lib/exceptions';
 import { createOAuth2Client } from '@/src/lib/oauth2Client';
-import { getServerSession } from 'next-auth/next';
 import prisma from '@/src/lib/prisma';
 import Joi from 'joi';
 import { isErrorWithStatus } from '@/src/lib/fetch/dashboard';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
-import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
-import logger from '@/src/lib/logger';
 import { limiter } from '@/src/lib/bottleneck';
-import { getAccessToken, handleError } from '@/src/lib/fetch/apiUtils';
+import { handleError } from '@/src/lib/fetch/apiUtils';
+import { clerkClient, currentUser } from '@clerk/nextjs';
+import { notFound } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
 
 /************************************************************************************
  * GET UTILITY FUNCTIONS
@@ -55,43 +55,50 @@ async function getWorkspace(
   const MAX_RETRIES = 3;
   let delay = 1000;
 
+  const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}`;
+  const headers = {
+    Authorization: `Bearer ${accessToken}`,
+    'Content-Type': 'application/json',
+  };
+
   while (retries < MAX_RETRIES) {
     try {
       const { remaining } = await gtmRateLimit.blockUntilReady(
         `user:${userId}`,
         1000
       );
+
       if (remaining > 0) {
-        let res;
+        let data;
         await limiter.schedule(async () => {
-          const oauth2Client = createOAuth2Client(accessToken);
-          if (!oauth2Client) {
-            return NextResponse.error();
+          const response = await fetch(url, { headers });
+
+          if (!response.ok) {
+            throw new Error(
+              `HTTP error! status: ${response.status}. ${response.statusText}`
+            );
           }
-          const gtm = new tagmanager_v2.Tagmanager({
-            auth: oauth2Client,
-          });
-          res = await gtm.accounts.containers.workspaces.get({
-            path: `accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}`,
-          });
+
+          data = await response.json();
         });
-        return res;
+
+        return data;
       } else {
         throw new Error('Rate limit exceeded');
       }
     } catch (error: any) {
       if (error.code === 429 || error.status === 429) {
-        // Log the rate limit error and wait before retrying
         console.warn('Rate limit exceeded. Retrying...');
         const jitter = Math.random() * 200;
         await new Promise((resolve) => setTimeout(resolve, delay + jitter));
-        delay *= 2; // Exponential backoff
+        delay *= 2;
         retries++;
       } else {
         throw error;
       }
     }
   }
+  throw new Error('Maximum retries reached without a successful response.');
 }
 
 /************************************************************************************
@@ -112,11 +119,12 @@ export async function GET(
     };
   }
 ) {
-  try {
-    const session = await getServerSession(authOptions);
+  const user = await currentUser();
+  if (!user) return notFound();
+  const userId = user?.id;
 
+  try {
     const paramsJOI = {
-      userId: session?.user?.id,
       accountId: params.accountId,
       containerId: params.containerId,
       workspaceId: params.workspaceId,
@@ -124,16 +132,19 @@ export async function GET(
 
     const validateParams = await validateGetParams(paramsJOI);
 
-    const { accountId, containerId, workspaceId, userId } = validateParams;
+    const { accountId, containerId, workspaceId } = validateParams;
 
-    const accessToken = await getAccessToken(userId);
+    const accessToken = await clerkClient.users.getUserOauthAccessToken(
+      user?.id,
+      'oauth_google'
+    );
 
     const data = await getWorkspace(
       userId,
       accountId,
       containerId,
       workspaceId,
-      accessToken
+      accessToken[0].token
     );
 
     return NextResponse.json(
@@ -169,9 +180,11 @@ export async function GET(
   UPDATE/PATCH request handler
 ************************************************************************************/
 export async function PATCH(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
+  const user = await currentUser();
+  if (!user) return notFound();
+  const userId = user?.id;
 
+  try {
     // Parse the request body
     const body = JSON.parse(await request.text());
 
@@ -210,16 +223,10 @@ export async function PATCH(request: NextRequest) {
       });
     }
 
-    const userId = session?.user?.id;
-
-    // using userId get accessToken from prisma account table
-    const user = await prisma.account.findFirst({
-      where: {
-        userId: userId,
-      },
-    });
-
-    const accessToken = user?.access_token;
+    const accessToken = await clerkClient.users.getUserOauthAccessToken(
+      user?.id,
+      'oauth_google'
+    );
 
     if (!accessToken) {
       // If the access token is null or undefined, return an error response
@@ -289,7 +296,7 @@ export async function PATCH(request: NextRequest) {
           // If we haven't hit the rate limit, proceed with the API request
 
           // If the data is not in the cache, fetch it from the API
-          const oauth2Client = createOAuth2Client(accessToken);
+          const oauth2Client = createOAuth2Client(accessToken[0].token);
           if (!oauth2Client) {
             // If oauth2Client is null, return an error response or throw an error
             return NextResponse.error();
@@ -330,9 +337,9 @@ export async function PATCH(request: NextRequest) {
             errors: null,
           };
 
-          const jsonString = JSON.stringify(response, null, 2);
+          const path = request.nextUrl.searchParams.get('path') || '/'; // should it fall back on the layout?
 
-          logger.debug('DEBUG RESPONSE: ', jsonString);
+          revalidatePath(path);
 
           return NextResponse.json(response, {
             headers: {
@@ -368,9 +375,11 @@ export async function PATCH(request: NextRequest) {
   DELETE request handler
 ************************************************************************************/
 export async function DELETE(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
+  const user = await currentUser();
+  if (!user) return notFound();
+  const userId = user?.id;
 
+  try {
     const url = request.url;
     const regex =
       /\/accounts\/([^/]+)\/containers\/([^/]+)\/workspaces\/([^/]+)/;
@@ -415,16 +424,10 @@ export async function DELETE(request: NextRequest) {
       });
     }
 
-    const userId = session?.user?.id;
-
-    // using userId get accessToken from prisma account table
-    const user = await prisma.account.findFirst({
-      where: {
-        userId: userId,
-      },
-    });
-
-    const accessToken = user?.access_token;
+    const accessToken = await clerkClient.users.getUserOauthAccessToken(
+      user?.id,
+      'oauth_google'
+    );
 
     if (!accessToken) {
       // If the access token is null or undefined, return an error response
@@ -494,7 +497,7 @@ export async function DELETE(request: NextRequest) {
           // If we haven't hit the rate limit, proceed with the API request
 
           // If the data is not in the cache, fetch it from the API
-          const oauth2Client = createOAuth2Client(accessToken);
+          const oauth2Client = createOAuth2Client(accessToken[0].token);
           if (!oauth2Client) {
             // If oauth2Client is null, return an error response or throw an error
             return NextResponse.error();
@@ -530,10 +533,6 @@ export async function DELETE(request: NextRequest) {
             },
             errors: null,
           };
-
-          const jsonString = JSON.stringify(response, null, 2);
-
-          logger.debug('DEBUG RESPONSE: ', jsonString);
 
           return NextResponse.json(response, {
             headers: {

@@ -15,9 +15,9 @@ import { selectIsLoading, setLoading } from '@/src/app/redux/globalSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { FormUpdateWorkspaceProps, UpdateResult } from '@/types/types';
+import { FormUpdateWorkspaceProps, UpdateResult } from '@/src/lib/types/types';
 import logger from '@/src/lib/logger';
-import { updateWorkspaces } from '@/src/lib/actions/workspaces';
+import { UpdateWorkspaces } from '@/src/lib/fetch/dashboard/gtm/actions/workspaces';
 
 // Type for the entire form data
 type Forms = z.infer<typeof UpdateWorkspaceSchema>;
@@ -32,7 +32,6 @@ const FormUpdateWorkspace: React.FC<FormUpdateWorkspaceProps> = ({
   const { isLimitReached } = useSelector(selectTable);
   const isLoading = useSelector(selectIsLoading);
   const formRefs = useRef<(HTMLFormElement | null)[]>([]);
-
   const {
     register,
     handleSubmit,
@@ -85,7 +84,7 @@ const FormUpdateWorkspace: React.FC<FormUpdateWorkspaceProps> = ({
 
     try {
       // If you're here, validation succeeded. Proceed with updateContainers.
-      const res = (await updateWorkspaces({ forms })) as UpdateResult;
+      const res = (await UpdateWorkspaces({ forms })) as UpdateResult;
 
       dispatch(clearSelectedRows()); // Clear selectedRows
 

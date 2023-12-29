@@ -1,131 +1,40 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '../../../auth/[...nextauth]/route';
-import Joi from 'joi';
-import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
-import logger from '@/src/lib/logger';
-import { limiter } from '@/src/lib/bottleneck';
-import { getAccessToken } from '@/src/lib/fetch/apiUtils';
+import { NextResponse } from 'next/server';
 import { ValidationError } from '@/src/lib/exceptions';
+import { listGtmAccounts } from '@/src/lib/fetch/dashboard/gtm/actions/accounts';
+import { currentUserOauthAccessToken } from '@/src/lib/clerk';
+import { auth } from '@clerk/nextjs';
+import { notFound } from 'next/navigation';
+import { redis } from '@/src/lib/redis/cache';
 
-// Separate out the validation logic into its own function
-async function validateParams(params) {
-  const schema = Joi.object({
-    pageNumber: Joi.number().integer().min(1).required(),
-    limit: Joi.number().integer().min(1).max(100).required(),
-    sort: Joi.string().valid('id').required(),
-    order: Joi.string().valid('asc', 'desc').required(),
-  });
-
-  const { error, value } = schema.validate(params);
-  if (error) {
-    throw new Error(`Validation Error: ${error.message}`);
-  }
-  return value;
-}
-
-// Separate out the logic to list GTM accounts into its own function
-export async function listGtmAccounts(userId, accessToken, limit?, pageNumber?) {
-  let retries = 0;
-  const MAX_RETRIES = 3;
-  let delay = 1000;
-
-  while (retries < MAX_RETRIES) {
-    const url = `https://www.googleapis.com/tagmanager/v2/accounts`;
-    const headers = {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    };
-
-    try {
-      const { remaining } = await gtmRateLimit.blockUntilReady(
-        `user:${userId}`,
-        1000
-      );
-
-      if (remaining > 0) {
-        let data;
-        await limiter.schedule(async () => {
-          const response = await fetch(url, { headers });
-
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-
-          data = await response.json();
-        });
-
-        pageNumber = pageNumber || 1;
-        limit = limit || 10;  // Default limit value
-
-
-        const startIndex = (pageNumber - 1) * limit;
-        const paginatedAccounts = data.account.slice(
-          startIndex,
-          startIndex + limit
-        );
-        
-
-        return {
-          data: paginatedAccounts,
-          meta: {
-            total: data.account.length,
-            pageNumber,
-            totalPages: Math.ceil(data.account.length / limit),
-            pageSize: limit,
-          },
-          errors: null,
-        };
-      } else {
-        throw new Error('Rate limit exceeded');
-      }
-    } catch (error: any) {
-      if (error.code === 429 || error.status === 429) {
-        console.warn('Rate limit exceeded. Retrying get accounts...');
-        const jitter = Math.random() * 200;
-        await new Promise((resolve) => setTimeout(resolve, delay + jitter));
-        delay *= 2;
-        retries++;
-      } else {
-        throw error;
-      }
-    }
-  }
-  throw new Error('Maximum retries reached without a successful response.');
-}
 // Refactored GET handler
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    const userId = session?.user?.id as string;
-    const pageNumber = Number(request.nextUrl.searchParams.get('page')) || 1;
-    const limit = Number(request.nextUrl.searchParams.get('limit')) || 10;
-    const sort = request.nextUrl.searchParams.get('sort') || 'id';
-    const order = request.nextUrl.searchParams.get('order') || 'asc';
+    const { userId } = auth();
+    if (!userId) return notFound();
 
-    const paramsJOI = {
-      pageNumber,
-      limit,
-      sort,
-      order,
-    };
+    const cachedValue = await redis.get(`user:${userId}-gtm:accounts`);
 
-    await validateParams(paramsJOI);
-    const accessToken = await getAccessToken(userId);
+    if (cachedValue) {
+      return NextResponse.json(JSON.parse(cachedValue), {
+        headers: { 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
 
-    const response = await listGtmAccounts(
-      userId,
-      accessToken,
-      limit,
-      pageNumber
+    const token = await currentUserOauthAccessToken(userId);
+    const response = await listGtmAccounts(token[0].token);
+
+    redis.set(
+      `gtm:accounts-userId:${userId}`,
+      JSON.stringify(response),
+      'EX',
+      60 * 60 * 24 * 7
     );
 
-    const getResult = NextResponse.json(response, {
+    return NextResponse.json(response, {
       headers: { 'Content-Type': 'application/json' },
       status: 200,
     });
-
-    return getResult;
   } catch (error: any) {
     if (error instanceof ValidationError) {
       console.error('Validation Error: ', error.message);
@@ -134,7 +43,6 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    logger.error('Error: ', error);
     return new NextResponse(JSON.stringify({ error: error.message }), {
       status: 500,
     });

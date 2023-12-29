@@ -4,16 +4,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager/v2';
 import { QuotaLimitError, ValidationError } from '@/src/lib/exceptions';
 import { createOAuth2Client } from '@/src/lib/oauth2Client';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '../../../../../auth/[...nextauth]/route';
 import prisma from '@/src/lib/prisma';
 import Joi from 'joi';
 import { isErrorWithStatus } from '@/src/lib/fetch/dashboard';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
 import logger from '@/src/lib/logger';
 import { limiter } from '@/src/lib/bottleneck';
-import { getAccessToken, handleError } from '@/src/lib/fetch/apiUtils';
-import { PostParams, ResultType } from '@/types/types';
+import { handleError } from '@/src/lib/fetch/apiUtils';
+import { PostParams, ResultType } from '@/src/lib/types/types';
+import { auth, clerkClient, currentUser, useSession } from '@clerk/nextjs';
+import { notFound } from 'next/navigation';
+import { listGtmContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containers';
+import { currentUserOauthAccessToken } from '@/src/lib/clerk';
+import { revalidatePath } from 'next/cache';
 
 /************************************************************************************
  * GET UTILITY FUNCTIONS
@@ -40,72 +43,6 @@ async function validateGetParams(params) {
   }
 
   return value; // return the validated parameters when validation passes
-}
-
-/************************************************************************************
-  Function to list GTM containers
-************************************************************************************/
-export async function listGtmContainers(
-  userId: string,
-  accessToken: string,
-  accountId: string,
-  pageNumber?: number,
-  limit?: number
-) {
-  let retries = 0;
-  const MAX_RETRIES = 3;
-  const allResults: ResultType[] = [];
-  let delay = 1000;
-
-  while (retries < MAX_RETRIES) {
-    try {
-      // Check if we've hit the rate limit
-      const { remaining } = await gtmRateLimit.blockUntilReady(
-        `user:${userId}`,
-        1000
-      );
-
-      if (remaining > 0) {
-        let res;
-        await limiter.schedule(async () => {
-          const oauth2Client = createOAuth2Client(accessToken);
-          if (!oauth2Client) {
-            throw new Error('OAuth2Client creation failed');
-          }
-
-          const gtm = new tagmanager_v2.Tagmanager({ auth: oauth2Client });
-          res = await gtm.accounts.containers.list({
-            parent: `accounts/${accountId}`,
-          });
-        });
-
-        const total = res.data.container?.length || 0;
-        allResults.push({
-          data: res.data.container,
-          meta: {
-            total,
-            pageNumber,
-            totalPages: Math.ceil(total / limit),
-            pageSize: limit,
-          },
-          errors: null,
-        });
-        return allResults; // Return results if successful
-      } else {
-        throw new Error('Rate limit exceeded');
-      }
-    } catch (error: any) {
-      if (error.code === 429 || error.status === 429) {
-        console.warn('Rate limit exceeded. Retrying get containers...');
-        const jitter = Math.random() * 200;
-        await new Promise((resolve) => setTimeout(resolve, delay + jitter));
-        delay *= 2;
-        retries++;
-      } else {
-        throw error;
-      }
-    }
-  }
 }
 
 /************************************************************************************
@@ -302,37 +239,18 @@ export async function GET(
   }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    const userId = session?.user?.id as string;
-    const pageNumber = Number(request.nextUrl.searchParams.get('page')) || 1;
-    const limit = Number(request.nextUrl.searchParams.get('limit')) || 10;
-    const sort = request.nextUrl.searchParams.get('sort') || 'id';
-    const order = request.nextUrl.searchParams.get('order') || 'asc';
+    const { userId } = auth();
+    if (!userId) return notFound();
     const accountId = params.accountId;
 
-    // Create a JavaScript object with the extracted parameters
-    const paramsJOI = {
-      pageNumber,
-      limit,
-      sort,
-      order,
-      accountIds: accountId ? [accountId] : [],
-    };
-
     // Call validateGetParams to validate the parameters
-    await validateGetParams(paramsJOI);
-    const accessToken = await getAccessToken(userId);
+    await validateGetParams(accountId);
+    const token = await currentUserOauthAccessToken(userId);
 
     // Call listGtmContainers for each accountId
     const allResults = await Promise.all(
       (accountId ? [accountId] : []).map(async (accountId) => {
-        return await listGtmContainers(
-          userId,
-          accessToken,
-          accountId,
-          pageNumber,
-          limit
-        );
+        return await listGtmContainers(token[0].token, accountId);
       })
     );
 
@@ -348,7 +266,7 @@ export async function GET(
       });
     }
 
-    logger.error('Error: ', error);
+    logger.error('Error: ', error.message);
     return new NextResponse(JSON.stringify({ error: error.message }), {
       status: 500,
     });
@@ -369,10 +287,11 @@ export async function POST(
     };
   }
 ) {
+  const { userId } = auth();
+  if (!userId) return notFound();
+
   try {
     const limit = Number(request.nextUrl.searchParams.get('limit')) || 10;
-    const session = await getServerSession(authOptions);
-    const userId = session?.user?.id as string;
 
     const body = JSON.parse(await request.text());
 
@@ -390,7 +309,7 @@ export async function POST(
     const validatedParams = await validatePostParams(paramsJOI);
     const { name, usageContext, domainName, notes, accountId } =
       validatedParams;
-    const accessToken = await getAccessToken(userId);
+    const token = await currentUserOauthAccessToken(userId);
 
     // check tier limit
     const tierLimitRecord = await prisma.tierLimit.findFirst({
@@ -423,7 +342,7 @@ export async function POST(
 
     const response = await createGtmContainer(
       userId,
-      accessToken,
+      token[0].token,
       accountId,
       name,
       usageContext,
@@ -431,6 +350,10 @@ export async function POST(
       notes,
       limit
     );
+
+    const path = request.nextUrl.searchParams.get('path') || '/'; // should it fall back on the layout?
+
+    revalidatePath(path);
 
     return NextResponse.json(response, {
       headers: {

@@ -1,8 +1,5 @@
 import type { Metadata } from 'next';
 import React from 'react';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
-import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
   title: 'Overview',
@@ -10,13 +7,6 @@ export const metadata: Metadata = {
 };
 
 export default async function GAPage() {
-  const session = await getServerSession(authOptions);
-
-  // if no session, redirect to home page
-  if (!session) {
-    redirect('/');
-  }
-
   try {
     const content = (
       <div>

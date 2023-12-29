@@ -1,11 +1,11 @@
 import FAQ from '@/src/components/server/FAQ/Faq';
 import PricingTable from '@/src/components/client/Pricing/Table';
-import { ProductWithPrice } from 'types/types';
+import { ProductWithPrice } from '@/src/lib/types/types';
 import prisma from '@/src/lib/prisma';
 
 const getActiveProductsWithPrices = async (): Promise<ProductWithPrice[]> => {
   'use server';
-  
+
   // Query the database to retrieve active products with prices
   const products = await prisma.product.findMany({
     where: { active: true },

@@ -74,10 +74,10 @@ export default function SideBar() {
         <div className="px-6">
           <Link
             className="flex-none text-xl font-semibold "
-            href="#"
+            href="/"
             aria-label="Brand"
           >
-            Brand
+            OptimaFlo
           </Link>
         </div>
 

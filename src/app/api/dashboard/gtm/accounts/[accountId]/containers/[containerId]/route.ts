@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager/v2';
 import { ValidationError } from '@/src/lib/exceptions';
 import { createOAuth2Client } from '@/src/lib/oauth2Client';
-import { getServerSession } from 'next-auth/next';
 import prisma from '@/src/lib/prisma';
 import Joi from 'joi';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
-import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
 import { limiter } from '@/src/lib/bottleneck';
-import { getAccessToken, handleError } from '@/src/lib/fetch/apiUtils';
+import { handleError } from '@/src/lib/fetch/apiUtils';
+import { clerkClient, currentUser } from '@clerk/nextjs';
+import { notFound } from 'next/navigation';
 
 /************************************************************************************
  * GET UTILITY FUNCTIONS
@@ -18,7 +18,6 @@ import { getAccessToken, handleError } from '@/src/lib/fetch/apiUtils';
 ************************************************************************************/
 async function validateGetParams(params) {
   const schema = Joi.object({
-    userId: Joi.string().uuid().required(),
     accountId: Joi.string()
       .pattern(/^\d{10}$/)
       .required(),
@@ -51,40 +50,48 @@ async function fetchGtmData(
   let delay = 1000;
 
   while (retries < MAX_RETRIES) {
+    const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}`;
+    const headers = {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    };
+
     try {
       const { remaining } = await gtmRateLimit.blockUntilReady(
         `user:${userId}`,
         1000
       );
+
       if (remaining > 0) {
-        let res;
-        await limiter.schedule(async () => {
-          const oauth2Client = createOAuth2Client(accessToken);
-          if (!oauth2Client) {
-            throw new Error('OAuth2Client creation failed');
+        let res = await limiter.schedule(async () => {
+          const response = await fetch(url, { headers });
+
+          if (!response.ok) {
+            throw new Error(
+              `HTTP error! status: ${response.status}. ${response.statusText}. ${response.url}`
+            );
           }
-          const gtm = new tagmanager_v2.Tagmanager({ auth: oauth2Client });
-          res = await gtm.accounts.containers.get({
-            path: `accounts/${accountId}/containers/${containerId}`,
-          });
+
+          return await response.json();
         });
-        return res.data;
+
+        return res; // This will be the container data
       } else {
         throw new Error('Rate limit exceeded');
       }
     } catch (error: any) {
       if (error.code === 429 || error.status === 429) {
-        // Log the rate limit error and wait before retrying
         console.warn('Rate limit exceeded. Retrying...');
         const jitter = Math.random() * 200;
         await new Promise((resolve) => setTimeout(resolve, delay + jitter));
-        delay *= 2; // Exponential backoff
+        delay *= 2;
         retries++;
       } else {
         throw error;
       }
     }
   }
+  throw new Error('Maximum retries reached without a successful response.');
 }
 
 /************************************************************************************
@@ -95,7 +102,6 @@ async function fetchGtmData(
 ************************************************************************************/
 async function validatePutParams(params: any) {
   const schema = Joi.object({
-    userId: Joi.string().uuid().required(),
     accountId: Joi.string()
       .pattern(/^\d{10}$/)
       .required(),
@@ -257,7 +263,6 @@ export async function updateGtmData(
 ************************************************************************************/
 async function validateDeleteParams(params: any) {
   const schema = Joi.object({
-    userId: Joi.string().uuid().required(),
     accountId: Joi.string()
       .pattern(/^\d{10}$/)
       .required(),
@@ -437,26 +442,33 @@ export async function GET(
     params,
   }: {
     params: {
-      accountId?: string;
-      containerId?: string;
+      accountId: string;
+      containerId: string;
     };
   }
 ) {
+  const user = await currentUser();
+  if (!user) return notFound();
+
+  const userId = user?.id;
+
   try {
-    const session = await getServerSession(authOptions);
     const paramsJOI = {
-      userId: session?.user?.id,
       accountId: params.accountId,
       containerId: params.containerId,
     };
 
     const validatedParams = await validateGetParams(paramsJOI);
-    const { accountId, containerId, userId } = validatedParams;
-    const accessToken = await getAccessToken(userId);
+    const { accountId, containerId } = validatedParams;
+
+    const accessToken = await clerkClient.users.getUserOauthAccessToken(
+      user?.id,
+      'oauth_google'
+    );
 
     const data = await fetchGtmData(
       userId,
-      accessToken,
+      accessToken[0].token,
       accountId,
       containerId
     );
@@ -494,14 +506,17 @@ export async function GET(
   PUT/UPDATE request handler
 ************************************************************************************/
 export async function PUT(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
+  const user = await currentUser();
+  if (!user) return notFound();
 
+  const userId = user?.id;
+
+  try {
     // Parse the request body
     const body = JSON.parse(await request.text());
 
     const paramsJOI = {
-      userId: session?.user?.id,
+      userId: user?.id,
       accountId: body.accountId,
       containerId: body.containerId,
       containerName: body.containerName,
@@ -510,15 +525,18 @@ export async function PUT(request: NextRequest) {
 
     const validateParams = await validatePutParams(paramsJOI);
 
-    const { accountId, containerId, userId, containerName, usageContext } =
+    const { accountId, containerId, containerName, usageContext } =
       validateParams;
 
     // using userId get accessToken from prisma account table
-    const accessToken = await getAccessToken(userId);
+    const accessToken = await clerkClient.users.getUserOauthAccessToken(
+      user?.id,
+      'oauth_google'
+    );
 
     const data = await updateGtmData(
       userId,
-      accessToken,
+      accessToken[0].token,
       accountId,
       containerId,
       containerName,
@@ -552,9 +570,11 @@ export async function PUT(request: NextRequest) {
   DELETE request handler
 ************************************************************************************/
 export async function DELETE(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
+  const user = await currentUser();
+  if (!user) return notFound();
+  const userId = user?.id;
 
+  try {
     const url = request.url;
     const regex = /\/accounts\/([^/]+)\/containers\/([^/]+)/;
     const match = url.match(regex);
@@ -564,21 +584,24 @@ export async function DELETE(request: NextRequest) {
     }
 
     const paramsJOI = {
-      userId: session?.user?.id,
+      userId: user?.id,
       accountId: match[1],
       containerId: match[2],
     };
 
     const validateParams = await validateDeleteParams(paramsJOI);
 
-    const { accountId, containerId, userId } = validateParams;
+    const { accountId, containerId } = validateParams;
 
     // using userId get accessToken from prisma account table
-    const accessToken = await getAccessToken(userId);
+    const accessToken = await clerkClient.users.getUserOauthAccessToken(
+      user?.id,
+      'oauth_google'
+    );
 
     const data = await deleteGtmData(
       userId,
-      accessToken,
+      accessToken[0].token,
       accountId,
       containerId
     );

@@ -1,4 +1,4 @@
-import { ContainerType } from '@/types/types';
+import { ContainerType } from '@/src/lib/types/types';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export const tableSlice = createSlice({
@@ -8,7 +8,10 @@ export const tableSlice = createSlice({
     currentPage: 1,
     itemsPerPage: 10,
     isLimitReached: false,
-    allSelected: false, // Add this line to include the allSelected state
+    allSelected: false,
+    notFoundError: false,
+    isModalOpen: false,
+    error: null as string | null,
   },
   reducers: {
     setSelectedRows: (
@@ -30,6 +33,18 @@ export const tableSlice = createSlice({
       // Add this reducer to toggle the allSelected state
       state.allSelected = !state.allSelected;
     },
+    setNotFoundError: (state, action: PayloadAction<boolean>) => {
+      state.notFoundError = action.payload;
+    },
+    openModal: (state) => {
+      state.isModalOpen = true;
+    },
+    closeModal: (state) => {
+      state.isModalOpen = false;
+    },
+    setError: (state, action: PayloadAction<string | null>) => {
+      state.error = action.payload; // Handle setting error state
+    },
   },
 });
 
@@ -38,7 +53,11 @@ export const {
   setCurrentPage,
   setIsLimitReached,
   clearSelectedRows,
-  toggleAllSelected, // Export the new reducer
+  toggleAllSelected,
+  setNotFoundError,
+  openModal,
+  closeModal,
+  setError,
 } = tableSlice.actions;
 
 export const selectTable = (state) => state.table; // Adjust this if your state structure has changed

@@ -2,13 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager/v2';
 import { QuotaLimitError } from '@/src/lib/exceptions';
 import { createOAuth2Client } from '@/src/lib/oauth2Client';
-import { getServerSession } from 'next-auth/next';
 import prisma from '@/src/lib/prisma';
 import Joi from 'joi';
 import { isErrorWithStatus } from '@/src/lib/fetch/dashboard';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
-import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
-import logger from '@/src/lib/logger';
+import { useSession } from '@clerk/nextjs';
 
 // Get Version
 export async function GET(
@@ -23,9 +21,8 @@ export async function GET(
     };
   }
 ) {
+  const { session } = useSession();
   try {
-    const session = await getServerSession(authOptions);
-
     const accountId = params.accountId;
     const containerId = params.containerId;
     const versionId = params.versionId;
@@ -119,10 +116,6 @@ export async function GET(
 
           // Return the response as JSON
 
-          const jsonString = JSON.stringify(response, null, 2);
-
-          logger.debug('DEBUG RESPONSE: ', jsonString);
-
           return NextResponse.json(response, {
             headers: {
               'Content-Type': 'application/json',
@@ -154,9 +147,9 @@ export async function GET(
 }
 
 // Update Version
-export async function PATCH(request: NextRequest) {
+/* export async function PATCH(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const { session } = useSession();
 
     // Parse the request body
     const body = JSON.parse(await request.text());
@@ -318,10 +311,6 @@ export async function PATCH(request: NextRequest) {
 
           // Return the response as JSON
 
-          const jsonString = JSON.stringify(response, null, 2);
-
-          logger.debug('DEBUG RESPONSE: ', jsonString);
-
           return NextResponse.json(response, {
             headers: {
               'Content-Type': 'application/json',
@@ -350,12 +339,12 @@ export async function PATCH(request: NextRequest) {
     // Return a 500 status code for internal server error
     return NextResponse.error();
   }
-}
+} */
 
 // Delete Version
-export async function DELETE(request: NextRequest) {
+/* export async function DELETE(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const { session } = useSession();
 
     const url = request.url;
     const regex = /\/accounts\/([^/]+)\/containers\/([^/]+)\/versions\/([^/]+)/;
@@ -518,10 +507,6 @@ export async function DELETE(request: NextRequest) {
 
           // Return the response as JSON
 
-          const jsonString = JSON.stringify(response, null, 2);
-
-          logger.debug('DEBUG RESPONSE: ', jsonString);
-
           return NextResponse.json(response, {
             headers: {
               'Content-Type': 'application/json',
@@ -550,13 +535,13 @@ export async function DELETE(request: NextRequest) {
     // Return a 500 status code for internal server error
     return NextResponse.error();
   }
-}
+} */
 
 // Undelete Version
 // Delete Version
-export async function POST(request: NextRequest) {
+/* export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const { session } = useSession();
 
     const url = request.url;
     const regex = /\/accounts\/([^/]+)\/containers\/([^/]+)\/versions\/([^/]+)/;
@@ -665,10 +650,6 @@ export async function POST(request: NextRequest) {
 
           // Return the response as JSON
 
-          const jsonString = JSON.stringify(response, null, 2);
-
-          logger.debug('DEBUG RESPONSE: ', jsonString);
-
           return NextResponse.json(response, {
             headers: {
               'Content-Type': 'application/json',
@@ -697,4 +678,4 @@ export async function POST(request: NextRequest) {
     // Return a 500 status code for internal server error
     return NextResponse.error();
   }
-}
+} */

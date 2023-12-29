@@ -1,6 +1,7 @@
 'use client';
-import Link from 'next/link';
 import { useMemo } from 'react';
+import { SignUpButton } from '@clerk/nextjs';
+import Link from 'next/link';
 
 const getLinkModeClasses = (variant) => {
   switch (variant) {
@@ -22,6 +23,53 @@ const getLinkModeClasses = (variant) => {
 };
 
 const BASE_LINK_CLASSES = 'cursor-pointer';
+
+export const LinkSignUp = ({
+  variant,
+  text,
+  ariaLabel,
+  userHasSubscription,
+  ...props
+}) => {
+  const computedClasses = useMemo(() => {
+    const modeClass = getLinkModeClasses(variant);
+    return [BASE_LINK_CLASSES, modeClass].join(' ');
+  }, [variant]);
+
+  // Determine redirect URL based on subscription status
+  const redirectUrl = userHasSubscription == true ? '/profile' : '/pricing';
+
+  return (
+    <SignUpButton
+      mode="modal"
+      redirectUrl={redirectUrl}
+      afterSignUpUrl={redirectUrl}
+    >
+      <div className={computedClasses} {...props} aria-label={ariaLabel}>
+        <button {...props}>{text}</button>
+      </div>
+    </SignUpButton>
+  );
+};
+
+export const LinkNav = ({ variant, text, href, ariaLabel, ...props }) => {
+  const computedClasses = useMemo(() => {
+    const modeClass = getLinkModeClasses(variant);
+    return [BASE_LINK_CLASSES, modeClass].join(' ');
+  }, [variant]);
+
+  return (
+    <Link
+      className={computedClasses}
+      {...props}
+      href={href}
+      passHref
+      aria-label={ariaLabel}
+    >
+      {text}
+    </Link>
+  );
+};
 
 export const LinkBody = ({ variant, text, href, ariaLabel, ...props }) => {
   const computedClasses = useMemo(() => {
