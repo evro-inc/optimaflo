@@ -1,6 +1,6 @@
 import React from 'react';
 import { getHomePage } from '@/sanity/sanity-utils';
-export const dynamic = 'force-dynamic';
+
 import Image from 'next/image';
 import { ButtonSignIn } from '@/src/components/client/Button/Button';
 

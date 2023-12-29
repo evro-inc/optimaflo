@@ -1,14 +1,22 @@
 import logger from './logger';
 
 export const getURL = () => {
-  let url =
-    process?.env?.LOCAL_SITE_URL ?? // Set this to your site URL in production env.
-    'http://localhost:3000/';
-  // Make sure to include `https://` when not localhost.
-  url = url.includes('http') ? url : `https://${url}`;
-  // Make sure to including trailing `/`.
-  url = url.charAt(url.length - 1) === '/' ? url : `${url}/`;
-  return url;
+  let vercelUrl = process.env.VERCEL_URL; // Assign VERCEL_URL to vercelUrl
+
+  // Check if we're running locally or in Vercel's environment
+  if (typeof vercelUrl === 'undefined' || vercelUrl.startsWith('localhost')) {
+    // For local development, use the local server URL
+    vercelUrl = 'http://localhost:3000'; // Adjust if your local server uses a different port
+  } else {
+    // Ensure the URL uses https if deployed on Vercel
+    vercelUrl = `https://${vercelUrl}`;
+  }
+
+  if (!vercelUrl) {
+    throw new Error('Could not determine URL. VERCEL_URL is undefined');
+  }
+
+  return vercelUrl;
 };
 
 export const postData = async ({ url, data }: { url: string; data?: any }) => {

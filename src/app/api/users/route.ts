@@ -1,8 +1,6 @@
-export const dynamic = 'force-dynamic';
 import prisma from '@/src/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import Joi from 'joi';
-import logger from '@/src/lib/logger';
 
 // This function handles an HTTP GET request
 export async function GET(req: NextRequest) {
@@ -69,9 +67,6 @@ export async function GET(req: NextRequest) {
     };
 
     // Return the response as JSON
-    const jsonString = JSON.stringify(response, null, 2);
-
-    logger.debug('DEBUG RESPONSE: ', jsonString);
 
     return NextResponse.json(response, {
       headers: {
@@ -114,9 +109,6 @@ export async function POST(request: Request) {
     });
 
     // Return the created user as JSON with status code 201 (Created)
-    const jsonString = JSON.stringify(response, null, 2);
-
-    logger.debug('DEBUG RESPONSE: ', jsonString);
 
     return NextResponse.json(response, {
       headers: {

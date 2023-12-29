@@ -1,62 +1,36 @@
-import type { Metadata } from 'next';
 import React from 'react';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
-import { redirect } from 'next/navigation';
-import FormCreateVariable from '@/src/components/client/GTM/variables/create';
-import FormDeleteBuiltInVariable from '@/src/components/client/GTM/variables/delete';
-import FormRevertBuiltInVariable from '@/src/components/client/GTM/variables/revert';
-import FormUpdateVersion from '@/src/components/client/GTM/versions/update';
-import FormCreateWorkspace from '@/src/components/client/GTM/workspaces/create';
-import FormCreateVersionWorkspace from '@/src/components/client/GTM/workspaces/create-version';
-import FormDeleteWorkspace from '@/src/components/client/GTM/workspaces/delete';
-import FormPreviewWorkspace from '@/src/components/client/GTM/workspaces/preview';
-import FormUpdateWorkspace from '@/src/components/client/GTM/workspaces/update';
+import { notFound } from 'next/navigation';
+import { auth } from '@clerk/nextjs';
+import WorkspaceTable from './server/table';
+import { currentUserOauthAccessToken } from '@/src/lib/clerk';
+import { fetchAllWorkspaces } from '@/src/lib/fetch/dashboard/gtm/actions/workspaces';
 
-export const metadata: Metadata = {
-  title: 'Overview',
-  description: 'Overview',
-};
+async function getWorkspaces() {
+  try {
+    const { userId } = auth();
+    if (!userId) return notFound();
+    const token = await currentUserOauthAccessToken(userId);
+    const workspaces = await fetchAllWorkspaces(token[0].token);
 
-export default async function AccountPage() {
-  const session = await getServerSession(authOptions);
+    const itemsPerPage = 10;
+    const totalPages = Math.ceil(workspaces.length / itemsPerPage);
 
-  // if no session, redirect to home page
-  if (!session) {
-    redirect('/');
+    return { props: { workspaces, totalPages } };
+  } catch (error: any) {
+    console.error('Error fetching workspaces:', error.message);
+    return { props: { workspaces: [], totalPages: 0 } }; // Return empty array and 0 totalPages in case of error
   }
+}
+
+export default async function WorkspacePage() {
+  const { userId } = auth();
+  if (!userId) return notFound();
+
+  const data = await getWorkspaces();
 
   return (
-    <div>
-      <h1>Workspaces</h1>
-      <FormCreateWorkspace />
-
-      <h2>WS UPDATE</h2>
-      <FormUpdateWorkspace />
-
-      <h2>WS DELETE</h2>
-      <FormDeleteWorkspace />
-
-      <h2>WS CREATE VERSION</h2>
-      <FormCreateVersionWorkspace />
-
-      <h2>WS PREVIEW</h2>
-      <FormPreviewWorkspace />
-
-      <h2>CREATE BUILT IN VAR</h2>
-      <FormDeleteBuiltInVariable />
-
-      <h2>DELETE BUILT IN VAR</h2>
-      <FormDeleteBuiltInVariable />
-
-      <h2>REVERT BUILT IN VAR</h2>
-      <FormRevertBuiltInVariable />
-
-      <h1>Version</h1>
-      <FormUpdateVersion />
-
-      <h2>VERSION CREATE</h2>
-      <FormCreateVariable />
-    </div>
+    <>
+      <WorkspaceTable workspaces={data.props.workspaces} />
+    </>
   );
 }

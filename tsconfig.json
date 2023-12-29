@@ -37,7 +37,7 @@
     ]
   },
   "include": [
-    "types/**/*.ts",
+    "src/lib/types/**/*.ts",
     "**/*.ts",
     "**/*.tsx",
     "prisma/seed.js",

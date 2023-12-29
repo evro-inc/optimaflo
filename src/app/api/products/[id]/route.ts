@@ -1,8 +1,6 @@
-export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/src/lib/prisma';
 import Joi from 'joi';
-import logger from '@/src/lib/logger';
 
 export async function GET(
   req: NextRequest,
@@ -48,9 +46,6 @@ export async function GET(
     };
 
     // Return the product as JSON
-    const jsonString = JSON.stringify(response, null, 2);
-
-    logger.debug('DEBUG RESPONSE: ', jsonString);
 
     return NextResponse.json(response, {
       headers: {
@@ -114,9 +109,6 @@ export async function PATCH(
     });
 
     // Return the updated product as JSON
-    const jsonString = JSON.stringify(response, null, 2);
-
-    logger.debug('DEBUG RESPONSE: ', jsonString);
 
     return NextResponse.json(response, {
       headers: {
@@ -175,9 +167,6 @@ export async function DELETE(
     });
 
     // Return the deleted product as JSON
-    const jsonString = JSON.stringify(response, null, 2);
-
-    logger.debug('DEBUG RESPONSE: ', jsonString);
 
     return NextResponse.json(response, {
       headers: {

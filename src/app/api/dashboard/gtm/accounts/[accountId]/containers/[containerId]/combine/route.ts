@@ -1,213 +1,234 @@
-export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager/v2';
-import { QuotaLimitError } from '@/src/lib/exceptions';
+import { ValidationError } from '@/src/lib/exceptions';
 import { createOAuth2Client } from '@/src/lib/oauth2Client';
-import { getServerSession } from 'next-auth/next';
 import prisma from '@/src/lib/prisma';
 import Joi from 'joi';
-import { isErrorWithStatus } from '@/src/lib/fetch/dashboard';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
-import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
-import logger from '@/src/lib/logger';
+import { getAccessToken, handleError } from '@/src/lib/fetch/apiUtils';
+import { limiter } from '@/src/lib/bottleneck';
+import { useSession } from '@clerk/nextjs';
 
-/* {
-  "error": {
-    "code": 400,
-    "message": "path or container_id: For Google tag only, this operation is not supported by GTM container.\n",
-    "errors": [
-      {
-        "message": "path or container_id: For Google tag only, this operation is not supported by GTM container.\n",
-        "domain": "global",
-        "reason": "badRequest"
-      }
-    ],
-    "status": "INVALID_ARGUMENT"
+/************************************************************************************
+ * POST UTILITY FUNCTIONS
+ ************************************************************************************/
+/************************************************************************************
+  Validate the POST parameters
+************************************************************************************/
+async function validatePostParams(params: {
+  accountId: string;
+  containerId: string;
+  containerIdToCombine: string;
+}) {
+  const schema = Joi.object({
+    accountId: Joi.string()
+      .pattern(/^\d{10}$/)
+      .required(),
+    containerId: Joi.string().required(),
+    containerIdToCombine: Joi.string().required(),
+  });
+
+  const { error } = schema.validate(params);
+
+  if (error) {
+    // If validation fails, return a 400 Bad Request response
+    return new NextResponse(JSON.stringify({ error: error.message }), {
+      status: 400,
+    });
   }
-} */
-export async function POST(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
+}
 
-    // Parse the request body
-    const body = JSON.parse(await request.text());
+/************************************************************************************
+  Function to combine GTM containers
+************************************************************************************/
+export async function combineGtmData(
+  userId: string,
+  accountId: string,
+  containerId: string,
+  containerIdToCombine: string,
+  accessToken: string
+) {
+  let retries = 0;
+  const MAX_RETRIES = 3;
+  let delay = 1000;
 
-    // Extract the account ID from the body
-    const accountId = body.accountId;
-    const containerId = body.containerId;
-    const containerIdToCombine = body.containerIdToCombine;
-
-    const schema = Joi.object({
-      accountId: Joi.string()
-        .pattern(/^\d{10}$/)
-        .required(),
-      containerId: Joi.string().required(),
-      containerIdToCombine: Joi.string().required(),
-    });
-
-    // Validate the accountId against the schema
-    const { error } = schema.validate({
-      accountId,
-      containerId,
-      containerIdToCombine,
-    });
-
-    if (error) {
-      // If validation fails, return a 400 Bad Request response
-      return new NextResponse(JSON.stringify({ error: error.message }), {
-        status: 400,
-      });
-    }
-
-    const userId = session?.user?.id;
-
-    // using userId get accessToken from prisma account table
-    const user = await prisma.account.findFirst({
-      where: {
-        userId: userId,
-      },
-    });
-
-    const accessToken = user?.access_token;
-
-    if (!accessToken) {
-      // If the access token is null or undefined, return an error response
-      return new NextResponse(
-        JSON.stringify({ message: 'Access token is missing' }),
-        {
-          status: 401,
-        }
+  while (retries < MAX_RETRIES) {
+    try {
+      const { remaining } = await gtmRateLimit.blockUntilReady(
+        `user:${userId}`,
+        1000
       );
-    }
 
-    // Fetch subscription data for the user
-    const subscriptionData = await prisma.subscription.findFirst({
-      where: {
-        userId: userId,
-      },
-    });
-
-    if (!subscriptionData) {
-      return new NextResponse(
-        JSON.stringify({ message: 'Subscription data not found' }),
-        {
-          status: 403,
-        }
-      );
-    }
-
-    const tierLimitRecord = await prisma.tierLimit.findFirst({
-      where: {
-        Feature: {
-          name: 'GTMContainer',
-        },
-        Subscription: {
+      // Fetch subscription data for the user
+      const subscriptionData = await prisma.subscription.findFirst({
+        where: {
           userId: userId,
         },
-      },
-      include: {
-        Feature: true,
-        Subscription: true,
-      },
-    });
+      });
 
-    if (
-      !tierLimitRecord ||
-      tierLimitRecord.createUsage >= tierLimitRecord.createLimit
-    ) {
-      return new NextResponse(
-        JSON.stringify({ message: 'Feature limit reached' }),
-        {
-          status: 403,
-        }
-      );
-    }
-
-    let retries = 0;
-    const MAX_RETRIES = 3;
-
-    while (retries < MAX_RETRIES) {
-      try {
-        // Check if we've hit the rate limit
-        const { remaining } = await gtmRateLimit.blockUntilReady(
-          `user:${userId}`,
-          1000
+      if (!subscriptionData) {
+        return new NextResponse(
+          JSON.stringify({ message: 'Subscription data not found' }),
+          {
+            status: 403,
+          }
         );
+      }
 
-        if (remaining > 0) {
-          // If we haven't hit the rate limit, proceed with the API request
+      const tierLimitRecord = await prisma.tierLimit.findFirst({
+        where: {
+          Feature: {
+            name: 'GTMContainer', // Replace with the actual feature name
+          },
+          Subscription: {
+            userId: userId, // Assuming Subscription model has a userId field
+          },
+        },
+        include: {
+          Feature: true,
+          Subscription: true,
+        },
+      });
 
-          // If the data is not in the cache, fetch it from the API
+      if (
+        !tierLimitRecord ||
+        tierLimitRecord.updateUsage >= tierLimitRecord.updateLimit
+      ) {
+        return new NextResponse(
+          JSON.stringify({ message: 'Feature limit reached' }),
+          {
+            status: 403,
+          }
+        );
+      }
+
+      if (remaining > 0) {
+        let res;
+
+        await limiter.schedule(async () => {
           const oauth2Client = createOAuth2Client(accessToken);
           if (!oauth2Client) {
-            // If oauth2Client is null, return an error response or throw an error
-            return NextResponse.error();
+            throw new Error('OAuth2Client creation failed');
           }
 
-          if (!oauth2Client) {
-            // If oauth2Client is null, return an error response or throw an error
-            return NextResponse.error();
-          }
-          // Create a Tag Manager service client
-          const gtm = new tagmanager_v2.Tagmanager({
-            auth: oauth2Client,
-          });
+          const gtm = new tagmanager_v2.Tagmanager({ auth: oauth2Client });
 
-          // Do the magic
-          const res = await gtm.accounts.containers.combine({
-            // Must be set to true to allow features.user_permissions to change from false to true. If this operation causes an update but this bit is false, the operation will fail.
+          res = await gtm.accounts.containers.combine({
             allowUserPermissionFeatureUpdate: true,
-            // ID of container that will be merged into the current container.
             containerId: containerIdToCombine,
-            // GTM Container's API relative path. Example: accounts/{account_id\}/containers/{container_id\}
             path: `accounts/${accountId}/containers/${containerId}:combine`,
-            // Specify the source of config setting after combine
             settingSource: 'other',
           });
 
           await prisma.tierLimit.update({
             where: {
               id: tierLimitRecord.id,
+              Feature: {
+                name: 'GTMContainer',
+              },
+              Subscription: {
+                userId: userId,
+              },
             },
             data: {
-              createUsage: {
+              updateUsage: {
                 increment: 1,
               },
             },
           });
+        });
 
-          const response = res.data;
+        const data = res.data;
 
-          const jsonString = JSON.stringify(response, null, 2);
+        const response = {
+          data: data,
+          meta: {
+            totalResults: data?.length ?? 0,
+          },
+          errors: null,
+        };
 
-          logger.debug('DEBUG RESPONSE: ', jsonString);
-
-          return NextResponse.json(response, {
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            status: 200,
-          });
-        } else {
-          // If we've hit the rate limit, throw an error
-          throw new Error('Rate limit exceeded');
-        }
-      } catch (error: unknown) {
-        if (isErrorWithStatus(error) && error.status === 429) {
-          retries++;
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-          if (retries === MAX_RETRIES) {
-            throw new QuotaLimitError();
-          }
-        } else {
-          throw error;
-        }
+        return response;
+      } else {
+        throw new Error('Rate limit exceeded');
+      }
+    } catch (error: any) {
+      if (error.code === 429 || error.status === 429) {
+        // Log the rate limit error and wait before retrying
+        console.warn('Rate limit exceeded. Retrying...');
+        const jitter = Math.random() * 200;
+        await new Promise((resolve) => setTimeout(resolve, delay + jitter));
+        delay *= 2; // Exponential backoff
+        retries++;
+      } else {
+        throw error;
       }
     }
-  } catch (error) {
-    console.error('Error: ', error);
+  }
 
+  throw new Error('Max retries exceeded'); // Throwing an error if max retries are exceeded outside the while loop
+}
+
+/************************************************************************************
+ * REQUEST HANDLERS
+ ************************************************************************************/
+/************************************************************************************
+  POST request handler
+************************************************************************************/
+export async function POST(request: NextRequest) {
+  const { session } = useSession();
+
+  try {
+    // Parse the request body
+    const body = JSON.parse(await request.text());
+
+    const paramsJOI = {
+      userId: session?.user?.id,
+      accountId: body.accountId,
+      containerId: body.containerId,
+      containerIdToCombine: body.containerIdToCombine,
+    };
+
+    const validateParams = await validatePostParams(paramsJOI);
+
+    const { accountId, containerId, containerIdToCombine, userId } =
+      validateParams;
+
+    const accessToken = await getAccessToken(userId);
+
+    const data = await combineGtmData(
+      userId,
+      accessToken,
+      accountId,
+      containerId,
+      containerIdToCombine
+    );
+
+    return NextResponse.json(
+      {
+        data: data,
+        meta: {
+          totalResults: 1,
+        },
+        errors: null,
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        status: 200,
+      }
+    );
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      console.error('Validation Error: ', error.message);
+      return new NextResponse(JSON.stringify({ error: error.message }), {
+        status: 400,
+      });
+    }
+
+    console.error('Error: ', error);
     // Return a 500 status code for internal server error
-    return NextResponse.error();
+    return handleError(error);
   }
 }

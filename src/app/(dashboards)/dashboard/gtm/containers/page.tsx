@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import React from 'react';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
-import { redirect } from 'next/navigation';
-import { gtmListContainers } from '@/src/lib/fetch/dashboard/gtm/containers';
-import ContainerTable from '@/src/components/client/GTM/containers/table';
-import { gtmListAccounts } from '@/src/lib/fetch/dashboard/gtm/accounts';
+import ContainerTable from '@/src/app/(dashboards)/dashboard/gtm/containers/table';
+import { auth } from '@clerk/nextjs';
+import { notFound } from 'next/navigation';
+import { listAllGtmContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containers';
+import { currentUserOauthAccessToken } from '@/src/lib/clerk';
+import { listGtmAccounts } from '@/src/lib/fetch/dashboard/gtm/actions/accounts';
 
 export const metadata: Metadata = {
   title: 'Overview',
@@ -13,20 +13,17 @@ export const metadata: Metadata = {
 };
 
 export default async function ContainerPage() {
-  const session = await getServerSession(authOptions);
+  const { userId } = auth();
+  if (!userId) return notFound();
+  const token = await currentUserOauthAccessToken(userId);
 
-  // if no session, redirect to home page
-  if (!session) {
-    redirect('/');
-  }
-
-  //fetch all containers from API
-  const accounts = await gtmListAccounts();
-  const containers = await gtmListContainers();
+  // Fetch
+  const combinedContainers = await listAllGtmContainers(token[0].token);
+  const allAccounts = await listGtmAccounts(token[0].token);
 
   return (
     <>
-      <ContainerTable containers={containers} accounts={accounts} />
+      <ContainerTable accounts={allAccounts} containers={combinedContainers} />
     </>
   );
 }

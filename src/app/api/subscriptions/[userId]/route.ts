@@ -1,10 +1,8 @@
-export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/src/lib/prisma';
 
 import { stripe } from '@/src/lib/stripe';
 import Joi from 'joi';
-import logger from '@/src/lib/logger';
 
 // Get a subscription by ID
 export async function GET(
@@ -57,11 +55,6 @@ export async function GET(
       );
     }
 
-    // Return the subscription as JSON
-    const jsonString = JSON.stringify(response, null, 2);
-
-    logger.debug('DEBUG RESPONSE: ', jsonString);
-
     return NextResponse.json(response, {
       headers: {
         'Content-Type': 'application/json',
@@ -113,11 +106,6 @@ export async function PATCH(
     // Update the subscription in Stripe
     await stripe.subscriptions.update(userId, body);
 
-    // Return the updated subscription as JSON
-    const jsonString = JSON.stringify(response, null, 2);
-
-    logger.debug('DEBUG RESPONSE: ', jsonString);
-
     return NextResponse.json(response, {
       headers: {
         'Content-Type': 'application/json',
@@ -168,9 +156,6 @@ export async function DELETE(
     await stripe.subscriptions.del(userId);
 
     // Return the canceled subscription as JSON
-    const jsonString = JSON.stringify(response, null, 2);
-
-    logger.debug('DEBUG RESPONSE: ', jsonString);
 
     return NextResponse.json(response, {
       headers: {

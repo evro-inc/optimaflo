@@ -7,19 +7,18 @@ import {
   Bars3BottomRightIcon,
   XMarkIcon,
 } from '@heroicons/react/24/solid';
-import { signOut } from 'next-auth/react';
-import router from 'next/router';
 import Link from 'next/link';
+import { SignInButton, SignOutButton } from '@clerk/nextjs';
 
 const getModeClasses = (variant, billingInterval) => {
   let baseClasses = '';
-  let activeClasses = 'relative w-1/2 shadow-sm';
-  let inactiveClasses = 'relative w-1/2';
+  let activeClasses = 'relative shadow-sm';
+  let inactiveClasses = 'relative';
 
   switch (variant) {
     case 'primary':
       baseClasses =
-        'cursor-pointer bg-blue-500  border border-blue-700 rounded-full text-white-500 inline-flex justify-center items-center gap-x-3 text-center hover:bg-blue-300 text-sm lg:text-base font-medium focus:outline-none focus:ring-2 focus:ring-yellow-600 focus:ring-offset-2 focus:ring-offset-white transition px-6 w-7/12 sm:w-auto';
+        'cursor-pointer bg-blue-500 border border-blue-700 rounded-full text-white-500 inline-flex justify-center items-center gap-x-3 text-center hover:bg-blue-300 text-sm lg:text-base font-medium focus:outline-none focus:ring-2 focus:ring-yellow-600 focus:ring-offset-2 focus:ring-offset-white transition px-6 w-7/12 sm:w-auto';
       break;
     case 'signup':
       baseClasses =
@@ -196,25 +195,30 @@ export const ButtonProfile = ({
  */
 export const ButtonSignIn = ({
   variant = 'signup',
-
   text,
   billingInterval,
+  userHasSubscription,
   ...props
 }) => {
   const computedClasses = useMemo(() => {
     const modeClass = getModeClasses(variant, billingInterval);
-
     return [modeClass].join(' ');
   }, [variant, billingInterval]);
 
+  const redirectUrl = userHasSubscription ? '/profile' : '/pricing';
+
   return (
-    <Link
-      href="/api/auth/signin"
-      aria-label="Sign Up with Google"
-      className={`${BASE_BUTTON_CLASSES} ${computedClasses} w-36 mx-5 lg:mx-0`}
+    <SignInButton
+      mode="modal"
+      redirectUrl={redirectUrl}
+      afterSignUpUrl={redirectUrl}
     >
-      <button {...props}>{text}</button>
-    </Link>
+      <div
+        className={`${BASE_BUTTON_CLASSES} ${computedClasses} w-36 mx-5 lg:mx-0`}
+      >
+        <button {...props}>{text}</button>
+      </div>
+    </SignInButton>
   );
 };
 
@@ -227,11 +231,6 @@ export const ButtonSignOut = ({
   billingInterval,
   ...props
 }) => {
-  const handleSignOut = async () => {
-    await signOut();
-    router.push('/');
-  };
-
   const computedClasses = useMemo(() => {
     const modeClass = getModeClasses(variant, billingInterval);
 
@@ -239,13 +238,14 @@ export const ButtonSignOut = ({
   }, [variant, billingInterval]);
 
   return (
-    <button
-      className={`${BASE_BUTTON_CLASSES} ${computedClasses}`}
-      onClick={handleSignOut} // And this line
-      {...props}
-    >
-      {text}
-    </button>
+    <SignOutButton>
+      <button
+        className={`${BASE_BUTTON_CLASSES} ${computedClasses}`}
+        {...props}
+      >
+        {text}
+      </button>
+    </SignOutButton>
   );
 };
 
@@ -296,7 +296,7 @@ export const ButtonNull = ({
 export const ButtonSubscribe = ({
   variant = 'primary',
   text,
-  isSelected, // New prop
+  isselected, // New prop
   billingInterval,
   ...props
 }) => {
@@ -305,7 +305,7 @@ export const ButtonSubscribe = ({
     return [modeClass].join(' ');
   }, [variant, billingInterval]);
 
-  const selectedClasses = isSelected ? 'bg-blue-500 text-white-500' : '';
+  const selectedClasses = isselected ? 'bg-blue-500 text-white-500' : '';
 
   return (
     <button
@@ -366,6 +366,24 @@ export const ButtonWithIcon = ({
       {icon && <span className="mr-2">{icon}</span>}{' '}
       {/* Conditionally render SVG */}
       {text}
+    </button>
+  );
+};
+
+export const Icon = ({
+  variant = 'primary',
+  icon,
+  billingInterval,
+  ...props
+}) => {
+  const computedClasses = useMemo(() => {
+    const modeClass = getModeClasses(variant, billingInterval);
+    return [modeClass].join(' ');
+  }, [variant, billingInterval]);
+
+  return (
+    <button className={`${BASE_BUTTON_CLASSES} ${computedClasses}`} {...props}>
+      {icon && <span>{icon}</span>}{' '}
     </button>
   );
 };

@@ -1,21 +1,19 @@
-export const dynamic = 'force-dynamic';
-import { getServerSession } from 'next-auth';
 import { stripe } from '@/src/lib/stripe';
 import { getURL } from '@/src/lib/helpers';
 import { NextResponse } from 'next/server';
-import { authOptions } from '../auth/[...nextauth]/route';
 import prisma from '@/src/lib/prisma';
 import logger from '@/src/lib/logger';
+import { useSession } from '@clerk/nextjs';
 
 export async function POST() {
-  try {
-    const session = await getServerSession(authOptions);
+  const { session } = useSession();
 
+  try {
     if (
       !session ||
       !session.user ||
       !session.user?.id ||
-      !session.user?.email
+      !session.user?.emailAddresses
     ) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }

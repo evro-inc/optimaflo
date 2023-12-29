@@ -1,4 +1,3 @@
-import logger from '@/src/lib/logger';
 import prisma from '@/src/lib/prisma';
 import { stripe } from '@/src/lib/stripe';
 import Joi from 'joi';
@@ -61,10 +60,6 @@ export async function GET(req: NextRequest) {
       errors: null,
     };
 
-    const jsonString = JSON.stringify(response, null, 2);
-
-    logger.debug('DEBUG RESPONSE: ', jsonString);
-
     return NextResponse.json(response, {
       headers: {
         'Content-Type': 'application/json',
@@ -86,7 +81,7 @@ export async function POST(request: NextRequest) {
 
     // Define a Joi schema for validation
     const schema = Joi.object({
-      id: Joi.string().uuid().required(),
+      id: Joi.string().required(),
       email: Joi.string().email().required(),
     });
 

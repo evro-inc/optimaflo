@@ -1,17 +1,97 @@
-/* eslint-disable no-unused-vars */
-export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
-import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager/v2';
-import { QuotaLimitError } from '@/src/lib/exceptions';
-import { createOAuth2Client } from '@/src/lib/oauth2Client';
-import { getServerSession } from 'next-auth/next';
-import prisma from '@/src/lib/prisma';
+import { ValidationError } from '@/src/lib/exceptions';
 import Joi from 'joi';
-import { isErrorWithStatus } from '@/src/lib/fetch/dashboard';
-import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
-import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
 import logger from '@/src/lib/logger';
+import { auth } from '@clerk/nextjs';
+import { notFound } from 'next/navigation';
+import { listGtmWorkspaces } from '@/src/lib/fetch/dashboard/gtm/actions/workspaces';
+import { redis } from '@/src/lib/redis/cache';
+import { currentUserOauthAccessToken } from '@/src/lib/clerk';
+import { revalidatePath } from 'next/cache';
 
+/************************************************************************************
+ * GET UTILITY FUNCTIONS
+ ************************************************************************************/
+/************************************************************************************
+  Validate the GET parameters
+************************************************************************************/
+async function validateGetParams(params) {
+  const schema = Joi.object({
+    accountId: Joi.string()
+      .pattern(/^\d{8,10}$/)
+      .required(),
+    containerId: Joi.string().required(),
+  });
+
+  const { error, value } = schema.validate(params);
+  if (error) {
+    throw new Error(`Validation Error: ${error.message}`);
+  }
+  return value;
+}
+
+/************************************************************************************
+ * POST UTILITY FUNCTIONS
+ ************************************************************************************/
+/************************************************************************************
+  Validate the POST parameters
+************************************************************************************/
+async function validatePostParams(params) {
+  const schema = Joi.object({
+    accountId: Joi.string()
+      .pattern(/^\d{10}$/)
+      .required(),
+    containerId: Joi.string().required(),
+    name: Joi.string().required(),
+    description: Joi.string().optional(),
+  });
+
+  const { error, value } = schema.validate(params);
+  if (error) {
+    throw new Error(`Validation Error: ${error.message}`);
+  }
+  return value;
+}
+
+/************************************************************************************
+  Function to create GTM containers
+************************************************************************************/
+async function createGtmWorkspace(
+  accessToken,
+  accountId,
+  containerId,
+  name,
+  description
+) {
+  const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces`;
+  const headers = {
+    Authorization: `Bearer ${accessToken}`,
+    'Content-Type': 'application/json',
+  };
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: headers,
+    body: JSON.stringify({
+      name: name,
+      description: description,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `HTTP error! status: ${response.status}. ${response.statusText}`
+    );
+  }
+
+  return await response.json();
+}
+/************************************************************************************
+ * REQUEST HANDLERS
+ ************************************************************************************/
+/************************************************************************************
+  GET request handler
+************************************************************************************/
 export async function GET(
   req: NextRequest,
   {
@@ -23,191 +103,80 @@ export async function GET(
     };
   }
 ) {
+  const { userId } = auth();
+  if (!userId) return notFound();
+
   try {
-    const session = await getServerSession(authOptions);
-    const accountId = params.accountId;
-    const containerId = params.containerId;
-
     const paramsJOI = {
-      accountId: accountId,
-      containerId: containerId,
+      accountId: params.accountId,
+      containerId: params.containerId,
     };
+    const validateParams = await validateGetParams(paramsJOI);
+    const { accountId, containerId } = validateParams;
 
-    const schema = Joi.object({
-      accountId: Joi.string()
-        .pattern(/^\d{10}$/)
-        .required(),
-      containerId: Joi.string().required(),
+    const cachedValue = await redis.get(
+      `gtm:workspaces:${accountId}:${containerId}`
+    );
+
+    if (cachedValue) {
+      return NextResponse.json(JSON.parse(cachedValue), {
+        headers: { 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+    const token = await currentUserOauthAccessToken(userId);
+    const data = await listGtmWorkspaces(
+      token[0].token,
+      accountId,
+      containerId
+    );
+
+    redis.set(
+      `gtm:workspaces:${accountId}:${containerId}`,
+      JSON.stringify(data),
+      'EX',
+      60 * 60 * 24 * 7
+    );
+
+    return NextResponse.json(data, {
+      headers: { 'Content-Type': 'application/json' },
+      status: 200,
     });
-
-    // Validate the accountId against the schema
-    const { error } = schema.validate(paramsJOI);
-
-    if (error) {
-      // If validation fails, return a 400 Bad Request response
+  } catch (error: any) {
+    if (error instanceof ValidationError) {
+      console.error('Validation Error: ', error.message);
       return new NextResponse(JSON.stringify({ error: error.message }), {
         status: 400,
       });
     }
 
-    const userId = session?.user?.id;
-
-    // using userId get accessToken from prisma account table
-    const user = await prisma.account.findFirst({
-      where: {
-        userId: userId,
-      },
+    logger.error('Error: ', error);
+    return new NextResponse(JSON.stringify({ error: error.message }), {
+      status: 500,
     });
-
-    const accessToken = user?.access_token;
-
-    if (!accessToken) {
-      // If the access token is null or undefined, return an error response
-      return new NextResponse(
-        JSON.stringify({ message: 'Access token is missing' }),
-        {
-          status: 401,
-        }
-      );
-    }
-
-    let retries = 0;
-    const MAX_RETRIES = 3;
-
-    while (retries < MAX_RETRIES) {
-      try {
-        const { remaining } = await gtmRateLimit.blockUntilReady(
-          `user:${userId}`,
-          1000
-        );
-
-        if (remaining > 0) {
-          // If the data is not in the cache, fetch it from the API
-          const oauth2Client = createOAuth2Client(accessToken);
-          if (!oauth2Client) {
-            // If oauth2Client is null, return an error response or throw an error
-            return NextResponse.error();
-          }
-
-          // Create a Tag Manager service client
-          const gtm = new tagmanager_v2.Tagmanager({
-            auth: oauth2Client,
-          });
-
-          // List GTM built-in variables
-          const res = await gtm.accounts.containers.workspaces.list({
-            parent: `accounts/${accountId}/containers/${containerId}`,
-          });
-
-          const data = res?.data?.workspace;
-
-          const response = {
-            data: data,
-            meta: {
-              totalResults: data?.length ?? 0,
-            },
-            errors: null,
-          };
-
-          const jsonString = JSON.stringify(response, null, 2);
-
-          logger.debug('DEBUG RESPONSE: ', jsonString);
-
-          return NextResponse.json(response, {
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            status: 200,
-          });
-        } else {
-          // If we've hit the rate limit, throw an error
-          throw new Error('Rate limit exceeded');
-        }
-      } catch (error: unknown) {
-        if (isErrorWithStatus(error) && error.status === 429) {
-          retries++;
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-          if (retries === MAX_RETRIES) {
-            throw new QuotaLimitError();
-          }
-        } else {
-          throw error;
-        }
-      }
-    }
-  } catch (error) {
-    console.error('Error: ', error);
-
-    // Return a 500 status code for internal server error
-    return NextResponse.error();
   }
 }
 
-// create a new workspace
-export async function POST(
-  request: NextRequest,
-  {
-    params,
-  }: {
-    params: {
-      accountId?: string;
-      containerId?: string;
-    };
-  }
-) {
+/************************************************************************************
+  POST request handler
+************************************************************************************/
+export async function POST(request: NextRequest) {
+  const { userId } = auth();
+  if (!userId) return notFound();
+  const accessToken = await currentUserOauthAccessToken(userId);
+
   try {
-    const limit = Number(request.nextUrl.searchParams.get('limit')) || 10;
-    const session = await getServerSession(authOptions);
     const body = JSON.parse(await request.text());
-
-    // Extract query parameters from the URL
-    const accountId = body.accountId;
-    const containerId = body.containerId;
-    const name = body.name;
-    const description = body.description;
-
-    // Create a JavaScript object with the extracted parameters
-    const paramsJOI = {
-      userId: session?.user?.id,
-      accountId,
-      containerId,
-      name,
-      description,
+    const postParams = {
+      accountId: body.accountId,
+      containerId: body.containerId,
+      name: body.name,
+      description: body.description,
     };
 
-    const schema = Joi.object({
-      userId: Joi.string().uuid().required(),
-      accountId: Joi.string()
-        .pattern(/^\d{10}$/)
-        .required(),
-      containerId: Joi.string().required(),
-      name: Joi.string().required(),
-      description: Joi.string().optional(),
-    });
-
-    // Validate the parameters against the schema
-    const { error } = schema.validate(paramsJOI);
-
-    if (error) {
-      // If validation fails, return a 400 Bad Request response
-      return new NextResponse(JSON.stringify({ error: error.message }), {
-        status: 400,
-      });
-    }
-
-    const { userId } = paramsJOI;
-
-    // using userId get accessToken from prisma account table
-    const user = await prisma.account.findFirst({
-      where: {
-        userId: userId,
-      },
-    });
-
-    const accessToken = user?.access_token;
+    const validatedParams = await validatePostParams(postParams);
 
     if (!accessToken) {
-      // If the access token is null or undefined, return an error response
       return new NextResponse(
         JSON.stringify({ message: 'Access token is missing' }),
         {
@@ -216,143 +185,27 @@ export async function POST(
       );
     }
 
-    // Fetch subscription data for the user
-    const subscriptionData = await prisma.subscription.findFirst({
-      where: {
-        userId: userId,
-      },
+    // Call the function to create a GTM workspace
+    const workspaceData = await createGtmWorkspace(
+      accessToken[0].token,
+      validatedParams.accountId,
+      validatedParams.containerId,
+      validatedParams.name,
+      validatedParams.description
+    );
+
+    const path = request.nextUrl.searchParams.get('path') || '/'; // should it fall back on the layout?
+
+    revalidatePath(path);
+
+    return NextResponse.json(workspaceData, {
+      headers: { 'Content-Type': 'application/json' },
+      status: 200,
     });
-
-    if (!subscriptionData) {
-      return new NextResponse(
-        JSON.stringify({ message: 'Subscription data not found' }),
-        {
-          status: 403,
-        }
-      );
-    }
-
-    const tierLimitRecord = await prisma.tierLimit.findFirst({
-      where: {
-        Feature: {
-          name: 'GTMWorkspaces', // Replace with the actual feature name
-        },
-        Subscription: {
-          userId: userId, // Assuming Subscription model has a userId field
-        },
-      },
-      include: {
-        Feature: true,
-        Subscription: true,
-      },
+  } catch (error: any) {
+    logger.error('Error: ', error);
+    return new NextResponse(JSON.stringify({ error: error.message }), {
+      status: 500,
     });
-
-    if (
-      !tierLimitRecord ||
-      tierLimitRecord.createUsage >= tierLimitRecord.createLimit
-    ) {
-      return new NextResponse(
-        JSON.stringify({ message: 'Feature limit reached' }),
-        {
-          status: 403,
-        }
-      );
-    }
-
-    let retries = 0;
-    const MAX_RETRIES = 3;
-
-    while (retries < MAX_RETRIES) {
-      try {
-        // Check if we've hit the rate limit
-        const { remaining } = await gtmRateLimit.blockUntilReady(
-          `user:${userId}`,
-          1000
-        );
-
-        if (remaining > 0) {
-          // If we haven't hit the rate limit, proceed with the API request
-
-          // Set the user's access token
-          const oauth2Client = createOAuth2Client(accessToken);
-          if (!oauth2Client) {
-            // If oauth2Client is null, return an error response or throw an error
-            return NextResponse.error();
-          }
-
-          // Create a Tag Manager service client
-          const gtm = new tagmanager_v2.Tagmanager({
-            auth: oauth2Client,
-          });
-
-          await gtm.accounts.containers.workspaces.create({
-            parent: `accounts/${accountId}/containers/${containerId}`,
-            requestBody: {
-              name: body.name,
-              description: body.description,
-            },
-          });
-
-          await prisma.tierLimit.update({
-            where: {
-              id: tierLimitRecord.id,
-            },
-            data: {
-              createUsage: {
-                increment: 1,
-              },
-            },
-          });
-
-          // After creating the new container, fetch the updated list of containers
-          const updatedWorkspaces =
-            await gtm.accounts.containers.workspaces.list({
-              parent: `accounts/${accountId}/containers/${containerId}`,
-            });
-
-          const total = updatedWorkspaces.data.workspace?.length || 0;
-
-          const response = {
-            data: updatedWorkspaces.data.workspace,
-            meta: {
-              total,
-              pageNumber: 1,
-              totalPages: Math.ceil(total / limit),
-              pageSize: limit,
-            },
-            errors: null,
-          };
-
-          const jsonString = JSON.stringify(response, null, 2);
-
-          logger.debug('DEBUG RESPONSE: ', jsonString);
-
-          return NextResponse.json(response, {
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            status: 200,
-          });
-        } else {
-          // If we've hit the rate limit, throw an error
-          throw new Error('Rate limit exceeded');
-        }
-      } catch (error: unknown) {
-        if (isErrorWithStatus(error) && error.status === 429) {
-          retries++;
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-          if (retries === MAX_RETRIES) {
-            throw new QuotaLimitError();
-          }
-        } else {
-          throw error;
-        }
-      }
-    }
-  } catch (error) {
-    console.error('Error: ', error);
-
-    // Return a 500 status code for internal server error
-    return NextResponse.error();
   }
 }

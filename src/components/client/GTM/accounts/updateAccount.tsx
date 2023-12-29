@@ -1,63 +1,184 @@
-import { revalidatePath } from 'next/cache';
-import { cookies, headers } from 'next/headers';
-import { getURL } from '@/src/lib/helpers';
+'use client'; // Ensures that this file is only used in a client-side environment
 
-function AccountFormUpdate() {
-  const handleSubmit = async (formData: FormData) => {
-    'use server';
+// Importing necessary hooks and functions from Redux and other libraries
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  clearSelectedRows,
+  selectTable,
+  setIsLimitReached,
+} from '@/src/app/redux/tableSlice';
+import { selectIsLoading, setLoading } from '@/src/app/redux/globalSlice';
+import { useEffect, useRef } from 'react';
+import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { updateAccounts } from '@/src/lib/fetch/dashboard/gtm/actions/accounts';
+import logger from '@/src/lib/logger';
+import { z } from 'zod';
+import { UpdateAccountSchema } from '@/src/lib/schemas/accounts';
+import { AnimatePresence, motion } from 'framer-motion';
+import { XMarkIcon } from '@heroicons/react/24/solid';
+import { ButtonGroup } from '../../ButtonGroup/ButtonGroup';
+import { LimitReached } from '../../modals/limitReached';
+import { UpdateResult } from '@/src/lib/types/types';
+
+// Defining the type for form data using Zod
+type Forms = z.infer<typeof UpdateAccountSchema>;
+
+// Functional component for updating account forms
+function AccountFormUpdate({ showOptions, onClose, selectedRows }) {
+  // Using Redux hooks for dispatching actions and selecting state
+  const dispatch = useDispatch();
+  const { isLimitReached } = useSelector(selectTable);
+  const isLoading = useSelector(selectIsLoading);
+
+  // useRef to keep track of form elements
+  const formRefs = useRef<(HTMLFormElement | null)[]>([]);
+
+  // Setting up form handling using react-hook-form with Zod for validation
+  const {
+    register,
+    handleSubmit,
+    reset,
+    control,
+    formState: { errors },
+  } = useForm<Forms>({
+    defaultValues: {
+      forms: [{ accountId: '', name: '' }],
+    },
+    resolver: zodResolver(UpdateAccountSchema),
+  });
+
+  // Managing dynamic form fields using react-hook-form
+  const { fields } = useFieldArray({ control, name: 'forms' });
+
+  // useEffect to reset form values based on selected rows
+  useEffect(() => {
+    const initialForms = Object.values(selectedRows).map((account: any) => ({
+      accountId: account?.accountId || '',
+      name: account?.name || '',
+    }));
+    reset({ forms: initialForms });
+  }, [selectedRows, reset]);
+
+  // Function to process form submission
+  const processForm: SubmitHandler<Forms> = async (data) => {
+    const { forms } = data;
+
+    // Dispatching loading state
+    dispatch(setLoading(true));
+
     try {
-      const cookie: any = cookies();
-      const cookieHeader: any = headers().get('cookie');
-      const baseURL = getURL();
+      // Updating accounts with the API call
+      const res = (await updateAccounts({ forms })) as UpdateResult;
 
-      const name = formData.get('name');
-      const accountId = formData.get('accountId');
+      // Clearing selected rows and closing the form on success
+      dispatch(clearSelectedRows());
+      onClose();
+      reset({ forms: [{ accountId: '', name: '' }] });
 
-      // Define headers
-      const requestHeaders = {
-        'Content-Type': 'application/json',
-      };
-
-      // Add Cookie header if it's not null
-      if (cookie) {
-        requestHeaders['Cookie'] = cookieHeader;
+      // Handling response based on success or limit reached
+      if (res && res.success) {
+        // Reset the forms here
+        reset({
+          forms: [
+            {
+              accountId: '',
+              name: '',
+            },
+          ],
+        });
+      } else if (res && res.limitReached) {
+        // Show the LimitReached modal
+        dispatch(setIsLimitReached(true));
       }
-
-      const response = await fetch(
-        `${baseURL}/api/dashboard/gtm/accounts/${accountId}`,
-        {
-          method: 'PATCH',
-          body: JSON.stringify({ name, accountId }),
-          headers: requestHeaders,
-        }
-      );
-
-      const resText = await response.text();
-
-      JSON.parse(resText);
-
-      revalidatePath('/dashboard/gtm/accounts');
     } catch (error) {
-      console.error(error);
+      // Logging errors
+      logger.error('Error updating accounts:', error);
+    } finally {
+      dispatch(setLoading(false));
     }
   };
 
+  // Function to handle form close
+  const handleClose = () => {
+    reset({ forms: [{ accountId: '', name: '' }] });
+    dispatch(clearSelectedRows());
+    onClose();
+  };
+
   return (
-    <div>
-      <form action={handleSubmit}>
-        <label>
-          Account ID:
-          <input type="text" name="accountId" />
-        </label>
+    <AnimatePresence>
+      {showOptions && (
+        <motion.div
+          initial={{ opacity: 0, y: -50 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -50 }}
+          className="fixed top-0 left-0 w-full h-full flex flex-col items-center justify-start z-50 bg-white-500 overflow-y-auto"
+        >
+          {/* Close Button */}
+          <button
+            onClick={handleClose}
+            className="absolute top-0 right-0 font-bold py-2 px-4"
+          >
+            <XMarkIcon className="w-14 h-14" />
+          </button>
 
-        <label>
-          New name:
-          <input type="text" name="name" />{' '}
-        </label>
+          <ButtonGroup
+            buttons={[
+              {
+                text: isLoading ? 'Submitting...' : 'Submit',
+                type: 'submit',
+                form: 'updateAccount',
+              },
+            ]}
+          />
 
-        <button type="submit">Submit</button>
-      </form>
-    </div>
+          <div className="container mx-auto /* ...container props */">
+            {fields.map((field, index) => (
+              <div key={field.id} /* ...div props */>
+                {/* Form and other UI elements */}
+                <form
+                  ref={(el) => (formRefs.current[index] = el)}
+                  onSubmit={handleSubmit(processForm)}
+                  id="updateAccount"
+                >
+                  <div className="grid gap-4 lg:gap-6">
+                    {/* Grid */}
+                    <div className="grid grid-cols-1 gap-4 lg:gap-6">
+                      <div className="pb-10">
+                        <label
+                          htmlFor="accountId"
+                          className="block text-sm text-gray-700 font-medium dark:text-white"
+                        >
+                          Current Account Name: {field.name}
+                        </label>
+                        <input
+                          type="text"
+                          {...register(`forms.${index}.name`)}
+                          placeholder="New Account Name"
+                          className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
+                        />
+                        {errors.forms?.[index]?.name && (
+                          <p className="text-red-500 text-xs italic">
+                            {errors.forms?.[index]?.name?.message}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    {/* End Grid */}
+
+                    {/* End Grid */}
+                  </div>
+                </form>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+      {isLimitReached && (
+        <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
+      )}
+    </AnimatePresence>
   );
 }
 

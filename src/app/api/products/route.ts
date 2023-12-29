@@ -1,8 +1,6 @@
-export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/src/lib/prisma';
 import Joi from 'joi';
-import logger from '@/src/lib/logger';
 
 export async function GET(req: NextRequest) {
   try {
@@ -66,11 +64,6 @@ export async function GET(req: NextRequest) {
       errors: null,
     };
 
-    // Return the response as JSON
-    const jsonString = JSON.stringify(response, null, 2);
-
-    logger.info('DEBUG RESPONSE: ', jsonString);
-
     return NextResponse.json(response, {
       headers: {
         'Content-Type': 'application/json',
@@ -112,9 +105,6 @@ export async function POST(request: NextRequest) {
     });
 
     // Return the created product as JSON
-    const jsonString = JSON.stringify(response, null, 2);
-
-    logger.debug('DEBUG RESPONSE: ', jsonString);
 
     return NextResponse.json(response, {
       headers: {
