@@ -817,7 +817,7 @@ export async function updateContainers(formData) {
 
   if (successfulCreations.length > 0) {
     await prisma.tierLimit.update({
-      where: { id: tierLimitRecord.id },
+      where: { id: tierLimitResponse.id },
       data: { updateUsage: { increment: successfulCreations.length } },
     });
 
