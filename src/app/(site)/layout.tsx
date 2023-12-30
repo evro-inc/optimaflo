@@ -27,7 +27,7 @@ export default function RootLayout(/* {
         <Providers>
           <html
             lang="en"
-            suppressHydrationWarning
+            suppressHydrationWarning 
             className={`${openSans.className}`}
           >
             <body>
