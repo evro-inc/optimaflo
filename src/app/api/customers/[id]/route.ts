@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/src/lib/prisma';
 import Joi from 'joi';
-import logger from '@/src/lib/logger';
-// adjust the path based on your project structure
 
 export async function GET(
   request: NextRequest,
@@ -14,7 +12,7 @@ export async function GET(
 ) {
   try {
     // Define a Joi schema for the customer ID
-    const schema = Joi.string().uuid().required();
+    const schema = Joi.string().required();
 
     // Validate the customer ID against the schema
     const { error } = schema.validate(params.id);
@@ -36,11 +34,6 @@ export async function GET(
         { status: 404 }
       );
     }
-
-    // Return the customer as JSON
-    const jsonString = JSON.stringify(customer, null, 2);
-
-    logger.debug('DEBUG RESPONSE: ', jsonString);
 
     return NextResponse.json(customer, {
       headers: {
@@ -74,7 +67,7 @@ export async function PATCH(
     // Validate the incoming data
     const schema = Joi.object({
       stripeCustomerId: Joi.string().optional(),
-      userId: Joi.string().uuid().optional(),
+      userId: Joi.string().optional(),
     });
 
     const { error } = schema.validate(json);

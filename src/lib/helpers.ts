@@ -10,7 +10,6 @@ export const getURL = () => {
   } else {
     // Ensure the URL uses https if deployed on Vercel
     vercelUrl = `https://${vercelUrl}`;
-    console.log('vercelUrl', vercelUrl);
   }
 
   if (!vercelUrl) {

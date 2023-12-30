@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/src/lib/prisma';
 import Joi from 'joi';
-import logger from '@/src/lib/logger';
 
 export async function GET(
   req: NextRequest,
@@ -58,10 +57,6 @@ export async function GET(
       },
       errors: null,
     };
-
-    const jsonString = JSON.stringify(response, null, 2);
-
-    logger.debug('DEBUG RESPONSE: ', jsonString);
 
     return NextResponse.json(response, {
       headers: {

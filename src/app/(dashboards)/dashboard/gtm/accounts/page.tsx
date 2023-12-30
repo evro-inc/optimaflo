@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import React from 'react';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
-import { redirect } from 'next/navigation';
-import AccountTable from '@/src/components/client/GTM/accounts/table';
+import { notFound } from 'next/navigation';
+import AccountTable from './table';
+import { auth } from '@clerk/nextjs';
+import { currentUserOauthAccessToken } from '@/src/lib/clerk';
+import { listGtmAccounts } from '@/src/lib/fetch/dashboard/gtm/actions/accounts';
 
 export const metadata: Metadata = {
   title: 'Overview',
@@ -11,18 +12,14 @@ export const metadata: Metadata = {
 };
 
 export default async function AccountPage() {
-  const session = await getServerSession(authOptions);
-
-  // if no session, redirect to home page
-  if (!session) {
-    redirect('/');
-  }
+  const { userId } = auth();
+  if (!userId) return notFound();
+  const token = await currentUserOauthAccessToken(userId);
+  const accounts = await listGtmAccounts(token[0].token);
 
   return (
     <>
-      <h1>Account</h1>
-
-      <AccountTable />
+      <AccountTable accounts={accounts} />
     </>
   );
 }

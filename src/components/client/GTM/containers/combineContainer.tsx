@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { combineContainers } from '@/src/lib/actions/containers';
+import { combineContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containers';
 import { LimitReached } from '../../modals/limitReached';
 import { ButtonGroup } from '../../ButtonGroup/ButtonGroup';
 import { XMarkIcon } from '@heroicons/react/24/solid';
@@ -19,7 +19,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   FormUpdateContainerProps,
   UpdateContainersResult,
-} from '@/types/types';
+} from '@/src/lib/types/types';
 import logger from '@/src/lib/logger';
 
 // Type for the entire form data

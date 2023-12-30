@@ -2,7 +2,7 @@
 import React from 'react';
 import { ButtonWithIcon } from '../Button/Button';
 import { useDispatch, useSelector } from 'react-redux';
-import { toggleUpdateWorkspace } from '@/src/app/redux/workspaceSlice';
+import { toggleUpdate } from '@/src/app/redux/sharedSlice';
 import { selectTable } from '@/src/app/redux/tableSlice';
 
 function ButtonUpdate() {
@@ -33,7 +33,7 @@ function ButtonUpdate() {
         </svg>
       }
       billingInterval={undefined}
-      onClick={() => dispatch(toggleUpdateWorkspace())}
+      onClick={() => dispatch(toggleUpdate())}
     />
   );
 }

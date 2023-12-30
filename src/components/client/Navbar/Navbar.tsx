@@ -1,19 +1,14 @@
 'use client';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useSession, signOut } from 'next-auth/react';
-import Image from 'next/image';
 
 import { useState, useEffect, useRef } from 'react';
 import React from 'react';
 import Logo from '../../icons/Logo';
-import {
-  Button,
-  ButtonProfile,
-  ButtonToggle,
-  ButtonSignIn,
-} from '../../client/Button/Button';
-import { LinkBody } from '../Links/Links';
+import { ButtonSignIn, ButtonToggle } from '../../client/Button/Button';
+import { LinkSignUp, LinkNav } from '../Links/Links';
+import { UserButton } from '@clerk/nextjs';
+import { useSession } from '@clerk/clerk-react';
+import { getSubscriptions } from '@/src/lib/fetch/subscriptions';
 
 const navigation = [
   { name: 'About', href: '/about' },
@@ -24,32 +19,34 @@ const navigation = [
 
 export default function Navbar() {
   const menuRef = useRef<HTMLDivElement | null>(null);
-
-  const router = useRouter();
-  const [showMenu, setShowMenu] = useState(false);
-
-  const { data: session } = useSession();
-
-  // This function checks if the clicked area is outside the menu
-  const handleClickOutside = (event) => {
-    if (menuRef.current && !menuRef.current.contains(event.target)) {
-      setShowMenu(false);
-    }
-  };
+  const { session } = useSession();
+  const [hasSubscription, setHasSubscription] = useState(false); // State to track subscription status
 
   useEffect(() => {
-    // When the component is mounted, it adds the "click" event listener
-    document.addEventListener('click', handleClickOutside);
-    return () => {
-      // When the component is unmounted, it removes the "click" event listener
-      document.removeEventListener('click', handleClickOutside);
-    };
-  }, []);
+    const fetchSubscriptions = async () => {
+      if (session?.user?.id) {
+        try {
+          const subscriptions = await getSubscriptions(session.user.id);
 
-  const handleSignOut = async () => {
-    await signOut();
-    router.push('/');
-  };
+          if (subscriptions.length > 0) {
+            // Check if the first subscription is active
+            const isActiveSubscription = subscriptions[0].status === 'active';
+            setHasSubscription(isActiveSubscription);
+          } else {
+            // No subscriptions found
+            setHasSubscription(false);
+          }
+        } catch (error) {
+          console.error('Error fetching subscriptions:', error);
+          setHasSubscription(false); // Set to false in case of error
+        }
+      } else {
+        setHasSubscription(false); // Set to false if no user session
+      }
+    };
+
+    fetchSubscriptions();
+  }, [session?.user?.id]);
 
   return (
     <div className="relative">
@@ -78,21 +75,7 @@ export default function Navbar() {
                 {session?.user && (
                   <div className="ml-3 relative">
                     <div className="block lg:hidden">
-                      <ButtonProfile
-                        variant="circle"
-                        onClick={() => setShowMenu(!showMenu)}
-                        id="user-menu"
-                        aria-label="User menu"
-                        aria-haspopup="true"
-                        billingInterval={''}
-                      >
-                        <Image
-                          className="object-cover rounded-full"
-                          layout="fill"
-                          src={session?.user.image}
-                          alt="Picture of the author"
-                        />
-                      </ButtonProfile>
+                      <UserButton afterSignOutUrl="/" />
                     </div>
                   </div>
                 )}
@@ -104,15 +87,6 @@ export default function Navbar() {
                   aria-controls="navbar-collapse-with-animation"
                   aria-label="Toggle navigation"
                 />
-                {/* <ButtonTheme
-                  className={`${THEME_BUTTON_CLASSES}`}
-                  variant="primary"
-                  size="small"
-                  text=""
-                  billingInterval={''}
-                  type="button"
-                  aria-label="Toggle Dark Mode"
-                /> */}
               </div>
             </div>
           </div>
@@ -132,7 +106,7 @@ export default function Navbar() {
                         : ''
                     }`}
                   >
-                    <LinkBody
+                    <LinkNav
                       href={item.href}
                       variant="nav"
                       text={item.name}
@@ -145,24 +119,8 @@ export default function Navbar() {
               <div className="lg:py-2">
                 <div className="flex lg:flex-row items-center font-medium text-gray-500 hover:text-blue-600 lg:border-l p-0 sm:p-[10px] lg:border-gray-300 w-full lg:w-auto">
                   {session?.user && (
-                    <div className="ml-3 relative">
-                      <div className="pr-5 hidden lg:block">
-                        <ButtonProfile
-                          variant="circle"
-                          onClick={() => setShowMenu(!showMenu)}
-                          id="user-menu"
-                          aria-label="User menu"
-                          aria-haspopup="true"
-                          billingInterval={''}
-                        >
-                          <Image
-                            className="object-cover rounded-full"
-                            layout="fill"
-                            src={session?.user.image}
-                            alt="Picture of the author"
-                          />
-                        </ButtonProfile>
-                      </div>
+                    <div className="hidden lg:flex items-center font-medium text-gray-500 hover:text-blue-600 p-0 sm:p-[10px] lg:border-gray-300 w-full lg:w-auto">
+                      <UserButton afterSignOutUrl="/" />
                     </div>
                   )}
                   {!session?.user && (
@@ -171,64 +129,24 @@ export default function Navbar() {
                       <ButtonSignIn
                         variant="signupNav"
                         billingInterval={''}
-                        aria-label="Get Started with Google Sign In"
-                        text="Get Started"
-                      />
-                      <LinkBody
-                        variant="login"
-                        href="/api/auth/signin"
-                        ariaLabel="Log in with Google"
+                        aria-label="Log in with Google Sign In"
                         text="Log In"
+                        userHasSubscription={hasSubscription}
+                      />
+                      <LinkSignUp
+                        variant="login"
+                        ariaLabel="Get Started with Google"
+                        text="Get Started"
+                        userHasSubscription={hasSubscription}
                       />
                     </div>
                   )}
-
-                  <div className="space-x-8 hidden lg:block">
-                    {/* <ButtonTheme
-                      className={`${THEME_BUTTON_CLASSES}`}
-                      variant="primary"
-                      size="small"
-                      text=""
-                      billingInterval={''}
-                      type="button"
-                      aria-label="Toggle Dark Mode"
-                    /> */}
-                  </div>
                 </div>
               </div>
             </div>
           </div>
         </nav>
       </header>
-      {showMenu && (
-        <div
-          className="origin-top-right absolute right-40 mt-2 w-48 rounded-md shadow-lg bg-white-500 ring-1 ring-black ring-opacity-5 focus:outline-none"
-          role="menu"
-          aria-orientation="vertical"
-          aria-labelledby="user-menu"
-        >
-          <div className="py-1 rounded-md bg-white shadow-xs" role="none">
-            <Link
-              href="/profile"
-              className="block px-4 py-2 text-sm hover:bg-blue-500 hover:text-white-500 w-full text-left"
-              role="menuitem"
-              onClick={() => {
-                setShowMenu(false);
-              }}
-            >
-              Your Profile
-            </Link>
-
-            <Button
-              onClick={handleSignOut}
-              className="block px-4 py-2 text-sm hover:bg-blue-500 hover:text-white-500 w-full text-left"
-              role="menuitem"
-              billingInterval={''}
-              text="Sign out"
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }

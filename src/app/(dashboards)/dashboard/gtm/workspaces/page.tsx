@@ -1,52 +1,36 @@
 import React from 'react';
-import WorkspaceTable from '@/src/components/client/GTM/workspaces/table';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/src/app/api/auth/[...nextauth]/route';
-import { getAccessToken } from '@/src/lib/fetch/apiUtils';
-import { redirect } from 'next/navigation';
-import { listGtmAccounts } from '@/src/app/api/dashboard/gtm/accounts/route';
-import { listGtmContainers } from '@/src/app/api/dashboard/gtm/accounts/[accountId]/containers/route';
-import { listGtmWorkspaces } from '@/src/app/api/dashboard/gtm/accounts/[accountId]/containers/[containerId]/workspaces/route';
+import { notFound } from 'next/navigation';
+import { auth } from '@clerk/nextjs';
+import WorkspaceTable from './server/table';
+import { currentUserOauthAccessToken } from '@/src/lib/clerk';
+import { fetchAllWorkspaces } from '@/src/lib/fetch/dashboard/gtm/actions/workspaces';
 
+async function getWorkspaces() {
+  try {
+    const { userId } = auth();
+    if (!userId) return notFound();
+    const token = await currentUserOauthAccessToken(userId);
+    const workspaces = await fetchAllWorkspaces(token[0].token);
+
+    const itemsPerPage = 10;
+    const totalPages = Math.ceil(workspaces.length / itemsPerPage);
+
+    return { props: { workspaces, totalPages } };
+  } catch (error: any) {
+    console.error('Error fetching workspaces:', error.message);
+    return { props: { workspaces: [], totalPages: 0 } }; // Return empty array and 0 totalPages in case of error
+  }
+}
 
 export default async function WorkspacePage() {
-  const session = await getServerSession(authOptions);
-  const userId = session?.user?.id as string;
-  const accessToken = await getAccessToken(userId);
+  const { userId } = auth();
+  if (!userId) return notFound();
 
-  // if no session, redirect to home page
-  if (!session) {
-    redirect('/');
-  }
+  const data = await getWorkspaces();
 
-  // Fetch accounts
-  const accounts = await listGtmAccounts(userId, accessToken);
-
-  console.log('accounts', accounts);
-  
-
-  // Fetch containers for each account in parallel
-  const containersPromises = accounts.data.map(account =>
-    listGtmContainers(userId, accessToken, account.accountId)
-  );
-  
-  const containersResults = await Promise.all(containersPromises);
-  const containerList = containersResults.map(result => result[0].data).flat();  
-
-  console.log('containerList', containerList);
-
-
-  const workspacesPromises = containerList.map(container =>
-    listGtmWorkspaces(userId, accessToken, container.accountId, container.containerId)
-  );
-  const workspacesResults = await Promise.all(workspacesPromises);
-  const workspaceList = workspacesResults.flatMap(result => result ? result.data : []);
-
-
-  
   return (
     <>
-      <WorkspaceTable containers={containerList} workspaces={workspaceList} />
+      <WorkspaceTable workspaces={data.props.workspaces} />
     </>
   );
 }

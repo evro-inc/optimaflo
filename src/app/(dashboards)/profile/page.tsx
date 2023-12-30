@@ -5,11 +5,11 @@ import { useDispatch, useSelector } from 'react-redux';
 import { selectSubscriber } from '../../redux/subscriberSlice';
 import { setLoading } from '../../redux/globalSlice';
 import { postData } from '@/src/lib/helpers';
-import { useSession } from 'next-auth/react';
 import React from 'react';
 import { Button } from '@/src/components/client/Button/Button';
 import LoadingDots from '@/src/components/server/LoadingDots/LoadingDots';
 import logger from '@/src/lib/logger';
+import { useSession } from '@clerk/nextjs';
 
 interface Props {
   title: string;
@@ -38,7 +38,7 @@ export default function Profile() {
 
   const { subscription, isLoading } = useSelector(selectSubscriber);
 
-  const { data: session } = useSession();
+  const { session } = useSession();
 
   const redirectToCustomerPortal = async () => {
     dispatch(setLoading(true));
