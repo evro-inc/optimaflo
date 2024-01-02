@@ -1,6 +1,7 @@
 // TableHeader.jsx
 import React from 'react';
 import { TableHead, TableHeader, TableRow } from '@/src/components/ui/table';
+import { Checkbox } from "@/src/components/ui/checkbox"
 
 interface TableHeaderProps {
   headers: string[];
@@ -17,7 +18,7 @@ const TableHeaderRow: React.FC<TableHeaderProps> = ({
     <TableHeader>
       <TableRow>
         <TableHead scope="col" className="pl-6 py-3 text-left">
-          <input type="checkbox" onChange={toggleAll} checked={allSelected} />
+          <Checkbox id="select-all" checked={allSelected} onCheckedChange={toggleAll} />
         </TableHead>
 
         {headers.map((header, index) => (

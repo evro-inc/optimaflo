@@ -40,4 +40,19 @@ export const NavItems = [
             },
         ],
     },
+    {
+        title: "Google Analytics 4",
+        icon: MixIcon,
+        href: "/dashboard/ga",
+        color: "text-orange-500",
+        isChidren: true,
+        children: [
+            {
+                title: "Accounts",
+                icon: MixIcon,
+                color: "text-pink-500",
+                href: "/dashboard/gtm/accounts",
+            },
+        ],
+    },
 ];

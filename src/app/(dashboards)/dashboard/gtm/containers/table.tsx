@@ -32,6 +32,8 @@ import TablePagination from '@/src/components/client/UI/TablePagination';
 import { ErrorMessage } from '@/src/components/client/modals/Error';
 import toast from 'react-hot-toast';
 import { Table, TableBody, TableFooter } from '@/src/components/ui/table';
+import { Checkbox } from "@/src/components/ui/checkbox"
+
 
 //dynamic import for buttons
 const LimitReachedModal = dynamic(
@@ -159,27 +161,27 @@ export default function ContainerTable({ accounts, containers }) {
         columns={[
           {
             render: (item) => (
-              <input
-                type="checkbox"
+              <Checkbox
+                id={`checkbox-${item.containerId}`}
                 checked={!!selectedRows[item.containerId]}
-                onChange={() => toggleRow(item)}
+                onCheckedChange={() => toggleRow(item)}
               />
             ),
           },
           {
-            render: (item) => <span>{item.name}</span>,
+            render: (item) => <label>{item.name}</label>,
           },
           {
-            render: (item) => <span>{item.containerId}</span>,
+            render: (item) => <label>{item.containerId}</label>,
           },
           {
-            render: (item) => <span>{item.publicId}</span>,
+            render: (item) => <label>{item.publicId}</label>,
           },
           {
-            render: (item) => <span>{item.accountId}</span>,
+            render: (item) => <label>{item.accountId}</label>,
           },
           {
-            render: (item) => <span>{item.usageContext}</span>,
+            render: (item) => <label>{item.usageContext}</label>,
           },
         ]}
       />
