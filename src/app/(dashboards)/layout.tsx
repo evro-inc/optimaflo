@@ -22,7 +22,7 @@ export default async function DashboardLayout({
     <ReduxProvider>
       <Providers>
         <html lang="en">
-          <body className="bg-gray-50">
+          <body className="flex h-screen border-collapse overflow-hidden">
             {/* ========== HEADER ========== */}
             <NavApp />
             {/* ========== END HEADER ========== */}
@@ -31,7 +31,7 @@ export default async function DashboardLayout({
             <SideBar />
 
             {/* Content */}
-            <div className="w-full pt-10 px-4 sm:px-6 md:px-8 lg:pl-72">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden pt-16 bg-secondary/10 pb-1">
               {/* Page Heading */}
               {children}
               <Toaster

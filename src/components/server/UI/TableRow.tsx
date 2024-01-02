@@ -1,16 +1,17 @@
 // TableRow.jsx
 import React from 'react';
+import { TableCell, TableRow } from '@/src/components/ui/table';
 
-const TableRow = ({ item, columns }) => {
+const TableRows = ({ item, columns }) => {
   return (
-    <tr>
+    <TableRow>
       {columns.map((column, index) => (
-        <td key={index} className="px-6 py-2 whitespace-nowrap">
+        <TableCell key={index} className="px-6 py-2">
           {column.render(item)}
-        </td>
+        </TableCell>
       ))}
-    </tr>
+    </TableRow>
   );
 };
 
-export default TableRow;
+export default TableRows;

@@ -1,5 +1,6 @@
 // TableHeader.jsx
 import React from 'react';
+import { TableHead, TableHeader, TableRow } from '@/src/components/ui/table';
 
 interface TableHeaderProps {
   headers: string[];
@@ -7,34 +8,30 @@ interface TableHeaderProps {
   allSelected: boolean;
 }
 
-const TableHeader: React.FC<TableHeaderProps> = ({
+const TableHeaderRow: React.FC<TableHeaderProps> = ({
   headers,
   toggleAll,
   allSelected,
 }) => {
   return (
-    <thead className="bg-gray-50 dark:bg-slate-900">
-      <tr>
-        <th scope="col" className="pl-6 py-3 text-left">
-          <input
-            type="checkbox"
-            onChange={toggleAll}
-            checked={allSelected}
-            // Other checkbox properties
-          />
-        </th>
+    <TableHeader>
+      <TableRow>
+        <TableHead scope="col" className="pl-6 py-3 text-left">
+          <input type="checkbox" onChange={toggleAll} checked={allSelected} />
+        </TableHead>
+
         {headers.map((header, index) => (
-          <th key={index} scope="col" className="px-6 py-3 text-left">
+          <TableHead key={index} scope="col" className="px-6 py-3 text-left">
             <div className="flex items-center gap-x-2">
-              <span className="text-xs font-semibold uppercase tracking-wide text-gray-800 dark:text-gray-200">
+              <span className="text-xs font-semibold uppercase tracking-wide">
                 {header}
               </span>
             </div>
-          </th>
+          </TableHead>
         ))}
-      </tr>
-    </thead>
+      </TableRow>
+    </TableHeader>
   );
 };
 
-export default TableHeader;
+export default TableHeaderRow;

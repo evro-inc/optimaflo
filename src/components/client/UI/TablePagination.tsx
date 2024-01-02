@@ -2,6 +2,7 @@
 import { setCurrentPage } from '@/src/app/redux/tableSlice';
 import React from 'react';
 import { useDispatch } from 'react-redux';
+import { Button } from '@/src/components/ui/button';
 
 const TablePagination = ({ currentPage, totalPages }) => {
   const dispatch = useDispatch();
@@ -47,7 +48,7 @@ const TablePagination = ({ currentPage, totalPages }) => {
 
       {/* Pagination buttons */}
       <div className="inline-flex gap-x-2">
-        <button
+        <Button
           type="button"
           onClick={prevPage}
           disabled={currentPage <= 1}
@@ -56,8 +57,8 @@ const TablePagination = ({ currentPage, totalPages }) => {
           {/* SVG for Previous */}
           {/* ... */}
           Prev
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           onClick={nextPage}
           disabled={currentPage >= totalPages}
@@ -66,7 +67,7 @@ const TablePagination = ({ currentPage, totalPages }) => {
           Next
           {/* SVG for Next */}
           {/* ... */}
-        </button>
+        </Button>
       </div>
     </div>
   );

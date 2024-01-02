@@ -5,6 +5,7 @@ import globalSlice from './globalSlice';
 import subscriberReducer from './subscriberSlice';
 import tableSlice from './tableSlice';
 import workspaceReducer from './sharedSlice';
+import sidebarReducer from './sidebarSlice';
 
 const rootReducer = combineReducers({
   user: userReducer,
@@ -12,6 +13,7 @@ const rootReducer = combineReducers({
   subscriber: subscriberReducer,
   table: tableSlice,
   entity: workspaceReducer,
+  sidebar: sidebarReducer,
 });
 
 export const store = configureStore({

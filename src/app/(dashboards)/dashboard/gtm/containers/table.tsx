@@ -19,7 +19,7 @@ import {
 /* import FormCombineContainer from '../../../../../components/client/GTM/containers/combineContainer'; */
 import { useAuth } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
-import TableRow from '@/src/components/server/UI/TableRow';
+import TableRows from '@/src/components/server/UI/TableRow';
 import {
   useError,
   useRowSelection,
@@ -27,10 +27,11 @@ import {
 } from '@/src/lib/helpers/client';
 import TableActions from '@/src/components/client/UI/TableActions';
 import { handleRefreshCache } from '@/src/lib/helpers/client';
-import TableHeader from '@/src/components/server/UI/Tableheader';
+import TableHeaderRow from '@/src/components/server/UI/Tableheader';
 import TablePagination from '@/src/components/client/UI/TablePagination';
 import { ErrorMessage } from '@/src/components/client/modals/Error';
 import toast from 'react-hot-toast';
+import { Table, TableBody, TableFooter } from '@/src/components/ui/table';
 
 //dynamic import for buttons
 const LimitReachedModal = dynamic(
@@ -152,7 +153,7 @@ export default function ContainerTable({ accounts, containers }) {
 
   const renderRow = (container: ContainerType) => {
     return (
-      <TableRow
+      <TableRows
         key={`${container.accountId}-${container.containerId}`}
         item={container}
         columns={[
@@ -221,8 +222,8 @@ export default function ContainerTable({ accounts, containers }) {
                     }
                   />
                 </div>
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <TableHeader
+                <Table>
+                  <TableHeaderRow
                     headers={[
                       'Container Name',
                       'Container ID',
@@ -233,10 +234,11 @@ export default function ContainerTable({ accounts, containers }) {
                     toggleAll={toggleAll}
                     allSelected={allSelected}
                   />
-                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  <TableBody>
                     {currentItems.map((container) => renderRow(container))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                  <TableFooter></TableFooter>
+                </Table>
                 <TablePagination
                   currentPage={currentPage}
                   totalPages={totalPages}
