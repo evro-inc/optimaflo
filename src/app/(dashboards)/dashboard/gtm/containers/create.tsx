@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CreateContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containers';
 import { LimitReached } from '../../../../../components/client/modals/limitReached';
 import { ButtonGroup } from '../../../../../components/client/ButtonGroup/ButtonGroup';
-import { XMarkIcon } from '@heroicons/react/24/solid';
 import { CreateResult, FormCreateContainerProps } from '@/src/lib/types/types';
 import { useDispatch, useSelector } from 'react-redux';
 import { selectTable, setIsLimitReached } from '@/src/app/redux/tableSlice';
@@ -15,6 +14,28 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import logger from '@/src/lib/logger';
 import toast from 'react-hot-toast';
+import { Cross1Icon } from '@radix-ui/react-icons';
+
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/src/components/ui/form';
+import { Input } from '@/src/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '@/src/components/ui/select';
+import { Icon } from '@/src/components/client/Button/Button';
 
 type Forms = z.infer<typeof CreateContainerSchema>;
 
@@ -26,13 +47,7 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
   const formRefs = useRef<(HTMLFormElement | null)[]>([]);
   const dispatch = useDispatch();
 
-  const {
-    register,
-    handleSubmit,
-    control,
-    reset,
-    formState: { errors },
-  } = useForm<Forms>({
+  const form = useForm<Forms>({
     defaultValues: {
       forms: [
         {
@@ -49,9 +64,10 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
   });
 
   const { fields, append, remove } = useFieldArray({
-    control,
+    control: form.control,
     name: 'forms',
   });
+
   const { loading } = useSelector(selectGlobal);
 
   const isLimitReached = useSelector(selectTable).isLimitReached;
@@ -74,6 +90,8 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
   };
 
   const processForm: SubmitHandler<Forms> = async (data) => {
+    console.log('data', data);
+
     const { forms } = data;
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
@@ -109,7 +127,7 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
           'Successfully created containers. It may take a minute to refresh.'
         );
         // Handle successful creation
-        reset({
+        form.reset({
           forms: [
             {
               accountId: '',
@@ -126,7 +144,7 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
       onClose();
 
       // Reset the forms here, regardless of success or limit reached
-      reset({
+      form.reset({
         forms: [
           {
             accountId: '',
@@ -141,7 +159,7 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
 
       if (res && res.success) {
         // Reset the forms here
-        reset({
+        form.reset({
           forms: [
             {
               accountId: '',
@@ -168,7 +186,7 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
 
   const handleClose = () => {
     // Reset the forms to their initial state
-    reset({
+    form.reset({
       forms: [
         {
           accountId: '',
@@ -193,15 +211,17 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
             initial={{ opacity: 0, y: -50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -50 }}
-            className="fixed top-0 left-0 w-full h-full flex flex-col items-center justify-start z-50 bg-white-500 overflow-y-auto"
+            className="fixed top-0 left-0 w-full h-full flex flex-col items-center justify-start z-50 bg-white overflow-y-auto"
           >
             {/* Close Button */}
-            <button
-              onClick={handleClose}
+            <Icon
               className="absolute top-0 right-0 font-bold py-2 px-4"
-            >
-              <XMarkIcon className="w-14 h-14" />
-            </button>
+              text="Close"
+              icon={<Cross1Icon />}
+              variant="create"
+              onClick={handleClose}
+              billingInterval={undefined}
+            />
 
             <ButtonGroup
               buttons={[
@@ -215,7 +235,6 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
               ]}
             />
 
-            {/* Hire Us */}
             <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-end">
               {fields.map((field, index) => (
                 <div
@@ -231,135 +250,172 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
 
                     <div className="mt-12">
                       {/* Form */}
-                      <form
-                        ref={(el) => (formRefs.current[index] = el)}
-                        onSubmit={handleSubmit(processForm)}
-                        id="createContainer"
-                      >
-                        <div className="grid gap-4 lg:gap-6">
-                          {/* Grid */}
+
+                      <Form {...form}>
+                        <form
+                          ref={(el) => (formRefs.current[index] = el)}
+                          onSubmit={form.handleSubmit(processForm)}
+                          id="createContainer"
+                        >
                           <div className="grid grid-cols-1 gap-4 lg:gap-6">
-                            <div>
-                              <label
-                                htmlFor="hs-firstname-hire-us-2"
-                                className="block text-sm text-gray-700 font-medium dark:text-white"
-                              >
-                                New Container Name:
-                              </label>
-                              <input
-                                type="text"
-                                {...register(`forms.${index}.containerName`)}
-                                className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
-                              />
-                              {errors.forms?.[index]?.containerName
-                                ?.message && (
-                                <p className="text-red-500 text-xs italic">
-                                  {
-                                    errors.forms?.[index]?.containerName
-                                      ?.message
-                                  }
-                                </p>
+                            <FormField
+                              control={form.control}
+                              name={`forms.${index}.containerName`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>New Container Name</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      placeholder="shadcn"
+                                      {...form.register(
+                                        `forms.${index}.containerName`
+                                      )}
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                  <FormDescription>
+                                    This is the container name you want to
+                                    create.
+                                  </FormDescription>
+                                  <FormMessage />
+                                </FormItem>
                               )}
-                            </div>
+                            />
 
-                            <div>
-                              <label
-                                htmlFor="hs-lastname-hire-us-2"
-                                className="block text-sm text-gray-700 font-medium dark:text-white"
-                              >
-                                Account
-                              </label>
-                              <select
-                                {...register(`forms.${index}.accountId`)}
-                                className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
-                              >
-                                {Array.isArray(accounts) &&
-                                  accounts.map((account: any) => (
-                                    <option key={account.accountId}>
-                                      {account.accountId}
-                                    </option>
-                                  ))}
-                              </select>
-                              {errors.forms?.[index]?.accountId?.message && (
-                                <p className="text-red-500 text-xs italic">
-                                  {errors.forms?.[index]?.accountId?.message}
-                                </p>
+                            <FormField
+                              control={form.control}
+                              name={`forms.${index}.accountId`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Account</FormLabel>
+                                  <FormControl>
+                                    <Select
+                                      {...form.register(
+                                        `forms.${index}.accountId`
+                                      )}
+                                      {...field}
+                                      onValueChange={field.onChange}
+                                    >
+                                      <SelectTrigger className="w-[180px]">
+                                        <SelectValue placeholder="Select an account." />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectGroup>
+                                          <SelectLabel>Account</SelectLabel>
+                                          {Array.isArray(accounts) &&
+                                            accounts.map((account: any) => (
+                                              <SelectItem
+                                                key={account.accountId}
+                                                value={account.accountId}
+                                              >
+                                                {account.accountId}
+                                              </SelectItem>
+                                            ))}
+                                        </SelectGroup>
+                                      </SelectContent>
+                                    </Select>
+                                  </FormControl>
+                                  <FormDescription>
+                                    This is the account you want to create the
+                                    container in.
+                                  </FormDescription>
+                                  <FormMessage />
+                                </FormItem>
                               )}
-                            </div>
+                            />
                           </div>
-                          {/* End Grid */}
-
                           <div>
-                            <label
-                              htmlFor="hs-work-email-hire-us-2"
-                              className="block text-sm text-gray-700 font-medium dark:text-white"
-                            >
-                              Usage Context:
-                            </label>
+                            <FormField
+                              control={form.control}
+                              name={`forms.${index}.usageContext`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Usage Context</FormLabel>
+                                  <FormControl>
+                                    <Select
+                                      {...form.register(
+                                        `forms.${index}.usageContext`
+                                      )}
+                                      {...field}
+                                      onValueChange={field.onChange}
+                                    >
+                                      <SelectTrigger className="w-[180px]">
+                                        <SelectValue placeholder="Select an account." />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectGroup>
+                                          <SelectLabel>Account</SelectLabel>
+                                          <SelectItem value="web">
+                                            Web
+                                          </SelectItem>
+                                          <SelectItem value="androidSdk5">
+                                            Android
+                                          </SelectItem>
+                                          <SelectItem value="iosSdk5">
+                                            IOS
+                                          </SelectItem>
+                                        </SelectGroup>
+                                      </SelectContent>
+                                    </Select>
+                                  </FormControl>
+                                  <FormDescription>
+                                    Add a usage context for the container.
+                                  </FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
 
-                            <select
-                              {...register(`forms.${index}.usageContext`)}
-                              className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
-                            >
-                              <option value="web">Web</option>
-                              <option value="androidSdk5">Android</option>
-                              <option value="iosSdk5">IOS</option>
-                            </select>
-                            {errors.forms?.[index]?.usageContext?.message && (
-                              <p className="text-red-500 text-xs italic">
-                                {errors.forms?.[index]?.usageContext?.message}
-                              </p>
+                          <FormField
+                            control={form.control}
+                            name={`forms.${index}.domainName`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>
+                                  Domain Name: Optional (Must be comma
+                                  separated)
+                                </FormLabel>
+                                <FormControl>
+                                  <Input
+                                    placeholder="Enter domain names separated by commas"
+                                    {...form.register(
+                                      `forms.${index}.domainName`
+                                    )}
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  This is the domain name you want to add.
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
                             )}
-                          </div>
+                          />
 
-                          {/* Grid */}
-                          <div className="grid grid-cols-1 gap-4 lg:gap-6">
-                            <div>
-                              <label
-                                htmlFor="hs-company-hire-us-2"
-                                className="block text-sm text-gray-700 font-medium dark:text-white"
-                              >
-                                Domain Name: Optional (Must be comma separated)
-                              </label>
+                          <FormField
+                            control={form.control}
+                            name={`forms.${index}.notes`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Notes: Optional</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    placeholder="Enter any notes you want"
+                                    {...form.register(`forms.${index}.notes`)}
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  This is the domain name you want to add.
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </form>
+                      </Form>
 
-                              <input
-                                type="text"
-                                {...register(`forms.${index}.domainName`)}
-                                placeholder="Enter domain names separated by commas"
-                                className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
-                              />
-                              {errors.forms?.[index]?.domainName?.message && (
-                                <p className="text-red-500 text-xs italic">
-                                  {errors.forms?.[index]?.domainName?.message}
-                                </p>
-                              )}
-                            </div>
-
-                            <div>
-                              <label
-                                htmlFor="hs-company-website-hire-us-2"
-                                className="block text-sm text-gray-700 font-medium dark:text-white"
-                              >
-                                Notes: Optional
-                              </label>
-
-                              <input
-                                type="text"
-                                {...register(`forms.${index}.notes`)}
-                                placeholder="Enter Note"
-                                className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
-                              />
-                              {errors.forms?.[index]?.notes?.message && (
-                                <p className="text-red-500 text-xs italic">
-                                  {errors.forms?.[index]?.notes?.message}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          {/* End Grid */}
-                        </div>
-                        {/* End Grid */}
-                      </form>
                       {/* End Form */}
                     </div>
                   </div>

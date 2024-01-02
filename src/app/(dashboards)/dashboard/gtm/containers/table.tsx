@@ -28,12 +28,18 @@ import {
 import TableActions from '@/src/components/client/UI/TableActions';
 import { handleRefreshCache } from '@/src/lib/helpers/client';
 import TableHeaderRow from '@/src/components/server/UI/Tableheader';
-import TablePagination from '@/src/components/client/UI/TablePagination';
 import { ErrorMessage } from '@/src/components/client/modals/Error';
 import toast from 'react-hot-toast';
 import { Table, TableBody, TableFooter } from '@/src/components/ui/table';
-import { Checkbox } from "@/src/components/ui/checkbox"
+import { Checkbox } from '@/src/components/ui/checkbox';
 
+// Dynamically import the TablePagination with SSR turned off
+const TablePaginationNoSSR = dynamic(
+  () => import('@/src/components/client/UI/TablePagination'),
+  {
+    ssr: false,
+  }
+);
 
 //dynamic import for buttons
 const LimitReachedModal = dynamic(
@@ -241,7 +247,7 @@ export default function ContainerTable({ accounts, containers }) {
                   </TableBody>
                   <TableFooter></TableFooter>
                 </Table>
-                <TablePagination
+                <TablePaginationNoSSR
                   currentPage={currentPage}
                   totalPages={totalPages}
                 />

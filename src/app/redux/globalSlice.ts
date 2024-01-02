@@ -44,6 +44,7 @@ export const {
 export const selectGlobal = (state) => state.global;
 export const selectIsLoading = (state) => state.global.isLoading;
 // Selector for accordion open items
-export const selectAccordionOpenItems = (state) => state.global.accordionOpenItems;
+export const selectAccordionOpenItems = (state) =>
+  state.global.accordionOpenItems;
 
 export default globalSlice.reducer;
