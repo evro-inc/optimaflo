@@ -13,8 +13,18 @@ import { CreateContainerSchema } from '@/src/lib/schemas/containers';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import logger from '@/src/lib/logger';
-import toast from 'react-hot-toast';
+
+import { toast } from "sonner"
+
+
+
 import { Cross1Icon } from '@radix-ui/react-icons';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/src/components/ui/card';
 
 import {
   Form,
@@ -46,6 +56,8 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
 }) => {
   const formRefs = useRef<(HTMLFormElement | null)[]>([]);
   const dispatch = useDispatch();
+  const { loading } = useSelector(selectGlobal);
+  const isLimitReached = useSelector(selectTable).isLimitReached;
 
   const form = useForm<Forms>({
     defaultValues: {
@@ -67,10 +79,6 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
     control: form.control,
     name: 'forms',
   });
-
-  const { loading } = useSelector(selectGlobal);
-
-  const isLimitReached = useSelector(selectTable).isLimitReached;
 
   const addForm = () => {
     append({
@@ -101,7 +109,12 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
       const identifier = `${form.accountId}-${form.containerName}`;
       if (uniqueContainers.has(identifier)) {
         toast.error(
-          `Duplicate container name found: ${form.containerName} for account ${form.accountId}`
+          `Duplicate container name found: ${form.containerName} for account ${form.accountId}`, {
+            action: {
+              label: 'Close',
+              onClick: () => toast.dismiss()
+            }
+          }
         );
         dispatch(setLoading(false));
         return; // Stop the function if a duplicate is found
@@ -242,180 +255,187 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
                   className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
                 >
                   <div className="max-w-xl mx-auto">
-                    <div className="text-center">
-                      <p className="text-3xl font-bold text-gray-800 sm:text-4xl dark:text-white">
-                        Container {index + 1}
-                      </p>
-                    </div>
-
                     <div className="mt-12">
                       {/* Form */}
 
-                      <Form {...form}>
-                        <form
-                          ref={(el) => (formRefs.current[index] = el)}
-                          onSubmit={form.handleSubmit(processForm)}
-                          id="createContainer"
-                        >
-                          <div className="grid grid-cols-1 gap-4 lg:gap-6">
-                            <FormField
-                              control={form.control}
-                              name={`forms.${index}.containerName`}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>New Container Name</FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      placeholder="shadcn"
-                                      {...form.register(
-                                        `forms.${index}.containerName`
-                                      )}
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                  <FormDescription>
-                                    This is the container name you want to
-                                    create.
-                                  </FormDescription>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
+                      <Card className="w-full max-w-xl mx-auto bg-white shadow-md rounded-lg overflow-hidden">
+                        <CardHeader className="bg-gray-100 p-4">
+                          <CardTitle className="text-lg font-semibold">
+                            Container {index + 1}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4">
+                          <Form {...form}>
+                            <form
+                              ref={(el) => (formRefs.current[index] = el)}
+                              onSubmit={form.handleSubmit(processForm)}
+                              id="createContainer"
+                              className="space-y-6"
+                            >
+                              <FormField
+                                control={form.control}
+                                name={`forms.${index}.containerName`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>New Container Name</FormLabel>
+                                    <FormDescription>
+                                      This is the container name you want to
+                                      create.
+                                    </FormDescription>
+                                    <FormControl>
+                                      <Input
+                                        placeholder="Name of the container"
+                                        {...form.register(
+                                          `forms.${index}.containerName`
+                                        )}
+                                        {...field}
+                                      />
+                                    </FormControl>
 
-                            <FormField
-                              control={form.control}
-                              name={`forms.${index}.accountId`}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Account</FormLabel>
-                                  <FormControl>
-                                    <Select
-                                      {...form.register(
-                                        `forms.${index}.accountId`
-                                      )}
-                                      {...field}
-                                      onValueChange={field.onChange}
-                                    >
-                                      <SelectTrigger className="w-[180px]">
-                                        <SelectValue placeholder="Select an account." />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectGroup>
-                                          <SelectLabel>Account</SelectLabel>
-                                          {Array.isArray(accounts) &&
-                                            accounts.map((account: any) => (
-                                              <SelectItem
-                                                key={account.accountId}
-                                                value={account.accountId}
-                                              >
-                                                {account.accountId}
-                                              </SelectItem>
-                                            ))}
-                                        </SelectGroup>
-                                      </SelectContent>
-                                    </Select>
-                                  </FormControl>
-                                  <FormDescription>
-                                    This is the account you want to create the
-                                    container in.
-                                  </FormDescription>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
-                          <div>
-                            <FormField
-                              control={form.control}
-                              name={`forms.${index}.usageContext`}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Usage Context</FormLabel>
-                                  <FormControl>
-                                    <Select
-                                      {...form.register(
-                                        `forms.${index}.usageContext`
-                                      )}
-                                      {...field}
-                                      onValueChange={field.onChange}
-                                    >
-                                      <SelectTrigger className="w-[180px]">
-                                        <SelectValue placeholder="Select an account." />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectGroup>
-                                          <SelectLabel>Account</SelectLabel>
-                                          <SelectItem value="web">
-                                            Web
-                                          </SelectItem>
-                                          <SelectItem value="androidSdk5">
-                                            Android
-                                          </SelectItem>
-                                          <SelectItem value="iosSdk5">
-                                            IOS
-                                          </SelectItem>
-                                        </SelectGroup>
-                                      </SelectContent>
-                                    </Select>
-                                  </FormControl>
-                                  <FormDescription>
-                                    Add a usage context for the container.
-                                  </FormDescription>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
 
-                          <FormField
-                            control={form.control}
-                            name={`forms.${index}.domainName`}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>
-                                  Domain Name: Optional (Must be comma
-                                  separated)
-                                </FormLabel>
-                                <FormControl>
-                                  <Input
-                                    placeholder="Enter domain names separated by commas"
-                                    {...form.register(
-                                      `forms.${index}.domainName`
-                                    )}
-                                    {...field}
-                                  />
-                                </FormControl>
-                                <FormDescription>
-                                  This is the domain name you want to add.
-                                </FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
+                              <FormField
+                                control={form.control}
+                                name={`forms.${index}.accountId`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Account</FormLabel>
+                                    <FormDescription>
+                                      This is the account you want to create the
+                                      container in.
+                                    </FormDescription>
+                                    <FormControl>
+                                      <Select
+                                        {...form.register(
+                                          `forms.${index}.accountId`
+                                        )}
+                                        {...field}
+                                        onValueChange={field.onChange}
+                                      >
+                                        <SelectTrigger className="w-[180px]">
+                                          <SelectValue placeholder="Select an account." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectGroup>
+                                            <SelectLabel>Account</SelectLabel>
+                                            {Array.isArray(accounts) &&
+                                              accounts.map((account: any) => (
+                                                <SelectItem
+                                                  key={account.accountId}
+                                                  value={account.accountId}
+                                                >
+                                                  {account.accountId}
+                                                </SelectItem>
+                                              ))}
+                                          </SelectGroup>
+                                        </SelectContent>
+                                      </Select>
+                                    </FormControl>
 
-                          <FormField
-                            control={form.control}
-                            name={`forms.${index}.notes`}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Notes: Optional</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    placeholder="Enter any notes you want"
-                                    {...form.register(`forms.${index}.notes`)}
-                                    {...field}
-                                  />
-                                </FormControl>
-                                <FormDescription>
-                                  This is the domain name you want to add.
-                                </FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </form>
-                      </Form>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
 
+                              <FormField
+                                control={form.control}
+                                name={`forms.${index}.usageContext`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Usage Context</FormLabel>
+                                    <FormDescription>
+                                      Add a usage context for the container.
+                                    </FormDescription>
+                                    <FormControl>
+                                      <Select
+                                        {...form.register(
+                                          `forms.${index}.usageContext`
+                                        )}
+                                        {...field}
+                                        onValueChange={field.onChange}
+                                      >
+                                        <SelectTrigger className="w-[180px]">
+                                          <SelectValue placeholder="Select an account." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectGroup>
+                                            <SelectLabel>Account</SelectLabel>
+                                            <SelectItem value="web">
+                                              Web
+                                            </SelectItem>
+                                            <SelectItem value="androidSdk5">
+                                              Android
+                                            </SelectItem>
+                                            <SelectItem value="iosSdk5">
+                                              IOS
+                                            </SelectItem>
+                                          </SelectGroup>
+                                        </SelectContent>
+                                      </Select>
+                                    </FormControl>
+
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+
+                              <FormField
+                                control={form.control}
+                                name={`forms.${index}.domainName`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>
+                                      Domain Name: Optional (Must be comma
+                                      separated)
+                                    </FormLabel>
+                                    <FormDescription>
+                                      This is the domain name you want to add.
+                                    </FormDescription>
+                                    <FormControl>
+                                      <Input
+                                        placeholder="Enter domain names separated by commas"
+                                        {...form.register(
+                                          `forms.${index}.domainName`
+                                        )}
+                                        {...field}
+                                      />
+                                    </FormControl>
+
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+
+                              <FormField
+                                control={form.control}
+                                name={`forms.${index}.notes`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Notes: Optional</FormLabel>
+                                    <FormDescription>
+                                      This is the domain name you want to add.
+                                    </FormDescription>
+                                    <FormControl>
+                                      <Input
+                                        placeholder="Enter any notes you want"
+                                        {...form.register(
+                                          `forms.${index}.notes`
+                                        )}
+                                        {...field}
+                                      />
+                                    </FormControl>
+
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </form>
+                          </Form>
+                        </CardContent>
+                      </Card>
                       {/* End Form */}
                     </div>
                   </div>

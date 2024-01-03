@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { updateContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containers';
 import { LimitReached } from '../../../../../components/client/modals/limitReached';
 import { ButtonGroup } from '../../../../../components/client/ButtonGroup/ButtonGroup';
-import { XMarkIcon } from '@heroicons/react/24/solid';
 import { z } from 'zod';
 import { UpdateContainerSchema } from '@/src/lib/schemas/containers';
 import {
@@ -18,6 +17,27 @@ import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CreateResult, FormUpdateContainerProps } from '@/src/lib/types/types';
 import logger from '@/src/lib/logger';
+
+import { Cross1Icon } from '@radix-ui/react-icons';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/src/components/ui/card';
+
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/src/components/ui/form';
+import { Input } from '@/src/components/ui/input';
+
+import { Icon } from '@/src/components/client/Button/Button';
 
 // Type for the entire form data
 type Forms = z.infer<typeof UpdateContainerSchema>;
@@ -33,13 +53,7 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
   const isLoading = useSelector(selectIsLoading);
   const formRefs = useRef<(HTMLFormElement | null)[]>([]);
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    control,
-    formState: { errors },
-  } = useForm<Forms>({
+  const form = useForm<Forms>({
     defaultValues: {
       forms: [
         {
@@ -56,7 +70,7 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
   });
 
   const { fields } = useFieldArray({
-    control,
+    control: form.control,
     name: 'forms',
   });
 
@@ -82,10 +96,13 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
       };
     });
 
-    reset({ forms: initialForms });
-  }, [selectedRows, reset]);
+    form.reset({ forms: initialForms });
+  }, [selectedRows, form]);
 
   const processForm: SubmitHandler<Forms> = async (data) => {
+
+    console.log('data', data);
+    
     const { forms } = data;
     dispatch(setLoading(true)); // Set loading to true
 
@@ -99,7 +116,7 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
       onClose();
 
       // Reset the forms here, regardless of success or limit reached
-      reset({
+      form.reset({
         forms: [
           {
             accountId: '',
@@ -114,7 +131,7 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
 
       if (res && res.success) {
         // Reset the forms here
-        reset({
+        form.reset({
           forms: [
             {
               accountId: '',
@@ -141,7 +158,7 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
 
   const handleClose = () => {
     // Reset the forms to their initial state
-    reset({
+    form.reset({
       forms: [
         {
           accountId: '',
@@ -168,27 +185,28 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
             initial={{ opacity: 0, y: -50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -50 }}
-            className="fixed top-0 left-0 w-full h-full flex flex-col items-center justify-start z-50 bg-white-500 overflow-y-auto"
+            className="fixed top-0 left-0 w-full h-full flex flex-col items-center justify-start z-50 bg-white overflow-y-auto"
           >
             {/* Close Button */}
-            <button
-              onClick={handleClose}
+            <Icon
               className="absolute top-0 right-0 font-bold py-2 px-4"
-            >
-              <XMarkIcon className="w-14 h-14" />
-            </button>
+              text="Close"
+              icon={<Cross1Icon />}
+              variant="create"
+              onClick={handleClose}
+              billingInterval={undefined}
+            />
 
             <ButtonGroup
               buttons={[
                 {
                   text: isLoading ? 'Submitting...' : 'Submit',
                   type: 'submit',
-                  form: 'updateContainer',
+                  form: `updateContainer-${selectedRows[0]?.containerId}`,
                 },
               ]}
             />
 
-            {/* Hire Us */}
             <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-end">
               {fields.map((field, index) => (
                 <div
@@ -196,143 +214,139 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
                   className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
                 >
                   <div className="max-w-xl mx-auto">
-                    <div className="text-center">
-                      <p className="text-3xl font-bold text-gray-800 sm:text-4xl dark:text-white">
-                        {field.containerName || `Container ${index + 1}`}
-                      </p>
-                    </div>
-
-                    <div className="mt-12">
-                      {/* Form */}
-                      <form
-                        ref={(el) => (formRefs.current[index] = el)}
-                        onSubmit={handleSubmit(processForm)}
-                        id="updateContainer"
-                      >
-                        <div className="grid gap-4 lg:gap-6">
-                          {/* Grid */}
-                          <div className="grid grid-cols-1 gap-4 lg:gap-6">
-                            <div>
-                              <label
-                                htmlFor="hs-firstname-hire-us-2"
-                                className="block text-sm text-gray-700 font-medium dark:text-white"
-                              >
-                                New Container Name:
-                              </label>
-                              <input
-                                type="text"
-                                {...register(`forms.${index}.containerName`)}
-                                defaultValue={field.containerName}
-                                className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
-                              />
-                              {errors.forms?.[index]?.containerName && (
-                                <p className="text-red-500 text-xs italic">
-                                  {
-                                    errors.forms?.[index]?.containerName
-                                      ?.message
-                                  }
-                                </p>
+                    <div className="mt-12"></div>
+                    <Card
+                      key={field.id}
+                      className="w-full max-w-xl mx-auto bg-white shadow-md rounded-lg overflow-hidden"
+                    >
+                      <CardHeader className="bg-gray-100 p-4">
+                        <CardTitle className="text-lg font-semibold">
+                          Container {index + 1}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <Form {...form}>
+                          <form
+                            ref={(el) => (formRefs.current[index] = el)}
+                            onSubmit={form.handleSubmit(processForm)}
+                            id={`updateContainer-${selectedRows[0]?.containerId}`}
+                            className="space-y-6"
+                          >
+                            <FormField
+                              control={form.control}
+                              name={`forms.${index}.containerName`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>New Container Name</FormLabel>
+                                  <FormDescription>
+                                    Enter the new name of the container
+                                  </FormDescription>
+                                  <FormControl>
+                                    <Input
+                                      placeholder="Name of the container"
+                                      {...form.register(
+                                        `forms.${index}.containerName`
+                                      )}
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
                               )}
-                            </div>
-
-                            <div>
-                              <label
-                                htmlFor="hs-lastname-hire-us-2"
-                                className="block text-sm text-gray-700 font-medium dark:text-white"
-                              >
-                                Account (Immutable):
-                              </label>
-                              <input
-                                type="text"
-                                id={`account-id-${index}`}
-                                readOnly
-                                defaultValue={field.accountId}
-                                className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
-                              />
-                              {errors.forms?.[index]?.accountId && (
-                                <p className="text-red-500 text-xs italic">
-                                  {errors.forms?.[index]?.accountId?.message}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          {/* End Grid */}
-
-                          <div>
-                            <label
-                              htmlFor="hs-work-email-hire-us-2"
-                              className="block text-sm text-gray-700 font-medium dark:text-white"
-                            >
-                              Usage Context (Immutable):
-                            </label>
-
-                            <input
-                              type="text"
-                              id={`usage-context-${index}`}
-                              readOnly
-                              defaultValue={field.usageContext}
-                              className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
                             />
 
-                            {errors.forms?.[index]?.usageContext && (
-                              <p className="text-red-500 text-xs italic">
-                                {errors.forms?.[index]?.usageContext?.message}
-                              </p>
-                            )}
-                          </div>
-
-                          {/* Grid */}
-                          <div className="grid grid-cols-1 gap-4 lg:gap-6">
-                            <div>
-                              <label
-                                htmlFor="hs-company-hire-us-2"
-                                className="block text-sm text-gray-700 font-medium dark:text-white"
-                              >
-                                Domain Name: Optional (Must be comma separated)
-                              </label>
-
-                              <input
-                                type="text"
-                                {...register(`forms.${index}.domainName`)}
-                                defaultValue={field.domainName}
-                                placeholder="Enter domain names separated by commas"
-                                className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
-                              />
-                              {errors.forms?.[index]?.domainName && (
-                                <p className="text-red-500 text-xs italic">
-                                  {errors.forms?.[index]?.domainName?.message}
-                                </p>
+                            <FormField
+                              control={form.control}
+                              name={`forms.${index}.accountId`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Account</FormLabel>
+                                  <FormDescription>
+                                    This is the account ID of the container (read only)
+                                  </FormDescription>
+                                  <FormControl>
+                                    <Input
+                                      readOnly
+                                      {...form.register(
+                                        `forms.${index}.accountId`
+                                      )}
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
                               )}
-                            </div>
+                            />
 
-                            <div>
-                              <label
-                                htmlFor="hs-company-website-hire-us-2"
-                                className="block text-sm text-gray-700 font-medium dark:text-white"
-                              >
-                                Notes: Optional
-                              </label>
-
-                              <input
-                                type="text"
-                                {...register(`forms.${index}.notes`)}
-                                defaultValue={field.notes}
-                                placeholder="Enter Note"
-                                className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
-                              />
-                              {errors.forms?.[index]?.notes && (
-                                <p className="text-red-500 text-xs italic">
-                                  {errors.forms?.[index]?.notes?.message}
-                                </p>
+                            <FormField
+                              control={form.control}
+                              name={`forms.${index}.usageContext`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Usage Context</FormLabel>
+                                  <FormDescription>
+                                    This is the usage context of the container (read only)
+                                  </FormDescription>
+                                  <FormControl>
+                                    <Input
+                                      readOnly
+                                      {...form.register(
+                                        `forms.${index}.usageContext`
+                                      )}
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
                               )}
-                            </div>
-                          </div>
-                          {/* End Grid */}
-                        </div>
-                        {/* End Grid */}
-                      </form>
-                      {/* End Form */}
-                    </div>
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name={`forms.${index}.domainName`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>
+                                    Domain Name: Optional (Must be comma
+                                    separated)
+                                  </FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      placeholder="Enter domain names separated by commas"
+                                      {...form.register(
+                                        `forms.${index}.domainName`
+                                      )}
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name={`forms.${index}.notes`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Notes: Optional</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      placeholder="Enter any notes you want"
+                                      {...form.register(`forms.${index}.notes`)}
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            {/* Add any additional fields following the same pattern */}
+                          </form>
+                        </Form>
+                      </CardContent>
+                    </Card>
                   </div>
                 </div>
               ))}
