@@ -25,6 +25,7 @@ export default function AccountTable({ accounts }) {
           render: (item) => (
             <ToggleRow
               item={item.accountId}
+              name={item.name}
             />
           ),
         },

@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { selectTable, setSelectedRows } from '@/src/app/redux/tableSlice';
 import { Checkbox } from '../../ui/checkbox';
 
-function ToggleRow({ item }) {
+function ToggleRow({ item, name }) {
   const dispatch = useDispatch();
   const { selectedRows } = useSelector(selectTable);
 
@@ -20,7 +20,7 @@ function ToggleRow({ item }) {
     if (newSelectedRows[uniqueKey]) {
       delete newSelectedRows[uniqueKey];
     } else {
-      newSelectedRows[uniqueKey] = item; // Here, item is the accountId itself
+      newSelectedRows[uniqueKey] = { account: item, name };
     }
 
     dispatch(setSelectedRows(newSelectedRows));

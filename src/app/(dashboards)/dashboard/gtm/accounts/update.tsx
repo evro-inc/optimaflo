@@ -20,12 +20,20 @@ import { XMarkIcon } from '@heroicons/react/24/solid';
 import { ButtonGroup } from '../../../../../components/client/ButtonGroup/ButtonGroup';
 import { LimitReached } from '../../../../../components/client/modals/limitReached';
 import { UpdateResult } from '@/src/lib/types/types';
+import { Icon } from '@/src/components/client/Button/Button';
+import { Cross1Icon } from '@radix-ui/react-icons';
+import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/card';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/src/components/ui/form';
+import { Input } from '@/src/components/ui/input';
 
 // Defining the type for form data using Zod
 type Forms = z.infer<typeof UpdateAccountSchema>;
 
 // Functional component for updating account forms
 function AccountFormUpdate({ showOptions, onClose, selectedRows }) {
+
+  console.log("selectedRows", selectedRows);
+  
   // Using Redux hooks for dispatching actions and selecting state
   const dispatch = useDispatch();
   const { isLimitReached } = useSelector(selectTable);
@@ -35,13 +43,7 @@ function AccountFormUpdate({ showOptions, onClose, selectedRows }) {
   const formRefs = useRef<(HTMLFormElement | null)[]>([]);
 
   // Setting up form handling using react-hook-form with Zod for validation
-  const {
-    register,
-    handleSubmit,
-    reset,
-    control,
-    formState: { errors },
-  } = useForm<Forms>({
+  const form = useForm<Forms>({
     defaultValues: {
       forms: [{ accountId: '', name: '' }],
     },
@@ -49,7 +51,10 @@ function AccountFormUpdate({ showOptions, onClose, selectedRows }) {
   });
 
   // Managing dynamic form fields using react-hook-form
-  const { fields } = useFieldArray({ control, name: 'forms' });
+  const { fields } = useFieldArray({ control: form.control, name: 'forms' });
+
+  console.log("fields", fields);
+  
 
   // useEffect to reset form values based on selected rows
   useEffect(() => {
@@ -57,8 +62,10 @@ function AccountFormUpdate({ showOptions, onClose, selectedRows }) {
       accountId: account?.accountId || '',
       name: account?.name || '',
     }));
-    reset({ forms: initialForms });
-  }, [selectedRows, reset]);
+    console.log("initialForms", initialForms);
+    
+    form.reset({ forms: initialForms });
+  }, [selectedRows, form]);
 
   // Function to process form submission
   const processForm: SubmitHandler<Forms> = async (data) => {
@@ -74,12 +81,12 @@ function AccountFormUpdate({ showOptions, onClose, selectedRows }) {
       // Clearing selected rows and closing the form on success
       dispatch(clearSelectedRows());
       onClose();
-      reset({ forms: [{ accountId: '', name: '' }] });
+      form.reset({ forms: [{ accountId: '', name: '' }] });
 
       // Handling response based on success or limit reached
       if (res && res.success) {
         // Reset the forms here
-        reset({
+        form.reset({
           forms: [
             {
               accountId: '',
@@ -101,7 +108,7 @@ function AccountFormUpdate({ showOptions, onClose, selectedRows }) {
 
   // Function to handle form close
   const handleClose = () => {
-    reset({ forms: [{ accountId: '', name: '' }] });
+    form.reset({ forms: [{ accountId: '', name: '' }] });
     dispatch(clearSelectedRows());
     onClose();
   };
@@ -116,60 +123,88 @@ function AccountFormUpdate({ showOptions, onClose, selectedRows }) {
           className="fixed top-0 left-0 w-full h-full flex flex-col items-center justify-start z-50 bg-white overflow-y-auto"
         >
           {/* Close Button */}
-          <button
-            onClick={handleClose}
-            className="absolute top-0 right-0 font-bold py-2 px-4"
-          >
-            <XMarkIcon className="w-14 h-14" />
-          </button>
+            <Icon
+              className="absolute top-5 right-5 font-bold py-2 px-4"
+              text="Close"
+              icon={<Cross1Icon />}
+              variant="create"
+              onClick={handleClose}
+              billingInterval={undefined}
+            />
 
           <ButtonGroup
             buttons={[
               {
                 text: isLoading ? 'Submitting...' : 'Submit',
                 type: 'submit',
-                form: 'updateAccount',
+                form: `updateAccount-${selectedRows[0]?.accountId}`,
               },
             ]}
           />
 
-          <div className="container mx-auto /* ...container props */">
+          <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-end">
             {fields.map((field, index) => (
-              <div key={field.id} /* ...div props */>
-                {/* Form and other UI elements */}
-                <form
-                  ref={(el) => (formRefs.current[index] = el)}
-                  onSubmit={handleSubmit(processForm)}
-                  id="updateAccount"
-                >
-                  <div className="grid gap-4 lg:gap-6">
-                    {/* Grid */}
-                    <div className="grid grid-cols-1 gap-4 lg:gap-6">
-                      <div className="pb-10">
-                        <label
-                          htmlFor="accountId"
-                          className="block text-sm text-gray-700 font-medium dark:text-white"
-                        >
-                          Current Account Name: {field.name}
-                        </label>
-                        <input
-                          type="text"
-                          {...register(`forms.${index}.name`)}
-                          placeholder="New Account Name"
-                          className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue focus:ring-blue dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
-                        />
-                        {errors.forms?.[index]?.name && (
-                          <p className="text-red text-xs italic">
-                            {errors.forms?.[index]?.name?.message}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    {/* End Grid */}
+              <div key={field.id} className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
 
-                    {/* End Grid */}
+
+                  <div className="max-w-xl mx-auto">
+                    <div className="mt-12"></div>
+                    <Card
+                      key={field.id}
+                      className="w-full max-w-xl mx-auto bg-white shadow-md rounded-lg overflow-hidden"
+                    >
+                      <CardHeader className="bg-gray-100 p-4">
+                        <CardTitle className="text-lg font-semibold">
+                          Account {field.name}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <Form {...form}>
+                          <form
+                            className="space-y-6"
+                            ref={(el) => (formRefs.current[index] = el)}
+                            onSubmit={form.handleSubmit(processForm)}
+                            id={`updateAccount-${selectedRows[0]?.accountId}`}
+                          >
+                            <FormField
+                              control={form.control}
+                              name={`forms.${index}.name`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>New Container Name</FormLabel>
+                                  <FormDescription>
+                                    Enter the new name of the account
+                                  </FormDescription>
+                                  <FormControl>
+                                    <Input
+                                      placeholder="Name of the account"
+                                      {...form.register(`forms.${index}.name`)}
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+
+
+                            {/* Add any additional fields following the same pattern */}
+                          </form>
+                        </Form>
+                      </CardContent>
+                    </Card>
                   </div>
-                </form>
+
+
+
+
+
+                {/* Form and other UI elements */}
+                
+
+
+
               </div>
             ))}
           </div>

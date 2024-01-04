@@ -1,21 +1,39 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
+export interface TableRow {
+  id: string;
+  [key: string]: any; // Allows for any additional properties
+}
+
+export interface TableState {
+  selectedRows: { [id: string]: TableRow };
+  currentPage: number;
+  itemsPerPage: number;
+  isLimitReached: boolean;
+  allSelected: boolean;
+  notFoundError: boolean;
+  isModalOpen: boolean;
+  error: string | null;
+}
+
+const initialState: TableState = {
+  selectedRows: {} as { [id: string]: TableRow },
+  currentPage: 1,
+  itemsPerPage: 10,
+  isLimitReached: false,
+  allSelected: false,
+  notFoundError: false,
+  isModalOpen: false,
+  error: null,
+};
+
 export const tableSlice = createSlice({
   name: 'table',
-  initialState: {
-    selectedRows: {},
-    currentPage: 1,
-    itemsPerPage: 10,
-    isLimitReached: false,
-    allSelected: false,
-    notFoundError: false,
-    isModalOpen: false,
-    error: null as string | null,
-  },
+  initialState,
   reducers: {
     setSelectedRows: (
       state,
-      action: PayloadAction<{ [key: string]: any }>
+      action: PayloadAction<{ [id: string]: TableRow }>
     ) => {
       state.selectedRows = action.payload;
     },
