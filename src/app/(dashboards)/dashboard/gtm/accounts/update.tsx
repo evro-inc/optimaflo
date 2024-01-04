@@ -17,8 +17,8 @@ import { z } from 'zod';
 import { UpdateAccountSchema } from '@/src/lib/schemas/accounts';
 import { AnimatePresence, motion } from 'framer-motion';
 import { XMarkIcon } from '@heroicons/react/24/solid';
-import { ButtonGroup } from '../../ButtonGroup/ButtonGroup';
-import { LimitReached } from '../../modals/limitReached';
+import { ButtonGroup } from '../../../../../components/client/ButtonGroup/ButtonGroup';
+import { LimitReached } from '../../../../../components/client/modals/limitReached';
 import { UpdateResult } from '@/src/lib/types/types';
 
 // Defining the type for form data using Zod
@@ -113,7 +113,7 @@ function AccountFormUpdate({ showOptions, onClose, selectedRows }) {
           initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -50 }}
-          className="fixed top-0 left-0 w-full h-full flex flex-col items-center justify-start z-50 bg-white-500 overflow-y-auto"
+          className="fixed top-0 left-0 w-full h-full flex flex-col items-center justify-start z-50 bg-white overflow-y-auto"
         >
           {/* Close Button */}
           <button
@@ -156,10 +156,10 @@ function AccountFormUpdate({ showOptions, onClose, selectedRows }) {
                           type="text"
                           {...register(`forms.${index}.name`)}
                           placeholder="New Account Name"
-                          className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
+                          className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue focus:ring-blue dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
                         />
                         {errors.forms?.[index]?.name && (
-                          <p className="text-red-500 text-xs italic">
+                          <p className="text-red text-xs italic">
                             {errors.forms?.[index]?.name?.message}
                           </p>
                         )}

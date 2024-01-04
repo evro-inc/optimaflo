@@ -38,6 +38,7 @@ import {
 import { Input } from '@/src/components/ui/input';
 
 import { Icon } from '@/src/components/client/Button/Button';
+import { toast } from 'sonner';
 
 // Type for the entire form data
 type Forms = z.infer<typeof UpdateContainerSchema>;
@@ -99,10 +100,7 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
     form.reset({ forms: initialForms });
   }, [selectedRows, form]);
 
-  const processForm: SubmitHandler<Forms> = async (data) => {
-
-    console.log('data', data);
-    
+  const processForm: SubmitHandler<Forms> = async (data) => {    
     const { forms } = data;
     dispatch(setLoading(true)); // Set loading to true
 
@@ -146,6 +144,12 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
       } else if (res && res.limitReached) {
         // Show the LimitReached modal
         dispatch(setIsLimitReached(true));
+        toast.error(res.message, {
+            action: {
+              label: 'Close',
+              onClick: () => toast.dismiss()
+            }
+          });
       }
     } catch (error) {
       logger.error('Error creating containers:', error);
@@ -189,7 +193,7 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
           >
             {/* Close Button */}
             <Icon
-              className="absolute top-0 right-0 font-bold py-2 px-4"
+              className="absolute top-5 right-5 font-bold py-2 px-4"
               text="Close"
               icon={<Cross1Icon />}
               variant="create"

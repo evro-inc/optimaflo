@@ -10,7 +10,7 @@ const LimitReached = dynamic(
 );
 
 const AccountFormUpdate = dynamic(
-  () => import('../GTM/accounts/updateAccount'),
+  () => import('../../../app/(dashboards)/dashboard/gtm/accounts/update'),
   {
     ssr: false,
   }

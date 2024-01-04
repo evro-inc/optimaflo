@@ -13,7 +13,6 @@ import { CreateContainerSchema } from '@/src/lib/schemas/containers';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import logger from '@/src/lib/logger';
-
 import { toast } from "sonner"
 
 
@@ -98,8 +97,6 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
   };
 
   const processForm: SubmitHandler<Forms> = async (data) => {
-    console.log('data', data);
-
     const { forms } = data;
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
@@ -126,18 +123,33 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
       const res: any = (await CreateContainers({ forms })) as CreateResult;
 
       if (res.limitReached) {
-        toast.error(res.message);
+        toast.error(res.message, {
+            action: {
+              label: 'Close',
+              onClick: () => toast.dismiss()
+            }
+          });
         dispatch(setIsLimitReached(true)); // Immediately set limitReached
         onClose(); // Close the form
         return; // Exit the function to prevent further execution
       } else if (res.errors && res.errors.length > 0) {
         // Iterate over each error and display a toast
         res.errors.forEach((error) => {
-          toast.error(error);
+          toast.error(error, {
+            action: {
+              label: 'Close',
+              onClick: () => toast.dismiss()
+            }
+          });
         });
       } else if (res.success) {
         toast.success(
-          'Successfully created containers. It may take a minute to refresh.'
+          'Successfully created containers. It may take a minute to refresh.', {
+            action: {
+              label: 'Close',
+              onClick: () => toast.dismiss()
+            }
+          }
         );
         // Handle successful creation
         form.reset({
@@ -228,7 +240,7 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
           >
             {/* Close Button */}
             <Icon
-              className="absolute top-0 right-0 font-bold py-2 px-4"
+              className="absolute top-5 right-5 font-bold py-2 px-4"
               text="Close"
               icon={<Cross1Icon />}
               variant="create"

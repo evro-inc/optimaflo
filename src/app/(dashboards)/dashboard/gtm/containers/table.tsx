@@ -29,7 +29,7 @@ import TableActions from '@/src/components/client/UI/TableActions';
 import { handleRefreshCache } from '@/src/lib/helpers/client';
 import TableHeaderRow from '@/src/components/server/UI/Tableheader';
 import { ErrorMessage } from '@/src/components/client/modals/Error';
-import toast from 'react-hot-toast';
+import { toast } from "sonner";
 import { Table, TableBody, TableFooter } from '@/src/components/ui/table';
 import { Checkbox } from '@/src/components/ui/checkbox';
 
@@ -89,7 +89,12 @@ export default function ContainerTable({ accounts, containers }) {
   const totalPages = Math.ceil(containers.length / itemsPerPage);
 
   const handleDelete = async () => {
-    toast('Deleting containers...');
+    toast('Deleting containers...', {
+            action: {
+              label: 'Close',
+              onClick: () => toast.dismiss()
+            }
+          });
     const uniqueAccountIds = Array.from(
       new Set(
         Object.values(selectedRows).map((rowData: any) => rowData.accountId)
@@ -138,7 +143,12 @@ export default function ContainerTable({ accounts, containers }) {
       // Display the message from each response if it exists
       responses.forEach((response) => {
         if (response.message) {
-          toast.error(response.message, { duration: 5000 });
+          toast.error(response.message, {
+            action: {
+              label: 'Close',
+              onClick: () => toast.dismiss()
+            }
+          });
         }
       });
     } else {
@@ -146,7 +156,10 @@ export default function ContainerTable({ accounts, containers }) {
       responses.forEach((response) => {
         if (response.message) {
           toast.success(response.message + 'The table will update shortly.', {
-            duration: 5000,
+            action: {
+              label: 'Close',
+              onClick: () => toast.dismiss()
+            }
           });
         }
       });

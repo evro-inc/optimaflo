@@ -1,4 +1,3 @@
-import { ContainerType } from '@/src/lib/types/types';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export const tableSlice = createSlice({
@@ -16,7 +15,7 @@ export const tableSlice = createSlice({
   reducers: {
     setSelectedRows: (
       state,
-      action: PayloadAction<{ [key: string]: ContainerType }>
+      action: PayloadAction<{ [key: string]: any }>
     ) => {
       state.selectedRows = action.payload;
     },

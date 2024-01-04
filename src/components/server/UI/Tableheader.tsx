@@ -1,27 +1,28 @@
 // TableHeader.jsx
 import React from 'react';
 import { TableHead, TableHeader, TableRow } from '@/src/components/ui/table';
-import { Checkbox } from '@/src/components/ui/checkbox';
+import ToggleAll from '../../client/UI/InputToggleAll';
 
 interface TableHeaderProps {
   headers: string[];
-  toggleAll: () => void;
-  allSelected: boolean;
+  items: any[];
+  uniqueKeys: string[];
 }
 
 const TableHeaderRow: React.FC<TableHeaderProps> = ({
   headers,
-  toggleAll,
-  allSelected,
+  items,
+  uniqueKeys,
 }) => {
+  
+  
   return (
     <TableHeader>
       <TableRow>
         <TableHead scope="col">
-          <Checkbox
-            id="select-all"
-            checked={allSelected}
-            onCheckedChange={toggleAll}
+          <ToggleAll 
+            items={items}
+            uniqueKeys={uniqueKeys}
           />
         </TableHead>
 
