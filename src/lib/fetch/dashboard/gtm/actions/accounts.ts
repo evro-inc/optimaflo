@@ -10,6 +10,7 @@ import { revalidatePath } from 'next/cache'; // Importing function to revalidate
 import { currentUserOauthAccessToken } from '@/src/lib/clerk'; // Importing function to get the current user's OAuth access token
 import { redis } from '@/src/lib/redis/cache'; // Importing Redis cache instance
 import { notFound } from 'next/navigation'; // Importing utility for handling 'not found' navigation in Next.js
+import { handleApiResponseError } from '@/src/lib/helpers/server';
 
 // Defining a type for form update schema using Zod
 type FormUpdateSchema = z.infer<typeof UpdateAccountSchema>;
@@ -189,39 +190,34 @@ export async function updateAccounts(
               headers: headers,
             });
 
-            // Handling specific 403 error (feature limit reached)
-            if (response.status === 403) {
-              const updatedAccount = await response.json();
-              if (updatedAccount.message === 'Feature limit reached') {
-                featureLimitReached.push(form.name);
-                return {
-                  success: false,
-                  errorCode: 403,
-                  message: 'Feature limit reached',
-                };
-              }
-            }
+            const parsedResponse = await response.json();
 
-            // Handling successful responses
-            if (response.ok) {
-              const resText = await response.json();
-              return { success: true, resText };
+
+            if (!response.ok) {              
+              if (response.status === 404) {
+                    // Return an object indicating this account was not found
+                    return { accountId: form.accountId, notFound: true };
+                  } else {
+                    // Handle other errors
+                    const errorResponse: any = await handleApiResponseError(
+                      response,
+                      parsedResponse,
+                      'Account'
+                    );
+                    errors.push(errorResponse.message);
+                    return { accountId: form.accountId, error: true };
+                  }
             } else {
-              // Adding errors to the errors array for non-successful responses
-              errors.push(
-                `Failed to update workspace with name ${form.name} in account ${form.accountId}: ${response.status}`
-              );
-              return {
-                success: false,
-                errorCode: response.status,
-                message: 'Failed to update',
-              };
+              return { ...parsedResponse, success: true };
             }
           });
         });
 
         // Awaiting all update promises
         const results = await Promise.all(updatePromises);
+        const notFoundIds = results
+          .filter(result => result && result.notFound)
+          .map(result => result.accountId);          
 
         // Handling cases where feature limits are reached
         if (featureLimitReached.length > 0) {
@@ -233,12 +229,21 @@ export async function updateAccounts(
             )}`,
           };
         }
+        else if (notFoundIds.length > 0) {
+          return {
+            success: false,
+            notFoundError: true,
+            notFoundIds: notFoundIds,
+            message: 'Some accounts were not found.',
+          };
+        }
 
         // Handling cases where other errors occurred
-        if (errors.length > 0) {
+        else if (errors.length > 0) {
           return {
             success: false,
             limitReached: false,
+            notFoundError: true ,
             message: errors.join(', '),
           };
         } else {

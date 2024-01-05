@@ -10,8 +10,11 @@ import {
 import Link from 'next/link';
 import { Button } from '@/src/components/ui/button';
 import { SignInButton } from '@clerk/nextjs';
+import { useRouter } from 'next/navigation';
+import { handleRefreshCache } from '@/src/lib/helpers/client';
+import { ReloadIcon } from '@radix-ui/react-icons';
 
-const getModeClasses = (variant, billingInterval) => {
+const getModeClasses = (variant, billingInterval?) => {
   let baseClasses = '';
   let activeClasses = 'relative shadow-sm';
   let inactiveClasses = 'relative';
@@ -307,6 +310,33 @@ export const Icon = ({
     </Button>
   );
 };
+
+
+export const RefreshIcon = ({
+  variant = 'primary',
+  userId,
+  feature,
+  ...props
+}) => {
+  const router = useRouter();
+  const computedClasses = useMemo(() => {
+    const modeClass = getModeClasses(variant);
+    return [modeClass].join(' ');
+  }, [variant]);
+
+  return (
+    <Button className={`${BASE_BUTTON_CLASSES} ${computedClasses}`} {...props}>
+      <span onClick={() => handleRefreshCache(
+        router,
+        `gtm:${feature}-userId:${userId}`,
+        `/dashboard/gtm/${feature}`
+      )}><ReloadIcon /></span>
+    </Button>
+  
+  );
+};
+
+
 
 export const ButtonSignIn = ({
   variant = 'signup',

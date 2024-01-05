@@ -4,7 +4,7 @@ import '../../styles/globals.css';
 import NavApp from '@/src/components/client/Navbar/NavApp';
 import { Providers, ReduxProvider } from '../providers';
 import SideBar from '@/src/components/client/Navbar/SideBar';
-import { Toaster } from "@/src/components/ui/sonner"
+import { Toaster } from '@/src/components/ui/sonner';
 
 import { notFound } from 'next/navigation';
 import { currentUser } from '@clerk/nextjs';
@@ -35,7 +35,7 @@ export default async function DashboardLayout({
             <div className="flex-1 overflow-y-auto overflow-x-hidden pt-16 bg-secondary/10 pb-1">
               {/* Page Heading */}
               {children}
-              <Toaster/>
+              <Toaster />
               {/* End Page Heading */}
             </div>
             {/* End Content */}

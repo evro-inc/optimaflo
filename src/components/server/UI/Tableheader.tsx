@@ -14,16 +14,11 @@ const TableHeaderRow: React.FC<TableHeaderProps> = ({
   items,
   uniqueKeys,
 }) => {
-  
-  
   return (
     <TableHeader>
       <TableRow>
         <TableHead scope="col">
-          <ToggleAll 
-            items={items}
-            uniqueKeys={uniqueKeys}
-          />
+          <ToggleAll items={items} uniqueKeys={uniqueKeys} />
         </TableHead>
 
         {headers.map((header, index) => (

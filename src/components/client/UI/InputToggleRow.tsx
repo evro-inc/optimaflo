@@ -4,15 +4,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import { selectTable, setSelectedRows } from '@/src/app/redux/tableSlice';
 import { Checkbox } from '../../ui/checkbox';
 
-function ToggleRow({ item, name }) {
+function ToggleRow({ item }) {
   const dispatch = useDispatch();
   const { selectedRows } = useSelector(selectTable);
 
-  // Since 'item' is the accountId itself, use it directly as the uniqueKey
-  const uniqueKey = item;
-
-  console.log("item", item);
-  console.log("uniqueKey", uniqueKey);
+  // Assume 'item' contains all necessary data like in ToggleAll
+  const uniqueKey = item.accountId; // Assuming 'accountId' is the unique identifier in 'item'
 
   const toggleRow = () => {
     const newSelectedRows = { ...selectedRows };
@@ -20,7 +17,7 @@ function ToggleRow({ item, name }) {
     if (newSelectedRows[uniqueKey]) {
       delete newSelectedRows[uniqueKey];
     } else {
-      newSelectedRows[uniqueKey] = { account: item, name };
+      newSelectedRows[uniqueKey] = item; // Add the entire item
     }
 
     dispatch(setSelectedRows(newSelectedRows));

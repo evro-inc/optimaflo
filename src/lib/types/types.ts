@@ -111,12 +111,15 @@ export type ContainerType = {
   notes: string;
 };
 
-export type UpdateResult = {
+export type UpdateAccountResult = {
   success: boolean;
   limitReached?: boolean;
   message?: string;
-  updateContainers?: any[];
   error?: string;
+  notFoundError?: boolean;
+  notFoundIds?: string[];
+  accountIds?: string[];
+  names?: string[];
 };
 
 export type FormUpdateContainerProps = {

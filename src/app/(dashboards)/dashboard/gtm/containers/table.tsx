@@ -29,7 +29,7 @@ import TableActions from '@/src/components/client/UI/TableActions';
 import { handleRefreshCache } from '@/src/lib/helpers/client';
 import TableHeaderRow from '@/src/components/server/UI/Tableheader';
 import { ErrorMessage } from '@/src/components/client/modals/Error';
-import { toast } from "sonner";
+import { toast } from 'sonner';
 import { Table, TableBody, TableFooter } from '@/src/components/ui/table';
 import { Checkbox } from '@/src/components/ui/checkbox';
 
@@ -90,11 +90,11 @@ export default function ContainerTable({ accounts, containers }) {
 
   const handleDelete = async () => {
     toast('Deleting containers...', {
-            action: {
-              label: 'Close',
-              onClick: () => toast.dismiss()
-            }
-          });
+      action: {
+        label: 'Close',
+        onClick: () => toast.dismiss(),
+      },
+    });
     const uniqueAccountIds = Array.from(
       new Set(
         Object.values(selectedRows).map((rowData: any) => rowData.accountId)
@@ -146,8 +146,8 @@ export default function ContainerTable({ accounts, containers }) {
           toast.error(response.message, {
             action: {
               label: 'Close',
-              onClick: () => toast.dismiss()
-            }
+              onClick: () => toast.dismiss(),
+            },
           });
         }
       });
@@ -158,8 +158,8 @@ export default function ContainerTable({ accounts, containers }) {
           toast.success(response.message + 'The table will update shortly.', {
             action: {
               label: 'Close',
-              onClick: () => toast.dismiss()
-            }
+              onClick: () => toast.dismiss(),
+            },
           });
         }
       });

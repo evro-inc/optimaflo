@@ -13,9 +13,7 @@ import { CreateContainerSchema } from '@/src/lib/schemas/containers';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import logger from '@/src/lib/logger';
-import { toast } from "sonner"
-
-
+import { toast } from 'sonner';
 
 import { Cross1Icon } from '@radix-ui/react-icons';
 import {
@@ -106,11 +104,12 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
       const identifier = `${form.accountId}-${form.containerName}`;
       if (uniqueContainers.has(identifier)) {
         toast.error(
-          `Duplicate container name found: ${form.containerName} for account ${form.accountId}`, {
+          `Duplicate container name found: ${form.containerName} for account ${form.accountId}`,
+          {
             action: {
               label: 'Close',
-              onClick: () => toast.dismiss()
-            }
+              onClick: () => toast.dismiss(),
+            },
           }
         );
         dispatch(setLoading(false));
@@ -124,11 +123,11 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
 
       if (res.limitReached) {
         toast.error(res.message, {
-            action: {
-              label: 'Close',
-              onClick: () => toast.dismiss()
-            }
-          });
+          action: {
+            label: 'Close',
+            onClick: () => toast.dismiss(),
+          },
+        });
         dispatch(setIsLimitReached(true)); // Immediately set limitReached
         onClose(); // Close the form
         return; // Exit the function to prevent further execution
@@ -138,17 +137,18 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
           toast.error(error, {
             action: {
               label: 'Close',
-              onClick: () => toast.dismiss()
-            }
+              onClick: () => toast.dismiss(),
+            },
           });
         });
       } else if (res.success) {
         toast.success(
-          'Successfully created containers. It may take a minute to refresh.', {
+          'Successfully created containers. It may take a minute to refresh.',
+          {
             action: {
               label: 'Close',
-              onClick: () => toast.dismiss()
-            }
+              onClick: () => toast.dismiss(),
+            },
           }
         );
         // Handle successful creation

@@ -9,7 +9,7 @@ import {
   setSelectedRows,
   toggleAllSelected,
 } from '@/src/app/redux/tableSlice';
-import { toast } from "sonner";
+import { toast } from 'sonner';
 import { useDispatch, useSelector } from 'react-redux';
 import { usePaginate } from '../paginate';
 
@@ -128,11 +128,11 @@ export const useToggleAll = (items, getIdFromItem, dispatch, allSelected) => {
 export const handleRefreshCache = async (router, key, path) => {
   try {
     toast.info('Refreshing Cache', {
-            action: {
-              label: 'Close',
-              onClick: () => toast.dismiss()
-            }
-          });
+      action: {
+        label: 'Close',
+        onClick: () => toast.dismiss(),
+      },
+    });
     const response = await fetch('/api/dashboard/refresh', {
       method: 'POST',
       headers: {
@@ -147,11 +147,11 @@ export const handleRefreshCache = async (router, key, path) => {
     await response.json();
     router.refresh();
     toast.success('Cache Refreshed', {
-            action: {
-              label: 'Close',
-              onClick: () => toast.dismiss()
-            }
-          });
+      action: {
+        label: 'Close',
+        onClick: () => toast.dismiss(),
+      },
+    });
   } catch (error) {
     console.error('Error refreshing cache:', error);
   }

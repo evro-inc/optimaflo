@@ -230,7 +230,6 @@ export async function DeleteContainers(
       toDeleteContainers.size > 0 &&
       !permissionDenied
     ) {
-      console.log('permissionDenied', permissionDenied);
 
       try {
         // Enforcing rate limit
@@ -272,8 +271,6 @@ export async function DeleteContainers(
                       'Container'
                     );
 
-                    console.log('Inside !response.ok');
-                    console.log('errorResponse: ', errorResponse);
 
                     if (errorResponse && errorResponse.message) {
                       console.log(

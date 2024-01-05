@@ -100,7 +100,7 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
     form.reset({ forms: initialForms });
   }, [selectedRows, form]);
 
-  const processForm: SubmitHandler<Forms> = async (data) => {    
+  const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
     dispatch(setLoading(true)); // Set loading to true
 
@@ -145,11 +145,11 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
         // Show the LimitReached modal
         dispatch(setIsLimitReached(true));
         toast.error(res.message, {
-            action: {
-              label: 'Close',
-              onClick: () => toast.dismiss()
-            }
-          });
+          action: {
+            label: 'Close',
+            onClick: () => toast.dismiss(),
+          },
+        });
       }
     } catch (error) {
       logger.error('Error creating containers:', error);
@@ -218,7 +218,6 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
                   className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
                 >
                   <div className="max-w-xl mx-auto">
-                    <div className="mt-12"></div>
                     <Card
                       key={field.id}
                       className="w-full max-w-xl mx-auto bg-white shadow-md rounded-lg overflow-hidden"
@@ -266,7 +265,8 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
                                 <FormItem>
                                   <FormLabel>Account</FormLabel>
                                   <FormDescription>
-                                    This is the account ID of the container (read only)
+                                    This is the account ID of the container
+                                    (read only)
                                   </FormDescription>
                                   <FormControl>
                                     <Input
@@ -289,7 +289,8 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
                                 <FormItem>
                                   <FormLabel>Usage Context</FormLabel>
                                   <FormDescription>
-                                    This is the usage context of the container (read only)
+                                    This is the usage context of the container
+                                    (read only)
                                   </FormDescription>
                                   <FormControl>
                                     <Input

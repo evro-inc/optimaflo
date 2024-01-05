@@ -6,9 +6,10 @@ import {
   clearSelectedRows,
   selectTable,
   setIsLimitReached,
+  setNotFoundError,
 } from '@/src/app/redux/tableSlice';
 import { selectIsLoading, setLoading } from '@/src/app/redux/globalSlice';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { updateAccounts } from '@/src/lib/fetch/dashboard/gtm/actions/accounts';
@@ -16,28 +17,42 @@ import logger from '@/src/lib/logger';
 import { z } from 'zod';
 import { UpdateAccountSchema } from '@/src/lib/schemas/accounts';
 import { AnimatePresence, motion } from 'framer-motion';
-import { XMarkIcon } from '@heroicons/react/24/solid';
 import { ButtonGroup } from '../../../../../components/client/ButtonGroup/ButtonGroup';
 import { LimitReached } from '../../../../../components/client/modals/limitReached';
-import { UpdateResult } from '@/src/lib/types/types';
+import { UpdateAccountResult } from '@/src/lib/types/types';
 import { Icon } from '@/src/components/client/Button/Button';
 import { Cross1Icon } from '@radix-ui/react-icons';
-import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/card';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/src/components/ui/form';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/src/components/ui/card';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/src/components/ui/form';
 import { Input } from '@/src/components/ui/input';
+import dynamic from 'next/dynamic';
+import { toast } from 'sonner';
+
 
 // Defining the type for form data using Zod
 type Forms = z.infer<typeof UpdateAccountSchema>;
 
 // Functional component for updating account forms
-function AccountFormUpdate({ showOptions, onClose, selectedRows }) {
-
-  console.log("selectedRows", selectedRows);
-  
+function AccountFormUpdate({ showOptions, onClose, selectedRows, setAccountInfo }) {
   // Using Redux hooks for dispatching actions and selecting state
   const dispatch = useDispatch();
-  const { isLimitReached } = useSelector(selectTable);
+  const { isLimitReached, notFoundError } = useSelector(selectTable);
   const isLoading = useSelector(selectIsLoading);
+
+
 
   // useRef to keep track of form elements
   const formRefs = useRef<(HTMLFormElement | null)[]>([]);
@@ -53,17 +68,12 @@ function AccountFormUpdate({ showOptions, onClose, selectedRows }) {
   // Managing dynamic form fields using react-hook-form
   const { fields } = useFieldArray({ control: form.control, name: 'forms' });
 
-  console.log("fields", fields);
-  
-
   // useEffect to reset form values based on selected rows
   useEffect(() => {
     const initialForms = Object.values(selectedRows).map((account: any) => ({
       accountId: account?.accountId || '',
       name: account?.name || '',
     }));
-    console.log("initialForms", initialForms);
-    
     form.reset({ forms: initialForms });
   }, [selectedRows, form]);
 
@@ -76,13 +86,13 @@ function AccountFormUpdate({ showOptions, onClose, selectedRows }) {
 
     try {
       // Updating accounts with the API call
-      const res = (await updateAccounts({ forms })) as UpdateResult;
+      const res = (await updateAccounts({ forms })) as UpdateAccountResult;
 
       // Clearing selected rows and closing the form on success
       dispatch(clearSelectedRows());
       onClose();
       form.reset({ forms: [{ accountId: '', name: '' }] });
-
+      
       // Handling response based on success or limit reached
       if (res && res.success) {
         // Reset the forms here
@@ -97,7 +107,23 @@ function AccountFormUpdate({ showOptions, onClose, selectedRows }) {
       } else if (res && res.limitReached) {
         // Show the LimitReached modal
         dispatch(setIsLimitReached(true));
+      } 
+      else if (res && res.notFoundError && res.notFoundIds) {
+      // Filter out the accounts that were not found
+      const notFoundAccounts = forms.filter(form => res?.notFoundIds?.includes(form.accountId));
+
+      if (notFoundAccounts.length > 0) {
+        // Update the state with the not found accounts
+        setAccountInfo(notFoundAccounts);
+        dispatch(setNotFoundError(true));
+        toast.error(res.message || 'Some accounts were not found.', {
+          action: {
+            label: 'Close',
+            onClick: () => toast.dismiss(),
+          },
+        });
       }
+    }
     } catch (error) {
       // Logging errors
       logger.error('Error updating accounts:', error);
@@ -123,14 +149,14 @@ function AccountFormUpdate({ showOptions, onClose, selectedRows }) {
           className="fixed top-0 left-0 w-full h-full flex flex-col items-center justify-start z-50 bg-white overflow-y-auto"
         >
           {/* Close Button */}
-            <Icon
-              className="absolute top-5 right-5 font-bold py-2 px-4"
-              text="Close"
-              icon={<Cross1Icon />}
-              variant="create"
-              onClick={handleClose}
-              billingInterval={undefined}
-            />
+          <Icon
+            className="absolute top-5 right-5 font-bold py-2 px-4"
+            text="Close"
+            icon={<Cross1Icon />}
+            variant="create"
+            onClick={handleClose}
+            billingInterval={undefined}
+          />
 
           <ButtonGroup
             buttons={[
@@ -144,67 +170,58 @@ function AccountFormUpdate({ showOptions, onClose, selectedRows }) {
 
           <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-end">
             {fields.map((field, index) => (
-              <div key={field.id} className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
+              <div
+                key={field.id}
+                className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
+              >
+                <div className="max-w-xl mx-auto">
+                  <div className="mt-12"></div>
+                  <Card
+                    key={field.id}
+                    className="w-full max-w-xl mx-auto bg-white shadow-md rounded-lg overflow-hidden"
+                  >
+                    <CardHeader className="bg-gray-100 p-4">
+                      <CardTitle className="text-lg font-semibold">
+                        Account {field.name}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Form {...form}>
+                        <form
+                          className="space-y-6"
+                          ref={(el) => (formRefs.current[index] = el)}
+                          onSubmit={form.handleSubmit(processForm)}
+                          id={`updateAccount-${selectedRows[0]?.accountId}`}
+                        >
+                          <FormField
+                            control={form.control}
+                            name={`forms.${index}.name`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>New Container Name</FormLabel>
+                                <FormDescription>
+                                  Enter the new name of the account
+                                </FormDescription>
+                                <FormControl>
+                                  <Input
+                                    placeholder="Name of the account"
+                                    {...form.register(`forms.${index}.name`)}
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
 
-
-                  <div className="max-w-xl mx-auto">
-                    <div className="mt-12"></div>
-                    <Card
-                      key={field.id}
-                      className="w-full max-w-xl mx-auto bg-white shadow-md rounded-lg overflow-hidden"
-                    >
-                      <CardHeader className="bg-gray-100 p-4">
-                        <CardTitle className="text-lg font-semibold">
-                          Account {field.name}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <Form {...form}>
-                          <form
-                            className="space-y-6"
-                            ref={(el) => (formRefs.current[index] = el)}
-                            onSubmit={form.handleSubmit(processForm)}
-                            id={`updateAccount-${selectedRows[0]?.accountId}`}
-                          >
-                            <FormField
-                              control={form.control}
-                              name={`forms.${index}.name`}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>New Container Name</FormLabel>
-                                  <FormDescription>
-                                    Enter the new name of the account
-                                  </FormDescription>
-                                  <FormControl>
-                                    <Input
-                                      placeholder="Name of the account"
-                                      {...form.register(`forms.${index}.name`)}
-                                      {...field}
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-
-
-
-                            {/* Add any additional fields following the same pattern */}
-                          </form>
-                        </Form>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-
-
-
+                          {/* Add any additional fields following the same pattern */}
+                        </form>
+                      </Form>
+                    </CardContent>
+                  </Card>
+                </div>
 
                 {/* Form and other UI elements */}
-                
-
-
-
               </div>
             ))}
           </div>
@@ -213,6 +230,7 @@ function AccountFormUpdate({ showOptions, onClose, selectedRows }) {
       {isLimitReached && (
         <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
       )}
+
     </AnimatePresence>
   );
 }

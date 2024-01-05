@@ -234,7 +234,7 @@ export async function handleApiResponseError(
         errorCode: 404,
         LimitReached: false,
         message:
-          'Permission denied for container. Check if you have account permissions or refresh the data.',
+          `Permission denied for ${feature}. Check if you have ${feature} permissions or refresh the data.`,
       };
 
     case 403:
