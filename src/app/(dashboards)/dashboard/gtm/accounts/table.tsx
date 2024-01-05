@@ -16,7 +16,7 @@ const TablePaginationNoSSR = dynamic(
 );
 
 export default function AccountTable({ accounts }) {
-  const { userId } : { userId: string | null } = auth();
+  const { userId }: { userId: string | null } = auth();
   const totalPages = Math.ceil(accounts.length / 10);
   const currentPage = Array.from({ length: totalPages }, (_, i) => i + 1);
   const renderRow = (account) => (
@@ -51,7 +51,11 @@ export default function AccountTable({ accounts }) {
                     Accounts
                   </h2>
                   <div className="inline-flex gap-x-2">
-                    <RefreshIcon userId={userId} feature="accounts" variant='create' />
+                    <RefreshIcon
+                      userId={userId}
+                      feature="accounts"
+                      variant="create"
+                    />
                     <ButtonUpdate />
                   </div>
                 </div>

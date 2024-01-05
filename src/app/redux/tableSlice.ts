@@ -46,9 +46,9 @@ export const tableSlice = createSlice({
     clearSelectedRows: (state) => {
       state.selectedRows = {}; // Clear selectedRows by setting it to an empty object
     },
-    toggleAllSelected: (state) => {
+    toggleAllSelected: (state, action) => {
       // Add this reducer to toggle the allSelected state
-      state.allSelected = !state.allSelected;
+        state.allSelected = action.payload !== undefined ? action.payload : !state.allSelected;
     },
     setNotFoundError: (state, action: PayloadAction<boolean>) => {
       state.notFoundError = action.payload;

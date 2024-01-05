@@ -13,6 +13,8 @@ import { SignInButton } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { handleRefreshCache } from '@/src/lib/helpers/client';
 import { ReloadIcon } from '@radix-ui/react-icons';
+import { useDispatch } from 'react-redux';
+import { setNotFoundError } from '@/src/app/redux/tableSlice';
 
 const getModeClasses = (variant, billingInterval?) => {
   let baseClasses = '';
@@ -311,7 +313,6 @@ export const Icon = ({
   );
 };
 
-
 export const RefreshIcon = ({
   variant = 'primary',
   userId,
@@ -326,17 +327,52 @@ export const RefreshIcon = ({
 
   return (
     <Button className={`${BASE_BUTTON_CLASSES} ${computedClasses}`} {...props}>
-      <span onClick={() => handleRefreshCache(
-        router,
-        `gtm:${feature}-userId:${userId}`,
-        `/dashboard/gtm/${feature}`
-      )}><ReloadIcon /></span>
+      <span
+        onClick={() =>
+          handleRefreshCache(
+            router,
+            `gtm:${feature}-userId:${userId}`,
+            `/dashboard/gtm/${feature}`
+          )
+        }
+      >
+        <ReloadIcon />
+      </span>
     </Button>
-  
   );
 };
 
+export const RefreshModal = ({
+  variant = 'primary',
+  userId,
+  feature,
+  ...props
+}) => {
+  const dispatch = useDispatch();
+  const router = useRouter();
+  const computedClasses = useMemo(() => {
+    const modeClass = getModeClasses(variant);
+    return [modeClass].join(' ');
+  }, [variant]);
 
+  return (
+    <Button className={`${BASE_BUTTON_CLASSES} ${computedClasses}`} {...props}>
+      <span
+        onClick={() =>
+          handleRefreshCache(
+            router,
+            `gtm:${feature}-userId:${userId}`,
+            `/dashboard/gtm/${feature}`
+          ).then(() => {
+            dispatch(setNotFoundError(false));
+          })
+        }
+      >
+        Close and Refresh
+      </span>
+    </Button>
+  );
+};
 
 export const ButtonSignIn = ({
   variant = 'signup',

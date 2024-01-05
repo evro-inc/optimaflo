@@ -1,5 +1,9 @@
 'use client';
-import { selectTable, setIsLimitReached, setNotFoundError } from '@/src/app/redux/tableSlice';
+import {
+  selectTable,
+  setIsLimitReached,
+  setNotFoundError,
+} from '@/src/app/redux/tableSlice';
 import { selectEntity, toggleUpdate } from '@/src/app/redux/sharedSlice';
 import dynamic from 'next/dynamic';
 import React, { useState } from 'react';
@@ -25,10 +29,10 @@ const NotFoundErrorModal = dynamic(
 
 function AccountForms() {
   const dispatch = useDispatch();
-  const { selectedRows, isLimitReached, notFoundError } = useSelector(selectTable);
+  const { selectedRows, isLimitReached, notFoundError } =
+    useSelector(selectTable);
   const { showUpdate } = useSelector(selectEntity);
   const [accountInfo, setAccountInfo] = useState({ accountId: [], name: [] });
-
 
   return (
     <>
@@ -37,9 +41,12 @@ function AccountForms() {
       )}
 
       {notFoundError && (
-        <NotFoundErrorModal onClose={() => dispatch(setNotFoundError(false))} feature="account" accounts={accountInfo}/>
+        <NotFoundErrorModal
+          feature="account"
+          accounts={accountInfo}
+        />
       )}
-      
+
       {showUpdate && (
         <AccountFormUpdate
           showOptions={showUpdate}

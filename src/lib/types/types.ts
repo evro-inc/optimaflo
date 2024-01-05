@@ -113,6 +113,7 @@ export type ContainerType = {
 
 export type UpdateAccountResult = {
   success: boolean;
+  updatedAccounts?: { accountId: string; name: string }[];
   limitReached?: boolean;
   message?: string;
   error?: string;

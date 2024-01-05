@@ -192,21 +192,20 @@ export async function updateAccounts(
 
             const parsedResponse = await response.json();
 
-
-            if (!response.ok) {              
+            if (!response.ok) {
               if (response.status === 404) {
-                    // Return an object indicating this account was not found
-                    return { accountId: form.accountId, notFound: true };
-                  } else {
-                    // Handle other errors
-                    const errorResponse: any = await handleApiResponseError(
-                      response,
-                      parsedResponse,
-                      'Account'
-                    );
-                    errors.push(errorResponse.message);
-                    return { accountId: form.accountId, error: true };
-                  }
+                // Return an object indicating this account was not found
+                return { accountId: form.accountId, notFound: true };
+              } else {
+                // Handle other errors
+                const errorResponse: any = await handleApiResponseError(
+                  response,
+                  parsedResponse,
+                  'Account'
+                );
+                errors.push(errorResponse.message);
+                return { accountId: form.accountId, error: true };
+              }
             } else {
               return { ...parsedResponse, success: true };
             }
@@ -216,8 +215,11 @@ export async function updateAccounts(
         // Awaiting all update promises
         const results = await Promise.all(updatePromises);
         const notFoundIds = results
-          .filter(result => result && result.notFound)
-          .map(result => result.accountId);          
+          .filter((result) => result && result.notFound)
+          .map((result) => result.accountId);
+        const successfulUpdates = results.filter(
+          (result) => result && result.success
+        );
 
         // Handling cases where feature limits are reached
         if (featureLimitReached.length > 0) {
@@ -228,13 +230,16 @@ export async function updateAccounts(
               ', '
             )}`,
           };
-        }
-        else if (notFoundIds.length > 0) {
+        } else if (notFoundIds.length > 0) {
           return {
             success: false,
             notFoundError: true,
             notFoundIds: notFoundIds,
-            message: 'Some accounts were not found.',
+            updatedAccounts: successfulUpdates.map((update) => ({
+              accountId: update.accountId,
+              name: update.name,
+            })),
+            message: `Account(s) not found: ${notFoundIds.join(', ')}`,
           };
         }
 
@@ -243,7 +248,7 @@ export async function updateAccounts(
           return {
             success: false,
             limitReached: false,
-            notFoundError: true ,
+            notFoundError: true,
             message: errors.join(', '),
           };
         } else {
@@ -269,9 +274,10 @@ export async function updateAccounts(
           return {
             success: true,
             limitReached: false,
-            updatedWorkspaces: results
-              .filter((r) => r.success)
-              .map((r) => r.resText),
+            updatedAccounts: successfulUpdates.map((update) => ({
+              accountId: update.accountId,
+              name: update.name,
+            })),
           };
         }
       }

@@ -233,8 +233,7 @@ export async function handleApiResponseError(
         success: false,
         errorCode: 404,
         LimitReached: false,
-        message:
-          `Permission denied for ${feature}. Check if you have ${feature} permissions or refresh the data.`,
+        message: `Permission denied for ${feature}. Check if you have ${feature} permissions or refresh the data.`,
       };
 
     case 403:

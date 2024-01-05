@@ -7,6 +7,7 @@ import {
   selectTable,
   setIsLimitReached,
   setNotFoundError,
+  toggleAllSelected,
 } from '@/src/app/redux/tableSlice';
 import { selectIsLoading, setLoading } from '@/src/app/redux/globalSlice';
 import { useEffect, useRef, useState } from 'react';
@@ -78,42 +79,39 @@ function AccountFormUpdate({ showOptions, onClose, selectedRows, setAccountInfo 
   }, [selectedRows, form]);
 
   // Function to process form submission
-  const processForm: SubmitHandler<Forms> = async (data) => {
-    const { forms } = data;
+// Function to process form submission
+const processForm: SubmitHandler<Forms> = async (data) => {
+  const { forms } = data;
 
-    // Dispatching loading state
-    dispatch(setLoading(true));
+  // Dispatching loading state
+  dispatch(setLoading(true));
 
-    try {
-      // Updating accounts with the API call
-      const res = (await updateAccounts({ forms })) as UpdateAccountResult;
+  try {
+    // Updating accounts with the API call
+    const res = await updateAccounts({ forms }) as UpdateAccountResult;
 
-      // Clearing selected rows and closing the form on success
-      dispatch(clearSelectedRows());
-      onClose();
-      form.reset({ forms: [{ accountId: '', name: '' }] });
-      
-      // Handling response based on success or limit reached
-      if (res && res.success) {
-        // Reset the forms here
-        form.reset({
-          forms: [
-            {
-              accountId: '',
-              name: '',
-            },
-          ],
+    // Check for successful updates and show toasts
+    if (res && res.updatedAccounts) {
+      res.updatedAccounts.forEach(account => {
+        toast.success(`Account ${account.name} (ID: ${account.accountId}) updated successfully.`, {
+          action: {
+            label: 'Close',
+            onClick: () => toast.dismiss(),
+          },
         });
-      } else if (res && res.limitReached) {
-        // Show the LimitReached modal
-        dispatch(setIsLimitReached(true));
-      } 
-      else if (res && res.notFoundError && res.notFoundIds) {
-      // Filter out the accounts that were not found
+      });
+    }
+
+    // Then check if there's a limit reached error
+    if (res && res.limitReached) {
+      dispatch(setIsLimitReached(true));
+    }
+
+    // Lastly, check for not found errors
+    if (res && res.notFoundError && res.notFoundIds) {
       const notFoundAccounts = forms.filter(form => res?.notFoundIds?.includes(form.accountId));
 
       if (notFoundAccounts.length > 0) {
-        // Update the state with the not found accounts
         setAccountInfo(notFoundAccounts);
         dispatch(setNotFoundError(true));
         toast.error(res.message || 'Some accounts were not found.', {
@@ -124,16 +122,21 @@ function AccountFormUpdate({ showOptions, onClose, selectedRows, setAccountInfo 
         });
       }
     }
-    } catch (error) {
-      // Logging errors
-      logger.error('Error updating accounts:', error);
-    } finally {
-      dispatch(setLoading(false));
-    }
-  };
+  } catch (error) {
+    logger.error('Error updating accounts:', error);
+  } finally {
+    // Always clear selected rows and close the form
+    dispatch(clearSelectedRows());
+    dispatch(toggleAllSelected(false));
+    onClose();
+    form.reset({ forms: [{ accountId: '', name: '' }] });
+    dispatch(setLoading(false));
+  }
+};
 
   // Function to handle form close
   const handleClose = () => {
+    dispatch(toggleAllSelected(false));
     form.reset({ forms: [{ accountId: '', name: '' }] });
     dispatch(clearSelectedRows());
     onClose();

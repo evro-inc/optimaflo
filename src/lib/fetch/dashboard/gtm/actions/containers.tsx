@@ -230,7 +230,6 @@ export async function DeleteContainers(
       toDeleteContainers.size > 0 &&
       !permissionDenied
     ) {
-
       try {
         // Enforcing rate limit
         const { remaining } = await gtmRateLimit.blockUntilReady(
@@ -270,7 +269,6 @@ export async function DeleteContainers(
                       parsedResponse,
                       'Container'
                     );
-
 
                     if (errorResponse && errorResponse.message) {
                       console.log(
