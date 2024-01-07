@@ -9,21 +9,27 @@ import {
 } from '@/src/app/redux/globalSlice';
 import { tierCreateLimit, tierUpdateLimit } from '@/src/lib/helpers/server';
 import { ReloadIcon } from '@radix-ui/react-icons';
+import { useRouter } from 'next/navigation';
+import { handleRefreshCache, useRowSelection } from '@/src/lib/helpers/client';
+import { handleDelete } from '@/src/app/(dashboards)/dashboard/gtm/containers/delete';
+
 
 const TableActions = ({
-  onDelete,
-  isUpdateDisabled,
-  isDeleteDisabled,
-  onRefresh,
   userId,
+  handleCreateLimit,
 }) => {
   const dispatch = useDispatch();
+  const router = useRouter();
+
+  const { selectedRows } = useRowSelection(
+    (container) => container.containerId
+  );
 
   const handleCreateClick = async () => {
     try {
-      const limitResponse: any = await tierCreateLimit(userId, 'GTMContainer');
 
-      if (limitResponse && limitResponse.limitReached) {
+
+      if (handleCreateLimit && handleCreateLimit.limitReached) {
         // Directly show the limit reached modal
         dispatch(setIsLimitReached(true)); // Assuming you have an action to explicitly set this
       } else {
@@ -57,7 +63,12 @@ const TableActions = ({
         text={''}
         icon={<ReloadIcon />}
         variant="create"
-        onClick={onRefresh}
+        onClick={() =>
+                handleRefreshCache(
+                  router,
+                  `gtm:containers-userId:${userId}`,
+                  '/dashboard/gtm/containers'
+                )}
         billingInterval={undefined}
       />
       <ButtonWithIcon
@@ -86,7 +97,7 @@ const TableActions = ({
       <ButtonWithIcon
         variant="create"
         text="Update"
-        disabled={isUpdateDisabled}
+        disabled={Object.keys(selectedRows).length === 0}
         icon={
           <svg
             className="w-3 h-3"
@@ -109,9 +120,9 @@ const TableActions = ({
       />
       <ButtonDelete
         text="Delete"
-        disabled={isDeleteDisabled}
+        disabled={Object.keys(selectedRows).length === 0}
         variant="create"
-        onClick={onDelete}
+        onClick={handleDelete}
         billingInterval={undefined}
       />
     </div>

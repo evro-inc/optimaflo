@@ -4,12 +4,22 @@ import { useDispatch, useSelector } from 'react-redux';
 import { selectTable, setSelectedRows } from '@/src/app/redux/tableSlice';
 import { Checkbox } from '../../ui/checkbox';
 
-function ToggleRow({ item }) {
+interface InputToggleRowProps {
+  item: any; // Replace 'any' with a specific type if possible
+  uniqueIdentifier: string[]; // e.g., 'accountId', 'containerId'
+}
+
+export const ToggleRow: React.FC<InputToggleRowProps> = ({
+  item,
+  uniqueIdentifier,
+}) => {
   const dispatch = useDispatch();
   const { selectedRows } = useSelector(selectTable);
 
-  // Assume 'item' contains all necessary data like in ToggleAll
-  const uniqueKey = item.accountId; // Assuming 'accountId' is the unique identifier in 'item'
+  // Determine the uniqueKey based on whether uniqueIdentifier is a string or an array
+  const uniqueKey = Array.isArray(uniqueIdentifier)
+    ? uniqueIdentifier.map(key => item[key]).join('-')
+    : item[uniqueIdentifier];
 
   const toggleRow = () => {
     const newSelectedRows = { ...selectedRows };
@@ -17,7 +27,7 @@ function ToggleRow({ item }) {
     if (newSelectedRows[uniqueKey]) {
       delete newSelectedRows[uniqueKey];
     } else {
-      newSelectedRows[uniqueKey] = item; // Add the entire item
+      newSelectedRows[uniqueKey] = item;
     }
 
     dispatch(setSelectedRows(newSelectedRows));
@@ -32,6 +42,4 @@ function ToggleRow({ item }) {
       onCheckedChange={toggleRow}
     />
   );
-}
-
-export default ToggleRow;
+};

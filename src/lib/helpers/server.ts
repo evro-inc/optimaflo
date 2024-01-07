@@ -127,8 +127,6 @@ export const tierCreateLimit = async (userId: string, featureName: string) => {
       },
     });
 
-    console.log('tierLimitRecord create', tierLimitRecord);
-
     // Handling feature limit
     if (
       !tierLimitRecord ||

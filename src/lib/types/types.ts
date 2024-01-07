@@ -169,7 +169,7 @@ export type CreateResult = {
 export type FormCreateContainerProps = {
   showOptions: boolean;
   onClose: () => void;
-  accounts: any; // Replace 'any' with the actual type if known
+  accounts: any; 
 };
 
 export type FormCreateWorkspaceProps = {

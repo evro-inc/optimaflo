@@ -1,4 +1,4 @@
-import ToggleRow from '@/src/components/client/UI/InputToggleRow';
+import {ToggleRow} from '@/src/components/client/UI/InputToggleRow';
 import AccountForms from '@/src/components/client/UI/AccountForms';
 import ButtonUpdate from '@/src/components/client/UI/ButtonUpdate';
 import TableRows from '@/src/components/server/UI/TableRow';
@@ -25,7 +25,12 @@ export default function AccountTable({ accounts }) {
       item={account}
       columns={[
         {
-          render: (item) => <ToggleRow item={item} />,
+          render: (item) => (
+              <ToggleRow 
+                item={item} 
+                uniqueIdentifier={['accountId']}
+              />
+            ),
         },
         {
           render: (item) => <label>{item.name}</label>,

@@ -2,7 +2,6 @@
 import {
   selectTable,
   setIsLimitReached,
-  setNotFoundError,
 } from '@/src/app/redux/tableSlice';
 import { selectEntity, toggleUpdate } from '@/src/app/redux/sharedSlice';
 import dynamic from 'next/dynamic';

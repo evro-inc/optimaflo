@@ -1,4 +1,5 @@
 'use server';
+
 import React from 'react';
 import '../../styles/globals.css';
 import NavApp from '@/src/components/client/Navbar/NavApp';

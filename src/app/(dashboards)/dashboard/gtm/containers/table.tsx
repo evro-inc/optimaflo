@@ -1,39 +1,20 @@
-'use client';
-import dynamic from 'next/dynamic';
-import React from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { DeleteContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containers';
-import { ContainerType, DeleteContainersResponse } from '@/src/lib/types/types';
-import {
-  selectGlobal,
-  toggleCreateContainer,
-  toggleUpdateContainer,
-  /* toggleCombineContainer, */
-} from '@/src/app/redux/globalSlice';
-import {
-  clearSelectedRows,
-  selectTable,
-  setIsLimitReached,
-  setNotFoundError,
-} from '@/src/app/redux/tableSlice';
-/* import FormCombineContainer from '../../../../../components/client/GTM/containers/combineContainer'; */
-import { useAuth } from '@clerk/nextjs';
-import { useRouter } from 'next/navigation';
+import {ToggleRow} from '@/src/components/client/UI/InputToggleRow';
+import AccountForms from '@/src/components/client/UI/AccountForms';
+import ButtonUpdate from '@/src/components/client/UI/ButtonUpdate';
 import TableRows from '@/src/components/server/UI/TableRow';
-import {
-  useError,
-  useRowSelection,
-  useToggleAll,
-} from '@/src/lib/helpers/client';
+import { Table, TableBody, TableFooter } from '@/src/components/ui/table';
+import TableHeaderRow from '@/src/components/server/UI/Tableheader';
+import dynamic from 'next/dynamic';
+import { RefreshIcon } from '@/src/components/client/Button/Button';
+import { auth } from '@clerk/nextjs';
+import { ContainerType } from '@/src/lib/types/types';
 import TableActions from '@/src/components/client/UI/TableActions';
 import { handleRefreshCache } from '@/src/lib/helpers/client';
-import TableHeaderRow from '@/src/components/server/UI/Tableheader';
-import { ErrorMessage } from '@/src/components/client/modals/Error';
-import { toast } from 'sonner';
-import { Table, TableBody, TableFooter } from '@/src/components/ui/table';
-import { Checkbox } from '@/src/components/ui/checkbox';
+import { handleDelete } from './delete';
+import ContainerForms from '@/src/components/client/UI/ContainerForms';
+import {tierCreateLimit} from '@/src/lib/helpers/server';
+import { notFound } from 'next/navigation';
 
-// Dynamically import the TablePagination with SSR turned off
 const TablePaginationNoSSR = dynamic(
   () => import('@/src/components/client/UI/TablePagination'),
   {
@@ -41,136 +22,14 @@ const TablePaginationNoSSR = dynamic(
   }
 );
 
-//dynamic import for buttons
-const LimitReachedModal = dynamic(
-  () =>
-    import('../../../../../components/client/modals/limitReached').then(
-      (mod) => mod.LimitReached
-    ),
-  { ssr: false }
-);
+export default async function ContainerTable({ accounts, containers }) {
+  const { userId }: { userId: string | null } = auth();
+  if (!userId) return notFound();
 
-const NotFoundErrorModal = dynamic(
-  () =>
-    import('../../../../../components/client/modals/notFoundError').then(
-      (mod) => mod.NotFoundError
-    ),
-  { ssr: false }
-);
+  const totalPages = Math.ceil(accounts.length / 10);
+  const currentPage = Array.from({ length: totalPages }, (_, i) => i + 1);
+  const createLimitResponse: any = await tierCreateLimit(userId, 'GTMContainer');
 
-const FormCreateContainer = dynamic(() => import('./create'), {
-  ssr: false,
-});
-
-const FormUpdateContainer = dynamic(() => import('./update'), {
-  ssr: false,
-});
-
-// In the component render method
-
-export default function ContainerTable({ accounts, containers }) {
-  const auth = useAuth();
-  const router = useRouter();
-  const userId = auth?.userId;
-  const dispatch = useDispatch();
-  const { showUpdateContainer, showCreateContainer } =
-    useSelector(selectGlobal);
-  const { itemsPerPage, currentPage, isLimitReached, notFoundError } =
-    useSelector(selectTable);
-  const { toggleRow, selectedRows, allSelected } = useRowSelection(
-    (container) => container.containerId
-  );
-  const { error, clearError } = useError();
-
-  const currentItems = containers.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-  const totalPages = Math.ceil(containers.length / itemsPerPage);
-
-  const handleDelete = async () => {
-    toast('Deleting containers...', {
-      action: {
-        label: 'Close',
-        onClick: () => toast.dismiss(),
-      },
-    });
-    const uniqueAccountIds = Array.from(
-      new Set(
-        Object.values(selectedRows).map((rowData: any) => rowData.accountId)
-      )
-    );
-
-    const deleteOperations = uniqueAccountIds.map(async (accountId) => {
-      const containersToDelete = Object.entries(
-        selectedRows as { [key: string]: ContainerType }
-      )
-        .filter(([, rowData]) => rowData.accountId === accountId)
-        .map(([containerId]) => containerId);
-
-      return DeleteContainers(accountId, new Set(containersToDelete));
-    });
-
-    // Wait for all delete operations to complete
-    const responses: DeleteContainersResponse[] = await Promise.all(
-      deleteOperations
-    );
-
-    let notFoundContainers: any = [];
-
-    responses.forEach((response, index) => {
-      if (!response.success && response.errors) {
-        response.errors.forEach((error) => {
-          if (error.includes('Not found or permission denied')) {
-            // Find the container ID and name associated with this error
-            const containerId = Object.keys(selectedRows)[index];
-            const containerName = selectedRows[containerId]?.name;
-            notFoundContainers.push(`${containerName} (ID: ${containerId})`);
-          }
-        });
-      }
-    });
-
-    // Check if any of the responses contains errors
-    const hasErrors = responses.some(
-      (response) =>
-        !response.success ||
-        response.limitReached ||
-        (response.errors && response.errors.length > 0)
-    );
-
-    if (hasErrors) {
-      // Display the message from each response if it exists
-      responses.forEach((response) => {
-        if (response.message) {
-          toast.error(response.message, {
-            action: {
-              label: 'Close',
-              onClick: () => toast.dismiss(),
-            },
-          });
-        }
-      });
-    } else {
-      // If no errors, show success toast
-      responses.forEach((response) => {
-        if (response.message) {
-          toast.success(response.message + 'The table will update shortly.', {
-            action: {
-              label: 'Close',
-              onClick: () => toast.dismiss(),
-            },
-          });
-        }
-      });
-    }
-
-    // Dispatch actions based on the responses
-    const limitReached = responses.some((response) => response.limitReached);
-    dispatch(setIsLimitReached(limitReached));
-
-    dispatch(clearSelectedRows());
-  };
 
   const renderRow = (container: ContainerType) => {
     return (
@@ -180,10 +39,9 @@ export default function ContainerTable({ accounts, containers }) {
         columns={[
           {
             render: (item) => (
-              <Checkbox
-                id={`checkbox-${item.containerId}`}
-                checked={!!selectedRows[item.containerId]}
-                onCheckedChange={() => toggleRow(item)}
+              <ToggleRow 
+                item={item} 
+              uniqueIdentifier={['accountId', 'containerId']}
               />
             ),
           },
@@ -207,16 +65,6 @@ export default function ContainerTable({ accounts, containers }) {
     );
   };
 
-  const getIdFromContainer = (container) => container.containerId;
-
-  // Use `useToggleAll` with the correct arguments
-  const toggleAll = useToggleAll(
-    containers,
-    getIdFromContainer,
-    dispatch,
-    allSelected
-  );
-
   return (
     <>
       <div className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14 mx-auto">
@@ -224,24 +72,18 @@ export default function ContainerTable({ accounts, containers }) {
           <div className="-m-1.5 overflow-x-auto">
             <div className="p-1.5 min-w-full inline-block align-middle">
               <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden dark:bg-slate-900 dark:border-gray-700">
+                {/* Table Actions here, if applicable */}
                 <div className="px-6 py-4 grid gap-3 md:flex md:justify-between md:items-center border-b border-gray-200 dark:border-gray-700">
                   {/* Header */}
                   <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
                     Containers
                   </h2>
+                  <div className="inline-flex gap-x-2">
                   <TableActions
                     userId={userId}
-                    onDelete={handleDelete}
-                    isUpdateDisabled={Object.keys(selectedRows).length === 0}
-                    isDeleteDisabled={Object.keys(selectedRows).length === 0}
-                    onRefresh={() =>
-                      handleRefreshCache(
-                        router,
-                        `gtm:containers-userId:${userId}`,
-                        '/dashboard/gtm/containers'
-                      )
-                    }
+                    handleCreateLimit={createLimitResponse}
                   />
+                  </div>
                 </div>
                 <Table>
                   <TableHeaderRow
@@ -252,13 +94,13 @@ export default function ContainerTable({ accounts, containers }) {
                       'Account ID',
                       'Usage Context',
                     ]}
-                    toggleAll={toggleAll}
-                    allSelected={allSelected}
+                    items={containers}
+                    uniqueKeys={['accountId', 'containerId']}
                   />
                   <TableBody>
-                    {currentItems.map((container) => renderRow(container))}
+                    {containers.map((container) => renderRow(container))}
                   </TableBody>
-                  <TableFooter></TableFooter>
+                  <TableFooter>{/* Footer content */}</TableFooter>
                 </Table>
                 <TablePaginationNoSSR
                   currentPage={currentPage}
@@ -269,34 +111,10 @@ export default function ContainerTable({ accounts, containers }) {
           </div>
         </div>
       </div>
-
-      {/* Modals */}
-      {isLimitReached && (
-        <LimitReachedModal onClose={() => dispatch(setIsLimitReached(false))} />
-      )}
-
-      {notFoundError && (
-        <NotFoundErrorModal onClose={() => dispatch(setNotFoundError(false))} />
-      )}
-
-      {error && <ErrorMessage onClose={clearError} />}
-
-      {/* Forms */}
-      {showCreateContainer && (
-        <FormCreateContainer
-          showOptions={showCreateContainer}
-          onClose={() => dispatch(toggleCreateContainer())}
-          accounts={accounts}
-        />
-      )}
-      {showUpdateContainer && (
-        <FormUpdateContainer
-          showOptions={showUpdateContainer}
-          onClose={() => dispatch(toggleUpdateContainer())}
-          accounts={accounts}
-          selectedRows={selectedRows}
-        />
-      )}
+      <ContainerForms 
+        accounts={accounts}
+        containers={containers}
+      />
     </>
   );
 }

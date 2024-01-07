@@ -98,6 +98,9 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
     const { forms } = data;
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
+    console.log('forms', forms);
+    
+
     // Check for duplicate container names for the same account
     const uniqueContainers = new Set();
     for (const form of forms) {
