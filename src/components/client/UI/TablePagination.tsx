@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
-import { useDispatch } from 'react-redux';
-import { setCurrentPage } from '@/src/app/redux/tableSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { selectTable, setCurrentPage } from '@/src/app/redux/tableSlice';
 import {
   Pagination,
   PaginationContent,
@@ -11,15 +11,25 @@ import {
   PaginationPrevious,
 } from '@/src/components/ui/pagination';
 
-const TablePagination = ({ currentPage, totalPages }) => {
+const TablePagination = ({ containers }) => {
   const dispatch = useDispatch();
 
   const changePage = (newPage) => {
     dispatch(setCurrentPage(newPage));
   };
+  const { itemsPerPage, currentPage } =
+    useSelector(selectTable);
+    
+  const currentItems = containers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+  const totalPages = Math.ceil(containers.length / itemsPerPage);
+
 
   const isPreviousDisabled = currentPage === 1;
   const isNextDisabled = currentPage === totalPages || totalPages === 1;
+
 
   return (
     <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700">

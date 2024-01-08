@@ -26,10 +26,7 @@ export default async function ContainerTable({ accounts, containers }) {
   const { userId }: { userId: string | null } = auth();
   if (!userId) return notFound();
 
-  const totalPages = Math.ceil(accounts.length / 10);
-  const currentPage = Array.from({ length: totalPages }, (_, i) => i + 1);
   const createLimitResponse: any = await tierCreateLimit(userId, 'GTMContainer');
-
 
   const renderRow = (container: ContainerType) => {
     return (
@@ -103,8 +100,7 @@ export default async function ContainerTable({ accounts, containers }) {
                   <TableFooter>{/* Footer content */}</TableFooter>
                 </Table>
                 <TablePaginationNoSSR
-                  currentPage={currentPage}
-                  totalPages={totalPages}
+                  containers={containers}
                 />
               </div>
             </div>
