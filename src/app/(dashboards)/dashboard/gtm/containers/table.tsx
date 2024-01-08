@@ -12,8 +12,10 @@ import TableActions from '@/src/components/client/UI/TableActions';
 import { handleRefreshCache } from '@/src/lib/helpers/client';
 import { handleDelete } from './delete';
 import ContainerForms from '@/src/components/client/UI/ContainerForms';
-import {tierCreateLimit} from '@/src/lib/helpers/server';
+import {fetchFilteredRows, fetchPages, tierCreateLimit} from '@/src/lib/helpers/server';
 import { notFound } from 'next/navigation';
+import { listAllGtmContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containers';
+import Search from '@/src/components/client/UI/Search';
 
 const TablePaginationNoSSR = dynamic(
   () => import('@/src/components/client/UI/TablePagination'),
@@ -22,11 +24,23 @@ const TablePaginationNoSSR = dynamic(
   }
 );
 
-export default async function ContainerTable({ accounts, containers }) {
+export default async function ContainerTable({ accounts, containers, query, currentPage }) {
   const { userId }: { userId: string | null } = auth();
   if (!userId) return notFound();
 
   const createLimitResponse: any = await tierCreateLimit(userId, 'GTMContainer');
+
+  const { data: rows, total, page, pageSize } = await fetchFilteredRows(
+    listAllGtmContainers,
+    query,
+    currentPage,
+  )
+  
+  const totalPages = await fetchPages(
+    listAllGtmContainers,
+    query,
+    10,
+  );
 
   const renderRow = (container: ContainerType) => {
     return (
@@ -76,6 +90,7 @@ export default async function ContainerTable({ accounts, containers }) {
                     Containers
                   </h2>
                   <div className="inline-flex gap-x-2">
+                    <Search placeholder={''}/>
                   <TableActions
                     userId={userId}
                     handleCreateLimit={createLimitResponse}
@@ -91,16 +106,16 @@ export default async function ContainerTable({ accounts, containers }) {
                       'Account ID',
                       'Usage Context',
                     ]}
-                    items={containers}
+                    items={rows}
                     uniqueKeys={['accountId', 'containerId']}
                   />
                   <TableBody>
-                    {containers.map((container) => renderRow(container))}
+                    {rows.map((container) => renderRow(container))}
                   </TableBody>
                   <TableFooter>{/* Footer content */}</TableFooter>
                 </Table>
                 <TablePaginationNoSSR
-                  containers={containers}
+                  totalPages={totalPages}
                 />
               </div>
             </div>

@@ -10,22 +10,19 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/src/components/ui/pagination';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
-const TablePagination = ({ containers }) => {
-  const dispatch = useDispatch();
+const TablePagination = ({ totalPages }) => {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentPage = Number(searchParams.get('page')) || 1;
+  const { push } = useRouter();
 
-  const changePage = (newPage) => {
-    dispatch(setCurrentPage(newPage));
+  const changePage = (pageNumber: number | string) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('page', pageNumber.toString());
+    push(`${pathname}?${params.toString()}`);
   };
-  const { itemsPerPage, currentPage } =
-    useSelector(selectTable);
-    
-  const currentItems = containers.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-  const totalPages = Math.ceil(containers.length / itemsPerPage);
-
 
   const isPreviousDisabled = currentPage === 1;
   const isNextDisabled = currentPage === totalPages || totalPages === 1;

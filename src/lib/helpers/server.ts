@@ -1,6 +1,24 @@
 'use server';
+import { notFound } from 'next/navigation';
 import logger from '../logger';
 import prisma from '../prisma';
+import { currentUserOauthAccessToken } from '@/src/lib/clerk';
+import { auth } from '@clerk/nextjs';
+import { ContainerType } from '../types/types';
+
+// Define the type for the pagination and filtering result
+type PaginatedFilteredResult<T> = {
+  data: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+// Define the type for the listing function
+type ListFunction<T> = (accessToken: string) => Promise<T[]>;
+
+
+
 
 export const getURL = () => {
   let vercelUrl = process.env.VERCEL_URL; // Assign VERCEL_URL to vercelUrl
@@ -259,4 +277,67 @@ export async function handleApiResponseError(
       };
   }
   return null;
+}
+
+
+export async function fetchFilteredRows<T>(
+  listFunction: ListFunction<T>,
+  query: string,
+  currentPage: number,
+  pageSize: number = 10
+): Promise<PaginatedFilteredResult<any>> {
+
+  const { userId } = auth();
+  if (!userId) return notFound();
+  const token = await currentUserOauthAccessToken(userId);
+
+  // Fetch all items using the provided listing function
+  const allItems = await listFunction(token[0].token);
+
+  // Filter items based on the query
+  const filteredItems = allItems.filter((item: any) =>
+    item.name.toLowerCase().includes(query.toLowerCase())
+  );
+
+  // Calculate pagination values
+  const total = filteredItems.length;
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+
+  // Paginate the filtered items
+  const paginatedItems = filteredItems.slice(startIndex, endIndex);
+
+  return {
+    data: paginatedItems,
+    total: total,
+    page: currentPage,
+    pageSize: pageSize,
+  };
+}
+
+// src/lib/fetch/dashboard/gtm/actions/containers.tsx
+// ... (other imports)
+
+// Function to fetch the total number of pages
+export async function fetchPages<T>(
+  listFunction: ListFunction<T>,
+  query: string,
+  pageSize: number
+): Promise<number> {
+  const { userId } = auth();
+  if (!userId) return notFound();
+  const token = await currentUserOauthAccessToken(userId);
+
+
+  // Fetch all containers without applying pagination
+  const allItems = await listFunction(token[0].token);
+
+  // Filter containers based on the query with a type guard to ensure 'name' property exists
+  const filteredContainers = allItems.filter((container: any) =>
+    'name' in container && container.name.toLowerCase().includes(query.toLowerCase())
+  );
+
+  // Calculate the total number of pages
+  const totalPages = Math.ceil(filteredContainers.length / pageSize);
+  return totalPages;
 }
