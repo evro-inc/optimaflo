@@ -5,7 +5,6 @@ import TableRows from '@/src/components/server/UI/TableRow';
 import { Table, TableBody, TableFooter } from '@/src/components/ui/table';
 import TableHeaderRow from '@/src/components/server/UI/Tableheader';
 import dynamic from 'next/dynamic';
-import { RefreshIcon } from '@/src/components/client/Button/Button';
 import { auth } from '@clerk/nextjs';
 import { ContainerType } from '@/src/lib/types/types';
 import TableActions from '@/src/components/client/UI/TableActions';
@@ -15,7 +14,6 @@ import ContainerForms from '@/src/components/client/UI/ContainerForms';
 import {fetchFilteredRows, fetchPages, tierCreateLimit} from '@/src/lib/helpers/server';
 import { notFound } from 'next/navigation';
 import { listAllGtmContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containers';
-import Search from '@/src/components/client/UI/Search';
 
 const TablePaginationNoSSR = dynamic(
   () => import('@/src/components/client/UI/TablePagination'),
@@ -90,7 +88,7 @@ export default async function ContainerTable({ accounts, containers, query, curr
                     Containers
                   </h2>
                   <div className="inline-flex gap-x-2">
-                    <Search placeholder={''}/>
+                    
                   <TableActions
                     userId={userId}
                     handleCreateLimit={createLimitResponse}

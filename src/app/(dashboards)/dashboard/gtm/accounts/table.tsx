@@ -7,6 +7,8 @@ import TableHeaderRow from '@/src/components/server/UI/Tableheader';
 import dynamic from 'next/dynamic';
 import { RefreshIcon } from '@/src/components/client/Button/Button';
 import { auth } from '@clerk/nextjs';
+import { fetchFilteredRows, fetchPages } from '@/src/lib/helpers/server';
+import { listGtmAccounts } from '@/src/lib/fetch/dashboard/gtm/actions/accounts';
 
 const TablePaginationNoSSR = dynamic(
   () => import('@/src/components/client/UI/TablePagination'),
@@ -15,10 +17,24 @@ const TablePaginationNoSSR = dynamic(
   }
 );
 
-export default function AccountTable({ accounts }) {
+export default async function AccountTable({ accounts, query, currentPage  }) {
   const { userId }: { userId: string | null } = auth();
-  const totalPages = Math.ceil(accounts.length / 10);
-  const currentPage = Array.from({ length: totalPages }, (_, i) => i + 1);
+
+  const { data: rows, total, page, pageSize } = await fetchFilteredRows(
+    listGtmAccounts,
+    query,
+    currentPage,
+  )
+  
+  const totalPages = await fetchPages(
+    listGtmAccounts,
+    query,
+    10,
+  );
+
+
+
+
   const renderRow = (account) => (
     <TableRows
       key={account.accountId}
@@ -67,16 +83,15 @@ export default function AccountTable({ accounts }) {
                 <Table>
                   <TableHeaderRow
                     headers={['Account Name', 'Account ID']}
-                    items={accounts}
+                    items={rows}
                     uniqueKeys={['accountId']}
                   />
                   <TableBody>
-                    {accounts.map((account) => renderRow(account))}
+                    {rows.map((account) => renderRow(account))}
                   </TableBody>
                   <TableFooter>{/* Footer content */}</TableFooter>
                 </Table>
                 <TablePaginationNoSSR
-                  currentPage={currentPage}
                   totalPages={totalPages}
                 />
               </div>

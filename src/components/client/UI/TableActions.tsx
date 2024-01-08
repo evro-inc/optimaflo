@@ -12,6 +12,7 @@ import { ReloadIcon } from '@radix-ui/react-icons';
 import { useRouter } from 'next/navigation';
 import { handleRefreshCache, useRowSelection } from '@/src/lib/helpers/client';
 import { handleDelete } from '@/src/app/(dashboards)/dashboard/gtm/containers/delete';
+import Search from './Search';
 
 
 const TableActions = ({
@@ -59,6 +60,7 @@ const TableActions = ({
 
   return (
     <div className="inline-flex gap-x-2">
+      <Search placeholder={''}/>
       <Icon
         text={''}
         icon={<ReloadIcon />}
