@@ -60,8 +60,6 @@ export default function ContainerForms({ accounts, containers }) {
   );
   const { error, clearError } = useError();
 
-console.log('accounts', accounts);
-
 
   return (
     <>

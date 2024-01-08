@@ -75,8 +75,6 @@ export const handleRefreshCache = async (router, key, path) => {
       }),
     });
 
-    console.log('response', response);
-
     await response.json();
     router.refresh();
   } catch (error) {
@@ -188,8 +186,6 @@ export const tierUpdateLimit = async (userId: string, featureName: string) => {
         Subscription: true,
       },
     });
-
-    console.log('tierLimitRecord update', tierLimitRecord);
 
     // Handling feature limit
     if (

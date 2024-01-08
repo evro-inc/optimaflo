@@ -97,8 +97,6 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
   const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
     dispatch(setLoading(true)); // Set loading to true using Redux action
-
-    console.log('forms', forms);
     
 
     // Check for duplicate container names for the same account

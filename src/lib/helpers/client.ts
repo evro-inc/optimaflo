@@ -29,8 +29,6 @@ export const handleGenericDelete = async (
 
     const responses = await Promise.all(deleteOperations);
 
-    console.log(responses);
-
     const limitReached = responses.some((response) => response.limitReached);
     const notFoundErrorOccurred = responses.some((response) =>
       response.results.some((result) => result.notFound)
