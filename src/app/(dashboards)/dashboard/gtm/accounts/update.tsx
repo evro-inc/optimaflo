@@ -42,18 +42,20 @@ import { Input } from '@/src/components/ui/input';
 import dynamic from 'next/dynamic';
 import { toast } from 'sonner';
 
-
 // Defining the type for form data using Zod
 type Forms = z.infer<typeof UpdateAccountSchema>;
 
 // Functional component for updating account forms
-function AccountFormUpdate({ showOptions, onClose, selectedRows, setAccountInfo }) {
+function AccountFormUpdate({
+  showOptions,
+  onClose,
+  selectedRows,
+  setAccountInfo,
+}) {
   // Using Redux hooks for dispatching actions and selecting state
   const dispatch = useDispatch();
   const { isLimitReached, notFoundError } = useSelector(selectTable);
   const isLoading = useSelector(selectIsLoading);
-
-
 
   // useRef to keep track of form elements
   const formRefs = useRef<(HTMLFormElement | null)[]>([]);
@@ -79,60 +81,65 @@ function AccountFormUpdate({ showOptions, onClose, selectedRows, setAccountInfo 
   }, [selectedRows, form]);
 
   // Function to process form submission
-// Function to process form submission
-const processForm: SubmitHandler<Forms> = async (data) => {
-  const { forms } = data;
+  // Function to process form submission
+  const processForm: SubmitHandler<Forms> = async (data) => {
+    const { forms } = data;
 
-  // Dispatching loading state
-  dispatch(setLoading(true));
+    // Dispatching loading state
+    dispatch(setLoading(true));
 
-  try {
-    // Updating accounts with the API call
-    const res = await updateAccounts({ forms }) as UpdateAccountResult;
+    try {
+      // Updating accounts with the API call
+      const res = (await updateAccounts({ forms })) as UpdateAccountResult;
 
-    // Check for successful updates and show toasts
-    if (res && res.updatedAccounts) {
-      res.updatedAccounts.forEach(account => {
-        toast.success(`Account ${account.name} (ID: ${account.accountId}) updated successfully.`, {
-          action: {
-            label: 'Close',
-            onClick: () => toast.dismiss(),
-          },
-        });
-      });
-    }
-
-    // Then check if there's a limit reached error
-    if (res && res.limitReached) {
-      dispatch(setIsLimitReached(true));
-    }
-
-    // Lastly, check for not found errors
-    if (res && res.notFoundError && res.notFoundIds) {
-      const notFoundAccounts = forms.filter(form => res?.notFoundIds?.includes(form.accountId));
-
-      if (notFoundAccounts.length > 0) {
-        setAccountInfo(notFoundAccounts);
-        dispatch(setNotFoundError(true));
-        toast.error(res.message || 'Some accounts were not found.', {
-          action: {
-            label: 'Close',
-            onClick: () => toast.dismiss(),
-          },
+      // Check for successful updates and show toasts
+      if (res && res.updatedAccounts) {
+        res.updatedAccounts.forEach((account) => {
+          toast.success(
+            `Account ${account.name} (ID: ${account.accountId}) updated successfully.`,
+            {
+              action: {
+                label: 'Close',
+                onClick: () => toast.dismiss(),
+              },
+            }
+          );
         });
       }
+
+      // Then check if there's a limit reached error
+      if (res && res.limitReached) {
+        dispatch(setIsLimitReached(true));
+      }
+
+      // Lastly, check for not found errors
+      if (res && res.notFoundError && res.notFoundIds) {
+        const notFoundAccounts = forms.filter((form) =>
+          res?.notFoundIds?.includes(form.accountId)
+        );
+
+        if (notFoundAccounts.length > 0) {
+          setAccountInfo(notFoundAccounts);
+          dispatch(setNotFoundError(true));
+          toast.error(res.message || 'Some accounts were not found.', {
+            action: {
+              label: 'Close',
+              onClick: () => toast.dismiss(),
+            },
+          });
+        }
+      }
+    } catch (error) {
+      logger.error('Error updating accounts:', error);
+    } finally {
+      // Always clear selected rows and close the form
+      dispatch(clearSelectedRows());
+      dispatch(toggleAllSelected(false));
+      onClose();
+      form.reset({ forms: [{ accountId: '', name: '' }] });
+      dispatch(setLoading(false));
     }
-  } catch (error) {
-    logger.error('Error updating accounts:', error);
-  } finally {
-    // Always clear selected rows and close the form
-    dispatch(clearSelectedRows());
-    dispatch(toggleAllSelected(false));
-    onClose();
-    form.reset({ forms: [{ accountId: '', name: '' }] });
-    dispatch(setLoading(false));
-  }
-};
+  };
 
   // Function to handle form close
   const handleClose = () => {
@@ -233,7 +240,6 @@ const processForm: SubmitHandler<Forms> = async (data) => {
       {isLimitReached && (
         <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
       )}
-
     </AnimatePresence>
   );
 }

@@ -1,4 +1,4 @@
-import {ToggleRow} from '@/src/components/client/UI/InputToggleRow';
+import { ToggleRow } from '@/src/components/client/UI/InputToggleRow';
 import AccountForms from '@/src/components/client/UI/AccountForms';
 import ButtonUpdate from '@/src/components/client/UI/ButtonUpdate';
 import TableRows from '@/src/components/server/UI/TableRow';
@@ -9,6 +9,7 @@ import { RefreshIcon } from '@/src/components/client/Button/Button';
 import { auth } from '@clerk/nextjs';
 import { fetchFilteredRows, fetchPages } from '@/src/lib/helpers/server';
 import { listGtmAccounts } from '@/src/lib/fetch/dashboard/gtm/actions/accounts';
+import { Label } from '@/src/components/ui/label';
 
 const TablePaginationNoSSR = dynamic(
   () => import('@/src/components/client/UI/TablePagination'),
@@ -17,23 +18,14 @@ const TablePaginationNoSSR = dynamic(
   }
 );
 
-export default async function AccountTable({ accounts, query, currentPage  }) {
+export default async function AccountTable({ accounts, query, currentPage }) {
   const { userId }: { userId: string | null } = auth();
 
-  const { data: rows, total, page, pageSize } = await fetchFilteredRows(
-    listGtmAccounts,
-    query,
-    currentPage,
-  )
-  
-  const totalPages = await fetchPages(
-    listGtmAccounts,
-    query,
-    10,
-  );
+  const {
+    data: rows,
+  } = await fetchFilteredRows(listGtmAccounts, query, currentPage);
 
-
-
+  const totalPages = await fetchPages(listGtmAccounts, query, 10);
 
   const renderRow = (account) => (
     <TableRows
@@ -42,17 +34,16 @@ export default async function AccountTable({ accounts, query, currentPage  }) {
       columns={[
         {
           render: (item) => (
-              <ToggleRow 
-                item={item} 
-                uniqueIdentifier={['accountId']}
-              />
-            ),
+            <ToggleRow item={item} uniqueIdentifier={['accountId']} />
+          ),
         },
         {
-          render: (item) => <label>{item.name}</label>,
+          render: (item) => <Label htmlFor={item.accountId}>{item.name}</Label>,
         },
         {
-          render: (item) => <label>{item.accountId}</label>,
+          render: (item) => (
+            <Label htmlFor={item.accountId}>{item.accountId}</Label>
+          ),
         },
       ]}
     />
@@ -91,9 +82,7 @@ export default async function AccountTable({ accounts, query, currentPage  }) {
                   </TableBody>
                   <TableFooter>{/* Footer content */}</TableFooter>
                 </Table>
-                <TablePaginationNoSSR
-                  totalPages={totalPages}
-                />
+                <TablePaginationNoSSR totalPages={totalPages} />
               </div>
             </div>
           </div>

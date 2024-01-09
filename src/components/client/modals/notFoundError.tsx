@@ -1,7 +1,8 @@
+"use client";
+
 import React from 'react';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { Alert, AlertTitle, AlertDescription } from '@/src/components/ui/alert';
-import { Button } from '../../ui/button';
 import {
   Table,
   TableBody,
@@ -12,10 +13,14 @@ import {
 } from '../../ui/table';
 import { RefreshModal } from '../Button/Button';
 import { useAuth } from '@clerk/nextjs';
+import { useSelector } from 'react-redux';
 
-export function NotFoundError({ feature, accounts }) {
-  // Check if accounts is an array and has at least one account
-  const hasAccountDetails = Array.isArray(accounts) && accounts.length > 0;
+export function NotFoundError({ feature }) {
+  // Use a selector to get the error details from the store
+  const errorDetails = useSelector((state: any) => state.table.errorDetails);
+
+  // Check if errorDetails is an array and has at least one item
+  const hasErrorDetails = Array.isArray(errorDetails) && errorDetails.length > 0;
   const { userId } = useAuth();
 
   return (
@@ -29,22 +34,22 @@ export function NotFoundError({ feature, accounts }) {
           <AlertDescription className="text-center">
             Check if you have access to this {feature}. If you do, please
             contact the team that manages access to your GTM container(s).
-            {hasAccountDetails ? (
+            {hasErrorDetails ? (
               <Table className="mt-5 mb-5">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-left">Account Name</TableHead>
-                    <TableHead className="text-left">Account ID</TableHead>
+                    <TableHead className="text-left">{feature} Name</TableHead>
+                    <TableHead className="text-left">{feature} ID</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {accounts.map((account) => (
-                    <TableRow key={account.accountId}>
+                  {errorDetails.map((errorItem) => (
+                    <TableRow key={errorItem.id.join(',')}>
                       <TableCell className="text-left">
-                        {account.name}
+                        {errorItem.name.join(', ')}
                       </TableCell>
                       <TableCell className="text-left">
-                        {account.accountId}
+                        {errorItem.id.join(', ')}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -58,7 +63,7 @@ export function NotFoundError({ feature, accounts }) {
           <RefreshModal
             type="button"
             userId={userId}
-            feature="accounts"
+            feature={feature}
             variant="create"
           />
         </div>

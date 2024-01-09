@@ -97,7 +97,6 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
   const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
     dispatch(setLoading(true)); // Set loading to true using Redux action
-    
 
     // Check for duplicate container names for the same account
     const uniqueContainers = new Set();
@@ -340,7 +339,7 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
                                                   key={account.accountId}
                                                   value={account.accountId}
                                                 >
-                                                  {account.accountId}
+                                                  {account.name}
                                                 </SelectItem>
                                               ))}
                                           </SelectGroup>

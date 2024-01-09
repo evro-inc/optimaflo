@@ -11,16 +11,13 @@ import { tierCreateLimit, tierUpdateLimit } from '@/src/lib/helpers/server';
 import { ReloadIcon } from '@radix-ui/react-icons';
 import { useRouter } from 'next/navigation';
 import { handleRefreshCache, useRowSelection } from '@/src/lib/helpers/client';
-import { handleDelete } from '@/src/app/(dashboards)/dashboard/gtm/containers/delete';
+import { useDeleteHook } from '@/src/app/(dashboards)/dashboard/gtm/containers/delete';
 import Search from './Search';
 
-
-const TableActions = ({
-  userId,
-  handleCreateLimit,
-}) => {
+const TableActions = ({ userId }) => {
   const dispatch = useDispatch();
   const router = useRouter();
+  const handleDelete = useDeleteHook();
 
   const { selectedRows } = useRowSelection(
     (container) => container.containerId
@@ -28,8 +25,11 @@ const TableActions = ({
 
   const handleCreateClick = async () => {
     try {
-
-
+      const handleCreateLimit: any = await tierCreateLimit(
+        userId,
+        'GTMContainer'
+      );
+      
       if (handleCreateLimit && handleCreateLimit.limitReached) {
         // Directly show the limit reached modal
         dispatch(setIsLimitReached(true)); // Assuming you have an action to explicitly set this
@@ -60,17 +60,18 @@ const TableActions = ({
 
   return (
     <div className="inline-flex gap-x-2">
-      <Search placeholder={''}/>
+      <Search placeholder={''} />
       <Icon
         text={''}
         icon={<ReloadIcon />}
         variant="create"
         onClick={() =>
-                handleRefreshCache(
-                  router,
-                  `gtm:containers-userId:${userId}`,
-                  '/dashboard/gtm/containers'
-                )}
+          handleRefreshCache(
+            router,
+            `gtm:containers-userId:${userId}`,
+            '/dashboard/gtm/containers'
+          )
+        }
         billingInterval={undefined}
       />
       <ButtonWithIcon

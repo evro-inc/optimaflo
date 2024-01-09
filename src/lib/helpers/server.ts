@@ -17,9 +17,6 @@ type PaginatedFilteredResult<T> = {
 // Define the type for the listing function
 type ListFunction<T> = (accessToken: string) => Promise<T[]>;
 
-
-
-
 export const getURL = () => {
   let vercelUrl = process.env.VERCEL_URL; // Assign VERCEL_URL to vercelUrl
 
@@ -218,10 +215,12 @@ export const tierUpdateLimit = async (userId: string, featureName: string) => {
 export async function handleApiResponseError(
   response: Response,
   parsedResponse: any,
-  feature: string
+  feature: string,
+  names: string[]
 ) {
   switch (response.status) {
     case 400:
+
       if (
         parsedResponse.error &&
         parsedResponse.error.message.includes(
@@ -237,7 +236,7 @@ export async function handleApiResponseError(
       return {
         success: false,
         errorCode: 400,
-        message: 'Unknown error occurred',
+        message: parsedResponse.error.message,
       };
 
     case 404:
@@ -245,7 +244,7 @@ export async function handleApiResponseError(
         success: false,
         errorCode: 404,
         LimitReached: false,
-        message: `Permission denied for ${feature}. Check if you have ${feature} permissions or refresh the data.`,
+        message: `Permission denied for ${feature}. Check if you have ${feature} permissions or refresh the data for ${names}.`,
       };
 
     case 403:
@@ -275,14 +274,12 @@ export async function handleApiResponseError(
   return null;
 }
 
-
 export async function fetchFilteredRows<T>(
   listFunction: ListFunction<T>,
   query: string,
   currentPage: number,
   pageSize: number = 10
 ): Promise<PaginatedFilteredResult<any>> {
-
   const { userId } = auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
@@ -324,13 +321,14 @@ export async function fetchPages<T>(
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
 
-
   // Fetch all containers without applying pagination
   const allItems = await listFunction(token[0].token);
 
   // Filter containers based on the query with a type guard to ensure 'name' property exists
-  const filteredContainers = allItems.filter((container: any) =>
-    'name' in container && container.name.toLowerCase().includes(query.toLowerCase())
+  const filteredContainers = allItems.filter(
+    (container: any) =>
+      'name' in container &&
+      container.name.toLowerCase().includes(query.toLowerCase())
   );
 
   // Calculate the total number of pages

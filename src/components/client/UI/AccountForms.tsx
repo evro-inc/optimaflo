@@ -1,8 +1,5 @@
 'use client';
-import {
-  selectTable,
-  setIsLimitReached,
-} from '@/src/app/redux/tableSlice';
+import { selectTable, setIsLimitReached } from '@/src/app/redux/tableSlice';
 import { selectEntity, toggleUpdate } from '@/src/app/redux/sharedSlice';
 import dynamic from 'next/dynamic';
 import React, { useState } from 'react';
@@ -40,10 +37,7 @@ function AccountForms() {
       )}
 
       {notFoundError && (
-        <NotFoundErrorModal
-          feature="account"
-          accounts={accountInfo}
-        />
+        <NotFoundErrorModal feature="account" data={accountInfo} />
       )}
 
       {showUpdate && (

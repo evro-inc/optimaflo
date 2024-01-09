@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import {DeleteContainerResult} from '../../lib/types/types';  
 
 export interface TableRow {
   id: string;
@@ -14,6 +15,7 @@ export interface TableState {
   notFoundError: boolean;
   isModalOpen: boolean;
   error: string | null;
+  errorDetails: DeleteContainerResult[];
 }
 
 const initialState: TableState = {
@@ -25,6 +27,7 @@ const initialState: TableState = {
   notFoundError: false,
   isModalOpen: false,
   error: null,
+  errorDetails: [], 
 };
 
 export const tableSlice = createSlice({
@@ -48,10 +51,14 @@ export const tableSlice = createSlice({
     },
     toggleAllSelected: (state, action) => {
       // Add this reducer to toggle the allSelected state
-        state.allSelected = action.payload !== undefined ? action.payload : !state.allSelected;
+      state.allSelected =
+        action.payload !== undefined ? action.payload : !state.allSelected;
     },
     setNotFoundError: (state, action: PayloadAction<boolean>) => {
       state.notFoundError = action.payload;
+    },
+    setErrorDetails: (state, action: PayloadAction<DeleteContainerResult[]>) => {
+      state.errorDetails = action.payload;
     },
     openModal: (state) => {
       state.isModalOpen = true;
@@ -75,6 +82,7 @@ export const {
   openModal,
   closeModal,
   setError,
+  setErrorDetails,
 } = tableSlice.actions;
 
 export const selectTable = (state) => state.table; // Adjust this if your state structure has changed

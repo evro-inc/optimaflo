@@ -29,7 +29,8 @@ type FormCreateSchema = z.infer<typeof CreateContainerSchema>;
 ************************************************************************************/
 export async function listGtmContainers(
   accessToken: string,
-  accountId: string
+  accountId: string,
+  accountName: string
 ) {
   let retries = 0;
   const MAX_RETRIES = 3;
@@ -81,7 +82,10 @@ export async function listGtmContainers(
           60 * 60 * 2
         );
 
-        return data;
+        return {
+          accountName,
+          containers: data
+        };
       }
     } catch (error: any) {
       if (error.code === 429 || error.status === 429) {
@@ -126,14 +130,19 @@ export async function listAllGtmContainers(accessToken: string) {
 
         // Fetch containers for each account in parallel
         const containersPromises = accounts.map((account) =>
-          listGtmContainers(accessToken, account.accountId)
+          listGtmContainers(accessToken, account.accountId, account.name)
         );
 
         // Get results for all accounts
         const containersResults = await Promise.all(containersPromises);
 
         // Combine containers from all accounts into one array
-        const combinedContainers = containersResults.flat();
+        const combinedContainers = containersResults.flatMap(result => {
+          return result.containers.map(container => ({
+            ...container,
+            accountName: result.accountName
+          }));
+        });
 
         // Cache the result in Redis
         await redis.set(
@@ -170,8 +179,8 @@ export async function listAllGtmContainers(accessToken: string) {
   Delete a single or multiple containers
 ************************************************************************************/
 export async function DeleteContainers(
-  accountId: string,
-  selectedContainers: Set<string>
+  selectedContainers: Set<string>,
+  containerNames: string[]
 ): Promise<DeleteContainersResponse> {
   // Initialization of retry mechanism
   let retries = 0;
@@ -241,7 +250,10 @@ export async function DeleteContainers(
           await limiter.schedule(async () => {
             // Creating promises for each container deletion
             const deletePromises = Array.from(toDeleteContainers).map(
-              async (containerId) => {
+              async (combinedId) => {
+                const [accountId, containerId] = combinedId.split('-');
+                
+                
                 const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}`;
                 const headers = {
                   Authorization: `Bearer ${token[0].token}`,
@@ -253,34 +265,30 @@ export async function DeleteContainers(
                     method: 'DELETE',
                     headers: headers,
                   });
+                  
+                  let parsedResponse;
 
-                  const parsedResponse = await response.json();
-
-                  // Handling successful deletion
                   if (response.ok) {
                     successfulDeletions.push(containerId);
                     toDeleteContainers.delete(containerId);
                     return { containerId, success: true };
-                  }
-
-                  if (!response.ok) {
-                    const errorResponse: any = await handleApiResponseError(
-                      response,
-                      parsedResponse,
-                      'Container'
-                    );
-
-                    if (errorResponse && errorResponse.message) {
-                      console.log(
-                        'errorResponse.message: ',
-                        errorResponse.message
-                      );
-                      errors.push(errorResponse.message);
-                    }
-                    errors.push(errorResponse.message);
                   } else {
-                    successfulDeletions.push(containerId);
+                    parsedResponse = await response.json();
+                    const errorResult = await handleApiResponseError(response, parsedResponse, 'container', containerNames);
+
+                    if (errorResult) {
+                      errors.push(`${errorResult.message}`);
+                      if (errorResult.errorCode === 403 && parsedResponse.message === 'Feature limit reached') {
+                        featureLimitReachedContainers.push(containerId);
+                      } else if (errorResult.errorCode === 404) {
+                        notFoundLimit.push(containerId); // Track 404 errors
+                      }
+                    } else {
+                      errors.push(`An unknown error occurred for container ${containerNames}.`);
+                    }
+
                     toDeleteContainers.delete(containerId);
+                    permissionDenied = errorResult ? true : permissionDenied;
                   }
                 } catch (error: any) {
                   // Handling exceptions during fetch
@@ -308,18 +316,31 @@ export async function DeleteContainers(
           if (notFoundLimit.length > 0) {
             return {
               success: false,
-              limitReached: true,
-              message: `Data/premissions not found: ${notFoundLimit.join(
-                ', '
-              )}`,
+              limitReached: false,
+              notFoundError: true, // Set the notFoundError flag
+              message: `Data/permissions not found: ${notFoundLimit.join(', ')}`,
               results: notFoundLimit.map((containerId) => ({
-                containerId,
+                id: [containerId], // Ensure id is an array
+                name: [containerNames.find(name => name.includes(name)) || 'Unknown'], // Ensure name is an array, match by containerId or default to 'Unknown'
                 success: false,
                 notFound: true,
               })),
             };
           }
-
+          if (featureLimitReachedContainers.length > 0) {
+            return {
+              success: false,
+              limitReached: true,
+              notFoundError: false,
+              message: `Feature limit reached for containers: ${featureLimitReachedContainers.join(', ')}`,
+              results: featureLimitReachedContainers.map((containerId) => ({
+                id: [containerId], // Ensure id is an array
+                name: [containerNames.find(name => name.includes(name)) || 'Unknown'], // Ensure name is an array, match by containerId or default to 'Unknown'
+                success: false,
+                featureLimitReached: true,
+              })),
+            };
+          }
           // Update tier limit usage as before (not shown in code snippet)
           if (successfulDeletions.length === selectedContainers.size) {
             break; // Exit loop if all containers are processed successfully
@@ -345,11 +366,12 @@ export async function DeleteContainers(
       }
     }
   }
-  if (permissionDenied) {
+  if (permissionDenied) {    
     return {
       success: false,
       errors: errors,
       results: [],
+      message: errors.join(', '),
     };
   }
 
@@ -359,7 +381,8 @@ export async function DeleteContainers(
       deletedContainers: successfulDeletions,
       errors: errors,
       results: successfulDeletions.map((containerId) => ({
-        containerId,
+        id: [containerId], // Ensure id is an array
+        name: [containerNames.find(name => name.includes(name)) || 'Unknown'], // Ensure name is an array and provide a default value
         success: true,
       })),
       // Add a general message if needed
@@ -382,16 +405,18 @@ export async function DeleteContainers(
   }
 
   // Returning the result of the deletion process
-  return {
-    success: errors.length === 0,
-    message: `Successfully deleted ${successfulDeletions.length} container(s)`,
-    deletedContainers: successfulDeletions,
-    errors: errors,
-    results: successfulDeletions.map((containerId) => ({
-      containerId,
-      success: true,
-    })),
-  };
+return {
+  success: errors.length === 0,
+  message: `Successfully deleted ${successfulDeletions.length} container(s)`,
+  deletedContainers: successfulDeletions,
+  errors: errors,
+  notFoundError: notFoundLimit.length > 0,
+  results: successfulDeletions.map((containerId) => ({
+    id: [containerId], // Ensure id is an array
+    name: [containerNames.find(name => name.includes(name)) || 'Unknown'], // Ensure name is an array
+    success: true,
+  })),
+};
 }
 
 /************************************************************************************
@@ -488,11 +513,6 @@ export async function CreateContainers(formData: FormCreateSchema) {
 
                 const parsedResponse = await response.json();
 
-                if (response.ok) {
-                  successfulCreations.push(containerName);
-                  toCreateContainers.delete(identifier);
-                }
-
                 if (!response.ok) {
                   // Common error handling for non-200 responses
                   let errorMessage = `Error for container ${containerName}. `;
@@ -532,11 +552,13 @@ export async function CreateContainers(formData: FormCreateSchema) {
 
                   errors.push(errorMessage);
                   toCreateContainers.delete(identifier);
-                } else {
-                  // Handling successful response
+                } 
+
+                if (response.ok) {
                   successfulCreations.push(containerName);
                   toCreateContainers.delete(identifier);
                 }
+
               } catch (error: any) {
                 errors.push(
                   `Exception creating container ${containerName}: ${error.message}`
@@ -715,40 +737,49 @@ export async function updateContainers(formData) {
 
                 const parsedResponse = await response.json();
 
+                if (!response.ok) {
+                 if (response.status === 404) {
+                  // Handling 'not found' error
+                    if (
+                      parsedResponse.message === 'Not found or permission denied'
+                    ) {
+                      notFoundLimit.push(containerName);
+                      return {
+                        success: false,
+                        errorCode: 404,
+                        message: 'Feature limit reached',
+                      };
+                    }
+                    errors.push(
+                      `Not found or permission denied for container ${containerName}`
+                    );
+                  } else if (response.status === 403) {
+                    // Handling feature limit error
+                    if (parsedResponse.message === 'Feature limit reached') {
+                      featureLimitReachedContainers.push(containerName);
+                      return {
+                        success: false,
+                        errorCode: 403,
+                        message: 'Feature limit reached',
+                      };
+                    }
+                  } else {
+                    errors.push(
+                      `Error ${response.status} for container ${containerName}: ${parsedResponse.message}`
+                    );
+                    toupdateContainers.delete(identifier);
+                  }
+                }
+
+
                 if (response.ok) {
                   successfulCreations.push(containerName);
                   toupdateContainers.delete(identifier);
-                } else if (response.status === 404) {
-                  // Handling 'not found' error
-                  if (
-                    parsedResponse.message === 'Not found or permission denied'
-                  ) {
-                    notFoundLimit.push(containerName);
-                    return {
-                      success: false,
-                      errorCode: 404,
-                      message: 'Feature limit reached',
-                    };
-                  }
-                  errors.push(
-                    `Not found or permission denied for container ${containerName}`
-                  );
-                } else if (response.status === 403) {
-                  // Handling feature limit error
-                  if (parsedResponse.message === 'Feature limit reached') {
-                    featureLimitReachedContainers.push(containerName);
-                    return {
-                      success: false,
-                      errorCode: 403,
-                      message: 'Feature limit reached',
-                    };
-                  }
-                } else {
-                  errors.push(
-                    `Error ${response.status} for container ${containerName}: ${parsedResponse.message}`
-                  );
-                  toupdateContainers.delete(identifier);
-                }
+                } 
+                
+                
+                
+
               } catch (error: any) {
                 errors.push(
                   `Exception creating container ${containerName}: ${error.message}`

@@ -1,6 +1,4 @@
-import {ToggleRow} from '@/src/components/client/UI/InputToggleRow';
-import AccountForms from '@/src/components/client/UI/AccountForms';
-import ButtonUpdate from '@/src/components/client/UI/ButtonUpdate';
+import { ToggleRow } from '@/src/components/client/UI/InputToggleRow';
 import TableRows from '@/src/components/server/UI/TableRow';
 import { Table, TableBody, TableFooter } from '@/src/components/ui/table';
 import TableHeaderRow from '@/src/components/server/UI/Tableheader';
@@ -8,12 +6,14 @@ import dynamic from 'next/dynamic';
 import { auth } from '@clerk/nextjs';
 import { ContainerType } from '@/src/lib/types/types';
 import TableActions from '@/src/components/client/UI/TableActions';
-import { handleRefreshCache } from '@/src/lib/helpers/client';
-import { handleDelete } from './delete';
 import ContainerForms from '@/src/components/client/UI/ContainerForms';
-import {fetchFilteredRows, fetchPages, tierCreateLimit} from '@/src/lib/helpers/server';
+import {
+  fetchFilteredRows,
+  fetchPages,
+} from '@/src/lib/helpers/server';
 import { notFound } from 'next/navigation';
 import { listAllGtmContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containers';
+import { Label } from '@/src/components/ui/label';
 
 const TablePaginationNoSSR = dynamic(
   () => import('@/src/components/client/UI/TablePagination'),
@@ -22,25 +22,23 @@ const TablePaginationNoSSR = dynamic(
   }
 );
 
-export default async function ContainerTable({ accounts, containers, query, currentPage }) {
+export default async function ContainerTable({
+  accounts,
+  containers,
+  query,
+  currentPage,
+}) {
   const { userId }: { userId: string | null } = auth();
   if (!userId) return notFound();
 
-  const createLimitResponse: any = await tierCreateLimit(userId, 'GTMContainer');
+  const {
+    data: rows,
+  } = await fetchFilteredRows(listAllGtmContainers, query, currentPage);
 
-  const { data: rows, total, page, pageSize } = await fetchFilteredRows(
-    listAllGtmContainers,
-    query,
-    currentPage,
-  )
-  
-  const totalPages = await fetchPages(
-    listAllGtmContainers,
-    query,
-    10,
-  );
+  const totalPages = await fetchPages(listAllGtmContainers, query, 10);
 
   const renderRow = (container: ContainerType) => {
+    
     return (
       <TableRows
         key={`${container.accountId}-${container.containerId}`}
@@ -48,26 +46,36 @@ export default async function ContainerTable({ accounts, containers, query, curr
         columns={[
           {
             render: (item) => (
-              <ToggleRow 
-                item={item} 
-              uniqueIdentifier={['accountId', 'containerId']}
+              <ToggleRow
+                item={item}
+                uniqueIdentifier={['accountId', 'containerId']}
               />
             ),
           },
           {
-            render: (item) => <label>{item.name}</label>,
+            render: (item) => (
+              <Label htmlFor={item.containerId}>{item.name}</Label>
+            ),
           },
           {
-            render: (item) => <label>{item.containerId}</label>,
+            render: (item) => (
+              <Label htmlFor={item.containerId}>{item.containerId}</Label>
+            ),
           },
           {
-            render: (item) => <label>{item.publicId}</label>,
+            render: (item) => (
+              <Label htmlFor={item.containerId}>{item.publicId}</Label>
+            ),
           },
           {
-            render: (item) => <label>{item.accountId}</label>,
+            render: (item) => (
+              <Label htmlFor={item.containerId}>{item.accountName}</Label>
+            ),
           },
           {
-            render: (item) => <label>{item.usageContext}</label>,
+            render: (item) => (
+              <Label htmlFor={item.containerId}>{item.usageContext}</Label>
+            ),
           },
         ]}
       />
@@ -88,11 +96,9 @@ export default async function ContainerTable({ accounts, containers, query, curr
                     Containers
                   </h2>
                   <div className="inline-flex gap-x-2">
-                    
-                  <TableActions
-                    userId={userId}
-                    handleCreateLimit={createLimitResponse}
-                  />
+                    <TableActions
+                      userId={userId}
+                    />
                   </div>
                 </div>
                 <Table>
@@ -101,7 +107,7 @@ export default async function ContainerTable({ accounts, containers, query, curr
                       'Container Name',
                       'Container ID',
                       'GTM ID',
-                      'Account ID',
+                      'Account Name',
                       'Usage Context',
                     ]}
                     items={rows}
@@ -112,18 +118,13 @@ export default async function ContainerTable({ accounts, containers, query, curr
                   </TableBody>
                   <TableFooter>{/* Footer content */}</TableFooter>
                 </Table>
-                <TablePaginationNoSSR
-                  totalPages={totalPages}
-                />
+                <TablePaginationNoSSR totalPages={totalPages} />
               </div>
             </div>
           </div>
         </div>
       </div>
-      <ContainerForms 
-        accounts={accounts}
-        containers={containers}
-      />
+      <ContainerForms accounts={accounts} containers={containers} />
     </>
   );
 }

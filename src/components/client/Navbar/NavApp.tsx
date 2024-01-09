@@ -34,9 +34,7 @@ export default function Navbar() {
 
       <NavigationMenu>
         <NavigationMenuList>
-          <NavigationMenuItem>
-
-          </NavigationMenuItem>
+          <NavigationMenuItem></NavigationMenuItem>
           <NavigationMenuItem>
             <NavigationMenuLink>
               <UserButton />

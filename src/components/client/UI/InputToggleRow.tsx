@@ -18,8 +18,9 @@ export const ToggleRow: React.FC<InputToggleRowProps> = ({
 
   // Determine the uniqueKey based on whether uniqueIdentifier is a string or an array
   const uniqueKey = Array.isArray(uniqueIdentifier)
-    ? uniqueIdentifier.map(key => item[key]).join('-')
+    ? uniqueIdentifier.map((key) => item[key]).join('-')
     : item[uniqueIdentifier];
+    
 
   const toggleRow = () => {
     const newSelectedRows = { ...selectedRows };

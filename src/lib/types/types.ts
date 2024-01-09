@@ -169,7 +169,7 @@ export type CreateResult = {
 export type FormCreateContainerProps = {
   showOptions: boolean;
   onClose: () => void;
-  accounts: any; 
+  accounts: any;
 };
 
 export type FormCreateWorkspaceProps = {
@@ -194,8 +194,9 @@ export type WorkspaceData = {
   workspaceName: string;
 };
 
-interface DeleteContainerResult {
-  containerId: string;
+export interface DeleteContainerResult {
+  id: string[];
+  name: string[];
   success: boolean;
   notFound?: boolean;
 }
