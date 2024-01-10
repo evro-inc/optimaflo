@@ -220,7 +220,6 @@ export async function handleApiResponseError(
 ) {
   switch (response.status) {
     case 400:
-
       if (
         parsedResponse.error &&
         parsedResponse.error.message.includes(

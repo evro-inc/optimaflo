@@ -36,9 +36,7 @@ function AccountForms() {
         <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
       )}
 
-      {notFoundError && (
-        <NotFoundErrorModal feature="account" data={accountInfo} />
-      )}
+      {notFoundError && <NotFoundErrorModal />}
 
       {showUpdate && (
         <AccountFormUpdate

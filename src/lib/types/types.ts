@@ -194,21 +194,21 @@ export type WorkspaceData = {
   workspaceName: string;
 };
 
-export interface DeleteContainerResult {
+export interface ContainerResult {
   id: string[];
   name: string[];
   success: boolean;
   notFound?: boolean;
 }
 
-export interface DeleteContainersResponse {
+export interface ContainersResponse {
   success: boolean;
-  deletedContainers?: string[];
+  containers?: string[];
   errors?: string[];
   limitReached?: boolean;
   errorCode?: number;
   message?: string;
-  results: DeleteContainerResult[];
+  results: ContainerResult[];
   notFoundError?: boolean;
 }
 

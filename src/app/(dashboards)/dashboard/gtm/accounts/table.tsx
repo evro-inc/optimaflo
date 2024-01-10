@@ -21,9 +21,11 @@ const TablePaginationNoSSR = dynamic(
 export default async function AccountTable({ accounts, query, currentPage }) {
   const { userId }: { userId: string | null } = auth();
 
-  const {
-    data: rows,
-  } = await fetchFilteredRows(listGtmAccounts, query, currentPage);
+  const { data: rows } = await fetchFilteredRows(
+    listGtmAccounts,
+    query,
+    currentPage
+  );
 
   const totalPages = await fetchPages(listGtmAccounts, query, 10);
 

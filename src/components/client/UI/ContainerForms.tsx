@@ -63,10 +63,6 @@ export default function ContainerForms({ accounts, containers }) {
     (container) => container.containerId
   );
   const { error, clearError } = useError();
-  const [containerInfo, setContainerInfo] = useState({
-    containerId: [],
-    name: [],
-  });
 
   return (
     <>
@@ -75,9 +71,7 @@ export default function ContainerForms({ accounts, containers }) {
         <LimitReachedModal onClose={() => dispatch(setIsLimitReached(false))} />
       )}
 
-      {notFoundError && (
-        <NotFoundErrorModal feature="container" data={containerInfo} />
-      )}
+      {notFoundError && <NotFoundErrorModal />}
 
       {error && <ErrorMessage onClose={clearError} />}
 

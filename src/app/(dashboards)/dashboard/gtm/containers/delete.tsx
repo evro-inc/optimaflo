@@ -8,7 +8,7 @@ import {
 } from '@/src/app/redux/tableSlice';
 import { DeleteContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containers';
 import { useRowSelection } from '@/src/lib/helpers/client';
-import { ContainerType, DeleteContainersResponse } from '@/src/lib/types/types';
+import { ContainerType, ContainersResponse } from '@/src/lib/types/types';
 import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
 
@@ -29,30 +29,26 @@ export const useDeleteHook = () => {
       new Set(
         Object.values(selectedRows).map((rowData: any) => rowData.accountId)
       )
-    );    
+    );
 
     const deleteOperations = uniqueAccountIds.map(async (accountId) => {
       const containersToDelete = Object.entries(
         selectedRows as { [key: string]: ContainerType }
       )
         .filter(([, rowData]) => rowData.accountId === accountId)
-        .map(([containerId]) => containerId);  
+        .map(([containerId]) => containerId);
 
       const containerNames = containersToDelete.map(
         (containerId) => selectedRows[containerId].name
-      );      
+      );
 
       return DeleteContainers(new Set(containersToDelete), containerNames);
-    });    
+    });
 
     // Wait for all delete operations to complete
-    const responses: DeleteContainersResponse[] = await Promise.all(
-      deleteOperations
-    );    
+    const responses: ContainersResponse[] = await Promise.all(deleteOperations);
 
     responses.forEach((response) => {
-      console.log('response results', response.results);
-      
       if (!response.success) {
         // Initialize message with a default error message
         let message = response.message || 'An error occurred.';
@@ -98,8 +94,6 @@ export const useDeleteHook = () => {
       dispatch(setErrorDetails(unsuccessfulResults)); // Dispatch only the unsuccessful error details
       dispatch(setNotFoundError(true));
     }
-
-
 
     dispatch(clearSelectedRows());
   };

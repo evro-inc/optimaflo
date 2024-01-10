@@ -6,7 +6,12 @@ import { LimitReached } from '../../../../../components/client/modals/limitReach
 import { ButtonGroup } from '../../../../../components/client/ButtonGroup/ButtonGroup';
 import { CreateResult, FormCreateContainerProps } from '@/src/lib/types/types';
 import { useDispatch, useSelector } from 'react-redux';
-import { selectTable, setIsLimitReached } from '@/src/app/redux/tableSlice';
+import {
+  selectTable,
+  setErrorDetails,
+  setIsLimitReached,
+  setNotFoundError,
+} from '@/src/app/redux/tableSlice';
 import { selectGlobal, setLoading } from '@/src/app/redux/globalSlice';
 import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
 import { CreateContainerSchema } from '@/src/lib/schemas/containers';
@@ -43,6 +48,15 @@ import {
   SelectValue,
 } from '@/src/components/ui/select';
 import { Icon } from '@/src/components/client/Button/Button';
+import dynamic from 'next/dynamic';
+
+const NotFoundErrorModal = dynamic(
+  () =>
+    import('../../../../../components/client/modals/notFoundError').then(
+      (mod) => mod.NotFoundError
+    ),
+  { ssr: false }
+);
 
 type Forms = z.infer<typeof CreateContainerSchema>;
 
@@ -55,6 +69,7 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
   const dispatch = useDispatch();
   const { loading } = useSelector(selectGlobal);
   const isLimitReached = useSelector(selectTable).isLimitReached;
+  const notFoundError = useSelector(selectTable).notFoundError;
 
   const form = useForm<Forms>({
     defaultValues: {
@@ -97,6 +112,12 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
   const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
     dispatch(setLoading(true)); // Set loading to true using Redux action
+    toast('Creating containers...', {
+      action: {
+        label: 'Close',
+        onClick: () => toast.dismiss(),
+      },
+    });
 
     // Check for duplicate container names for the same account
     const uniqueContainers = new Set();
@@ -119,9 +140,63 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
     }
 
     try {
-      const res: any = (await CreateContainers({ forms })) as CreateResult;
+      const response: any = (await CreateContainers({ forms })) as CreateResult;
 
-      if (res.limitReached) {
+      if (!response.success) {
+        // Initialize message with a default error message
+        let message = response.message || 'An error occurred.';
+
+        // Check if there are specific errors and join them into a single message
+        if (response.errors && response.errors.length > 0) {
+          message = response.errors.join(', ');
+        }
+
+        // If a notFoundError is present, override the message
+        if (response.notFoundError) {
+          console.log('response', response);
+
+          dispatch(setErrorDetails(response.results)); // Assuming results contain the error details
+          dispatch(setNotFoundError(true)); // Dispatch the not found error action
+          onClose();
+        }
+
+        if (response.limitReached) {
+          dispatch(setIsLimitReached(true));
+          onClose();
+        }
+
+        // Display the toast with the constructed message
+        toast.error(message, {
+          action: {
+            label: 'Close',
+            onClick: () => toast.dismiss(),
+          },
+        });
+
+        onClose(); // Close the form
+        form.reset({
+          forms: [
+            {
+              accountId: '',
+              usageContext: '',
+              containerName: '',
+              domainName: '',
+              notes: '',
+              containerId: '',
+            },
+          ],
+        });
+      } else {
+        toast.success(response.message, {
+          action: {
+            label: 'Close',
+            onClick: () => toast.dismiss(),
+          },
+        });
+      }
+
+      /*     if (res.limitReached) {
+        
         toast.error(res.message, {
           action: {
             label: 'Close',
@@ -131,7 +206,23 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
         dispatch(setIsLimitReached(true)); // Immediately set limitReached
         onClose(); // Close the form
         return; // Exit the function to prevent further execution
-      } else if (res.errors && res.errors.length > 0) {
+      }
+      
+    if (res.notFoundError) {
+      toast.error(res.message, {
+        action: {
+          label: 'Close',
+          onClick: () => toast.dismiss(),
+        },
+      });
+      
+      dispatch(setErrorDetails(res.results)); // Assuming results contain the error details
+      dispatch(setNotFoundError(true));
+      onClose(); // Close the form
+      return; // Exit the function to prevent further execution
+    }
+    
+      if (res.errors && res.errors.length > 0) {
         // Iterate over each error and display a toast
         res.errors.forEach((error) => {
           toast.error(error, {
@@ -141,7 +232,8 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
             },
           });
         });
-      } else if (res.success) {
+      }
+      if (res.success) {
         toast.success(
           'Successfully created containers. It may take a minute to refresh.',
           {
@@ -164,7 +256,7 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
             },
           ],
         }); // Reset form with initial values
-      }
+      } */
       // close the modal
       onClose();
 
@@ -182,7 +274,7 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
         ],
       });
 
-      if (res && res.success) {
+      /*       if (res && res.success) {
         // Reset the forms here
         form.reset({
           forms: [
@@ -200,6 +292,7 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
         // Show the LimitReached modal
         setIsLimitReached(true);
       }
+ */
     } catch (error) {
       logger.error('Error creating containers:', error);
 
@@ -463,6 +556,8 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
       {isLimitReached && (
         <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
       )}
+
+      {notFoundError && <NotFoundErrorModal />}
     </>
   );
 };

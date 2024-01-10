@@ -22,8 +22,6 @@ function ToggleAll({ items, uniqueKeys }) {
         const uniqueKey = uniqueKeys.map((key) => item[key]).join('-');
         newSelectedRows[uniqueKey] = item;
       });
-      console.log('newSelectedRows', newSelectedRows);
-      
 
       dispatch(setSelectedRows(newSelectedRows));
       dispatch(toggleAllSelected(true));

@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import {DeleteContainerResult} from '../../lib/types/types';  
+import { ContainerResult } from '../../lib/types/types';
 
 export interface TableRow {
   id: string;
@@ -15,7 +15,7 @@ export interface TableState {
   notFoundError: boolean;
   isModalOpen: boolean;
   error: string | null;
-  errorDetails: DeleteContainerResult[];
+  errorDetails: ContainerResult[];
 }
 
 const initialState: TableState = {
@@ -27,7 +27,7 @@ const initialState: TableState = {
   notFoundError: false,
   isModalOpen: false,
   error: null,
-  errorDetails: [], 
+  errorDetails: [],
 };
 
 export const tableSlice = createSlice({
@@ -57,7 +57,7 @@ export const tableSlice = createSlice({
     setNotFoundError: (state, action: PayloadAction<boolean>) => {
       state.notFoundError = action.payload;
     },
-    setErrorDetails: (state, action: PayloadAction<DeleteContainerResult[]>) => {
+    setErrorDetails: (state, action: PayloadAction<ContainerResult[]>) => {
       state.errorDetails = action.payload;
     },
     openModal: (state) => {

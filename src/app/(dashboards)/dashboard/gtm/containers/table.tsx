@@ -7,10 +7,7 @@ import { auth } from '@clerk/nextjs';
 import { ContainerType } from '@/src/lib/types/types';
 import TableActions from '@/src/components/client/UI/TableActions';
 import ContainerForms from '@/src/components/client/UI/ContainerForms';
-import {
-  fetchFilteredRows,
-  fetchPages,
-} from '@/src/lib/helpers/server';
+import { fetchFilteredRows, fetchPages } from '@/src/lib/helpers/server';
 import { notFound } from 'next/navigation';
 import { listAllGtmContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containers';
 import { Label } from '@/src/components/ui/label';
@@ -31,14 +28,15 @@ export default async function ContainerTable({
   const { userId }: { userId: string | null } = auth();
   if (!userId) return notFound();
 
-  const {
-    data: rows,
-  } = await fetchFilteredRows(listAllGtmContainers, query, currentPage);
+  const { data: rows } = await fetchFilteredRows(
+    listAllGtmContainers,
+    query,
+    currentPage
+  );
 
   const totalPages = await fetchPages(listAllGtmContainers, query, 10);
 
   const renderRow = (container: ContainerType) => {
-    
     return (
       <TableRows
         key={`${container.accountId}-${container.containerId}`}
@@ -96,9 +94,7 @@ export default async function ContainerTable({
                     Containers
                   </h2>
                   <div className="inline-flex gap-x-2">
-                    <TableActions
-                      userId={userId}
-                    />
+                    <TableActions userId={userId} />
                   </div>
                 </div>
                 <Table>
