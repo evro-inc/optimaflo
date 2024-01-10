@@ -13,7 +13,9 @@ import {
 } from '../../ui/table';
 import { RefreshModal } from '../Button/Button';
 import { useAuth } from '@clerk/nextjs';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { Button } from '../../ui/button';
+import { setNotFoundError } from '@/src/app/redux/tableSlice';
 
 export function NotFoundError({ feature }) {
   // Use a selector to get the error details from the store
@@ -22,7 +24,12 @@ export function NotFoundError({ feature }) {
   // Check if errorDetails is an array and has at least one item
   const hasErrorDetails = Array.isArray(errorDetails) && errorDetails.length > 0;
   const { userId } = useAuth();
+  const dispatch = useDispatch();
 
+  const onClose = () => {
+    // Clear the error details from the store
+    dispatch(setNotFoundError(false));
+  };
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
       {/* Overlay */}
@@ -60,12 +67,20 @@ export function NotFoundError({ feature }) {
             )}
           </AlertDescription>
 
-          <RefreshModal
+          {/* <RefreshModal
             type="button"
             userId={userId}
             feature={feature}
             variant="create"
-          />
+          /> */}
+
+          {/*  Close button */}
+          <Button
+            className="mt-5"
+            type="button" onClick={onClose}
+          >
+            Close
+          </Button>
         </div>
       </Alert>
     </div>

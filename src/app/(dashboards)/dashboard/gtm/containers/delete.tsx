@@ -89,13 +89,17 @@ export const useDeleteHook = () => {
     dispatch(setIsLimitReached(limitReached));
 
     const notFoundError = responses.some((response) => response.notFoundError);
-    
-  if (notFoundError) {
-    dispatch(setNotFoundError(true));
-    dispatch(setErrorDetails(
-      responses.flatMap((response) => response.results)
-    )); // Dispatch the error details
-  }
+
+    if (notFoundError) {
+      // Filter out successful results before dispatching
+      const unsuccessfulResults = responses.flatMap((response) =>
+        response.results.filter((result) => !result.success)
+      );
+      dispatch(setErrorDetails(unsuccessfulResults)); // Dispatch only the unsuccessful error details
+      dispatch(setNotFoundError(true));
+    }
+
+
 
     dispatch(clearSelectedRows());
   };

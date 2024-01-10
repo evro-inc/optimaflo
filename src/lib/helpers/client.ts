@@ -108,7 +108,10 @@ export const useToggleAll = (items, getIdFromItem, dispatch, allSelected) => {
   const toggleAll = () => {
     if (allSelected) {
       dispatch(setSelectedRows({}));
-      dispatch(toggleAllSelected());
+      dispatch(toggleAllSelected(
+        // Use currentItems instead of items
+        currentItems.length === Object.keys({}).length
+      ));
     } else {
       const newSelectedRows = {};
       currentItems.forEach((item) => {
@@ -117,7 +120,10 @@ export const useToggleAll = (items, getIdFromItem, dispatch, allSelected) => {
         newSelectedRows[itemId] = item;
       });
       dispatch(setSelectedRows(newSelectedRows));
-      dispatch(toggleAllSelected());
+      dispatch(toggleAllSelected(
+        // Use currentItems instead of items
+        currentItems.length === Object.keys(newSelectedRows).length
+      ));
     }
   };
 
