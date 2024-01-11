@@ -29,11 +29,19 @@ function ToggleAll({ items, uniqueKeys }) {
   };
 
   return (
-    <Checkbox
-      id="select-all"
-      checked={allSelected}
-      onCheckedChange={toggleAll}
-    />
+    <div className="flex items-center space-x-2">
+      <Checkbox
+        id="select-all"
+        checked={allSelected}
+        onCheckedChange={toggleAll}
+      />
+      <label
+        htmlFor="select-all"
+        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+      >
+        Select All
+      </label>
+    </div>
   );
 }
 

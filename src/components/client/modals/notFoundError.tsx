@@ -21,7 +21,8 @@ export function NotFoundError() {
   const errorDetails = useSelector((state: any) => state.table.errorDetails);
 
   // Check if errorDetails is an array and has at least one item
-  const hasErrorDetails = Array.isArray(errorDetails) && errorDetails.length > 0;
+  const hasErrorDetails =
+    Array.isArray(errorDetails) && errorDetails.length > 0;
 
   const dispatch = useDispatch();
 

@@ -7,7 +7,11 @@ import { auth } from '@clerk/nextjs';
 import { ContainerType } from '@/src/lib/types/types';
 import TableActions from '@/src/components/client/UI/TableActions';
 import ContainerForms from '@/src/components/client/UI/ContainerForms';
-import { fetchFilteredRows, fetchPages } from '@/src/lib/helpers/server';
+import {
+  fetchAllFilteredRows,
+  fetchFilteredRows,
+  fetchPages,
+} from '@/src/lib/helpers/server';
 import { notFound } from 'next/navigation';
 import { listAllGtmContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containers';
 import { Label } from '@/src/components/ui/label';
@@ -33,6 +37,8 @@ export default async function ContainerTable({
     query,
     currentPage
   );
+
+  const allRows = await fetchAllFilteredRows(listAllGtmContainers, query);
 
   const totalPages = await fetchPages(listAllGtmContainers, query, 10);
 
@@ -106,7 +112,7 @@ export default async function ContainerTable({
                       'Account Name',
                       'Usage Context',
                     ]}
-                    items={rows}
+                    items={allRows}
                     uniqueKeys={['accountId', 'containerId']}
                   />
                   <TableBody>

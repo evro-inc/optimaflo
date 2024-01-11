@@ -307,8 +307,25 @@ export async function fetchFilteredRows<T>(
   };
 }
 
-// src/lib/fetch/dashboard/gtm/actions/containers.tsx
-// ... (other imports)
+export async function fetchAllFilteredRows<T>(
+  listFunction: ListFunction<T>,
+  query: string
+): Promise<T[]> {
+  const { userId } = auth();
+  if (!userId) return notFound();
+  const token = await currentUserOauthAccessToken(userId);
+
+  // Fetch all items using the provided listing function
+  const allItems = await listFunction(token[0].token);
+
+  // Filter items based on the query
+  const filteredItems = allItems.filter((item: any) =>
+    item.name.toLowerCase().includes(query.toLowerCase())
+  );
+
+  // Return all filtered items
+  return filteredItems;
+}
 
 // Function to fetch the total number of pages
 export async function fetchPages<T>(
