@@ -4,7 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CreateContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containers';
 import { LimitReached } from '../../../../../components/client/modals/limitReached';
 import { ButtonGroup } from '../../../../../components/client/ButtonGroup/ButtonGroup';
-import { CreateResult, FormCreateContainerProps } from '@/src/lib/types/types';
+import {
+  ContainersResponse,
+  FormCreateContainerProps,
+} from '@/src/lib/types/types';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   selectTable,
@@ -17,7 +20,6 @@ import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
 import { CreateContainerSchema } from '@/src/lib/schemas/containers';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import logger from '@/src/lib/logger';
 import { toast } from 'sonner';
 
 import { Cross1Icon } from '@radix-ui/react-icons';
@@ -121,6 +123,7 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
 
     // Check for duplicate container names for the same account
     const uniqueContainers = new Set();
+
     for (const form of forms) {
       const identifier = `${form.accountId}-${form.containerName}`;
       if (uniqueContainers.has(identifier)) {
@@ -140,10 +143,25 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
     }
 
     try {
-      const response: any = (await CreateContainers({ forms })) as CreateResult;
+      const createOperations = forms.map((form) => {
+        return CreateContainers({ forms: [form] });
+      });
 
-      if (!response.success) {
-        // Initialize message with a default error message
+      const responses: ContainersResponse[] = await Promise.all(
+        createOperations
+      );
+
+      /*      if(response.success) {
+        console.log('response', response);
+        
+        toast.success(response.message, {
+          action: {
+            label: 'Close',
+            onClick: () => toast.dismiss(),
+          },
+        });
+      } else {
+               // Initialize message with a default error message
         let message = response.message || 'An error occurred.';
 
         // Check if there are specific errors and join them into a single message
@@ -186,78 +204,42 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
             },
           ],
         });
-      } else {
-        toast.success(response.message, {
-          action: {
-            label: 'Close',
-            onClick: () => toast.dismiss(),
-          },
-        });
-      }
+      } */
 
-      /*     if (res.limitReached) {
-        
-        toast.error(res.message, {
-          action: {
-            label: 'Close',
-            onClick: () => toast.dismiss(),
-          },
-        });
-        dispatch(setIsLimitReached(true)); // Immediately set limitReached
-        onClose(); // Close the form
-        return; // Exit the function to prevent further execution
-      }
-      
-    if (res.notFoundError) {
-      toast.error(res.message, {
-        action: {
-          label: 'Close',
-          onClick: () => toast.dismiss(),
-        },
-      });
-      
-      dispatch(setErrorDetails(res.results)); // Assuming results contain the error details
-      dispatch(setNotFoundError(true));
-      onClose(); // Close the form
-      return; // Exit the function to prevent further execution
-    }
-    
-      if (res.errors && res.errors.length > 0) {
-        // Iterate over each error and display a toast
-        res.errors.forEach((error) => {
-          toast.error(error, {
+      responses.forEach((response) => {
+        if (!response.success) {
+          // Handle errors
+          let message = response.message || 'An error occurred.';
+          if (response.errors && response.errors.length > 0) {
+            message = response.errors.join(', ');
+          }
+          toast.error(message, {
             action: {
               label: 'Close',
               onClick: () => toast.dismiss(),
             },
           });
-        });
-      }
-      if (res.success) {
-        toast.success(
-          'Successfully created containers. It may take a minute to refresh.',
-          {
+
+          if (response.notFoundError) {
+            dispatch(setNotFoundError(true));
+            dispatch(setErrorDetails(response.results));
+          }
+
+          if (response.limitReached) {
+            dispatch(setIsLimitReached(true));
+          }
+        } else {
+          // Handle success
+          toast.success(response.message, {
             action: {
               label: 'Close',
               onClick: () => toast.dismiss(),
             },
-          }
-        );
-        // Handle successful creation
-        form.reset({
-          forms: [
-            {
-              accountId: '',
-              usageContext: '',
-              containerName: '',
-              domainName: '',
-              notes: '',
-              containerId: '',
-            },
-          ],
-        }); // Reset form with initial values
-      } */
-      // close the modal
+          });
+          // Additional success handling if needed
+        }
+      });
+
       onClose();
 
       // Reset the forms here, regardless of success or limit reached
@@ -273,29 +255,13 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
           },
         ],
       });
-
-      /*       if (res && res.success) {
-        // Reset the forms here
-        form.reset({
-          forms: [
-            {
-              accountId: '',
-              usageContext: '',
-              containerName: '',
-              domainName: '',
-              notes: '',
-              containerId: '',
-            },
-          ],
-        });
-      } else if (res && res.limitReached) {
-        // Show the LimitReached modal
-        setIsLimitReached(true);
-      }
- */
     } catch (error) {
-      logger.error('Error creating containers:', error);
-
+      toast.error('An unexpected error occurred.', {
+        action: {
+          label: 'Close',
+          onClick: () => toast.dismiss(),
+        },
+      });
       return { success: false };
     } finally {
       dispatch(setLoading(false)); // Set loading to false

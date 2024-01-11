@@ -11,8 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '../../ui/table';
-import { RefreshModal } from '../Button/Button';
-import { useAuth } from '@clerk/nextjs';
+
 import { useDispatch, useSelector } from 'react-redux';
 import { Button } from '../../ui/button';
 import { setNotFoundError } from '@/src/app/redux/tableSlice';
@@ -22,12 +21,8 @@ export function NotFoundError() {
   const errorDetails = useSelector((state: any) => state.table.errorDetails);
 
   // Check if errorDetails is an array and has at least one item
-  const hasErrorDetails =
-    Array.isArray(errorDetails) && errorDetails.length > 0;
+  const hasErrorDetails = Array.isArray(errorDetails) && errorDetails.length > 0;
 
-  console.log('errorDetails', errorDetails);
-
-  const { userId } = useAuth();
   const dispatch = useDispatch();
 
   const onClose = () => {
@@ -67,13 +62,6 @@ export function NotFoundError() {
               <p>No specific details available.</p>
             )}
           </AlertDescription>
-
-          {/* <RefreshModal
-            type="button"
-            userId={userId}
-            feature={feature}
-            variant="create"
-          /> */}
 
           {/*  Close button */}
           <Button className="mt-5" type="button" onClick={onClose}>

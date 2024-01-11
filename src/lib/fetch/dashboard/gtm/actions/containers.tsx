@@ -13,7 +13,7 @@ import { notFound } from 'next/navigation';
 import { listGtmAccounts } from './accounts';
 import { currentUserOauthAccessToken } from '@/src/lib/clerk';
 import prisma from '@/src/lib/prisma';
-import { ContainersResponse } from '@/src/lib/types/types';
+import { ContainerResult, ContainersResponse } from '@/src/lib/types/types';
 import {
   handleApiResponseError,
   tierCreateLimit,
@@ -456,6 +456,12 @@ export async function CreateContainers(formData: FormCreateSchema) {
   const createUsage = Number(tierLimitResponse.createUsage);
   const availableCreateUsage = limit - createUsage;
 
+  const creationResults: {
+    containerName: string;
+    success: boolean;
+    message?: string;
+  }[] = [];
+
   // Handling feature limit
   if (tierLimitResponse && tierLimitResponse.limitReached) {
     return {
@@ -470,7 +476,7 @@ export async function CreateContainers(formData: FormCreateSchema) {
     // If the creation request exceeds the available limit
     return {
       success: false,
-      createdContainers: [],
+      containers: [],
       message: `Cannot create ${toCreateContainers.size} containers as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
       errors: [
         `Cannot create ${toCreateContainers.size} containers as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
@@ -551,13 +557,22 @@ export async function CreateContainers(formData: FormCreateSchema) {
                     }),
                   });
 
-                  const parsedResponse = await response.json();
+                  let parsedResponse;
 
                   if (response.ok) {
                     successfulCreations.push(containerName);
+                    console.log('successfulCreations', successfulCreations);
+
                     toCreateContainers.delete(identifier);
+
+                    creationResults.push({
+                      containerName: containerName,
+                      success: true,
+                      message: `Successfully created container ${containerName}`,
+                    });
                   } else {
-                    let errorMessage = `Error for container ${containerName}. `;
+                    parsedResponse = await response.json();
+
                     const errorResult = await handleApiResponseError(
                       response,
                       parsedResponse,
@@ -566,14 +581,13 @@ export async function CreateContainers(formData: FormCreateSchema) {
                     );
 
                     if (errorResult) {
-                      errorMessage += `${errorResult.message}`;
+                      errors.push(`${errorResult.message}`);
                       if (
                         errorResult.errorCode === 403 &&
                         parsedResponse.message === 'Feature limit reached'
                       ) {
                         featureLimitReachedContainers.push(containerName);
                       } else if (errorResult.errorCode === 404) {
-                        // Find the name of the container that corresponds to the containerId
                         const containerName =
                           containerNames.find((name) =>
                             name.includes(identifier.split('-')[1])
@@ -581,37 +595,45 @@ export async function CreateContainers(formData: FormCreateSchema) {
                         notFoundLimit.push({
                           id: identifier.split('-')[1],
                           name: containerName,
-                        }); // Push an object with id and name
+                        });
                       }
                     } else {
-                      errorMessage += 'An unknown error occurred.';
+                      errors.push(
+                        `An unknown error occurred for container ${containerName}.`
+                      );
                     }
 
-                    errors.push(errorMessage);
                     toCreateContainers.delete(identifier);
                     permissionDenied = errorResult ? true : permissionDenied;
+                    creationResults.push({
+                      containerName: containerName,
+                      success: false,
+                      message: errorResult?.message,
+                    });
                   }
                 } catch (error: any) {
                   errors.push(
                     `Exception creating container ${containerName}: ${error.message}`
                   );
                   toCreateContainers.delete(identifier);
+                  creationResults.push({
+                    containerName: containerName,
+                    success: false,
+                    message: error.message,
+                  });
                 }
               }
             );
 
-            const results = await Promise.all(createPromises);
-            results.forEach((result) => {
-              if (result && !result.success) {
-                errors.push(
-                  `Failed to create container ${result}: ${result.error}`
-                );
-              }
-            });
+            await Promise.all(createPromises);
           });
 
           if (notFoundLimit.length > 0) {
-            const notFoundNames = notFoundLimit.map(item => item.name).join(', ');
+            console.log('notFoundLimit', notFoundLimit);
+
+            const notFoundNames = notFoundLimit
+              .map((item) => item.name)
+              .join(', ');
             return {
               success: false,
               limitReached: false,
@@ -628,6 +650,11 @@ export async function CreateContainers(formData: FormCreateSchema) {
             };
           }
           if (featureLimitReachedContainers.length > 0) {
+            console.log(
+              'featureLimitReachedContainers',
+              featureLimitReachedContainers
+            );
+
             return {
               success: false,
               limitReached: true,
@@ -673,6 +700,8 @@ export async function CreateContainers(formData: FormCreateSchema) {
   }
 
   if (permissionDenied) {
+    console.log('permissionDenied', permissionDenied);
+
     return {
       success: false,
       errors: errors,
@@ -682,9 +711,10 @@ export async function CreateContainers(formData: FormCreateSchema) {
   }
 
   if (errors.length > 0) {
+    console.log('errors', errors);
     return {
       success: false,
-      createdContainers: successfulCreations,
+      containers: successfulCreations,
       errors: errors,
       results: successfulCreations.map((containerName) => ({
         containerName,
@@ -705,18 +735,30 @@ export async function CreateContainers(formData: FormCreateSchema) {
     await redis.del(cacheKey);
     revalidatePath(`/dashboard/gtm/containers`);
   }
+  console.log('successfulCreations bottom', successfulCreations);
 
+  // Map over formData.forms to create the results array
+  const results: ContainerResult[] = formData.forms.map((form) => {
+    // Ensure that form.containerId is defined before adding it to the array
+    const containerId = form.containerId ? [form.containerId] : []; // Provide an empty array as a fallback
+    return {
+      id: containerId, // Ensure id is an array of strings
+      name: [form.containerName], // Wrap the string in an array
+      success: true, // or false, depending on the actual result
+      // Include `notFound` if applicable
+      notFound: false, // Set this to the appropriate value based on your logic
+    };
+  });
+
+  // Return the response with the correctly typed results
   return {
-    success: errors.length === 0,
-    containers: successfulCreations,
-    message: `Successfully created ${successfulCreations.length} container(s)`,
-    errors: errors,
-    notFoundError: notFoundLimit.length > 0,
-    results: successfulCreations.map((containerName) => ({
-      id: [containerName], // Ensure id is an array
-      name: [containerNames.find((name) => name.includes(name)) || 'Unknown'], // Ensure name is an array
-      success: true,
-    })),
+    success: true, // or false, depending on the actual results
+    containers: [], // Populate with actual container IDs if applicable
+    errors: [], // Populate with actual error messages if applicable
+    limitReached: false, // Set based on actual limit status
+    message: 'Containers created successfully', // Customize the message as needed
+    results: results, // Use the correctly typed results
+    notFoundError: false, // Set based on actual not found status
   };
 }
 
