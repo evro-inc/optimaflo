@@ -18,7 +18,7 @@ type FormUpdateSchema = z.infer<typeof UpdateAccountSchema>;
 /************************************************************************************
  * List All Google Tag Manager Accounts
  ************************************************************************************/
-export async function listGtmAccounts(accessToken: string) {
+export async function listGtmAccounts() {
   // Initialization of retry mechanism
   let retries = 0;
   const MAX_RETRIES = 3;
@@ -28,6 +28,9 @@ export async function listGtmAccounts(accessToken: string) {
   const { userId } = await auth();
   // If user ID is not found, return a 'not found' error
   if (!userId) return notFound();
+
+  const token = await currentUserOauthAccessToken(userId);
+  const accessToken = token[0].token;
 
   const cachedValue = await redis.get(`gtm:accounts-userId:${userId}`);
 

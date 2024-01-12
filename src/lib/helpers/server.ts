@@ -15,7 +15,7 @@ type PaginatedFilteredResult<T> = {
 };
 
 // Define the type for the listing function
-type ListFunction<T> = (accessToken: string) => Promise<T[]>;
+type ListFunction<T> = () => Promise<T[]>;
 
 export const getURL = () => {
   let vercelUrl = process.env.VERCEL_URL; // Assign VERCEL_URL to vercelUrl
@@ -281,10 +281,9 @@ export async function fetchFilteredRows<T>(
 ): Promise<PaginatedFilteredResult<any>> {
   const { userId } = auth();
   if (!userId) return notFound();
-  const token = await currentUserOauthAccessToken(userId);
 
   // Fetch all items using the provided listing function
-  const allItems = await listFunction(token[0].token);
+  const allItems = await listFunction();
 
   // Filter items based on the query
   const filteredItems = allItems.filter((item: any) =>
@@ -313,10 +312,9 @@ export async function fetchAllFilteredRows<T>(
 ): Promise<T[]> {
   const { userId } = auth();
   if (!userId) return notFound();
-  const token = await currentUserOauthAccessToken(userId);
 
   // Fetch all items using the provided listing function
-  const allItems = await listFunction(token[0].token);
+  const allItems = await listFunction();
 
   // Filter items based on the query
   const filteredItems = allItems.filter((item: any) =>
@@ -335,19 +333,18 @@ export async function fetchPages<T>(
 ): Promise<number> {
   const { userId } = auth();
   if (!userId) return notFound();
-  const token = await currentUserOauthAccessToken(userId);
 
   // Fetch all containers without applying pagination
-  const allItems = await listFunction(token[0].token);
+  const allItems = await listFunction();
 
   // Filter containers based on the query with a type guard to ensure 'name' property exists
-  const filteredContainers = allItems.filter(
+  const filtered = allItems.filter(
     (container: any) =>
       'name' in container &&
       container.name.toLowerCase().includes(query.toLowerCase())
   );
 
   // Calculate the total number of pages
-  const totalPages = Math.ceil(filteredContainers.length / pageSize);
+  const totalPages = Math.ceil(filtered.length / pageSize);
   return totalPages;
 }

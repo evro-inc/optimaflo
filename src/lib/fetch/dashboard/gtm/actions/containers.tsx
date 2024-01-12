@@ -28,7 +28,6 @@ type FormCreateSchema = z.infer<typeof CreateContainerSchema>;
   Function to list GTM containers
 ************************************************************************************/
 export async function listGtmContainers(
-  accessToken: string,
   accountId: string,
   accountName: string
 ) {
@@ -40,6 +39,9 @@ export async function listGtmContainers(
   const { userId } = await auth();
   // If user ID is not found, return a 'not found' error
   if (!userId) return notFound();
+
+  const token = await currentUserOauthAccessToken(userId);
+  const accessToken = token[0].token;
 
   const cachedValue = await redis.get(`user:${userId}-gtm:containers`);
 
@@ -105,12 +107,14 @@ export async function listGtmContainers(
 /************************************************************************************
   Fetch all containers for all accounts
 ************************************************************************************/
-export async function listAllGtmContainers(accessToken: string) {
+export async function listAllGtmContainers() {
   let retries = 0;
   const MAX_RETRIES = 3;
   let delay = 1000;
 
   const { userId } = auth();
+  if (!userId) return notFound();
+  
   const cacheKey = `gtm:containers-userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
   if (cachedValue) {
@@ -126,11 +130,11 @@ export async function listAllGtmContainers(accessToken: string) {
 
       if (remaining > 0) {
         // Fetch accounts
-        const accounts = await listGtmAccounts(accessToken);
+        const accounts = await listGtmAccounts();
 
         // Fetch containers for each account in parallel
         const containersPromises = accounts.map((account) =>
-          listGtmContainers(accessToken, account.accountId, account.name)
+          listGtmContainers(account.accountId, account.name)
         );
 
         // Get results for all accounts
