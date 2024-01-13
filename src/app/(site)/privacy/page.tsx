@@ -1,19 +1,9 @@
-'use client';
-import React, { useEffect } from 'react';
+import React from 'react';
 
 export default function Privacy() {
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://app.termly.io/embed-policy.min.js';
-    script.async = true;
-    document.body.appendChild(script);
-  }, []);
-
   return (
-    <div
-      dangerouslySetInnerHTML={{
-        __html: `<div name="termly-embed" data-id="eda34601-95c0-4909-89a1-c09ed6d15c8d" data-type="iframe"></div>`,
-      }}
-    />
+    <iframe src="https://app.termly.io/document/privacy-policy/0c6fa074-f4b9-44df-9806-eadb4de3d06f" width="100%" height="900"></iframe>
   );
 }
+
+

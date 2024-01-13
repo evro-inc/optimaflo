@@ -59,7 +59,7 @@ export const toDateTime = (secs: number) => {
   return t;
 };
 
-export const handleRefreshCache = async (router, key, path) => {
+export const handleRefreshCache = async ( key, path) => {
   try {
     const response = await fetch('/api/dashboard/refresh', {
       method: 'POST',
@@ -73,7 +73,7 @@ export const handleRefreshCache = async (router, key, path) => {
     });
 
     await response.json();
-    router.refresh();
+
   } catch (error) {
     console.error('Error refreshing cache:', error);
   }

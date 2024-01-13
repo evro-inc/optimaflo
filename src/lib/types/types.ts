@@ -210,6 +210,7 @@ export interface ContainersResponse {
   message?: string;
   results: ContainerResult[];
   notFoundError?: boolean;
+  revalidationSuccess?: boolean;
 }
 
 export interface DeleteWorkspaceResult {
