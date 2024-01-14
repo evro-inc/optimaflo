@@ -141,9 +141,7 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
     try {
       const response: any = (await CreateContainers({ forms })) as ContainersResponse;
 
-      if(response.success) {
-        console.log('response', response);
-        
+      if(response.success) {        
         response.results.forEach((result) => {
           if (result.success) {
             toast.success(`Successfully created container: ${result.name}`, {
@@ -155,35 +153,31 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
           }
         });
       } else {
-               // Initialize message with a default error message
-        let message = response.message || 'An error occurred.';
-
-        // Check if there are specific errors and join them into a single message
-        if (response.errors && response.errors.length > 0) {
-          message = response.errors.join(', ');
-        }
-
         // If a notFoundError is present, override the message
         if (response.notFoundError) {
-          console.log('response', response);
+
+        response.results.forEach((result) => {
+          if (result.notFound) {
+            toast.error(`Unable to create container ${result.name}. Please check if you have the appropriate access permissions.`, {
+              action: {
+                label: 'Close',
+                onClick: () => toast.dismiss(),
+              },
+            });
+          }
+        });
+
 
           dispatch(setErrorDetails(response.results)); // Assuming results contain the error details
           dispatch(setNotFoundError(true)); // Dispatch the not found error action
           onClose();
         }
 
+        // Handle limit reached and other errors
         if (response.limitReached) {
           dispatch(setIsLimitReached(true));
-          onClose();
-        }
+        } 
 
-        // Display the toast with the constructed message
-        toast.error(message, {
-          action: {
-            label: 'Close',
-            onClick: () => toast.dismiss(),
-          },
-        });
 
         onClose(); // Close the form
         form.reset({
