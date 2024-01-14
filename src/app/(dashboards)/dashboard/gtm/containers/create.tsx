@@ -144,11 +144,15 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
       if(response.success) {
         console.log('response', response);
         
-        toast.success(response.message, {
-          action: {
-            label: 'Close',
-            onClick: () => toast.dismiss(),
-          },
+        response.results.forEach((result) => {
+          if (result.success) {
+            toast.success(`Successfully created container: ${result.name}`, {
+              action: {
+                label: 'Close',
+                onClick: () => toast.dismiss(),
+              },
+            });
+          }
         });
       } else {
                // Initialize message with a default error message
