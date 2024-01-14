@@ -14,7 +14,7 @@ import { handleRefreshCache, useRowSelection } from '@/src/lib/helpers/client';
 import { useDeleteHook } from '@/src/app/(dashboards)/dashboard/gtm/containers/delete';
 import Search from './Search';
 
-const TableActions = ({ userId }) => {
+const TableActions = ({ userId, accounts }) => {
   const dispatch = useDispatch();
   const router = useRouter();
   const handleDelete = useDeleteHook();
@@ -57,6 +57,7 @@ const TableActions = ({ userId }) => {
       console.error('Error in handleUpdateClick:', error);
     }
   };
+  
 
   return (
     <div className="inline-flex gap-x-2">
@@ -65,13 +66,16 @@ const TableActions = ({ userId }) => {
         text={''}
         icon={<ReloadIcon />}
         variant="create"
-        onClick={() =>
-          handleRefreshCache(
-            router,
-            `gtm:containers-userId:${userId}`,
-            '/dashboard/gtm/containers'
-          )
-        }
+        onClick={() => {
+          accounts.forEach((account) => {
+            handleRefreshCache(
+              router,
+              'gtm:containers',
+              [`accountId:${account.accountId}`,`userId:${userId}`],
+              '/dashboard/gtm/containers'
+            );
+          });
+        }}
         billingInterval={undefined}
       />
       <ButtonWithIcon

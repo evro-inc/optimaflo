@@ -32,7 +32,9 @@ export async function listGtmAccounts() {
   const token = await currentUserOauthAccessToken(userId);
   const accessToken = token[0].token;
 
-  const cachedValue = await redis.get(`gtm:accounts-userId:${userId}`);
+  const cacheKey = `gtm:accounts:userId:${userId}`;
+
+  const cachedValue = await redis.get(cacheKey);
 
   if (cachedValue) {
     return JSON.parse(cachedValue);
@@ -74,7 +76,7 @@ export async function listGtmAccounts() {
 
         // Caching the data in Redis with a 2 hour expiration time
         redis.set(
-          `gtm:accounts-userId:${userId}`,
+          cacheKey,
           JSON.stringify(data),
           'EX',
           60 * 60 * 2
@@ -118,6 +120,9 @@ export async function updateAccounts(
   const { userId } = await auth();
   // If user ID is not found, return a 'not found' error
   if (!userId) return notFound();
+
+  const cacheKey = `gtm:accounts:userId:${userId}`;
+
 
   // Getting the current user's OAuth access token
   const token = await currentUserOauthAccessToken(userId);
@@ -204,7 +209,8 @@ export async function updateAccounts(
                 const errorResponse: any = await handleApiResponseError(
                   response,
                   parsedResponse,
-                  'Account'
+                  'Account',
+                  form.accountId
                 );
                 errors.push(errorResponse.message);
                 return { accountId: form.accountId, error: true };
@@ -256,12 +262,10 @@ export async function updateAccounts(
           };
         } else {
           // Fetching and caching updated accounts if successful
-          const accessToken = await currentUserOauthAccessToken(userId);
-          const cacheKey = `gtm:accounts-userId:${userId}`;
           await redis.del(cacheKey);
 
           // Optionally fetching and caching the updated list of workspaces
-          const updatedAccounts = await listGtmAccounts(accessToken[0].token);
+          const updatedAccounts = await listGtmAccounts();
           await redis.set(
             cacheKey,
             JSON.stringify(updatedAccounts),

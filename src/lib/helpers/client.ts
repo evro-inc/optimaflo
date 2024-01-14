@@ -133,7 +133,9 @@ export const useToggleAll = (items, getIdFromItem, dispatch, allSelected) => {
 
   return toggleAll;
 };
-export const handleRefreshCache = async (router, key, path) => {
+
+
+export const handleRefreshCache = async (router, baseKey, dynamicParts, path) => {
   try {
     toast.info('Refreshing Cache', {
       action: {
@@ -141,13 +143,20 @@ export const handleRefreshCache = async (router, key, path) => {
         onClick: () => toast.dismiss(),
       },
     });
+
+    // Construct the full key using the baseKey and dynamicParts
+    const fullKey = `${baseKey}:${dynamicParts.join(':')}`;
+
+    console.log('fullKey:', fullKey);
+    
+
     const response = await fetch('/api/dashboard/refresh', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        key,
+        key: fullKey,
         path,
       }),
     });

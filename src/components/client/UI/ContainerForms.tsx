@@ -54,7 +54,7 @@ const FormUpdateContainer = dynamic(
 
 // In the component render method
 
-export default function ContainerForms({ accounts, containers }) {
+export default function ContainerForms({ accounts }) {
   const dispatch = useDispatch();
   const { showUpdateContainer, showCreateContainer } =
     useSelector(selectGlobal);

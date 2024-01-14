@@ -274,16 +274,13 @@ export async function handleApiResponseError(
 }
 
 export async function fetchFilteredRows<T>(
-  listFunction: ListFunction<T>,
+  allItems: T[],
   query: string,
   currentPage: number,
   pageSize: number = 10
-): Promise<PaginatedFilteredResult<any>> {
+): Promise<PaginatedFilteredResult<T>> {
   const { userId } = auth();
   if (!userId) return notFound();
-
-  // Fetch all items using the provided listing function
-  const allItems = await listFunction();
 
   // Filter items based on the query
   const filteredItems = allItems.filter((item: any) =>
@@ -307,14 +304,11 @@ export async function fetchFilteredRows<T>(
 }
 
 export async function fetchAllFilteredRows<T>(
-  listFunction: ListFunction<T>,
+  allItems: T[],
   query: string
 ): Promise<T[]> {
   const { userId } = auth();
   if (!userId) return notFound();
-
-  // Fetch all items using the provided listing function
-  const allItems = await listFunction();
 
   // Filter items based on the query
   const filteredItems = allItems.filter((item: any) =>
@@ -327,21 +321,18 @@ export async function fetchAllFilteredRows<T>(
 
 // Function to fetch the total number of pages
 export async function fetchPages<T>(
-  listFunction: ListFunction<T>,
+  allItems: T[],
   query: string,
   pageSize: number
 ): Promise<number> {
   const { userId } = auth();
   if (!userId) return notFound();
 
-  // Fetch all containers without applying pagination
-  const allItems = await listFunction();
-
-  // Filter containers based on the query with a type guard to ensure 'name' property exists
+  // Filter items based on the query with a type guard to ensure 'name' property exists
   const filtered = allItems.filter(
-    (container: any) =>
-      'name' in container &&
-      container.name.toLowerCase().includes(query.toLowerCase())
+    (item: any) =>
+      'name' in item &&
+      item.name.toLowerCase().includes(query.toLowerCase())
   );
 
   // Calculate the total number of pages
