@@ -7,7 +7,11 @@ import { auth } from '@clerk/nextjs';
 import { ContainerType } from '@/src/lib/types/types';
 import TableActions from '@/src/components/client/UI/TableActions';
 import ContainerForms from '@/src/components/client/UI/ContainerForms';
-import { fetchAllFilteredRows, fetchFilteredRows, fetchPages } from '@/src/lib/helpers/server';
+import {
+  fetchAllFilteredRows,
+  fetchFilteredRows,
+  fetchPages,
+} from '@/src/lib/helpers/server';
 import { notFound } from 'next/navigation';
 import { Label } from '@/src/components/ui/label';
 
@@ -31,9 +35,9 @@ export default async function ContainerTable({
     containers,
     query,
     currentPage
-  );  
+  );
 
-  const allRows  = await fetchAllFilteredRows(containers, query)
+  const allRows = await fetchAllFilteredRows(containers, query);
 
   const totalPages = await fetchPages(containers, query, 10);
 

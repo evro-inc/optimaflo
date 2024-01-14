@@ -59,7 +59,7 @@ export const toDateTime = (secs: number) => {
   return t;
 };
 
-export const handleRefreshCache = async ( key, path) => {
+export const handleRefreshCache = async (key, path) => {
   try {
     const response = await fetch('/api/dashboard/refresh', {
       method: 'POST',
@@ -73,7 +73,6 @@ export const handleRefreshCache = async ( key, path) => {
     });
 
     await response.json();
-
   } catch (error) {
     console.error('Error refreshing cache:', error);
   }
@@ -331,8 +330,7 @@ export async function fetchPages<T>(
   // Filter items based on the query with a type guard to ensure 'name' property exists
   const filtered = allItems.filter(
     (item: any) =>
-      'name' in item &&
-      item.name.toLowerCase().includes(query.toLowerCase())
+      'name' in item && item.name.toLowerCase().includes(query.toLowerCase())
   );
 
   // Calculate the total number of pages

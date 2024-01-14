@@ -26,40 +26,44 @@ export default async function ContainerPage({
   if (!userId) return notFound();
 
   // Fetch
-const allAccounts = await listGtmAccounts();
+  const allAccounts = await listGtmAccounts();
 
-// Fetch containers for all accounts in parallel
-const containersPromises = allAccounts.map(account =>
-  listGtmContainers(account.accountId)
-);
+  // Fetch containers for all accounts in parallel
+  const containersPromises = allAccounts.map((account) =>
+    listGtmContainers(account.accountId)
+  );
 
-// Wait for all container fetches to complete
-const containersResults = await Promise.all(containersPromises);
+  // Wait for all container fetches to complete
+  const containersResults = await Promise.all(containersPromises);
 
-// Combine account data with container data
-const combinedData = containersResults.map((result, index) => {
-  const account = allAccounts[index];
-  // Check if result is already the expected array of containers
-  if (Array.isArray(result)) {
-    return result.map(container => ({
-      ...container,
-      accountName: account.name
-    }));
-  } 
-  // Check if result is an object with a containers property
-  else if (result && Array.isArray(result.containers)) {
-    return result.containers.map(container => ({
-      ...container,
-      accountName: account.name
-    }));
-  } 
-  // Check if result is undefined or in an unexpected format
-  else {
-    console.error('Expected result to be an array or an object with a containers property, but got:', result);
-    return [];
-  }
-}).flat();
-
+  // Combine account data with container data
+  const combinedData = containersResults
+    .map((result, index) => {
+      const account = allAccounts[index];
+      // Check if result is already the expected array of containers
+      if (Array.isArray(result)) {
+        return result.map((container) => ({
+          ...container,
+          accountName: account.name,
+        }));
+      }
+      // Check if result is an object with a containers property
+      else if (result && Array.isArray(result.containers)) {
+        return result.containers.map((container) => ({
+          ...container,
+          accountName: account.name,
+        }));
+      }
+      // Check if result is undefined or in an unexpected format
+      else {
+        console.error(
+          'Expected result to be an array or an object with a containers property, but got:',
+          result
+        );
+        return [];
+      }
+    })
+    .flat();
 
   return (
     <>

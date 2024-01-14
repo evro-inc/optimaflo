@@ -75,12 +75,7 @@ export async function listGtmAccounts() {
         });
 
         // Caching the data in Redis with a 2 hour expiration time
-        redis.set(
-          cacheKey,
-          JSON.stringify(data),
-          'EX',
-          60 * 60 * 2
-        );
+        redis.set(cacheKey, JSON.stringify(data), 'EX', 60 * 60 * 2);
         return data;
       } else {
         throw new Error('Rate limit exceeded');
@@ -122,7 +117,6 @@ export async function updateAccounts(
   if (!userId) return notFound();
 
   const cacheKey = `gtm:accounts:userId:${userId}`;
-
 
   // Getting the current user's OAuth access token
   const token = await currentUserOauthAccessToken(userId);

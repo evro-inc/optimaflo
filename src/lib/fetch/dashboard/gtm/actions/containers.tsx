@@ -27,9 +27,7 @@ type FormCreateSchema = z.infer<typeof CreateContainerSchema>;
 /************************************************************************************
   Function to list GTM containers
 ************************************************************************************/
-export async function listGtmContainers(
-  accountId: string
-) {
+export async function listGtmContainers(accountId: string) {
   let retries = 0;
   const MAX_RETRIES = 3;
   let delay = 1000;
@@ -46,7 +44,7 @@ export async function listGtmContainers(
 
   const cachedValue = await redis.get(cacheKey);
 
-  if (cachedValue) {    
+  if (cachedValue) {
     return JSON.parse(cachedValue);
   }
 
@@ -78,12 +76,7 @@ export async function listGtmContainers(
           data = responseBody.container || [];
         });
 
-        redis.set(
-          cacheKey,
-          JSON.stringify(data),
-          'EX',
-          60 * 60 * 2
-        );
+        redis.set(cacheKey, JSON.stringify(data), 'EX', 60 * 60 * 2);
 
         return {
           containers: data,
@@ -376,8 +369,8 @@ export async function CreateContainers(formData: FormCreateSchema) {
   const successfulCreations: string[] = [];
   const featureLimitReachedContainers: string[] = [];
   const notFoundLimit: { id: string; name: string }[] = [];
-  let accountIdForCache: string | undefined
-  
+  let accountIdForCache: string | undefined;
+
   // Refactor: Use string identifiers in the set
   const toCreateContainers = new Set(
     formData.forms.map((cd) => `${cd.accountId}-${cd.containerName}`)
@@ -561,7 +554,6 @@ export async function CreateContainers(formData: FormCreateSchema) {
           });
 
           if (notFoundLimit.length > 0) {
-
             const notFoundNames = notFoundLimit
               .map((item) => item.name)
               .join(', ');
@@ -581,8 +573,6 @@ export async function CreateContainers(formData: FormCreateSchema) {
             };
           }
           if (featureLimitReachedContainers.length > 0) {
-
-
             return {
               success: false,
               limitReached: true,
@@ -628,7 +618,6 @@ export async function CreateContainers(formData: FormCreateSchema) {
   }
 
   if (permissionDenied) {
-
     return {
       success: false,
       errors: errors,
@@ -702,8 +691,8 @@ export async function UpdateContainers(formData: FormCreateSchema) {
   const successfulUpdates: string[] = [];
   const featureLimitReachedContainers: string[] = [];
   const notFoundLimit: { id: string; name: string }[] = [];
-  let accountIdForCache: string | undefined
-  
+  let accountIdForCache: string | undefined;
+
   // Refactor: Use string identifiers in the set
   const toUpdateContainers = new Set(
     formData.forms.map((cd) => `${cd.accountId}-${cd.containerName}`)
@@ -887,7 +876,6 @@ export async function UpdateContainers(formData: FormCreateSchema) {
           });
 
           if (notFoundLimit.length > 0) {
-
             const notFoundNames = notFoundLimit
               .map((item) => item.name)
               .join(', ');
@@ -907,8 +895,6 @@ export async function UpdateContainers(formData: FormCreateSchema) {
             };
           }
           if (featureLimitReachedContainers.length > 0) {
-
-
             return {
               success: false,
               limitReached: true,
@@ -954,7 +940,6 @@ export async function UpdateContainers(formData: FormCreateSchema) {
   }
 
   if (permissionDenied) {
-
     return {
       success: false,
       errors: errors,
@@ -1012,7 +997,6 @@ export async function UpdateContainers(formData: FormCreateSchema) {
     notFoundError: false, // Set based on actual not found status
   };
 }
-
 
 /************************************************************************************
   Combine containers

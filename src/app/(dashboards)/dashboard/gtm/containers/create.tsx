@@ -4,7 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CreateContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containers';
 import { LimitReached } from '../../../../../components/client/modals/limitReached';
 import { ButtonGroup } from '../../../../../components/client/ButtonGroup/ButtonGroup';
-import { ContainersResponse, FormCreateContainerProps } from '@/src/lib/types/types';
+import {
+  ContainersResponse,
+  FormCreateContainerProps,
+} from '@/src/lib/types/types';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   selectTable,
@@ -139,9 +142,11 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
     }
 
     try {
-      const response: any = (await CreateContainers({ forms })) as ContainersResponse;
+      const response: any = (await CreateContainers({
+        forms,
+      })) as ContainersResponse;
 
-      if(response.success) {        
+      if (response.success) {
         response.results.forEach((result) => {
           if (result.success) {
             toast.success(`Successfully created container: ${result.name}`, {
@@ -153,31 +158,44 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
           }
         });
       } else {
+        // Initialize message with a default error message
+        let message = response.message || 'An error occurred.';
+
+        // Check if there are specific errors and join them into a single message
+        if (response.errors && response.errors.length > 0) {
+          message = response.errors.join(', ');
+        }
+
         // If a notFoundError is present, override the message
         if (response.notFoundError) {
-
-        response.results.forEach((result) => {
-          if (result.notFound) {
-            toast.error(`Unable to create container ${result.name}. Please check if you have the appropriate access permissions.`, {
-              action: {
-                label: 'Close',
-                onClick: () => toast.dismiss(),
-              },
-            });
-          }
-        });
-
+          response.results.forEach((result) => {
+            if (result.notFound) {
+              toast.error(`Container not found: ${result.name}`, {
+                action: {
+                  label: 'Close',
+                  onClick: () => toast.dismiss(),
+                },
+              });
+            }
+          });
 
           dispatch(setErrorDetails(response.results)); // Assuming results contain the error details
           dispatch(setNotFoundError(true)); // Dispatch the not found error action
           onClose();
         }
 
-        // Handle limit reached and other errors
         if (response.limitReached) {
           dispatch(setIsLimitReached(true));
-        } 
+          onClose();
+        }
 
+        // Display the toast with the constructed message
+        toast.error(message, {
+          action: {
+            label: 'Close',
+            onClick: () => toast.dismiss(),
+          },
+        });
 
         onClose(); // Close the form
         form.reset({
@@ -194,8 +212,6 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
         });
       }
 
-
-
       onClose();
 
       // Reset the forms here, regardless of success or limit reached
@@ -211,7 +227,6 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
           },
         ],
       });
-
     } catch (error) {
       toast.error('An unexpected error occurred.', {
         action: {
@@ -224,11 +239,6 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
       dispatch(setLoading(false)); // Set loading to false
     }
   };
-
-
-
-
-
 
   const handleClose = () => {
     // Reset the forms to their initial state

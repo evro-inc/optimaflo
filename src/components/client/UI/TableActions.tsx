@@ -57,7 +57,6 @@ const TableActions = ({ userId, accounts }) => {
       console.error('Error in handleUpdateClick:', error);
     }
   };
-  
 
   return (
     <div className="inline-flex gap-x-2">
@@ -71,7 +70,7 @@ const TableActions = ({ userId, accounts }) => {
             handleRefreshCache(
               router,
               'gtm:containers',
-              [`accountId:${account.accountId}`,`userId:${userId}`],
+              [`accountId:${account.accountId}`, `userId:${userId}`],
               '/dashboard/gtm/containers'
             );
           });
