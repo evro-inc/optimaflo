@@ -15,6 +15,17 @@ import { handleRefreshCache } from '@/src/lib/helpers/client';
 import { ReloadIcon } from '@radix-ui/react-icons';
 import { useDispatch } from 'react-redux';
 import { setNotFoundError } from '@/src/app/redux/tableSlice';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/src/components/ui/alert-dialog';
 
 const getModeClasses = (variant, billingInterval?) => {
   let baseClasses = '';
@@ -75,6 +86,10 @@ const getModeClasses = (variant, billingInterval?) => {
     case 'create':
       baseClasses =
         'py-2 px-3 inline-flex justify-center items-center gap-2 rounded-md border font-medium  shadow-sm align-middle  focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white focus:ring-blue-600 transition-all text-sm';
+      break;
+    case 'delete':
+      baseClasses =
+        'py-2 px-3 inline-flex justify-center items-center gap-2 rounded-md border font-medium  shadow-sm align-middle  focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white focus:ring-red transition-all text-sm bg-red text-white hover:bg-blue hover:text-white';
       break;
     case 'appPrimary':
       baseClasses =
@@ -246,6 +261,7 @@ export const ButtonDelete = ({
   variant = 'primary',
   text,
   billingInterval,
+  onDelete,
   ...props
 }) => {
   const computedClasses = useMemo(() => {
@@ -254,23 +270,42 @@ export const ButtonDelete = ({
   }, [variant, billingInterval]);
 
   return (
-    <Button className={`${BASE_BUTTON_CLASSES} ${computedClasses}`} {...props}>
-      <svg
-        className="w-3 h-3"
-        xmlns="http://www.w3.org/2000/svg"
-        width="16"
-        height="16"
-        fill="currentColor"
-        viewBox="0 0 16 16"
-      >
-        <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z" />
-        <path
-          fillRule="evenodd"
-          d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"
-        />
-      </svg>
-      {text}
-    </Button>
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button
+          className={`${BASE_BUTTON_CLASSES} ${computedClasses}`}
+          {...props}
+        >
+          <svg
+            className="w-3 h-3"
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            fill="currentColor"
+            viewBox="0 0 16 16"
+          >
+            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z" />
+            <path
+              fillRule="evenodd"
+              d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"
+            />
+          </svg>
+          {text}
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This action cannot be undone. This will permanently be deleted.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={onDelete}>Continue</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 };
 
@@ -317,9 +352,9 @@ export const RefreshIcon = ({
   variant = 'primary',
   userId,
   feature,
+
   ...props
 }) => {
-  const router = useRouter();
   const computedClasses = useMemo(() => {
     const modeClass = getModeClasses(variant);
     return [modeClass].join(' ');
@@ -327,15 +362,7 @@ export const RefreshIcon = ({
 
   return (
     <Button className={`${BASE_BUTTON_CLASSES} ${computedClasses}`} {...props}>
-      <span
-        onClick={() =>
-          handleRefreshCache(
-            router,
-            `gtm:${feature}-userId:${userId}`,
-            `/dashboard/gtm/${feature}`
-          )
-        }
-      >
+      <span>
         <ReloadIcon />
       </span>
     </Button>

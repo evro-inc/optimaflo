@@ -1,23 +1,14 @@
 'use client';
 import dynamic from 'next/dynamic';
-import React, { useState } from 'react';
+import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   selectGlobal,
   toggleCreateContainer,
   toggleUpdateContainer,
 } from '@/src/app/redux/globalSlice';
-import {
-  clearSelectedRows,
-  selectTable,
-  setIsLimitReached,
-  setNotFoundError,
-} from '@/src/app/redux/tableSlice';
-import {
-  useError,
-  useRowSelection,
-  useToggleAll,
-} from '@/src/lib/helpers/client';
+import { selectTable, setIsLimitReached } from '@/src/app/redux/tableSlice';
+import { useError, useRowSelection } from '@/src/lib/helpers/client';
 
 import { ErrorMessage } from '@/src/components/client/modals/Error';
 

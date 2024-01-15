@@ -8,7 +8,6 @@ import dynamic from 'next/dynamic';
 import { RefreshIcon } from '@/src/components/client/Button/Button';
 import { auth } from '@clerk/nextjs';
 import { fetchFilteredRows, fetchPages } from '@/src/lib/helpers/server';
-import { listGtmAccounts } from '@/src/lib/fetch/dashboard/gtm/actions/accounts';
 import { Label } from '@/src/components/ui/label';
 
 const TablePaginationNoSSR = dynamic(
@@ -21,13 +20,9 @@ const TablePaginationNoSSR = dynamic(
 export default async function AccountTable({ accounts, query, currentPage }) {
   const { userId }: { userId: string | null } = auth();
 
-  const { data: rows } = await fetchFilteredRows(
-    listGtmAccounts,
-    query,
-    currentPage
-  );
+  const { data: rows } = await fetchFilteredRows(accounts, query, currentPage);
 
-  const totalPages = await fetchPages(listGtmAccounts, query, 10);
+  const totalPages = await fetchPages(accounts, query, 10);
 
   const renderRow = (account) => (
     <TableRows

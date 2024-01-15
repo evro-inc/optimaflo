@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { ButtonDelete, ButtonWithIcon, Icon } from '../Button/Button';
+import { ButtonDelete, ButtonWithIcon, RefreshIcon } from '../Button/Button';
 import { useDispatch } from 'react-redux';
 import { setIsLimitReached } from '@/src/app/redux/tableSlice';
 import {
@@ -8,13 +8,12 @@ import {
   toggleUpdateContainer,
 } from '@/src/app/redux/globalSlice';
 import { tierCreateLimit, tierUpdateLimit } from '@/src/lib/helpers/server';
-import { ReloadIcon } from '@radix-ui/react-icons';
 import { useRouter } from 'next/navigation';
 import { handleRefreshCache, useRowSelection } from '@/src/lib/helpers/client';
 import { useDeleteHook } from '@/src/app/(dashboards)/dashboard/gtm/containers/delete';
 import Search from './Search';
 
-const TableActions = ({ userId, accounts }) => {
+const TableActions = ({ userId, allData }) => {
   const dispatch = useDispatch();
   const router = useRouter();
   const handleDelete = useDeleteHook();
@@ -58,24 +57,27 @@ const TableActions = ({ userId, accounts }) => {
     }
   };
 
+  const refreshAllCache = () => {
+    const keysToRefresh = allData.map((item) => {
+      // Construct the key based on the item data
+      // Adjust the key structure to match your cache key format
+      const base = `gtm:containers`;
+      const accountIdPart = `accountId:${item.accountId}`;
+      const userIdPart = `userId:${userId}`;
+      return [base, accountIdPart, userIdPart].filter(Boolean).join(':');
+    });
+
+    handleRefreshCache(router, keysToRefresh, `/dashboard/gtm/containers`);
+  };
+
   return (
     <div className="inline-flex gap-x-2">
       <Search placeholder={''} />
-      <Icon
-        text={''}
-        icon={<ReloadIcon />}
+      <RefreshIcon
+        userId={userId}
+        feature="accounts"
         variant="create"
-        onClick={() => {
-          accounts.forEach((account) => {
-            handleRefreshCache(
-              router,
-              'gtm:containers',
-              [`accountId:${account.accountId}`, `userId:${userId}`],
-              '/dashboard/gtm/containers'
-            );
-          });
-        }}
-        billingInterval={undefined}
+        onClick={refreshAllCache}
       />
       <ButtonWithIcon
         variant="create"
@@ -127,8 +129,9 @@ const TableActions = ({ userId, accounts }) => {
       <ButtonDelete
         text="Delete"
         disabled={Object.keys(selectedRows).length === 0}
-        variant="create"
-        onClick={handleDelete}
+        variant="delete"
+        onClick={() => {}}
+        onDelete={handleDelete}
         billingInterval={undefined}
       />
     </div>

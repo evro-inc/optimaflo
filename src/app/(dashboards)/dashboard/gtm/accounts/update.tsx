@@ -10,7 +10,7 @@ import {
   toggleAllSelected,
 } from '@/src/app/redux/tableSlice';
 import { selectIsLoading, setLoading } from '@/src/app/redux/globalSlice';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { updateAccounts } from '@/src/lib/fetch/dashboard/gtm/actions/accounts';

@@ -194,6 +194,12 @@ export async function DeleteContainers(
                   if (response.ok) {
                     successfulDeletions.push(containerId);
                     toDeleteContainers.delete(containerId);
+
+                    await prisma.tierLimit.update({
+                      where: { id: tierLimitResponse.id },
+                      data: { deleteUsage: { increment: 1 } },
+                    });
+
                     return { containerId, success: true };
                   } else {
                     parsedResponse = await response.json();
@@ -222,6 +228,13 @@ export async function DeleteContainers(
 
                     toDeleteContainers.delete(containerId);
                     permissionDenied = errorResult ? true : permissionDenied;
+
+                    if (selectedContainers.size > 0) {
+                      const firstContainerId = selectedContainers
+                        .values()
+                        .next().value;
+                      accountIdForCache = firstContainerId.split('-')[0];
+                    }
                   }
                 } catch (error: any) {
                   // Handling exceptions during fetch
@@ -243,9 +256,10 @@ export async function DeleteContainers(
               success: false,
               limitReached: false,
               notFoundError: true, // Set the notFoundError flag
-              message: `Data/permissions not found: ${notFoundLimit.map(
-                (id) => id
-              )}`,
+              message: `Could not delete container. Please check your permissions. Container Name: 
+              ${containerNames.find((name) =>
+                name.includes(name)
+              )}. All other containers were successfully deleted.`,
               results: notFoundLimit.map((containerId) => ({
                 id: [containerId], // Ensure id is an array
                 name: [
@@ -298,6 +312,15 @@ export async function DeleteContainers(
           console.error('An unexpected error occurred:', error);
           break;
         }
+      } finally {
+        // This block will run regardless of the outcome of the try...catch
+        if (accountIdForCache && userId) {
+          // Invalidate cache for all accounts if containers belong to multiple accounts
+          // Otherwise, just invalidate cache for the single account
+          const cacheKey = `gtm:containers:accountId:${accountIdForCache}:userId:${userId}`;
+          await redis.del(cacheKey);
+          await revalidatePath(`/dashboard/gtm/containers`);
+        }
       }
     }
   }
@@ -326,11 +349,6 @@ export async function DeleteContainers(
   }
   // If there are successful deletions, update the deleteUsage
   if (successfulDeletions.length > 0) {
-    await prisma.tierLimit.update({
-      where: { id: tierLimitResponse.id },
-      data: { deleteUsage: { increment: successfulDeletions.length } },
-    });
-
     const cacheKey = `gtm:containers:accountId:${accountIdForCache}:userId:${userId}`;
 
     // Update the Redis cache
@@ -398,7 +416,20 @@ export async function CreateContainers(formData: FormCreateSchema) {
   }
 
   if (toCreateContainers.size > availableCreateUsage) {
-    // If the creation request exceeds the available limit
+    const attemptedCreations = Array.from(toCreateContainers).map(
+      (identifier) => {
+        const [accountId, containerName] = identifier.split('-');
+        return {
+          id: [], // No container ID since creation did not happen
+          name: containerName, // Include the container name from the identifier
+          success: false,
+          message: `Creation limit reached. Cannot create container "${containerName}".`,
+          // remaining creation limit
+          remaining: availableCreateUsage,
+          limitReached: true,
+        };
+      }
+    );
     return {
       success: false,
       containers: [],
@@ -406,7 +437,7 @@ export async function CreateContainers(formData: FormCreateSchema) {
       errors: [
         `Cannot create ${toCreateContainers.size} containers as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
       ],
-      results: [],
+      results: attemptedCreations,
       limitReached: true,
     };
   }
@@ -487,9 +518,12 @@ export async function CreateContainers(formData: FormCreateSchema) {
 
                   if (response.ok) {
                     successfulCreations.push(containerName);
-
                     toCreateContainers.delete(identifier);
 
+                    await prisma.tierLimit.update({
+                      where: { id: tierLimitResponse.id },
+                      data: { createUsage: { increment: 1 } },
+                    });
                     creationResults.push({
                       containerName: containerName,
                       success: true,
@@ -536,6 +570,9 @@ export async function CreateContainers(formData: FormCreateSchema) {
                       message: errorResult?.message,
                     });
                   }
+                  if (successfulCreations.length > 0) {
+                    accountIdForCache = formData.forms[0].accountId; // Set this to the accountId of the first form data or adjust as needed
+                  }
                 } catch (error: any) {
                   errors.push(
                     `Exception creating container ${containerName}: ${error.message}`
@@ -554,15 +591,11 @@ export async function CreateContainers(formData: FormCreateSchema) {
           });
 
           if (notFoundLimit.length > 0) {
-            const notFoundNames = notFoundLimit
-              .map((item) => item.name)
-              .join(', ');
             return {
               success: false,
               limitReached: false,
               notFoundError: true, // Set the notFoundError flag
               containers: [],
-              message: `Data/permissions not found for containers: ${notFoundNames}`,
 
               results: notFoundLimit.map((item) => ({
                 id: item.id,
@@ -572,6 +605,7 @@ export async function CreateContainers(formData: FormCreateSchema) {
               })),
             };
           }
+
           if (featureLimitReachedContainers.length > 0) {
             return {
               success: false,
@@ -580,17 +614,21 @@ export async function CreateContainers(formData: FormCreateSchema) {
               message: `Feature limit reached for containers: ${featureLimitReachedContainers.join(
                 ', '
               )}`,
-              results: featureLimitReachedContainers.map((containerId) => ({
-                id: [containerId], // Ensure id is an array
-                name: [
-                  containerNames.find((name) => name.includes(name)) ||
-                    'Unknown',
-                ], // Ensure name is an array, match by containerId or default to 'Unknown'
-                success: false,
-                featureLimitReached: true,
-              })),
+              results: featureLimitReachedContainers.map((containerId) => {
+                // Find the name associated with the containerId
+                const containerName =
+                  containerNames.find((name) => name.includes(containerId)) ||
+                  'Unknown';
+                return {
+                  id: [containerId], // Ensure id is an array
+                  name: [containerName], // Ensure name is an array, match by containerId or default to 'Unknown'
+                  success: false,
+                  featureLimitReached: true,
+                };
+              }),
             };
           }
+
           if (successfulCreations.length === formData.forms.length) {
             break;
           }
@@ -612,6 +650,13 @@ export async function CreateContainers(formData: FormCreateSchema) {
         } else {
           console.error('An unexpected error occurred:', error);
           break;
+        }
+      } finally {
+        // This block will run regardless of the outcome of the try...catch
+        if (accountIdForCache && userId) {
+          const cacheKey = `gtm:containers:accountId:${accountIdForCache}:userId:${userId}`;
+          await redis.del(cacheKey);
+          await revalidatePath(`/dashboard/gtm/containers`);
         }
       }
     }
@@ -640,11 +685,6 @@ export async function CreateContainers(formData: FormCreateSchema) {
   }
 
   if (successfulCreations.length > 0) {
-    await prisma.tierLimit.update({
-      where: { id: tierLimitResponse.id },
-      data: { createUsage: { increment: successfulCreations.length } },
-    });
-
     const cacheKey = `gtm:containers:accountId:${accountIdForCache}:userId:${userId}`;
 
     await redis.del(cacheKey);
@@ -691,7 +731,8 @@ export async function UpdateContainers(formData: FormCreateSchema) {
   const successfulUpdates: string[] = [];
   const featureLimitReachedContainers: string[] = [];
   const notFoundLimit: { id: string; name: string }[] = [];
-  let accountIdForCache: string | undefined;
+
+  let accountIdsForCache = new Set<string>();
 
   // Refactor: Use string identifiers in the set
   const toUpdateContainers = new Set(
@@ -703,7 +744,7 @@ export async function UpdateContainers(formData: FormCreateSchema) {
   const updateUsage = Number(tierLimitResponse.updateUsage);
   const availableUpdateUsage = limit - updateUsage;
 
-  const updateResults: {
+  const UpdateResults: {
     containerName: string;
     success: boolean;
     message?: string;
@@ -720,7 +761,20 @@ export async function UpdateContainers(formData: FormCreateSchema) {
   }
 
   if (toUpdateContainers.size > availableUpdateUsage) {
-    // If the creation request exceeds the available limit
+    const attemptedUpdates = Array.from(toUpdateContainers).map(
+      (identifier) => {
+        const [accountId, containerName] = identifier.split('-');
+        return {
+          id: [], // No container ID since update did not happen
+          name: containerName, // Include the container name from the identifier
+          success: false,
+          message: `Update limit reached. Cannot update container "${containerName}".`,
+          // remaining update limit
+          remaining: availableUpdateUsage,
+          limitReached: true,
+        };
+      }
+    );
     return {
       success: false,
       containers: [],
@@ -728,7 +782,7 @@ export async function UpdateContainers(formData: FormCreateSchema) {
       errors: [
         `Cannot update ${toUpdateContainers.size} containers as it exceeds the available limit. You have ${availableUpdateUsage} more update(s) available.`,
       ],
-      results: [],
+      results: attemptedUpdates,
       limitReached: true,
     };
   }
@@ -752,7 +806,7 @@ export async function UpdateContainers(formData: FormCreateSchema) {
             const updatePromises = Array.from(toUpdateContainers).map(
               async (identifier) => {
                 const [accountId, containerName] = identifier.split('-');
-                accountIdForCache = accountId;
+                accountIdsForCache.add(accountId);
                 const containerData = formData.forms.find(
                   (cd) =>
                     cd.accountId === accountId &&
@@ -809,10 +863,14 @@ export async function UpdateContainers(formData: FormCreateSchema) {
 
                   if (response.ok) {
                     successfulUpdates.push(containerName);
-
                     toUpdateContainers.delete(identifier);
 
-                    updateResults.push({
+                    await prisma.tierLimit.update({
+                      where: { id: tierLimitResponse.id },
+                      data: { updateUsage: { increment: 1 } },
+                    });
+
+                    UpdateResults.push({
                       containerName: containerName,
                       success: true,
                       message: `Successfully updated container ${containerName}`,
@@ -852,7 +910,7 @@ export async function UpdateContainers(formData: FormCreateSchema) {
 
                     toUpdateContainers.delete(identifier);
                     permissionDenied = errorResult ? true : permissionDenied;
-                    updateResults.push({
+                    UpdateResults.push({
                       containerName: containerName,
                       success: false,
                       message: errorResult?.message,
@@ -863,7 +921,7 @@ export async function UpdateContainers(formData: FormCreateSchema) {
                     `Exception updating container ${containerName}: ${error.message}`
                   );
                   toUpdateContainers.delete(identifier);
-                  updateResults.push({
+                  UpdateResults.push({
                     containerName: containerName,
                     success: false,
                     message: error.message,
@@ -875,16 +933,18 @@ export async function UpdateContainers(formData: FormCreateSchema) {
             await Promise.all(updatePromises);
           });
 
+          for (const accountId of accountIdsForCache) {
+            const cacheKey = `gtm:containers:accountId:${accountId}:userId:${userId}`;
+            await redis.del(cacheKey);
+            await revalidatePath(`/dashboard/gtm/containers`);
+          }
+
           if (notFoundLimit.length > 0) {
-            const notFoundNames = notFoundLimit
-              .map((item) => item.name)
-              .join(', ');
             return {
               success: false,
               limitReached: false,
               notFoundError: true, // Set the notFoundError flag
               containers: [],
-              message: `Data/permissions not found for containers: ${notFoundNames}`,
 
               results: notFoundLimit.map((item) => ({
                 id: item.id,
@@ -894,6 +954,7 @@ export async function UpdateContainers(formData: FormCreateSchema) {
               })),
             };
           }
+
           if (featureLimitReachedContainers.length > 0) {
             return {
               success: false,
@@ -902,17 +963,21 @@ export async function UpdateContainers(formData: FormCreateSchema) {
               message: `Feature limit reached for containers: ${featureLimitReachedContainers.join(
                 ', '
               )}`,
-              results: featureLimitReachedContainers.map((containerId) => ({
-                id: [containerId], // Ensure id is an array
-                name: [
-                  containerNames.find((name) => name.includes(name)) ||
-                    'Unknown',
-                ], // Ensure name is an array, match by containerId or default to 'Unknown'
-                success: false,
-                featureLimitReached: true,
-              })),
+              results: featureLimitReachedContainers.map((containerId) => {
+                // Find the name associated with the containerId
+                const containerName =
+                  containerNames.find((name) => name.includes(containerId)) ||
+                  'Unknown';
+                return {
+                  id: [containerId], // Ensure id is an array
+                  name: [containerName], // Ensure name is an array, match by containerId or default to 'Unknown'
+                  success: false,
+                  featureLimitReached: true,
+                };
+              }),
             };
           }
+
           if (successfulUpdates.length === formData.forms.length) {
             break;
           }
@@ -934,6 +999,14 @@ export async function UpdateContainers(formData: FormCreateSchema) {
         } else {
           console.error('An unexpected error occurred:', error);
           break;
+        }
+      } finally {
+        // This block will run regardless of the outcome of the try...catch
+        if (accountIdsForCache && userId) {
+          await redis.del(
+            `gtm:containers:accountId:${accountIdsForCache}:userId:${userId}`
+          );
+          await revalidatePath(`/dashboard/gtm/containers`);
         }
       }
     }
@@ -962,14 +1035,9 @@ export async function UpdateContainers(formData: FormCreateSchema) {
   }
 
   if (successfulUpdates.length > 0) {
-    await prisma.tierLimit.update({
-      where: { id: tierLimitResponse.id },
-      data: { updateUsage: { increment: successfulUpdates.length } },
-    });
-
-    const cacheKey = `gtm:containers:accountId:${accountIdForCache}:userId:${userId}`;
-
-    await redis.del(cacheKey);
+    await redis.del(
+      `gtm:containers:accountId:${accountIdsForCache}:userId:${userId}`
+    );
     revalidatePath(`/dashboard/gtm/containers`);
   }
 

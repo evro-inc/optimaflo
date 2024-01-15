@@ -199,6 +199,8 @@ export interface ContainerResult {
   name: string[];
   success: boolean;
   notFound?: boolean;
+  limitReached?: boolean;
+  remaining?: number;
 }
 
 export interface ContainersResponse {

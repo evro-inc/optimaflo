@@ -134,45 +134,36 @@ export const useToggleAll = (items, getIdFromItem, dispatch, allSelected) => {
   return toggleAll;
 };
 
-export const handleRefreshCache = async (
-  router,
-  baseKey,
-  dynamicParts,
-  path
-) => {
+export const handleRefreshCache = async (router, keys, path) => {
   try {
-    toast.info('Refreshing Cache', {
-      action: {
-        label: 'Close',
-        onClick: () => toast.dismiss(),
-      },
-    });
+    for (const key of keys) {
+      console.log('Refreshing cache for key:', key);
 
-    // Construct the full key using the baseKey and dynamicParts
-    const fullKey = `${baseKey}:${dynamicParts.join(':')}`;
+      // Call the API to refresh the cache for each key
+      const response = await fetch('/api/dashboard/refresh', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ key, path }),
+      });
 
-    console.log('fullKey:', fullKey);
+      // Check the response or handle it as needed
+      if (!response.ok) {
+        throw new Error(`Failed to refresh cache for key: ${key}`);
+      }
+    }
 
-    const response = await fetch('/api/dashboard/refresh', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        key: fullKey,
-        path,
-      }),
-    });
-
-    await response.json();
+    // After all refreshes are done, you might want to update the UI
     router.refresh();
-    toast.success('Cache Refreshed', {
+    toast.success('All caches refreshed', {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error refreshing cache:', error);
+    toast.error(`Error: ${error.message}`);
   }
 };

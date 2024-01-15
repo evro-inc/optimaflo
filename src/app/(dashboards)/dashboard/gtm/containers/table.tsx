@@ -99,7 +99,7 @@ export default async function ContainerTable({
                     Containers
                   </h2>
                   <div className="inline-flex gap-x-2">
-                    <TableActions userId={userId} accounts={accounts} />
+                    <TableActions userId={userId} allData={accounts} />
                   </div>
                 </div>
                 <Table>
@@ -115,7 +115,7 @@ export default async function ContainerTable({
                     uniqueKeys={['accountId', 'containerId']}
                   />
                   <TableBody>
-                    {rows.map((container) => renderRow(container))}
+                    {rows.map((container: any) => renderRow(container))}
                   </TableBody>
                   <TableFooter>{/* Footer content */}</TableFooter>
                 </Table>
@@ -125,7 +125,7 @@ export default async function ContainerTable({
           </div>
         </div>
       </div>
-      <ContainerForms accounts={accounts} containers={containers} />
+      <ContainerForms accounts={accounts} />
     </>
   );
 }

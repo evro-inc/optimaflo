@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { updateContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containers';
+import { UpdateContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containers';
 import { LimitReached } from '../../../../../components/client/modals/limitReached';
 import { ButtonGroup } from '../../../../../components/client/ButtonGroup/ButtonGroup';
 import { z } from 'zod';
@@ -9,13 +9,18 @@ import { UpdateContainerSchema } from '@/src/lib/schemas/containers';
 import {
   clearSelectedRows,
   selectTable,
+  setErrorDetails,
   setIsLimitReached,
+  setNotFoundError,
 } from '@/src/app/redux/tableSlice';
 import { selectIsLoading, setLoading } from '@/src/app/redux/globalSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CreateResult, FormUpdateContainerProps } from '@/src/lib/types/types';
+import {
+  ContainersResponse,
+  FormUpdateContainerProps,
+} from '@/src/lib/types/types';
 import logger from '@/src/lib/logger';
 
 import { Cross1Icon } from '@radix-ui/react-icons';
@@ -104,11 +109,87 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
     const { forms } = data;
     dispatch(setLoading(true)); // Set loading to true
 
-    try {
-      // If you're here, validation succeeded. Proceed with updateContainers.
-      const res = (await updateContainers({ forms })) as CreateResult;
+    toast('Updating containers...', {
+      action: {
+        label: 'Close',
+        onClick: () => toast.dismiss(),
+      },
+    });
 
+    try {
+      // If you're here, validation succeeded. Proceed with UpdateContainers.
+      const res = (await UpdateContainers({ forms })) as ContainersResponse;
       dispatch(clearSelectedRows()); // Clear selectedRows
+
+      if (res.success) {
+        console.log('res.success:', res.results);
+
+        res.results.forEach((result) => {
+          console.log('result each :', result);
+
+          if (result.success) {
+            toast.success(`Successfully updated container: ${result.name}`, {
+              action: {
+                label: 'Close',
+                onClick: () => toast.dismiss(),
+              },
+            });
+          }
+        });
+      } else {
+        // If a notFoundError is present, override the message
+        if (res.notFoundError) {
+          res.results.forEach((result) => {
+            if (result.notFound) {
+              toast.error(
+                `Unable to update container ${result.name}. Please check your access permissions. Any other containers updated were successful.`,
+                {
+                  action: {
+                    label: 'Close',
+                    onClick: () => toast.dismiss(),
+                  },
+                }
+              );
+            }
+          });
+
+          dispatch(setErrorDetails(res.results)); // Assuming results contain the error details
+          dispatch(setNotFoundError(true)); // Dispatch the not found error action
+          onClose();
+        }
+
+        if (res.limitReached) {
+          res.results.forEach((result) => {
+            if (result.limitReached) {
+              toast.error(
+                `Unable to update container ${result.name}. You have ${result.remaining} more container(s) you can update.`,
+                {
+                  action: {
+                    label: 'Close',
+                    onClick: () => toast.dismiss(),
+                  },
+                }
+              );
+            }
+          });
+          dispatch(setIsLimitReached(true));
+          onClose();
+        }
+
+        onClose(); // Close the form
+        form.reset({
+          forms: [
+            {
+              accountId: '',
+              usageContext: '',
+              containerName: '',
+              domainName: '',
+              notes: '',
+              containerId: '',
+            },
+          ],
+        });
+      }
 
       // close the modal
       onClose();
@@ -126,31 +207,6 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
           },
         ],
       });
-
-      if (res && res.success) {
-        // Reset the forms here
-        form.reset({
-          forms: [
-            {
-              accountId: '',
-              usageContext: '',
-              containerName: '',
-              domainName: '',
-              notes: '',
-              containerId: '',
-            },
-          ],
-        });
-      } else if (res && res.limitReached) {
-        // Show the LimitReached modal
-        dispatch(setIsLimitReached(true));
-        toast.error(res.message, {
-          action: {
-            label: 'Close',
-            onClick: () => toast.dismiss(),
-          },
-        });
-      }
     } catch (error) {
       logger.error('Error creating containers:', error);
 
@@ -196,7 +252,7 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
               className="absolute top-5 right-5 font-bold py-2 px-4"
               text="Close"
               icon={<Cross1Icon />}
-              variant="create"
+              variant="update"
               onClick={handleClose}
               billingInterval={undefined}
             />
