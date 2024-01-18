@@ -87,11 +87,7 @@ const TableActions = ({ userId, allData }) => {
   return (
     <div className="inline-flex gap-x-2">
       <Search placeholder={''} />
-      <Icon
-        variant="create"
-        onClick={refreshAllCache}
-        icon={<ReloadIcon />}
-      />
+      <Icon variant="create" onClick={refreshAllCache} icon={<ReloadIcon />} />
       <ButtonWithIcon
         variant="create"
         text="Create"

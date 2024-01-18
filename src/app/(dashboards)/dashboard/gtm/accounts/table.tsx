@@ -9,6 +9,7 @@ import { RefreshIcon } from '@/src/components/client/Button/Button';
 import { auth } from '@clerk/nextjs';
 import { fetchFilteredRows, fetchPages } from '@/src/lib/helpers/server';
 import { Label } from '@/src/components/ui/label';
+import TableActions from './TableActions';
 
 const TablePaginationNoSSR = dynamic(
   () => import('@/src/components/client/UI/TablePagination'),
@@ -60,12 +61,7 @@ export default async function AccountTable({ accounts, query, currentPage }) {
                     Accounts
                   </h2>
                   <div className="inline-flex gap-x-2">
-                    <RefreshIcon
-                      userId={userId}
-                      feature="accounts"
-                      variant="create"
-                    />
-                    <ButtonUpdate />
+                    <TableActions userId={userId} />
                   </div>
                 </div>
                 <Table>

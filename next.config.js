@@ -1,5 +1,3 @@
-const { logging } = require('googleapis/build/src/apis/logging');
-
 /** @type {import('next').NextConfig} */
 const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
@@ -30,11 +28,6 @@ const nextConfig = {
   },
   typescript: {
     ignoreBuildErrors: true,
-  },
-  logging: {
-    fetches:{
-      fullUrl: true,
-    }
   },
 };
 

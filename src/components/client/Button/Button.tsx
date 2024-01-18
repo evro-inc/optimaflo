@@ -325,11 +325,7 @@ export const ButtonWithIcon = ({
   );
 };
 
-export const Icon = ({
-  variant = 'primary',
-  icon,
-  ...props
-}) => {
+export const Icon = ({ variant = 'primary', icon, ...props }) => {
   const computedClasses = useMemo(() => {
     const modeClass = getModeClasses(variant);
     return [modeClass].join(' ');
@@ -341,8 +337,6 @@ export const Icon = ({
     </Button>
   );
 };
-
-
 
 export const ButtonSignIn = ({
   variant = 'signup',

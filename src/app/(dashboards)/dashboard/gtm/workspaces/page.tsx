@@ -1,3 +1,5 @@
+'use server';
+
 import React, { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import { auth } from '@clerk/nextjs';
@@ -7,37 +9,55 @@ import { listGtmWorkspaces } from '@/src/lib/fetch/dashboard/gtm/actions/workspa
 import { listGtmContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containers';
 import { Skeleton } from '@/src/components/ui/skeleton';
 
+async function getAccounts() {
+  try {
+    const { userId } = auth();
+    if (!userId) return notFound();
+
+    const accounts = await listGtmAccounts();
+    return accounts;
+  } catch (error: any) {
+    console.error('Error fetching accounts:', error);
+  }
+}
+
 async function getWorkspaces() {
   try {
     const { userId } = auth();
     if (!userId) return notFound();
 
     const accounts = await listGtmAccounts();
-    
-    const containersPromises = accounts.map(account => listGtmContainers(account.accountId));
-    const containers = await Promise.all(containersPromises);
-    const flattenedContainers = containers.flat();    
 
-    const workspacesPromises = containers.flat().map(container => {
+    const containersPromises = accounts.map((account) =>
+      listGtmContainers(account.accountId)
+    );
+    const containers = await Promise.all(containersPromises);
+    const flattenedContainers = containers.flat();
+
+    const workspacesPromises = containers.flat().map((container) => {
       return listGtmWorkspaces(container.accountId, container.containerId);
     });
     const workspaces = await Promise.all(workspacesPromises);
     const flattenedWorkspaces = workspaces.flat();
 
-    const combinedData = flattenedWorkspaces.map(workspace => {
-      const account = accounts.find(acc => acc.accountId === workspace.accountId);
-      const container = flattenedContainers.find(container => container.containerId === workspace.containerId);
+    const combinedData = flattenedWorkspaces.map((workspace) => {
+      const account = accounts.find(
+        (acc) => acc.accountId === workspace.accountId
+      );
+      const container = flattenedContainers.find(
+        (container) => container.containerId === workspace.containerId
+      );
       return {
         ...workspace,
         accountName: account ? account.name : '',
         containerName: container ? container.name : '',
       };
-    })
-    
-    return combinedData ;
+    });
+
+    return combinedData;
   } catch (error: any) {
     console.error('Error fetching workspaces:', error);
-    return  notFound();
+    return notFound();
   }
 }
 
@@ -54,7 +74,13 @@ export default async function WorkspacePage({
   const { userId } = auth();
   if (!userId) return notFound();
 
-  const data = await getWorkspaces();    
+  const accountData = await getAccounts();
+  const workspaceData = await getWorkspaces();
+
+  const [accounts, workspaces] = await Promise.all([
+    accountData,
+    workspaceData,
+  ]);
 
   return (
     <>
@@ -82,7 +108,8 @@ export default async function WorkspacePage({
         }
       >
         <WorkspaceTable
-          workspaces={data}
+          accounts={accounts}
+          workspaces={workspaces}
           query={query}
           currentPage={currentPage}
         />

@@ -24,6 +24,7 @@ const TablePaginationNoSSR = dynamic(
 );
 
 export default async function WorkspaceTable({
+  accounts,
   workspaces,
   query,
   currentPage,
@@ -99,10 +100,7 @@ export default async function WorkspaceTable({
                     Workspaces
                   </h2>
                   <div className="inline-flex gap-x-2">
-                    <TableActions
-                      userId={userId}
-                      allData={workspaces}
-                    />
+                    <TableActions userId={userId} allData={workspaces} />
                   </div>
                 </div>
                 <Table>
@@ -128,7 +126,7 @@ export default async function WorkspaceTable({
           </div>
         </div>
       </div>
-      <WorkspaceForms workspaces={workspaces} />
+      <WorkspaceForms workspaces={workspaces} accounts={accounts} />
     </>
   );
 }

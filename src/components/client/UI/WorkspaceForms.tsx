@@ -11,7 +11,6 @@ import { selectTable, setIsLimitReached } from '@/src/app/redux/tableSlice';
 import { useError, useRowSelection } from '@/src/lib/helpers/client';
 
 import { ErrorMessage } from '@/src/components/client/modals/Error';
-import { listGtmAccounts } from '@/src/lib/fetch/dashboard/gtm/actions/accounts';
 
 // Dynamic imports for modals and forms
 const LimitReachedModal = dynamic(
@@ -32,17 +31,14 @@ const FormUpdateWorkspace = dynamic(() => import('../GTM/workspaces/update'), {
   ssr: false,
 });
 
-function WorkspaceForms({ workspaces }) {
+function WorkspaceForms({ accounts, workspaces }) {
   const dispatch = useDispatch();
-  const { showCreateWorkspace, showUpdateWorkspace } =
-    useSelector(selectGlobal);
+  const { showCreate, showUpdate } = useSelector(selectGlobal);
   const { isLimitReached, notFoundError } = useSelector(selectTable);
   const { selectedRows } = useRowSelection(
     (workspace) => workspace.workspaceId
   );
   const { error, clearError } = useError();
-
-  const accounts = listGtmAccounts();
 
   return (
     <>
@@ -56,17 +52,17 @@ function WorkspaceForms({ workspaces }) {
       {error && <ErrorMessage onClose={clearError} />}
 
       {/* Forms */}
-      {showCreateWorkspace && (
+      {showCreate && (
         <FormCreateWorkspace
-          showOptions={showCreateWorkspace}
+          showOptions={showCreate}
           onClose={() => dispatch(toggleCreate())}
           accounts={accounts}
           workspaces={workspaces}
         />
       )}
-      {showUpdateWorkspace && (
+      {showUpdate && (
         <FormUpdateWorkspace
-          showOptions={showUpdateWorkspace}
+          showOptions={showUpdate}
           onClose={() => dispatch(toggleUpdate())}
           accounts={accounts}
           selectedRows={selectedRows}

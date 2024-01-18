@@ -12,6 +12,7 @@ const SingleFormSchema = z.object({
     .string()
     .min(1, 'Workspace Description is required')
     .optional(),
+  workspaceId: z.string().optional(),
 });
 
 // Define the schema for the entire form with field array

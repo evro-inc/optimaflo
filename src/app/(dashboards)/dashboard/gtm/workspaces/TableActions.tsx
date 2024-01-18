@@ -1,13 +1,18 @@
 'use client';
 import React from 'react';
-import { ButtonDelete, ButtonWithIcon, Icon } from '../../../../../components/client/Button/Button';
+import {
+  ButtonDelete,
+  ButtonWithIcon,
+  Icon,
+} from '../../../../../components/client/Button/Button';
 import { useDispatch } from 'react-redux';
 import { setIsLimitReached } from '@/src/app/redux/tableSlice';
+import { toggleCreate, toggleUpdate } from '@/src/app/redux/globalSlice';
 import {
-  toggleCreate,
-  toggleUpdate,
-} from '@/src/app/redux/globalSlice';
-import { revalidate, tierCreateLimit, tierUpdateLimit } from '@/src/lib/helpers/server';
+  revalidate,
+  tierCreateLimit,
+  tierUpdateLimit,
+} from '@/src/lib/helpers/server';
 import { useRowSelection } from '@/src/lib/helpers/client';
 import Search from '../../../../../components/client/UI/Search';
 import { useDeleteHook } from './delete';
@@ -26,10 +31,12 @@ const TableActions = ({ userId, allData }) => {
     try {
       const handleCreateLimit: any = await tierCreateLimit(
         userId,
-        'GTMWorkspace'
+        'GTMWorkspaces'
       );
 
       if (handleCreateLimit && handleCreateLimit.limitReached) {
+        console.log('handleCreateLimit', handleCreateLimit);
+
         // Directly show the limit reached modal
         dispatch(setIsLimitReached(true)); // Assuming you have an action to explicitly set this
       } else {
@@ -57,7 +64,7 @@ const TableActions = ({ userId, allData }) => {
     }
   };
 
-  const refreshAllCache = async () => {    
+  const refreshAllCache = async () => {
     // Assuming you want to refresh cache for each workspace
     const keysToRefresh = allData.map((workspace) => {
       // Construct the key based on the workspace data
@@ -65,27 +72,28 @@ const TableActions = ({ userId, allData }) => {
       const accountIdPart = `accountId:${workspace.accountId}`;
       const containerIdPart = `containerId:${workspace.containerId}`;
       const userIdPart = `userId:${userId}`;
-      return [base, accountIdPart, containerIdPart, userIdPart].filter(Boolean).join(':');
+      return [base, accountIdPart, containerIdPart, userIdPart]
+        .filter(Boolean)
+        .join(':');
     });
     console.log('keysToRefresh', keysToRefresh);
-    
+
     await revalidate(keysToRefresh, '/dashboard/gtm/workspaces');
-    toast.info('Updating our systems. This may take a minute or two to update on screen.', {
-      action: {
-        label: 'Close',
-        onClick: () => toast.dismiss(),
-      },
-    });
+    toast.info(
+      'Updating our systems. This may take a minute or two to update on screen.',
+      {
+        action: {
+          label: 'Close',
+          onClick: () => toast.dismiss(),
+        },
+      }
+    );
   };
 
   return (
     <div className="inline-flex gap-x-2">
       <Search placeholder={''} />
-      <Icon
-        variant="create"
-        onClick={refreshAllCache}
-        icon={<ReloadIcon />}
-      />
+      <Icon variant="create" onClick={refreshAllCache} icon={<ReloadIcon />} />
       <ButtonWithIcon
         variant="create"
         text="Create"

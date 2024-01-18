@@ -47,8 +47,7 @@ const FormUpdateContainer = dynamic(
 
 export default function ContainerForms({ accounts }) {
   const dispatch = useDispatch();
-  const { showUpdateContainer, showCreateContainer } =
-    useSelector(selectGlobal);
+  const { showCreate, showUpdate } = useSelector(selectGlobal);
   const { isLimitReached, notFoundError } = useSelector(selectTable);
   const { selectedRows } = useRowSelection(
     (container) => container.containerId
@@ -67,16 +66,16 @@ export default function ContainerForms({ accounts }) {
       {error && <ErrorMessage onClose={clearError} />}
 
       {/* Forms */}
-      {showCreateContainer && (
+      {showCreate && (
         <FormCreateContainer
-          showOptions={showCreateContainer}
+          showOptions={showCreate}
           onClose={() => dispatch(toggleCreate())}
           accounts={accounts}
         />
       )}
-      {showUpdateContainer && (
+      {showUpdate && (
         <FormUpdateContainer
-          showOptions={showUpdateContainer}
+          showOptions={showUpdate}
           onClose={() => dispatch(toggleUpdate())}
           accounts={accounts}
           selectedRows={selectedRows}

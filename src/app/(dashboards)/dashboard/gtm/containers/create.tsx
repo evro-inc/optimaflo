@@ -5,7 +5,7 @@ import { CreateContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containe
 import { LimitReached } from '../../../../../components/client/modals/limitReached';
 import { ButtonGroup } from '../../../../../components/client/ButtonGroup/ButtonGroup';
 import {
-  ContainersResponse,
+  FeatureResponse,
   FormCreateContainerProps,
 } from '@/src/lib/types/types';
 import { useDispatch, useSelector } from 'react-redux';
@@ -144,7 +144,7 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
     try {
       const response: any = (await CreateContainers({
         forms,
-      })) as ContainersResponse;
+      })) as FeatureResponse;
 
       if (response.success) {
         response.results.forEach((result) => {

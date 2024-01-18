@@ -137,15 +137,15 @@ export const useToggleAll = (items, getIdFromItem, dispatch, allSelected) => {
 };
 
 export const handleRefreshCache = async (
-  router, 
-  keyParts: Record<string, string | number>, 
+  router,
+  keyParts: Record<string, string | number>,
   path: string
 ) => {
   try {
     // Construct the dynamic key using the keyParts object
     const dynamicKey = Object.entries(keyParts)
-                            .map(([key, value]) => `${key}:${value}`)
-                            .join(':');
+      .map(([key, value]) => `${key}:${value}`)
+      .join(':');
 
     const response = await fetch('/api/dashboard/refresh', {
       method: 'POST',

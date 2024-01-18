@@ -1,19 +1,62 @@
 'use client';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LimitReached } from '../../modals/limitReached';
 import { ButtonGroup } from '../../ButtonGroup/ButtonGroup';
-import { XMarkIcon } from '@heroicons/react/24/solid';
-import { CreateResult, FormCreateWorkspaceProps } from '@/src/lib/types/types';
+import {
+  FeatureResponse,
+  FormCreateWorkspaceProps,
+} from '@/src/lib/types/types';
 import { useDispatch, useSelector } from 'react-redux';
-import { selectTable, setIsLimitReached } from '@/src/app/redux/tableSlice';
+import {
+  selectTable,
+  setErrorDetails,
+  setIsLimitReached,
+  setNotFoundError,
+} from '@/src/app/redux/tableSlice';
 import { selectGlobal, setLoading } from '@/src/app/redux/globalSlice';
 import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
 import { CreateWorkspaceSchema } from '@/src/lib/schemas/workspaces';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import logger from '@/src/lib/logger';
 import { CreateWorkspaces } from '@/src/lib/fetch/dashboard/gtm/actions/workspaces';
+import dynamic from 'next/dynamic';
+import { toast } from 'sonner';
+import { Icon } from '../../Button/Button';
+import { Cross1Icon } from '@radix-ui/react-icons';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/src/components/ui/card';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/src/components/ui/form';
+import { Input } from '@/src/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '@/src/components/ui/select';
+
+const NotFoundErrorModal = dynamic(
+  () =>
+    import('../../../../components/client/modals/notFoundError').then(
+      (mod) => mod.NotFoundError
+    ),
+  { ssr: false }
+);
 
 type Forms = z.infer<typeof CreateWorkspaceSchema>;
 
@@ -23,21 +66,18 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
   accounts = [],
   workspaces = [],
 }) => {
-  const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
   const formRefs = useRef<(HTMLFormElement | null)[]>([]);
   const dispatch = useDispatch();
-  const {
-    register,
-    handleSubmit,
-    control,
-    reset,
-    formState: { errors },
-  } = useForm<Forms>({
+  const { loading } = useSelector(selectGlobal);
+  const isLimitReached = useSelector(selectTable).isLimitReached;
+  const notFoundError = useSelector(selectTable).notFoundError;
+  console.log('workspaces', workspaces);
+
+  const form = useForm<Forms>({
     defaultValues: {
       forms: [
         {
-          accountId: '',
-
+          accountId: accounts[0]?.accountId,
           name: '',
           description: '',
           containerId: '',
@@ -48,19 +88,13 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
   });
 
   const { fields, append, remove } = useFieldArray({
-    control,
+    control: form.control,
     name: 'forms',
   });
-
-  const { isLimitReached, loading } = useSelector((state) => ({
-    ...selectTable(state),
-    ...selectGlobal(state),
-  }));
 
   const addForm = () => {
     append({
       accountId: '',
-
       name: '',
       description: '',
       containerId: '',
@@ -72,46 +106,95 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
       remove(fields.length - 1);
     }
   };
-  useEffect(() => {
-    // Initialize selectedAccounts array with empty strings for each field
-    setSelectedAccounts(fields.map(() => ''));
-  }, [fields]);
-
-  const handleAccountChange = (accountId: string, index: number) => {
-    const updatedAccounts = [...selectedAccounts];
-    updatedAccounts[index] = accountId;
-    setSelectedAccounts(updatedAccounts);
-  };
 
   const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
-    try {
-      const res = (await CreateWorkspaces({ forms })) as CreateResult;
+    toast('Creating workspaces...', {
+      action: {
+        label: 'Close',
+        onClick: () => toast.dismiss(),
+      },
+    });
 
-      if (res.limitReached) {
-        dispatch(setIsLimitReached(true)); // Set limitReached to true using Redux action
-      }
-
-      // close the modal
-      onClose();
-
-      // Reset the forms here, regardless of success or limit reached
-      reset({
-        forms: [
+    const uniqueWorkspaces = new Set(forms.map((form) => form.containerId));
+    for (const form of forms) {
+      const identifier = `${form.accountId}-${form.containerId}-${form.name}`;
+      if (uniqueWorkspaces.has(identifier)) {
+        toast.error(
+          `Duplicate workspace found for ${form.accountId} - ${form.containerId} - ${form.name}`,
           {
-            accountId: '',
-            name: '',
-            description: '',
-            containerId: '',
-          },
-        ],
-      });
+            action: {
+              label: 'Close',
+              onClick: () => toast.dismiss(),
+            },
+          }
+        );
+        dispatch(setLoading(false));
+        return;
+      }
+      uniqueWorkspaces.add(identifier);
+    }
 
-      if (res && res.success) {
-        // Reset the forms here
-        reset({
+    try {
+      const res = (await CreateWorkspaces({ forms })) as FeatureResponse;
+
+      if (res.success) {
+        res.results.forEach((result) => {
+          if (result.success) {
+            toast.success(
+              `Workspace ${result.name} created successfully. The table will update shortly.`,
+              {
+                action: {
+                  label: 'Close',
+                  onClick: () => toast.dismiss(),
+                },
+              }
+            );
+          }
+        });
+      } else {
+        if (res.notFoundError) {
+          res.results.forEach((result) => {
+            if (result.notFound) {
+              toast.error(
+                `Unable to create container ${result.name}. Please check your access permissions. Any other containers created were successful.`,
+                {
+                  action: {
+                    label: 'Close',
+                    onClick: () => toast.dismiss(),
+                  },
+                }
+              );
+            }
+          });
+
+          dispatch(setErrorDetails(res.results)); // Assuming results contain the error details
+          dispatch(setNotFoundError(true)); // Dispatch the not found error action
+          onClose();
+        }
+
+        if (res.limitReached) {
+          res.results.forEach((result) => {
+            if (result.limitReached) {
+              toast.error(
+                `Unable to create container ${result.name}. You have ${result.remaining} more container(s) you can create.`,
+                {
+                  action: {
+                    label: 'Close',
+                    onClick: () => toast.dismiss(),
+                  },
+                }
+              );
+            }
+          });
+          dispatch(setIsLimitReached(true));
+          onClose();
+        }
+
+        onClose(); // Close the form
+        form.reset({
           forms: [
             {
               accountId: '',
@@ -121,13 +204,28 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
             },
           ],
         });
-      } else if (res && res.limitReached) {
-        // Show the LimitReached modal
-        setIsLimitReached(true);
       }
-    } catch (error) {
-      logger.error('Error creating workspaces:', error);
 
+      onClose();
+
+      // Reset the forms here, regardless of success or limit reached
+      form.reset({
+        forms: [
+          {
+            accountId: '',
+            name: '',
+            description: '',
+            containerId: '',
+          },
+        ],
+      });
+    } catch (error) {
+      toast.error('An unexpected error occurred.', {
+        action: {
+          label: 'Close',
+          onClick: () => toast.dismiss(),
+        },
+      });
       return { success: false };
     } finally {
       dispatch(setLoading(false)); // Set loading to false
@@ -136,7 +234,7 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
 
   const handleClose = () => {
     // Reset the forms to their initial state
-    reset({
+    form.reset({
       forms: [
         {
           accountId: '',
@@ -151,8 +249,12 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
     onClose();
   };
 
-  const uniqueAccountIds: string[] = Array.from(
-    new Set(accounts.map((account) => account.accountId))
+  const accountIdsWithContainers = new Set(
+    workspaces.map((workspace) => workspace.accountId)
+  );
+
+  const accountsWithContainers = accounts.filter((account) =>
+    accountIdsWithContainers.has(account.accountId)
   );
 
   return (
@@ -163,16 +265,17 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
             initial={{ opacity: 0, y: -50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -50 }}
-            className="fixed top-0 left-0 w-full h-full flex flex-col items-center justify-start z-50 bg-white-500 overflow-y-auto"
+            className="fixed top-0 left-0 w-full h-full flex flex-col items-center justify-start z-50 bg-white overflow-y-auto"
           >
             {/* Close Button */}
-            <button
+            <Icon
+              className="absolute top-5 right-5 font-bold py-2 px-4"
+              text="Close"
+              icon={<Cross1Icon />}
+              variant="create"
               onClick={handleClose}
-              className="absolute top-0 right-0 font-bold py-2 px-4"
-            >
-              <XMarkIcon className="w-14 h-14" />
-            </button>
-
+              billingInterval={undefined}
+            />
             <ButtonGroup
               buttons={[
                 { text: 'Add Form', onClick: addForm },
@@ -186,152 +289,215 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
             />
 
             <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-end">
-              {fields.map((field, index) => (
-                <div
-                  key={field.id}
-                  className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-                >
-                  <div className="max-w-xl mx-auto">
-                    <div className="text-center">
-                      <p className="text-3xl font-bold text-gray-800 sm:text-4xl dark:text-white">
-                        Workspace {index + 1}
-                      </p>
-                    </div>
+              {fields.map((field, index) => {
+                const selectedAccountId = form.watch(
+                  `forms.${index}.accountId`
+                );
 
-                    <div className="mt-12">
-                      {/* Form */}
-                      <form
-                        ref={(el) => (formRefs.current[index] = el)}
-                        onSubmit={handleSubmit(processForm)}
-                        id="createWorkspace"
-                      >
-                        <div className="grid gap-4 lg:gap-6">
-                          {/* Grid */}
-                          <div className="grid grid-cols-1 gap-4 lg:gap-6">
-                            <div>
-                              <label
-                                htmlFor="hs-firstname-hire-us-2"
-                                className="block text-sm text-gray-700 font-medium dark:text-white"
-                              >
-                                New Workspace Name:
-                              </label>
-                              <input
-                                type="text"
-                                {...register(`forms.${index}.name`)}
-                                className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
-                              />
-                              {errors.forms?.[index]?.name?.message && (
-                                <p className="text-red-500 text-xs italic">
-                                  {errors.forms?.[index]?.name?.message}
-                                </p>
-                              )}
-                            </div>
+                // Filter workspaces to only include those that belong to the selected account
+                const filteredWorkspaces = workspaces.filter(
+                  (workspace) => workspace.accountId === selectedAccountId
+                );
 
-                            <div>
-                              <label
-                                htmlFor="hs-lastname-hire-us-2"
-                                className="block text-sm text-gray-700 font-medium dark:text-white"
-                              >
-                                Account
-                              </label>
-                              <select
-                                {...register(`forms.${index}.accountId`)}
-                                className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
-                                onChange={(e) =>
-                                  handleAccountChange(e.target.value, index)
-                                }
-                              >
-                                <option value="">Select an account</option>
-                                {uniqueAccountIds.map((accountId: string) => (
-                                  <option key={accountId} value={accountId}>
-                                    {accountId}
-                                  </option>
-                                ))}
-                              </select>
-                              {errors.forms?.[index]?.accountId?.message && (
-                                <p className="text-red-500 text-xs italic">
-                                  {errors.forms?.[index]?.accountId?.message}
-                                </p>
-                              )}
-                            </div>
+                // Create a Set to store unique container IDs
+                const uniqueContainerIds = new Set(
+                  filteredWorkspaces.map((ws) => ws.containerId)
+                );
 
-                            <div>
-                              <label
-                                htmlFor="hs-lastname-hire-us-2"
-                                className="block text-sm text-gray-700 font-medium dark:text-white"
-                              >
-                                Container
-                              </label>
-                              <select
-                                {...register(`forms.${index}.containerId`)}
-                                className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
-                                disabled={!selectedAccounts[index]}
-                              >
-                                {!selectedAccounts[index] ? (
-                                  <option value="">Select a container</option>
-                                ) : (
-                                  workspaces
-                                    .filter(
-                                      (workspace) =>
-                                        workspace.accountId ===
-                                        selectedAccounts[index]
-                                    )
-                                    .map((workspace) => workspace.containerId)
-                                    .filter(
-                                      (value, idx, self) =>
-                                        self.indexOf(value) === idx
-                                    )
-                                    .map((containerId) => (
-                                      <option
-                                        key={containerId}
-                                        value={containerId}
-                                      >
-                                        {
-                                          workspaces.find(
-                                            (w) => w.containerId === containerId
-                                          )?.containerName
-                                        }
-                                      </option>
-                                    ))
-                                )}
-                              </select>
-                              {errors.forms?.[index]?.containerId?.message && (
-                                <p className="text-red-500 text-xs italic">
-                                  {errors.forms?.[index]?.containerId?.message}
-                                </p>
-                              )}
-                            </div>
+                // Filter the workspaces again to only include unique containers
+                const uniqueFilteredWorkspaces = filteredWorkspaces.filter(
+                  (workspace, idx, self) =>
+                    idx ===
+                    self.findIndex(
+                      (w) =>
+                        w.containerId === workspace.containerId &&
+                        uniqueContainerIds.has(w.containerId)
+                    )
+                );
 
-                            <div>
-                              <label
-                                htmlFor="hs-firstname-hire-us-2"
-                                className="block text-sm text-gray-700 font-medium dark:text-white"
-                              >
-                                Description:
-                              </label>
-                              <input
-                                type="text"
-                                {...register(`forms.${index}.description`)}
-                                className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
-                              />
-                              {errors.forms?.[index]?.description?.message && (
-                                <p className="text-red-500 text-xs italic">
-                                  {errors.forms?.[index]?.description?.message}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          {/* End Grid */}
+                return (
+                  <div
+                    key={field.id}
+                    className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
+                  >
+                    <div className="max-w-xl mx-auto">
+                      <div className="mt-12">
+                        {/* Form */}
 
-                          {/* End Grid */}
-                        </div>
-                        {/* End Grid */}
-                      </form>
-                      {/* End Form */}
+                        <Card className="w-full max-w-xl mx-auto bg-white shadow-md rounded-lg overflow-hidden">
+                          <CardHeader className="bg-gray-100 p-4">
+                            <CardTitle className="text-lg font-semibold">
+                              Workspace {index + 1}
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="p-4">
+                            <Form {...form}>
+                              <form
+                                ref={(el) => (formRefs.current[index] = el)}
+                                onSubmit={form.handleSubmit(processForm)}
+                                id="createWorkspace"
+                                className="space-y-6"
+                              >
+                                <FormField
+                                  control={form.control}
+                                  name={`forms.${index}.name`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>New Workspace Name</FormLabel>
+                                      <FormDescription>
+                                        This is the workspace name you want to
+                                        create.
+                                      </FormDescription>
+                                      <FormControl>
+                                        <Input
+                                          placeholder="Name of the workspace"
+                                          {...form.register(
+                                            `forms.${index}.name`
+                                          )}
+                                          {...field}
+                                        />
+                                      </FormControl>
+
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+
+                                <FormField
+                                  control={form.control}
+                                  name={`forms.${index}.accountId`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Account</FormLabel>
+                                      <FormDescription>
+                                        This is the account you want to create
+                                        the container in.
+                                      </FormDescription>
+                                      <FormControl>
+                                        <Select
+                                          {...form.register(
+                                            `forms.${index}.accountId`
+                                          )}
+                                          {...field}
+                                          onValueChange={field.onChange}
+                                        >
+                                          <SelectTrigger className="w-[180px]">
+                                            <SelectValue placeholder="Select an account." />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectGroup>
+                                              <SelectLabel>Account</SelectLabel>
+                                              {accountsWithContainers.map(
+                                                (account) => (
+                                                  <SelectItem
+                                                    key={account.accountId}
+                                                    value={account.accountId}
+                                                  >
+                                                    {account.name}
+                                                  </SelectItem>
+                                                )
+                                              )}
+                                            </SelectGroup>
+                                          </SelectContent>
+                                        </Select>
+                                      </FormControl>
+
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+
+                                <FormField
+                                  control={form.control}
+                                  name={`forms.${index}.containerId`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Container</FormLabel>
+                                      <FormDescription>
+                                        Which container do you want to create
+                                        the workspace in?
+                                      </FormDescription>
+                                      <FormControl>
+                                        <Select
+                                          {...form.register(
+                                            `forms.${index}.containerId`
+                                          )}
+                                          {...field}
+                                          onValueChange={field.onChange}
+                                        >
+                                          <SelectTrigger className="w-[180px]">
+                                            <SelectValue placeholder="Select a container." />
+                                          </SelectTrigger>
+
+                                          <SelectContent>
+                                            <SelectGroup>
+                                              <SelectLabel>
+                                                Containers
+                                              </SelectLabel>
+                                              {uniqueFilteredWorkspaces.length >
+                                              0 ? (
+                                                uniqueFilteredWorkspaces.map(
+                                                  (workspace) => (
+                                                    <SelectItem
+                                                      key={
+                                                        workspace.containerId
+                                                      }
+                                                      value={
+                                                        workspace.containerId
+                                                      }
+                                                    >
+                                                      {workspace.containerName}
+                                                    </SelectItem>
+                                                  )
+                                                )
+                                              ) : (
+                                                <SelectItem value="" disabled>
+                                                  No containers available
+                                                </SelectItem>
+                                              )}
+                                            </SelectGroup>
+                                          </SelectContent>
+                                        </Select>
+                                      </FormControl>
+
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+
+                                <FormField
+                                  control={form.control}
+                                  name={`forms.${index}.description`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Description:</FormLabel>
+                                      <FormDescription>
+                                        This is a description of the workspace.
+                                      </FormDescription>
+                                      <FormControl>
+                                        <Input
+                                          placeholder="Enter your description"
+                                          {...form.register(
+                                            `forms.${index}.description`
+                                          )}
+                                          {...field}
+                                        />
+                                      </FormControl>
+
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </form>
+                            </Form>
+                          </CardContent>
+                        </Card>
+                        {/* End Form */}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* End Hire Us */}
@@ -340,8 +506,10 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
       </AnimatePresence>
 
       {isLimitReached && (
-        <LimitReached onClose={() => dispatch(isLimitReached(false))} /> // Use Redux action for onClose
+        <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
       )}
+
+      {notFoundError && <NotFoundErrorModal />}
     </>
   );
 };
