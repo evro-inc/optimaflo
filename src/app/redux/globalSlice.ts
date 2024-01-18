@@ -4,8 +4,8 @@ export const globalSlice = createSlice({
   name: 'global',
   initialState: {
     isLoading: false,
-    showUpdateContainer: false,
-    showCreateContainer: false,
+    showUpdate: false,
+    showCreate: false,
     showCombineContainer: false,
     accordionOpenItems: {},
   },
@@ -13,11 +13,11 @@ export const globalSlice = createSlice({
     setLoading: (state, action) => {
       state.isLoading = action.payload;
     },
-    toggleUpdateContainer: (state) => {
-      state.showUpdateContainer = !state.showUpdateContainer;
+    toggleUpdate: (state) => {
+      state.showUpdate = !state.showUpdate;
     },
-    toggleCreateContainer: (state) => {
-      state.showCreateContainer = !state.showCreateContainer;
+    toggleCreate: (state) => {
+      state.showCreate = !state.showCreate;
     },
     toggleCombineContainer: (state) => {
       state.showCombineContainer = !state.showCombineContainer;
@@ -35,8 +35,8 @@ export const globalSlice = createSlice({
 
 export const {
   setLoading,
-  toggleUpdateContainer,
-  toggleCreateContainer,
+  toggleUpdate,
+  toggleCreate,
   toggleCombineContainer,
   toggleAccordionItem,
 } = globalSlice.actions;

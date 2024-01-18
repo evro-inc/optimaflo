@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { ContainerResult } from '../../lib/types/types';
+import { FeatureResult } from '../../lib/types/types';
 
 export interface TableRow {
   id: string;
@@ -15,7 +15,7 @@ export interface TableState {
   notFoundError: boolean;
   isModalOpen: boolean;
   error: string | null;
-  errorDetails: ContainerResult[];
+  errorDetails: FeatureResult[];
 }
 
 const initialState: TableState = {
@@ -57,7 +57,7 @@ export const tableSlice = createSlice({
     setNotFoundError: (state, action: PayloadAction<boolean>) => {
       state.notFoundError = action.payload;
     },
-    setErrorDetails: (state, action: PayloadAction<ContainerResult[]>) => {
+    setErrorDetails: (state, action: PayloadAction<FeatureResult[]>) => {
       state.errorDetails = action.payload;
     },
     openModal: (state) => {

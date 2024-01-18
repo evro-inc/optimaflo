@@ -4,9 +4,9 @@ import { Table, TableBody, TableFooter } from '@/src/components/ui/table';
 import TableHeaderRow from '@/src/components/server/UI/Tableheader';
 import dynamic from 'next/dynamic';
 import { auth } from '@clerk/nextjs';
-import { ContainerType } from '@/src/lib/types/types';
-import TableActions from '@/src/app/(dashboards)/dashboard/gtm/containers/TableActions';
-import ContainerForms from '@/src/components/client/UI/ContainerForms';
+import { WorkspaceType } from '@/src/lib/types/types'; //  change
+import TableActions from '@/src/app/(dashboards)/dashboard/gtm/workspaces/TableActions';
+
 import {
   fetchAllFilteredRows,
   fetchFilteredRows,
@@ -14,6 +14,7 @@ import {
 } from '@/src/lib/helpers/server';
 import { notFound } from 'next/navigation';
 import { Label } from '@/src/components/ui/label';
+import WorkspaceForms from '@/src/components/client/UI/WorkspaceForms';
 
 const TablePaginationNoSSR = dynamic(
   () => import('@/src/components/client/UI/TablePagination'),
@@ -22,9 +23,8 @@ const TablePaginationNoSSR = dynamic(
   }
 );
 
-export default async function ContainerTable({
-  accounts,
-  containers,
+export default async function WorkspaceTable({
+  workspaces,
   query,
   currentPage,
 }) {
@@ -32,52 +32,52 @@ export default async function ContainerTable({
   if (!userId) return notFound();
 
   const { data: rows } = await fetchFilteredRows(
-    containers,
+    workspaces,
     query,
     currentPage
   );
 
-  const allRows = await fetchAllFilteredRows(containers, query);
+  const allRows = await fetchAllFilteredRows(workspaces, query);
 
-  const totalPages = await fetchPages(containers, query, 10);
+  const totalPages = await fetchPages(workspaces, query, 10);
 
-  const renderRow = (container: ContainerType) => {
+  const renderRow = (workspace: WorkspaceType) => {
     return (
       <TableRows
-        key={`${container.accountId}-${container.containerId}`}
-        item={container}
+        key={`${workspace.accountId}-${workspace.containerId}-${workspace.workspaceId}`}
+        item={workspace}
         columns={[
           {
             render: (item) => (
               <ToggleRow
                 item={item}
-                uniqueIdentifier={['accountId', 'containerId']}
+                uniqueIdentifier={['accountId', 'containerId', 'workspaceId']}
               />
             ),
           },
           {
             render: (item) => (
-              <Label htmlFor={item.containerId}>{item.name}</Label>
+              <Label htmlFor={item.workspaceId}>{item.name}</Label>
             ),
           },
           {
             render: (item) => (
-              <Label htmlFor={item.containerId}>{item.containerId}</Label>
+              <Label htmlFor={item.workspaceId}>{item.workspaceId}</Label>
             ),
           },
           {
             render: (item) => (
-              <Label htmlFor={item.containerId}>{item.publicId}</Label>
+              <Label htmlFor={item.workspaceId}>{item.containerName}</Label>
             ),
           },
           {
             render: (item) => (
-              <Label htmlFor={item.containerId}>{item.accountName}</Label>
+              <Label htmlFor={item.workspaceId}>{item.containerId}</Label>
             ),
           },
           {
             render: (item) => (
-              <Label htmlFor={item.containerId}>{item.usageContext}</Label>
+              <Label htmlFor={item.workspaceId}>{item.accountName}</Label>
             ),
           },
         ]}
@@ -96,26 +96,29 @@ export default async function ContainerTable({
                 <div className="px-6 py-4 grid gap-3 md:flex md:justify-between md:items-center border-b border-gray-200 dark:border-gray-700">
                   {/* Header */}
                   <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
-                    Containers
+                    Workspaces
                   </h2>
                   <div className="inline-flex gap-x-2">
-                    <TableActions userId={userId} allData={accounts} />
+                    <TableActions
+                      userId={userId}
+                      allData={workspaces}
+                    />
                   </div>
                 </div>
                 <Table>
                   <TableHeaderRow
                     headers={[
+                      'Workspace Name',
+                      'Workspace ID',
                       'Container Name',
                       'Container ID',
-                      'GTM ID',
                       'Account Name',
-                      'Usage Context',
                     ]}
                     items={allRows}
-                    uniqueKeys={['accountId', 'containerId']}
+                    uniqueKeys={['accountId', 'containerId', 'workspaceId']}
                   />
                   <TableBody>
-                    {rows.map((container: any) => renderRow(container))}
+                    {rows.map((workspace: any) => renderRow(workspace))}
                   </TableBody>
                   <TableFooter>{/* Footer content */}</TableFooter>
                 </Table>
@@ -125,7 +128,7 @@ export default async function ContainerTable({
           </div>
         </div>
       </div>
-      <ContainerForms accounts={accounts} />
+      <WorkspaceForms workspaces={workspaces} />
     </>
   );
 }

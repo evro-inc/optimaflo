@@ -8,7 +8,7 @@ import {
 } from '@/src/app/redux/tableSlice';
 import { DeleteContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containers';
 import { useRowSelection } from '@/src/lib/helpers/client';
-import { ContainerType, ContainersResponse } from '@/src/lib/types/types';
+import { ContainerType, FeatureResponse } from '@/src/lib/types/types';
 import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
 
@@ -46,7 +46,7 @@ export const useDeleteHook = () => {
     });
 
     // Wait for all delete operations to complete
-    const responses: ContainersResponse[] = await Promise.all(deleteOperations);
+    const responses: FeatureResponse[] = await Promise.all(deleteOperations);
 
     responses.forEach((response) => {
       if (!response.success) {

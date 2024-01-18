@@ -2,9 +2,9 @@
 import { notFound } from 'next/navigation';
 import logger from '../logger';
 import prisma from '../prisma';
-import { currentUserOauthAccessToken } from '@/src/lib/clerk';
 import { auth } from '@clerk/nextjs';
-import { ContainerType } from '../types/types';
+import { revalidatePath } from 'next/cache';
+import { redis } from '../redis/cache';
 
 // Define the type for the pagination and filtering result
 type PaginatedFilteredResult<T> = {
@@ -57,25 +57,6 @@ export const toDateTime = (secs: number) => {
   var t = new Date('1970-01-01T00:30:00Z'); // Unix epoch start.
   t.setSeconds(secs);
   return t;
-};
-
-export const handleRefreshCache = async (key, path) => {
-  try {
-    const response = await fetch('/api/dashboard/refresh', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        key,
-        path,
-      }),
-    });
-
-    await response.json();
-  } catch (error) {
-    console.error('Error refreshing cache:', error);
-  }
 };
 
 export const tierDeleteLimit = async (userId: string, featureName: string) => {
@@ -281,9 +262,12 @@ export async function fetchFilteredRows<T>(
   const { userId } = auth();
   if (!userId) return notFound();
 
-  // Filter items based on the query
-  const filteredItems = allItems.filter((item: any) =>
-    item.name.toLowerCase().includes(query.toLowerCase())
+  // Ensure that item.name exists and is a string before calling toLowerCase()
+  const filteredItems = allItems.filter(
+    (item: any) =>
+      item.name &&
+      typeof item.name === 'string' &&
+      item.name.toLowerCase().includes(query.toLowerCase())
   );
 
   // Calculate pagination values
@@ -310,8 +294,11 @@ export async function fetchAllFilteredRows<T>(
   if (!userId) return notFound();
 
   // Filter items based on the query
-  const filteredItems = allItems.filter((item: any) =>
-    item.name.toLowerCase().includes(query.toLowerCase())
+  const filteredItems = allItems.filter(
+    (item: any) =>
+      item.name &&
+      typeof item.name === 'string' &&
+      item.name.toLowerCase().includes(query.toLowerCase())
   );
 
   // Return all filtered items
@@ -336,4 +323,15 @@ export async function fetchPages<T>(
   // Calculate the total number of pages
   const totalPages = Math.ceil(filtered.length / pageSize);
   return totalPages;
+}
+
+export async function revalidate(keys, path) {
+  const pipeline = redis.pipeline();
+
+  for (const key of keys) {
+    pipeline.del(key);
+    await revalidatePath(path);
+  }
+
+  await pipeline.exec(); // Execute all queued commands in a batch
 }

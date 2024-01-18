@@ -39,7 +39,6 @@ import {
   FormMessage,
 } from '@/src/components/ui/form';
 import { Input } from '@/src/components/ui/input';
-import dynamic from 'next/dynamic';
 import { toast } from 'sonner';
 
 // Defining the type for form data using Zod

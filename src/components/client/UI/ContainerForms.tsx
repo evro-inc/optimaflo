@@ -4,8 +4,8 @@ import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   selectGlobal,
-  toggleCreateContainer,
-  toggleUpdateContainer,
+  toggleCreate,
+  toggleUpdate,
 } from '@/src/app/redux/globalSlice';
 import { selectTable, setIsLimitReached } from '@/src/app/redux/tableSlice';
 import { useError, useRowSelection } from '@/src/lib/helpers/client';
@@ -70,14 +70,14 @@ export default function ContainerForms({ accounts }) {
       {showCreateContainer && (
         <FormCreateContainer
           showOptions={showCreateContainer}
-          onClose={() => dispatch(toggleCreateContainer())}
+          onClose={() => dispatch(toggleCreate())}
           accounts={accounts}
         />
       )}
       {showUpdateContainer && (
         <FormUpdateContainer
           showOptions={showUpdateContainer}
-          onClose={() => dispatch(toggleUpdateContainer())}
+          onClose={() => dispatch(toggleUpdate())}
           accounts={accounts}
           selectedRows={selectedRows}
         />

@@ -194,7 +194,7 @@ export type WorkspaceData = {
   workspaceName: string;
 };
 
-export interface ContainerResult {
+export interface FeatureResult {
   id: string[];
   name: string[];
   success: boolean;
@@ -203,33 +203,14 @@ export interface ContainerResult {
   remaining?: number;
 }
 
-export interface ContainersResponse {
+export interface FeatureResponse {
   success: boolean;
-  containers?: string[];
+  features?: string[];
   errors?: string[];
   limitReached?: boolean;
   errorCode?: number;
   message?: string;
-  results: ContainerResult[];
+  results: FeatureResult[];
   notFoundError?: boolean;
   revalidationSuccess?: boolean;
-}
-
-export interface DeleteWorkspaceResult {
-  containerId: string;
-  workspaceId?: string; // Make workspaceId optional
-  success: boolean;
-  errorCode?: number;
-  message?: string;
-  notFound?: boolean;
-}
-export interface DeleteWorkspacesResponse {
-  success: boolean;
-  deletedWorkspaces?: Array<{ containerId: string; workspaceId: string }>;
-  errors?: string[];
-  limitReached?: boolean;
-  errorCode?: number;
-  message?: string;
-  results: DeleteWorkspaceResult[];
-  remainingWorkspaces?: Set<string>; // Add this line
 }

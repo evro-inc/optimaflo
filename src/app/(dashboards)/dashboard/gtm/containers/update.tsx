@@ -122,11 +122,7 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
       dispatch(clearSelectedRows()); // Clear selectedRows
 
       if (res.success) {
-        console.log('res.success:', res.results);
-
         res.results.forEach((result) => {
-          console.log('result each :', result);
-
           if (result.success) {
             toast.success(`Successfully updated container: ${result.name}`, {
               action: {

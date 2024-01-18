@@ -1,21 +1,27 @@
 'use client';
 import React from 'react';
-import { ButtonDelete, ButtonWithIcon, RefreshIcon } from '../Button/Button';
+import {
+  ButtonDelete,
+  ButtonWithIcon,
+  Icon,
+} from '../../../../../components/client/Button/Button';
 import { useDispatch } from 'react-redux';
 import { setIsLimitReached } from '@/src/app/redux/tableSlice';
+import { toggleCreate, toggleUpdate } from '@/src/app/redux/globalSlice';
 import {
-  toggleCreateContainer,
-  toggleUpdateContainer,
-} from '@/src/app/redux/globalSlice';
-import { tierCreateLimit, tierUpdateLimit } from '@/src/lib/helpers/server';
+  revalidate,
+  tierCreateLimit,
+  tierUpdateLimit,
+} from '@/src/lib/helpers/server';
 import { useRouter } from 'next/navigation';
-import { handleRefreshCache, useRowSelection } from '@/src/lib/helpers/client';
+import { useRowSelection } from '@/src/lib/helpers/client';
 import { useDeleteHook } from '@/src/app/(dashboards)/dashboard/gtm/containers/delete';
-import Search from './Search';
+import Search from '../../../../../components/client/UI/Search';
+import { toast } from 'sonner';
+import { ReloadIcon } from '@radix-ui/react-icons';
 
 const TableActions = ({ userId, allData }) => {
   const dispatch = useDispatch();
-  const router = useRouter();
   const handleDelete = useDeleteHook();
 
   const { selectedRows } = useRowSelection(
@@ -34,7 +40,7 @@ const TableActions = ({ userId, allData }) => {
         dispatch(setIsLimitReached(true)); // Assuming you have an action to explicitly set this
       } else {
         // Otherwise, proceed with normal creation process
-        dispatch(toggleCreateContainer());
+        dispatch(toggleCreate());
       }
     } catch (error) {
       console.error('Error in handleCreateClick:', error);
@@ -50,14 +56,14 @@ const TableActions = ({ userId, allData }) => {
         dispatch(setIsLimitReached(true)); // Assuming you have an action to explicitly set this
       } else {
         // Otherwise, proceed with normal creation process
-        dispatch(toggleUpdateContainer());
+        dispatch(toggleUpdate());
       }
     } catch (error) {
       console.error('Error in handleUpdateClick:', error);
     }
   };
 
-  const refreshAllCache = () => {
+  const refreshAllCache = async () => {
     const keysToRefresh = allData.map((item) => {
       // Construct the key based on the item data
       // Adjust the key structure to match your cache key format
@@ -66,18 +72,25 @@ const TableActions = ({ userId, allData }) => {
       const userIdPart = `userId:${userId}`;
       return [base, accountIdPart, userIdPart].filter(Boolean).join(':');
     });
-
-    handleRefreshCache(router, keysToRefresh, `/dashboard/gtm/containers`);
+    await revalidate(keysToRefresh, '/dashboard/gtm/containers');
+    toast.info(
+      'Updating our systems. This may take a minute or two to update on screen.',
+      {
+        action: {
+          label: 'Close',
+          onClick: () => toast.dismiss(),
+        },
+      }
+    );
   };
 
   return (
     <div className="inline-flex gap-x-2">
       <Search placeholder={''} />
-      <RefreshIcon
-        userId={userId}
-        feature="accounts"
+      <Icon
         variant="create"
         onClick={refreshAllCache}
+        icon={<ReloadIcon />}
       />
       <ButtonWithIcon
         variant="create"

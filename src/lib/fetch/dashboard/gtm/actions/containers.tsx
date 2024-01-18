@@ -13,7 +13,7 @@ import { notFound } from 'next/navigation';
 import { listGtmAccounts } from './accounts';
 import { currentUserOauthAccessToken } from '@/src/lib/clerk';
 import prisma from '@/src/lib/prisma';
-import { ContainerResult, ContainersResponse } from '@/src/lib/types/types';
+import { FeatureResult, FeatureResponse } from '@/src/lib/types/types';
 import {
   handleApiResponseError,
   tierCreateLimit,
@@ -76,7 +76,7 @@ export async function listGtmContainers(accountId: string) {
           data = responseBody.container || [];
         });
 
-        redis.set(cacheKey, JSON.stringify(data), 'EX', 60 * 60 * 2);
+        redis.set(cacheKey, JSON.stringify(data));
 
         return {
           containers: data,
@@ -103,7 +103,7 @@ export async function listGtmContainers(accountId: string) {
 export async function DeleteContainers(
   selectedContainers: Set<string>,
   containerNames: string[]
-): Promise<ContainersResponse> {
+): Promise<FeatureResponse> {
   // Initialization of retry mechanism
   let retries = 0;
   const MAX_RETRIES = 3;
@@ -112,7 +112,7 @@ export async function DeleteContainers(
   // Arrays to track various outcomes
   const errors: string[] = [];
   const successfulDeletions: string[] = [];
-  const featureLimitReachedContainers: string[] = [];
+  const featureLimitReached: string[] = [];
   const notFoundLimit: string[] = [];
   const toDeleteContainers = new Set(selectedContainers);
   let accountIdForCache: string | undefined;
@@ -144,7 +144,7 @@ export async function DeleteContainers(
     // If the deletion request exceeds the available limit
     return {
       success: false,
-      containers: [],
+      features: [],
       errors: [
         `Cannot delete ${toDeleteContainers.size} containers as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
       ],
@@ -216,7 +216,7 @@ export async function DeleteContainers(
                         errorResult.errorCode === 403 &&
                         parsedResponse.message === 'Feature limit reached'
                       ) {
-                        featureLimitReachedContainers.push(containerId);
+                        featureLimitReached.push(containerId);
                       } else if (errorResult.errorCode === 404) {
                         notFoundLimit.push(containerId); // Track 404 errors
                       }
@@ -271,15 +271,15 @@ export async function DeleteContainers(
               })),
             };
           }
-          if (featureLimitReachedContainers.length > 0) {
+          if (featureLimitReached.length > 0) {
             return {
               success: false,
               limitReached: true,
               notFoundError: false,
-              message: `Feature limit reached for containers: ${featureLimitReachedContainers.join(
+              message: `Feature limit reached for containers: ${featureLimitReached.join(
                 ', '
               )}`,
-              results: featureLimitReachedContainers.map((containerId) => ({
+              results: featureLimitReached.map((containerId) => ({
                 id: [containerId], // Ensure id is an array
                 name: [
                   containerNames.find((name) => name.includes(name)) ||
@@ -336,7 +336,7 @@ export async function DeleteContainers(
   if (errors.length > 0) {
     return {
       success: false,
-      containers: successfulDeletions,
+      features: successfulDeletions,
       errors: errors,
       results: successfulDeletions.map((containerId) => ({
         id: [containerId], // Ensure id is an array
@@ -361,7 +361,7 @@ export async function DeleteContainers(
   return {
     success: errors.length === 0,
     message: `Successfully deleted ${successfulDeletions.length} container(s)`,
-    containers: successfulDeletions,
+    features: successfulDeletions,
     errors: errors,
     notFoundError: notFoundLimit.length > 0,
     results: successfulDeletions.map((containerId) => ({
@@ -385,7 +385,7 @@ export async function CreateContainers(formData: FormCreateSchema) {
   let delay = 1000;
   const errors: string[] = [];
   const successfulCreations: string[] = [];
-  const featureLimitReachedContainers: string[] = [];
+  const featureLimitReached: string[] = [];
   const notFoundLimit: { id: string; name: string }[] = [];
   let accountIdForCache: string | undefined;
 
@@ -432,7 +432,7 @@ export async function CreateContainers(formData: FormCreateSchema) {
     );
     return {
       success: false,
-      containers: [],
+      features: [],
       message: `Cannot create ${toCreateContainers.size} containers as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
       errors: [
         `Cannot create ${toCreateContainers.size} containers as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
@@ -545,7 +545,7 @@ export async function CreateContainers(formData: FormCreateSchema) {
                         errorResult.errorCode === 403 &&
                         parsedResponse.message === 'Feature limit reached'
                       ) {
-                        featureLimitReachedContainers.push(containerName);
+                        featureLimitReached.push(containerName);
                       } else if (errorResult.errorCode === 404) {
                         const containerName =
                           containerNames.find((name) =>
@@ -595,7 +595,7 @@ export async function CreateContainers(formData: FormCreateSchema) {
               success: false,
               limitReached: false,
               notFoundError: true, // Set the notFoundError flag
-              containers: [],
+              features: [],
 
               results: notFoundLimit.map((item) => ({
                 id: item.id,
@@ -606,15 +606,15 @@ export async function CreateContainers(formData: FormCreateSchema) {
             };
           }
 
-          if (featureLimitReachedContainers.length > 0) {
+          if (featureLimitReached.length > 0) {
             return {
               success: false,
               limitReached: true,
               notFoundError: false,
-              message: `Feature limit reached for containers: ${featureLimitReachedContainers.join(
+              message: `Feature limit reached for containers: ${featureLimitReached.join(
                 ', '
               )}`,
-              results: featureLimitReachedContainers.map((containerId) => {
+              results: featureLimitReached.map((containerId) => {
                 // Find the name associated with the containerId
                 const containerName =
                   containerNames.find((name) => name.includes(containerId)) ||
@@ -674,7 +674,7 @@ export async function CreateContainers(formData: FormCreateSchema) {
   if (errors.length > 0) {
     return {
       success: false,
-      containers: successfulCreations,
+      features: successfulCreations,
       errors: errors,
       results: successfulCreations.map((containerName) => ({
         containerName,
@@ -692,7 +692,7 @@ export async function CreateContainers(formData: FormCreateSchema) {
   }
 
   // Map over formData.forms to create the results array
-  const results: ContainerResult[] = formData.forms.map((form) => {
+  const results: FeatureResult[] = formData.forms.map((form) => {
     // Ensure that form.containerId is defined before adding it to the array
     const containerId = form.containerId ? [form.containerId] : []; // Provide an empty array as a fallback
     return {
@@ -707,7 +707,7 @@ export async function CreateContainers(formData: FormCreateSchema) {
   // Return the response with the correctly typed results
   return {
     success: true, // or false, depending on the actual results
-    containers: [], // Populate with actual container IDs if applicable
+    features: [], // Populate with actual container IDs if applicable
     errors: [], // Populate with actual error messages if applicable
     limitReached: false, // Set based on actual limit status
     message: 'Containers created successfully', // Customize the message as needed
@@ -729,7 +729,7 @@ export async function UpdateContainers(formData: FormCreateSchema) {
   let delay = 1000;
   const errors: string[] = [];
   const successfulUpdates: string[] = [];
-  const featureLimitReachedContainers: string[] = [];
+  const featureLimitReached: string[] = [];
   const notFoundLimit: { id: string; name: string }[] = [];
 
   let accountIdsForCache = new Set<string>();
@@ -777,7 +777,7 @@ export async function UpdateContainers(formData: FormCreateSchema) {
     );
     return {
       success: false,
-      containers: [],
+      features: [],
       message: `Cannot update ${toUpdateContainers.size} containers as it exceeds the available limit. You have ${availableUpdateUsage} more update(s) available.`,
       errors: [
         `Cannot update ${toUpdateContainers.size} containers as it exceeds the available limit. You have ${availableUpdateUsage} more update(s) available.`,
@@ -891,7 +891,7 @@ export async function UpdateContainers(formData: FormCreateSchema) {
                         errorResult.errorCode === 403 &&
                         parsedResponse.message === 'Feature limit reached'
                       ) {
-                        featureLimitReachedContainers.push(containerName);
+                        featureLimitReached.push(containerName);
                       } else if (errorResult.errorCode === 404) {
                         const containerName =
                           containerNames.find((name) =>
@@ -944,7 +944,7 @@ export async function UpdateContainers(formData: FormCreateSchema) {
               success: false,
               limitReached: false,
               notFoundError: true, // Set the notFoundError flag
-              containers: [],
+              features: [],
 
               results: notFoundLimit.map((item) => ({
                 id: item.id,
@@ -955,15 +955,15 @@ export async function UpdateContainers(formData: FormCreateSchema) {
             };
           }
 
-          if (featureLimitReachedContainers.length > 0) {
+          if (featureLimitReached.length > 0) {
             return {
               success: false,
               limitReached: true,
               notFoundError: false,
-              message: `Feature limit reached for containers: ${featureLimitReachedContainers.join(
+              message: `Feature limit reached for containers: ${featureLimitReached.join(
                 ', '
               )}`,
-              results: featureLimitReachedContainers.map((containerId) => {
+              results: featureLimitReached.map((containerId) => {
                 // Find the name associated with the containerId
                 const containerName =
                   containerNames.find((name) => name.includes(containerId)) ||
@@ -1024,7 +1024,7 @@ export async function UpdateContainers(formData: FormCreateSchema) {
   if (errors.length > 0) {
     return {
       success: false,
-      containers: successfulUpdates,
+      features: successfulUpdates,
       errors: errors,
       results: successfulUpdates.map((containerName) => ({
         containerName,
@@ -1042,7 +1042,7 @@ export async function UpdateContainers(formData: FormCreateSchema) {
   }
 
   // Map over formData.forms to update the results array
-  const results: ContainerResult[] = formData.forms.map((form) => {
+  const results: FeatureResult[] = formData.forms.map((form) => {
     // Ensure that form.containerId is defined before adding it to the array
     const containerId = form.containerId ? [form.containerId] : []; // Provide an empty array as a fallback
     return {
@@ -1057,7 +1057,7 @@ export async function UpdateContainers(formData: FormCreateSchema) {
   // Return the response with the correctly typed results
   return {
     success: true, // or false, depending on the actual results
-    containers: [], // Populate with actual container IDs if applicable
+    features: [], // Populate with actual container IDs if applicable
     errors: [], // Populate with actual error messages if applicable
     limitReached: false, // Set based on actual limit status
     message: 'Containers updated successfully', // Customize the message as needed
@@ -1129,7 +1129,7 @@ export async function UpdateContainers(formData: FormCreateSchema) {
       Authorization: `Bearer ${accessToken}`,
     };
 
-    const featureLimitReachedContainers: string[] = [];
+    const featureLimitReached: string[] = [];
 
     const updatePromises = forms.map(async (containerData) => {
       const {
@@ -1170,7 +1170,7 @@ export async function UpdateContainers(formData: FormCreateSchema) {
 
       if (response.status === 403) {
         if (updateContainer.message === 'Feature limit reached') {
-          featureLimitReachedContainers.push(containerData.containerName);
+          featureLimitReached.push(containerData.containerName);
           return {
             success: false,
             errorCode: 403,
@@ -1196,11 +1196,11 @@ export async function UpdateContainers(formData: FormCreateSchema) {
 
     const results = await Promise.all(updatePromises);
 
-    if (featureLimitReachedContainers.length > 0) {
+    if (featureLimitReached.length > 0) {
       return {
         success: false,
         limitReached: true,
-        message: `Feature limit reached for containers: ${featureLimitReachedContainers.join(
+        message: `Feature limit reached for containers: ${featureLimitReached.join(
           ', '
         )}`,
       };

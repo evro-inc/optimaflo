@@ -9,12 +9,14 @@ import { auth } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
 import { limiter } from '../../../../bottleneck';
 import { gtmRateLimit } from '../../../../redis/rateLimits';
-import { listGtmAccounts } from './accounts';
-import { listGtmContainers } from './containers';
 import { redis } from '../../../../redis/cache';
 import { currentUserOauthAccessToken } from '../../../../clerk';
 import prisma from '@/src/lib/prisma';
-import { DeleteWorkspacesResponse } from '@/src/lib/types/types';
+import { FeatureResponse } from '@/src/lib/types/types';
+import {
+  handleApiResponseError,
+  tierDeleteLimit,
+} from '@/src/lib/helpers/server';
 
 // Define the types for the form data
 type FormCreateSchema = z.infer<typeof CreateWorkspaceSchema>;
@@ -30,7 +32,6 @@ interface WorkspaceType {
   Function to list or get one GTM workspaces
 ************************************************************************************/
 export async function listGtmWorkspaces(
-  accessToken: string,
   accountId: string,
   containerId: string
 ) {
@@ -43,8 +44,11 @@ export async function listGtmWorkspaces(
   // If user ID is not found, return a 'not found' error
   if (!userId) return notFound();
 
-  const cacheKey = `gtm:workspaces-containerId:${containerId}-userId:${userId}`;
-  const cachedValue = await redis.get(cacheKey);
+  const token = await currentUserOauthAccessToken(userId);
+  const accessToken = token[0].token;
+
+  const cacheKey = `gtm:workspaces:accountId:${accountId}:containerId:${containerId}:userId:${userId}`;
+  const cachedValue = await redis.get(cacheKey);  
 
   if (cachedValue) {
     return JSON.parse(cachedValue);
@@ -75,15 +79,13 @@ export async function listGtmWorkspaces(
           }
 
           const responseBody = await response.json();
-          data = responseBody.workspace;
+          data = responseBody.workspace || [];
         });
 
         // Caching the data in Redis with a 2 hour expiration time
         redis.set(cacheKey, JSON.stringify(data), 'EX', 60 * 60 * 2);
 
         return data;
-      } else {
-        throw new Error('Rate limit exceeded');
       }
     } catch (error: any) {
       if (error.code === 429 || error.status === 429) {
@@ -101,80 +103,12 @@ export async function listGtmWorkspaces(
 }
 
 /************************************************************************************
-  Function to list all GTM workspaces in all containers in all accounts
-************************************************************************************/
-export async function fetchAllWorkspaces(
-  accessToken: string
-): Promise<WorkspaceType[]> {
-  const { userId } = auth();
-  const cacheKey = `gtm:all_workspaces-user:${userId}`;
-
-  try {
-    // Check Redis cache first
-    const cachedWorkspaces = await redis.get(cacheKey);
-    if (cachedWorkspaces) {
-      return JSON.parse(cachedWorkspaces);
-    }
-
-    // If not in cache, fetch from source in parallel
-    const allAccounts = await listGtmAccounts(accessToken);
-    const allWorkspaces: WorkspaceType[] = [];
-
-    // Create an array of promises for fetching containers
-    const containerPromises = allAccounts.map(async (account) => {
-      const containers = await listGtmContainers(
-        accessToken,
-        account.accountId
-      );
-      const containerMap = new Map<string, string>(
-        containers.map((c) => [c.containerId, c.name])
-      );
-
-      // Create an array of promises for fetching workspaces within each container
-      const workspacePromises = containers.map(async (container) => {
-        const workspaces = await listGtmWorkspaces(
-          accessToken,
-          account.accountId,
-          container.containerId
-        );
-
-        const enhancedWorkspaces = workspaces.map((workspace) => ({
-          ...workspace,
-          containerName: containerMap.get(workspace.containerId),
-        }));
-
-        return enhancedWorkspaces;
-      });
-
-      const workspaceArrays = await Promise.all(workspacePromises);
-      const flattenedWorkspaces = workspaceArrays.flat();
-      allWorkspaces.push(...flattenedWorkspaces);
-    });
-
-    await Promise.all(containerPromises);
-
-    // Cache the result in Redis
-    await redis.set(
-      cacheKey,
-      JSON.stringify(allWorkspaces),
-      'EX',
-      60 * 60 * 24 * 7 // Cache for 7 days
-    );
-
-    return allWorkspaces;
-  } catch (error: any) {
-    console.error('Error in fetchAllWorkspaces: ', error.message);
-    throw error;
-  }
-}
-
-/************************************************************************************
   Delete a single or multiple workspaces
 ************************************************************************************/
-export async function DeleteWorkspaces(
+/* export async function DeleteWorkspaces(
   accountId: string,
   selectedWorkspaces: Set<string>
-): Promise<DeleteWorkspacesResponse> {
+): Promise<FeatureResponse> {
   // Initialization of retry mechanism
   let retries = 0;
   const MAX_RETRIES = 3;
@@ -405,6 +339,299 @@ export async function DeleteWorkspaces(
       success: true,
     })),
   };
+} */
+export async function DeleteWorkspaces(
+  selectedWorkspaces: Set<string>,
+  workspaceNames: string[]
+): Promise<FeatureResponse> {
+  // Initialization of retry mechanism
+  let retries = 0;
+  const MAX_RETRIES = 3;
+  let delay = 1000;
+
+  // Arrays to track various outcomes
+  const errors: string[] = [];
+  const successfulDeletions: Array<{
+    containerId: string;
+    workspaceId: string;
+  }> = [];
+  const featureLimitReached: { containerId: string; workspaceId: string }[] =
+    [];
+  const notFoundLimit: { containerId: string; workspaceId: string }[] = [];
+  const toDeleteWorkspaces = new Set<string>(selectedWorkspaces);
+  let accountIdForCache: string | undefined;
+
+  // Authenticating user and getting user ID
+  const { userId } = await auth();
+  // If user ID is not found, return a 'not found' error
+  if (!userId) return notFound();
+  const token = await currentUserOauthAccessToken(userId);
+
+  // Check for feature limit using Prisma ORM
+  const tierLimitResponse: any = await tierDeleteLimit(userId, 'GTMWorkspaces');
+  const limit = Number(tierLimitResponse.deleteLimit);
+  const deleteUsage = Number(tierLimitResponse.deleteUsage);
+  const availableDeleteUsage = limit - deleteUsage;
+  const containerIdsProcessed = new Set<string>();
+
+  // Handling feature limit
+  if (tierLimitResponse && tierLimitResponse.limitReached) {
+    return {
+      success: false,
+      limitReached: true,
+      errors: [],
+      message: 'Feature limit reached for Deleting Workspaces',
+      results: [],
+    };
+  }
+
+  if (toDeleteWorkspaces.size > availableDeleteUsage) {
+    // If the deletion request exceeds the available limit
+    return {
+      success: false,
+      features: [],
+      errors: [
+        `Cannot delete ${toDeleteWorkspaces.size} workspaces as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
+      ],
+      results: [],
+      limitReached: true,
+      message: `Cannot delete ${toDeleteWorkspaces.size} workspaces as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
+    };
+  }
+  let permissionDenied = false;
+
+  if (toDeleteWorkspaces.size <= availableDeleteUsage) {
+    // Retry loop for deletion requests
+    while (
+      retries < MAX_RETRIES &&
+      toDeleteWorkspaces.size > 0 &&
+      !permissionDenied
+    ) {
+      try {
+        // Enforcing rate limit
+        const { remaining } = await gtmRateLimit.blockUntilReady(
+          `user:${userId}`,
+          1000
+        );
+
+        if (remaining > 0) {
+          await limiter.schedule(async () => {
+            // Creating promises for each container deletion
+            const deletePromises = Array.from(toDeleteWorkspaces).map(
+              async (combinedId) => {
+                const [accountId, containerId, workspaceId] =
+                  combinedId.split('-');
+                accountIdForCache = accountId;
+
+                const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}`;
+                const headers = {
+                  Authorization: `Bearer ${token[0].token}`,
+                  'Content-Type': 'application/json',
+                };
+
+                try {
+                  const response = await fetch(url, {
+                    method: 'DELETE',
+                    headers: headers,
+                  });
+
+                  let parsedResponse;
+
+                  if (response.ok) {
+                    containerIdsProcessed.add(containerId);
+                    successfulDeletions.push({ containerId, workspaceId });
+                    toDeleteWorkspaces.delete(combinedId);
+
+                    await prisma.tierLimit.update({
+                      where: { id: tierLimitResponse.id },
+                      data: { deleteUsage: { increment: 1 } },
+                    });
+
+                    return {
+                      containerId,
+                      workspaceId,
+                      success: true,
+                    };
+                  } else {
+                    parsedResponse = await response.json();
+                    const errorResult = await handleApiResponseError(
+                      response,
+                      parsedResponse,
+                      'workspace',
+                      workspaceNames
+                    );
+
+                    if (errorResult) {
+                      errors.push(`${errorResult.message}`);
+                      if (
+                        errorResult.errorCode === 403 &&
+                        parsedResponse.message === 'Feature limit reached'
+                      ) {
+                        featureLimitReached.push({ containerId, workspaceId });
+                      } else if (errorResult.errorCode === 404) {
+                        notFoundLimit.push({ containerId, workspaceId }); // Track 404 errors
+                      }
+                    } else {
+                      errors.push(
+                        `An unknown error occurred for container ${workspaceNames}.`
+                      );
+                    }
+
+                    toDeleteWorkspaces.delete(
+                      `${accountId}-${containerId}-${workspaceId}`
+                    );
+                    permissionDenied = errorResult ? true : permissionDenied;
+
+                    if (selectedWorkspaces.size > 0) {
+                      const firstWorkspaceId = selectedWorkspaces
+                        .values()
+                        .next().value;
+                      accountIdForCache = firstWorkspaceId.split('-')[0];
+                    }
+                  }
+                } catch (error: any) {
+                  // Handling exceptions during fetch
+                  errors.push(
+                    `Error deleting container ${containerId}: ${error.message}`
+                  );
+                }
+                containerIdsProcessed.add(containerId);
+                toDeleteWorkspaces.delete(
+                  `${accountId}-${containerId}-${workspaceId}`
+                );
+                return { containerId, success: false };
+              }
+            );
+
+            // Awaiting all deletion promises
+            await Promise.all(deletePromises);
+          });
+
+          if (notFoundLimit.length > 0) {
+            return {
+              success: false,
+              limitReached: false,
+              notFoundError: true, // Set the notFoundError flag
+              message: `Could not delete container. Please check your permissions. Container Name: 
+              ${workspaceNames.find((name) =>
+                name.includes(name)
+              )}. All other containers were successfully deleted.`,
+              results: notFoundLimit.map(({ containerId, workspaceId }) => ({
+                id: [containerId, workspaceId], // Combine containerId and workspaceId into a single array of strings
+                name: [
+                  workspaceNames.find((name) => name.includes(workspaceId)) ||
+                    'Unknown',
+                ], // Ensure name is an array, match by workspaceId or default to 'Unknown'
+                success: false,
+                notFound: true,
+              })),
+            };
+          }
+          if (featureLimitReached.length > 0) {
+            return {
+              success: false,
+              limitReached: true,
+              notFoundError: false,
+              message: `Feature limit reached for containers: ${featureLimitReached.join(
+                ', '
+              )}`,
+              results: featureLimitReached.map(
+                ({ containerId, workspaceId }) => ({
+                  id: [containerId, workspaceId], // Ensure id is an array
+                  name: [
+                    workspaceNames.find((name) => name.includes(name)) ||
+                      'Unknown',
+                  ], // Ensure name is an array, match by containerId or default to 'Unknown'
+                  success: false,
+                  featureLimitReached: true,
+                })
+              ),
+            };
+          }
+          // Update tier limit usage as before (not shown in code snippet)
+          if (successfulDeletions.length === selectedWorkspaces.size) {
+            break; // Exit loop if all containers are processed successfully
+          }
+          if (permissionDenied) {
+            break; // Exit the loop if a permission error was encountered
+          }
+        } else {
+          throw new Error('Rate limit exceeded');
+        }
+      } catch (error: any) {
+        // Handling rate limit exceeded error
+        if (error.code === 429 || error.status === 429) {
+          console.warn('Rate limit exceeded. Retrying...');
+          const jitter = Math.random() * 200;
+          await new Promise((resolve) => setTimeout(resolve, delay + jitter));
+          delay *= 2;
+          retries++;
+        } else {
+          console.error('An unexpected error occurred:', error);
+          break;
+        }
+      } finally {
+        // This block will run regardless of the outcome of the try...catch
+        if (accountIdForCache && userId) {
+          containerIdsProcessed.forEach(async (containerId) => {
+            const cacheKey = `gtm:workspaces:accountId:${accountIdForCache}:containerId:${containerId}:userId:${userId}`;
+            await redis.del(cacheKey);
+          });
+          await revalidatePath(`/dashboard/gtm/workspaces`);
+        }
+      }
+    }
+  }
+  if (permissionDenied) {
+    return {
+      success: false,
+      errors: errors,
+      results: [],
+      message: errors.join(', '),
+    };
+  }
+
+  if (errors.length > 0) {
+    return {
+      success: false,
+      features: successfulDeletions.map(
+        ({ containerId, workspaceId }) => `${containerId}-${workspaceId}`
+      ),
+      errors: errors,
+      results: successfulDeletions.map(({ containerId, workspaceId }) => ({
+        id: [containerId, workspaceId], // Ensure id is an array
+        name: [workspaceNames.find((name) => name.includes(name)) || 'Unknown'], // Ensure name is an array and provide a default value
+        success: true,
+      })),
+      // Add a general message if needed
+      message: errors.join(', '),
+    };
+  }
+  // If there are successful deletions, update the deleteUsage
+  if (successfulDeletions.length > 0) {
+    for (const { containerId } of successfulDeletions) {
+      const specificCacheKey = `gtm:workspaces:accountId:${accountIdForCache}:containerId:${containerId}:userId:${userId}`;
+      await redis.del(specificCacheKey);
+    }
+    // Revalidate paths if needed
+    revalidatePath(`/dashboard/gtm/workspaces`);
+  }
+
+  // Returning the result of the deletion process
+  return {
+    success: errors.length === 0,
+    message: `Successfully deleted ${successfulDeletions.length} container(s)`,
+    features: successfulDeletions.map(
+      ({ containerId, workspaceId }) => `${containerId}-${workspaceId}`
+    ),
+    errors: errors,
+    notFoundError: notFoundLimit.length > 0,
+    results: successfulDeletions.map(({ containerId, workspaceId }) => ({
+      id: [containerId, workspaceId], // Ensure id is an array
+      name: [workspaceNames.find((name) => name.includes(name)) || 'Unknown'], // Ensure name is an array
+      success: true,
+    })),
+  };
 }
 
 /************************************************************************************
@@ -420,7 +647,7 @@ export async function CreateWorkspaces(formData: FormCreateSchema) {
   let delay = 1000;
   const errors: string[] = [];
   const successfulCreations: Array<{ name: string; containerId: string }> = [];
-  const featureLimitReachedContainers: string[] = [];
+  const featureLimitReached: string[] = [];
   const notFoundLimit: string[] = [];
 
   // Refactor: Use string identifiers in the set
@@ -540,7 +767,7 @@ export async function CreateWorkspaces(formData: FormCreateSchema) {
                 } else if (response.status === 403) {
                   // Handling feature limit error
                   if (parsedResponse.message === 'Feature limit reached') {
-                    featureLimitReachedContainers.push(
+                    featureLimitReached.push(
                       validatedworkspaceData.containerId
                     );
                     return {
@@ -573,9 +800,9 @@ export async function CreateWorkspaces(formData: FormCreateSchema) {
             }
           });
 
-          if (featureLimitReachedContainers.length > 0) {
+          if (featureLimitReached.length > 0) {
             throw new Error(
-              `Feature limit reached for containers: ${featureLimitReachedContainers.join(
+              `Feature limit reached for containers: ${featureLimitReached.join(
                 ', '
               )}`
             );

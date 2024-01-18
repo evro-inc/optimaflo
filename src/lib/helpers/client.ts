@@ -72,7 +72,9 @@ export const useRowSelection = (getIdFromItem) => {
       dispatch(setSelectedRows(newSelectedRows));
     }
 
-    dispatch(toggleAllSelected());
+    dispatch(
+      toggleAllSelected(items.length === Object.keys(selectedRows).length)
+    );
   };
 
   return { toggleRow, toggleAll, selectedRows, allSelected };
@@ -134,36 +136,37 @@ export const useToggleAll = (items, getIdFromItem, dispatch, allSelected) => {
   return toggleAll;
 };
 
-export const handleRefreshCache = async (router, keys, path) => {
+export const handleRefreshCache = async (
+  router, 
+  keyParts: Record<string, string | number>, 
+  path: string
+) => {
   try {
-    for (const key of keys) {
-      console.log('Refreshing cache for key:', key);
+    // Construct the dynamic key using the keyParts object
+    const dynamicKey = Object.entries(keyParts)
+                            .map(([key, value]) => `${key}:${value}`)
+                            .join(':');
 
-      // Call the API to refresh the cache for each key
-      const response = await fetch('/api/dashboard/refresh', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ key, path }),
-      });
+    const response = await fetch('/api/dashboard/refresh', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        key: dynamicKey,
+        path,
+      }),
+    });
 
-      // Check the response or handle it as needed
-      if (!response.ok) {
-        throw new Error(`Failed to refresh cache for key: ${key}`);
-      }
-    }
-
-    // After all refreshes are done, you might want to update the UI
+    await response.json();
     router.refresh();
-    toast.success('All caches refreshed', {
+    toast.success('Cache Refreshed', {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error refreshing cache:', error);
-    toast.error(`Error: ${error.message}`);
   }
 };
