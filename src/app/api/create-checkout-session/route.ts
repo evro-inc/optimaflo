@@ -2,7 +2,6 @@ import { NextResponse, NextRequest } from 'next/server';
 import { stripe } from '@/src/lib/stripe';
 import { getURL } from '@/src/lib/helpers';
 import prisma from '@/src/lib/prisma';
-import logger from '@/src/lib/logger';
 import { auth, currentUser } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
 

@@ -13,7 +13,6 @@ import {
   tierCreateLimit,
   tierUpdateLimit,
 } from '@/src/lib/helpers/server';
-import { useRouter } from 'next/navigation';
 import { useRowSelection } from '@/src/lib/helpers/client';
 import { useDeleteHook } from '@/src/app/(dashboards)/dashboard/gtm/containers/delete';
 import Search from '@/src/components/client/UI/SearchInput';

@@ -8,7 +8,6 @@ import { postData } from '@/src/lib/helpers';
 import React from 'react';
 import { Button } from '@/src/components/client/Button/Button';
 import LoadingDots from '@/src/components/server/LoadingDots/LoadingDots';
-import logger from '@/src/lib/logger';
 import { useSession } from '@clerk/nextjs';
 
 interface Props {

@@ -82,10 +82,7 @@ const getModeClasses = (variant, billingInterval?) => {
       baseClasses =
         'py-2 px-3 inline-flex justify-center items-center gap-2 rounded-md border font-medium  shadow-sm align-middle  focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white focus:ring-blue-600 transition-all text-sm';
       break;
-    case 'delete':
-      baseClasses =
-        'py-2 px-3 inline-flex justify-center items-center gap-2 rounded-md border font-medium  shadow-sm align-middle  focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white focus:ring-red transition-all text-sm bg-red text-white hover:bg-blue hover:text-white';
-      break;
+
     case 'appPrimary':
       baseClasses =
         'inline-flex justify-center items-center gap-2 rounded-md border font-medium bg-blue-500 text-white-500 shadow-sm align-middle hover:bg-white-500 hover:text-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white focus:ring-blue-600 transition-all text-sm whitespace-nowrap w-24 h-20';

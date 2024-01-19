@@ -1,6 +1,5 @@
 import { authMiddleware, redirectToSignIn } from '@clerk/nextjs';
 import { getSubscriptions } from './lib/fetch/subscriptions';
-import logger from './lib/logger';
 import { NextResponse } from 'next/server';
 import {
   checkoutSessionRateLimit,

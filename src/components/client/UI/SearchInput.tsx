@@ -6,7 +6,7 @@ import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
 import { Label } from '@radix-ui/react-label';
 import { useDebouncedCallback } from 'use-debounce';
 
-export default function Search({ placeholder }: { placeholder: string }) {
+export default function Search() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { replace } = useRouter();

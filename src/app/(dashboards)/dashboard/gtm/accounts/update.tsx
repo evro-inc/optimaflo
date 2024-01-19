@@ -14,7 +14,6 @@ import { useEffect, useRef } from 'react';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { updateAccounts } from '@/src/lib/fetch/dashboard/gtm/actions/accounts';
-import logger from '@/src/lib/logger';
 import { z } from 'zod';
 import { UpdateAccountSchema } from '@/src/lib/schemas/accounts';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -40,6 +39,7 @@ import {
 } from '@/src/components/ui/form';
 import { Input } from '@/src/components/ui/input';
 import { toast } from 'sonner';
+import { NotFoundError } from '@/src/components/client/modals/notFoundError';
 
 // Defining the type for form data using Zod
 type Forms = z.infer<typeof UpdateAccountSchema>;
@@ -238,6 +238,10 @@ function AccountFormUpdate({
       )}
       {isLimitReached && (
         <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
+      )}
+
+      {notFoundError && (
+        <NotFoundError onClose={() => dispatch(setNotFoundError(false))} />
       )}
     </AnimatePresence>
   );

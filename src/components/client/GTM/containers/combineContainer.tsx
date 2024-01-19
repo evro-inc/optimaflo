@@ -20,7 +20,6 @@ import {
   FormUpdateContainerProps,
   UpdateContainersResult,
 } from '@/src/lib/types/types';
-import logger from '@/src/lib/logger';
 
 // Type for the entire form data
 type Forms = z.infer<typeof UpdateContainerSchema>;
@@ -136,7 +135,6 @@ const FormCombineContainer: React.FC<FormUpdateContainerProps> = ({
       }
     } catch (error: any) {
       throw new Error(error);
-      return { success: false };
     } finally {
       dispatch(setLoading(false)); // Set loading to false
     }

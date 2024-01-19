@@ -7,7 +7,6 @@ import {
   grantGAAccess,
   grantGtmAccess,
 } from '@/src/lib/fetch/dashboard';
-import logger from '@/src/lib/logger';
 
 // List of relevant Stripe webhook events
 const relevantEvents = new Set([
@@ -406,7 +405,9 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
     }
 
     await prisma.$transaction(operations);
-  } catch (error) {}
+  } catch (error: any) {
+    throw new Error(error);
+  }
 }
 
 // Handle Checkout Session Events Created by Stripe

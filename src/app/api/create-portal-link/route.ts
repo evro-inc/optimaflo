@@ -2,7 +2,7 @@ import { stripe } from '@/src/lib/stripe';
 import { getURL } from '@/src/lib/helpers';
 import { NextResponse } from 'next/server';
 import prisma from '@/src/lib/prisma';
-import logger from '@/src/lib/logger';
+
 import { useSession } from '@clerk/nextjs';
 
 export async function POST() {

@@ -14,9 +14,6 @@ type PaginatedFilteredResult<T> = {
   pageSize: number;
 };
 
-// Define the type for the listing function
-type ListFunction<T> = () => Promise<T[]>;
-
 export const getURL = () => {
   let vercelUrl = process.env.VERCEL_URL; // Assign VERCEL_URL to vercelUrl
 

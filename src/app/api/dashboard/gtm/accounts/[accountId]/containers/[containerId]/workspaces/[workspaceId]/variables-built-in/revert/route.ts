@@ -9,7 +9,7 @@ import Joi from 'joi';
 import { isErrorWithStatus } from '@/src/lib/fetch/dashboard';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
 import { BuiltInVariableType } from '@/src/lib/types/gtm';
-import logger from '@/src/lib/logger';
+
 import { useSession } from '@clerk/nextjs';
 
 export async function POST(

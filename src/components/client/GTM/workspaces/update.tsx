@@ -20,7 +20,7 @@ import {
   FeatureResponse,
   FormUpdateWorkspaceProps,
 } from '@/src/lib/types/types';
-import logger from '@/src/lib/logger';
+
 import { UpdateWorkspaces } from '@/src/lib/fetch/dashboard/gtm/actions/workspaces';
 import { toast } from 'sonner';
 import { Icon } from '../../Button/Button';
@@ -203,7 +203,6 @@ const FormUpdateWorkspace: React.FC<FormUpdateWorkspaceProps> = ({
       });
     } catch (error: any) {
       throw new Error(error);
-      return { success: false };
     } finally {
       dispatch(setLoading(false)); // Set loading to false
     }

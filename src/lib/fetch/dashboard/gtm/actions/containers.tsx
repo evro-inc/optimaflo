@@ -10,7 +10,6 @@ import { gtmRateLimit } from '../../../../redis/rateLimits';
 import { limiter } from '../../../../bottleneck';
 import { redis } from '@/src/lib/redis/cache';
 import { notFound } from 'next/navigation';
-import { listGtmAccounts } from './accounts';
 import { currentUserOauthAccessToken } from '@/src/lib/clerk';
 import prisma from '@/src/lib/prisma';
 import { FeatureResult, FeatureResponse } from '@/src/lib/types/types';
@@ -418,7 +417,7 @@ export async function CreateContainers(formData: FormCreateSchema) {
   if (toCreateContainers.size > availableCreateUsage) {
     const attemptedCreations = Array.from(toCreateContainers).map(
       (identifier) => {
-        const [accountId, containerName] = identifier.split('-');
+        const [containerName] = identifier.split('-');
         return {
           id: [], // No container ID since creation did not happen
           name: containerName, // Include the container name from the identifier
@@ -763,7 +762,7 @@ export async function UpdateContainers(formData: FormCreateSchema) {
   if (toUpdateContainers.size > availableUpdateUsage) {
     const attemptedUpdates = Array.from(toUpdateContainers).map(
       (identifier) => {
-        const [accountId, containerName] = identifier.split('-');
+        const [containerName] = identifier.split('-');
         return {
           id: [], // No container ID since update did not happen
           name: containerName, // Include the container name from the identifier

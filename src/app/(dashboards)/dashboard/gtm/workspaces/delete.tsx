@@ -36,7 +36,6 @@ export const useDeleteHook = () => {
 
     const workspaceNames = workspacesToDelete.map((workspaceId) => {
       // Extract the workspaceId part from the concatenated string
-      const [, , extractedWorkspaceId] = workspaceId.split('-');
       // Find the workspace by its workspaceId and return its name or 'Unknown'
       return selectedRows[workspaceId]?.name || 'Unknown';
     });

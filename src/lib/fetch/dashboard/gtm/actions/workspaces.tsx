@@ -24,12 +24,6 @@ import {
 type FormCreateSchema = z.infer<typeof CreateWorkspaceSchema>;
 type FormUpdateSchema = z.infer<typeof UpdateWorkspaceSchema>;
 
-// Assuming WorkspaceType is the type for each workspace
-interface WorkspaceType {
-  containerId: string;
-  containerName?: string;
-}
-
 /************************************************************************************
   Function to list or get one GTM workspaces
 ************************************************************************************/
@@ -643,7 +637,6 @@ export async function CreateWorkspaces(formData: FormCreateSchema) {
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
 
-  let retries = 0;
   const MAX_RETRIES = 3;
   let delay = 1000;
   const errors: string[] = [];
@@ -688,7 +681,7 @@ export async function CreateWorkspaces(formData: FormCreateSchema) {
   if (toCreateWorkspaces.size > availableCreateUsage) {
     const attemptedCreations = Array.from(toCreateWorkspaces).map(
       (identifier) => {
-        const { accountId, name: workspaceName } = identifier;
+        const { name: workspaceName } = identifier;
         return {
           id: [], // No workspace ID since creation did not happen
           name: workspaceName, // Include the workspace name from the identifier
@@ -1228,7 +1221,7 @@ export async function CreateWorkspaces(formData: FormCreateSchema) {
     })),
   };
 } */
-export async function UpdateWorkspaces(formData: FormCreateSchema) {
+export async function UpdateWorkspaces(formData: FormUpdateSchema) {
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
@@ -1458,12 +1451,6 @@ export async function UpdateWorkspaces(formData: FormCreateSchema) {
 
             await Promise.all(updatePromises);
           });
-
-          for (const accountId of toUpdateWorkspaces) {
-            const cacheKey = `gtm:workspaces:accountId:${accountIdForCache}:containerId:${containerIdForCache}:userId:${userId}`;
-            await redis.del(cacheKey);
-            await revalidatePath(`/dashboard/gtm/workspaces`);
-          }
 
           if (notFoundLimit.length > 0) {
             return {

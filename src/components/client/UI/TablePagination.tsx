@@ -1,7 +1,6 @@
 'use client';
 import React from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { selectTable, setCurrentPage } from '@/src/app/redux/tableSlice';
+
 import {
   Pagination,
   PaginationContent,

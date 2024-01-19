@@ -21,7 +21,6 @@ import {
   ContainersResponse,
   FormUpdateContainerProps,
 } from '@/src/lib/types/types';
-import logger from '@/src/lib/logger';
 
 import { Cross1Icon } from '@radix-ui/react-icons';
 import {
@@ -205,8 +204,6 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
       });
     } catch (error: any) {
       throw new Error(error);
-
-      return { success: false };
     } finally {
       dispatch(setLoading(false)); // Set loading to false
     }

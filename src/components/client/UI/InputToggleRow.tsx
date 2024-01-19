@@ -33,7 +33,10 @@ export const ToggleRow: React.FC<InputToggleRowProps> = ({
     dispatch(setSelectedRows(newSelectedRows));
   };
 
-  const isChecked = selectedRows.hasOwnProperty(uniqueKey);
+  const isChecked = Object.prototype.hasOwnProperty.call(
+    selectedRows,
+    uniqueKey
+  );
 
   return (
     <Checkbox
