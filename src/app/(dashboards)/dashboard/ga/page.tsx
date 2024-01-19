@@ -10,6 +10,6 @@ export default async function GAPage() {
 
     return content;
   } catch (error: any) {
-    console.error('Error in gaListAccounts:', error.message);
+    throw new Error(error);
   }
 }

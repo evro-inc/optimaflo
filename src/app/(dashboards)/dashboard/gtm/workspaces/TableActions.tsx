@@ -1,5 +1,5 @@
 'use client';
-import React, { Suspense } from 'react';
+import React from 'react';
 import {
   ButtonDelete,
   ButtonWithIcon,
@@ -41,8 +41,8 @@ const TableActions = ({ userId, allData }) => {
         // Otherwise, proceed with normal creation process
         dispatch(toggleCreate());
       }
-    } catch (error) {
-      console.error('Error in handleCreateClick:', error);
+    } catch (error: any) {
+      throw new Error('Error in handleCreateClick:', error);
     }
   };
 
@@ -57,8 +57,8 @@ const TableActions = ({ userId, allData }) => {
         // Otherwise, proceed with normal creation process
         dispatch(toggleUpdate());
       }
-    } catch (error) {
-      console.error('Error in handleUpdateClick:', error);
+    } catch (error: any) {
+      throw new Error('Error in handleUpdateClick:', error);
     }
   };
 
@@ -89,9 +89,7 @@ const TableActions = ({ userId, allData }) => {
 
   return (
     <div className="inline-flex gap-x-2">
-      <Suspense fallback={<div>Loading...</div>}>
-        <Search placeholder={''} />
-      </Suspense>
+      <Search placeholder={''} />
       <Icon variant="create" onClick={refreshAllCache} icon={<ReloadIcon />} />
       <ButtonWithIcon
         variant="create"

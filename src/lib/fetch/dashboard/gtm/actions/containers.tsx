@@ -83,7 +83,6 @@ export async function listGtmContainers(accountId: string) {
       }
     } catch (error: any) {
       if (error.code === 429 || error.status === 429) {
-        console.warn('Rate limit exceeded. Retrying get accounts...');
         const jitter = Math.random() * 200;
         await new Promise((resolve) => setTimeout(resolve, delay + jitter));
         delay *= 2;
@@ -302,13 +301,11 @@ export async function DeleteContainers(
       } catch (error: any) {
         // Handling rate limit exceeded error
         if (error.code === 429 || error.status === 429) {
-          console.warn('Rate limit exceeded. Retrying...');
           const jitter = Math.random() * 200;
           await new Promise((resolve) => setTimeout(resolve, delay + jitter));
           delay *= 2;
           retries++;
         } else {
-          console.error('An unexpected error occurred:', error);
           break;
         }
       } finally {
@@ -640,14 +637,12 @@ export async function CreateContainers(formData: FormCreateSchema) {
         }
       } catch (error: any) {
         if (error.code === 429 || error.status === 429) {
-          console.warn('Rate limit exceeded. Retrying...');
           await new Promise((resolve) =>
             setTimeout(resolve, delay + Math.random() * 200)
           );
           delay *= 2;
           retries++;
         } else {
-          console.error('An unexpected error occurred:', error);
           break;
         }
       } finally {
@@ -989,14 +984,12 @@ export async function UpdateContainers(formData: FormCreateSchema) {
         }
       } catch (error: any) {
         if (error.code === 429 || error.status === 429) {
-          console.warn('Rate limit exceeded. Retrying...');
           await new Promise((resolve) =>
             setTimeout(resolve, delay + Math.random() * 200)
           );
           delay *= 2;
           retries++;
         } else {
-          console.error('An unexpected error occurred:', error);
           break;
         }
       } finally {

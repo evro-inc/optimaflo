@@ -155,7 +155,6 @@ export async function combineGtmData(
     } catch (error: any) {
       if (error.code === 429 || error.status === 429) {
         // Log the rate limit error and wait before retrying
-        console.warn('Rate limit exceeded. Retrying...');
         const jitter = Math.random() * 200;
         await new Promise((resolve) => setTimeout(resolve, delay + jitter));
         delay *= 2; // Exponential backoff
@@ -221,13 +220,11 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     if (error instanceof ValidationError) {
-      console.error('Validation Error: ', error.message);
       return new NextResponse(JSON.stringify({ error: error.message }), {
         status: 400,
       });
     }
 
-    console.error('Error: ', error);
     // Return a 500 status code for internal server error
     return handleError(error);
   }

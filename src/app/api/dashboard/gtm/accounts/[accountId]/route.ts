@@ -201,8 +201,6 @@ export async function GET(
       }
     }
   } catch (error) {
-    console.error('Error: ', error);
-
     // Return a 500 status code for internal server error
     return NextResponse.error();
   }
@@ -253,8 +251,6 @@ export async function PATCH(request: NextRequest) {
       status: 200,
     });
   } catch (error) {
-    console.error('Error: ', error);
-
     // Return a 500 status code for internal server error
     return NextResponse.error();
   }

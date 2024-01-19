@@ -37,8 +37,8 @@ export const handleGenericDelete = async (
     dispatch(setIsLimitReached(limitReached));
     dispatch(setNotFoundError(notFoundErrorOccurred));
     dispatch(clearSelectedRows());
-  } catch (error) {
-    console.error(error);
+  } catch (error: any) {
+    throw new Error(error);
   }
 };
 
@@ -166,7 +166,7 @@ export const handleRefreshCache = async (
         onClick: () => toast.dismiss(),
       },
     });
-  } catch (error) {
-    console.error('Error refreshing cache:', error);
+  } catch (error: any) {
+    throw new Error(error);
   }
 };

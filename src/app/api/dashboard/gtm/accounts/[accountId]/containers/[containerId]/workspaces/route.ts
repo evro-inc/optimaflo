@@ -144,7 +144,6 @@ export async function GET(
     });
   } catch (error: any) {
     if (error instanceof ValidationError) {
-      console.error('Validation Error: ', error.message);
       return new NextResponse(JSON.stringify({ error: error.message }), {
         status: 400,
       });

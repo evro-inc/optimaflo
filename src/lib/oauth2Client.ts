@@ -11,7 +11,7 @@ export function createOAuth2Client(accessToken: string) {
     return oauth2Client;
   } catch (error) {
     // <-- Define `error` here
-    console.error('Error creating OAuth2 client:', error);
+
     return null;
   }
 }

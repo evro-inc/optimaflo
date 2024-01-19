@@ -15,8 +15,8 @@ export const useUserDetails = (userId) => {
         const res = await fetch(`/api/users/${userId}`);
         const data = await res.json();
         dispatch(setUserDetails(data));
-      } catch (error) {
-        console.error('Failed to fetch user details:', error);
+      } catch (error: any) {
+        throw new Error('Failed to fetch user details:', error);
       }
       dispatch(setLoading(false)); // Set loading state to false after fetching
     };
@@ -36,8 +36,8 @@ export const useSubscription = (userId) => {
         const res = await fetch(`/api/subscriptions/${userId}`);
         const data = await res.json();
         dispatch(setSubscription(data));
-      } catch (error) {
-        console.error('Failed to fetch subscription:', error);
+      } catch (error: any) {
+        throw new Error('Failed to fetch subscription:', error);
       }
       dispatch(setLoading(false)); // Set loading state to false after fetching
     };

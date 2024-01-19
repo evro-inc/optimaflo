@@ -43,7 +43,6 @@ export async function handler(req: Request) {
       'svix-signature': svix_signature,
     }) as WebhookEvent;
   } catch (err) {
-    console.error('Error verifying webhook:', err);
     return new Response('Error occured', {
       status: 400,
     });
@@ -159,7 +158,7 @@ export async function handler(req: Request) {
       }
       break;
     default:
-      console.log('Unknown event type');
+      throw new Error('Unhandled event type: ' + eventType);
   }
 
   return new Response('', { status: 200 });

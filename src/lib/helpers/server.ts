@@ -86,12 +86,11 @@ export const tierDeleteLimit = async (userId: string, featureName: string) => {
     // Return the tierLimitRecord object
     return tierLimitRecord;
   } catch (error) {
-    console.error('Error in tierLimits:', error);
     // Handle the error or return an appropriate response
     return {
       success: false,
       limitReached: true,
-      message: 'An error occurred',
+      message: `An error occurred: ${error}`,
       results: [],
     };
   }
@@ -130,12 +129,11 @@ export const tierCreateLimit = async (userId: string, featureName: string) => {
     // Return the tierLimitRecord object
     return tierLimitRecord;
   } catch (error) {
-    console.error('Error in tierLimits:', error);
     // Handle the error or return an appropriate response
     return {
       success: false,
       limitReached: true,
-      message: 'An error occurred',
+      message: `An error occurred: ${error}`,
       results: [],
     };
   }
@@ -174,12 +172,11 @@ export const tierUpdateLimit = async (userId: string, featureName: string) => {
     // Return the tierLimitRecord object
     return tierLimitRecord;
   } catch (error) {
-    console.error('Error in tierLimits:', error);
     // Handle the error or return an appropriate response
     return {
       success: false,
       limitReached: true,
-      message: 'An error occurred',
+      message: `An error occurred: ${error}`,
       results: [],
     };
   }

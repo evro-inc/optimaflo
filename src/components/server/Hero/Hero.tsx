@@ -31,7 +31,6 @@ export default async function Hero() {
                 {/* Buttons */}
                 <div className="flex flex-col sm:flex-row justify-center items-center pb-20 space-y-4 sm:space-y-0 sm:space-x-4">
                   <ButtonSignIn
-                    billingInterval={''}
                     variant="body"
                     size="large"
                     text="Get started"

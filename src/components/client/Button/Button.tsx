@@ -21,6 +21,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/src/components/ui/alert-dialog';
+import { setLoading } from '@/src/app/redux/globalSlice';
+import { useDispatch } from 'react-redux';
+import { postData } from '@/src/lib/helpers';
 
 const getModeClasses = (variant, billingInterval?) => {
   let baseClasses = '';
@@ -335,31 +338,54 @@ export const Icon = ({ variant = 'primary', icon, ...props }) => {
   );
 };
 
-export const ButtonSignIn = ({
-  variant = 'signup',
-  text,
-  billingInterval,
-  userHasSubscription,
-  ...props
-}) => {
+export const ButtonSignIn = ({ variant = 'signup', text, ...props }) => {
   const computedClasses = useMemo(() => {
-    const modeClass = getModeClasses(variant, billingInterval);
+    const modeClass = getModeClasses(variant);
     return [modeClass].join(' ');
-  }, [variant, billingInterval]);
-
-  const redirectUrl = userHasSubscription ? '/profile' : '/pricing';
+  }, [variant]);
 
   return (
-    <SignInButton
-      mode="modal"
-      redirectUrl={redirectUrl}
-      afterSignUpUrl={redirectUrl}
-    >
+    <SignInButton mode="modal" redirectUrl="/profile" afterSignUpUrl="/pricing">
       <div
         className={`${BASE_BUTTON_CLASSES} ${computedClasses} w-36 mx-5 lg:mx-0`}
       >
         <button {...props}>{text}</button>
       </div>
     </SignInButton>
+  );
+};
+
+export const ButtonCustomerPortal = ({
+  variant = 'primary',
+  text,
+  ...props
+}) => {
+  const computedClasses = useMemo(() => {
+    const modeClass = getModeClasses(variant);
+    return [modeClass].join(' ');
+  }, [variant]);
+  const dispatch = useDispatch();
+
+  const redirectToCustomerPortal = async () => {
+    dispatch(setLoading(true));
+    try {
+      const { url } = await postData({
+        url: '/api/create-portal-link',
+      });
+      window.location.assign(url);
+    } catch (error: any) {
+      if (error) throw new Error(error);
+    }
+    dispatch(setLoading(false));
+  };
+
+  return (
+    <Button
+      className={`${BASE_BUTTON_CLASSES} ${computedClasses}`}
+      {...props}
+      onClick={redirectToCustomerPortal}
+    >
+      {text}
+    </Button>
   );
 };

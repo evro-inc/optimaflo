@@ -83,7 +83,6 @@ export async function listGtmAccounts() {
     } catch (error: any) {
       // Handling rate limit exceeded error
       if (error.code === 429 || error.status === 429) {
-        console.warn('Rate limit exceeded. Retrying get accounts...');
         // Adding jitter to avoid simultaneous retries
         const jitter = Math.random() * 200;
         await new Promise((resolve) => setTimeout(resolve, delay + jitter));
@@ -285,7 +284,6 @@ export async function updateAccounts(
     } catch (error: any) {
       // Handling rate limit exceeded error
       if (error.code === 429 || error.status === 429) {
-        console.warn('Rate limit exceeded. Retrying get accounts...');
         // Adding jitter to delay and retry
         const jitter = Math.random() * 200;
         await new Promise((resolve) => setTimeout(resolve, delay + jitter));

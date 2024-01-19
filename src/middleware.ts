@@ -115,7 +115,6 @@ export default authMiddleware({
         }
       }
     } catch (error) {
-      console.error(`Error in middleware: ${error}`);
       return NextResponse.error();
     }
 

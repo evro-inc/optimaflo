@@ -17,7 +17,7 @@ async function getAccounts() {
     const accounts = await listGtmAccounts();
     return accounts;
   } catch (error: any) {
-    console.error('Error fetching accounts:', error);
+    throw new Error('Error fetching accounts:', error);
   }
 }
 
@@ -56,7 +56,7 @@ async function getWorkspaces() {
 
     return combinedData;
   } catch (error: any) {
-    console.error('Error fetching workspaces:', error);
+    throw new Error('Error fetching workspaces:', error);
     return notFound();
   }
 }

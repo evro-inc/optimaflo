@@ -52,7 +52,7 @@ export const ContactForm = () => {
           setSubmitted(true);
         }
       } catch (err: any) {
-        console.error('Err', err);
+        throw new Error('Failed to submit contact form:', err);
       }
     }
   };

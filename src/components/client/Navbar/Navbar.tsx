@@ -8,7 +8,6 @@ import { ButtonSignIn, ButtonToggle } from '../../client/Button/Button';
 import { LinkSignUp, LinkNav } from '../Links/Links';
 import { UserButton } from '@clerk/nextjs';
 import { useSession } from '@clerk/clerk-react';
-import { getSubscriptions } from '@/src/lib/fetch/subscriptions';
 
 const navigation = [
   { name: 'About', href: '/about' },
@@ -20,33 +19,6 @@ const navigation = [
 export default function Navbar() {
   const menuRef = useRef<HTMLDivElement | null>(null);
   const { session } = useSession();
-  const [hasSubscription, setHasSubscription] = useState(false); // State to track subscription status
-
-  useEffect(() => {
-    const fetchSubscriptions = async () => {
-      if (session?.user?.id) {
-        try {
-          const subscriptions = await getSubscriptions(session.user.id);
-
-          if (subscriptions.length > 0) {
-            // Check if the first subscription is active
-            const isActiveSubscription = subscriptions[0].status === 'active';
-            setHasSubscription(isActiveSubscription);
-          } else {
-            // No subscriptions found
-            setHasSubscription(false);
-          }
-        } catch (error) {
-          console.error('Error fetching subscriptions:', error);
-          setHasSubscription(false); // Set to false in case of error
-        }
-      } else {
-        setHasSubscription(false); // Set to false if no user session
-      }
-    };
-
-    fetchSubscriptions();
-  }, [session?.user?.id]);
 
   return (
     <div className="relative">
@@ -131,13 +103,11 @@ export default function Navbar() {
                         billingInterval={''}
                         aria-label="Log in with Google Sign In"
                         text="Log In"
-                        userHasSubscription={hasSubscription}
                       />
                       <LinkSignUp
                         variant="login"
                         ariaLabel="Get Started with Google"
                         text="Get Started"
-                        userHasSubscription={hasSubscription}
                       />
                     </div>
                   )}

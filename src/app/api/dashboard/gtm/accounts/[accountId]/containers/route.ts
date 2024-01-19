@@ -205,7 +205,6 @@ async function createGtmContainer(
     } catch (error: any) {
       if (error.code === 429 || error.status === 429) {
         // Log the rate limit error and wait before retrying
-        console.warn('Rate limit exceeded. Retrying create container');
         const jitter = Math.random() * 200;
         await new Promise((resolve) => setTimeout(resolve, delay + jitter));
         delay *= 2; // Exponential backoff
@@ -260,7 +259,6 @@ export async function GET(
     });
   } catch (error: any) {
     if (error instanceof ValidationError) {
-      console.error('Validation Error: ', error.message);
       return new NextResponse(JSON.stringify({ error: error.message }), {
         status: 400,
       });
@@ -361,8 +359,6 @@ export async function POST(
       status: 200,
     });
   } catch (error) {
-    console.error('Error: ', error);
-
     // Return a 500 status code for internal server error
     return handleError(error);
   }

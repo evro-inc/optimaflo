@@ -67,8 +67,6 @@ export async function GET(req: NextRequest) {
       status: 200,
     });
   } catch (error) {
-    console.error('Error: ', error);
-
     // Return a 500 status code for internal server error
     return NextResponse.error();
   }
@@ -111,8 +109,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ stripeCustomerId: customer.stripeCustomerId });
   } catch (err: any) {
-    console.error('Failed to create customer:', err);
-
     // Return a 500 Internal Server Error response if something goes wrong.
     return NextResponse.json(
       {

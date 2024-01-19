@@ -2,23 +2,18 @@ import { stripe } from '@/src/lib/stripe';
 import { getURL } from '@/src/lib/helpers';
 import { NextResponse } from 'next/server';
 import prisma from '@/src/lib/prisma';
-
-import { useSession } from '@clerk/nextjs';
+import { currentUser } from '@clerk/nextjs';
 
 export async function POST() {
-  const { session } = useSession();
+  const user = await currentUser();
 
   try {
-    if (
-      !session ||
-      !session.user ||
-      !session.user?.id ||
-      !session.user?.emailAddresses
-    ) {
+    if (!user || !user?.id || !user?.emailAddresses) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const { id, email } = session.user;
+    const { id } = user;
+    const email = user.emailAddresses[0].emailAddress;
 
     let customer;
 
@@ -65,7 +60,6 @@ export async function POST() {
 
     return NextResponse.json({ url }, { status: 200 });
   } catch (err: any) {
-    console.error(err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

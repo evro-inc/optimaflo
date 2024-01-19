@@ -85,7 +85,6 @@ export async function listGtmWorkspaces(
       }
     } catch (error: any) {
       if (error.code === 429 || error.status === 429) {
-        console.warn('Rate limit exceeded. Retrying get workspaces...');
         const jitter = Math.random() * 200;
         await new Promise((resolve) => setTimeout(resolve, delay + jitter));
         delay *= 2;
@@ -322,13 +321,11 @@ export async function DeleteWorkspaces(
       } catch (error: any) {
         // Handling rate limit exceeded error
         if (error.code === 429 || error.status === 429) {
-          console.warn('Rate limit exceeded. Retrying...');
           const jitter = Math.random() * 200;
           await new Promise((resolve) => setTimeout(resolve, delay + jitter));
           delay *= 2;
           retries++;
         } else {
-          console.error('An unexpected error occurred:', error);
           break;
         }
       } finally {
@@ -903,14 +900,12 @@ export async function CreateWorkspaces(formData: FormCreateSchema) {
         }
       } catch (error: any) {
         if (error.code === 429 || error.status === 429) {
-          console.warn('Rate limit exceeded. Retrying...');
           await new Promise((resolve) =>
             setTimeout(resolve, delay + Math.random() * 200)
           );
           delay *= 2;
           retries++;
         } else {
-          console.error('An unexpected error occurred:', error);
           break;
         }
       } finally {
@@ -1526,14 +1521,12 @@ export async function UpdateWorkspaces(formData: FormUpdateSchema) {
         }
       } catch (error: any) {
         if (error.code === 429 || error.status === 429) {
-          console.warn('Rate limit exceeded. Retrying...');
           await new Promise((resolve) =>
             setTimeout(resolve, delay + Math.random() * 200)
           );
           delay *= 2;
           retries++;
         } else {
-          console.error('An unexpected error occurred:', error);
           break;
         }
       } finally {

@@ -50,9 +50,8 @@ export default async function ContainerPage({
       }
       // Check if result is undefined or in an unexpected format
       else {
-        console.error(
-          'Expected result to be an array or an object with a containers property, but got:',
-          result
+        throw new Error(
+          `Unexpected result from listGtmContainers for account ${account.accountId}`
         );
         return [];
       }
