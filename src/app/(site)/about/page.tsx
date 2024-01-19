@@ -3,12 +3,15 @@ import { ButtonNull } from '@/src/components/client/Button/Button';
 import { Images } from '@/src/components/client/Images/Images';
 import CTA from '@/src/components/server/CTA/cta';
 import FAQ from '@/src/components/server/FAQ/Faq';
+import { Suspense } from 'react';
 
 export default async function HowItWorks() {
   const aboutPage = await getAboutPage();
 
   return (
     <div>
+
+          <Suspense fallback={<div>Loading...</div>}>
       {aboutPage.map((page) => {
         return (
           <div key={page.id}>
@@ -115,7 +118,10 @@ export default async function HowItWorks() {
       }, [])}
 
       <FAQ />
-      <CTA />
+      <CTA />    </Suspense>
+
+
+
     </div>
   );
 }
