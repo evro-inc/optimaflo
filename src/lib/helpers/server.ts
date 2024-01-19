@@ -1,6 +1,5 @@
 'use server';
 import { notFound } from 'next/navigation';
-import logger from '../logger';
 import prisma from '../prisma';
 import { auth } from '@clerk/nextjs';
 import { revalidatePath } from 'next/cache';

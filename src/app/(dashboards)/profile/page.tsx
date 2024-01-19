@@ -6,7 +6,7 @@ import { selectSubscriber } from '../../redux/subscriberSlice';
 import { setLoading } from '../../redux/globalSlice';
 import { postData } from '@/src/lib/helpers';
 import React from 'react';
-import { Button } from '@/src/components/client/Button/Button';
+import { ButtonPrim } from '@/src/components/client/Button/Button';
 import LoadingDots from '@/src/components/server/LoadingDots/LoadingDots';
 import { useSession } from '@clerk/nextjs';
 
@@ -87,7 +87,7 @@ export default function Profile() {
               <p className="pb-4 sm:pb-0">
                 Manage your subscription on Stripe.
               </p>
-              <Button
+              <ButtonPrim
                 billingInterval={''}
                 text="Open customer portal"
                 variant="slim"

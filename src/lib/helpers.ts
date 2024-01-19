@@ -1,4 +1,3 @@
-import logger from './logger';
 
 export const getURL = () => {
   let vercelUrl = process.env.VERCEL_URL; // Assign VERCEL_URL to vercelUrl
