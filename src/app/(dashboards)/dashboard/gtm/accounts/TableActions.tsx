@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { Suspense } from 'react';
 import { revalidate } from '@/src/lib/helpers/server';
 import Search from '@/src/components/client/UI/SearchInput';
 import { toast } from 'sonner';
@@ -26,7 +26,9 @@ const TableActions = ({ userId }) => {
 
   return (
     <div className="inline-flex gap-x-2">
-      <Search placeholder={''} />
+      <Suspense fallback={<div>Loading...</div>}>
+        <Search placeholder={''} />
+      </Suspense>
       <Icon variant="create" onClick={refreshAllCache} icon={<ReloadIcon />} />
 
       <ButtonUpdate />

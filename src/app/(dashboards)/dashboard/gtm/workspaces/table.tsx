@@ -15,6 +15,7 @@ import {
 import { notFound } from 'next/navigation';
 import { Label } from '@/src/components/ui/label';
 import WorkspaceForms from '@/src/components/client/UI/WorkspaceForms';
+import { Suspense } from 'react';
 
 const TablePaginationNoSSR = dynamic(
   () => import('@/src/components/client/UI/TablePagination'),
@@ -120,7 +121,9 @@ export default async function WorkspaceTable({
                   </TableBody>
                   <TableFooter>{/* Footer content */}</TableFooter>
                 </Table>
-                <TablePaginationNoSSR totalPages={totalPages} />
+                <Suspense fallback={<div>Loading...</div>}>
+                  <TablePaginationNoSSR totalPages={totalPages} />
+                </Suspense>
               </div>
             </div>
           </div>

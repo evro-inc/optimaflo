@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { Suspense } from 'react';
 import {
   ButtonDelete,
   ButtonWithIcon,
@@ -85,7 +85,9 @@ const TableActions = ({ userId, allData }) => {
 
   return (
     <div className="inline-flex gap-x-2">
-      <Search placeholder={''} />
+      <Suspense fallback={<div>Loading...</div>}>
+        <Search placeholder={''} />
+      </Suspense>
       <Icon variant="create" onClick={refreshAllCache} icon={<ReloadIcon />} />
       <ButtonWithIcon
         variant="create"

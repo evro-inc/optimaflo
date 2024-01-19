@@ -6,7 +6,7 @@ import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
 import { Label } from '@radix-ui/react-label';
 import { useDebouncedCallback } from 'use-debounce';
 
-export default function Search() {
+export default function Search({ placeholder }: { placeholder: string }) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { replace } = useRouter();
@@ -27,7 +27,7 @@ export default function Search() {
       <MagnifyingGlassIcon className="absolute w-4 h-4 text-gray-400 left-3 top-3" />
       <Input
         className="pl-8 rounded-md shadow-sm"
-        placeholder="Search..."
+        placeholder={placeholder}
         type="search"
         onChange={(e) => {
           handleSearch(e.target.value);
