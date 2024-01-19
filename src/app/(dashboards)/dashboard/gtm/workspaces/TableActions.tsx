@@ -35,8 +35,6 @@ const TableActions = ({ userId, allData }) => {
       );
 
       if (handleCreateLimit && handleCreateLimit.limitReached) {
-        console.log('handleCreateLimit', handleCreateLimit);
-
         // Directly show the limit reached modal
         dispatch(setIsLimitReached(true)); // Assuming you have an action to explicitly set this
       } else {

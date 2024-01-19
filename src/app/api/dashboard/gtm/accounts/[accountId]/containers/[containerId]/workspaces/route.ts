@@ -150,7 +150,6 @@ export async function GET(
       });
     }
 
-    logger.error('Error: ', error);
     return new NextResponse(JSON.stringify({ error: error.message }), {
       status: 500,
     });
@@ -203,7 +202,6 @@ export async function POST(request: NextRequest) {
       status: 200,
     });
   } catch (error: any) {
-    logger.error('Error: ', error);
     return new NextResponse(JSON.stringify({ error: error.message }), {
       status: 500,
     });

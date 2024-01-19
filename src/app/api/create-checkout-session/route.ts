@@ -31,12 +31,6 @@ export async function POST(request: NextRequest) {
           customerRecord.stripeCustomerId
         );
       } catch (error) {
-        logger.error({
-          message: 'Customer not found in Stripe',
-          userId: userId,
-          error,
-        });
-
         customer = await stripe.customers.create({
           email: user?.emailAddresses[0].emailAddress,
         });
@@ -85,11 +79,6 @@ export async function POST(request: NextRequest) {
       status: 200,
     });
   } catch (err: any) {
-    logger.error({
-      message: 'Error creating checkout session',
-      userId: userId,
-      error: err,
-    });
     return new NextResponse(err.message, { status: 500 });
   }
 }

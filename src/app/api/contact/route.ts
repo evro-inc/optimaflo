@@ -38,7 +38,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ message: 'Email sent' }, { status: 200 });
   } catch (error) {
-    logger.error('Error: ', error);
     return NextResponse.error(); // Optionally, add a custom message or status code
   }
 }

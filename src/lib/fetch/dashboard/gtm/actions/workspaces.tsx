@@ -643,8 +643,6 @@ export async function CreateWorkspaces(formData: FormCreateSchema) {
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
 
-  console.log('formData', formData);
-
   let retries = 0;
   const MAX_RETRIES = 3;
   let delay = 1000;
@@ -678,8 +676,6 @@ export async function CreateWorkspaces(formData: FormCreateSchema) {
 
   // Handling feature limit
   if (tierLimitResponse && tierLimitResponse.limitReached) {
-    console.log('tierLimitResponse', tierLimitResponse);
-
     return {
       success: false,
       limitReached: true,
@@ -692,8 +688,6 @@ export async function CreateWorkspaces(formData: FormCreateSchema) {
   if (toCreateWorkspaces.size > availableCreateUsage) {
     const attemptedCreations = Array.from(toCreateWorkspaces).map(
       (identifier) => {
-        console.log('identifier', identifier);
-
         const { accountId, name: workspaceName } = identifier;
         return {
           id: [], // No workspace ID since creation did not happen

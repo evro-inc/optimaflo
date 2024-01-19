@@ -128,8 +128,8 @@ function AccountFormUpdate({
           });
         }
       }
-    } catch (error) {
-      logger.error('Error updating accounts:', error);
+    } catch (error: any) {
+      throw new Error(error);
     } finally {
       // Always clear selected rows and close the form
       dispatch(clearSelectedRows());

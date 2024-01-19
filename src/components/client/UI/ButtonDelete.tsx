@@ -52,11 +52,6 @@ function ButtonDel() {
     } catch (error: any) {
       if (error.message && error.message.includes('Feature limit reached')) {
         dispatch(setIsLimitReached(true));
-      } else {
-        logger.error(
-          'Error deleting workspace',
-          error?.message || JSON.stringify(error)
-        );
       }
     }
   };

@@ -71,7 +71,6 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
   const { loading } = useSelector(selectGlobal);
   const isLimitReached = useSelector(selectTable).isLimitReached;
   const notFoundError = useSelector(selectTable).notFoundError;
-  console.log('workspaces', workspaces);
 
   const form = useForm<Forms>({
     defaultValues: {

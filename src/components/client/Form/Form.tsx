@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { Images } from '../Images/Images';
-import { Button } from '../Button/Button';
+import { ButtonPrim } from '../Button/Button';
 import { LinkBody } from '../Links/Links';
 
 export const ContactForm = () => {
@@ -178,7 +178,7 @@ export const ContactForm = () => {
               </div>
 
               <div className="flex justify-center pt-5">
-                <Button
+                <ButtonPrim
                   variant="body"
                   type="submit"
                   text="Send"

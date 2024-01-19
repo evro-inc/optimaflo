@@ -47,8 +47,8 @@ export default function Profile() {
         url: '/api/create-portal-link',
       });
       window.location.assign(url);
-    } catch (error) {
-      if (error) return logger.error((error as Error).message);
+    } catch (error: any) {
+      throw new Error(error);
     }
     dispatch(setLoading(false));
   };

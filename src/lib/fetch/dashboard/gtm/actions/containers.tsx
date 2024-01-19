@@ -1227,7 +1227,6 @@ export async function UpdateContainers(formData: FormCreateSchema) {
       };
     }
   } catch (error: any) {
-    logger.error(error);
     return {
       success: false,
       limitReached: false,

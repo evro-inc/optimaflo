@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 import React from 'react';
 
-export const metadata: Metadata = {
+/* export const metadata: Metadata = {
   title: 'Overview',
   description: 'Overview',
-};
+}; */
 
 export default async function GAPage() {
   try {

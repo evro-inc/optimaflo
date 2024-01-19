@@ -8,10 +8,10 @@ import HIW from '@/src/components/server/HowItWorks/HIW';
 import CTA from '@/src/components/server/CTA/cta';
 import Hero from '@/src/components/server/Hero/Hero';
 
-export const metadata: Metadata = {
+/* export const metadata: Metadata = {
   title: 'OptimaFlo - Coming Soon',
   description: 'OptimaFlo - Coming Soon',
-};
+}; */
 
 export default async function Home() {
   return (

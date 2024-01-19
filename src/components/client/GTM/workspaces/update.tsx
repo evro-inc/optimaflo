@@ -201,9 +201,8 @@ const FormUpdateWorkspace: React.FC<FormUpdateWorkspaceProps> = ({
           },
         ],
       });
-    } catch (error) {
-      logger.error('Error creating containers:', error);
-
+    } catch (error: any) {
+      throw new Error(error);
       return { success: false };
     } finally {
       dispatch(setLoading(false)); // Set loading to false

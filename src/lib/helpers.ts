@@ -28,8 +28,6 @@ export const postData = async ({ url, data }: { url: string; data?: any }) => {
   });
 
   if (!res.ok) {
-    logger.error('Error in postData', { url, data, res });
-
     throw Error(res.statusText);
   }
 

@@ -52,9 +52,6 @@ export default authMiddleware({
                 productIds.includes(productId)
               )
             ) {
-              logger.error(
-                `User ${auth.userId} tried to access ${req.nextUrl.pathname} without the required subscription`
-              );
               return NextResponse.redirect(new URL('/blocked', req.url));
             }
           }
@@ -64,9 +61,6 @@ export default authMiddleware({
         // Check the general API rate limit
         const generalRateLimitResult = await generalApiRateLimit.limit(ip);
         if (!generalRateLimitResult.success) {
-          logger.error(
-            `General API rate limit reached for IP ${ip} - ${generalRateLimitResult.remaining} remaining`
-          );
           return NextResponse.redirect(new URL('/blocked', req.url));
         }
 
@@ -116,9 +110,6 @@ export default authMiddleware({
             const rateLimitResult = await rule.rateLimit.limit(ip);
 
             if (!rateLimitResult.success) {
-              logger.error(
-                `Feature rate limit reached for IP ${ip} - ${rateLimitResult.remaining} remaining - ${rule.urlPattern}}`
-              );
               return NextResponse.redirect(new URL('/blocked', req.url));
             }
           }

@@ -134,9 +134,8 @@ const FormCombineContainer: React.FC<FormUpdateContainerProps> = ({
         // Show the LimitReached modal
         dispatch(setIsLimitReached(true));
       }
-    } catch (error) {
-      logger.error('Error creating containers:', error);
-
+    } catch (error: any) {
+      throw new Error(error);
       return { success: false };
     } finally {
       dispatch(setLoading(false)); // Set loading to false

@@ -203,8 +203,8 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
           },
         ],
       });
-    } catch (error) {
-      logger.error('Error creating containers:', error);
+    } catch (error: any) {
+      throw new Error(error);
 
       return { success: false };
     } finally {

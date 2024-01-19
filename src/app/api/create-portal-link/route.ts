@@ -36,12 +36,6 @@ export async function POST() {
           customerRecord.stripeCustomerId
         );
       } catch (error) {
-        logger.error({
-          message: 'Customer not found in Stripe',
-          userId: id,
-          error,
-        });
-
         customer = await stripe.customers.create({ email });
 
         // Update the customer record in Prisma with the new Stripe Customer ID

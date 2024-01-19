@@ -266,7 +266,6 @@ export async function GET(
       });
     }
 
-    logger.error('Error: ', error.message);
     return new NextResponse(JSON.stringify({ error: error.message }), {
       status: 500,
     });

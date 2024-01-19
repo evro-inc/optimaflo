@@ -6,11 +6,11 @@ import { auth } from '@clerk/nextjs';
 import { listGtmAccounts } from '@/src/lib/fetch/dashboard/gtm/actions/accounts';
 import { Skeleton } from '@/src/components/ui/skeleton';
 
-export const metadata: Metadata = {
+/* export const metadata: Metadata = {
   title: 'Overview',
   description: 'Overview',
 };
-
+ */
 export default async function AccountPage({
   searchParams,
 }: {

@@ -5,8 +5,7 @@ import { Price } from '@prisma/client';
 import { ProductWithPrice } from '@/src/lib/types/types';
 import { postData } from '@/src/lib/helpers';
 import { getStripe } from '@/src/lib/stripe-client';
-import { Button, ButtonSubscribe } from '../Button/Button';
-import logger from '@/src/lib/logger';
+import { ButtonPrim, ButtonSubscribe } from '../Button/Button';
 import { LinkBody } from '../Links/Links';
 import { useSelector } from 'react-redux';
 import { selectUser } from '@/src/app/redux/userSlice';
@@ -63,8 +62,8 @@ export default function PricingTable({ products = [] }: Props) {
         }
         await stripe.redirectToCheckout({ sessionId });
       }
-    } catch (error) {
-      logger.error((error as Error)?.message);
+    } catch (error: any) {
+      throw new Error(error);
     } finally {
       setPriceIdLoading(undefined);
     }
@@ -104,35 +103,34 @@ export default function PricingTable({ products = [] }: Props) {
 
             {/* Switch */}
 
-            <div className="flex justify-center items-center">
-              <div className="flex-inline border rounded-full p-1">
-                <ButtonSubscribe
-                  variant="subscribe"
-                  text="Monthly"
-                  isselected={billingInterval === 'month'}
-                  onClick={() => setBillingInterval('month')}
-                  type="button"
-                  billingInterval={undefined}
-                />
+            <div className="flex justify-center">
+              <ButtonSubscribe
+                variant="subscribe"
+                text="Monthly"
+                isselected={billingInterval === 'month'}
+                onClick={() => setBillingInterval('month')}
+                type="button"
+                billingInterval={undefined}
+              />
 
-                <ButtonSubscribe
-                  variant="subscribe"
-                  text="Yearly"
-                  isselected={billingInterval === 'year'}
-                  onClick={() => setBillingInterval('year')}
-                  type="button"
-                  billingInterval={undefined}
-                />
-                <ButtonSubscribe
-                  variant="subscribe"
-                  text="daily"
-                  isselected={billingInterval === 'day'}
-                  onClick={() => setBillingInterval('day')}
-                  type="button"
-                  billingInterval={undefined}
-                />
-              </div>
+              <ButtonSubscribe
+                variant="subscribe"
+                text="Yearly"
+                isselected={billingInterval === 'year'}
+                onClick={() => setBillingInterval('year')}
+                type="button"
+                billingInterval={undefined}
+              />
+              <ButtonSubscribe
+                variant="subscribe"
+                text="daily"
+                isselected={billingInterval === 'day'}
+                onClick={() => setBillingInterval('day')}
+                type="button"
+                billingInterval={undefined}
+              />
             </div>
+
             {/* End Switch */}
           </div>
         </div>
@@ -224,7 +222,7 @@ export default function PricingTable({ products = [] }: Props) {
                     </ul>
 
                     <div className="justify-center pt-5">
-                      <Button
+                      <ButtonPrim
                         variant="signup"
                         text={
                           subscription &&
@@ -3258,7 +3256,7 @@ export default function PricingTable({ products = [] }: Props) {
                       <td className="py-5 px-6" key={product.id}>
                         {/*Check */}
                         <div className="justify-center pt-5">
-                          <Button
+                          <ButtonPrim
                             variant="signup"
                             text={
                               subscription &&
