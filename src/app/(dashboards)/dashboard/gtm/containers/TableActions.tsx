@@ -16,7 +16,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { useRowSelection } from '@/src/lib/helpers/client';
 import { useDeleteHook } from '@/src/app/(dashboards)/dashboard/gtm/containers/delete';
-import Search from '@/src/components/client/UI/Search';
+import Search from '@/src/components/client/UI/SearchInput';
 import { toast } from 'sonner';
 import { ReloadIcon } from '@radix-ui/react-icons';
 

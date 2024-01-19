@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import { revalidate } from '@/src/lib/helpers/server';
-import Search from '@/src/components/client/UI/Search';
+import Search from '@/src/components/client/UI/SearchInput';
 import { toast } from 'sonner';
 import { ReloadIcon } from '@radix-ui/react-icons';
 import ButtonUpdate from '@/src/components/client/UI/ButtonUpdate';
