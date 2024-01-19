@@ -14,7 +14,7 @@ import {
   tierUpdateLimit,
 } from '@/src/lib/helpers/server';
 import { useRowSelection } from '@/src/lib/helpers/client';
-import Search from '../../../../../components/client/UI/Search';
+import Search from '@/src/components/client/UI/Search';
 import { useDeleteHook } from './delete';
 import { toast } from 'sonner';
 import { ReloadIcon } from '@radix-ui/react-icons';
