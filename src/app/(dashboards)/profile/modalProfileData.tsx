@@ -64,7 +64,7 @@ export default function ProfileInformation() {
         <DialogHeader>
           <DialogTitle>Edit Personal Data</DialogTitle>
           <DialogDescription>
-            Make changes to your personal data here. Click save when you're
+            Make changes to your personal data here. Click save when you are
             done.
           </DialogDescription>
         </DialogHeader>
