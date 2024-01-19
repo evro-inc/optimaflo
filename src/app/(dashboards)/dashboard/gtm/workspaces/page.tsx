@@ -56,7 +56,6 @@ async function getWorkspaces() {
 
     return combinedData;
   } catch (error: any) {
-    throw new Error('Error fetching workspaces:', error);
     return notFound();
   }
 }

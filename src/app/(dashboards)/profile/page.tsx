@@ -7,7 +7,6 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import { AvatarImage, AvatarFallback, Avatar } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
 import ProfileInformation from './modalProfileData';
 import { currentUser } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
@@ -18,12 +17,11 @@ import {
   TableBody,
   TableCaption,
   TableCell,
-  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
 } from '@/src/components/ui/table';
-import { getFeature, getTierLimit } from '@/src/lib/fetch/feature';
+import { getTierLimit } from '@/src/lib/fetch/feature';
 
 export default async function Profile() {
   const user = await currentUser();

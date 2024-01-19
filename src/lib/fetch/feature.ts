@@ -1,4 +1,3 @@
-import { getURL } from '../helpers';
 import prisma from '../prisma';
 
 export async function getFeature(userId: string) {

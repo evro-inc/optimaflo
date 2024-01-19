@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 
-import { useState, useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import React from 'react';
 import Logo from '../../icons/Logo';
 import { ButtonSignIn, ButtonToggle } from '../../client/Button/Button';

@@ -53,7 +53,6 @@ export default async function ContainerPage({
         throw new Error(
           `Unexpected result from listGtmContainers for account ${account.accountId}`
         );
-        return [];
       }
     })
     .flat();
