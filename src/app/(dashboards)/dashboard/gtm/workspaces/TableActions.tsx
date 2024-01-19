@@ -50,7 +50,7 @@ const TableActions = ({ userId, allData }) => {
 
   const handleUpdateClick = async () => {
     try {
-      const limitResponse: any = await tierUpdateLimit(userId, 'GTMWorkspace');
+      const limitResponse: any = await tierUpdateLimit(userId, 'GTMWorkspaces');
 
       if (limitResponse && limitResponse.limitReached) {
         // Directly show the limit reached modal
@@ -76,7 +76,6 @@ const TableActions = ({ userId, allData }) => {
         .filter(Boolean)
         .join(':');
     });
-    console.log('keysToRefresh', keysToRefresh);
 
     await revalidate(keysToRefresh, '/dashboard/gtm/workspaces');
     toast.info(

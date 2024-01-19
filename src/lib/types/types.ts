@@ -135,7 +135,7 @@ export type FormUpdateWorkspaceProps = {
   onClose: () => void;
   accounts: any; // Replace 'any' with the actual type if known
   selectedRows: Map<string, ContainerType>;
-  workspaces: any;
+  workspaces?: any;
 };
 
 export type ResultType = {

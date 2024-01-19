@@ -66,7 +66,6 @@ function WorkspaceForms({ accounts, workspaces }) {
           onClose={() => dispatch(toggleUpdate())}
           accounts={accounts}
           selectedRows={selectedRows}
-          workspaces={workspaces}
         />
       )}
     </>

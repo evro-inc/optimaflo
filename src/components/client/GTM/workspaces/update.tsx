@@ -3,21 +3,53 @@ import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LimitReached } from '../../modals/limitReached';
 import { ButtonGroup } from '../../ButtonGroup/ButtonGroup';
-import { XMarkIcon } from '@heroicons/react/24/solid';
 import { z } from 'zod';
 import { UpdateWorkspaceSchema } from '@/src/lib/schemas/workspaces';
 import {
   clearSelectedRows,
   selectTable,
+  setErrorDetails,
   setIsLimitReached,
+  setNotFoundError,
 } from '@/src/app/redux/tableSlice';
 import { selectIsLoading, setLoading } from '@/src/app/redux/globalSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { FormUpdateWorkspaceProps, UpdateResult } from '@/src/lib/types/types';
+import {
+  FeatureResponse,
+  FormUpdateWorkspaceProps,
+} from '@/src/lib/types/types';
 import logger from '@/src/lib/logger';
 import { UpdateWorkspaces } from '@/src/lib/fetch/dashboard/gtm/actions/workspaces';
+import { toast } from 'sonner';
+import { Icon } from '../../Button/Button';
+import { Cross1Icon } from '@radix-ui/react-icons';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/src/components/ui/card';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/src/components/ui/form';
+import { Input } from '@/src/components/ui/input';
+import dynamic from 'next/dynamic';
+
+const NotFoundErrorModal = dynamic(
+  () =>
+    import('../../../../components/client/modals/notFoundError').then(
+      (mod) => mod.NotFoundError
+    ),
+  { ssr: false }
+);
 
 // Type for the entire form data
 type Forms = z.infer<typeof UpdateWorkspaceSchema>;
@@ -28,17 +60,13 @@ const FormUpdateWorkspace: React.FC<FormUpdateWorkspaceProps> = ({
   onClose,
   selectedRows,
 }) => {
-  const dispatch = useDispatch();
-  const { isLimitReached } = useSelector(selectTable);
   const isLoading = useSelector(selectIsLoading);
   const formRefs = useRef<(HTMLFormElement | null)[]>([]);
-  const {
-    register,
-    handleSubmit,
-    reset,
-    control,
-    formState: { errors },
-  } = useForm<Forms>({
+  const dispatch = useDispatch();
+  const isLimitReached = useSelector(selectTable).isLimitReached;
+  const notFoundError = useSelector(selectTable).notFoundError;
+
+  const form = useForm<Forms>({
     defaultValues: {
       forms: [
         {
@@ -54,7 +82,7 @@ const FormUpdateWorkspace: React.FC<FormUpdateWorkspaceProps> = ({
   });
 
   const { fields } = useFieldArray({
-    control,
+    control: form.control,
     name: 'forms',
   });
 
@@ -75,52 +103,104 @@ const FormUpdateWorkspace: React.FC<FormUpdateWorkspaceProps> = ({
       };
     });
 
-    reset({ forms: initialForms });
-  }, [selectedRows, reset]);
+    form.reset({ forms: initialForms });
+  }, [selectedRows, form]);
 
   const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
     dispatch(setLoading(true)); // Set loading to true
 
+    toast('Updating workspaces...', {
+      action: {
+        label: 'Close',
+        onClick: () => toast.dismiss(),
+      },
+    });
+
     try {
       // If you're here, validation succeeded. Proceed with updateContainers.
-      const res = (await UpdateWorkspaces({ forms })) as UpdateResult;
+      const res = (await UpdateWorkspaces({ forms })) as FeatureResponse;
 
       dispatch(clearSelectedRows()); // Clear selectedRows
 
-      // close the modal
-      onClose();
+      if (res.success) {
+        res.results.forEach((result) => {
+          if (result.success) {
+            toast.success(
+              `Workspace ${result.name} created successfully. The table will update shortly.`,
+              {
+                action: {
+                  label: 'Close',
+                  onClick: () => toast.dismiss(),
+                },
+              }
+            );
+          }
+        });
+      } else {
+        if (res.notFoundError) {
+          res.results.forEach((result) => {
+            if (result.notFound) {
+              toast.error(
+                `Unable to create container ${result.name}. Please check your access permissions. Any other containers created were successful.`,
+                {
+                  action: {
+                    label: 'Close',
+                    onClick: () => toast.dismiss(),
+                  },
+                }
+              );
+            }
+          });
 
-      // Reset the forms here, regardless of success or limit reached
-      reset({
-        forms: [
-          {
-            accountId: '',
-            workspaceId: '',
-            name: '',
-            description: '',
-            containerId: '',
-          },
-        ],
-      });
+          dispatch(setErrorDetails(res.results)); // Assuming results contain the error details
+          dispatch(setNotFoundError(true)); // Dispatch the not found error action
+          onClose();
+        }
 
-      if (res && res.success) {
-        // Reset the forms here
-        reset({
+        if (res.limitReached) {
+          res.results.forEach((result) => {
+            if (result.limitReached) {
+              toast.error(
+                `Unable to create container ${result.name}. You have ${result.remaining} more container(s) you can create.`,
+                {
+                  action: {
+                    label: 'Close',
+                    onClick: () => toast.dismiss(),
+                  },
+                }
+              );
+            }
+          });
+          dispatch(setIsLimitReached(true));
+          onClose();
+        }
+
+        onClose(); // Close the form
+        form.reset({
           forms: [
             {
               accountId: '',
-              workspaceId: '',
               name: '',
               description: '',
               containerId: '',
             },
           ],
         });
-      } else if (res && res.limitReached) {
-        // Show the LimitReached modal
-        dispatch(setIsLimitReached(true));
       }
+      onClose();
+
+      // Reset the forms here, regardless of success or limit reached
+      form.reset({
+        forms: [
+          {
+            accountId: '',
+            name: '',
+            description: '',
+            containerId: '',
+          },
+        ],
+      });
     } catch (error) {
       logger.error('Error creating containers:', error);
 
@@ -132,7 +212,7 @@ const FormUpdateWorkspace: React.FC<FormUpdateWorkspaceProps> = ({
 
   const handleClose = () => {
     // Reset the forms to their initial state
-    reset({
+    form.reset({
       forms: [
         {
           accountId: '',
@@ -158,16 +238,17 @@ const FormUpdateWorkspace: React.FC<FormUpdateWorkspaceProps> = ({
             initial={{ opacity: 0, y: -50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -50 }}
-            className="fixed top-0 left-0 w-full h-full flex flex-col items-center justify-start z-50 bg-white-500 overflow-y-auto"
+            className="fixed top-0 left-0 w-full h-full flex flex-col items-center justify-start z-50 bg-white overflow-y-auto"
           >
             {/* Close Button */}
-            <button
+            <Icon
+              className="absolute top-5 right-5 font-bold py-2 px-4"
+              text="Close"
+              icon={<Cross1Icon />}
+              variant="create"
               onClick={handleClose}
-              className="absolute top-0 right-0 font-bold py-2 px-4"
-            >
-              <XMarkIcon className="w-14 h-14" />
-            </button>
-
+              billingInterval={undefined}
+            />
             <ButtonGroup
               buttons={[
                 {
@@ -194,59 +275,75 @@ const FormUpdateWorkspace: React.FC<FormUpdateWorkspaceProps> = ({
 
                     <div className="mt-12">
                       {/* Form */}
-                      <form
-                        ref={(el) => (formRefs.current[index] = el)}
-                        onSubmit={handleSubmit(processForm)}
-                        id="updateContainer"
-                      >
-                        <div className="grid gap-4 lg:gap-6">
-                          {/* Grid */}
-                          <div className="grid grid-cols-1 gap-4 lg:gap-6">
-                            <div>
-                              <label
-                                htmlFor="hs-firstname-hire-us-2"
-                                className="block text-sm text-gray-700 font-medium dark:text-white"
-                              >
-                                New Container Name:
-                              </label>
-                              <input
-                                type="text"
-                                {...register(`forms.${index}.name`)}
-                                defaultValue={field.name}
-                                className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
-                              />
-                              {errors.forms?.[index]?.name && (
-                                <p className="text-red-500 text-xs italic">
-                                  {errors.forms?.[index]?.name?.message}
-                                </p>
-                              )}
-                            </div>
+                      <Card className="w-full max-w-xl mx-auto bg-white shadow-md rounded-lg overflow-hidden">
+                        <CardHeader className="bg-gray-100 p-4">
+                          <CardTitle className="text-lg font-semibold">
+                            Workspace {index + 1}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4">
+                          <Form {...form}>
+                            <form
+                              ref={(el) => (formRefs.current[index] = el)}
+                              onSubmit={form.handleSubmit(processForm)}
+                              id="updateContainer"
+                              className="space-y-6"
+                            >
+                              <FormField
+                                control={form.control}
+                                name={`forms.${index}.name`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>
+                                      Workspace Name To Update
+                                    </FormLabel>
+                                    <FormDescription>
+                                      This is the workspace name you want to
+                                      update.
+                                    </FormDescription>
+                                    <FormControl>
+                                      <Input
+                                        defaultValue={field.name}
+                                        placeholder="Name of the workspace"
+                                        {...form.register(
+                                          `forms.${index}.name`
+                                        )}
+                                        {...field}
+                                      />
+                                    </FormControl>
 
-                            <div>
-                              <label
-                                htmlFor="hs-firstname-hire-us-2"
-                                className="block text-sm text-gray-700 font-medium dark:text-white"
-                              >
-                                Description:
-                              </label>
-                              <input
-                                type="text"
-                                {...register(`forms.${index}.description`)}
-                                className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
                               />
-                              {errors.forms?.[index]?.description?.message && (
-                                <p className="text-red-500 text-xs italic">
-                                  {errors.forms?.[index]?.description?.message}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          {/* End Grid */}
 
-                          {/* End Grid */}
-                        </div>
-                        {/* End Grid */}
-                      </form>
+                              <FormField
+                                control={form.control}
+                                name={`forms.${index}.description`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Description:</FormLabel>
+                                    <FormDescription>
+                                      This is a description of the workspace.
+                                    </FormDescription>
+                                    <FormControl>
+                                      <Input
+                                        placeholder="Enter your description"
+                                        {...form.register(
+                                          `forms.${index}.description`
+                                        )}
+                                        {...field}
+                                      />
+                                    </FormControl>
+
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </form>
+                          </Form>
+                        </CardContent>
+                      </Card>
                       {/* End Form */}
                     </div>
                   </div>
@@ -262,6 +359,8 @@ const FormUpdateWorkspace: React.FC<FormUpdateWorkspaceProps> = ({
       {isLimitReached && (
         <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
       )}
+
+      {notFoundError && <NotFoundErrorModal />}
     </>
   );
 };
