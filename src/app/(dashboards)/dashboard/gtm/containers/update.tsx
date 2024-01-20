@@ -18,7 +18,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  ContainersResponse,
+  FeatureResponse,
   FormUpdateContainerProps,
 } from '@/src/lib/types/types';
 
@@ -117,7 +117,7 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
 
     try {
       // If you're here, validation succeeded. Proceed with UpdateContainers.
-      const res = (await UpdateContainers({ forms })) as ContainersResponse;
+      const res = (await UpdateContainers({ forms })) as FeatureResponse;
       dispatch(clearSelectedRows()); // Clear selectedRows
 
       if (res.success) {

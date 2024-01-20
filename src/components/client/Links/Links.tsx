@@ -1,5 +1,5 @@
 'use client';
-import { useMemo } from 'react';
+import { Suspense, useMemo } from 'react';
 import { SignUpButton } from '@clerk/nextjs';
 import Link from 'next/link';
 import { Button } from '../../ui/button';
@@ -32,9 +32,11 @@ export const LinkSignUp = ({ variant, text, ariaLabel, ...props }) => {
   }, [variant]);
 
   return (
+    <Suspense fallback={<div>Loading...</div>}>
     <SignUpButton mode="modal" redirectUrl="/profile" afterSignUpUrl="/pricing">
         <Button className={computedClasses} {...props} aria-label={ariaLabel}>{text}</Button>
     </SignUpButton>
+    </Suspense>
   );
 };
 

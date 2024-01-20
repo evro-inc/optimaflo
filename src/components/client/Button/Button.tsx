@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useTheme } from 'next-themes';
 import {
   MoonIcon,
@@ -345,9 +345,11 @@ export const ButtonSignIn = ({ variant = 'signup', text, ...props }) => {
   }, [variant]);
 
   return (
+    <Suspense fallback={<div>Loading...</div>}>
     <SignInButton mode="modal" redirectUrl="/profile" afterSignUpUrl="/pricing">
         <Button {...props} className={`${BASE_BUTTON_CLASSES} ${computedClasses} w-36 mx-5 lg:mx-0`}>{text}</Button>
     </SignInButton>
+    </Suspense>
   );
 };
 

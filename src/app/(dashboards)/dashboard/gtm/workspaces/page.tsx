@@ -1,5 +1,3 @@
-'use server';
-
 import React, { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import { auth } from '@clerk/nextjs';

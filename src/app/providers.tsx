@@ -1,6 +1,6 @@
 /* eslint-disable no-undef */
 'use client';
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { Provider } from 'react-redux';
 import { store } from './redux/store';
 import { ClerkProvider } from '@clerk/nextjs';
@@ -13,7 +13,7 @@ export const Providers = ({ children }: Props) => {
   useEffect(() => {
     import('preline');
   }, []);
-  return <ClerkProvider>{children}</ClerkProvider>;
+  return <Suspense fallback={<div>Loading...</div>}><ClerkProvider>{children}</ClerkProvider></Suspense>;
 };
 
 export const ReduxProvider = ({ children }) => {
