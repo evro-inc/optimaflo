@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 
 import Integrations from '@/src/components/server/Block/Integrations';
 import Features from '@/src/components/server/Features/Features';
@@ -9,14 +9,16 @@ import Hero from '@/src/components/server/Hero/Hero';
 
 export default async function Home() {
   return (
-    <main>
-      <Hero />
+    <Suspense fallback={<div>Loading...</div>}>
+      <main>
+        <Hero />
 
-      <Features />
-      <HIW />
-      <Integrations />
-      <FAQ />
-      <CTA />
-    </main>
+        <Features />
+        <HIW />
+        <Integrations />
+        <FAQ />
+        <CTA />
+      </main>
+    </Suspense>
   );
 }
