@@ -2,7 +2,6 @@ import FAQ from '@/src/components/server/FAQ/Faq';
 import PricingTable from '@/src/components/client/Pricing/Table';
 import { ProductWithPrice } from '@/src/lib/types/types';
 import prisma from '@/src/lib/prisma';
-import { Suspense } from 'react';
 
 const getActiveProductsWithPrices = async (): Promise<ProductWithPrice[]> => {
   'use server';
@@ -57,11 +56,9 @@ export default async function PricingPage() {
 
   return (
     <>
-      <Suspense fallback={<div>Loading...</div>}>
-        <PricingTable products={products} />
+      <PricingTable products={products} />
 
-        <FAQ />
-      </Suspense>
+      <FAQ />
     </>
   );
 }

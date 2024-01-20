@@ -1,4 +1,5 @@
-import React from 'react';
+"use client";
+import React, { Suspense } from 'react';
 import { getHomePage } from '@/sanity/sanity-utils';
 import { ButtonNull } from '../../client/Button/Button';
 import { LinkBody } from '../../client/Links/Links';
@@ -7,6 +8,7 @@ export default async function FAQ() {
   const homePage = await getHomePage();
 
   return (
+    <Suspense fallback={<div>Loading...</div>}>
     <section>
       {homePage.map((page) => {
         return (
@@ -118,5 +120,6 @@ export default async function FAQ() {
         );
       })}
     </section>
+    </Suspense>
   );
 }
