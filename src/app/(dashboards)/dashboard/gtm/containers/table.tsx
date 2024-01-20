@@ -14,7 +14,6 @@ import {
 } from '@/src/lib/helpers/server';
 import { notFound } from 'next/navigation';
 import { Label } from '@/src/components/ui/label';
-import { Suspense } from 'react';
 
 const TablePaginationNoSSR = dynamic(
   () => import('@/src/components/client/UI/TablePagination'),
@@ -120,9 +119,7 @@ export default async function ContainerTable({
                   </TableBody>
                   <TableFooter>{/* Footer content */}</TableFooter>
                 </Table>
-                <Suspense fallback={<div>Loading...</div>}>
-                  <TablePaginationNoSSR totalPages={totalPages} />
-                </Suspense>
+                <TablePaginationNoSSR totalPages={totalPages} />
               </div>
             </div>
           </div>

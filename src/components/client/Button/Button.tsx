@@ -346,11 +346,7 @@ export const ButtonSignIn = ({ variant = 'signup', text, ...props }) => {
 
   return (
     <SignInButton mode="modal" redirectUrl="/profile" afterSignUpUrl="/pricing">
-      <div
-        className={`${BASE_BUTTON_CLASSES} ${computedClasses} w-36 mx-5 lg:mx-0`}
-      >
-        <button {...props}>{text}</button>
-      </div>
+        <Button {...props} className={`${BASE_BUTTON_CLASSES} ${computedClasses} w-36 mx-5 lg:mx-0`}>{text}</Button>
     </SignInButton>
   );
 };

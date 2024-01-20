@@ -6,8 +6,7 @@ import React from 'react';
 import Logo from '../../icons/Logo';
 import { ButtonSignIn, ButtonToggle } from '../../client/Button/Button';
 import { LinkSignUp, LinkNav } from '../Links/Links';
-import { UserButton } from '@clerk/nextjs';
-import { useSession } from '@clerk/clerk-react';
+import { UserButton, useSession } from '@clerk/nextjs';
 
 const navigation = [
   { name: 'About', href: '/about' },

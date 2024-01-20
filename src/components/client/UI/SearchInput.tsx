@@ -5,6 +5,7 @@ import { Input } from '../../ui/input';
 import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
 import { Label } from '@radix-ui/react-label';
 import { useDebouncedCallback } from 'use-debounce';
+import { Suspense } from 'react';
 
 export default function Search({ placeholder }: { placeholder: string }) {
   const searchParams = useSearchParams();
@@ -25,6 +26,7 @@ export default function Search({ placeholder }: { placeholder: string }) {
   return (
     <form className="relative mx-4">
       <MagnifyingGlassIcon className="absolute w-4 h-4 text-gray-400 left-3 top-3" />
+      <Suspense fallback={<div>Loading...</div>}>
       <Input
         className="pl-8 rounded-md shadow-sm"
         placeholder={placeholder}
@@ -34,6 +36,7 @@ export default function Search({ placeholder }: { placeholder: string }) {
         }}
         defaultValue={searchParams.get('query')?.toString()}
       />
+      </Suspense>
       <Label className="sr-only" htmlFor="search">
         Search
       </Label>

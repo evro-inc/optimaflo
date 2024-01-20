@@ -2,6 +2,7 @@
 import { useMemo } from 'react';
 import { SignUpButton } from '@clerk/nextjs';
 import Link from 'next/link';
+import { Button } from '../../ui/button';
 
 const getLinkModeClasses = (variant) => {
   switch (variant) {
@@ -32,9 +33,7 @@ export const LinkSignUp = ({ variant, text, ariaLabel, ...props }) => {
 
   return (
     <SignUpButton mode="modal" redirectUrl="/profile" afterSignUpUrl="/pricing">
-      <div className={computedClasses} {...props} aria-label={ariaLabel}>
-        <button {...props}>{text}</button>
-      </div>
+        <Button className={computedClasses} {...props} aria-label={ariaLabel}>{text}</Button>
     </SignUpButton>
   );
 };

@@ -1,5 +1,5 @@
 'use client';
-import React, { Suspense, useState } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Price } from '@prisma/client';
 import { ProductWithPrice } from '@/src/lib/types/types';
@@ -10,7 +10,6 @@ import { LinkBody } from '../Links/Links';
 import { useSelector } from 'react-redux';
 import { selectUser } from '@/src/app/redux/userSlice';
 import { useAuth } from '@clerk/nextjs';
-import { Skeleton } from '../../ui/skeleton';
 
 interface Props {
   products: ProductWithPrice[];
@@ -72,7 +71,6 @@ export default function PricingTable({ products = [] }: Props) {
 
   return (
     <>
-    <Suspense fallback={<Skeleton />}>
       {showAlert && (
         <div
           className="bg-red-500 text-sm text-white-500 rounded-md p-4"
@@ -3285,7 +3283,6 @@ export default function PricingTable({ products = [] }: Props) {
           {/*End lg+ */}
         </div>
       </div>
-      </Suspense>
     </>
   );
 }
