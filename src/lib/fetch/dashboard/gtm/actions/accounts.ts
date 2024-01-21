@@ -54,10 +54,11 @@ export async function listGtmAccounts() {
         // Scheduling the API call with a rate limiter
         await limiter.schedule(async () => {
           // Setting up the API call
-          const url = `https://www.googleapis.com/tagmanager/v2/accounts`;
+          const url = `https://www.googleapis.com/tagmanager/v2/accounts?fields=account(accountId,name)`;
           const headers = {
             Authorization: `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
+            'Accept-Encoding': 'gzip',
           };
 
           // Making the API call
@@ -178,6 +179,7 @@ export async function updateAccounts(
             const headers = {
               Authorization: `Bearer ${token[0].token}`,
               'Content-Type': 'application/json',
+              'Accept-Encoding': 'gzip',
             };
 
             const payload = {

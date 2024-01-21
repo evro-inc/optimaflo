@@ -97,6 +97,42 @@ export async function listGtmWorkspaces(
   throw new Error('Maximum retries reached without a successful response.');
 }
 
+/* async function listWorkspacesForAccount(accountId: string): Promise<any[]> {
+  const containers = await listGtmContainers(accountId);
+
+  const workspacePromises = containers.map(async (container) => {
+    const workspaces = await listGtmWorkspaces(
+      accountId,
+      container.containerId
+    );
+
+    // Return an array of objects, each containing container and workspace data
+    return workspaces.map((workspace) => ({
+      containerId: container.containerId,
+      containerName: container.name,
+      workspaceId: workspace.workspaceId,
+      workspaceName: workspace.name,
+      accountId: accountId,
+    }));
+  });
+
+  const workspacesNestedArray = await Promise.all(workspacePromises);
+  return workspacesNestedArray.flat();
+}
+
+// Function to list workspaces for multiple accounts in parallel
+export async function listWorkspacesForMultipleAccounts(
+  accountIds: string[]
+): Promise<any[]> {
+  const allWorkspacesPromises = accountIds.map((accountId) =>
+    listWorkspacesForAccount(accountId)
+  );
+  const allWorkspacesNestedArray = await Promise.all(allWorkspacesPromises);
+  // Flatten the nested array of workspaces
+  const allWorkspaces = allWorkspacesNestedArray.flat();
+  return allWorkspaces;
+} */
+
 /************************************************************************************
   Delete a single or multiple workspaces
 ************************************************************************************/
@@ -187,6 +223,7 @@ export async function DeleteWorkspaces(
                 const headers = {
                   Authorization: `Bearer ${token[0].token}`,
                   'Content-Type': 'application/json',
+                  'Accept-Encoding': 'gzip',
                 };
 
                 try {
@@ -741,6 +778,7 @@ export async function CreateWorkspaces(formData: FormCreateSchema) {
                 const headers = {
                   Authorization: `Bearer ${token[0].token}`,
                   'Content-Type': 'application/json',
+                  'Accept-Encoding': 'gzip',
                 };
 
                 try {
@@ -1329,6 +1367,7 @@ export async function UpdateWorkspaces(formData: FormUpdateSchema) {
                 const headers = {
                   Authorization: `Bearer ${token[0].token}`,
                   'Content-Type': 'application/json',
+                  'Accept-Encoding': 'gzip',
                 };
 
                 try {

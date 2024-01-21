@@ -26,8 +26,8 @@ export default function RootLayout({
         className={`${openSans.className}`}
       >
         <ClerkProvider>
-        <body>
-          <ReduxProvider>
+          <body>
+            <ReduxProvider>
               <Alert variant="destructive">
                 <ExclamationTriangleIcon className="h-4 w-4" />
                 <AlertTitle>Warning!!</AlertTitle>
@@ -41,8 +41,8 @@ export default function RootLayout({
               <Navbar />
               {children}
               <Footer />
-          </ReduxProvider>
-        </body>
+            </ReduxProvider>
+          </body>
         </ClerkProvider>
       </html>
     </>

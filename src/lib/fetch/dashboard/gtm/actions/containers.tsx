@@ -95,6 +95,8 @@ export async function listGtmContainers(accountId: string) {
   throw new Error('Maximum retries reached without a successful response.');
 }
 
+
+
 /************************************************************************************
   Delete a single or multiple containers
 ************************************************************************************/
@@ -179,6 +181,7 @@ export async function DeleteContainers(
                 const headers = {
                   Authorization: `Bearer ${token[0].token}`,
                   'Content-Type': 'application/json',
+                  'Accept-Encoding': 'gzip',
                 };
 
                 try {
@@ -474,6 +477,7 @@ export async function CreateContainers(formData: FormCreateSchema) {
                 const headers = {
                   Authorization: `Bearer ${token[0].token}`,
                   'Content-Type': 'application/json',
+                  'Accept-Encoding': 'gzip',
                 };
 
                 try {
@@ -817,6 +821,7 @@ export async function UpdateContainers(formData: FormCreateSchema) {
                 const headers = {
                   Authorization: `Bearer ${token[0].token}`,
                   'Content-Type': 'application/json',
+                  'Accept-Encoding': 'gzip',
                 };
 
                 try {

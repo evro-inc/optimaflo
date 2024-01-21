@@ -23,8 +23,8 @@ export default async function DashboardLayout({
 
   return (
     <ReduxProvider>
-        <html lang="en">
-          <ClerkProvider>
+      <html lang="en">
+        <ClerkProvider>
           <body className="flex h-screen border-collapse overflow-hidden">
             {/* ========== HEADER ========== */}
             <NavApp />
@@ -43,8 +43,8 @@ export default async function DashboardLayout({
             {/* End Content */}
             {/* ========== END MAIN CONTENT ========== */}
           </body>
-          </ClerkProvider>
-        </html>
+        </ClerkProvider>
+      </html>
     </ReduxProvider>
   );
 }

@@ -33,9 +33,15 @@ export const LinkSignUp = ({ variant, text, ariaLabel, ...props }) => {
 
   return (
     <Suspense fallback={<div>Loading...</div>}>
-    <SignUpButton mode="modal" redirectUrl="/profile" afterSignUpUrl="/pricing">
-        <Button className={computedClasses} {...props} aria-label={ariaLabel}>{text}</Button>
-    </SignUpButton>
+      <SignUpButton
+        mode="modal"
+        redirectUrl="/profile"
+        afterSignUpUrl="/pricing"
+      >
+        <Button className={computedClasses} {...props} aria-label={ariaLabel}>
+          {text}
+        </Button>
+      </SignUpButton>
     </Suspense>
   );
 };

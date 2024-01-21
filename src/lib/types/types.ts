@@ -214,3 +214,22 @@ export interface FeatureResponse {
   notFoundError?: boolean;
   revalidationSuccess?: boolean;
 }
+export type Account = {
+  accountId: string;
+  name: string;
+};
+
+export type Container = {
+  accountId: string;
+  containerId: string;
+  name: string;
+  publicId: string;
+  usageContext: string[];
+};
+
+export type Workspace = {
+  accountId: string;
+  containerId: string;
+  workspaceId: string;
+  name: string;
+};

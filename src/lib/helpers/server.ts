@@ -253,13 +253,19 @@ export async function fetchFilteredRows<T>(
   const { userId } = auth();
   if (!userId) return notFound();
 
-  // Ensure that item.name exists and is a string before calling toLowerCase()
-  const filteredItems = allItems.filter(
-    (item: any) =>
-      item.name &&
-      typeof item.name === 'string' &&
-      item.name.toLowerCase().includes(query.toLowerCase())
-  );
+  let filteredItems;
+  if (query) {
+    // Filter items if query is not empty
+    filteredItems = allItems.filter(
+      (item: any) =>
+        item.name &&
+        typeof item.name === 'string' &&
+        item.name.toLowerCase().includes(query.toLowerCase())
+    );
+  } else {
+    // If query is empty, use all items
+    filteredItems = allItems;
+  }
 
   // Calculate pagination values
   const total = filteredItems.length;
@@ -284,19 +290,21 @@ export async function fetchAllFilteredRows<T>(
   const { userId } = auth();
   if (!userId) return notFound();
 
-  // Filter items based on the query
-  const filteredItems = allItems.filter(
-    (item: any) =>
-      item.name &&
-      typeof item.name === 'string' &&
-      item.name.toLowerCase().includes(query.toLowerCase())
-  );
+  let filteredItems;
+  if (query) {
+    filteredItems = allItems.filter(
+      (item: any) =>
+        item.name &&
+        typeof item.name === 'string' &&
+        item.name.toLowerCase().includes(query.toLowerCase())
+    );
+  } else {
+    filteredItems = allItems;
+  }
 
-  // Return all filtered items
   return filteredItems;
 }
 
-// Function to fetch the total number of pages
 export async function fetchPages<T>(
   allItems: T[],
   query: string,
@@ -305,13 +313,16 @@ export async function fetchPages<T>(
   const { userId } = auth();
   if (!userId) return notFound();
 
-  // Filter items based on the query with a type guard to ensure 'name' property exists
-  const filtered = allItems.filter(
-    (item: any) =>
-      'name' in item && item.name.toLowerCase().includes(query.toLowerCase())
-  );
+  let filtered;
+  if (query) {
+    filtered = allItems.filter(
+      (item: any) =>
+        'name' in item && item.name.toLowerCase().includes(query.toLowerCase())
+    );
+  } else {
+    filtered = allItems;
+  }
 
-  // Calculate the total number of pages
   const totalPages = Math.ceil(filtered.length / pageSize);
   return totalPages;
 }
