@@ -2,12 +2,13 @@ import { openSans } from '@/src/lib/fonts';
 import '../../styles/globals.css';
 import '../../styles/tailwind.css';
 
-import { Providers, ReduxProvider } from '../providers';
+import { ReduxProvider } from '../providers';
 import React from 'react';
 import Footer from '@/src/components/server/Footer/Footer';
 import Navbar from '@/src/components/client/Navbar/Navbar';
 import { Alert, AlertDescription, AlertTitle } from '@/src/components/ui/alert';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
+import { ClerkProvider } from '@clerk/nextjs';
 
 export default function RootLayout({
   // Layouts must accept a children prop.
@@ -24,9 +25,9 @@ export default function RootLayout({
         suppressHydrationWarning
         className={`${openSans.className}`}
       >
+        <ClerkProvider>
         <body>
           <ReduxProvider>
-            <Providers>
               <Alert variant="destructive">
                 <ExclamationTriangleIcon className="h-4 w-4" />
                 <AlertTitle>Warning!!</AlertTitle>
@@ -40,9 +41,9 @@ export default function RootLayout({
               <Navbar />
               {children}
               <Footer />
-            </Providers>
           </ReduxProvider>
         </body>
+        </ClerkProvider>
       </html>
     </>
   );

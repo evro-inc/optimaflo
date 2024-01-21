@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { FeatureResult } from '../../lib/types/types';
+import { FeatureResult } from '../types/types';
 
 export interface TableRow {
   id: string;

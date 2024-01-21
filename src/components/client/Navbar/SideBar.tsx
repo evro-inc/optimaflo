@@ -10,7 +10,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import {
   selectIsSidebarOpen,
   toggleSidebar,
-} from '@/src/app/redux/sidebarSlice';
+} from '@/src/lib/redux/sidebarSlice';
 
 interface SidebarProps {
   className?: string;

@@ -5,7 +5,7 @@ import {
   setErrorDetails,
   setIsLimitReached,
   setNotFoundError,
-} from '@/src/app/redux/tableSlice';
+} from '@/src/lib/redux/tableSlice';
 import { DeleteContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containers';
 import { useRowSelection } from '@/src/lib/helpers/client';
 import { ContainerType, FeatureResponse } from '@/src/lib/types/types';

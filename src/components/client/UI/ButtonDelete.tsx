@@ -7,7 +7,7 @@ import {
   selectTable,
   setIsLimitReached,
   setNotFoundError,
-} from '@/src/app/redux/tableSlice';
+} from '@/src/lib/redux/tableSlice';
 import { DeleteWorkspaces } from '@/src/lib/fetch/dashboard/gtm/actions/workspaces';
 
 import { DeleteWorkspacesResponse, WorkspaceType } from '@/src/lib/types/types';

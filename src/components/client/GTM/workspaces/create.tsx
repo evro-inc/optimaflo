@@ -13,8 +13,8 @@ import {
   setErrorDetails,
   setIsLimitReached,
   setNotFoundError,
-} from '@/src/app/redux/tableSlice';
-import { selectGlobal, setLoading } from '@/src/app/redux/globalSlice';
+} from '@/src/lib/redux/tableSlice';
+import { selectGlobal, setLoading } from '@/src/lib/redux/globalSlice';
 import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
 import { CreateWorkspaceSchema } from '@/src/lib/schemas/workspaces';
 import { zodResolver } from '@hookform/resolvers/zod';

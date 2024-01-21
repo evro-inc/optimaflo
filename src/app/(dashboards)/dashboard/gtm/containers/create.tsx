@@ -14,8 +14,8 @@ import {
   setErrorDetails,
   setIsLimitReached,
   setNotFoundError,
-} from '@/src/app/redux/tableSlice';
-import { selectGlobal, setLoading } from '@/src/app/redux/globalSlice';
+} from '@/src/lib/redux/tableSlice';
+import { selectGlobal, setLoading } from '@/src/lib/redux/globalSlice';
 import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
 import { CreateContainerSchema } from '@/src/lib/schemas/containers';
 import { zodResolver } from '@hookform/resolvers/zod';

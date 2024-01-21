@@ -8,8 +8,8 @@ import {
   setIsLimitReached,
   setNotFoundError,
   toggleAllSelected,
-} from '@/src/app/redux/tableSlice';
-import { selectIsLoading, setLoading } from '@/src/app/redux/globalSlice';
+} from '@/src/lib/redux/tableSlice';
+import { selectIsLoading, setLoading } from '@/src/lib/redux/globalSlice';
 import { useEffect, useRef } from 'react';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';

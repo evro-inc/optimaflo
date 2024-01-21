@@ -8,7 +8,7 @@ import { getStripe } from '@/src/lib/stripe-client';
 import { ButtonPrim, ButtonSubscribe } from '../Button/Button';
 import { LinkBody } from '../Links/Links';
 import { useSelector } from 'react-redux';
-import { selectUser } from '@/src/app/redux/userSlice';
+import { selectUser } from '@/src/lib/redux/userSlice';
 import { useAuth } from '@clerk/nextjs';
 
 interface Props {

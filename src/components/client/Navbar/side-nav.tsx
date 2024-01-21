@@ -12,12 +12,12 @@ import {
 import { ChevronDownIcon } from '@radix-ui/react-icons';
 import { cn } from '@/src/lib/utils';
 import { Accordion } from './subnav-accordion';
-import { selectIsSidebarOpen } from '@/src/app/redux/sidebarSlice';
+import { selectIsSidebarOpen } from '@/src/lib/redux/sidebarSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   selectAccordionOpenItems,
   toggleAccordionItem,
-} from '@/src/app/redux/globalSlice';
+} from '@/src/lib/redux/globalSlice';
 
 export function SideNav({ items, setOpen, className }) {
   const path = usePathname();

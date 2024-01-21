@@ -8,7 +8,7 @@ import {
   setError,
   setSelectedRows,
   toggleAllSelected,
-} from '@/src/app/redux/tableSlice';
+} from '@/src/lib/redux/tableSlice';
 import { toast } from 'sonner';
 import { useDispatch, useSelector } from 'react-redux';
 import { usePaginate } from '../paginate';

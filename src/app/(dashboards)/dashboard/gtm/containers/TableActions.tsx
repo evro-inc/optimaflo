@@ -6,8 +6,8 @@ import {
   Icon,
 } from '../../../../../components/client/Button/Button';
 import { useDispatch } from 'react-redux';
-import { setIsLimitReached } from '@/src/app/redux/tableSlice';
-import { toggleCreate, toggleUpdate } from '@/src/app/redux/globalSlice';
+import { setIsLimitReached } from '@/src/lib/redux/tableSlice';
+import { toggleCreate, toggleUpdate } from '@/src/lib/redux/globalSlice';
 import {
   revalidate,
   tierCreateLimit,

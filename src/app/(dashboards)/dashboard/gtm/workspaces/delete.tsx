@@ -6,7 +6,7 @@ import {
   setErrorDetails,
   setIsLimitReached,
   setNotFoundError,
-} from '@/src/app/redux/tableSlice';
+} from '@/src/lib/redux/tableSlice';
 import { DeleteWorkspaces } from '@/src/lib/fetch/dashboard/gtm/actions/workspaces';
 import { useRowSelection } from '@/src/lib/helpers/client';
 import { WorkspaceType, FeatureResponse } from '@/src/lib/types/types';

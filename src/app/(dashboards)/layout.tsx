@@ -3,12 +3,13 @@
 import React from 'react';
 import '../../styles/globals.css';
 import NavApp from '@/src/components/client/Navbar/NavApp';
-import { Providers, ReduxProvider } from '../providers';
+import { ReduxProvider } from '../providers';
 import SideBar from '@/src/components/client/Navbar/SideBar';
 import { Toaster } from '@/src/components/ui/sonner';
 
 import { notFound } from 'next/navigation';
 import { currentUser } from '@clerk/nextjs';
+import { ClerkProvider } from '@clerk/nextjs';
 
 export default async function DashboardLayout({
   // Layouts must accept a children prop.
@@ -22,8 +23,8 @@ export default async function DashboardLayout({
 
   return (
     <ReduxProvider>
-      <Providers>
         <html lang="en">
+          <ClerkProvider>
           <body className="flex h-screen border-collapse overflow-hidden">
             {/* ========== HEADER ========== */}
             <NavApp />
@@ -42,8 +43,8 @@ export default async function DashboardLayout({
             {/* End Content */}
             {/* ========== END MAIN CONTENT ========== */}
           </body>
+          </ClerkProvider>
         </html>
-      </Providers>
     </ReduxProvider>
   );
 }

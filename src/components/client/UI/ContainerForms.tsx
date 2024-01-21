@@ -6,8 +6,8 @@ import {
   selectGlobal,
   toggleCreate,
   toggleUpdate,
-} from '@/src/app/redux/globalSlice';
-import { selectTable, setIsLimitReached } from '@/src/app/redux/tableSlice';
+} from '@/src/lib/redux/globalSlice';
+import { selectTable, setIsLimitReached } from '@/src/lib/redux/tableSlice';
 import { useError, useRowSelection } from '@/src/lib/helpers/client';
 
 import { ErrorMessage } from '@/src/components/client/modals/Error';
