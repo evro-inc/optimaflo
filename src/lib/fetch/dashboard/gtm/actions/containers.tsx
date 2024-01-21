@@ -60,6 +60,7 @@ export async function listGtmContainers(accountId: string) {
           const headers = {
             Authorization: `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
+            'Accept-Encoding': 'gzip',
           };
 
           const response = await fetch(url, { headers });
