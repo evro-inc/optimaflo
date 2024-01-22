@@ -10,6 +10,7 @@ import { revalidatePath } from 'next/cache'; // Importing function to revalidate
 import { currentUserOauthAccessToken } from '@/src/lib/clerk'; // Importing function to get the current user's OAuth access token
 import { redis } from '@/src/lib/redis/cache'; // Importing Redis cache instance
 import { notFound } from 'next/navigation'; // Importing utility for handling 'not found' navigation in Next.js
+import { handleApiResponseError } from '@/src/lib/helpers/server';
 
 // Defining a type for form update schema using Zod
 type FormUpdateSchema = z.infer<typeof UpdateAccountSchema>;
@@ -17,7 +18,7 @@ type FormUpdateSchema = z.infer<typeof UpdateAccountSchema>;
 /************************************************************************************
  * List All Google Tag Manager Accounts
  ************************************************************************************/
-export async function listGtmAccounts(accessToken: string) {
+export async function listGtmAccounts() {
   // Initialization of retry mechanism
   let retries = 0;
   const MAX_RETRIES = 3;
@@ -28,7 +29,12 @@ export async function listGtmAccounts(accessToken: string) {
   // If user ID is not found, return a 'not found' error
   if (!userId) return notFound();
 
-  const cachedValue = await redis.get(`gtm:accounts-userId:${userId}`);
+  const token = await currentUserOauthAccessToken(userId);
+  const accessToken = token[0].token;
+
+  const cacheKey = `gtm:accounts:userId:${userId}`;
+
+  const cachedValue = await redis.get(cacheKey);
 
   if (cachedValue) {
     return JSON.parse(cachedValue);
@@ -48,10 +54,11 @@ export async function listGtmAccounts(accessToken: string) {
         // Scheduling the API call with a rate limiter
         await limiter.schedule(async () => {
           // Setting up the API call
-          const url = `https://www.googleapis.com/tagmanager/v2/accounts`;
+          const url = `https://www.googleapis.com/tagmanager/v2/accounts?fields=account(accountId,name)`;
           const headers = {
             Authorization: `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
+            'Accept-Encoding': 'gzip',
           };
 
           // Making the API call
@@ -69,12 +76,7 @@ export async function listGtmAccounts(accessToken: string) {
         });
 
         // Caching the data in Redis with a 2 hour expiration time
-        redis.set(
-          `gtm:accounts-userId:${userId}`,
-          JSON.stringify(data),
-          'EX',
-          60 * 60 * 2
-        );
+        redis.set(cacheKey, JSON.stringify(data), 'EX', 60 * 60 * 2);
         return data;
       } else {
         throw new Error('Rate limit exceeded');
@@ -82,7 +84,6 @@ export async function listGtmAccounts(accessToken: string) {
     } catch (error: any) {
       // Handling rate limit exceeded error
       if (error.code === 429 || error.status === 429) {
-        console.warn('Rate limit exceeded. Retrying get accounts...');
         // Adding jitter to avoid simultaneous retries
         const jitter = Math.random() * 200;
         await new Promise((resolve) => setTimeout(resolve, delay + jitter));
@@ -114,6 +115,8 @@ export async function updateAccounts(
   const { userId } = await auth();
   // If user ID is not found, return a 'not found' error
   if (!userId) return notFound();
+
+  const cacheKey = `gtm:accounts:userId:${userId}`;
 
   // Getting the current user's OAuth access token
   const token = await currentUserOauthAccessToken(userId);
@@ -176,6 +179,7 @@ export async function updateAccounts(
             const headers = {
               Authorization: `Bearer ${token[0].token}`,
               'Content-Type': 'application/json',
+              'Accept-Encoding': 'gzip',
             };
 
             const payload = {
@@ -189,39 +193,37 @@ export async function updateAccounts(
               headers: headers,
             });
 
-            // Handling specific 403 error (feature limit reached)
-            if (response.status === 403) {
-              const updatedAccount = await response.json();
-              if (updatedAccount.message === 'Feature limit reached') {
-                featureLimitReached.push(form.name);
-                return {
-                  success: false,
-                  errorCode: 403,
-                  message: 'Feature limit reached',
-                };
-              }
-            }
+            const parsedResponse = await response.json();
 
-            // Handling successful responses
-            if (response.ok) {
-              const resText = await response.json();
-              return { success: true, resText };
+            if (!response.ok) {
+              if (response.status === 404) {
+                // Return an object indicating this account was not found
+                return { accountId: form.accountId, notFound: true };
+              } else {
+                // Handle other errors
+                const errorResponse: any = await handleApiResponseError(
+                  response,
+                  parsedResponse,
+                  'Account',
+                  form.accountId
+                );
+                errors.push(errorResponse.message);
+                return { accountId: form.accountId, error: true };
+              }
             } else {
-              // Adding errors to the errors array for non-successful responses
-              errors.push(
-                `Failed to update workspace with name ${form.name} in account ${form.accountId}: ${response.status}`
-              );
-              return {
-                success: false,
-                errorCode: response.status,
-                message: 'Failed to update',
-              };
+              return { ...parsedResponse, success: true };
             }
           });
         });
 
         // Awaiting all update promises
         const results = await Promise.all(updatePromises);
+        const notFoundIds = results
+          .filter((result) => result && result.notFound)
+          .map((result) => result.accountId);
+        const successfulUpdates = results.filter(
+          (result) => result && result.success
+        );
 
         // Handling cases where feature limits are reached
         if (featureLimitReached.length > 0) {
@@ -232,23 +234,33 @@ export async function updateAccounts(
               ', '
             )}`,
           };
+        } else if (notFoundIds.length > 0) {
+          return {
+            success: false,
+            notFoundError: true,
+            notFoundIds: notFoundIds,
+            updatedAccounts: successfulUpdates.map((update) => ({
+              accountId: update.accountId,
+              name: update.name,
+            })),
+            message: `Account(s) not found: ${notFoundIds.join(', ')}`,
+          };
         }
 
         // Handling cases where other errors occurred
-        if (errors.length > 0) {
+        else if (errors.length > 0) {
           return {
             success: false,
             limitReached: false,
+            notFoundError: true,
             message: errors.join(', '),
           };
         } else {
           // Fetching and caching updated accounts if successful
-          const accessToken = await currentUserOauthAccessToken(userId);
-          const cacheKey = `gtm:accounts-userId:${userId}`;
           await redis.del(cacheKey);
 
           // Optionally fetching and caching the updated list of workspaces
-          const updatedAccounts = await listGtmAccounts(accessToken[0].token);
+          const updatedAccounts = await listGtmAccounts();
           await redis.set(
             cacheKey,
             JSON.stringify(updatedAccounts),
@@ -264,16 +276,16 @@ export async function updateAccounts(
           return {
             success: true,
             limitReached: false,
-            updatedWorkspaces: results
-              .filter((r) => r.success)
-              .map((r) => r.resText),
+            updatedAccounts: successfulUpdates.map((update) => ({
+              accountId: update.accountId,
+              name: update.name,
+            })),
           };
         }
       }
     } catch (error: any) {
       // Handling rate limit exceeded error
       if (error.code === 429 || error.status === 429) {
-        console.warn('Rate limit exceeded. Retrying get accounts...');
         // Adding jitter to delay and retry
         const jitter = Math.random() * 200;
         await new Promise((resolve) => setTimeout(resolve, delay + jitter));

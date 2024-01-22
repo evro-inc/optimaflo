@@ -88,7 +88,6 @@ async function getWorkspace(
       }
     } catch (error: any) {
       if (error.code === 429 || error.status === 429) {
-        console.warn('Rate limit exceeded. Retrying...');
         const jitter = Math.random() * 200;
         await new Promise((resolve) => setTimeout(resolve, delay + jitter));
         delay *= 2;
@@ -164,13 +163,10 @@ export async function GET(
     );
   } catch (error) {
     if (error instanceof ValidationError) {
-      console.error('Validation Error: ', error.message);
       return new NextResponse(JSON.stringify({ error: error.message }), {
         status: 400,
       });
     }
-
-    console.error('Error: ', error);
     // Return a 500 status code for internal server error
     return handleError(error);
   }
@@ -364,8 +360,6 @@ export async function PATCH(request: NextRequest) {
       }
     }
   } catch (error) {
-    console.error('Error: ', error);
-
     // Return a 500 status code for internal server error
     return NextResponse.error();
   }
@@ -557,8 +551,6 @@ export async function DELETE(request: NextRequest) {
       }
     }
   } catch (error) {
-    console.error('Error: ', error);
-
     // Return a 500 status code for internal server error
     return NextResponse.error();
   }

@@ -7,7 +7,6 @@ import {
   grantGAAccess,
   grantGtmAccess,
 } from '@/src/lib/fetch/dashboard';
-import logger from '@/src/lib/logger';
 
 // List of relevant Stripe webhook events
 const relevantEvents = new Set([
@@ -362,7 +361,6 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
     // Step 2: Upsert tier limits
     const featureLimits = createFeatureLimitsByTier[productId];
     if (!featureLimits) {
-      logger.warn(`Unknown product ID: ${productId}`);
       return;
     }
 
@@ -374,7 +372,6 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
       });
 
       if (!feature) {
-        logger.warn(`Unknown feature name: ${featureName}`);
         continue;
       }
 
@@ -408,8 +405,8 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
     }
 
     await prisma.$transaction(operations);
-  } catch (error) {
-    logger.error('error: ', error);
+  } catch (error: any) {
+    throw new Error(error);
   }
 }
 
@@ -834,12 +831,8 @@ async function deleteCustomerAndRelatedRecords(stripeCustomerId: string) {
       // Finally, delete the customer record
       await prisma.customer.delete({ where: { stripeCustomerId } });
     });
-
-    logger.info(
-      `Successfully deleted customer and related records for Stripe Customer ID: ${stripeCustomerId}`
-    );
   } catch (error) {
-    logger.error(`Error deleting customer and related records: ${error}`);
+    throw new Error('Failed to delete customer');
     // Handle the error appropriately
   }
 }
@@ -856,7 +849,6 @@ export async function POST(req: NextRequest) {
     if (!sig || !webhookSecret) return;
     event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
   } catch (err: any) {
-    logger.error(err.message);
     return NextResponse.json(
       { error: `Webhook Error: ${err.message}` },
       { status: 400 }
@@ -911,7 +903,6 @@ export async function POST(req: NextRequest) {
       }
     } catch (error: unknown) {
       const err = error as Error;
-      logger.error('error: ', err);
       return NextResponse.json(
         { error: `Webhook handler failed. ${err.message}` },
         { status: 400 }

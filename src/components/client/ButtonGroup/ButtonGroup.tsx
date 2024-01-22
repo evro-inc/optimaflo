@@ -1,5 +1,6 @@
 'use client';
 import React, { useMemo } from 'react';
+import { Button } from '@/src/components/ui/button';
 
 interface ButtonConfig {
   text: string;
@@ -49,7 +50,7 @@ export const ButtonGroup: React.FC<ButtonGroupFourProps> = ({
   return (
     <div className="inline-flex rounded-md">
       {buttons.map((button, index) => (
-        <button
+        <Button
           key={index}
           type={button.type || 'button'}
           onClick={button.onClick}
@@ -58,7 +59,7 @@ export const ButtonGroup: React.FC<ButtonGroupFourProps> = ({
           {...props}
         >
           {button.text}
-        </button>
+        </Button>
       ))}
     </div>
   );

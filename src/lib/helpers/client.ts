@@ -8,8 +8,8 @@ import {
   setError,
   setSelectedRows,
   toggleAllSelected,
-} from '@/src/app/redux/tableSlice';
-import toast from 'react-hot-toast';
+} from '@/src/lib/redux/tableSlice';
+import { toast } from 'sonner';
 import { useDispatch, useSelector } from 'react-redux';
 import { usePaginate } from '../paginate';
 
@@ -29,8 +29,6 @@ export const handleGenericDelete = async (
 
     const responses = await Promise.all(deleteOperations);
 
-    console.log(responses);
-
     const limitReached = responses.some((response) => response.limitReached);
     const notFoundErrorOccurred = responses.some((response) =>
       response.results.some((result) => result.notFound)
@@ -39,8 +37,8 @@ export const handleGenericDelete = async (
     dispatch(setIsLimitReached(limitReached));
     dispatch(setNotFoundError(notFoundErrorOccurred));
     dispatch(clearSelectedRows());
-  } catch (error) {
-    console.error(error);
+  } catch (error: any) {
+    throw new Error(error);
   }
 };
 
@@ -74,7 +72,9 @@ export const useRowSelection = (getIdFromItem) => {
       dispatch(setSelectedRows(newSelectedRows));
     }
 
-    dispatch(toggleAllSelected());
+    dispatch(
+      toggleAllSelected(items.length === Object.keys(selectedRows).length)
+    );
   };
 
   return { toggleRow, toggleAll, selectedRows, allSelected };
@@ -110,30 +110,50 @@ export const useToggleAll = (items, getIdFromItem, dispatch, allSelected) => {
   const toggleAll = () => {
     if (allSelected) {
       dispatch(setSelectedRows({}));
-      dispatch(toggleAllSelected());
+      dispatch(
+        toggleAllSelected(
+          // Use currentItems instead of items
+          currentItems.length === Object.keys({}).length
+        )
+      );
     } else {
       const newSelectedRows = {};
-      currentItems.forEach((item) => { // Use currentItems instead of items
+      currentItems.forEach((item) => {
+        // Use currentItems instead of items
         const itemId = getIdFromItem(item);
         newSelectedRows[itemId] = item;
       });
       dispatch(setSelectedRows(newSelectedRows));
-      dispatch(toggleAllSelected());
+      dispatch(
+        toggleAllSelected(
+          // Use currentItems instead of items
+          currentItems.length === Object.keys(newSelectedRows).length
+        )
+      );
     }
   };
 
   return toggleAll;
 };
-export const handleRefreshCache = async (router, key, path) => {
+
+export const handleRefreshCache = async (
+  router,
+  keyParts: Record<string, string | number>,
+  path: string
+) => {
   try {
-    const toastId = toast.loading('Refreshing cache...');
+    // Construct the dynamic key using the keyParts object
+    const dynamicKey = Object.entries(keyParts)
+      .map(([key, value]) => `${key}:${value}`)
+      .join(':');
+
     const response = await fetch('/api/dashboard/refresh', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        key,
+        key: dynamicKey,
         path,
       }),
     });
@@ -141,9 +161,12 @@ export const handleRefreshCache = async (router, key, path) => {
     await response.json();
     router.refresh();
     toast.success('Cache Refreshed', {
-      id: toastId,
+      action: {
+        label: 'Close',
+        onClick: () => toast.dismiss(),
+      },
     });
-  } catch (error) {
-    console.error('Error refreshing cache:', error);
+  } catch (error: any) {
+    throw new Error(error);
   }
 };

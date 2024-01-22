@@ -2,7 +2,6 @@ import { NextResponse, NextRequest } from 'next/server';
 import { stripe } from '@/src/lib/stripe';
 import { getURL } from '@/src/lib/helpers';
 import prisma from '@/src/lib/prisma';
-import logger from '@/src/lib/logger';
 import { auth, currentUser } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
 
@@ -31,12 +30,6 @@ export async function POST(request: NextRequest) {
           customerRecord.stripeCustomerId
         );
       } catch (error) {
-        logger.error({
-          message: 'Customer not found in Stripe',
-          userId: userId,
-          error,
-        });
-
         customer = await stripe.customers.create({
           email: user?.emailAddresses[0].emailAddress,
         });
@@ -85,11 +78,6 @@ export async function POST(request: NextRequest) {
       status: 200,
     });
   } catch (err: any) {
-    logger.error({
-      message: 'Error creating checkout session',
-      userId: userId,
-      error: err,
-    });
     return new NextResponse(err.message, { status: 500 });
   }
 }

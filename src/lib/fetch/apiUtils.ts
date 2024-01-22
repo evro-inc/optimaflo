@@ -30,7 +30,6 @@ export const getAccessToken = async (userId) => {
 
 // Centralized error handling
 export const handleError = (error) => {
-  console.error('Error:', error);
   if (error.message === 'Access token is missing') {
     return NextResponse.json({ message: error.message }, { status: 401 });
   }

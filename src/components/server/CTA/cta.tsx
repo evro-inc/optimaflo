@@ -18,7 +18,6 @@ export default async function CTA() {
 
           <div className="pt-16 flex flex-col sm:flex-row justify-center items-center pb-10 space-y-4 sm:space-y-0 sm:space-x-4">
             <ButtonSignIn
-              billingInterval={''}
               variant="bodyGray"
               size="large"
               text="Get started"

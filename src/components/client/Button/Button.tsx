@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useTheme } from 'next-themes';
 import {
   MoonIcon,
@@ -8,9 +8,24 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/solid';
 import Link from 'next/link';
-import { SignInButton, SignOutButton } from '@clerk/nextjs';
+import { Button } from '@/src/components/ui/button';
+import { SignInButton } from '@clerk/nextjs';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/src/components/ui/alert-dialog';
+import { setLoading } from '@/src/lib/redux/globalSlice';
+import { useDispatch } from 'react-redux';
+import { postData } from '@/src/lib/helpers';
 
-const getModeClasses = (variant, billingInterval) => {
+const getModeClasses = (variant, billingInterval?) => {
   let baseClasses = '';
   let activeClasses = 'relative shadow-sm';
   let inactiveClasses = 'relative';
@@ -68,8 +83,9 @@ const getModeClasses = (variant, billingInterval) => {
       break;
     case 'create':
       baseClasses =
-        'py-2 px-3 inline-flex justify-center items-center gap-2 rounded-md border font-medium bg-blue-500 text-white-500 shadow-sm align-middle hover:bg-white-500 hover:text-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white focus:ring-blue-600 transition-all text-sm';
+        'py-2 px-3 inline-flex justify-center items-center gap-2 rounded-md border font-medium  shadow-sm align-middle  focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white focus:ring-blue-600 transition-all text-sm';
       break;
+
     case 'appPrimary':
       baseClasses =
         'inline-flex justify-center items-center gap-2 rounded-md border font-medium bg-blue-500 text-white-500 shadow-sm align-middle hover:bg-white-500 hover:text-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white focus:ring-blue-600 transition-all text-sm whitespace-nowrap w-24 h-20';
@@ -88,7 +104,7 @@ const BASE_BUTTON_CLASSES = '';
 /**
  * Primary UI component for user interaction
  */
-export const Button = ({
+export const ButtonPrim = ({
   variant = 'primary',
   text,
   billingInterval,
@@ -100,9 +116,9 @@ export const Button = ({
   }, [variant, billingInterval]);
 
   return (
-    <button className={`${BASE_BUTTON_CLASSES} ${computedClasses}`} {...props}>
+    <Button className={`${BASE_BUTTON_CLASSES} ${computedClasses}`} {...props}>
       {text}
-    </button>
+    </Button>
   );
 };
 
@@ -127,7 +143,7 @@ export const ButtonTheme = ({
   if (!mounted) return null;
 
   return (
-    <button
+    <Button
       className={`${BASE_BUTTON_CLASSES} ${computedClasses}`}
       {...props}
       onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
@@ -137,7 +153,7 @@ export const ButtonTheme = ({
       ) : (
         <MoonIcon className="w-6 h-6 text-blue-500" />
       )}
-    </button>
+    </Button>
   );
 };
 
@@ -161,91 +177,10 @@ export const ButtonToggle = ({
   if (!mounted) return null;
 
   return (
-    <button className={`${BASE_BUTTON_CLASSES} ${computedClasses}`} {...props}>
+    <Button className={`${BASE_BUTTON_CLASSES} ${computedClasses}`} {...props}>
       <Bars3BottomRightIcon className="hs-collapse-open:hidden w-14 h-14" />
       <XMarkIcon className="hs-collapse-open:block hidden w-14 h-14" />
-    </button>
-  );
-};
-
-/**
- * PROFILE BUTTON
- */
-export const ButtonProfile = ({
-  variant = 'circle',
-  billingInterval,
-  children, // Add this line
-  ...props
-}) => {
-  const computedClasses = useMemo(() => {
-    const modeClass = getModeClasses(variant, billingInterval);
-
-    return [modeClass].join(' ');
-  }, [variant, billingInterval]);
-
-  return (
-    <button type="button" className={` ${computedClasses}`} {...props}>
-      {children} {/* Render children here */}
-    </button>
-  );
-};
-
-/**
- * Sign In Button
- */
-export const ButtonSignIn = ({
-  variant = 'signup',
-  text,
-  billingInterval,
-  userHasSubscription,
-  ...props
-}) => {
-  const computedClasses = useMemo(() => {
-    const modeClass = getModeClasses(variant, billingInterval);
-    return [modeClass].join(' ');
-  }, [variant, billingInterval]);
-
-  const redirectUrl = userHasSubscription ? '/profile' : '/pricing';
-
-  return (
-    <SignInButton
-      mode="modal"
-      redirectUrl={redirectUrl}
-      afterSignUpUrl={redirectUrl}
-    >
-      <div
-        className={`${BASE_BUTTON_CLASSES} ${computedClasses} w-36 mx-5 lg:mx-0`}
-      >
-        <button {...props}>{text}</button>
-      </div>
-    </SignInButton>
-  );
-};
-
-/**
- * Sign Out Button
- */
-export const ButtonSignOut = ({
-  variant = 'primary',
-  text,
-  billingInterval,
-  ...props
-}) => {
-  const computedClasses = useMemo(() => {
-    const modeClass = getModeClasses(variant, billingInterval);
-
-    return [modeClass].join(' ');
-  }, [variant, billingInterval]);
-
-  return (
-    <SignOutButton>
-      <button
-        className={`${BASE_BUTTON_CLASSES} ${computedClasses}`}
-        {...props}
-      >
-        {text}
-      </button>
-    </SignOutButton>
+    </Button>
   );
 };
 
@@ -265,12 +200,12 @@ export const ButtonLink = ({
 
   return (
     <Link href={href}>
-      <button
+      <Button
         className={`${BASE_BUTTON_CLASSES} ${computedClasses}`}
         {...props}
       >
         {text}
-      </button>
+      </Button>
     </Link>
   );
 };
@@ -287,9 +222,9 @@ export const ButtonNull = ({
   }, [variant, billingInterval]);
 
   return (
-    <button className={`${computedClasses}`} {...props}>
+    <Button className={`${computedClasses}`} {...props}>
       {text}
-    </button>
+    </Button>
   );
 };
 
@@ -308,12 +243,12 @@ export const ButtonSubscribe = ({
   const selectedClasses = isselected ? 'bg-blue-500 text-white-500' : '';
 
   return (
-    <button
+    <Button
       className={`${BASE_BUTTON_CLASSES} ${computedClasses} ${selectedClasses}`}
       {...props}
     >
       {text}
-    </button>
+    </Button>
   );
 };
 
@@ -321,6 +256,7 @@ export const ButtonDelete = ({
   variant = 'primary',
   text,
   billingInterval,
+  onDelete,
   ...props
 }) => {
   const computedClasses = useMemo(() => {
@@ -329,23 +265,42 @@ export const ButtonDelete = ({
   }, [variant, billingInterval]);
 
   return (
-    <button className={`${BASE_BUTTON_CLASSES} ${computedClasses}`} {...props}>
-      <svg
-        className="w-3 h-3"
-        xmlns="http://www.w3.org/2000/svg"
-        width="16"
-        height="16"
-        fill="currentColor"
-        viewBox="0 0 16 16"
-      >
-        <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z" />
-        <path
-          fillRule="evenodd"
-          d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"
-        />
-      </svg>
-      {text}
-    </button>
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button
+          className={`${BASE_BUTTON_CLASSES} ${computedClasses}`}
+          {...props}
+        >
+          <svg
+            className="w-3 h-3"
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            fill="currentColor"
+            viewBox="0 0 16 16"
+          >
+            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z" />
+            <path
+              fillRule="evenodd"
+              d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"
+            />
+          </svg>
+          {text}
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This action cannot be undone. This will permanently be deleted.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={onDelete}>Continue</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 };
 
@@ -362,28 +317,82 @@ export const ButtonWithIcon = ({
   }, [variant, billingInterval]);
 
   return (
-    <button className={`${BASE_BUTTON_CLASSES} ${computedClasses}`} {...props}>
+    <Button className={`${BASE_BUTTON_CLASSES} ${computedClasses}`} {...props}>
       {icon && <span className="mr-2">{icon}</span>}{' '}
       {/* Conditionally render SVG */}
       {text}
-    </button>
+    </Button>
   );
 };
 
-export const Icon = ({
+export const Icon = ({ variant = 'primary', icon, ...props }) => {
+  const computedClasses = useMemo(() => {
+    const modeClass = getModeClasses(variant);
+    return [modeClass].join(' ');
+  }, [variant]);
+
+  return (
+    <Button className={`${BASE_BUTTON_CLASSES} ${computedClasses}`} {...props}>
+      {icon && <span>{icon}</span>}{' '}
+    </Button>
+  );
+};
+
+export const ButtonSignIn = ({ variant = 'signup', text, ...props }) => {
+  const computedClasses = useMemo(() => {
+    const modeClass = getModeClasses(variant);
+    return [modeClass].join(' ');
+  }, [variant]);
+
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SignInButton
+        mode="modal"
+        redirectUrl="/profile"
+        afterSignUpUrl="/pricing"
+      >
+        <Button
+          {...props}
+          className={`${BASE_BUTTON_CLASSES} ${computedClasses} w-36 mx-5 lg:mx-0`}
+        >
+          {text}
+        </Button>
+      </SignInButton>
+    </Suspense>
+  );
+};
+
+export const ButtonCustomerPortal = ({
   variant = 'primary',
-  icon,
-  billingInterval,
+  text,
   ...props
 }) => {
   const computedClasses = useMemo(() => {
-    const modeClass = getModeClasses(variant, billingInterval);
+    const modeClass = getModeClasses(variant);
     return [modeClass].join(' ');
-  }, [variant, billingInterval]);
+  }, [variant]);
+  const dispatch = useDispatch();
+
+  const redirectToCustomerPortal = async () => {
+    dispatch(setLoading(true));
+    try {
+      const { url } = await postData({
+        url: '/api/create-portal-link',
+      });
+      window.location.assign(url);
+    } catch (error: any) {
+      if (error) throw new Error(error);
+    }
+    dispatch(setLoading(false));
+  };
 
   return (
-    <button className={`${BASE_BUTTON_CLASSES} ${computedClasses}`} {...props}>
-      {icon && <span>{icon}</span>}{' '}
-    </button>
+    <Button
+      className={`${BASE_BUTTON_CLASSES} ${computedClasses}`}
+      {...props}
+      onClick={redirectToCustomerPortal}
+    >
+      {text}
+    </Button>
   );
 };

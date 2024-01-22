@@ -2,20 +2,11 @@
 'use client';
 import { useEffect } from 'react';
 import { Provider } from 'react-redux';
-import { store } from './redux/store';
-import { ClerkProvider } from '@clerk/nextjs';
+import { store } from '../lib/redux/store';
 
-type Props = {
-  children: React.ReactNode;
-};
-
-export const Providers = ({ children }: Props) => {
+export const ReduxProvider = ({ children }) => {
   useEffect(() => {
     import('preline');
   }, []);
-  return <ClerkProvider>{children}</ClerkProvider>;
-};
-
-export const ReduxProvider = ({ children }) => {
   return <Provider store={store}>{children}</Provider>;
 };

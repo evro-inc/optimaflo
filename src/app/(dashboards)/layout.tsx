@@ -1,12 +1,15 @@
 'use server';
+
 import React from 'react';
 import '../../styles/globals.css';
 import NavApp from '@/src/components/client/Navbar/NavApp';
-import { Providers, ReduxProvider } from '../providers';
+import { ReduxProvider } from '../providers';
 import SideBar from '@/src/components/client/Navbar/SideBar';
-import { Toaster } from 'react-hot-toast';
+import { Toaster } from '@/src/components/ui/sonner';
+
 import { notFound } from 'next/navigation';
 import { currentUser } from '@clerk/nextjs';
+import { ClerkProvider } from '@clerk/nextjs';
 
 export default async function DashboardLayout({
   // Layouts must accept a children prop.
@@ -20,9 +23,9 @@ export default async function DashboardLayout({
 
   return (
     <ReduxProvider>
-      <Providers>
-        <html lang="en">
-          <body className="bg-gray-50">
+      <html lang="en">
+        <ClerkProvider>
+          <body className="flex h-screen border-collapse overflow-hidden">
             {/* ========== HEADER ========== */}
             <NavApp />
             {/* ========== END HEADER ========== */}
@@ -31,23 +34,17 @@ export default async function DashboardLayout({
             <SideBar />
 
             {/* Content */}
-            <div className="w-full pt-10 px-4 sm:px-6 md:px-8 lg:pl-72">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden pt-16 bg-secondary/10 pb-1">
               {/* Page Heading */}
               {children}
-              <Toaster
-                position="top-right"
-                reverseOrder={false}
-                toastOptions={{
-                  className: 'z-50',
-                }}
-              />
+              <Toaster />
               {/* End Page Heading */}
             </div>
             {/* End Content */}
             {/* ========== END MAIN CONTENT ========== */}
           </body>
-        </html>
-      </Providers>
+        </ClerkProvider>
+      </html>
     </ReduxProvider>
   );
 }

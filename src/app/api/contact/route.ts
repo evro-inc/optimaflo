@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import Plunk from '@plunk/node';
 import { render } from '@react-email/render';
 import WelcomeEmail from '@/src/components/server/emails/WelcomeTemplate';
-import logger from '@/src/lib/logger';
 
 // This function handles an HTTP POST request
 export async function POST(request: NextRequest) {
@@ -38,7 +37,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ message: 'Email sent' }, { status: 200 });
   } catch (error) {
-    logger.error('Error: ', error);
     return NextResponse.error(); // Optionally, add a custom message or status code
   }
 }

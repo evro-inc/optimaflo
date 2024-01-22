@@ -1,6 +1,6 @@
 'use client';
 import { useSelector } from 'react-redux';
-import { selectTable } from '../app/redux/tableSlice';
+import { selectTable } from './redux/tableSlice';
 
 export function usePaginate(param) {
   const { itemsPerPage, currentPage } = useSelector(selectTable);

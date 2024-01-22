@@ -1,141 +1,166 @@
-'use client';
-import { ReactNode } from 'react';
-import Link from 'next/link';
-import { useDispatch, useSelector } from 'react-redux';
-import { selectSubscriber } from '../../redux/subscriberSlice';
-import { setLoading } from '../../redux/globalSlice';
-import { postData } from '@/src/lib/helpers';
-import React from 'react';
-import { Button } from '@/src/components/client/Button/Button';
-import LoadingDots from '@/src/components/server/LoadingDots/LoadingDots';
-import logger from '@/src/lib/logger';
-import { useSession } from '@clerk/nextjs';
+'use server';
+import {
+  CardTitle,
+  CardHeader,
+  CardContent,
+  Card,
+  CardFooter,
+} from '@/components/ui/card';
+import { AvatarImage, AvatarFallback, Avatar } from '@/components/ui/avatar';
+import ProfileInformation from './modalProfileData';
+import { currentUser } from '@clerk/nextjs';
+import { notFound } from 'next/navigation';
+import { getSubscription } from '@/src/lib/fetch/subscriptions';
+import { ButtonCustomerPortal } from '@/src/components/client/Button/Button';
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/src/components/ui/table';
+import { getTierLimit } from '@/src/lib/fetch/feature';
 
-interface Props {
-  title: string;
-  description?: string;
-  footer?: ReactNode;
-  children: ReactNode;
-}
+export default async function Profile() {
+  const user = await currentUser();
+  if (!user) return notFound();
 
-function Card({ title, description, footer, children }: Props) {
-  return (
-    <div className="border border-zinc-700	max-w-3xl w-full p rounded-md m-auto my-8">
-      <div className="px-5 py-4">
-        <h3 className="text-2xl mb-1 font-medium">{title}</h3>
-        <p className="text-zinc-300">{description}</p>
-        {children}
+  const subscription = await getSubscription(user.id);
+
+  if (!subscription) {
+    return (
+      <div className="flex flex-col justify-center items-center min-h-screen">
+        <Card className="md:col-span-6">
+          <CardHeader>
+            <CardTitle>Subscription Details No membership</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="font-medium">Sign Up Today</div>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <ButtonCustomerPortal text="Change Plan" variant="create" />
+          </CardFooter>
+        </Card>
       </div>
-      <div className="border-t border-zinc-700 bg-zinc-900 p-4 text-zinc-500 rounded-b-md">
-        {footer}
+    );
+  }
+
+  const subscriptionId = subscription.id || '';
+  const tierLimits = await getTierLimit(subscriptionId);
+
+  const invoices = subscription.Invoice;
+
+  const mostRecentInvoice = invoices.reduce((latest, invoice) => {
+    const currentDueDate = new Date(invoice.dueDate);
+    return currentDueDate > new Date(latest.dueDate) ? invoice : latest;
+  }, invoices[0]);
+
+  // Convert the dueDate of the most recent invoice to a Date object
+  const renewalDate = new Date(mostRecentInvoice.dueDate);
+
+  return (
+    <div className="flex flex-col justify-center items-center min-h-screen">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+        <Card className="md:col-span-6">
+          <CardHeader>
+            <CardTitle>Profile Information</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center space-y-4">
+            <Avatar className="h-24 w-24">
+              <AvatarImage alt="User avatar" src={user?.imageUrl} />
+              <AvatarFallback>{user?.username}</AvatarFallback>
+            </Avatar>
+            <div className="space-y-2">
+              <div className="text-lg font-semibold">
+                <span className="pr-1">{user?.firstName}</span>
+                <span>{user?.lastName}</span>
+              </div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                Email:{' '}
+                {user?.emailAddresses.map((email) => (
+                  <div key={email.id}>{email.emailAddress}</div>
+                ))}
+              </div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                User Name: {user?.username}
+              </div>
+            </div>
+            <ProfileInformation />
+          </CardContent>
+        </Card>
+
+        <Card className="md:col-span-6">
+          <CardHeader>
+            <CardTitle>Subscription Details</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="font-medium">Current Plan</div>
+              <div>{subscription.Product.name}</div>
+            </div>
+            <div className="space-y-2">
+              <div className="font-medium">Status</div>
+              <div>{subscription.status}</div>
+            </div>
+            <div className="space-y-2">
+              <div className="font-medium">Renewal Date</div>
+              <div>{renewalDate.toLocaleDateString()}</div>
+            </div>
+            <div className="space-y-2">
+              <div className="font-medium">Plan Features</div>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Unlimited access to all features</li>
+                <li>Priority customer support</li>
+                <li>Access to beta features</li>
+              </ul>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <ButtonCustomerPortal text="Change Plan" variant="create" />
+          </CardFooter>
+        </Card>
+
+        <Card className="md:col-span-12">
+          <CardHeader>
+            <CardTitle>Tier Limits</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Table>
+              <TableCaption>Tier Limits</TableCaption>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[100px]">Feature</TableHead>
+                  <TableHead>Create Usage</TableHead>
+                  <TableHead>Create Limit</TableHead>
+                  <TableHead>Update Usage</TableHead>
+                  <TableHead>Update Limit</TableHead>
+                  <TableHead>Delete Usage</TableHead>
+                  <TableHead>Delete Limit</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {tierLimits.map((data) => (
+                  <TableRow key={data.id}>
+                    <TableCell className="font-medium">
+                      {data.Feature.name}
+                    </TableCell>
+                    <TableCell>{data.createUsage}</TableCell>
+                    <TableCell>{data.createLimit}</TableCell>
+                    <TableCell>{data.updateUsage}</TableCell>
+                    <TableCell>{data.updateLimit}</TableCell>
+                    <TableCell>{data.deleteUsage}</TableCell>
+                    <TableCell>{data.deleteLimit}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       </div>
     </div>
-  );
-}
-
-export default function Profile() {
-  const dispatch = useDispatch();
-
-  const { subscription, isLoading } = useSelector(selectSubscriber);
-
-  const { session } = useSession();
-
-  const redirectToCustomerPortal = async () => {
-    dispatch(setLoading(true));
-    try {
-      const { url } = await postData({
-        url: '/api/create-portal-link',
-      });
-      window.location.assign(url);
-    } catch (error) {
-      if (error) return logger.error((error as Error).message);
-    }
-    dispatch(setLoading(false));
-  };
-
-  const subscriptionPrice =
-    (subscription as any)?.Price &&
-    new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: (subscription as any)?.price?.currency || 'USD',
-      minimumFractionDigits: 0,
-    }).format(((subscription as any)?.price?.unitAmount || 0) / 100);
-
-  return (
-    <section className="bg-black mb-32">
-      <div className="max-w-6xl mx-auto pt-8 sm:pt-24 pb-8 px-4 sm:px-6 lg:px-8">
-        <div className="sm:flex sm:flex-col sm:align-center">
-          <h1 className="text-4xl font-extrabold text-white sm:text-center sm:text-6xl">
-            Account
-          </h1>
-          <p className="mt-5 text-xl text-zinc-200 sm:text-center sm:text-2xl max-w-2xl m-auto">
-            We partnered with Stripe for a simplified billing.
-          </p>
-        </div>
-      </div>
-      <div className="p-4">
-        <Card
-          title="Your Plan"
-          description={
-            subscription
-              ? `You are currently on the ${
-                  (subscription as any)?.price?.Product?.name
-                } plan.`
-              : ''
-          }
-          footer={
-            <div className="flex items-start justify-between flex-col sm:flex-row sm:items-center">
-              <p className="pb-4 sm:pb-0">
-                Manage your subscription on Stripe.
-              </p>
-              <Button
-                billingInterval={''}
-                text="Open customer portal"
-                variant="slim"
-                loading={isLoading}
-                disabled={isLoading || !subscription}
-                onClick={redirectToCustomerPortal}
-              />
-            </div>
-          }
-        >
-          <div className="text-xl mt-8 mb-4 font-semibold">
-            {isLoading ? (
-              <div className="h-12 mb-6">
-                <LoadingDots />
-              </div>
-            ) : subscription ? (
-              `${subscriptionPrice}/${(subscription as any)?.Price?.interval}`
-            ) : (
-              <Link href="/">Choose your plan</Link>
-            )}
-          </div>
-        </Card>
-        <Card
-          title="Your Name"
-          description="Please enter your full name, or a display name you are comfortable with."
-          footer={<p>Please use 64 characters at maximum.</p>}
-        >
-          <div className="text-xl mt-8 mb-4 font-semibold">
-            {session?.user ? (
-              `${session?.user?.name || session?.user?.email}`
-            ) : (
-              <div className="h-8 mb-6">
-                <LoadingDots />
-              </div>
-            )}
-          </div>
-        </Card>
-        <Card
-          title="Your Email"
-          description="Please enter the email address you want to use to login."
-          footer={<p>We will email you to verify the change.</p>}
-        >
-          <p className="text-xl mt-8 mb-4 font-semibold">
-            {session?.user ? session?.user.email : undefined}
-          </p>
-        </Card>
-      </div>
-    </section>
   );
 }

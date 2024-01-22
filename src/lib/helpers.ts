@@ -1,5 +1,3 @@
-import logger from './logger';
-
 export const getURL = () => {
   let vercelUrl = process.env.VERCEL_URL; // Assign VERCEL_URL to vercelUrl
 
@@ -28,8 +26,6 @@ export const postData = async ({ url, data }: { url: string; data?: any }) => {
   });
 
   if (!res.ok) {
-    logger.error('Error in postData', { url, data, res });
-
     throw Error(res.statusText);
   }
 

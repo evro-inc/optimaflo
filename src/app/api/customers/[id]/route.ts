@@ -42,8 +42,6 @@ export async function GET(
       status: 200,
     });
   } catch (error) {
-    console.error('Error: ', error);
-
     // Return a 500 status code for internal server error
     return NextResponse.error();
   }
@@ -84,8 +82,6 @@ export async function PATCH(
 
     return NextResponse.json(updated);
   } catch (error) {
-    console.error('Error: ', error);
-
     // Return a 500 status code for internal server error
     return NextResponse.error();
   }
@@ -112,8 +108,6 @@ export async function DELETE(
 
     return NextResponse.json(deleted);
   } catch (error) {
-    console.error('Error: ', error);
-
     // Return a 500 status code for internal server error
     return NextResponse.error();
   }

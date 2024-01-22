@@ -65,8 +65,6 @@ export async function GET(
       status: 200,
     });
   } catch (error) {
-    console.error('Error: ', error);
-
     // Return a 500 status code for internal server error
     return NextResponse.error();
   }
@@ -120,8 +118,6 @@ export async function PUT(
     // Return the updated user
     return NextResponse.json(updatedUser);
   } catch (error) {
-    console.error('Error: ', error);
-
     // Return a 500 status code for internal server error
     return NextResponse.json({ error: error }, { status: 500 });
   }
@@ -174,8 +170,6 @@ export async function PATCH(
     // Return the updated user
     return NextResponse.json(updatedUser);
   } catch (error) {
-    console.error('Error: ', error);
-
     // Return a 500 status code for internal server error
     return NextResponse.json({ error: error }, { status: 500 });
   }
@@ -215,8 +209,6 @@ export async function DELETE(
     // Return the deleted user
     return NextResponse.json(deletedUser);
   } catch (error) {
-    console.error('Error: ', error);
-
     // Return a 500 status code for internal server error
     return NextResponse.json({ error: error }, { status: 500 });
   }

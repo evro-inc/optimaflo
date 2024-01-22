@@ -7,9 +7,9 @@ import {
   selectTable,
   setIsLimitReached,
   setNotFoundError,
-} from '@/src/app/redux/tableSlice';
+} from '@/src/lib/redux/tableSlice';
 import { DeleteWorkspaces } from '@/src/lib/fetch/dashboard/gtm/actions/workspaces';
-import logger from '@/src/lib/logger';
+
 import { DeleteWorkspacesResponse, WorkspaceType } from '@/src/lib/types/types';
 
 function ButtonDel() {
@@ -52,11 +52,6 @@ function ButtonDel() {
     } catch (error: any) {
       if (error.message && error.message.includes('Feature limit reached')) {
         dispatch(setIsLimitReached(true));
-      } else {
-        logger.error(
-          'Error deleting workspace',
-          error?.message || JSON.stringify(error)
-        );
       }
     }
   };

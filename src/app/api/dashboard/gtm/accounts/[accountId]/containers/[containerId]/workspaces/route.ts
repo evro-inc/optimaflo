@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ValidationError } from '@/src/lib/exceptions';
 import Joi from 'joi';
-import logger from '@/src/lib/logger';
+
 import { auth } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
 import { listGtmWorkspaces } from '@/src/lib/fetch/dashboard/gtm/actions/workspaces';
@@ -144,13 +144,11 @@ export async function GET(
     });
   } catch (error: any) {
     if (error instanceof ValidationError) {
-      console.error('Validation Error: ', error.message);
       return new NextResponse(JSON.stringify({ error: error.message }), {
         status: 400,
       });
     }
 
-    logger.error('Error: ', error);
     return new NextResponse(JSON.stringify({ error: error.message }), {
       status: 500,
     });
@@ -203,7 +201,6 @@ export async function POST(request: NextRequest) {
       status: 200,
     });
   } catch (error: any) {
-    logger.error('Error: ', error);
     return new NextResponse(JSON.stringify({ error: error.message }), {
       status: 500,
     });

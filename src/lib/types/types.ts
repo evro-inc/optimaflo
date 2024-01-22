@@ -102,21 +102,24 @@ export type Form = {
   forms: FormElement[];
 };
 export type ContainerType = {
+  accountId: string;
   containerId: string;
   name: string;
   publicId: string;
-  accountId: string;
-  usageContext: string;
-  domainName: string;
-  notes: string;
+  accountName: string;
+  usageContext: string[];
 };
 
-export type UpdateResult = {
+export type UpdateAccountResult = {
   success: boolean;
+  updatedAccounts?: { accountId: string; name: string }[];
   limitReached?: boolean;
   message?: string;
-  updateContainers?: any[];
   error?: string;
+  notFoundError?: boolean;
+  notFoundIds?: string[];
+  accountIds?: string[];
+  names?: string[];
 };
 
 export type FormUpdateContainerProps = {
@@ -131,7 +134,7 @@ export type FormUpdateWorkspaceProps = {
   onClose: () => void;
   accounts: any; // Replace 'any' with the actual type if known
   selectedRows: Map<string, ContainerType>;
-  workspaces: any;
+  workspaces?: any;
 };
 
 export type ResultType = {
@@ -165,7 +168,7 @@ export type CreateResult = {
 export type FormCreateContainerProps = {
   showOptions: boolean;
   onClose: () => void;
-  accounts: any; // Replace 'any' with the actual type if known
+  accounts: any;
 };
 
 export type FormCreateWorkspaceProps = {
@@ -190,38 +193,42 @@ export type WorkspaceData = {
   workspaceName: string;
 };
 
-interface DeleteContainerResult {
-  containerId: string;
+export interface FeatureResult {
+  id: string[];
+  name: string[];
   success: boolean;
   notFound?: boolean;
+  limitReached?: boolean;
+  remaining?: number;
 }
 
-export interface DeleteContainersResponse {
+export interface FeatureResponse {
   success: boolean;
-  deletedContainers?: string[];
+  features?: string[];
   errors?: string[];
   limitReached?: boolean;
   errorCode?: number;
   message?: string;
-  results: DeleteContainerResult[];
+  results: FeatureResult[];
   notFoundError?: boolean;
+  revalidationSuccess?: boolean;
 }
+export type Account = {
+  accountId: string;
+  name: string;
+};
 
-export interface DeleteWorkspaceResult {
+export type Container = {
+  accountId: string;
   containerId: string;
-  workspaceId?: string; // Make workspaceId optional
-  success: boolean;
-  errorCode?: number;
-  message?: string;
-  notFound?: boolean;
-}
-export interface DeleteWorkspacesResponse {
-  success: boolean;
-  deletedWorkspaces?: Array<{ containerId: string; workspaceId: string }>;
-  errors?: string[];
-  limitReached?: boolean;
-  errorCode?: number;
-  message?: string;
-  results: DeleteWorkspaceResult[];
-  remainingWorkspaces?: Set<string>; // Add this line
-}
+  name: string;
+  publicId: string;
+  usageContext: string[];
+};
+
+export type Workspace = {
+  accountId: string;
+  containerId: string;
+  workspaceId: string;
+  name: string;
+};

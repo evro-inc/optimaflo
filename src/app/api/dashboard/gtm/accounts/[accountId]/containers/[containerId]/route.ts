@@ -81,7 +81,6 @@ async function fetchGtmData(
       }
     } catch (error: any) {
       if (error.code === 429 || error.status === 429) {
-        console.warn('Rate limit exceeded. Retrying...');
         const jitter = Math.random() * 200;
         await new Promise((resolve) => setTimeout(resolve, delay + jitter));
         delay *= 2;
@@ -241,7 +240,6 @@ export async function updateGtmData(
     } catch (error: any) {
       if (error.code === 429 || error.status === 429) {
         // Log the rate limit error and wait before retrying
-        console.warn('Rate limit exceeded. Retrying...');
         const jitter = Math.random() * 200;
         await new Promise((resolve) => setTimeout(resolve, delay + jitter));
         delay *= 2; // Exponential backoff
@@ -404,27 +402,24 @@ async function deleteGtmData(
       } catch (error: any) {
         if (error.code === 429 || error.status === 429) {
           // Log the rate limit error and wait before retrying
-          console.warn('Rate limit exceeded. Retrying...');
           const jitter = Math.random() * 200;
           await new Promise((resolve) => setTimeout(resolve, delay + jitter));
           delay *= 2; // Exponential backoff
           retries++;
         } else {
           // For other errors, you might want to break the loop and handle them differently
-          console.error('An unexpected error occurred:', error);
+
           break;
         }
       }
     }
   } catch (error) {
     if (error instanceof ValidationError) {
-      console.error('Validation Error: ', error.message);
       return new NextResponse(JSON.stringify({ error: error.message }), {
         status: 400,
       });
     }
 
-    console.error('Error: ', error);
     // Return a 500 status code for internal server error
     return handleError(error);
   }
@@ -490,13 +485,11 @@ export async function GET(
     );
   } catch (error) {
     if (error instanceof ValidationError) {
-      console.error('Validation Error: ', error.message);
       return new NextResponse(JSON.stringify({ error: error.message }), {
         status: 400,
       });
     }
 
-    console.error('Error: ', error);
     // Return a 500 status code for internal server error
     return handleError(error);
   }
@@ -559,8 +552,6 @@ export async function PUT(request: NextRequest) {
       }
     );
   } catch (error) {
-    console.error('Error: ', error);
-
     // Return a 500 status code for internal server error
     return handleError(error);
   }
@@ -622,8 +613,6 @@ export async function DELETE(request: NextRequest) {
       }
     );
   } catch (error) {
-    console.error('Error: ', error);
-
     // Return a 500 status code for internal server error
     return handleError(error);
   }

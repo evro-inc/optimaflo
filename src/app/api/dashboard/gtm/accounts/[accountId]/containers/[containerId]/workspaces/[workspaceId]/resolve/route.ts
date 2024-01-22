@@ -141,8 +141,6 @@ export async function POST(
       }
     }
   } catch (error) {
-    console.error('Error: ', error);
-
     // Return a 500 status code for internal server error
     return NextResponse.error();
   }

@@ -1,6 +1,18 @@
 'use server';
-import logger from '../logger';
+import { notFound } from 'next/navigation';
 import prisma from '../prisma';
+import { auth } from '@clerk/nextjs';
+import { revalidatePath } from 'next/cache';
+import { redis } from '../redis/cache';
+import { fetchGtmSettings } from '../fetch/dashboard';
+
+// Define the type for the pagination and filtering result
+type PaginatedFilteredResult<T> = {
+  data: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
 
 export const getURL = () => {
   let vercelUrl = process.env.VERCEL_URL; // Assign VERCEL_URL to vercelUrl
@@ -30,8 +42,6 @@ export const postData = async ({ url, data }: { url: string; data?: any }) => {
   });
 
   if (!res.ok) {
-    logger.error('Error in postData', { url, data, res });
-
     throw Error(res.statusText);
   }
 
@@ -42,28 +52,6 @@ export const toDateTime = (secs: number) => {
   var t = new Date('1970-01-01T00:30:00Z'); // Unix epoch start.
   t.setSeconds(secs);
   return t;
-};
-
-export const handleRefreshCache = async (router, key, path) => {
-  try {
-    const response = await fetch('/api/dashboard/refresh', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        key,
-        path,
-      }),
-    });
-
-    console.log('response', response);
-
-    await response.json();
-    router.refresh();
-  } catch (error) {
-    console.error('Error refreshing cache:', error);
-  }
 };
 
 export const tierDeleteLimit = async (userId: string, featureName: string) => {
@@ -99,12 +87,11 @@ export const tierDeleteLimit = async (userId: string, featureName: string) => {
     // Return the tierLimitRecord object
     return tierLimitRecord;
   } catch (error) {
-    console.error('Error in tierLimits:', error);
     // Handle the error or return an appropriate response
     return {
       success: false,
       limitReached: true,
-      message: 'An error occurred',
+      message: `An error occurred: ${error}`,
       results: [],
     };
   }
@@ -127,8 +114,6 @@ export const tierCreateLimit = async (userId: string, featureName: string) => {
       },
     });
 
-    console.log('tierLimitRecord create', tierLimitRecord);
-
     // Handling feature limit
     if (
       !tierLimitRecord ||
@@ -145,12 +130,11 @@ export const tierCreateLimit = async (userId: string, featureName: string) => {
     // Return the tierLimitRecord object
     return tierLimitRecord;
   } catch (error) {
-    console.error('Error in tierLimits:', error);
     // Handle the error or return an appropriate response
     return {
       success: false,
       limitReached: true,
-      message: 'An error occurred',
+      message: `An error occurred: ${error}`,
       results: [],
     };
   }
@@ -173,8 +157,6 @@ export const tierUpdateLimit = async (userId: string, featureName: string) => {
       },
     });
 
-    console.log('tierLimitRecord update', tierLimitRecord);
-
     // Handling feature limit
     if (
       !tierLimitRecord ||
@@ -191,12 +173,11 @@ export const tierUpdateLimit = async (userId: string, featureName: string) => {
     // Return the tierLimitRecord object
     return tierLimitRecord;
   } catch (error) {
-    console.error('Error in tierLimits:', error);
     // Handle the error or return an appropriate response
     return {
       success: false,
       limitReached: true,
-      message: 'An error occurred',
+      message: `An error occurred: ${error}`,
       results: [],
     };
   }
@@ -206,7 +187,8 @@ export const tierUpdateLimit = async (userId: string, featureName: string) => {
 export async function handleApiResponseError(
   response: Response,
   parsedResponse: any,
-  feature: string
+  feature: string,
+  names: string[]
 ) {
   switch (response.status) {
     case 400:
@@ -225,7 +207,7 @@ export async function handleApiResponseError(
       return {
         success: false,
         errorCode: 400,
-        message: 'Unknown error occurred',
+        message: parsedResponse.error.message,
       };
 
     case 404:
@@ -233,8 +215,7 @@ export async function handleApiResponseError(
         success: false,
         errorCode: 404,
         LimitReached: false,
-        message:
-          'Permission denied for container. Check if you have account permissions or refresh the data.',
+        message: `Permission denied for ${feature}. Check if you have ${feature} permissions or refresh the data for ${names}.`,
       };
 
     case 403:
@@ -262,4 +243,110 @@ export async function handleApiResponseError(
       };
   }
   return null;
+}
+
+export async function fetchFilteredRows<T>(
+  allItems: T[],
+  query: string,
+  currentPage: number,
+  pageSize: number = 10
+): Promise<PaginatedFilteredResult<T>> {
+  const { userId } = auth();
+  if (!userId) return notFound();
+
+  let filteredItems;
+  if (query) {
+    // Filter items if query is not empty
+    filteredItems = allItems.filter(
+      (item: any) =>
+        item.name &&
+        typeof item.name === 'string' &&
+        item.name.toLowerCase().includes(query.toLowerCase())
+    );
+  } else {
+    // If query is empty, use all items
+    filteredItems = allItems;
+  }
+
+  // Calculate pagination values
+  const total = filteredItems.length;
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+
+  // Paginate the filtered items
+  const paginatedItems = filteredItems.slice(startIndex, endIndex);
+
+  return {
+    data: paginatedItems,
+    total: total,
+    page: currentPage,
+    pageSize: pageSize,
+  };
+}
+
+export async function fetchAllFilteredRows<T>(
+  allItems: T[],
+  query: string
+): Promise<T[]> {
+  const { userId } = auth();
+  if (!userId) return notFound();
+
+  let filteredItems;
+  if (query) {
+    filteredItems = allItems.filter(
+      (item: any) =>
+        item.name &&
+        typeof item.name === 'string' &&
+        item.name.toLowerCase().includes(query.toLowerCase())
+    );
+  } else {
+    filteredItems = allItems;
+  }
+
+  return filteredItems;
+}
+
+export async function fetchPages<T>(
+  allItems: T[],
+  query: string,
+  pageSize: number
+): Promise<number> {
+  const { userId } = auth();
+  if (!userId) return notFound();
+
+  let filtered;
+  if (query) {
+    filtered = allItems.filter(
+      (item: any) =>
+        'name' in item && item.name.toLowerCase().includes(query.toLowerCase())
+    );
+  } else {
+    filtered = allItems;
+  }
+
+  const totalPages = Math.ceil(filtered.length / pageSize);
+  return totalPages;
+}
+
+export async function revalidate(keys, path, userId) {
+  const pipeline = redis.pipeline();
+
+  const user = await prisma.user.findFirst({
+    where: {
+      id: userId,
+    },
+  });
+
+  if (!user) {
+    notFound();
+  }
+
+  await fetchGtmSettings(userId);
+
+  for (const key of keys) {
+    pipeline.del(key);
+  }
+
+  await pipeline.exec(); // Execute all queued commands in a batch
+  await revalidatePath(path);
 }

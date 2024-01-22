@@ -66,8 +66,6 @@ export async function GET(request: NextRequest) {
       status: 200,
     });
   } catch (error) {
-    console.error('Error: ', error);
-
     // Return a 500 status code for internal server error
     return NextResponse.error();
   }
@@ -117,8 +115,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(created);
   } catch (error) {
-    console.error('Error: ', error);
-
     // Return a 500 status code for internal server error
     return NextResponse.error();
   }

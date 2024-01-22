@@ -4,17 +4,61 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CreateContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containers';
 import { LimitReached } from '../../../../../components/client/modals/limitReached';
 import { ButtonGroup } from '../../../../../components/client/ButtonGroup/ButtonGroup';
-import { XMarkIcon } from '@heroicons/react/24/solid';
-import { CreateResult, FormCreateContainerProps } from '@/src/lib/types/types';
+import {
+  FeatureResponse,
+  FormCreateContainerProps,
+} from '@/src/lib/types/types';
 import { useDispatch, useSelector } from 'react-redux';
-import { selectTable, setIsLimitReached } from '@/src/app/redux/tableSlice';
-import { selectGlobal, setLoading } from '@/src/app/redux/globalSlice';
+import {
+  selectTable,
+  setErrorDetails,
+  setIsLimitReached,
+  setNotFoundError,
+} from '@/src/lib/redux/tableSlice';
+import { selectGlobal, setLoading } from '@/src/lib/redux/globalSlice';
 import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
 import { CreateContainerSchema } from '@/src/lib/schemas/containers';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import logger from '@/src/lib/logger';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
+
+import { Cross1Icon } from '@radix-ui/react-icons';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/src/components/ui/card';
+
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/src/components/ui/form';
+import { Input } from '@/src/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '@/src/components/ui/select';
+import { Icon } from '@/src/components/client/Button/Button';
+import dynamic from 'next/dynamic';
+
+const NotFoundErrorModal = dynamic(
+  () =>
+    import('../../../../../components/client/modals/notFoundError').then(
+      (mod) => mod.NotFoundError
+    ),
+  { ssr: false }
+);
 
 type Forms = z.infer<typeof CreateContainerSchema>;
 
@@ -25,14 +69,11 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
 }) => {
   const formRefs = useRef<(HTMLFormElement | null)[]>([]);
   const dispatch = useDispatch();
+  const { loading } = useSelector(selectGlobal);
+  const isLimitReached = useSelector(selectTable).isLimitReached;
+  const notFoundError = useSelector(selectTable).notFoundError;
 
-  const {
-    register,
-    handleSubmit,
-    control,
-    reset,
-    formState: { errors },
-  } = useForm<Forms>({
+  const form = useForm<Forms>({
     defaultValues: {
       forms: [
         {
@@ -49,12 +90,9 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
   });
 
   const { fields, append, remove } = useFieldArray({
-    control,
+    control: form.control,
     name: 'forms',
   });
-  const { loading } = useSelector(selectGlobal);
-
-  const isLimitReached = useSelector(selectTable).isLimitReached;
 
   const addForm = () => {
     append({
@@ -76,6 +114,12 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
   const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
     dispatch(setLoading(true)); // Set loading to true using Redux action
+    toast('Creating containers...', {
+      action: {
+        label: 'Close',
+        onClick: () => toast.dismiss(),
+      },
+    });
 
     // Check for duplicate container names for the same account
     const uniqueContainers = new Set();
@@ -83,7 +127,13 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
       const identifier = `${form.accountId}-${form.containerName}`;
       if (uniqueContainers.has(identifier)) {
         toast.error(
-          `Duplicate container name found: ${form.containerName} for account ${form.accountId}`
+          `Duplicate container name found: ${form.containerName} for account ${form.accountId}`,
+          {
+            action: {
+              label: 'Close',
+              onClick: () => toast.dismiss(),
+            },
+          }
         );
         dispatch(setLoading(false));
         return; // Stop the function if a duplicate is found
@@ -92,24 +142,63 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
     }
 
     try {
-      const res: any = (await CreateContainers({ forms })) as CreateResult;
+      const response: any = (await CreateContainers({
+        forms,
+      })) as FeatureResponse;
 
-      if (res.limitReached) {
-        toast.error(res.message);
-        dispatch(setIsLimitReached(true)); // Immediately set limitReached
-        onClose(); // Close the form
-        return; // Exit the function to prevent further execution
-      } else if (res.errors && res.errors.length > 0) {
-        // Iterate over each error and display a toast
-        res.errors.forEach((error) => {
-          toast.error(error);
+      if (response.success) {
+        response.results.forEach((result) => {
+          if (result.success) {
+            toast.success(`Successfully created container: ${result.name}`, {
+              action: {
+                label: 'Close',
+                onClick: () => toast.dismiss(),
+              },
+            });
+          }
         });
-      } else if (res.success) {
-        toast.success(
-          'Successfully created containers. It may take a minute to refresh.'
-        );
-        // Handle successful creation
-        reset({
+      } else {
+        // If a notFoundError is present, override the message
+        if (response.notFoundError) {
+          response.results.forEach((result) => {
+            if (result.notFound) {
+              toast.error(
+                `Unable to create container ${result.name}. Please check your access permissions. Any other containers created were successful.`,
+                {
+                  action: {
+                    label: 'Close',
+                    onClick: () => toast.dismiss(),
+                  },
+                }
+              );
+            }
+          });
+
+          dispatch(setErrorDetails(response.results)); // Assuming results contain the error details
+          dispatch(setNotFoundError(true)); // Dispatch the not found error action
+          onClose();
+        }
+
+        if (response.limitReached) {
+          response.results.forEach((result) => {
+            if (result.limitReached) {
+              toast.error(
+                `Unable to create container ${result.name}. You have ${result.remaining} more container(s) you can create.`,
+                {
+                  action: {
+                    label: 'Close',
+                    onClick: () => toast.dismiss(),
+                  },
+                }
+              );
+            }
+          });
+          dispatch(setIsLimitReached(true));
+          onClose();
+        }
+
+        onClose(); // Close the form
+        form.reset({
           forms: [
             {
               accountId: '',
@@ -120,13 +209,13 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
               containerId: '',
             },
           ],
-        }); // Reset form with initial values
+        });
       }
-      // close the modal
+
       onClose();
 
       // Reset the forms here, regardless of success or limit reached
-      reset({
+      form.reset({
         forms: [
           {
             accountId: '',
@@ -138,28 +227,13 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
           },
         ],
       });
-
-      if (res && res.success) {
-        // Reset the forms here
-        reset({
-          forms: [
-            {
-              accountId: '',
-              usageContext: '',
-              containerName: '',
-              domainName: '',
-              notes: '',
-              containerId: '',
-            },
-          ],
-        });
-      } else if (res && res.limitReached) {
-        // Show the LimitReached modal
-        setIsLimitReached(true);
-      }
     } catch (error) {
-      logger.error('Error creating containers:', error);
-
+      toast.error('An unexpected error occurred.', {
+        action: {
+          label: 'Close',
+          onClick: () => toast.dismiss(),
+        },
+      });
       return { success: false };
     } finally {
       dispatch(setLoading(false)); // Set loading to false
@@ -168,7 +242,7 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
 
   const handleClose = () => {
     // Reset the forms to their initial state
-    reset({
+    form.reset({
       forms: [
         {
           accountId: '',
@@ -193,15 +267,17 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
             initial={{ opacity: 0, y: -50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -50 }}
-            className="fixed top-0 left-0 w-full h-full flex flex-col items-center justify-start z-50 bg-white-500 overflow-y-auto"
+            className="fixed top-0 left-0 w-full h-full flex flex-col items-center justify-start z-50 bg-white overflow-y-auto"
           >
             {/* Close Button */}
-            <button
+            <Icon
+              className="absolute top-5 right-5 font-bold py-2 px-4"
+              text="Close"
+              icon={<Cross1Icon />}
+              variant="create"
               onClick={handleClose}
-              className="absolute top-0 right-0 font-bold py-2 px-4"
-            >
-              <XMarkIcon className="w-14 h-14" />
-            </button>
+              billingInterval={undefined}
+            />
 
             <ButtonGroup
               buttons={[
@@ -215,7 +291,6 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
               ]}
             />
 
-            {/* Hire Us */}
             <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-end">
               {fields.map((field, index) => (
                 <div
@@ -223,143 +298,187 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
                   className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
                 >
                   <div className="max-w-xl mx-auto">
-                    <div className="text-center">
-                      <p className="text-3xl font-bold text-gray-800 sm:text-4xl dark:text-white">
-                        Container {index + 1}
-                      </p>
-                    </div>
-
                     <div className="mt-12">
                       {/* Form */}
-                      <form
-                        ref={(el) => (formRefs.current[index] = el)}
-                        onSubmit={handleSubmit(processForm)}
-                        id="createContainer"
-                      >
-                        <div className="grid gap-4 lg:gap-6">
-                          {/* Grid */}
-                          <div className="grid grid-cols-1 gap-4 lg:gap-6">
-                            <div>
-                              <label
-                                htmlFor="hs-firstname-hire-us-2"
-                                className="block text-sm text-gray-700 font-medium dark:text-white"
-                              >
-                                New Container Name:
-                              </label>
-                              <input
-                                type="text"
-                                {...register(`forms.${index}.containerName`)}
-                                className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
-                              />
-                              {errors.forms?.[index]?.containerName
-                                ?.message && (
-                                <p className="text-red-500 text-xs italic">
-                                  {
-                                    errors.forms?.[index]?.containerName
-                                      ?.message
-                                  }
-                                </p>
-                              )}
-                            </div>
 
-                            <div>
-                              <label
-                                htmlFor="hs-lastname-hire-us-2"
-                                className="block text-sm text-gray-700 font-medium dark:text-white"
-                              >
-                                Account
-                              </label>
-                              <select
-                                {...register(`forms.${index}.accountId`)}
-                                className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
-                              >
-                                {Array.isArray(accounts) &&
-                                  accounts.map((account: any) => (
-                                    <option key={account.accountId}>
-                                      {account.accountId}
-                                    </option>
-                                  ))}
-                              </select>
-                              {errors.forms?.[index]?.accountId?.message && (
-                                <p className="text-red-500 text-xs italic">
-                                  {errors.forms?.[index]?.accountId?.message}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          {/* End Grid */}
-
-                          <div>
-                            <label
-                              htmlFor="hs-work-email-hire-us-2"
-                              className="block text-sm text-gray-700 font-medium dark:text-white"
+                      <Card className="w-full max-w-xl mx-auto bg-white shadow-md rounded-lg overflow-hidden">
+                        <CardHeader className="bg-gray-100 p-4">
+                          <CardTitle className="text-lg font-semibold">
+                            Container {index + 1}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4">
+                          <Form {...form}>
+                            <form
+                              ref={(el) => (formRefs.current[index] = el)}
+                              onSubmit={form.handleSubmit(processForm)}
+                              id="createContainer"
+                              className="space-y-6"
                             >
-                              Usage Context:
-                            </label>
+                              <FormField
+                                control={form.control}
+                                name={`forms.${index}.containerName`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>New Container Name</FormLabel>
+                                    <FormDescription>
+                                      This is the container name you want to
+                                      create.
+                                    </FormDescription>
+                                    <FormControl>
+                                      <Input
+                                        placeholder="Name of the container"
+                                        {...form.register(
+                                          `forms.${index}.containerName`
+                                        )}
+                                        {...field}
+                                      />
+                                    </FormControl>
 
-                            <select
-                              {...register(`forms.${index}.usageContext`)}
-                              className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
-                            >
-                              <option value="web">Web</option>
-                              <option value="androidSdk5">Android</option>
-                              <option value="iosSdk5">IOS</option>
-                            </select>
-                            {errors.forms?.[index]?.usageContext?.message && (
-                              <p className="text-red-500 text-xs italic">
-                                {errors.forms?.[index]?.usageContext?.message}
-                              </p>
-                            )}
-                          </div>
-
-                          {/* Grid */}
-                          <div className="grid grid-cols-1 gap-4 lg:gap-6">
-                            <div>
-                              <label
-                                htmlFor="hs-company-hire-us-2"
-                                className="block text-sm text-gray-700 font-medium dark:text-white"
-                              >
-                                Domain Name: Optional (Must be comma separated)
-                              </label>
-
-                              <input
-                                type="text"
-                                {...register(`forms.${index}.domainName`)}
-                                placeholder="Enter domain names separated by commas"
-                                className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
                               />
-                              {errors.forms?.[index]?.domainName?.message && (
-                                <p className="text-red-500 text-xs italic">
-                                  {errors.forms?.[index]?.domainName?.message}
-                                </p>
-                              )}
-                            </div>
 
-                            <div>
-                              <label
-                                htmlFor="hs-company-website-hire-us-2"
-                                className="block text-sm text-gray-700 font-medium dark:text-white"
-                              >
-                                Notes: Optional
-                              </label>
+                              <FormField
+                                control={form.control}
+                                name={`forms.${index}.accountId`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Account</FormLabel>
+                                    <FormDescription>
+                                      This is the account you want to create the
+                                      container in.
+                                    </FormDescription>
+                                    <FormControl>
+                                      <Select
+                                        {...form.register(
+                                          `forms.${index}.accountId`
+                                        )}
+                                        {...field}
+                                        onValueChange={field.onChange}
+                                      >
+                                        <SelectTrigger className="w-[180px]">
+                                          <SelectValue placeholder="Select an account." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectGroup>
+                                            <SelectLabel>Account</SelectLabel>
+                                            {Array.isArray(accounts) &&
+                                              accounts.map((account: any) => (
+                                                <SelectItem
+                                                  key={account.accountId}
+                                                  value={account.accountId}
+                                                >
+                                                  {account.name}
+                                                </SelectItem>
+                                              ))}
+                                          </SelectGroup>
+                                        </SelectContent>
+                                      </Select>
+                                    </FormControl>
 
-                              <input
-                                type="text"
-                                {...register(`forms.${index}.notes`)}
-                                placeholder="Enter Note"
-                                className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
                               />
-                              {errors.forms?.[index]?.notes?.message && (
-                                <p className="text-red-500 text-xs italic">
-                                  {errors.forms?.[index]?.notes?.message}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          {/* End Grid */}
-                        </div>
-                        {/* End Grid */}
-                      </form>
+
+                              <FormField
+                                control={form.control}
+                                name={`forms.${index}.usageContext`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Usage Context</FormLabel>
+                                    <FormDescription>
+                                      Add a usage context for the container.
+                                    </FormDescription>
+                                    <FormControl>
+                                      <Select
+                                        {...form.register(
+                                          `forms.${index}.usageContext`
+                                        )}
+                                        {...field}
+                                        onValueChange={field.onChange}
+                                      >
+                                        <SelectTrigger className="w-[180px]">
+                                          <SelectValue placeholder="Select an account." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectGroup>
+                                            <SelectLabel>Account</SelectLabel>
+                                            <SelectItem value="web">
+                                              Web
+                                            </SelectItem>
+                                            <SelectItem value="androidSdk5">
+                                              Android
+                                            </SelectItem>
+                                            <SelectItem value="iosSdk5">
+                                              IOS
+                                            </SelectItem>
+                                          </SelectGroup>
+                                        </SelectContent>
+                                      </Select>
+                                    </FormControl>
+
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+
+                              <FormField
+                                control={form.control}
+                                name={`forms.${index}.domainName`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>
+                                      Domain Name: Optional (Must be comma
+                                      separated)
+                                    </FormLabel>
+                                    <FormDescription>
+                                      This is the domain name you want to add.
+                                    </FormDescription>
+                                    <FormControl>
+                                      <Input
+                                        placeholder="Enter domain names separated by commas"
+                                        {...form.register(
+                                          `forms.${index}.domainName`
+                                        )}
+                                        {...field}
+                                      />
+                                    </FormControl>
+
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+
+                              <FormField
+                                control={form.control}
+                                name={`forms.${index}.notes`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Notes: Optional</FormLabel>
+                                    <FormDescription>
+                                      This is the domain name you want to add.
+                                    </FormDescription>
+                                    <FormControl>
+                                      <Input
+                                        placeholder="Enter any notes you want"
+                                        {...form.register(
+                                          `forms.${index}.notes`
+                                        )}
+                                        {...field}
+                                      />
+                                    </FormControl>
+
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </form>
+                          </Form>
+                        </CardContent>
+                      </Card>
                       {/* End Form */}
                     </div>
                   </div>
@@ -375,6 +494,8 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
       {isLimitReached && (
         <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
       )}
+
+      {notFoundError && <NotFoundErrorModal />}
     </>
   );
 };

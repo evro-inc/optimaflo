@@ -1,0 +1,151 @@
+'use client';
+import React, { Suspense } from 'react';
+import {
+  ButtonDelete,
+  ButtonWithIcon,
+  Icon,
+} from '../../../../../components/client/Button/Button';
+import { useDispatch } from 'react-redux';
+import { setIsLimitReached } from '@/src/lib/redux/tableSlice';
+import { toggleCreate, toggleUpdate } from '@/src/lib/redux/globalSlice';
+import {
+  revalidate,
+  tierCreateLimit,
+  tierUpdateLimit,
+} from '@/src/lib/helpers/server';
+import { useRowSelection } from '@/src/lib/helpers/client';
+import { useDeleteHook } from '@/src/app/(dashboards)/dashboard/gtm/containers/delete';
+import Search from '@/src/components/client/UI/SearchInput';
+import { toast } from 'sonner';
+import { ReloadIcon } from '@radix-ui/react-icons';
+
+const TableActions = ({ userId }) => {
+  const dispatch = useDispatch();
+  const handleDelete = useDeleteHook();
+
+  const { selectedRows } = useRowSelection(
+    (container) => container.containerId
+  );
+
+  const handleCreateClick = async () => {
+    try {
+      const handleCreateLimit: any = await tierCreateLimit(
+        userId,
+        'GTMContainer'
+      );
+
+      if (handleCreateLimit && handleCreateLimit.limitReached) {
+        // Directly show the limit reached modal
+        dispatch(setIsLimitReached(true)); // Assuming you have an action to explicitly set this
+      } else {
+        // Otherwise, proceed with normal creation process
+        dispatch(toggleCreate());
+      }
+    } catch (error: any) {
+      throw new Error('Error in handleCreateClick:', error);
+    }
+  };
+
+  const handleUpdateClick = async () => {
+    try {
+      const limitResponse: any = await tierUpdateLimit(userId, 'GTMContainer');
+
+      if (limitResponse && limitResponse.limitReached) {
+        // Directly show the limit reached modal
+        dispatch(setIsLimitReached(true)); // Assuming you have an action to explicitly set this
+      } else {
+        // Otherwise, proceed with normal creation process
+        dispatch(toggleUpdate());
+      }
+    } catch (error: any) {
+      throw new Error('Error in handleUpdateClick:', error);
+    }
+  };
+
+  const refreshAllCache = async () => {
+    // Assuming you want to refresh cache for each workspace
+
+    const keys = [
+      `gtm:accounts:userId:${userId}`,
+      `gtm:containers:userId:${userId}`,
+      `gtm:workspaces:userId:${userId}`,
+    ];
+
+    await revalidate(keys, '/dashboard/gtm/workspaces', userId);
+    toast.info(
+      'Updating our systems. This may take a minute or two to update on screen.',
+      {
+        action: {
+          label: 'Close',
+          onClick: () => toast.dismiss(),
+        },
+      }
+    );
+  };
+
+  return (
+    <div className="inline-flex gap-x-2">
+      <Suspense fallback={<div>Loading...</div>}>
+        <Search placeholder={''} />
+      </Suspense>
+      <Icon variant="create" onClick={refreshAllCache} icon={<ReloadIcon />} />
+      <ButtonWithIcon
+        variant="create"
+        text="Create"
+        icon={
+          <svg
+            className="w-3 h-3"
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+          >
+            <path
+              d="M2.63452 7.50001L13.6345 7.5M8.13452 13V2"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          </svg>
+        }
+        onClick={handleCreateClick}
+        billingInterval={undefined}
+      />
+      <ButtonWithIcon
+        variant="create"
+        text="Update"
+        disabled={Object.keys(selectedRows).length === 0}
+        icon={
+          <svg
+            className="w-3 h-3"
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+          >
+            <path
+              d="M2.63452 7.50001L13.6345 7.5M8.13452 13V2"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          </svg>
+        }
+        onClick={handleUpdateClick}
+        billingInterval={undefined}
+      />
+      <ButtonDelete
+        text="Delete"
+        disabled={Object.keys(selectedRows).length === 0}
+        variant="delete"
+        onClick={() => {}}
+        onDelete={handleDelete}
+        billingInterval={undefined}
+      />
+    </div>
+  );
+};
+
+export default TableActions;

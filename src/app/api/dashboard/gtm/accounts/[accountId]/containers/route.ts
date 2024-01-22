@@ -8,7 +8,7 @@ import prisma from '@/src/lib/prisma';
 import Joi from 'joi';
 import { isErrorWithStatus } from '@/src/lib/fetch/dashboard';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
-import logger from '@/src/lib/logger';
+
 import { limiter } from '@/src/lib/bottleneck';
 import { handleError } from '@/src/lib/fetch/apiUtils';
 import { PostParams, ResultType } from '@/src/lib/types/types';
@@ -205,7 +205,6 @@ async function createGtmContainer(
     } catch (error: any) {
       if (error.code === 429 || error.status === 429) {
         // Log the rate limit error and wait before retrying
-        console.warn('Rate limit exceeded. Retrying create container');
         const jitter = Math.random() * 200;
         await new Promise((resolve) => setTimeout(resolve, delay + jitter));
         delay *= 2; // Exponential backoff
@@ -260,13 +259,11 @@ export async function GET(
     });
   } catch (error: any) {
     if (error instanceof ValidationError) {
-      console.error('Validation Error: ', error.message);
       return new NextResponse(JSON.stringify({ error: error.message }), {
         status: 400,
       });
     }
 
-    logger.error('Error: ', error.message);
     return new NextResponse(JSON.stringify({ error: error.message }), {
       status: 500,
     });
@@ -362,8 +359,6 @@ export async function POST(
       status: 200,
     });
   } catch (error) {
-    console.error('Error: ', error);
-
     // Return a 500 status code for internal server error
     return handleError(error);
   }

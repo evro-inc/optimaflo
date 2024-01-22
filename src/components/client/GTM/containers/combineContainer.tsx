@@ -11,8 +11,8 @@ import {
   clearSelectedRows,
   selectTable,
   setIsLimitReached,
-} from '@/src/app/redux/tableSlice';
-import { selectIsLoading, setLoading } from '@/src/app/redux/globalSlice';
+} from '@/src/lib/redux/tableSlice';
+import { selectIsLoading, setLoading } from '@/src/lib/redux/globalSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -20,7 +20,6 @@ import {
   FormUpdateContainerProps,
   UpdateContainersResult,
 } from '@/src/lib/types/types';
-import logger from '@/src/lib/logger';
 
 // Type for the entire form data
 type Forms = z.infer<typeof UpdateContainerSchema>;
@@ -134,10 +133,8 @@ const FormCombineContainer: React.FC<FormUpdateContainerProps> = ({
         // Show the LimitReached modal
         dispatch(setIsLimitReached(true));
       }
-    } catch (error) {
-      logger.error('Error creating containers:', error);
-
-      return { success: false };
+    } catch (error: any) {
+      throw new Error(error);
     } finally {
       dispatch(setLoading(false)); // Set loading to false
     }
