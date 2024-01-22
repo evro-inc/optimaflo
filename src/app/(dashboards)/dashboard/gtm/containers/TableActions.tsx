@@ -19,7 +19,7 @@ import Search from '@/src/components/client/UI/SearchInput';
 import { toast } from 'sonner';
 import { ReloadIcon } from '@radix-ui/react-icons';
 
-const TableActions = ({ userId, allData }) => {
+const TableActions = ({ userId }) => {
   const dispatch = useDispatch();
   const handleDelete = useDeleteHook();
 
@@ -63,15 +63,15 @@ const TableActions = ({ userId, allData }) => {
   };
 
   const refreshAllCache = async () => {
-    const keysToRefresh = allData.map((item) => {
-      // Construct the key based on the item data
-      // Adjust the key structure to match your cache key format
-      const base = `gtm:containers`;
-      const accountIdPart = `accountId:${item.accountId}`;
-      const userIdPart = `userId:${userId}`;
-      return [base, accountIdPart, userIdPart].filter(Boolean).join(':');
-    });
-    await revalidate(keysToRefresh, '/dashboard/gtm/containers');
+    // Assuming you want to refresh cache for each workspace
+
+    const keys = [
+      `gtm:accounts:userId:${userId}`,
+      `gtm:containers:userId:${userId}`,
+      `gtm:workspaces:userId:${userId}`,
+    ];
+
+    await revalidate(keys, '/dashboard/gtm/workspaces', userId);
     toast.info(
       'Updating our systems. This may take a minute or two to update on screen.',
       {

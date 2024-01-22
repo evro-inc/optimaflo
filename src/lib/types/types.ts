@@ -102,13 +102,12 @@ export type Form = {
   forms: FormElement[];
 };
 export type ContainerType = {
+  accountId: string;
   containerId: string;
   name: string;
   publicId: string;
-  accountId: string;
-  usageContext: string;
-  domainName: string;
-  notes: string;
+  accountName: string;
+  usageContext: string[];
 };
 
 export type UpdateAccountResult = {

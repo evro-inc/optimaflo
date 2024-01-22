@@ -19,6 +19,7 @@ import {
   tierDeleteLimit,
   tierUpdateLimit,
 } from '@/src/lib/helpers/server';
+import { fetchGtmSettings } from '../..';
 
 // Define the types for the form data
 type FormCreateSchema = z.infer<typeof CreateContainerSchema>;
@@ -26,7 +27,7 @@ type FormCreateSchema = z.infer<typeof CreateContainerSchema>;
 /************************************************************************************
   Function to list GTM containers
 ************************************************************************************/
-export async function listGtmContainers(accountId: string) {
+export async function listGtmContainers() {
   let retries = 0;
   const MAX_RETRIES = 3;
   let delay = 1000;
@@ -39,8 +40,16 @@ export async function listGtmContainers(accountId: string) {
   const token = await currentUserOauthAccessToken(userId);
   const accessToken = token[0].token;
 
-  const cacheKey = `gtm:containers:accountId:${accountId}:userId:${userId}`;
+  const gtmData = await prisma.user.findFirst({
+    where: {
+      id: userId,
+    },
+    include: {
+      gtm: true,
+    },
+  });
 
+  const cacheKey = `gtm:containers:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
 
   if (cachedValue) {
@@ -54,33 +63,45 @@ export async function listGtmContainers(accountId: string) {
         1000
       );
       if (remaining > 0) {
-        let data;
+        let allData: any[] = [];
+
         await limiter.schedule(async () => {
-          const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers`;
+          const uniqueAccountIds = Array.from(
+            new Set(gtmData.gtm.map((item) => item.accountId))
+          );
+
+          const urls = uniqueAccountIds.map(
+            (accountId) =>
+              `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers?fields=container(accountId,containerId,name,publicId,usageContext)`
+          );
+
           const headers = {
             Authorization: `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
             'Accept-Encoding': 'gzip',
           };
 
-          const response = await fetch(url, { headers });
+          for (const url of urls) {
+            try {
+              const response = await fetch(url, { headers });
+              if (!response.ok) {
+                throw new Error(
+                  `HTTP error! status: ${response.status}. ${response.statusText}`
+                );
+              }
 
-          if (!response.ok) {
-            throw new Error(
-              `HTTP error! status: ${response.status}. ${response.statusText}`
-            );
+              const responseBody = await response.json();
+
+              allData.push(responseBody.container || []);
+            } catch (error: any) {
+              throw new Error(`Error fetching data: ${error.message}`);
+            }
           }
-
-          const responseBody = await response.json();
-
-          data = responseBody.container || [];
         });
 
-        redis.set(cacheKey, JSON.stringify(data));
+        redis.set(cacheKey, JSON.stringify(allData.flat()));
 
-        return {
-          containers: data,
-        };
+        return allData;
       }
     } catch (error: any) {
       if (error.code === 429 || error.status === 429) {
@@ -95,8 +116,6 @@ export async function listGtmContainers(accountId: string) {
   }
   throw new Error('Maximum retries reached without a successful response.');
 }
-
-
 
 /************************************************************************************
   Delete a single or multiple containers
@@ -116,7 +135,6 @@ export async function DeleteContainers(
   const featureLimitReached: string[] = [];
   const notFoundLimit: string[] = [];
   const toDeleteContainers = new Set(selectedContainers);
-  let accountIdForCache: string | undefined;
 
   // Authenticating user and getting user ID
   const { userId } = await auth();
@@ -176,7 +194,6 @@ export async function DeleteContainers(
             const deletePromises = Array.from(toDeleteContainers).map(
               async (combinedId) => {
                 const [accountId, containerId] = combinedId.split('-');
-                accountIdForCache = accountId;
 
                 const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}`;
                 const headers = {
@@ -196,6 +213,14 @@ export async function DeleteContainers(
                   if (response.ok) {
                     successfulDeletions.push(containerId);
                     toDeleteContainers.delete(containerId);
+
+                    await prisma.gtm.deleteMany({
+                      where: {
+                        accountId: accountId,
+                        containerId: containerId,
+                        userId: userId, // Ensure this matches the user ID
+                      },
+                    });
 
                     await prisma.tierLimit.update({
                       where: { id: tierLimitResponse.id },
@@ -230,13 +255,6 @@ export async function DeleteContainers(
 
                     toDeleteContainers.delete(containerId);
                     permissionDenied = errorResult ? true : permissionDenied;
-
-                    if (selectedContainers.size > 0) {
-                      const firstContainerId = selectedContainers
-                        .values()
-                        .next().value;
-                      accountIdForCache = firstContainerId.split('-')[0];
-                    }
                   }
                 } catch (error: any) {
                   // Handling exceptions during fetch
@@ -314,10 +332,10 @@ export async function DeleteContainers(
         }
       } finally {
         // This block will run regardless of the outcome of the try...catch
-        if (accountIdForCache && userId) {
+        if (userId) {
           // Invalidate cache for all accounts if containers belong to multiple accounts
           // Otherwise, just invalidate cache for the single account
-          const cacheKey = `gtm:containers:accountId:${accountIdForCache}:userId:${userId}`;
+          const cacheKey = `gtm:containers:userId:${userId}`;
           await redis.del(cacheKey);
           await revalidatePath(`/dashboard/gtm/containers`);
         }
@@ -349,7 +367,7 @@ export async function DeleteContainers(
   }
   // If there are successful deletions, update the deleteUsage
   if (successfulDeletions.length > 0) {
-    const cacheKey = `gtm:containers:accountId:${accountIdForCache}:userId:${userId}`;
+    const cacheKey = `gtm:containers:userId:${userId}`;
 
     // Update the Redis cache
     await redis.del(cacheKey);
@@ -387,7 +405,6 @@ export async function CreateContainers(formData: FormCreateSchema) {
   const successfulCreations: string[] = [];
   const featureLimitReached: string[] = [];
   const notFoundLimit: { id: string; name: string }[] = [];
-  let accountIdForCache: string | undefined;
 
   // Refactor: Use string identifiers in the set
   const toCreateContainers = new Set(
@@ -461,7 +478,6 @@ export async function CreateContainers(formData: FormCreateSchema) {
             const createPromises = Array.from(toCreateContainers).map(
               async (identifier) => {
                 const [accountId, containerName] = identifier.split('-');
-                accountIdForCache = accountId;
                 const containerData = formData.forms.find(
                   (cd) =>
                     cd.accountId === accountId &&
@@ -520,6 +536,7 @@ export async function CreateContainers(formData: FormCreateSchema) {
                   if (response.ok) {
                     successfulCreations.push(containerName);
                     toCreateContainers.delete(identifier);
+                    fetchGtmSettings(userId);
 
                     await prisma.tierLimit.update({
                       where: { id: tierLimitResponse.id },
@@ -571,9 +588,7 @@ export async function CreateContainers(formData: FormCreateSchema) {
                       message: errorResult?.message,
                     });
                   }
-                  if (successfulCreations.length > 0) {
-                    accountIdForCache = formData.forms[0].accountId; // Set this to the accountId of the first form data or adjust as needed
-                  }
+
                 } catch (error: any) {
                   errors.push(
                     `Exception creating container ${containerName}: ${error.message}`
@@ -652,8 +667,8 @@ export async function CreateContainers(formData: FormCreateSchema) {
         }
       } finally {
         // This block will run regardless of the outcome of the try...catch
-        if (accountIdForCache && userId) {
-          const cacheKey = `gtm:containers:accountId:${accountIdForCache}:userId:${userId}`;
+        if (userId) {
+          const cacheKey = `gtm:containers:userId:${userId}`;
           await redis.del(cacheKey);
           await revalidatePath(`/dashboard/gtm/containers`);
         }
@@ -684,7 +699,7 @@ export async function CreateContainers(formData: FormCreateSchema) {
   }
 
   if (successfulCreations.length > 0) {
-    const cacheKey = `gtm:containers:accountId:${accountIdForCache}:userId:${userId}`;
+    const cacheKey = `gtm:containers:userId:${userId}`;
 
     await redis.del(cacheKey);
     revalidatePath(`/dashboard/gtm/containers`);
@@ -933,11 +948,11 @@ export async function UpdateContainers(formData: FormCreateSchema) {
             await Promise.all(updatePromises);
           });
 
-          for (const accountId of accountIdsForCache) {
-            const cacheKey = `gtm:containers:accountId:${accountId}:userId:${userId}`;
+
+            const cacheKey = `gtm:containers:userId:${userId}`;
             await redis.del(cacheKey);
             await revalidatePath(`/dashboard/gtm/containers`);
-          }
+          
 
           if (notFoundLimit.length > 0) {
             return {

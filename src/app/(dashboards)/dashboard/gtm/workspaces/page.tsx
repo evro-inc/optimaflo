@@ -9,42 +9,36 @@ import { listGtmWorkspaces } from '@/src/lib/fetch/dashboard/gtm/actions/workspa
 import { listGtmContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containers';
 import { Skeleton } from '@/src/components/ui/skeleton';
 
-async function getAccounts() {
+/* async function getWorkspaces() {
   try {
     const { userId } = auth();
     if (!userId) return notFound();
 
-    const accounts = await listGtmAccounts();
-    return accounts;
-  } catch (error: any) {
-    throw new Error('Error fetching accounts:', error);
-  }
-}
-
-async function getWorkspaces() {
-  try {
-    const { userId } = auth();
-    if (!userId) return notFound();
-
-    const accounts = await listGtmAccounts();
-
-    const containersPromises = accounts.map((account) =>
-      listGtmContainers(account.accountId)
+    // Fetch accounts and containers in parallel
+    const accountsPromise = listGtmAccounts();
+    const containersPromise = accountsPromise.then(accounts =>
+      Promise.all(accounts.map(account => listGtmContainers()))
     );
-    const containers = await Promise.all(containersPromises);
-    const flattenedContainers = containers.flat();
 
-    const workspacesPromises = containers.flat().map((container) => {
-      return listGtmWorkspaces(container.accountId, container.containerId);
-    });
-    const workspaces = await Promise.all(workspacesPromises);
-    const flattenedWorkspaces = workspaces.flat();
+    // Wait for containers to finish fetching
+    const accounts = await accountsPromise;
+    const containersNestedArray = await containersPromise;
+    const containers = containersNestedArray.flat();
 
-    const combinedData = flattenedWorkspaces.map((workspace) => {
+    // Initiate workspace fetches in parallel without waiting for containers to finish
+    const workspacesPromises = containers.map(container =>
+      listGtmWorkspaces()
+    );
+
+    // Wait for all workspace fetches to complete
+    const workspacesNestedArray = await Promise.all(workspacesPromises);
+    const workspaces = workspacesNestedArray.flat();
+
+    const combinedData = workspaces.map((workspace) => {
       const account = accounts.find(
         (acc) => acc.accountId === workspace.accountId
       );
-      const container = flattenedContainers.find(
+      const container = workspaces.find(
         (container) => container.containerId === workspace.containerId
       );
       return {
@@ -58,7 +52,7 @@ async function getWorkspaces() {
   } catch (error: any) {
     return notFound();
   }
-}
+} */
 
 export default async function WorkspacePage({
   searchParams,
@@ -73,11 +67,13 @@ export default async function WorkspacePage({
   const { userId } = auth();
   if (!userId) return notFound();
 
-  const accountData = await getAccounts();
-  const workspaceData = await getWorkspaces();
+  const accountData = await listGtmAccounts();
+  const containerData = await listGtmContainers();
+  const workspaceData = await listGtmWorkspaces();
 
-  const [accounts, workspaces] = await Promise.all([
+  const [accounts, containers, workspaces] = await Promise.all([
     accountData,
+    containerData,
     workspaceData,
   ]);
 
@@ -108,6 +104,7 @@ export default async function WorkspacePage({
       >
         <WorkspaceTable
           accounts={accounts}
+          containers={containers}
           workspaces={workspaces}
           query={query}
           currentPage={currentPage}

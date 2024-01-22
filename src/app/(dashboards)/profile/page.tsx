@@ -28,7 +28,28 @@ export default async function Profile() {
   if (!user) return notFound();
 
   const subscription = await getSubscription(user.id);
-  const subscriptionId = subscription.id;
+
+  if (!subscription) {
+    return (
+      <div className="flex flex-col justify-center items-center min-h-screen">
+        <Card className="md:col-span-6">
+          <CardHeader>
+            <CardTitle>Subscription Details No membership</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="font-medium">Sign Up Today</div>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <ButtonCustomerPortal text="Change Plan" variant="create" />
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+
+  const subscriptionId = subscription.id || '';
   const tierLimits = await getTierLimit(subscriptionId);
 
   const invoices = subscription.Invoice;

@@ -14,20 +14,20 @@ import { ErrorMessage } from '@/src/components/client/modals/Error';
 
 // Dynamic imports for modals and forms
 const LimitReachedModal = dynamic(
-  () => import('../modals/limitReached').then((mod) => mod.LimitReached),
+  () => import('../../../../../components/client/modals/limitReached').then((mod) => mod.LimitReached),
   { ssr: false }
 );
 
 const NotFoundErrorModal = dynamic(
-  () => import('../modals/notFoundError').then((mod) => mod.NotFoundError),
+  () => import('../../../../../components/client/modals/notFoundError').then((mod) => mod.NotFoundError),
   { ssr: false }
 );
 
-const FormCreateWorkspace = dynamic(() => import('../GTM/workspaces/create'), {
+const FormCreateWorkspace = dynamic(() => import('./create'), {
   ssr: false,
 });
 
-const FormUpdateWorkspace = dynamic(() => import('../GTM/workspaces/update'), {
+const FormUpdateWorkspace = dynamic(() => import('./update'), {
   ssr: false,
 });
 

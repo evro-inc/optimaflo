@@ -4,6 +4,7 @@ import prisma from '../prisma';
 import { auth } from '@clerk/nextjs';
 import { revalidatePath } from 'next/cache';
 import { redis } from '../redis/cache';
+import { fetchGtmSettings } from '../fetch/dashboard';
 
 // Define the type for the pagination and filtering result
 type PaginatedFilteredResult<T> = {
@@ -327,13 +328,25 @@ export async function fetchPages<T>(
   return totalPages;
 }
 
-export async function revalidate(keys, path) {
+export async function revalidate(keys, path, userId) {
   const pipeline = redis.pipeline();
+
+  const user = await prisma.user.findFirst({
+    where: {
+      id: userId,
+    },
+  });
+
+  if (!user) {
+    notFound();
+  }
+
+  await fetchGtmSettings(userId);
 
   for (const key of keys) {
     pipeline.del(key);
-    await revalidatePath(path);
   }
 
   await pipeline.exec(); // Execute all queued commands in a batch
+  await revalidatePath(path);
 }

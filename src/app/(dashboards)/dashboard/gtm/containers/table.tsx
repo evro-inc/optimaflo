@@ -31,15 +31,30 @@ export default async function ContainerTable({
   const { userId }: { userId: string | null } = auth();
   if (!userId) return notFound();
 
+  const combinedData = containers.flat().map((container) => {
+    const account = accounts.find((a) => a.accountId === container.accountId);
+    if (account) {
+      return {
+        ...container,
+        accountName: account.name,
+      };
+    } else {
+      return {
+        ...container,
+        accountName: 'Unknown Account',
+      };
+    }
+  });
+
   const { data: rows } = await fetchFilteredRows(
-    containers,
+    combinedData,
     query,
     currentPage
   );
 
-  const allRows = await fetchAllFilteredRows(containers, query);
+  const allRows = await fetchAllFilteredRows(combinedData, query);
 
-  const totalPages = await fetchPages(containers, query, 10);
+  const totalPages = await fetchPages(combinedData, query, 10);
 
   const renderRow = (container: ContainerType) => {
     return (
@@ -99,7 +114,7 @@ export default async function ContainerTable({
                     Containers
                   </h2>
                   <div className="inline-flex gap-x-2">
-                    <TableActions userId={userId} allData={accounts} />
+                    <TableActions userId={userId} allData={containers} />
                   </div>
                 </div>
                 <Table>

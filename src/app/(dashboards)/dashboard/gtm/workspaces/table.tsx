@@ -14,7 +14,7 @@ import {
 } from '@/src/lib/helpers/server';
 import { notFound } from 'next/navigation';
 import { Label } from '@/src/components/ui/label';
-import WorkspaceForms from '@/src/components/client/UI/WorkspaceForms';
+import WorkspaceForms from '@/src/app/(dashboards)/dashboard/gtm/workspaces/WorkspaceForms';
 
 const TablePaginationNoSSR = dynamic(
   () => import('@/src/components/client/UI/TablePagination'),
@@ -25,6 +25,7 @@ const TablePaginationNoSSR = dynamic(
 
 export default async function WorkspaceTable({
   accounts,
+  containers,
   workspaces,
   query,
   currentPage,
@@ -32,15 +33,38 @@ export default async function WorkspaceTable({
   const { userId }: { userId: string | null } = auth();
   if (!userId) return notFound();
 
+  const flatContainers = containers.flat();
+  const flatWorkspaces = workspaces.flat();
+
+  const combinedData = flatWorkspaces.map((workspace) => {
+    const account = accounts.find((a) => a.accountId === workspace.accountId);
+    const container = flatContainers.find(
+      (c) => c.containerId === workspace.containerId
+    );
+    if (account && container) {
+      return {
+        ...workspace,
+        accountName: account.name,
+        containerName: container.name,
+      };
+    } else {
+      return {
+        ...workspace,
+        accountName: 'Unknown Account',
+        containerName: 'Unknown Container',
+      };
+    }
+  });
+
   const { data: rows } = await fetchFilteredRows(
-    workspaces,
+    combinedData,
     query,
     currentPage
   );
 
-  const allRows = await fetchAllFilteredRows(workspaces, query);
+  const allRows = await fetchAllFilteredRows(combinedData, query);
 
-  const totalPages = await fetchPages(workspaces, query, 10);
+  const totalPages = await fetchPages(combinedData, query, 10);
 
   const renderRow = (workspace: WorkspaceType) => {
     return (
@@ -126,7 +150,7 @@ export default async function WorkspaceTable({
           </div>
         </div>
       </div>
-      <WorkspaceForms workspaces={workspaces} accounts={accounts} />
+      <WorkspaceForms workspaces={combinedData} accounts={accounts} />
     </>
   );
 }

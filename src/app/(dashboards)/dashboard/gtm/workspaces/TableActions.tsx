@@ -19,7 +19,7 @@ import { useDeleteHook } from './delete';
 import { toast } from 'sonner';
 import { ReloadIcon } from '@radix-ui/react-icons';
 
-const TableActions = ({ userId, allData }) => {
+const TableActions = ({ userId }) => {
   const dispatch = useDispatch();
   const handleDelete = useDeleteHook();
 
@@ -64,18 +64,14 @@ const TableActions = ({ userId, allData }) => {
 
   const refreshAllCache = async () => {
     // Assuming you want to refresh cache for each workspace
-    const keysToRefresh = allData.map((workspace) => {
-      // Construct the key based on the workspace data
-      const base = `gtm:workspaces`;
-      const accountIdPart = `accountId:${workspace.accountId}`;
-      const containerIdPart = `containerId:${workspace.containerId}`;
-      const userIdPart = `userId:${userId}`;
-      return [base, accountIdPart, containerIdPart, userIdPart]
-        .filter(Boolean)
-        .join(':');
-    });
 
-    await revalidate(keysToRefresh, '/dashboard/gtm/workspaces');
+    const keys = [
+      `gtm:accounts:userId:${userId}`,
+      `gtm:containers:userId:${userId}`,
+      `gtm:workspaces:userId:${userId}`,
+    ];
+
+    await revalidate(keys, '/dashboard/gtm/workspaces', userId);
     toast.info(
       'Updating our systems. This may take a minute or two to update on screen.',
       {

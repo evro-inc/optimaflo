@@ -19,43 +19,13 @@ export default async function ContainerPage({
   const { userId } = auth();
   if (!userId) return notFound();
 
-  // Fetch
-  const allAccounts = await listGtmAccounts();
+  const accountData = await listGtmAccounts();
+  const containerData = await listGtmContainers();
 
-  // Fetch containers for all accounts in parallel
-  const containersPromises = allAccounts.map((account) =>
-    listGtmContainers(account.accountId)
-  );
-
-  // Wait for all container fetches to complete
-  const containersResults = await Promise.all(containersPromises);
-
-  // Combine account data with container data
-  const combinedData = containersResults
-    .map((result, index) => {
-      const account = allAccounts[index];
-      // Check if result is already the expected array of containers
-      if (Array.isArray(result)) {
-        return result.map((container) => ({
-          ...container,
-          accountName: account.name,
-        }));
-      }
-      // Check if result is an object with a containers property
-      else if (result && Array.isArray(result.containers)) {
-        return result.containers.map((container) => ({
-          ...container,
-          accountName: account.name,
-        }));
-      }
-      // Check if result is undefined or in an unexpected format
-      else {
-        throw new Error(
-          `Unexpected result from listGtmContainers for account ${account.accountId}`
-        );
-      }
-    })
-    .flat();
+  const [accounts, containers] = await Promise.all([
+    accountData,
+    containerData,
+  ]);
 
   return (
     <>
@@ -83,8 +53,8 @@ export default async function ContainerPage({
         }
       >
         <ContainerTable
-          accounts={allAccounts}
-          containers={combinedData}
+          accounts={accounts}
+          containers={containers}
           query={query}
           currentPage={currentPage}
         />

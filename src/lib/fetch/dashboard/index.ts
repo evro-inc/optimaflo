@@ -112,11 +112,25 @@ export async function fetchGtmSettings(userId: string) {
                 `${accountId}-${containerId}-${workspaceId}`
               )
             ) {
-              await prisma.gtm.create({
-                data: {
-                  accountId: accountId,
-                  containerId: containerId,
-                  workspaceId: workspaceId,
+              await prisma.gtm.upsert({
+                where: {
+                  userId_accountId_containerId_workspaceId: {
+                    userId,
+                    accountId,
+                    containerId,
+                    workspaceId,
+                  },
+                },
+                update: {
+                  accountId,
+                  containerId,
+                  workspaceId,
+                  User: { connect: { id: userId } },
+                },
+                create: {
+                  accountId,
+                  containerId,
+                  workspaceId,
                   User: { connect: { id: userId } },
                 },
               });
