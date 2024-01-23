@@ -25,6 +25,7 @@ export default async function CTA() {
               aria-label="Get Started Button"
               href="#"
             />
+            
             <LinkBody
               variant="bodyOffWhite"
               href="/features"
