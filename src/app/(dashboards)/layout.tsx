@@ -12,12 +12,16 @@ import { currentUser } from '@clerk/nextjs';
 import { ClerkProvider } from '@clerk/nextjs';
 
 export default async function DashboardLayout({
+export default async function DashboardLayout({
   // Layouts must accept a children prop.
   // This will be populated with nested layouts or pages
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const user = await currentUser();
+  if (!user) return notFound();
+
   const user = await currentUser();
   if (!user) return notFound();
 
@@ -30,6 +34,8 @@ export default async function DashboardLayout({
             <NavApp />
             {/* ========== END HEADER ========== */}
 
+            {/* ========== MAIN CONTENT ========== */}
+            <SideBar />
             {/* ========== MAIN CONTENT ========== */}
             <SideBar />
 

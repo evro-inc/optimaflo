@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ValidationError } from '@/src/lib/exceptions';
+import { ValidationError } from '@/src/lib/exceptions';
 import Joi from 'joi';
 
 import { auth } from '@clerk/nextjs';
@@ -106,6 +107,9 @@ export async function GET(
   const { userId } = auth();
   if (!userId) return notFound();
 
+  const { userId } = auth();
+  if (!userId) return notFound();
+
   try {
     const paramsJOI = {
       accountId: params.accountId,
@@ -170,8 +174,14 @@ export async function POST(request: NextRequest) {
       containerId: body.containerId,
       name: body.name,
       description: body.description,
+    const postParams = {
+      accountId: body.accountId,
+      containerId: body.containerId,
+      name: body.name,
+      description: body.description,
     };
 
+    const validatedParams = await validatePostParams(postParams);
     const validatedParams = await validatePostParams(postParams);
 
     if (!accessToken) {

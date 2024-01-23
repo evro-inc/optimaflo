@@ -1,5 +1,6 @@
 /* eslint-disable no-unused-vars */
 
+
 import { NextRequest, NextResponse } from 'next/server';
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager/v2';
 import { QuotaLimitError } from '@/src/lib/exceptions';
@@ -24,6 +25,8 @@ export async function GET(
     };
   }
 ) {
+  const { session } = useSession();
+
   const { session } = useSession();
 
   try {
@@ -163,6 +166,8 @@ export async function POST(
 ) {
   const { session } = useSession();
 
+  const { session } = useSession();
+
   try {
     const limit = Number(request.nextUrl.searchParams.get('limit')) || 10;
     const body = JSON.parse(await request.text());
@@ -183,6 +188,7 @@ export async function POST(
     };
 
     const schema = Joi.object({
+      userId: Joi.string().required(),
       userId: Joi.string().required(),
       accountId: Joi.string()
         .pattern(/^\d{10}$/)
@@ -371,6 +377,8 @@ export async function DELETE(
 ) {
   const { session } = useSession();
 
+  const { session } = useSession();
+
   try {
     const limit = Number(request.nextUrl.searchParams.get('limit')) || 10;
     const body = JSON.parse(await request.text());
@@ -391,6 +399,7 @@ export async function DELETE(
     };
 
     const schema = Joi.object({
+      userId: Joi.string().required(),
       userId: Joi.string().required(),
       accountId: Joi.string()
         .pattern(/^\d{10}$/)

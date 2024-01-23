@@ -8,7 +8,10 @@ import { notFound } from 'next/navigation';
 export async function POST(request: NextRequest) {
   const user = await currentUser();
   const { userId } = auth();
+  const user = await currentUser();
+  const { userId } = auth();
 
+  if (!user) return notFound();
   if (!user) return notFound();
 
   const { price, quantity = 1, metadata = {} } = await request.json();
@@ -19,6 +22,7 @@ export async function POST(request: NextRequest) {
     // Query the customer from the Prisma customer table using the user's ID
     const customerRecord = await prisma.customer.findFirst({
       where: {
+        userId: userId,
         userId: userId,
       },
     });
@@ -32,6 +36,7 @@ export async function POST(request: NextRequest) {
       } catch (error) {
         customer = await stripe.customers.create({
           email: user?.emailAddresses[0].emailAddress,
+          email: user?.emailAddresses[0].emailAddress,
         });
 
         // Update the customer record in Prisma with the new Stripe Customer ID
@@ -44,11 +49,13 @@ export async function POST(request: NextRequest) {
       // If the customer record was not found, create a new one
       customer = await stripe.customers.create({
         email: user?.emailAddresses[0].emailAddress,
+        email: user?.emailAddresses[0].emailAddress,
       });
 
       // Create a new customer record in Prisma with the Stripe Customer ID
       await prisma.customer.create({
         data: {
+          userId: userId,
           userId: userId,
           stripeCustomerId: customer.id,
         },

@@ -1,5 +1,6 @@
 /* eslint-disable no-unused-vars */
 
+
 import { NextRequest, NextResponse } from 'next/server';
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager/v2';
 import { QuotaLimitError } from '@/src/lib/exceptions';
@@ -27,6 +28,8 @@ export async function POST(
 ) {
   const { session } = useSession();
 
+  const { session } = useSession();
+
   try {
     const body = JSON.parse(await request.text());
 
@@ -46,6 +49,7 @@ export async function POST(
     };
 
     const schema = Joi.object({
+      userId: Joi.string().required(),
       userId: Joi.string().required(),
       accountId: Joi.string()
         .pattern(/^\d{10}$/)

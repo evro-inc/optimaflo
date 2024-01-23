@@ -1,4 +1,5 @@
 import { openSans } from '@/src/lib/fonts';
+import { openSans } from '@/src/lib/fonts';
 import '../../styles/globals.css';
 import '../../styles/tailwind.css';
 
@@ -11,11 +12,13 @@ import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { ClerkProvider } from '@clerk/nextjs';
 
 export default function RootLayout({
+export default function RootLayout({
   // Layouts must accept a children prop.
   // This will be populated with nested layouts or pages
   children,
 }: {
   children: React.ReactNode;
+}) {
 }) {
   // added suppressHydrationWarning to html tag to prevent hydration mismatch error
   return (
@@ -48,3 +51,4 @@ export default function RootLayout({
     </>
   );
 }
+

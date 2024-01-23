@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager/v2';
 import { ValidationError } from '@/src/lib/exceptions';
+import { ValidationError } from '@/src/lib/exceptions';
 import { createOAuth2Client } from '@/src/lib/oauth2Client';
 import prisma from '@/src/lib/prisma';
 import Joi from 'joi';
@@ -48,7 +49,61 @@ async function fetchGtmData(
   let retries = 0;
   const MAX_RETRIES = 3;
   let delay = 1000;
+import { handleError } from '@/src/lib/fetch/apiUtils';
+import { clerkClient, currentUser } from '@clerk/nextjs';
+import { notFound } from 'next/navigation';
 
+/************************************************************************************
+ * GET UTILITY FUNCTIONS
+ ************************************************************************************/
+/************************************************************************************
+  Validate the GET parameters
+************************************************************************************/
+async function validateGetParams(params) {
+  const schema = Joi.object({
+    accountId: Joi.string()
+      .pattern(/^\d{10}$/)
+      .required(),
+    containerId: Joi.string().required(),
+  });
+
+  // Validate the accountId against the schema
+  const { error, value } = schema.validate(params);
+
+  if (error) {
+    return new NextResponse(JSON.stringify({ error: error.message }), {
+      status: 400,
+    });
+  }
+
+  return value;
+}
+
+/************************************************************************************
+  Function to list or get one GTM containers
+************************************************************************************/
+async function fetchGtmData(
+  userId: string,
+  accessToken: string,
+  accountId: string,
+  containerId: string
+) {
+  let retries = 0;
+  const MAX_RETRIES = 3;
+  let delay = 1000;
+
+  while (retries < MAX_RETRIES) {
+    const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}`;
+    const headers = {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    };
+
+    try {
+      const { remaining } = await gtmRateLimit.blockUntilReady(
+        `user:${userId}`,
+        1000
+      );
   while (retries < MAX_RETRIES) {
     const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}`;
     const headers = {
@@ -142,7 +197,46 @@ export async function updateGtmData(
         `user:${userId}`,
         1000
       );
+  // Validate the accountId against the schema
+  const { error, value } = schema.validate(params);
 
+  if (error) {
+    return new NextResponse(JSON.stringify({ error: error.message }), {
+      status: 400,
+    });
+  }
+
+  return value;
+}
+
+/************************************************************************************
+  Function to update GTM containers
+************************************************************************************/
+export async function updateGtmData(
+  userId: string,
+  accessToken: string,
+  accountId: string,
+  containerId: string,
+  containerName: string,
+  usageContext: string[]
+) {
+  let retries = 0;
+  const MAX_RETRIES = 3;
+  let delay = 1000;
+
+  while (retries < MAX_RETRIES) {
+    try {
+      const { remaining } = await gtmRateLimit.blockUntilReady(
+        `user:${userId}`,
+        1000
+      );
+
+      // Fetch subscription data for the user
+      const subscriptionData = await prisma.subscription.findFirst({
+        where: {
+          userId: userId,
+        },
+      });
       // Fetch subscription data for the user
       const subscriptionData = await prisma.subscription.findFirst({
         where: {
@@ -158,7 +252,29 @@ export async function updateGtmData(
           }
         );
       }
+      if (!subscriptionData) {
+        return new NextResponse(
+          JSON.stringify({ message: 'Subscription data not found' }),
+          {
+            status: 403,
+          }
+        );
+      }
 
+      const tierLimitRecord = await prisma.tierLimit.findFirst({
+        where: {
+          Feature: {
+            name: 'GTMContainer', // Replace with the actual feature name
+          },
+          Subscription: {
+            userId: userId, // Assuming Subscription model has a userId field
+          },
+        },
+        include: {
+          Feature: true,
+          Subscription: true,
+        },
+      });
       const tierLimitRecord = await prisma.tierLimit.findFirst({
         where: {
           Feature: {
@@ -185,7 +301,20 @@ export async function updateGtmData(
           }
         );
       }
+      if (
+        !tierLimitRecord ||
+        tierLimitRecord.updateUsage >= tierLimitRecord.updateLimit
+      ) {
+        return new NextResponse(
+          JSON.stringify({ message: 'Feature limit reached' }),
+          {
+            status: 403,
+          }
+        );
+      }
 
+      if (remaining > 0) {
+        let res;
       if (remaining > 0) {
         let res;
 
@@ -194,9 +323,22 @@ export async function updateGtmData(
           if (!oauth2Client) {
             throw new Error('OAuth2Client creation failed');
           }
+        await limiter.schedule(async () => {
+          const oauth2Client = createOAuth2Client(accessToken);
+          if (!oauth2Client) {
+            throw new Error('OAuth2Client creation failed');
+          }
 
           const gtm = new tagmanager_v2.Tagmanager({ auth: oauth2Client });
+          const gtm = new tagmanager_v2.Tagmanager({ auth: oauth2Client });
 
+          res = await gtm.accounts.containers.update({
+            path: `accounts/${accountId}/containers/${containerId}`,
+            requestBody: {
+              name: containerName,
+              usageContext: usageContext,
+            },
+          });
           res = await gtm.accounts.containers.update({
             path: `accounts/${accountId}/containers/${containerId}`,
             requestBody: {
@@ -222,9 +364,34 @@ export async function updateGtmData(
             },
           });
         });
+          await prisma.tierLimit.update({
+            where: {
+              id: tierLimitRecord.id,
+              Feature: {
+                name: 'GTMContainer',
+              },
+              Subscription: {
+                userId: userId,
+              },
+            },
+            data: {
+              updateUsage: {
+                increment: 1,
+              },
+            },
+          });
+        });
 
         const data = [res.data];
+        const data = [res.data];
 
+        const response = {
+          data: data,
+          meta: {
+            totalResults: data?.length ?? 0,
+          },
+          errors: null,
+        };
         const response = {
           data: data,
           meta: {
@@ -289,6 +456,28 @@ async function deleteGtmData(
   containerId: string
 ) {
   try {
+  // Validate the accountId against the schema
+  const { error, value } = schema.validate(params);
+
+  if (error) {
+    return new NextResponse(JSON.stringify({ error: error.message }), {
+      status: 400,
+    });
+  }
+
+  return value;
+}
+
+/************************************************************************************
+  Function to delete GTM containers
+************************************************************************************/
+async function deleteGtmData(
+  userId: string,
+  accessToken: string,
+  accountId: string,
+  containerId: string
+) {
+  try {
     // Fetch subscription data for the user
     const subscriptionData = await prisma.subscription.findFirst({
       where: {
@@ -309,8 +498,10 @@ async function deleteGtmData(
       where: {
         Feature: {
           name: 'GTMContainer',
+          name: 'GTMContainer',
         },
         Subscription: {
+          userId: userId,
           userId: userId,
         },
       },
