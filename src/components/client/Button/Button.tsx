@@ -338,12 +338,7 @@ export const Icon = ({ variant = 'primary', icon, ...props }) => {
   );
 };
 
-export const ButtonSignIn = ({ variant = 'signup', text, ...props }) => {
-  const computedClasses = useMemo(() => {
-    const modeClass = getModeClasses(variant);
-    return [modeClass].join(' ');
-  }, [variant]);
-
+export const ButtonSignIn = ({ ...props }) => {
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <SignInButton
@@ -351,11 +346,8 @@ export const ButtonSignIn = ({ variant = 'signup', text, ...props }) => {
         redirectUrl="/profile"
         afterSignUpUrl="/pricing"
       >
-        <Button
-          {...props}
-          className={`${BASE_BUTTON_CLASSES} ${computedClasses} w-36 mx-5 lg:mx-0`}
-        >
-          {text}
+        <Button {...props} aria-label="Log in with Google Sign In">
+          Log In
         </Button>
       </SignInButton>
     </Suspense>
