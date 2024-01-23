@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager/v2';
 import { ValidationError } from '@/src/lib/exceptions';
+import { ValidationError } from '@/src/lib/exceptions';
 import { createOAuth2Client } from '@/src/lib/oauth2Client';
 import prisma from '@/src/lib/prisma';
 import Joi from 'joi';
@@ -27,9 +28,60 @@ async function validatePostParams(params: {
     containerId: Joi.string().required(),
     containerIdToCombine: Joi.string().required(),
   });
+import { getAccessToken, handleError } from '@/src/lib/fetch/apiUtils';
+import { limiter } from '@/src/lib/bottleneck';
+import { useSession } from '@clerk/nextjs';
+
+/************************************************************************************
+ * POST UTILITY FUNCTIONS
+ ************************************************************************************/
+/************************************************************************************
+  Validate the POST parameters
+************************************************************************************/
+async function validatePostParams(params: {
+  accountId: string;
+  containerId: string;
+  containerIdToCombine: string;
+}) {
+  const schema = Joi.object({
+    accountId: Joi.string()
+      .pattern(/^\d{10}$/)
+      .required(),
+    containerId: Joi.string().required(),
+    containerIdToCombine: Joi.string().required(),
+  });
 
   const { error } = schema.validate(params);
+  const { error } = schema.validate(params);
 
+  if (error) {
+    // If validation fails, return a 400 Bad Request response
+    return new NextResponse(JSON.stringify({ error: error.message }), {
+      status: 400,
+    });
+  }
+}
+
+/************************************************************************************
+  Function to combine GTM containers
+************************************************************************************/
+export async function combineGtmData(
+  userId: string,
+  accountId: string,
+  containerId: string,
+  containerIdToCombine: string,
+  accessToken: string
+) {
+  let retries = 0;
+  const MAX_RETRIES = 3;
+  let delay = 1000;
+
+  while (retries < MAX_RETRIES) {
+    try {
+      const { remaining } = await gtmRateLimit.blockUntilReady(
+        `user:${userId}`,
+        1000
+      );
   if (error) {
     // If validation fails, return a 400 Bad Request response
     return new NextResponse(JSON.stringify({ error: error.message }), {
@@ -65,6 +117,12 @@ export async function combineGtmData(
           userId: userId,
         },
       });
+      // Fetch subscription data for the user
+      const subscriptionData = await prisma.subscription.findFirst({
+        where: {
+          userId: userId,
+        },
+      });
 
       if (!subscriptionData) {
         return new NextResponse(
@@ -74,7 +132,29 @@ export async function combineGtmData(
           }
         );
       }
+      if (!subscriptionData) {
+        return new NextResponse(
+          JSON.stringify({ message: 'Subscription data not found' }),
+          {
+            status: 403,
+          }
+        );
+      }
 
+      const tierLimitRecord = await prisma.tierLimit.findFirst({
+        where: {
+          Feature: {
+            name: 'GTMContainer', // Replace with the actual feature name
+          },
+          Subscription: {
+            userId: userId, // Assuming Subscription model has a userId field
+          },
+        },
+        include: {
+          Feature: true,
+          Subscription: true,
+        },
+      });
       const tierLimitRecord = await prisma.tierLimit.findFirst({
         where: {
           Feature: {
@@ -101,18 +181,36 @@ export async function combineGtmData(
           }
         );
       }
+      if (
+        !tierLimitRecord ||
+        tierLimitRecord.updateUsage >= tierLimitRecord.updateLimit
+      ) {
+        return new NextResponse(
+          JSON.stringify({ message: 'Feature limit reached' }),
+          {
+            status: 403,
+          }
+        );
+      }
 
+      if (remaining > 0) {
+        let res;
       if (remaining > 0) {
         let res;
 
         await limiter.schedule(async () => {
+        await limiter.schedule(async () => {
           const oauth2Client = createOAuth2Client(accessToken);
           if (!oauth2Client) {
+            throw new Error('OAuth2Client creation failed');
             throw new Error('OAuth2Client creation failed');
           }
 
           const gtm = new tagmanager_v2.Tagmanager({ auth: oauth2Client });
 
+          const gtm = new tagmanager_v2.Tagmanager({ auth: oauth2Client });
+
+          res = await gtm.accounts.containers.combine({
           res = await gtm.accounts.containers.combine({
             allowUserPermissionFeatureUpdate: true,
             containerId: containerIdToCombine,
@@ -129,8 +227,15 @@ export async function combineGtmData(
               Subscription: {
                 userId: userId,
               },
+              Feature: {
+                name: 'GTMContainer',
+              },
+              Subscription: {
+                userId: userId,
+              },
             },
             data: {
+              updateUsage: {
               updateUsage: {
                 increment: 1,
               },
@@ -226,6 +331,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Return a 500 status code for internal server error
+    return handleError(error);
     return handleError(error);
   }
 }

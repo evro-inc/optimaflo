@@ -51,6 +51,20 @@ export async function listGtmContainers() {
 
   const cacheKey = `gtm:containers:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
+  const token = await currentUserOauthAccessToken(userId);
+  const accessToken = token[0].token;
+
+  const gtmData = await prisma.user.findFirst({
+    where: {
+      id: userId,
+    },
+    include: {
+      gtm: true,
+    },
+  });
+
+  const cacheKey = `gtm:containers:userId:${userId}`;
+  const cachedValue = await redis.get(cacheKey);
 
   if (cachedValue) {
     return JSON.parse(cachedValue);
@@ -306,6 +320,7 @@ export async function DeleteContainers(
                     'Unknown',
                 ], // Ensure name is an array, match by containerId or default to 'Unknown'
                 success: false,
+                featureLimitReached: true,
                 featureLimitReached: true,
               })),
             };

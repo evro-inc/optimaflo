@@ -29,10 +29,13 @@ const getModeClasses = (variant, billingInterval?) => {
   let baseClasses = '';
   let activeClasses = 'relative shadow-sm';
   let inactiveClasses = 'relative';
+  let activeClasses = 'relative shadow-sm';
+  let inactiveClasses = 'relative';
 
   switch (variant) {
     case 'primary':
       baseClasses =
+        'cursor-pointer bg-blue-500 border border-blue-700 rounded-full text-white-500 inline-flex justify-center items-center gap-x-3 text-center hover:bg-blue-300 text-sm lg:text-base font-medium focus:outline-none focus:ring-2 focus:ring-yellow-600 focus:ring-offset-2 focus:ring-offset-white transition px-6 w-7/12 sm:w-auto';
         'cursor-pointer bg-blue-500 border border-blue-700 rounded-full text-white-500 inline-flex justify-center items-center gap-x-3 text-center hover:bg-blue-300 text-sm lg:text-base font-medium focus:outline-none focus:ring-2 focus:ring-yellow-600 focus:ring-offset-2 focus:ring-offset-white transition px-6 w-7/12 sm:w-auto';
       break;
     case 'signup':
@@ -232,6 +235,7 @@ export const ButtonSubscribe = ({
   variant = 'primary',
   text,
   isselected, // New prop
+  isselected, // New prop
   billingInterval,
   ...props
 }) => {
@@ -240,6 +244,7 @@ export const ButtonSubscribe = ({
     return [modeClass].join(' ');
   }, [variant, billingInterval]);
 
+  const selectedClasses = isselected ? 'bg-blue-500 text-white-500' : '';
   const selectedClasses = isselected ? 'bg-blue-500 text-white-500' : '';
 
   return (

@@ -1,4 +1,5 @@
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager';
+import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager';
 import Stripe from 'stripe';
 
 export interface PageMeta {
@@ -90,6 +91,7 @@ export interface User {
   Subscription: Subscription[];
 }
 export type FormElement = {
+export type FormElement = {
   accountId: string;
   usageContext: string;
   containerName: string;
@@ -97,13 +99,18 @@ export type FormElement = {
   notes: string;
   containerId: string;
 };
+};
 
+export type Form = {
+  forms: FormElement[];
+};
 export type Form = {
   forms: FormElement[];
 };
 export type ContainerType = {
   accountId: string;
   containerId: string;
+  name: string;
   name: string;
   publicId: string;
   accountName: string;

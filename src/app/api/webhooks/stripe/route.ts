@@ -736,6 +736,7 @@ async function upsertInvoiceRecord(invoice: Stripe.Invoice) {
 async function grantAccessToContent(invoice: Stripe.Invoice) {
   const productAccessGranters = {
     prod_OoCMHi502SCeOH: grantGtmAccess,
+    prod_OoCMHi502SCeOH: grantGtmAccess,
     prod_OQ3TPC9yMxJAeN: grantGAAccess,
     // Add more product IDs and access granters as needed
   };
@@ -758,6 +759,7 @@ async function grantAccessToContent(invoice: Stripe.Invoice) {
 }
 
 // Fetch GTM Settings
+// Fetch GTM Settings
 async function fetchGTM(invoice: Stripe.Invoice) {
   // Fetch user ID using the Stripe Customer ID
   const customerRecord = await prisma.customer.findFirst({
@@ -777,9 +779,11 @@ async function fetchGTM(invoice: Stripe.Invoice) {
   }
   if (customerRecord) {
     await fetchGtmSettings(userId);
+    await fetchGtmSettings(userId);
   }
 }
 
+// Reset Usage for Subscription
 // Reset Usage for Subscription
 async function resetUsageForSubscription(subscriptionId: string) {
   await prisma.tierLimit.updateMany({
@@ -868,6 +872,9 @@ export async function POST(req: NextRequest) {
         case 'price.created':
         case 'price.updated':
           await upsertPriceRecord(event.data.object as Stripe.Price);
+          break;
+        case 'customer.deleted':
+          await deleteCustomerAndRelatedRecords(event.data.object.id);
           break;
         case 'customer.deleted':
           await deleteCustomerAndRelatedRecords(event.data.object.id);

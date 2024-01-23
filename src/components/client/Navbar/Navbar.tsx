@@ -47,6 +47,7 @@ export default function Navbar() {
                   <div className="ml-3 relative">
                     <div className="block lg:hidden">
                       <UserButton afterSignOutUrl="/" />
+                      <UserButton afterSignOutUrl="/" />
                     </div>
                   </div>
                 )}
@@ -78,6 +79,7 @@ export default function Navbar() {
                     }`}
                   >
                     <LinkNav
+                    <LinkNav
                       href={item.href}
                       variant="nav"
                       text={item.name}
@@ -92,6 +94,8 @@ export default function Navbar() {
                   {session?.user && (
                     <div className="hidden lg:flex items-center font-medium text-gray-500 hover:text-blue-600 p-0 sm:p-[10px] lg:border-gray-300 w-full lg:w-auto">
                       <UserButton afterSignOutUrl="/" />
+                    <div className="hidden lg:flex items-center font-medium text-gray-500 hover:text-blue-600 p-0 sm:p-[10px] lg:border-gray-300 w-full lg:w-auto">
+                      <UserButton afterSignOutUrl="/" />
                     </div>
                   )}
                   {!session?.user && (
@@ -103,6 +107,7 @@ export default function Navbar() {
                         aria-label="Log in with Google Sign In"
                         text="Log In"
                       />
+                      <LinkSignUp
                       <LinkSignUp
                         variant="login"
                         ariaLabel="Get Started with Google"

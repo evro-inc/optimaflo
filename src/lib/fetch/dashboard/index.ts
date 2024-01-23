@@ -3,6 +3,7 @@ import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager/v2';
 import { OAuth2Client } from 'google-auth-library';
 import prisma from '@/src/lib/prisma';
 import { clerkClient } from '@clerk/nextjs';
+import { clerkClient } from '@clerk/nextjs';
 
 export function isErrorWithStatus(error: unknown): error is { status: number } {
   return (error as { status: number }).status !== undefined;
@@ -32,6 +33,7 @@ export async function grantGtmAccess(customerId: string) {
 
   // Get the product IDs for the GTM products
   const gtmProductIds = ['prod_OoCMHi502SCeOH', 'prod_OaGCBK8Qe6Vofp'];
+  const gtmProductIds = ['prod_OoCMHi502SCeOH', 'prod_OaGCBK8Qe6Vofp'];
 
   // Iterate over the product IDs
   for (const productId of gtmProductIds) {
@@ -45,7 +47,9 @@ export async function grantGtmAccess(customerId: string) {
 }
 
 export async function fetchGtmSettings(userId: string) {
+export async function fetchGtmSettings(userId: string) {
   // Check if the User record exists
+  const existingUser = await prisma.User.findFirst({ where: { id: userId } });
   const existingUser = await prisma.User.findFirst({ where: { id: userId } });
 
   if (!existingUser) {
@@ -66,11 +70,29 @@ export async function fetchGtmSettings(userId: string) {
       (rec) => `${rec.accountId}-${rec.containerId}-${rec.workspaceId}`
     )
   );
+    await prisma.User.create({ data: { id: userId } });
+  }
+
+  const token = await clerkClient.users.getUserOauthAccessToken(
+    userId,
+    'oauth_google'
+  );
+  const tokenValue = token[0].token;
+  const headers = { Authorization: `Bearer ${tokenValue}` };
+
+  const existingRecords = await prisma.gtm.findMany({ where: { userId } });
+  const existingCompositeKeySet = new Set(
+    existingRecords.map(
+      (rec) => `${rec.accountId}-${rec.containerId}-${rec.workspaceId}`
+    )
+  );
 
   let retries = 0;
   const MAX_RETRIES = 3;
   let success = false;
+  let success = false;
 
+  while (retries < MAX_RETRIES && !success) {
   while (retries < MAX_RETRIES && !success) {
     try {
       // Fetch the list of accounts
@@ -79,7 +101,13 @@ export async function fetchGtmSettings(userId: string) {
         { headers }
       );
       const accountsData = await accountsResponse.json();
+      const accountsResponse = await fetch(
+        'https://tagmanager.googleapis.com/tagmanager/v2/accounts',
+        { headers }
+      );
+      const accountsData = await accountsResponse.json();
       const accountIds =
+        accountsData.account?.map((account) => account.accountId) || [];
         accountsData.account?.map((account) => account.accountId) || [];
 
       for (const accountId of accountIds) {
@@ -89,7 +117,15 @@ export async function fetchGtmSettings(userId: string) {
           { headers }
         );
         const containersData = await containersResponse.json();
+        // Fetch containers for each account
+        const containersResponse = await fetch(
+          `https://tagmanager.googleapis.com/tagmanager/v2/accounts/${accountId}/containers`,
+          { headers }
+        );
+        const containersData = await containersResponse.json();
         const containerIds =
+          containersData.container?.map((container) => container.containerId) ||
+          [];
           containersData.container?.map((container) => container.containerId) ||
           [];
 
@@ -100,11 +136,19 @@ export async function fetchGtmSettings(userId: string) {
             { headers }
           );
           const workspacesData = await workspacesResponse.json();
+          // Fetch workspaces for each container
+          const workspacesResponse = await fetch(
+            `https://tagmanager.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces`,
+            { headers }
+          );
+          const workspacesData = await workspacesResponse.json();
           const workspaceIds =
+            workspacesData.workspace?.map(
             workspacesData.workspace?.map(
               (workspace) => workspace.workspaceId
             ) || [];
 
+          // Inside the loop for workspaceIds
           // Inside the loop for workspaceIds
           for (const workspaceId of workspaceIds) {
             if (
@@ -139,6 +183,7 @@ export async function fetchGtmSettings(userId: string) {
         }
       }
       success = true;
+      success = true;
     } catch (error: any) {
       if (error.message.includes('Quota exceeded')) {
         await new Promise((resolve) =>
@@ -150,6 +195,9 @@ export async function fetchGtmSettings(userId: string) {
       }
     }
   }
+}
+
+/* GA UTILS */
 }
 
 /* GA UTILS */

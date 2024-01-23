@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager/v2';
 import { QuotaLimitError, ValidationError } from '@/src/lib/exceptions';
+import { QuotaLimitError, ValidationError } from '@/src/lib/exceptions';
 import { createOAuth2Client } from '@/src/lib/oauth2Client';
 import prisma from '@/src/lib/prisma';
 import Joi from 'joi';
@@ -28,7 +29,31 @@ async function validateGetParams(params) {
       .pattern(/^\d{1,3}$/)
       .required(),
   });
+import { limiter } from '@/src/lib/bottleneck';
+import { handleError } from '@/src/lib/fetch/apiUtils';
+import { clerkClient, currentUser } from '@clerk/nextjs';
+import { notFound } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
 
+/************************************************************************************
+ * GET UTILITY FUNCTIONS
+ ************************************************************************************/
+/************************************************************************************
+  Validate the GET parameters
+************************************************************************************/
+async function validateGetParams(params) {
+  const schema = Joi.object({
+    accountId: Joi.string()
+      .pattern(/^\d{10}$/)
+      .required(),
+    containerId: Joi.string().required(),
+    workspaceId: Joi.string()
+      .pattern(/^\d{1,3}$/)
+      .required(),
+  });
+
+  // Validate the accountId against the schema
+  const { error, value } = schema.validate(params);
   // Validate the accountId against the schema
   const { error, value } = schema.validate(params);
 
@@ -60,7 +85,41 @@ async function getWorkspace(
     Authorization: `Bearer ${accessToken}`,
     'Content-Type': 'application/json',
   };
+  if (error) {
+    // If validation fails, return a 400 Bad Request response
+    return new NextResponse(JSON.stringify({ error: error.message }), {
+      status: 400,
+    });
+  }
+  return value;
+}
 
+/************************************************************************************
+  Function to list or get one GTM workspace
+************************************************************************************/
+async function getWorkspace(
+  userId: string,
+  accountId: string,
+  containerId: string,
+  workspaceId: string,
+  accessToken: string
+) {
+  let retries = 0;
+  const MAX_RETRIES = 3;
+  let delay = 1000;
+
+  const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}`;
+  const headers = {
+    Authorization: `Bearer ${accessToken}`,
+    'Content-Type': 'application/json',
+  };
+
+  while (retries < MAX_RETRIES) {
+    try {
+      const { remaining } = await gtmRateLimit.blockUntilReady(
+        `user:${userId}`,
+        1000
+      );
   while (retries < MAX_RETRIES) {
     try {
       const { remaining } = await gtmRateLimit.blockUntilReady(
@@ -169,13 +228,21 @@ export async function GET(
     }
     // Return a 500 status code for internal server error
     return handleError(error);
+    return handleError(error);
   }
 }
 
 /************************************************************************************
   UPDATE/PATCH request handler
 ************************************************************************************/
+/************************************************************************************
+  UPDATE/PATCH request handler
+************************************************************************************/
 export async function PATCH(request: NextRequest) {
+  const user = await currentUser();
+  if (!user) return notFound();
+  const userId = user?.id;
+
   const user = await currentUser();
   if (!user) return notFound();
   const userId = user?.id;
@@ -219,6 +286,10 @@ export async function PATCH(request: NextRequest) {
       });
     }
 
+    const accessToken = await clerkClient.users.getUserOauthAccessToken(
+      user?.id,
+      'oauth_google'
+    );
     const accessToken = await clerkClient.users.getUserOauthAccessToken(
       user?.id,
       'oauth_google'
@@ -293,6 +364,7 @@ export async function PATCH(request: NextRequest) {
 
           // If the data is not in the cache, fetch it from the API
           const oauth2Client = createOAuth2Client(accessToken[0].token);
+          const oauth2Client = createOAuth2Client(accessToken[0].token);
           if (!oauth2Client) {
             // If oauth2Client is null, return an error response or throw an error
             return NextResponse.error();
@@ -334,7 +406,9 @@ export async function PATCH(request: NextRequest) {
           };
 
           const path = request.nextUrl.searchParams.get('path') || '/'; // should it fall back on the layout?
+          const path = request.nextUrl.searchParams.get('path') || '/'; // should it fall back on the layout?
 
+          revalidatePath(path);
           revalidatePath(path);
 
           return NextResponse.json(response, {
@@ -368,7 +442,14 @@ export async function PATCH(request: NextRequest) {
 /************************************************************************************
   DELETE request handler
 ************************************************************************************/
+/************************************************************************************
+  DELETE request handler
+************************************************************************************/
 export async function DELETE(request: NextRequest) {
+  const user = await currentUser();
+  if (!user) return notFound();
+  const userId = user?.id;
+
   const user = await currentUser();
   if (!user) return notFound();
   const userId = user?.id;
@@ -422,6 +503,10 @@ export async function DELETE(request: NextRequest) {
       user?.id,
       'oauth_google'
     );
+    const accessToken = await clerkClient.users.getUserOauthAccessToken(
+      user?.id,
+      'oauth_google'
+    );
 
     if (!accessToken) {
       // If the access token is null or undefined, return an error response
@@ -452,6 +537,7 @@ export async function DELETE(request: NextRequest) {
     const tierLimitRecord = await prisma.tierLimit.findFirst({
       where: {
         Feature: {
+          name: 'GTMWorkspaces', // Replace with the actual feature name
           name: 'GTMWorkspaces', // Replace with the actual feature name
         },
         Subscription: {
@@ -491,6 +577,7 @@ export async function DELETE(request: NextRequest) {
           // If we haven't hit the rate limit, proceed with the API request
 
           // If the data is not in the cache, fetch it from the API
+          const oauth2Client = createOAuth2Client(accessToken[0].token);
           const oauth2Client = createOAuth2Client(accessToken[0].token);
           if (!oauth2Client) {
             // If oauth2Client is null, return an error response or throw an error
