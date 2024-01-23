@@ -358,11 +358,10 @@ export async function DeleteWorkspaces(
       } finally {
         // This block will run regardless of the outcome of the try...catch
 
-            const cacheKey = `gtm:workspaces:userId:${userId}`;
-            await redis.del(cacheKey);
+        const cacheKey = `gtm:workspaces:userId:${userId}`;
+        await redis.del(cacheKey);
 
-          await revalidatePath(`/dashboard/gtm/workspaces`);
-        
+        await revalidatePath(`/dashboard/gtm/workspaces`);
       }
     }
   }

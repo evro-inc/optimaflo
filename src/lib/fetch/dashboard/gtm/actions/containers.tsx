@@ -588,7 +588,6 @@ export async function CreateContainers(formData: FormCreateSchema) {
                       message: errorResult?.message,
                     });
                   }
-
                 } catch (error: any) {
                   errors.push(
                     `Exception creating container ${containerName}: ${error.message}`
@@ -948,11 +947,9 @@ export async function UpdateContainers(formData: FormCreateSchema) {
             await Promise.all(updatePromises);
           });
 
-
-            const cacheKey = `gtm:containers:userId:${userId}`;
-            await redis.del(cacheKey);
-            await revalidatePath(`/dashboard/gtm/containers`);
-          
+          const cacheKey = `gtm:containers:userId:${userId}`;
+          await redis.del(cacheKey);
+          await revalidatePath(`/dashboard/gtm/containers`);
 
           if (notFoundLimit.length > 0) {
             return {
