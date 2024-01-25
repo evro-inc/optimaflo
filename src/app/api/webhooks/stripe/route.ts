@@ -41,6 +41,8 @@ async function upsertProductRecord(product: Stripe.Product) {
       name: product.name,
       description: product.description,
       updated: currentTimestamp,
+      metadata: product.metadata,
+      image: product.images?.[0] || null,
     },
     create: {
       id: product.id,
@@ -48,6 +50,8 @@ async function upsertProductRecord(product: Stripe.Product) {
       name: product.name,
       description: product.description,
       updated: currentTimestamp,
+      metadata: product.metadata,
+      image: product.images?.[0] || null,
     },
   });
 }
@@ -164,139 +168,98 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
     };
 
     const createFeatureLimitsByTier = {
-      prod_OoCMHi502SCeOH: {
+      /* Basic Tier */
+      prod_PR67hSV5IpooDJ: {
         create: {
           GTMContainer: 3,
-          GTMTags: 7,
-          GTMTriggers: 7,
-          GTMVariables: 7,
-          GTMWorkspaces: 2,
-          GTMVaraiblesBuiltIn: 7,
-          GTMClients: 1,
-          GTMFolders: 3,
-          GTMTemplates: 3,
-          GTMTransformations: 3,
-          GTMZones: 3,
-          GTMVersions: 3,
-        },
-        update: {
-          GTMContainer: 5,
-          GTMTags: 10,
-          GTMTriggers: 10,
-          GTMVariables: 10,
-          GTMWorkspaces: 3,
-          GTMVaraiblesBuiltIn: 10,
-          GTMClients: 2,
-          GTMFolders: 5,
-          GTMTemplates: 5,
-          GTMTransformations: 5,
-          GTMZones: 5,
-          GTMVersions: 5,
-        },
-        delete: {
-          GTMContainer: 0,
-          GTMTags: 3,
-          GTMTriggers: 5,
-          GTMVariables: 5,
-          GTMWorkspaces: 1,
-          GTMVaraiblesBuiltIn: 5,
-          GTMClients: 0,
-          GTMFolders: 0,
-          GTMTemplates: 0,
-          GTMTransformations: 0,
-          GTMZones: 0,
-          GTMVersions: 0,
-        },
-      },
-      prod_OZZrME91D1RRo4: {
-        create: {
-          GTMContainer: 10,
-          GTMTags: 20,
-          GTMTriggers: 20,
-          GTMVariables: 20,
-          GTMWorkspaces: 3,
-          GTMVaraiblesBuiltIn: 20,
-          GTMClients: 3,
-          GTMFolders: 10,
-          GTMTemplates: 10,
-          GTMTransformations: 10,
-          GTMZones: 10,
-          GTMVersions: 10,
-        },
-        update: {
-          GTMContainer: 15,
-          GTMTags: 25,
-          GTMTriggers: 25,
-          GTMVariables: 25,
-          GTMWorkspaces: 4,
-          GTMVaraiblesBuiltIn: 25,
-          GTMClients: 4,
-          GTMFolders: 15,
-          GTMTemplates: 15,
-          GTMTransformations: 15,
-          GTMZones: 15,
-          GTMVersions: 15,
-        },
-        delete: {
-          GTMContainer: 1,
-          GTMTags: 5,
-          GTMTriggers: 10,
-          GTMVariables: 10,
-          GTMWorkspaces: 1,
-          GTMVaraiblesBuiltIn: 10,
-          GTMClients: 1,
-          GTMFolders: 3,
-          GTMTemplates: 1,
-          GTMTransformations: 1,
-          GTMZones: 1,
-          GTMVersions: 5,
-        },
-      },
-      prod_OZZrME91D1RRo5: {
-        create: {
-          GTMContainer: 50,
-          GTMTags: 50,
-          GTMTriggers: 50,
-          GTMVariables: 50,
-          GTMWorkspaces: 5,
-          GTMVaraiblesBuiltIn: 50,
-          GTMClients: 5,
-          GTMFolders: 20,
-          GTMTemplates: 20,
-          GTMTransformations: 20,
-          GTMZones: 20,
-          GTMVersions: 20,
-        },
-        update: {
-          GTMContainer: 60,
-          GTMTags: 60,
-          GTMTriggers: 60,
+          GTMTags: 30,
+          GTMTriggers: 40,
           GTMVariables: 60,
-          GTMWorkspaces: 6,
-          GTMVaraiblesBuiltIn: 60,
-          GTMClients: 6,
-          GTMFolders: 25,
-          GTMTemplates: 25,
-          GTMTransformations: 25,
-          GTMZones: 25,
-          GTMVersions: 25,
+          GTMWorkspaces: 10,
+          GTMVaraiblesBuiltIn: 150,
+          //GTMClients: 1,
+          GTMFolders: 10,
+          GTMTemplates: 3,
+          GTMTransformations: 9,
+          GTMZones: 4,
+          GTMVersions: 50,
+        },
+        update: {
+          GTMContainer: 3,
+          GTMTags: 30,
+          GTMTriggers: 40,
+          GTMVariables: 60,
+          GTMWorkspaces: 10,
+          GTMVaraiblesBuiltIn: 150,
+          //GTMClients: 1,
+          GTMFolders: 10,
+          GTMTemplates: 3,
+          GTMTransformations: 9,
+          GTMZones: 4,
+          GTMVersions: 50,
+        },
+        delete: {
+          GTMContainer: 3,
+          GTMTags: 30,
+          GTMTriggers: 40,
+          GTMVariables: 60,
+          GTMWorkspaces: 10,
+          GTMVaraiblesBuiltIn: 150,
+          //GTMClients: 1,
+          GTMFolders: 10,
+          GTMTemplates: 3,
+          GTMTransformations: 9,
+          GTMZones: 5,
+          GTMVersions: 50,
+        },
+      },
+      /* Pro Tier */
+      prod_PR68ixfux75cGT: {
+        create: {
+          GTMContainer: 10,
+          GTMTags: 60,
+          GTMTriggers: 120,
+          GTMVariables: 180,
+          GTMWorkspaces: 30,
+          GTMVaraiblesBuiltIn: 450,
+          //GTMClients: 3,
+          GTMFolders: 30,
+          GTMTemplates: 10,
+          GTMTransformations: 20,
+          GTMZones: 15,
+          GTMVersions: 150,
+        },
+        update: {
+          GTMContainer: 10,
+          GTMTags: 60,
+          GTMTriggers: 120,
+          GTMVariables: 180,
+          GTMWorkspaces: 30,
+          GTMVaraiblesBuiltIn: 450,
+          //GTMClients: 3,
+          GTMFolders: 30,
+          GTMTemplates: 10,
+          GTMTransformations: 20,
+          GTMZones: 15,
+          GTMVersions: 150,
         },
         delete: {
           GTMContainer: 10,
-          GTMTags: 20,
-          GTMTriggers: 20,
-          GTMVariables: 20,
-          GTMWorkspaces: 10,
-          GTMVaraiblesBuiltIn: 20,
-          GTMClients: 3,
-          GTMFolders: 10,
+          GTMTags: 60,
+          GTMTriggers: 120,
+          GTMVariables: 180,
+          GTMWorkspaces: 30,
+          GTMVaraiblesBuiltIn: 450,
+          //GTMClients: 3,
+          GTMFolders: 30,
           GTMTemplates: 10,
-          GTMTransformations: 10,
-          GTMZones: 10,
-          GTMVersions: 10,
+          GTMTransformations: 20,
+          GTMZones: 15,
+          GTMVersions: 150,
         },
       },
-      prod_OaGCBK8Qe6Vofp: {
+      /* Enterprise Tier */
+      prod_PR6ETKqabgOXDt: {
         create: {
           GTMContainer: 10000,
           GTMTags: 10000,
@@ -352,6 +315,23 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
       update: subscriptionData,
       create: subscriptionData,
     });
+
+    if (createdOrUpdatedSubscription.status) {
+      await prisma.subscription.upsert({
+        where: {
+          userId_productId: {
+            userId,
+            productId,
+          },
+        },
+        update: {
+          status: createdOrUpdatedSubscription.status,
+        },
+        create: {
+          status: createdOrUpdatedSubscription.status,
+        },
+      });
+    }
 
     // Confirm that the subscription was created or updated
     if (!createdOrUpdatedSubscription) {
@@ -735,9 +715,13 @@ async function upsertInvoiceRecord(invoice: Stripe.Invoice) {
 
 async function grantAccessToContent(invoice: Stripe.Invoice) {
   const productAccessGranters = {
-    prod_OoCMHi502SCeOH: grantGtmAccess,
-    prod_OQ3TPC9yMxJAeN: grantGAAccess,
-    // Add more product IDs and access granters as needed
+    prod_PR67hSV5IpooDJ_GTM: grantGtmAccess,
+    prod_PR68ixfux75cGT_GTM: grantGtmAccess,
+    prod_PR6ETKqabgOXDt_GTM: grantGtmAccess,
+
+    prod_PR67hSV5IpooDJ_GA4: grantGAAccess,
+    prod_PR68ixfux75cGT_GA4: grantGAAccess,
+    prod_PR6ETKqabgOXDt_GA4: grantGAAccess,
   };
 
   // Get the product IDs associated with the invoice

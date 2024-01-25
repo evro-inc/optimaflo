@@ -1,5 +1,4 @@
 import { getFeaturesPage } from '@/sanity/sanity-utils';
-import { ButtonNull } from '@/src/components/client/Button/Button';
 import { Images } from '@/src/components/client/Images/Images';
 import CTA from '@/src/components/server/CTA/cta';
 import Features from '@/src/components/server/Features/Features';
@@ -16,7 +15,7 @@ export default async function FeaturePage() {
             <section className="pb-24" key={page.id}>
               <div className="max-w-[85rem] mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-10">
                 <div className="mt-5 max-w-2xl text-center mx-auto">
-                  <h1 className="block font-bold text-blue-300 text-4xl md:text-5xl lg:text-6xl ">
+                  <h1 className="block font-bold text-4xl md:text-5xl lg:text-6xl ">
                     {page.title}
                   </h1>
                   <p className="pt-10">{page.SubTitle}</p>
@@ -41,15 +40,6 @@ export default async function FeaturePage() {
 
                 <div className="mt-5 sm:mt-10 lg:mt-0">
                   <div className="space-y-6 sm:space-y-8">
-                    <div>
-                      <ButtonNull
-                        billingInterval={''}
-                        variant="bodyThin"
-                        text="How It Works"
-                        type="button"
-                        aria-label="How It Works"
-                      />
-                    </div>
                     {/* Title */}
                     <div className="space-y-2 md:space-y-4">
                       <h2 className="font-bold text-3xl lg:text-4xl text-gray-800 dark:text-gray-200">
@@ -67,7 +57,7 @@ export default async function FeaturePage() {
                           <li key={step.stepTitle} className="flex space-x-3">
                             {/* Solid Check */}
                             <svg
-                              className="flex-shrink-0 h-6 w-6 text-blue-600 dark:text-blue-500"
+                              className="flex-shrink-0 h-6 w-6"
                               width="16"
                               height="16"
                               viewBox="0 0 16 16"

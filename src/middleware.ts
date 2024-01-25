@@ -28,11 +28,15 @@ export default authMiddleware({
         // Define a mapping between paths and product IDs
         const regexToProductIds = {
           '^/dashboard/gtm.*': [
-            'prod_OZZrME91D1Tyue',
-            'prod_OaGCBK8Qe6Vofp',
-            'prod_OoCMHi502SCeOH',
+            'prod_PR6ETKqabgOXDt',
+            'prod_PR68ixfux75cGT',
+            'prod_PR67hSV5IpooDJ',
           ],
-          '^/dashboard/ga.*': ['prod_OQ3TPC9yMxJAeN'],
+          '^/dashboard/ga.*': [
+            'prod_PR67hSV5IpooDJ',
+            'prod_PR68ixfux75cGT',
+            'prod_PR6ETKqabgOXDt',
+          ],
         };
 
         // Subscription check
@@ -127,6 +131,8 @@ export default authMiddleware({
     '/features',
     '/pricing',
     '/contact',
+    '/tos',
+    '/privacy',
     '/api/webhooks(.*)',
   ],
   apiRoutes: [

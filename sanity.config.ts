@@ -1,28 +1,28 @@
 import { defineConfig } from 'sanity';
-import { deskTool } from 'sanity/desk';
+import { structureTool } from 'sanity/structure';
 import schemas from './sanity/schemas';
 
 export const config = defineConfig([
   {
     name: 'default',
-    projectId: process.env.SANITY_PROJECT_ID as string,
+    projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID as string,
     dataset: 'production',
     title: 'OptimaFlo CMS Production',
-    apiVersion: '2023-10-02',
+    apiVersion: '2024-01-25',
     basePath: '/admin',
-    plugins: [deskTool()],
+    plugins: [structureTool()],
     schema: {
       types: schemas,
     },
   },
   {
     name: 'sandbox',
-    projectId: process.env.SANITY_PROJECT_ID as string,
+    projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID as string,
     dataset: 'sandbox',
     title: 'OptimaFlo CMS Sandbox',
-    apiVersion: '2023-10-02',
+    apiVersion: '2024-01-25',
     basePath: '/admin-sandbox',
-    plugins: [deskTool()],
+    plugins: [structureTool()],
     schema: {
       types: schemas,
     },

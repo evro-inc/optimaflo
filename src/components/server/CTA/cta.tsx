@@ -1,38 +1,25 @@
 import React from 'react';
-import { ButtonSignIn } from '../../client/Button/Button';
 import { getHomePage } from '@/sanity/sanity-utils';
-import { LinkBody } from '../../client/Links/Links';
+import { LinkSignUp } from '../../client/Links/Links';
 
 export default async function CTA() {
   const homePage = await getHomePage();
 
   return (
-    <section className="relative overflow-hidden bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-500 via-blue-300 to-blue-500">
-      <div className="max-w-[85rem] mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-24 text-white-500">
-        <div className="text-center">
-          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold">
+    <section className="relative overflow-hidden bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blueBackground via-blueLightBackground bg-blueBackground text-secondary">
+      <div className="max-w-[85rem] mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-8">
+        <div className="text-center mx-auto">
+          <h2 className="block font-medium text-2xl md:text-3xl lg:text-4xl">
             {homePage[0].ctaTitle}
           </h2>
+        </div>
 
-          <p className="mt-3">{homePage[0].ctaDescription}</p>
+        <div className="max-w-2xl text-center mx-auto">
+          <p className="text-lg">{homePage[0].ctaTitle}</p>
+        </div>
 
-          <div className="pt-16 flex flex-col sm:flex-row justify-center items-center pb-10 space-y-4 sm:space-y-0 sm:space-x-4">
-            <ButtonSignIn
-              variant="bodyGray"
-              size="large"
-              text="Get started"
-              type="button"
-              aria-label="Get Started Button"
-              href="#"
-            />
-            
-            <LinkBody
-              variant="bodyOffWhite"
-              href="/features"
-              text="Learn more"
-              ariaLabel="Learn More Button"
-            />
-          </div>
+        <div className="flex flex-row justify-center items-center text-center pt-5">
+          <LinkSignUp className="w-1/4" variant="secondary" />
         </div>
       </div>
     </section>

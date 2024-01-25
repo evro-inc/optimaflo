@@ -14,12 +14,18 @@ import { ErrorMessage } from '@/src/components/client/modals/Error';
 
 // Dynamic imports for modals and forms
 const LimitReachedModal = dynamic(
-  () => import('../../../../../components/client/modals/limitReached').then((mod) => mod.LimitReached),
+  () =>
+    import('../../../../../components/client/modals/limitReached').then(
+      (mod) => mod.LimitReached
+    ),
   { ssr: false }
 );
 
 const NotFoundErrorModal = dynamic(
-  () => import('../../../../../components/client/modals/notFoundError').then((mod) => mod.NotFoundError),
+  () =>
+    import('../../../../../components/client/modals/notFoundError').then(
+      (mod) => mod.NotFoundError
+    ),
   { ssr: false }
 );
 
