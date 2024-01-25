@@ -1,12 +1,6 @@
-import { PersonIcon, MixIcon, DashboardIcon } from '@radix-ui/react-icons';
+import { PersonIcon, MixIcon } from '@radix-ui/react-icons';
 
 export const NavItems = [
-  {
-    title: 'Dashboard',
-    icon: DashboardIcon,
-    href: '/',
-    color: 'text-sky-500',
-  },
   {
     title: 'Profile',
     icon: PersonIcon,
@@ -40,7 +34,7 @@ export const NavItems = [
       },
     ],
   },
-  {
+  /*  {
     title: 'Google Analytics 4',
     icon: MixIcon,
     href: '/dashboard/ga',
@@ -54,5 +48,5 @@ export const NavItems = [
         href: '/dashboard/gtm/accounts',
       },
     ],
-  },
+  }, */
 ];

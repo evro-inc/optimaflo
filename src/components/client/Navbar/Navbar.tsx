@@ -5,7 +5,7 @@ import React from 'react';
 import Logo from '../../icons/Logo';
 import { ButtonSignIn } from '../../client/Button/Button';
 import { LinkSignUp, LinkNav } from '../Links/Links';
-import { SignedIn, SignedOut, UserButton, useSession } from '@clerk/nextjs';
+import { SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
 import { HamburgerMenuIcon } from '@radix-ui/react-icons';
 import { Sheet, SheetClose, SheetContent, SheetTrigger } from '../../ui/sheet';
 import { Button } from '../../ui/button';
@@ -18,8 +18,6 @@ const navigation = [
 ];
 
 export default function Navbar() {
-  const { session } = useSession();
-
   return (
     <header className="flex flex-wrap lg:justify-start lg:flex-nowrap z-40 w-full text-sm py-3 lg:py-0">
       {/* Left side: Logo */}
@@ -51,8 +49,8 @@ export default function Navbar() {
 
         <SheetContent>
           <nav className="md:hidden flex flex-col ml-auto gap-4 sm:gap-6">
-            {navigation.map((item, index) => (
-              <div className="font-medium p-0 sm:p-[10px]">
+            {navigation.map((item) => (
+              <div key={item.name} className="font-medium p-0 sm:p-[10px]">
                 <SheetClose asChild>
                   <LinkNav
                     href={item.href}
@@ -62,6 +60,14 @@ export default function Navbar() {
                 </SheetClose>
               </div>
             ))}
+            <SignedIn>
+              {/* Mount the UserButton component */}
+              <div className="font-medium p-0 sm:p-[10px]">
+                <SheetClose asChild>
+                  <LinkNav href="/profile" text="Profile" ariaLabel="profile" />
+                </SheetClose>
+              </div>
+            </SignedIn>
 
             <SignedOut>
               <SheetClose>
@@ -76,8 +82,11 @@ export default function Navbar() {
       </Sheet>
 
       <nav className="hidden lg:flex ml-auto gap-4 sm:gap-6">
-        {navigation.map((item, index) => (
-          <div className="flex lg:flex-row items-center font-medium">
+        {navigation.map((item) => (
+          <div
+            key={item.name}
+            className="flex lg:flex-row items-center font-medium"
+          >
             <Button variant="ghost" asChild>
               <Link aria-label={`Navigate to ${item.name}`} href={item.href}>
                 {item.name}
@@ -89,6 +98,13 @@ export default function Navbar() {
         <SignedIn>
           {/* Mount the UserButton component */}
           <div className="hidden lg:flex items-center font-medium p-0 sm:p-[10px]  w-full lg:w-auto">
+            <Link
+              href="/profile"
+              className="pr-10"
+              aria-label="profile page button"
+            >
+              Profile
+            </Link>
             <UserButton afterSignOutUrl="/" />
           </div>
         </SignedIn>

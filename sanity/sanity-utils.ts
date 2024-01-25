@@ -2,9 +2,9 @@ import { Page } from '@/src/lib/types/Page';
 import { createClient, groq } from 'next-sanity';
 
 export const client = createClient({
-  projectId: 'yrgkj5vi',
+  projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || '',
   dataset: process.env.VERCEL_ENV === 'production' ? 'production' : 'sandbox',
-  apiVersion: '2023-07-13',
+  apiVersion: '2024-01-25',
   useCdn: false,
 });
 

@@ -18,9 +18,8 @@ import {
   CardTitle,
 } from '../../ui/card';
 import { Button } from '../../ui/button';
-import { Separator } from "@/components/ui/separator"
+import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
-
 
 interface Props {
   products: ProductWithPrice[];
@@ -111,50 +110,52 @@ export default function PricingCards({ products = [] }: Props) {
         </div>
       )}
 
-        {/* Hero */}
+      {/* Hero */}
 
+      {/* End Grid */}
 
-        {/* End Grid */}
-
-        <div className="flex justify-center">
-          <Tabs defaultValue={allIntervals[0]} className="w-4/5">
-            <TabsList className="grid w-96 grid-cols-2 mx-auto">
-              {allIntervals.map((interval) => (
-                <TabsTrigger
-                  key={interval}
-                  value={interval!}
-                  className="px-2 py-1"
-                >
-                  {interval!.charAt(0).toUpperCase() + interval!.slice(1)}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+      <div className="flex justify-center">
+        <Tabs defaultValue={allIntervals[0]} className="w-4/5">
+          <TabsList className="grid w-96 grid-cols-2 mx-auto">
             {allIntervals.map((interval) => (
-              <TabsContent key={interval} value={interval!} className="p-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 lg:gap-8 justify-around items-end">
-                  {sortedProducts.map((product) => {
-                    const price: any = product.Price.find(
-                      (p) => p.interval === interval
-                    );
-                    if (!price) return null;                    
-                    return (
-                      <Card key={product.id}>
-                
+              <TabsTrigger
+                key={interval}
+                value={interval!}
+                className="px-2 py-1"
+              >
+                {interval!.charAt(0).toUpperCase() + interval!.slice(1)}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          {allIntervals.map((interval) => (
+            <TabsContent key={interval} value={interval!} className="mt-6">
+              <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6 justify-around items-end">
+                {sortedProducts.map((product) => {
+                  const price: any = product.Price.find(
+                    (p) => p.interval === interval
+                  );
+                  if (!price) return null;
+                  return (
+                    <Card key={product.id} className="flex flex-col h-full">
+                      <div className="flex flex-col justify-between flex-grow">
                         <CardHeader>
                           <CardTitle>{product.name}</CardTitle>
-                          <CardDescription>
+                          <CardDescription className="h-20 overflow-hidden text-ellipsis">
                             {product.description}
                           </CardDescription>
-                          <Separator className='my-4'/>
+                          <Separator className="my-4" />
                         </CardHeader>
                         <CardContent className="text-4xl font-bold">
-                            {new Intl.NumberFormat('en-US', {
-                              style: 'currency',
-                              currency: price.currency,
-                              minimumFractionDigits: 0,
-                            }).format(price.unitAmount / 100)} <span className='text-base capitalize'>Per {price.interval}</span>                        
+                          {new Intl.NumberFormat('en-US', {
+                            style: 'currency',
+                            currency: price.currency,
+                            minimumFractionDigits: 0,
+                          }).format(price.unitAmount / 100)}{' '}
+                          <span className="text-base capitalize">
+                            Per {price.interval}
+                          </span>
                         </CardContent>
-   
+
                         <CardContent className="grid gap-2">
                           <ul className="grid gap-2 text-sm">
                             <li>{product?.metadata?.bulletOne}</li>
@@ -163,27 +164,26 @@ export default function PricingCards({ products = [] }: Props) {
                           </ul>
                         </CardContent>
                         <CardFooter>
-                             <Button
-                              variant="default"
-                              className='w-full'
-                              onClick={() => handleCheckout(price, product)}
-                            >
-                              {subscription &&
-                              product.name === subscription.price?.Product?.name
-                                ? 'Manage'
-                                : 'Subscribe'}
-                            </Button>
+                          <Button
+                            variant="default"
+                            className="w-full"
+                            onClick={() => handleCheckout(price, product)}
+                          >
+                            {subscription &&
+                            product.name === subscription.price?.Product?.name
+                              ? 'Manage'
+                              : 'Subscribe'}
+                          </Button>
                         </CardFooter>
-                      </Card>
-                    );
-                  })}
-                </div>
-              </TabsContent>
-            ))}
-          </Tabs>
-        </div>
-
-
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            </TabsContent>
+          ))}
+        </Tabs>
+      </div>
     </>
   );
 }

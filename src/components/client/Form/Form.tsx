@@ -59,7 +59,7 @@ export const ContactForm = () => {
 
   return isSubmitted ? (
     <div className="transition-all duration-500 ease-in-out text-xl md:text-3xl py-20">
-      <p className="text-center font-semibold text-blue-500 pb-5">
+      <p className="text-center font-semibold  pb-5">
         Thank you for your message!
       </p>
       <p className="text-center text-gray-600">
@@ -74,7 +74,7 @@ export const ContactForm = () => {
         <div className="mt-12 flex flex-col lg:flex-row items-center sm:items-start gap-6 lg:gap-16">
           <div className="divide-y divide-gray-200 order-1 w-6/12 flex items-end">
             <div>
-              <h1 className="text-2xl font-bold sm:text-4xl pb-5 text-blue-300">
+              <h1 className="text-2xl font-bold sm:text-4xl pb-5">
                 Get In Touch
               </h1>
               <p className="mt-1 text-gray-600">

@@ -169,7 +169,7 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
 
     const createFeatureLimitsByTier = {
       /* Basic Tier */
-      prod_OoCMHi502SCeOH: {
+      prod_PR67hSV5IpooDJ: {
         create: {
           GTMContainer: 3,
           GTMTags: 30,
@@ -214,7 +214,7 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
         },
       },
       /* Pro Tier */
-      prod_OZZrME91D1RRo4: {
+      prod_PR68ixfux75cGT: {
         create: {
           GTMContainer: 10,
           GTMTags: 60,
@@ -259,7 +259,7 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
         },
       },
       /* Enterprise Tier */
-      prod_OaGCBK8Qe6Vofp: {
+      prod_PR6ETKqabgOXDt: {
         create: {
           GTMContainer: 10000,
           GTMTags: 10000,
@@ -315,6 +315,23 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
       update: subscriptionData,
       create: subscriptionData,
     });
+
+    if (createdOrUpdatedSubscription.status) {
+      await prisma.subscription.upsert({
+        where: {
+          userId_productId: {
+            userId,
+            productId,
+          },
+        },
+        update: {
+          status: createdOrUpdatedSubscription.status,
+        },
+        create: {
+          status: createdOrUpdatedSubscription.status,
+        },
+      });
+    }
 
     // Confirm that the subscription was created or updated
     if (!createdOrUpdatedSubscription) {
@@ -698,9 +715,13 @@ async function upsertInvoiceRecord(invoice: Stripe.Invoice) {
 
 async function grantAccessToContent(invoice: Stripe.Invoice) {
   const productAccessGranters = {
-    prod_OoCMHi502SCeOH: grantGtmAccess,
-    prod_OQ3TPC9yMxJAeN: grantGAAccess,
-    // Add more product IDs and access granters as needed
+    prod_PR67hSV5IpooDJ_GTM: grantGtmAccess,
+    prod_PR68ixfux75cGT_GTM: grantGtmAccess,
+    prod_PR6ETKqabgOXDt_GTM: grantGtmAccess,
+
+    prod_PR67hSV5IpooDJ_GA4: grantGAAccess,
+    prod_PR68ixfux75cGT_GA4: grantGAAccess,
+    prod_PR6ETKqabgOXDt_GA4: grantGAAccess,
   };
 
   // Get the product IDs associated with the invoice

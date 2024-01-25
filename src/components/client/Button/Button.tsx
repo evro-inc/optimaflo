@@ -33,35 +33,35 @@ const getModeClasses = (variant, billingInterval?) => {
   switch (variant) {
     case 'primary':
       baseClasses =
-        'cursor-pointer bg-blue-500 border border-blue-700 rounded-full text-white-500 inline-flex justify-center items-center gap-x-3 text-center hover:bg-blue-300 text-sm lg:text-base font-medium focus:outline-none focus:ring-2 focus:ring-yellow-600 focus:ring-offset-2 focus:ring-offset-white transition px-6 w-7/12 sm:w-auto';
+        'cursor-pointer bg-blue-500 border border-blue-700 rounded-full inline-flex justify-center items-center gap-x-3 text-center hover:bg-blue-300 text-sm lg:text-base font-medium focus:outline-none focus:ring-2 focus:ring-yellow-600 focus:ring-offset-2 focus:ring-offset-white transition px-6 w-7/12 sm:w-auto';
       break;
     case 'signup':
       baseClasses =
-        'cursor-pointer py-3 bg-blue-500 border border-blue-700 rounded-full text-white-500 inline-flex justify-center items-center gap-x-3 text-center hover:bg-blue-300 font-medium px-6 w-full lg:w-36 active:bg-blue-700 focus:outline-none focus:ring focus:ring-blue-100';
+        'cursor-pointer py-3 bg-blue-500 border border-blue-700 rounded-full inline-flex justify-center items-center gap-x-3 text-center hover:bg-blue-300 font-medium px-6 w-full lg:w-36 active:bg-blue-700 focus:outline-none focus:ring focus:ring-blue-100';
       break;
 
     case 'signupNav':
       baseClasses =
-        'cursor-pointer py-3 bg-blue-500 border border-blue-700 rounded-full text-white-500 inline-flex justify-center items-center gap-x-3 text-center hover:bg-blue-300 font-medium px-6 w-full lg:w-36 active:bg-blue-700 focus:outline-none focus:ring focus:ring-blue-100';
+        'cursor-pointer py-3 bg-blue-500 border border-blue-700 rounded-full  inline-flex justify-center items-center gap-x-3 text-center hover:bg-blue-300 font-medium px-6 w-full lg:w-36 active:bg-blue-700 focus:outline-none focus:ring focus:ring-blue-100';
       break;
 
     case 'body':
       baseClasses =
-        'cursor-pointer py-3 bg-blue-500 border border-blue-700 rounded-full text-white-500 inline-flex justify-center items-center gap-x-3 text-center hover:bg-blue-300 font-medium px-6 w-36 active:bg-blue-700 focus:outline-none focus:ring focus:ring-blue-100';
+        'cursor-pointer py-3 bg-blue-500 border border-blue-700 rounded-full  inline-flex justify-center items-center gap-x-3 text-center hover:bg-blue-300 font-medium px-6 w-36 active:bg-blue-700 focus:outline-none focus:ring focus:ring-blue-100';
       break;
     case 'bodyGray':
       baseClasses =
-        'cursor-pointer py-3 bg-offwhite-700 rounded-full text-blue-500 inline-flex justify-center items-center gap-x-3 text-center hover:bg-offwhite-500 font-medium px-0 sm:px-6 w-36 active:bg-gray-700 focus:outline-none focus:ring focus:ring-gray-100';
+        'cursor-pointer py-3 bg-offwhite-700 rounded-full  inline-flex justify-center items-center gap-x-3 text-center hover:bg-offwhite-500 font-medium px-0 sm:px-6 w-36 active:bg-gray-700 focus:outline-none focus:ring focus:ring-gray-100';
       break;
 
     case 'bodyLong':
       baseClasses =
-        'cursor-pointer py-3 bg-blue-500 border border-blue-700 rounded-full text-white-500 inline-flex justify-center items-center gap-x-3 text-center hover:bg-blue-300 font-medium px-6 w-56 active:bg-blue-700 focus:outline-none focus:ring focus:ring-blue-100 whitespace-nowrap';
+        'cursor-pointer py-3 bg-blue-500 border border-blue-700 rounded-full  inline-flex justify-center items-center gap-x-3 text-center hover:bg-blue-300 font-medium px-6 w-56 active:bg-blue-700 focus:outline-none focus:ring focus:ring-blue-100 whitespace-nowrap';
       break;
 
     case 'bodyThin':
       baseClasses =
-        'bg-offwhite-600 rounded-full text-blue-500 inline-flex justify-center items-center gap-x-3 text-center font-medium uppercase w-36';
+        'bg-offwhite-600 rounded-full  inline-flex justify-center items-center gap-x-3 text-center font-medium uppercase w-36';
       break;
 
     case 'circle':
@@ -75,7 +75,7 @@ const getModeClasses = (variant, billingInterval?) => {
       break;
     case 'subscribe':
       baseClasses =
-        'cursor-pointer py-3 rounded-full inline-flex justify-center items-center gap-x-3 text-center font-medium px-6 w-24 hover:bg-blue-500 hover:text-white-500 transition active:bg-blue-500 focus:outline-none focus:ring focus:ring-blue-100 focus:bg-blue-500 focus:text-white-500 mx-2';
+        'cursor-pointer py-3 rounded-full inline-flex justify-center items-center gap-x-3 text-center font-medium px-6 w-24 hover:bg-blue-500 hover: transition active:bg-blue-500 focus:outline-none focus:ring focus:ring-blue-100 focus:bg-blue-500 focus: mx-2';
       break;
     case 'delete':
       baseClasses =
@@ -88,7 +88,7 @@ const getModeClasses = (variant, billingInterval?) => {
 
     case 'appPrimary':
       baseClasses =
-        'inline-flex justify-center items-center gap-2 rounded-md border font-medium bg-blue-500 text-white-500 shadow-sm align-middle hover:bg-white-500 hover:text-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white focus:ring-blue-600 transition-all text-sm whitespace-nowrap w-24 h-20';
+        'inline-flex justify-center items-center gap-2 rounded-md border font-medium bg-blue-500  shadow-sm align-middle hover:bg-white-500 hover: focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white focus:ring-blue-600 transition-all text-sm whitespace-nowrap w-24 h-20';
       break;
     default:
       baseClasses = '';
@@ -151,7 +151,7 @@ export const ButtonTheme = ({
       {resolvedTheme === 'dark' ? (
         <SunIcon className="w-6 h-6 text-yellow-500" />
       ) : (
-        <MoonIcon className="w-6 h-6 text-blue-500" />
+        <MoonIcon className="w-6 h-6 " />
       )}
     </Button>
   );
@@ -240,7 +240,7 @@ export const ButtonSubscribe = ({
     return [modeClass].join(' ');
   }, [variant, billingInterval]);
 
-  const selectedClasses = isselected ? 'bg-blue-500 text-white-500' : '';
+  const selectedClasses = isselected ? 'bg-blue-500 ' : '';
 
   return (
     <Button

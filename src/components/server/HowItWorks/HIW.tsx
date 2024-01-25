@@ -19,8 +19,8 @@ export default async function HowItWorks() {
       {homePage.map(() => {
         return (
           <>
-            <div className="bg-white-500 flex justify-center items-center">
-              <div className="text-blue-500 grid grid-cols-1 lg:grid-cols-3 max-w-[85rem] mx-auto">
+            <div className="flex justify-center items-center">
+              <div className="grid grid-cols-1 lg:grid-cols-3 max-w-[85rem] mx-auto">
                 <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-0 lg:py-24 space-y-8 col-span-2 order-2 lg:order-1">
                   <div className="gap-y-4 text-left ">
                     <div>

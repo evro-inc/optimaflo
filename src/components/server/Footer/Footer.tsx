@@ -1,9 +1,9 @@
 import Link from 'next/link';
-import { Images } from '../../client/Images/Images';
-import { LinkBody } from '../../client/Links/Links';
 import { Button } from '../../ui/button';
 
 export default function Footer() {
+  const currentYear = new Date().getFullYear();
+
   const navigation = [
     { name: 'About', href: '/about' },
     { name: 'Features', href: '/features' },
@@ -17,7 +17,7 @@ export default function Footer() {
         <div>
           <Link
             className="text-xl font-semibold text-black "
-            href="#"
+            href="/"
             aria-label="Brand"
           >
             OptimaFlo
@@ -27,8 +27,11 @@ export default function Footer() {
         {/* Second Column: Links */}
         <div>
           <nav className="hidden sm:flex ml-auto gap-4 sm:gap-6">
-            {navigation.map((item, index) => (
-              <div className="flex sm:flex-row items-center font-medium">
+            {navigation.map((item) => (
+              <div
+                key={item.name}
+                className="flex sm:flex-row items-center font-medium"
+              >
                 <Button variant="ghost" asChild>
                   <Link
                     aria-label={`Navigate to ${item.name}`}
@@ -45,7 +48,7 @@ export default function Footer() {
 
       <div className="grid md:grid-cols-2 sm:grid-cols-1 gap-4 text-center pt-5">
         <p className="md:col-span-1 sm:col-span-1">
-          <span>Copyright © 2023 OptimaFlo.</span>
+          <span>Copyright ©{currentYear} OptimaFlo.</span>{' '}
           <span> All Rights Reserved.</span>
         </p>
 
@@ -54,20 +57,14 @@ export default function Footer() {
           {/* Your social media buttons go here */}
 
           <div className="inline-block px-4">
-            <LinkBody
-              variant="link"
-              text="Terms of Service"
-              href="/tos"
-              ariaLabel="Terms of Service"
-            />
+            <Link aria-label="Terms of Service" href="/tos">
+              Terms of Service
+            </Link>
           </div>
 
-          <LinkBody
-            variant="link"
-            text="Privacy Policy"
-            href="/privacy"
-            ariaLabel="Privacy Policy"
-          />
+          <Link aria-label="Privacy Policy" href="/privacy">
+            Privacy Policy
+          </Link>
         </div>
       </div>
     </footer>

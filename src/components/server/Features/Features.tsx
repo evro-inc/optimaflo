@@ -2,7 +2,6 @@ import React from 'react';
 import { client, getHomePage } from '@/sanity/sanity-utils';
 import imageUrlBuilder from '@sanity/image-url';
 import { Images } from '../../client/Images/Images';
-import { Button } from '../../ui/button';
 
 const builder = imageUrlBuilder(client);
 
@@ -20,7 +19,7 @@ export default async function Features() {
       {homePage.map(() => {
         return (
           <>
-            <div className="max-w-[85rem] mx-auto px-4 sm:px-6 lg:px-8 py-24 space-y-8 bg-offBackground">
+            <div className=" mx-auto px-4 sm:px-6 lg:px-8 py-24 space-y-8 bg-offBackground">
               <div className="text-left">
                 <h2 className="block font-medium text-2xl md:text-3xl lg:text-4xl pt-5 pb-10">
                   Explore Our Amazing Features

@@ -20,10 +20,10 @@ export default async function Hero() {
               <div className="container mx-auto px-2 py-20 w-full">
                 {/* Title */}
                 <header className="container mx-auto px-2 py-6 sm:py-20 w-full text-center">
-                  <h1 className="font-bold text-3xl md:text-5xl lg:text-6xl ">
+                  <h1 className="font-bold text-3xl md:text-5xl lg:text-6xl">
                     {page.title} <span>{page.spanTitle}</span>
                   </h1>
-                  <p className="mt-5 max-w-xl mx-auto pb-8 px-5 text-md md:text-2xl lg:text-3xl">
+                  <p className="mt-5 max-w-2xl mx-auto pb-8 px-5 text-md md:text-2xl lg:text-3xl">
                     {page.subtitle}
                   </p>
                 </header>

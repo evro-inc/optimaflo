@@ -1,5 +1,4 @@
 import { getAboutPage } from '@/sanity/sanity-utils';
-import { ButtonNull } from '@/src/components/client/Button/Button';
 import { Images } from '@/src/components/client/Images/Images';
 import CTA from '@/src/components/server/CTA/cta';
 import FAQ from '@/src/components/server/FAQ/Faq';
@@ -16,7 +15,7 @@ export default async function HowItWorks() {
             <section className="pb-24">
               <div className="max-w-[85rem] mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-10">
                 <div className="mt-5 max-w-2xl text-center mx-auto">
-                  <h1 className="block font-bold text-blue-300 text-4xl md:text-5xl lg:text-6xl ">
+                  <h1 className="block font-bold text-4xl md:text-5xl lg:text-6xl ">
                     {page.title}
                   </h1>
 
@@ -37,7 +36,7 @@ export default async function HowItWorks() {
             {/* Content */}
 
             <section className="bg-white-500 flex items-center pt-20 pb-10 sm:py-40">
-              <div className="max-w-screen-xl mx-auto text-blue-500  flex flex-col lg:flex-row">
+              <div className="max-w-screen-xl mx-auto flex flex-col lg:flex-row">
                 <div className="px-4 sm:px-6 lg:px-8 py-0 lg:py-24 flex flex-col space-y-8 lg:w-1/2">
                   <div className="flex flex-col gap-y-4 text-left">
                     <div>
@@ -64,7 +63,7 @@ export default async function HowItWorks() {
             </section>
 
             <section className="bg-white-500  flex flex-col-reverse lg:flex-row items-center pt-20 pb-10 sm:py-40">
-              <div className="max-w-screen-xl mx-auto text-blue-500  flex flex-col lg:flex-row">
+              <div className="max-w-screen-xl mx-auto flex flex-col lg:flex-row">
                 <div className="flex-1 flex items-center justify-center sm:justify-end order-last lg:order-none">
                   {' '}
                   {/* Added order-last and lg:order-none */}
