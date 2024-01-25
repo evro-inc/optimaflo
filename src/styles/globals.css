@@ -40,6 +40,9 @@
     --radius: 0rem;
     --button-bg: var(--background);
     --button-hover-bg: var(--primary);
+    --custom-bg-offwhite: 270, 100%, 98%;
+    --custom-color-blue: 229, 65%, 17%;
+    --custom-color-bluelight: 234, 43%, 35%;
   }
 
   .dark {
@@ -64,6 +67,9 @@
     --ring: 240 4.9% 83.9%;
     --button-bg: var(--foreground);
     --button-hover-bg: var(--secondary);
+    --custom-bg-offwhite: 270, 100%, 98%;
+    --custom-color-blue: 229, 65%, 17%;
+    --custom-color-bluelight: 234, 43%, 35%;
   }
 }
  

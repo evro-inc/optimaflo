@@ -1,14 +1,13 @@
 'use client';
 import Link from 'next/link';
 
-import { useRef } from 'react';
 import React from 'react';
 import Logo from '../../icons/Logo';
 import { ButtonSignIn } from '../../client/Button/Button';
 import { LinkSignUp, LinkNav } from '../Links/Links';
-import { UserButton, useSession } from '@clerk/nextjs';
+import { SignedIn, SignedOut, UserButton, useSession } from '@clerk/nextjs';
 import { HamburgerMenuIcon } from '@radix-ui/react-icons';
-import { Sheet, SheetContent, SheetTrigger } from '../../ui/sheet';
+import { Sheet, SheetClose, SheetContent, SheetTrigger } from '../../ui/sheet';
 import { Button } from '../../ui/button';
 
 const navigation = [
@@ -19,7 +18,6 @@ const navigation = [
 ];
 
 export default function Navbar() {
-  const menuRef = useRef<HTMLDivElement | null>(null);
   const { session } = useSession();
 
   return (
@@ -37,57 +35,69 @@ export default function Navbar() {
       </div>
 
       <Sheet>
-        <SheetTrigger asChild>
-          <Button variant="toggle" className="lg:hidden ml-auto">
-            <HamburgerMenuIcon className="h-6 w-6" />
-          </Button>
-        </SheetTrigger>
+        <div className="flex ml-auto items-center">
+          <SignedIn>
+            {/* Mount the UserButton component */}
+            <div className="px-5 lg:hidden">
+              <UserButton afterSignOutUrl="/" />
+            </div>
+          </SignedIn>
+          <SheetTrigger asChild>
+            <Button variant="ghost" className="lg:hidden">
+              <HamburgerMenuIcon className="h-6 w-6" />
+            </Button>
+          </SheetTrigger>
+        </div>
+
         <SheetContent>
           <nav className="md:hidden flex flex-col ml-auto gap-4 sm:gap-6">
             {navigation.map((item, index) => (
               <div className="font-medium p-0 sm:p-[10px]">
-                <LinkNav
-                  href={item.href}
-                  text={item.name}
-                  ariaLabel={`Navigate to ${item.name}`}
-                />
+                <SheetClose asChild>
+                  <LinkNav
+                    href={item.href}
+                    text={item.name}
+                    ariaLabel={`Navigate to ${item.name}`}
+                  />
+                </SheetClose>
               </div>
             ))}
 
-            {/* Container for vertical display */}
-            {session?.user ? (
-              <UserButton afterSignOutUrl="/" />
-            ) : (
-              <>
-                <ButtonSignIn />
-                <LinkSignUp />
-              </>
-            )}
+            <SignedOut>
+              <SheetClose>
+                <ButtonSignIn className="w-full" />
+              </SheetClose>
+              <SheetClose>
+                <LinkSignUp variant="default" className="w-full" />
+              </SheetClose>
+            </SignedOut>
           </nav>
         </SheetContent>
       </Sheet>
 
       <nav className="hidden lg:flex ml-auto gap-4 sm:gap-6">
         {navigation.map((item, index) => (
-          <div className="flex lg:flex-row items-center font-medium  p-0 sm:p-[10px]  w-full lg:w-auto">
-            <LinkNav
-              href={item.href}
-              text={item.name}
-              ariaLabel={`Navigate to ${item.name}`}
-            />
+          <div className="flex lg:flex-row items-center font-medium">
+            <Button variant="ghost" asChild>
+              <Link aria-label={`Navigate to ${item.name}`} href={item.href}>
+                {item.name}
+              </Link>
+            </Button>
           </div>
         ))}
 
-        {session?.user ? (
+        <SignedIn>
+          {/* Mount the UserButton component */}
           <div className="hidden lg:flex items-center font-medium p-0 sm:p-[10px]  w-full lg:w-auto">
             <UserButton afterSignOutUrl="/" />
           </div>
-        ) : (
+        </SignedIn>
+        <SignedOut>
           <div className="flex lg:flex-row items-center font-medium  p-0 sm:p-[10px]  w-full lg:w-auto">
             <ButtonSignIn className="mr-4" /> {/* Adds margin to the right */}
-            <LinkSignUp />
+            <LinkSignUp variant="default" />
           </div>
-        )}
+        </SignedOut>
       </nav>
     </header>
   );

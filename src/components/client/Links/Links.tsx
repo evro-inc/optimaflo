@@ -26,7 +26,7 @@ const getLinkModeClasses = (variant) => {
 
 const BASE_LINK_CLASSES = 'cursor-pointer';
 
-export const LinkSignUp = ({ ...props }) => {
+export const LinkSignUp = ({ ...props }, variant?) => {
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <SignUpButton
@@ -34,7 +34,7 @@ export const LinkSignUp = ({ ...props }) => {
         redirectUrl="/profile"
         afterSignUpUrl="/pricing"
       >
-        <Button {...props} aria-label="Sign up with Google">
+        <Button variant={variant} {...props} aria-label="Sign up with Google">
           Sign Up
         </Button>
       </SignUpButton>

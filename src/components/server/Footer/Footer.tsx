@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Images } from '../../client/Images/Images';
 import { LinkBody } from '../../client/Links/Links';
+import { Button } from '../../ui/button';
 
 export default function Footer() {
   const navigation = [
@@ -25,35 +26,20 @@ export default function Footer() {
 
         {/* Second Column: Links */}
         <div>
-          <ul className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 items-center">
-            {navigation.map((item) => (
-              <li key={item.name}>
-                <LinkBody
-                  href={item.href}
-                  variant="nav"
-                  text={item.name}
-                  ariaLabel={`Navigate to ${item.name}`}
-                />
-              </li>
+          <nav className="hidden sm:flex ml-auto gap-4 sm:gap-6">
+            {navigation.map((item, index) => (
+              <div className="flex sm:flex-row items-center font-medium">
+                <Button variant="ghost" asChild>
+                  <Link
+                    aria-label={`Navigate to ${item.name}`}
+                    href={item.href}
+                  >
+                    {item.name}
+                  </Link>
+                </Button>
+              </div>
             ))}
-          </ul>
-        </div>
-
-        {/* Third Column: Social Media Buttons */}
-        <div>
-          {/* Your social media buttons go here */}
-          <Link
-            href="https://twitter.com/OptimaFlo"
-            aria-label="Twitter"
-            target="_blank"
-          >
-            <Images
-              src="/logo-black.png"
-              width={35}
-              height={35}
-              alt="OptimaFlo Logo"
-            />
-          </Link>
+          </nav>
         </div>
       </div>
 

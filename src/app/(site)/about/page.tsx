@@ -41,15 +41,6 @@ export default async function HowItWorks() {
                 <div className="px-4 sm:px-6 lg:px-8 py-0 lg:py-24 flex flex-col space-y-8 lg:w-1/2">
                   <div className="flex flex-col gap-y-4 text-left">
                     <div>
-                      <ButtonNull
-                        billingInterval={''}
-                        variant="bodyThin"
-                        text="How It Works"
-                        type="button"
-                        aria-label="How It Works"
-                      />
-                    </div>
-                    <div>
                       <h2 className="font-medium text-2xl md:text-3xl lg:text-4xl pt-5 pb-10">
                         {page.subheadingTwo}
                       </h2>
@@ -89,15 +80,6 @@ export default async function HowItWorks() {
 
                 <div className="px-4 sm:px-6 lg:px-8 py-0 lg:py-24 flex flex-col space-y-8 lg:w-1/2">
                   <div className="flex flex-col gap-y-4 text-left">
-                    <div>
-                      <ButtonNull
-                        billingInterval={''}
-                        variant="bodyThin"
-                        text="How It Works"
-                        type="button"
-                        aria-label="How It Works"
-                      />
-                    </div>
                     <div>
                       <h2 className="font-medium text-2xl md:text-3xl lg:text-4xl pt-5 pb-10">
                         {page.subheadingTwo}

@@ -2,6 +2,8 @@ import React from 'react';
 import { getHomePage } from '@/sanity/sanity-utils';
 import { ButtonLink, ButtonNull } from '../../client/Button/Button';
 import { Logo } from '../../client/Images/Images';
+import { Button } from '../../ui/button';
+import Link from 'next/link';
 
 export default async function Integrations() {
   const homePage = await getHomePage();
@@ -17,16 +19,6 @@ export default async function Integrations() {
             >
               <div className="text-blue-500 ">
                 <div className="max-w-[85rem] mx-auto px-4 sm:px-6 lg:px-8 py-24 space-y-8">
-                  <div className="text-center">
-                    <ButtonNull
-                      billingInterval={''}
-                      variant="bodyThin"
-                      text="Integrations"
-                      type="button"
-                      aria-label="Explore Integrations"
-                    />
-                  </div>
-
                   <div className="max-w-3xl text-center mx-auto">
                     <h2 className="block font-medium text-2xl md:text-3xl lg:text-4xl">
                       {page.oneLiner}{' '}
@@ -38,14 +30,14 @@ export default async function Integrations() {
                   </div>
 
                   <div className="text-center">
-                    <ButtonLink
-                      billingInterval={''}
-                      href="/features"
-                      variant="bodyLong"
-                      text="Explore Integrations"
-                      type="button"
-                      aria-label="Explore Integrations Button"
-                    />
+                    <Button asChild>
+                      <Link
+                        href="/features"
+                        aria-label="Explore Integrations button"
+                      >
+                        Explore Integrations
+                      </Link>
+                    </Button>
                   </div>
                   <div className="flex justify-center items-center space-x-28 pt-10">
                     <Logo
