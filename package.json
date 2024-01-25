@@ -32,7 +32,8 @@
     "generate:storybook": "npm run build:tailwind && storybook build",
     "storybook:test": "test-storybook",
     "watch:storybook": "storybook dev -p 6006",
-    "watch:tailwind": "npx tailwindcss -i ./src/styles/globals.css -o ./src/styles/tailwind.css --watch"
+    "watch:tailwind": "npx tailwindcss -i ./src/styles/globals.css -o ./src/styles/tailwind.css --watch",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@clerk/nextjs": "^4.29.3",
