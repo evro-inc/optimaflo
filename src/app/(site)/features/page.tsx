@@ -1,4 +1,4 @@
-import { getFeaturesPage } from '@/sanity/sanity-utils';
+import { getFeaturesPage } from '@/src/lib/sanity/sanity-utils';
 import { Images } from '@/src/components/client/Images/Images';
 import CTA from '@/src/components/server/CTA/cta';
 import Features from '@/src/components/server/Features/Features';

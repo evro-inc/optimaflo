@@ -1,5 +1,5 @@
 import React from 'react';
-import { client, getHomePage } from '@/sanity/sanity-utils';
+import { client, getHomePage } from '@/src/lib/sanity/sanity-utils';
 import imageUrlBuilder from '@sanity/image-url';
 import { Images } from '../../client/Images/Images';
 
