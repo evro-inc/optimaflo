@@ -25,7 +25,8 @@ export default async function HowItWorks() {
     const aboutPage = await client.fetch<AboutPage[]>(
       `*[_type == "aboutPage"]`
     );
-    if (aboutPage) {
+    console.log('aboutPage', aboutPage);
+    if (aboutPage && Array.isArray(aboutPage)) {
       return (
         <div>
           {aboutPage.map((page) => {
@@ -120,6 +121,7 @@ export default async function HowItWorks() {
         </div>
       );
     } else {
+      console.error("Error fetching aboutPage:", error);
       return (
         <div>
           <h1>404</h1>
