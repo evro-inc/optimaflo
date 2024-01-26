@@ -41,7 +41,7 @@
     "@heroicons/react": "^2.1.1",
     "@hookform/resolvers": "^3.3.3",
     "@plunk/node": "^2.0.0",
-    "@prisma/client": "^5.7.1",
+    "@prisma/client": "^5.8.1",
     "@radix-ui/react-accordion": "^1.1.2",
     "@radix-ui/react-alert-dialog": "^1.0.5",
     "@radix-ui/react-avatar": "^1.0.4",
@@ -142,7 +142,7 @@
     "pino-pretty": "^10.2.0",
     "postcss": "^8.4.24",
     "prettier": "^2.8.8",
-    "prisma": "^5.7.1",
+    "prisma": "^5.8.1",
     "storybook": "^7.5.2",
     "typescript": "^5.1.3"
   },
