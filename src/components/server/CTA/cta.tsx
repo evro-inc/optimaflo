@@ -1,5 +1,5 @@
 import React from 'react';
-import { getHomePage } from '@/sanity/sanity-utils';
+import { getHomePage } from '@/src/lib/sanity/sanity-utils';
 import { LinkSignUp } from '../../client/Links/Links';
 
 export default async function CTA() {

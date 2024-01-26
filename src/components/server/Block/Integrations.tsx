@@ -1,5 +1,5 @@
 import React from 'react';
-import { getHomePage } from '@/sanity/sanity-utils';
+import { getHomePage } from '@/src/lib/sanity/sanity-utils';
 import { Button } from '../../ui/button';
 import Link from 'next/link';
 

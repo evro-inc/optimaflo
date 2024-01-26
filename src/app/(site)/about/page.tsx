@@ -1,10 +1,28 @@
-import { getAboutPage } from '@/sanity/sanity-utils';
 import { Images } from '@/src/components/client/Images/Images';
 import CTA from '@/src/components/server/CTA/cta';
 import FAQ from '@/src/components/server/FAQ/Faq';
+import {client} from '@/src/lib/sanity/sanity-utils';
+
+type AboutPage = {
+    id: string;
+    title: string;
+    subheadingOne: string;
+    mainImage: string;
+    paragraphOne: string;
+    subheadingTwo: string;
+    paragraphTwo: string;
+    subheadingThree: string;
+    paragraphThree: string;
+    teamMembers: {
+      name: string;
+      role: string;
+      image: string;
+    }[];
+};
+  
 
 export default async function HowItWorks() {
-  const aboutPage = await getAboutPage();
+  const aboutPage = await client.fetch<AboutPage[]>(`*[_type == "aboutPage"]`);
 
   return (
     <div>
