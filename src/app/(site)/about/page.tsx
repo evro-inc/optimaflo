@@ -121,7 +121,6 @@ export default async function HowItWorks() {
         </div>
       );
     } else {
-      console.error("Error fetching aboutPage:", error);
       return (
         <div>
           <h1>404</h1>
