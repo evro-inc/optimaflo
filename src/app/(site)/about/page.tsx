@@ -1,4 +1,3 @@
-import { getAboutPage } from '@/src/lib/sanity/sanity-utils';
 import { Images } from '@/src/components/client/Images/Images';
 import CTA from '@/src/components/server/CTA/cta';
 import FAQ from '@/src/components/server/FAQ/Faq';
