@@ -128,7 +128,7 @@ export default async function HowItWorks() {
       );
     }
   } catch (error) {
-        console.error("Error fetching aboutPage:", error);
+    console.error('Error fetching aboutPage:', error);
 
     return (
       <div>
