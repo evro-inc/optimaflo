@@ -30,7 +30,7 @@ export async function grantGtmAccess(customerId: string) {
 
   const userId = customerRecord.userId;
 
-  // Get the product IDs for the GTM products
+  // Get the product IDs for the GTM products - Needs to make IDs from Stripe webhook - see function grantAccessToContent
   const gtmProductIds = [
     'prod_PR67hSV5IpooDJ',
     'prod_PR68ixfux75cGT',

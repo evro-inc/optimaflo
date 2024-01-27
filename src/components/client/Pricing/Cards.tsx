@@ -20,6 +20,7 @@ import {
 import { Button } from '../../ui/button';
 import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 interface Props {
   products: ProductWithPrice[];
@@ -28,7 +29,7 @@ interface Props {
 export default function PricingCards({ products = [] }: Props) {
   const router = useRouter();
 
-  const [, /* priceIdLoading */ setPriceIdLoading] = useState<string>();
+  const [, setPriceIdLoading] = useState<string>();
   const { subscription } = useSelector(selectUser);
 
   const [showAlert, setShowAlert] = useState(false);
@@ -69,7 +70,12 @@ export default function PricingCards({ products = [] }: Props) {
         await stripe.redirectToCheckout({ sessionId });
       }
     } catch (error: any) {
-      throw new Error(error);
+      toast.error(error.message, {
+        action: {
+          label: 'Close',
+          onClick: () => toast.dismiss(),
+        },
+      });
     } finally {
       setPriceIdLoading(undefined);
     }
