@@ -28,7 +28,7 @@ function AccountForms() {
   const { selectedRows, isLimitReached, notFoundError } =
     useSelector(selectTable);
   const { showUpdate } = useSelector(selectEntity);
-  const [setAccountInfo] = useState({ accountId: [], name: [] });
+  const [, setAccountInfo] = useState({ accountId: [], name: [] }); // Update state initialization
 
   return (
     <>

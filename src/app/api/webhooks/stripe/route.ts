@@ -316,23 +316,6 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
       create: subscriptionData,
     });
 
-    if (createdOrUpdatedSubscription.status) {
-      await prisma.subscription.upsert({
-        where: {
-          userId_productId: {
-            userId,
-            productId,
-          },
-        },
-        update: {
-          status: createdOrUpdatedSubscription.status,
-        },
-        create: {
-          status: createdOrUpdatedSubscription.status,
-        },
-      });
-    }
-
     // Confirm that the subscription was created or updated
     if (!createdOrUpdatedSubscription) {
       throw new Error('Failed to create or update subscription');
@@ -340,6 +323,7 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
 
     // Step 2: Upsert tier limits
     const featureLimits = createFeatureLimitsByTier[productId];
+
     if (!featureLimits) {
       return;
     }
@@ -385,6 +369,22 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
     }
 
     await prisma.$transaction(operations);
+    if (createdOrUpdatedSubscription.status) {
+      await prisma.subscription.upsert({
+        where: {
+          userId_productId: {
+            userId,
+            productId,
+          },
+        },
+        update: {
+          status: createdOrUpdatedSubscription.status,
+        },
+        create: {
+          status: createdOrUpdatedSubscription.status,
+        },
+      });
+    }
   } catch (error: any) {
     throw new Error(error);
   }
@@ -714,10 +714,11 @@ async function upsertInvoiceRecord(invoice: Stripe.Invoice) {
 }
 
 async function grantAccessToContent(invoice: Stripe.Invoice) {
+  // needs to match ids for grantGtmAccess function
   const productAccessGranters = {
-    prod_PR67hSV5IpooDJ_GTM: grantGtmAccess,
-    prod_PR68ixfux75cGT_GTM: grantGtmAccess,
-    prod_PR6ETKqabgOXDt_GTM: grantGtmAccess,
+    prod_PR67hSV5IpooDJ: grantGtmAccess,
+    prod_PR68ixfux75cGT: grantGtmAccess,
+    prod_PR6ETKqabgOXDt: grantGtmAccess,
 
     prod_PR67hSV5IpooDJ_GA4: grantGAAccess,
     prod_PR68ixfux75cGT_GA4: grantGAAccess,

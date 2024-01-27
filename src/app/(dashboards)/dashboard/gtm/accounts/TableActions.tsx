@@ -12,7 +12,7 @@ const TableActions = ({ userId }) => {
     // Assuming you want to refresh cache for each workspace
     const redisRevalidate = `gtm:accounts:userId:${userId}`;
 
-    await revalidate(redisRevalidate, '/dashboard/gtm/accounts');
+    await revalidate(redisRevalidate, '/dashboard/gtm/accounts', userId);
     toast.info(
       'Updating our systems. This may take a minute or two to update on screen.',
       {
