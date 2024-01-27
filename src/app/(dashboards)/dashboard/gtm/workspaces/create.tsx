@@ -93,7 +93,7 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
 
   const addForm = () => {
     append({
-      accountId: '',
+      accountId: accounts[0]?.accountId,
       name: '',
       description: '',
       containerId: '',
