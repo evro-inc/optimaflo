@@ -92,7 +92,7 @@ function AccountFormUpdate({
         name: account.name,
       })),
     });
-  }, [selectedRows, form.reset]);
+  }, [selectedRows, form.reset, form]);
 
   // Function to process form submission
   // Function to process form submission

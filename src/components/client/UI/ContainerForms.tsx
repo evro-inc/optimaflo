@@ -8,7 +8,7 @@ import {
   toggleUpdate,
 } from '@/src/lib/redux/globalSlice';
 import { selectTable, setIsLimitReached } from '@/src/lib/redux/tableSlice';
-import { useError, useRowSelection } from '@/src/lib/helpers/client';
+import { useError } from '@/src/lib/helpers/client';
 
 import { ErrorMessage } from '@/src/components/client/modals/Error';
 

@@ -30,11 +30,9 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from '@/src/components/ui/dropdown-menu';
-import TableActions from './TableActions';
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
 import { revalidate } from '@/src/lib/helpers/server';
-import { Icon } from '@/src/components/client/Button/Button';
 import { ReloadIcon } from '@radix-ui/react-icons';
 import { toggleUpdate } from '@/src/lib/redux/sharedSlice';
 import { useDispatch } from 'react-redux';

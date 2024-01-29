@@ -5,7 +5,7 @@ import { auth } from '@clerk/nextjs';
 import { listGtmAccounts } from '@/src/lib/fetch/dashboard/gtm/actions/accounts';
 import { Skeleton } from '@/src/components/ui/skeleton';
 import { DataTable } from './table';
-import { Account, columns } from './columns';
+import { columns } from './columns';
 
 export default async function AccountPage({
   searchParams,
