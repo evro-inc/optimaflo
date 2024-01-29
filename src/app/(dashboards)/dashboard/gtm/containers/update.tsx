@@ -52,6 +52,7 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
   showOptions,
   onClose,
   selectedRows,
+  table,
 }) => {
   const dispatch = useDispatch();
   const { isLimitReached } = useSelector(selectTable);
@@ -205,6 +206,7 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
     } catch (error: any) {
       throw new Error(error);
     } finally {
+      table.setRowSelection({});
       dispatch(setLoading(false)); // Set loading to false
     }
   };
@@ -225,6 +227,7 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
     });
 
     dispatch(clearSelectedRows()); // Clear selectedRows
+    table.setRowSelection({});
 
     // Close the modal
     onClose();

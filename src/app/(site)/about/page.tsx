@@ -128,8 +128,6 @@ export default async function HowItWorks() {
       );
     }
   } catch (error) {
-    console.error('Error fetching aboutPage:', error);
-
     return (
       <div>
         <h1>404</h1>

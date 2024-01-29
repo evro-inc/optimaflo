@@ -1,10 +1,11 @@
 import React, { Suspense } from 'react';
-import ContainerTable from '@/src/app/(dashboards)/dashboard/gtm/containers/table';
+import { DataTable } from '@/src/app/(dashboards)/dashboard/gtm/containers/table';
 import { auth } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
 import { listGtmContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containers';
 import { listGtmAccounts } from '@/src/lib/fetch/dashboard/gtm/actions/accounts';
 import { Skeleton } from '@/src/components/ui/skeleton';
+import { columns } from './columns';
 
 export default async function ContainerPage({
   searchParams,
@@ -26,6 +27,21 @@ export default async function ContainerPage({
     accountData,
     containerData,
   ]);
+
+  const combinedData = containers.flat().map((container) => {
+    const account = accounts.find((a) => a.accountId === container.accountId);
+    if (account) {
+      return {
+        ...container,
+        accountName: account.name,
+      };
+    } else {
+      return {
+        ...container,
+        accountName: 'Unknown Account',
+      };
+    }
+  });
 
   return (
     <>
@@ -52,12 +68,13 @@ export default async function ContainerPage({
           </div>
         }
       >
-        <ContainerTable
-          accounts={accounts}
-          containers={containers}
-          query={query}
-          currentPage={currentPage}
-        />
+        <div className="container mx-auto py-10">
+          <DataTable
+            columns={columns}
+            data={combinedData}
+            accounts={accounts}
+          />
+        </div>
       </Suspense>
     </>
   );

@@ -8,7 +8,7 @@ import {
   toggleUpdate,
 } from '@/src/lib/redux/globalSlice';
 import { selectTable, setIsLimitReached } from '@/src/lib/redux/tableSlice';
-import { useError, useRowSelection } from '@/src/lib/helpers/client';
+import { useError } from '@/src/lib/helpers/client';
 
 import { ErrorMessage } from '@/src/components/client/modals/Error';
 
@@ -45,13 +45,11 @@ const FormUpdateContainer = dynamic(
 
 // In the component render method
 
-export default function ContainerForms({ accounts }) {
+export default function ContainerForms({ accounts, selectedRows, table }) {
   const dispatch = useDispatch();
   const { showCreate, showUpdate } = useSelector(selectGlobal);
   const { isLimitReached, notFoundError } = useSelector(selectTable);
-  const { selectedRows } = useRowSelection(
-    (container) => container.containerId
-  );
+
   const { error, clearError } = useError();
 
   return (
@@ -79,6 +77,7 @@ export default function ContainerForms({ accounts }) {
           onClose={() => dispatch(toggleUpdate())}
           accounts={accounts}
           selectedRows={selectedRows}
+          table={table}
         />
       )}
     </>

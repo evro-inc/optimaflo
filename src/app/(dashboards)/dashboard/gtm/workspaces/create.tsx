@@ -22,7 +22,6 @@ import { z } from 'zod';
 import { CreateWorkspaces } from '@/src/lib/fetch/dashboard/gtm/actions/workspaces';
 import dynamic from 'next/dynamic';
 import { toast } from 'sonner';
-import { Icon } from '../../../../../components/client/Button/Button';
 import { Cross1Icon } from '@radix-ui/react-icons';
 import {
   Card,
@@ -49,6 +48,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/src/components/ui/select';
+import { Button } from '@/src/components/ui/button';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -64,7 +64,7 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
   showOptions,
   onClose,
   accounts = [],
-  workspaces = [],
+  table = [],
 }) => {
   const formRefs = useRef<(HTMLFormElement | null)[]>([]);
   const dispatch = useDispatch();
@@ -76,7 +76,7 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
     defaultValues: {
       forms: [
         {
-          accountId: accounts[0]?.accountId,
+          accountId: table[0].accountId,
           name: '',
           description: '',
           containerId: '',
@@ -93,7 +93,7 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
 
   const addForm = () => {
     append({
-      accountId: accounts[0]?.accountId,
+      accountId: table[0].accountId,
       name: '',
       description: '',
       containerId: '',
@@ -249,7 +249,7 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
   };
 
   const accountIdsWithContainers = new Set(
-    workspaces.map((workspace) => workspace.accountId)
+    table.map((workspace) => workspace.accountId)
   );
 
   const accountsWithContainers = accounts.filter((account) =>
@@ -267,14 +267,17 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
             className="fixed top-0 left-0 w-full h-full flex flex-col items-center justify-start z-50 bg-white overflow-y-auto"
           >
             {/* Close Button */}
-            <Icon
-              className="absolute top-5 right-5 font-bold py-2 px-4"
-              text="Close"
-              icon={<Cross1Icon />}
-              variant="create"
+
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={handleClose}
-              billingInterval={undefined}
-            />
+              className="absolute top-5 right-5 font-bold"
+            >
+              <Cross1Icon className="h-4 w-4" />{' '}
+              <span className="sr-only">Close</span>
+            </Button>
+
             <ButtonGroup
               buttons={[
                 { text: 'Add Form', onClick: addForm },
@@ -294,7 +297,7 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
                 );
 
                 // Filter workspaces to only include those that belong to the selected account
-                const filteredWorkspaces = workspaces.filter(
+                const filteredWorkspaces = table.filter(
                   (workspace) => workspace.accountId === selectedAccountId
                 );
 

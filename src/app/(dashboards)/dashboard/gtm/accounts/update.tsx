@@ -44,13 +44,24 @@ import { NotFoundError } from '@/src/components/client/modals/notFoundError';
 // Defining the type for form data using Zod
 type Forms = z.infer<typeof UpdateAccountSchema>;
 
+interface Account {
+  accountId: string;
+  name: string;
+}
+
+interface AccountFormUpdateProps {
+  showOptions: boolean;
+  onClose: () => void;
+  selectedRows: Account[];
+  setAccountInfo: any;
+}
 // Functional component for updating account forms
 function AccountFormUpdate({
   showOptions,
   onClose,
   selectedRows,
   setAccountInfo,
-}) {
+}: AccountFormUpdateProps) {
   // Using Redux hooks for dispatching actions and selecting state
   const dispatch = useDispatch();
   const { isLimitReached, notFoundError } = useSelector(selectTable);
@@ -62,7 +73,10 @@ function AccountFormUpdate({
   // Setting up form handling using react-hook-form with Zod for validation
   const form = useForm<Forms>({
     defaultValues: {
-      forms: [{ accountId: '', name: '' }],
+      forms: selectedRows.map((account) => ({
+        accountId: account.accountId,
+        name: account.name,
+      })),
     },
     resolver: zodResolver(UpdateAccountSchema),
   });
@@ -72,12 +86,13 @@ function AccountFormUpdate({
 
   // useEffect to reset form values based on selected rows
   useEffect(() => {
-    const initialForms = Object.values(selectedRows).map((account: any) => ({
-      accountId: account?.accountId || '',
-      name: account?.name || '',
-    }));
-    form.reset({ forms: initialForms });
-  }, [selectedRows, form]);
+    form.reset({
+      forms: selectedRows.map((account) => ({
+        accountId: account.accountId,
+        name: account.name,
+      })),
+    });
+  }, [selectedRows, form.reset, form]);
 
   // Function to process form submission
   // Function to process form submission

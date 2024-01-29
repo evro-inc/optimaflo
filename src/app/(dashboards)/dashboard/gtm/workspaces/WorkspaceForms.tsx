@@ -8,7 +8,7 @@ import {
   toggleUpdate, // This was changed to be specific for workspaces
 } from '@/src/lib/redux/globalSlice'; // This was changed from sharedSlice
 import { selectTable, setIsLimitReached } from '@/src/lib/redux/tableSlice';
-import { useError, useRowSelection } from '@/src/lib/helpers/client';
+import { useError } from '@/src/lib/helpers/client';
 
 import { ErrorMessage } from '@/src/components/client/modals/Error';
 
@@ -37,14 +37,14 @@ const FormUpdateWorkspace = dynamic(() => import('./update'), {
   ssr: false,
 });
 
-function WorkspaceForms({ accounts, workspaces }) {
+function WorkspaceForms({ accounts, selectedRows, table }) {
   const dispatch = useDispatch();
   const { showCreate, showUpdate } = useSelector(selectGlobal);
   const { isLimitReached, notFoundError } = useSelector(selectTable);
-  const { selectedRows } = useRowSelection(
-    (workspace) => workspace.workspaceId
-  );
+
   const { error, clearError } = useError();
+
+  const tableData = table.getRowModel().rows.map((row) => row.original);
 
   return (
     <>
@@ -63,7 +63,7 @@ function WorkspaceForms({ accounts, workspaces }) {
           showOptions={showCreate}
           onClose={() => dispatch(toggleCreate())}
           accounts={accounts}
-          workspaces={workspaces}
+          table={tableData}
         />
       )}
       {showUpdate && (
@@ -72,6 +72,7 @@ function WorkspaceForms({ accounts, workspaces }) {
           onClose={() => dispatch(toggleUpdate())}
           accounts={accounts}
           selectedRows={selectedRows}
+          table={table}
         />
       )}
     </>
