@@ -100,7 +100,7 @@
     "stripe": "^13.3.0",
     "styled-components": "^5.3.11",
     "svix": "^1.13.0",
-    "tailwind-merge": "^2.2.0",
+    "tailwind-merge": "^2.2.1",
     "tailwindcss": "^3.3.2",
     "tailwindcss-animate": "^1.0.7",
     "ts-node": "^10.9.1",

@@ -59,6 +59,7 @@ const FormUpdateWorkspace: React.FC<FormUpdateWorkspaceProps> = ({
   showOptions,
   onClose,
   selectedRows,
+  table,
 }) => {
   const isLoading = useSelector(selectIsLoading);
   const formRefs = useRef<(HTMLFormElement | null)[]>([]);
@@ -204,6 +205,7 @@ const FormUpdateWorkspace: React.FC<FormUpdateWorkspaceProps> = ({
     } catch (error: any) {
       throw new Error(error);
     } finally {
+      table.setRowSelection({});
       dispatch(setLoading(false)); // Set loading to false
     }
   };
@@ -223,6 +225,7 @@ const FormUpdateWorkspace: React.FC<FormUpdateWorkspaceProps> = ({
     });
 
     dispatch(clearSelectedRows()); // Clear selectedRows
+    table.setRowSelection({});
 
     // Close the modal
     onClose();

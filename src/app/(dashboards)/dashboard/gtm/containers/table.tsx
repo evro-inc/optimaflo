@@ -37,7 +37,6 @@ import {
   tierCreateLimit,
   tierUpdateLimit,
 } from '@/src/lib/helpers/server';
-import { Icon } from '@/src/components/client/Button/Button';
 import { ReloadIcon } from '@radix-ui/react-icons';
 import { useDispatch } from 'react-redux';
 import ContainerForms from '@/src/components/client/UI/ContainerForms';
@@ -45,6 +44,17 @@ import { setIsLimitReached } from '@/src/lib/redux/tableSlice';
 import { notFound } from 'next/navigation';
 import { toggleCreate, toggleUpdate } from '@/src/lib/redux/globalSlice';
 import { useDeleteHook } from './delete';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/src/components/ui/alert-dialog';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -159,10 +169,10 @@ export function DataTable<TData, TValue>({
   };
 
   return (
-    <div>
+    <>
       <div className="flex items-center py-4">
         <Input
-          placeholder="Filter account names..."
+          placeholder="Filter container names..."
           value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
           onChange={(event) =>
             table.getColumn('name')?.setFilterValue(event.target.value)
@@ -184,26 +194,47 @@ export function DataTable<TData, TValue>({
             Update
           </Button>
 
-          <Button
-            disabled={Object.keys(table.getState().rowSelection).length === 0}
-            onClick={handleDelete}
-          >
-            Delete
-          </Button>
-
-          {/*           <Icon
-            variant="create"
-            onClick={refreshAllCache}
-            icon={<ReloadIcon />}
-          /> */}
-
-          {/* <ButtonUpdate selectedRows={table.getState().rowSelection} /> */}
-          {/*           <Button
-            disabled={Object.keys(table.getState().rowSelection).length === 0}
-            onClick={() => dispatch(toggleUpdate())}
-          >
-            Update
-          </Button> */}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="destructive"
+                disabled={
+                  Object.keys(table.getState().rowSelection).length === 0
+                }
+              >
+                <svg
+                  className="w-3 h-3"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  fill="currentColor"
+                  viewBox="0 0 16 16"
+                >
+                  <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z" />
+                  <path
+                    fillRule="evenodd"
+                    d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"
+                  />
+                </svg>
+                Delete
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently be
+                  deleted.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete}>
+                  Continue
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -231,7 +262,7 @@ export function DataTable<TData, TValue>({
           </DropdownMenu>
         </div>
       </div>
-      <div className="rounded-md border">
+      <div className="border bg-white border-gray-200 rounded-xl shadow-sm overflow-hidden dark:bg-slate-900 dark:border-gray-700">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -308,6 +339,6 @@ export function DataTable<TData, TValue>({
         selectedRows={selectedRowsData}
         table={table}
       />
-    </div>
+    </>
   );
 }

@@ -1,7 +1,5 @@
 import React, { Suspense } from 'react';
-import ContainerTable, {
-  DataTable,
-} from '@/src/app/(dashboards)/dashboard/gtm/containers/table';
+import { DataTable } from '@/src/app/(dashboards)/dashboard/gtm/containers/table';
 import { auth } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
 import { listGtmContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containers';
@@ -70,12 +68,6 @@ export default async function ContainerPage({
           </div>
         }
       >
-        {/*  <ContainerTable
-          accounts={accounts}
-          containers={containers}
-          query={query}
-          currentPage={currentPage}
-        /> */}
         <div className="container mx-auto py-10">
           <DataTable
             columns={columns}

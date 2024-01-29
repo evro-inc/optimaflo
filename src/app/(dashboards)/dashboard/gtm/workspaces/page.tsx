@@ -1,58 +1,12 @@
-'use server';
-
 import React, { Suspense } from 'react';
-import { notFound } from 'next/navigation';
+import { DataTable } from '@/src/app/(dashboards)/dashboard/gtm/workspaces/table';
 import { auth } from '@clerk/nextjs';
-import WorkspaceTable from './table';
-import { listGtmAccounts } from '@/src/lib/fetch/dashboard/gtm/actions/accounts';
+import { notFound } from 'next/navigation';
 import { listGtmWorkspaces } from '@/src/lib/fetch/dashboard/gtm/actions/workspaces';
 import { listGtmContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containers';
+import { listGtmAccounts } from '@/src/lib/fetch/dashboard/gtm/actions/accounts';
 import { Skeleton } from '@/src/components/ui/skeleton';
-
-/* async function getWorkspaces() {
-  try {
-    const { userId } = auth();
-    if (!userId) return notFound();
-
-    // Fetch accounts and containers in parallel
-    const accountsPromise = listGtmAccounts();
-    const containersPromise = accountsPromise.then(accounts =>
-      Promise.all(accounts.map(account => listGtmContainers()))
-    );
-
-    // Wait for containers to finish fetching
-    const accounts = await accountsPromise;
-    const containersNestedArray = await containersPromise;
-    const containers = containersNestedArray.flat();
-
-    // Initiate workspace fetches in parallel without waiting for containers to finish
-    const workspacesPromises = containers.map(container =>
-      listGtmWorkspaces()
-    );
-
-    // Wait for all workspace fetches to complete
-    const workspacesNestedArray = await Promise.all(workspacesPromises);
-    const workspaces = workspacesNestedArray.flat();
-
-    const combinedData = workspaces.map((workspace) => {
-      const account = accounts.find(
-        (acc) => acc.accountId === workspace.accountId
-      );
-      const container = workspaces.find(
-        (container) => container.containerId === workspace.containerId
-      );
-      return {
-        ...workspace,
-        accountName: account ? account.name : '',
-        containerName: container ? container.name : '',
-      };
-    });
-
-    return combinedData;
-  } catch (error: any) {
-    return notFound();
-  }
-} */
+import { columns } from './columns';
 
 export default async function WorkspacePage({
   searchParams,
@@ -76,6 +30,29 @@ export default async function WorkspacePage({
     containerData,
     workspaceData,
   ]);
+
+  const flatContainers = containers.flat();
+  const flatWorkspaces = workspaces.flat();
+
+  const combinedData = flatWorkspaces.map((workspace) => {
+    const account = accounts.find((a) => a.accountId === workspace.accountId);
+    const container = flatContainers.find(
+      (c) => c.containerId === workspace.containerId
+    );
+    if (account && container) {
+      return {
+        ...workspace,
+        accountName: account.name,
+        containerName: container.name,
+      };
+    } else {
+      return {
+        ...workspace,
+        accountName: 'Unknown Account',
+        containerName: 'Unknown Container',
+      };
+    }
+  });
 
   return (
     <>
@@ -102,13 +79,13 @@ export default async function WorkspacePage({
           </div>
         }
       >
-        <WorkspaceTable
-          accounts={accounts}
-          containers={containers}
-          workspaces={workspaces}
-          query={query}
-          currentPage={currentPage}
-        />
+        <div className="container mx-auto py-10">
+          <DataTable
+            columns={columns}
+            data={combinedData}
+            accounts={accounts}
+          />
+        </div>
       </Suspense>
     </>
   );

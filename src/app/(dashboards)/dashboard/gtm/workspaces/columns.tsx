@@ -7,17 +7,17 @@ import { ArrowUpDown } from 'lucide-react';
 
 // This type is used to define the shape of our data.
 // You can use a Zod schema here if you want.
-export type Container = {
+export type Workspace = {
   id: string;
   select: boolean;
+  workspaceName: string;
+  workspaceId: string;
   containerName: string;
   containerId: string;
-  gtmId: string;
   accountName: string;
-  usageContext: string;
 };
 
-export const columns: ColumnDef<Container>[] = [
+export const columns: ColumnDef<Workspace>[] = [
   {
     id: 'select',
     header: ({ table }) => (
@@ -49,6 +49,34 @@ export const columns: ColumnDef<Container>[] = [
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
+          Workspace Name
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+  },
+  {
+    accessorKey: 'workspaceId',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Workspace ID
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+  },
+  {
+    accessorKey: 'containerName',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
           Container Name
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
@@ -70,20 +98,6 @@ export const columns: ColumnDef<Container>[] = [
     },
   },
   {
-    accessorKey: 'publicId',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          GTM ID
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-  },
-  {
     accessorKey: 'accountName',
     header: ({ column }) => {
       return (
@@ -92,20 +106,6 @@ export const columns: ColumnDef<Container>[] = [
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
           Account Name
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-  },
-  {
-    accessorKey: 'usageContext',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Usage Context
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );

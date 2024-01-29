@@ -13,11 +13,8 @@ import { WorkspaceType, FeatureResponse } from '@/src/lib/types/types';
 import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
 
-export const useDeleteHook = () => {
+export const useDeleteHook = (selectedRows, table) => {
   const dispatch = useDispatch();
-  const { selectedRows } = useRowSelection(
-    (workspace) => `${workspace.containerId}-${workspace.workspaceId}`
-  );
 
   const handleDelete = async () => {
     toast('Deleting workspaces...', {
@@ -81,6 +78,7 @@ export const useDeleteHook = () => {
     }
 
     dispatch(clearSelectedRows());
+    table.setRowSelection({});
   };
 
   return handleDelete;
