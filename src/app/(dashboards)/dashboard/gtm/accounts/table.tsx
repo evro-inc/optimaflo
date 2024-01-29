@@ -36,7 +36,6 @@ import { toast } from 'sonner';
 import { revalidate } from '@/src/lib/helpers/server';
 import { Icon } from '@/src/components/client/Button/Button';
 import { ReloadIcon } from '@radix-ui/react-icons';
-import ButtonUpdate from '@/src/components/client/UI/ButtonUpdate';
 import { toggleUpdate } from '@/src/lib/redux/sharedSlice';
 import { useDispatch } from 'react-redux';
 import AccountForms from '@/src/components/client/UI/AccountForms';
@@ -87,9 +86,12 @@ export function DataTable<TData, TValue>({
 
   const refreshAllCache = async () => {
     // Assuming you want to refresh cache for each workspace
-    const redisRevalidate = `gtm:accounts:userId:${userId}`;
-
-    await revalidate(redisRevalidate, '/dashboard/gtm/accounts', userId);
+    const keys = [
+      `gtm:accounts:userId:${userId}`,
+      `gtm:containers:userId:${userId}`,
+      `gtm:workspaces:userId:${userId}`,
+    ];
+    await revalidate(keys, '/dashboard/gtm/accounts', userId);
     toast.info(
       'Updating our systems. This may take a minute or two to update on screen.',
       {
@@ -118,11 +120,9 @@ export function DataTable<TData, TValue>({
         />
 
         <div className="ml-auto space-x-4">
-          <Icon
-            variant="create"
-            onClick={refreshAllCache}
-            icon={<ReloadIcon />}
-          />
+          <Button variant="outline" size="icon" onClick={refreshAllCache}>
+            <ReloadIcon className="h-4 w-4" />
+          </Button>
 
           {/* <ButtonUpdate selectedRows={table.getState().rowSelection} /> */}
           <Button

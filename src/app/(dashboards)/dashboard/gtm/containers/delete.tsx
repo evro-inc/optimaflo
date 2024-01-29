@@ -12,11 +12,8 @@ import { ContainerType, FeatureResponse } from '@/src/lib/types/types';
 import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
 
-export const useDeleteHook = () => {
+export const useDeleteHook = (selectedRows, table) => {
   const dispatch = useDispatch();
-  const { selectedRows } = useRowSelection(
-    (container) => container.containerId
-  );
 
   const handleDelete = async () => {
     toast('Deleting containers...', {
@@ -32,15 +29,22 @@ export const useDeleteHook = () => {
     );
 
     const deleteOperations = uniqueAccountIds.map(async (accountId) => {
-      const containersToDelete = Object.entries(
-        selectedRows as { [key: string]: ContainerType }
-      )
-        .filter(([, rowData]) => rowData.accountId === accountId)
-        .map(([containerId]) => containerId);
+      const containersToDelete = selectedRows
+        .filter((rowData) => rowData.accountId === accountId)
+        .map((rowData) => `${rowData.accountId}-${rowData.containerId}`);
 
-      const containerNames = containersToDelete.map(
-        (containerId) => selectedRows[containerId].name
-      );
+      const containerNames = containersToDelete.map((combinedId) => {
+        const [accountId, containerId] = combinedId.split('-');
+        const container = selectedRows.find(
+          (rowData) =>
+            rowData.accountId === accountId &&
+            rowData.containerId === containerId
+        );
+        if (!container) {
+          return undefined; // This will help identify which combinedId is problematic
+        }
+        return container.name;
+      });
 
       return DeleteContainers(new Set(containersToDelete), containerNames);
     });
@@ -96,6 +100,7 @@ export const useDeleteHook = () => {
     }
 
     dispatch(clearSelectedRows());
+    table.setRowSelection({});
   };
   return handleDelete;
 };
