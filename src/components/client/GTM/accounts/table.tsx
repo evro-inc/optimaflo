@@ -6,7 +6,7 @@ import ButtonNext from '../../UI/ButtonNext';
 import ButtonUpdate from '../../UI/ButtonUpdate';
 import AccountForms from '../../UI/AccountForms';
 import { currentUser } from '@clerk/nextjs';
-import { listGtmAccounts } from '@/src/lib/fetch/dashboard/gtm/actions/accounts';
+import { listGtmAccounts } from '@/src/lib/fetch/dashboard/ga/actions/accounts';
 
 async function AccountTable() {
   const user = await currentUser();

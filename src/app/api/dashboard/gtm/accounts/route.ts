@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { ValidationError } from '@/src/lib/exceptions';
-import { listGtmAccounts } from '@/src/lib/fetch/dashboard/gtm/actions/accounts';
+import { listGtmAccounts } from '@/src/lib/fetch/dashboard/ga/actions/accounts';
 import { currentUserOauthAccessToken } from '@/src/lib/clerk';
 import { auth } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';

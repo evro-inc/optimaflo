@@ -122,6 +122,18 @@ export type UpdateAccountResult = {
   names?: string[];
 };
 
+export type GAUpdateAccountResult = {
+  success: boolean;
+  updatedAccounts?: { name: string, displayName: string }[];
+  limitReached?: boolean;
+  message?: string;
+  error?: string;
+  notFoundError?: boolean;
+  notFoundIds?: string[];
+  accountIds?: string[];
+  names?: string[];
+};
+
 export type FormUpdateContainerProps = {
   showOptions: boolean;
   onClose: () => void;

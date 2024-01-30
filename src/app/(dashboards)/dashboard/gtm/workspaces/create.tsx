@@ -16,10 +16,10 @@ import {
 } from '@/src/lib/redux/tableSlice';
 import { selectGlobal, setLoading } from '@/src/lib/redux/globalSlice';
 import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
-import { CreateWorkspaceSchema } from '@/src/lib/schemas/workspaces';
+import { CreateWorkspaceSchema } from '@/src/lib/schemas/gtm/workspaces';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { CreateWorkspaces } from '@/src/lib/fetch/dashboard/gtm/actions/workspaces';
+import { CreateWorkspaces } from '@/src/lib/fetch/dashboard/ga/actions/workspaces';
 import dynamic from 'next/dynamic';
 import { toast } from 'sonner';
 import { Cross1Icon } from '@radix-ui/react-icons';

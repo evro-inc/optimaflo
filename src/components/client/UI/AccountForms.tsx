@@ -10,7 +10,7 @@ const LimitReached = dynamic(
 );
 
 const AccountFormUpdate = dynamic(
-  () => import('../../../app/(dashboards)/dashboard/gtm/accounts/update'),
+  () => import('../../../app/(dashboards)/dashboard/ga/accounts/update'),
   {
     ssr: false,
   }
@@ -24,8 +24,9 @@ const NotFoundErrorModal = dynamic(
 );
 
 interface Account {
-  accountId: string;
   name: string;
+  displayName: string;
+  accountId: string; // Add the accountId property to the Account type
 }
 
 function AccountForms({ selectedRows }: { selectedRows: Account[] }) {

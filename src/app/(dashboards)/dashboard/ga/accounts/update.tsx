@@ -15,11 +15,11 @@ import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { updateAccounts } from '@/src/lib/fetch/dashboard/ga/actions/accounts';
 import { z } from 'zod';
-import { UpdateAccountSchema } from '@/src/lib/schemas/gtm/accounts';
+import { UpdateAccountSchema } from '@/src/lib/schemas/ga/accounts';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ButtonGroup } from '../../../../../components/client/ButtonGroup/ButtonGroup';
 import { LimitReached } from '../../../../../components/client/modals/limitReached';
-import { UpdateAccountResult } from '@/src/lib/types/types';
+import { GAUpdateAccountResult } from '@/src/lib/types/types';
 import { Icon } from '@/src/components/client/Button/Button';
 import { Cross1Icon } from '@radix-ui/react-icons';
 import {
@@ -45,8 +45,8 @@ import { NotFoundError } from '@/src/components/client/modals/notFoundError';
 type Forms = z.infer<typeof UpdateAccountSchema>;
 
 interface Account {
-  accountId: string;
   name: string;
+  displayName: string;
 }
 
 interface AccountFormUpdateProps {
@@ -74,8 +74,8 @@ function AccountFormUpdate({
   const form = useForm<Forms>({
     defaultValues: {
       forms: selectedRows.map((account) => ({
-        accountId: account.accountId,
         name: account.name,
+        displayName: account.displayName,
       })),
     },
     resolver: zodResolver(UpdateAccountSchema),
@@ -88,8 +88,8 @@ function AccountFormUpdate({
   useEffect(() => {
     form.reset({
       forms: selectedRows.map((account) => ({
-        accountId: account.accountId,
         name: account.name,
+        displayName: account.displayName,
       })),
     });
   }, [selectedRows, form.reset, form]);
@@ -104,13 +104,13 @@ function AccountFormUpdate({
 
     try {
       // Updating accounts with the API call
-      const res = (await updateAccounts({ forms })) as UpdateAccountResult;
+      const res = (await updateAccounts({ forms })) as GAUpdateAccountResult;
 
       // Check for successful updates and show toasts
       if (res && res.updatedAccounts) {
         res.updatedAccounts.forEach((account) => {
           toast.success(
-            `Account ${account.name} (ID: ${account.accountId}) updated successfully.`,
+            `Account ${account.displayName} updated successfully.`,
             {
               action: {
                 label: 'Close',
@@ -129,7 +129,7 @@ function AccountFormUpdate({
       // Lastly, check for not found errors
       if (res && res.notFoundError) {
         const notFoundAccounts = forms.filter((form) =>
-          res?.notFoundIds?.includes(form.accountId)
+          res?.notFoundIds?.includes(form.name)
         );
 
         if (notFoundAccounts.length > 0) {
@@ -141,7 +141,7 @@ function AccountFormUpdate({
               onClick: () => toast.dismiss(),
             },
           });
-        }else {
+        } else {
           toast.error(res.message || 'Unknown Error.', {
             action: {
               label: 'Close',
@@ -157,7 +157,7 @@ function AccountFormUpdate({
       dispatch(clearSelectedRows());
       dispatch(toggleAllSelected(false));
       onClose();
-      form.reset({ forms: [{ accountId: '', name: '' }] });
+      form.reset({ forms: [{name: '', displayName: '' }] });
       dispatch(setLoading(false));
     }
   };
@@ -165,7 +165,7 @@ function AccountFormUpdate({
   // Function to handle form close
   const handleClose = () => {
     dispatch(toggleAllSelected(false));
-    form.reset({ forms: [{ accountId: '', name: '' }] });
+    form.reset({ forms: [{ name: '', displayName: '', }] });
     dispatch(clearSelectedRows());
     onClose();
   };
@@ -194,7 +194,7 @@ function AccountFormUpdate({
               {
                 text: isLoading ? 'Submitting...' : 'Submit',
                 type: 'submit',
-                form: `updateAccount-${selectedRows[0]?.accountId}`,
+                form: `updateAccount-${selectedRows[0]?.name}`,
               },
             ]}
           />
@@ -213,7 +213,7 @@ function AccountFormUpdate({
                   >
                     <CardHeader className="bg-gray-100 p-4">
                       <CardTitle className="text-lg font-semibold">
-                        Account {field.name}
+                        Account {field.displayName}
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -222,21 +222,21 @@ function AccountFormUpdate({
                           className="space-y-6"
                           ref={(el) => (formRefs.current[index] = el)}
                           onSubmit={form.handleSubmit(processForm)}
-                          id={`updateAccount-${selectedRows[0]?.accountId}`}
+                          id={`updateAccount-${selectedRows[0]?.name}`}
                         >
                           <FormField
                             control={form.control}
-                            name={`forms.${index}.name`}
+                            name={`forms.${index}.displayName`}
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>New Container Name</FormLabel>
+                                <FormLabel>New Account Name</FormLabel>
                                 <FormDescription>
                                   Enter the new name of the account
                                 </FormDescription>
                                 <FormControl>
                                   <Input
                                     placeholder="Name of the account"
-                                    {...form.register(`forms.${index}.name`)}
+                                    {...form.register(`forms.${index}.displayName`)}
                                     {...field}
                                   />
                                 </FormControl>

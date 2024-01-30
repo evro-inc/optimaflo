@@ -1,14 +1,12 @@
 import React, { Suspense } from 'react';
-import { DataTable } from '@/src/app/(dashboards)/dashboard/gtm/workspaces/table';
-import { auth } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
-import { listGtmWorkspaces } from '@/src/lib/fetch/dashboard/ga/actions/workspaces';
-import { listGtmContainers } from '@/src/lib/fetch/dashboard/ga/actions/containers';
-import { listGtmAccounts } from '@/src/lib/fetch/dashboard/gtm/actions/accounts';
+import { auth } from '@clerk/nextjs';
 import { Skeleton } from '@/src/components/ui/skeleton';
+import { DataTable } from './table';
 import { columns } from './columns';
+import { listGaAccounts } from '@/src/lib/fetch/dashboard/ga/actions/accounts';
 
-export default async function WorkspacePage({
+export default async function AccountPage({
   searchParams,
 }: {
   searchParams?: {
@@ -20,39 +18,10 @@ export default async function WorkspacePage({
   const currentPage = Number(searchParams?.page) || 1;
   const { userId } = auth();
   if (!userId) return notFound();
+  const accounts = await listGaAccounts();
 
-  const accountData = await listGtmAccounts();
-  const containerData = await listGtmContainers();
-  const workspaceData = await listGtmWorkspaces();
-
-  const [accounts, containers, workspaces] = await Promise.all([
-    accountData,
-    containerData,
-    workspaceData,
-  ]);
-
-  const flatContainers = containers.flat();
-  const flatWorkspaces = workspaces.flat();
-
-  const combinedData = flatWorkspaces.map((workspace) => {
-    const account = accounts.find((a) => a.accountId === workspace.accountId);
-    const container = flatContainers.find(
-      (c) => c.containerId === workspace.containerId
-    );
-    if (account && container) {
-      return {
-        ...workspace,
-        accountName: account.name,
-        containerName: container.name,
-      };
-    } else {
-      return {
-        ...workspace,
-        accountName: 'Unknown Account',
-        containerName: 'Unknown Container',
-      };
-    }
-  });
+  console.log("accounts", accounts);
+  
 
   return (
     <>
@@ -80,11 +49,7 @@ export default async function WorkspacePage({
         }
       >
         <div className="container mx-auto py-10">
-          <DataTable
-            columns={columns}
-            data={combinedData}
-            accounts={accounts}
-          />
+          <DataTable columns={columns} data={accounts} />
         </div>
       </Suspense>
     </>

@@ -4,7 +4,7 @@ import Joi from 'joi';
 
 import { auth } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
-import { listGtmWorkspaces } from '@/src/lib/fetch/dashboard/gtm/actions/workspaces';
+import { listGtmWorkspaces } from '@/src/lib/fetch/dashboard/ga/actions/workspaces';
 import { redis } from '@/src/lib/redis/cache';
 import { currentUserOauthAccessToken } from '@/src/lib/clerk';
 import { revalidatePath } from 'next/cache';

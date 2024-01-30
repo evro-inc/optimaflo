@@ -1,7 +1,7 @@
 'use client';
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CreateContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containers';
+import { CreateContainers } from '@/src/lib/fetch/dashboard/ga/actions/containers';
 import { LimitReached } from '../../../../../components/client/modals/limitReached';
 import { ButtonGroup } from '../../../../../components/client/ButtonGroup/ButtonGroup';
 import {
@@ -17,7 +17,7 @@ import {
 } from '@/src/lib/redux/tableSlice';
 import { selectGlobal, setLoading } from '@/src/lib/redux/globalSlice';
 import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
-import { CreateContainerSchema } from '@/src/lib/schemas/containers';
+import { CreateContainerSchema } from '@/src/lib/schemas/gtm/containers';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';

@@ -3,8 +3,8 @@
 // Importing necessary modules and functions
 import { auth } from '@clerk/nextjs'; // Importing authentication function from Clerk
 import { limiter } from '../../../../bottleneck'; // Importing rate limiter configuration
-import { gtmRateLimit } from '../../../../redis/rateLimits'; // Importing rate limiting utility for Google Tag Manager
-import { UpdateAccountSchema } from '../../../../schemas/gtm/accounts'; // Importing schema for account updates
+import { gaRateLimit } from '../../../../redis/rateLimits'; // Importing rate limiting utility for Google Tag Manager
+import { UpdateAccountSchema } from '../../../../schemas/ga/accounts'; // Importing schema for account updates
 import { z } from 'zod'; // Importing Zod for schema validation
 import { revalidatePath } from 'next/cache'; // Importing function to revalidate cached paths in Next.js
 import { currentUserOauthAccessToken } from '@/src/lib/clerk'; // Importing function to get the current user's OAuth access token
@@ -18,7 +18,7 @@ type FormUpdateSchema = z.infer<typeof UpdateAccountSchema>;
 /************************************************************************************
  * List All Google Tag Manager Accounts
  ************************************************************************************/
-export async function listGtmAccounts() {
+export async function listGaAccounts() {
   // Initialization of retry mechanism
   let retries = 0;
   const MAX_RETRIES = 3;
@@ -32,7 +32,7 @@ export async function listGtmAccounts() {
   const token = await currentUserOauthAccessToken(userId);
   const accessToken = token[0].token;
 
-  const cacheKey = `gtm:accounts:userId:${userId}`;
+  const cacheKey = `ga:accounts:userId:${userId}`;
 
   const cachedValue = await redis.get(cacheKey);
 
@@ -44,7 +44,7 @@ export async function listGtmAccounts() {
   while (retries < MAX_RETRIES) {
     try {
       // Enforcing rate limit for the user
-      const { remaining } = await gtmRateLimit.blockUntilReady(
+      const { remaining } = await gaRateLimit.blockUntilReady(
         `user:${userId}`,
         1000
       );
@@ -54,7 +54,7 @@ export async function listGtmAccounts() {
         // Scheduling the API call with a rate limiter
         await limiter.schedule(async () => {
           // Setting up the API call
-          const url = `https://www.googleapis.com/tagmanager/v2/accounts?fields=account(accountId,name)`;
+          const url = `https://analyticsadmin.googleapis.com/v1beta/accounts?fields=accounts(name,displayName,regionCode)`;
           const headers = {
             Authorization: `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
@@ -72,7 +72,9 @@ export async function listGtmAccounts() {
           }
           // Parsing the response body
           const responseBody = await response.json();
-          data = responseBody.account;
+          data = responseBody.accounts;
+          console.log("data", data);
+          
         });
 
         // Caching the data in Redis with a 2 hour expiration time
@@ -116,12 +118,13 @@ export async function updateAccounts(
   // If user ID is not found, return a 'not found' error
   if (!userId) return notFound();
 
-  const cacheKey = `gtm:accounts:userId:${userId}`;
+  const cacheKey = `ga:accounts:userId:${userId}`;
 
   // Getting the current user's OAuth access token
   const token = await currentUserOauthAccessToken(userId);
 
-  // Not including tier limits on accounts for now
+  console.log("formData", formData);
+  
 
   // Initializing arrays for promises and tracking feature limits
   let updatePromises: Promise<any>[] = [];
@@ -130,7 +133,7 @@ export async function updateAccounts(
   // Retry loop
   while (retries < MAX_RETRIES) {
     try {
-      const { remaining } = await gtmRateLimit.blockUntilReady(
+      const { remaining } = await gaRateLimit.blockUntilReady(
         `user:${userId}`,
         1000
       );
@@ -175,7 +178,7 @@ export async function updateAccounts(
 
           // Creating promises for each form update
           updatePromises = forms.map(async (form) => {
-            const url = `https://www.googleapis.com/tagmanager/v2/accounts/${form.accountId}`;
+            const url = `https://analyticsadmin.googleapis.com/v1beta/${form.name}?updateMask=displayName`;
             const headers = {
               Authorization: `Bearer ${token[0].token}`,
               'Content-Type': 'application/json',
@@ -183,32 +186,35 @@ export async function updateAccounts(
             };
 
             const payload = {
-              accountId: form.accountId,
               name: form.name,
+              displayName: form.displayName,
             };
             // Performing the PUT request for each form
             const response = await fetch(url, {
-              method: 'PUT',
+              method: 'PATCH',
               body: JSON.stringify(payload),
               headers: headers,
             });
+
+            console.log("response", response);
+            
 
             const parsedResponse = await response.json();
 
             if (!response.ok) {
               if (response.status === 404) {
                 // Return an object indicating this account was not found
-                return { accountId: form.accountId, notFound: true };
+                return { name: form.name, notFound: true };
               } else {
                 // Handle other errors
                 const errorResponse: any = await handleApiResponseError(
                   response,
                   parsedResponse,
                   'Account',
-                  form.accountId
+                  form.name
                 );
                 errors.push(errorResponse.message);
-                return { accountId: form.accountId, error: true };
+                return { name: form.name, error: true };
               }
             } else {
               return { ...parsedResponse, success: true };
@@ -260,7 +266,7 @@ export async function updateAccounts(
           await redis.del(cacheKey);
 
           // Optionally fetching and caching the updated list of workspaces
-          const updatedAccounts = await listGtmAccounts();
+          const updatedAccounts = await listGaAccounts();
           await redis.set(
             cacheKey,
             JSON.stringify(updatedAccounts),
@@ -269,7 +275,7 @@ export async function updateAccounts(
           );
 
           // Revalidating the path to update the cached data
-          const path = `/dashboard/gtm/accounts`;
+          const path = `/dashboard/ga/accounts`;
           revalidatePath(path);
 
           // Returning success with the updated workspaces
