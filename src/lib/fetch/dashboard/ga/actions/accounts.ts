@@ -73,8 +73,7 @@ export async function listGaAccounts() {
           // Parsing the response body
           const responseBody = await response.json();
           data = responseBody.accounts;
-          console.log("data", data);
-          
+          console.log('data', data);
         });
 
         // Caching the data in Redis with a 2 hour expiration time
@@ -123,8 +122,7 @@ export async function updateAccounts(
   // Getting the current user's OAuth access token
   const token = await currentUserOauthAccessToken(userId);
 
-  console.log("formData", formData);
-  
+  console.log('formData', formData);
 
   // Initializing arrays for promises and tracking feature limits
   let updatePromises: Promise<any>[] = [];
@@ -196,8 +194,7 @@ export async function updateAccounts(
               headers: headers,
             });
 
-            console.log("response", response);
-            
+            console.log('response', response);
 
             const parsedResponse = await response.json();
 

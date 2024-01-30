@@ -157,7 +157,7 @@ function AccountFormUpdate({
       dispatch(clearSelectedRows());
       dispatch(toggleAllSelected(false));
       onClose();
-      form.reset({ forms: [{name: '', displayName: '' }] });
+      form.reset({ forms: [{ name: '', displayName: '' }] });
       dispatch(setLoading(false));
     }
   };
@@ -165,7 +165,7 @@ function AccountFormUpdate({
   // Function to handle form close
   const handleClose = () => {
     dispatch(toggleAllSelected(false));
-    form.reset({ forms: [{ name: '', displayName: '', }] });
+    form.reset({ forms: [{ name: '', displayName: '' }] });
     dispatch(clearSelectedRows());
     onClose();
   };
@@ -236,7 +236,9 @@ function AccountFormUpdate({
                                 <FormControl>
                                   <Input
                                     placeholder="Name of the account"
-                                    {...form.register(`forms.${index}.displayName`)}
+                                    {...form.register(
+                                      `forms.${index}.displayName`
+                                    )}
                                     {...field}
                                   />
                                 </FormControl>

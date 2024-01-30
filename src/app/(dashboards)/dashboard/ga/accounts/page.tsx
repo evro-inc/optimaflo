@@ -20,8 +20,7 @@ export default async function AccountPage({
   if (!userId) return notFound();
   const accounts = await listGaAccounts();
 
-  console.log("accounts", accounts);
-  
+  console.log('accounts', accounts);
 
   return (
     <>

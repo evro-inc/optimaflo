@@ -140,7 +140,7 @@ function AccountFormUpdate({
               onClick: () => toast.dismiss(),
             },
           });
-        }else {
+        } else {
           toast.error(res.message || 'Unknown Error.', {
             action: {
               label: 'Close',

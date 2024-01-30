@@ -1,4 +1,9 @@
-import { PersonIcon, MixIcon, BarChartIcon, Component1Icon } from '@radix-ui/react-icons';
+import {
+  PersonIcon,
+  MixIcon,
+  BarChartIcon,
+  Component1Icon,
+} from '@radix-ui/react-icons';
 
 export const NavItems = [
   {

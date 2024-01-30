@@ -124,7 +124,7 @@ export type UpdateAccountResult = {
 
 export type GAUpdateAccountResult = {
   success: boolean;
-  updatedAccounts?: { name: string, displayName: string }[];
+  updatedAccounts?: { name: string; displayName: string }[];
   limitReached?: boolean;
   message?: string;
   error?: string;
