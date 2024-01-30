@@ -31,14 +31,14 @@ export async function grantGtmAccess(customerId: string) {
   const userId = customerRecord.userId;
 
   // Get the product IDs for the GTM products - Needs to make IDs from Stripe webhook - see function grantAccessToContent
-  const gtmProductIds = [
+  const productIds = [
     'prod_PR67hSV5IpooDJ',
     'prod_PR68ixfux75cGT',
     'prod_PR6ETKqabgOXDt',
   ];
 
   // Iterate over the product IDs
-  for (const productId of gtmProductIds) {
+  for (const productId of productIds) {
     // Update the ProductAccess record for this user and product to grant access
     await prisma.productAccess.upsert({
       where: { userId_productId: { userId, productId } },

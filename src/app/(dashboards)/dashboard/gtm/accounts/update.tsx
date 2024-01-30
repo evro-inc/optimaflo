@@ -13,7 +13,7 @@ import { selectIsLoading, setLoading } from '@/src/lib/redux/globalSlice';
 import { useEffect, useRef } from 'react';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { updateAccounts } from '@/src/lib/fetch/dashboard/ga/actions/accounts';
+import { updateAccounts } from '@/src/lib/fetch/dashboard/gtm/actions/accounts';
 import { z } from 'zod';
 import { UpdateAccountSchema } from '@/src/lib/schemas/gtm/accounts';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -94,7 +94,6 @@ function AccountFormUpdate({
     });
   }, [selectedRows, form.reset, form]);
 
-  // Function to process form submission
   // Function to process form submission
   const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
