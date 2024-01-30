@@ -51,3 +51,5 @@ cypress.env.json
 /playwright-report/
 /playwright/.cache/
 auth.example.json
+
+.tar.gz
