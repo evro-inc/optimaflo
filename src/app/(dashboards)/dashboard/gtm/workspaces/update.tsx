@@ -21,7 +21,7 @@ import {
   FormUpdateWorkspaceProps,
 } from '@/src/lib/types/types';
 
-import { UpdateWorkspaces } from '@/src/lib/fetch/dashboard/ga/actions/workspaces';
+import { UpdateWorkspaces } from '@/src/lib/fetch/dashboard/actions/ga/workspaces';
 import { toast } from 'sonner';
 import { Icon } from '../../../../../components/client/Button/Button';
 import { Cross1Icon } from '@radix-ui/react-icons';

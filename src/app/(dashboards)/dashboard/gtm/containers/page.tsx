@@ -2,8 +2,8 @@ import React, { Suspense } from 'react';
 import { DataTable } from '@/src/app/(dashboards)/dashboard/gtm/containers/table';
 import { auth } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
-import { listGtmContainers } from '@/src/lib/fetch/dashboard/ga/actions/containers';
-import { listGtmAccounts } from '@/src/lib/fetch/dashboard/gtm/actions/accounts';
+import { listGtmContainers } from '@/src/lib/fetch/dashboard/actions/ga/containers';
+import { listGtmAccounts } from '@/src/lib/fetch/dashboard/actions/gtm/accounts';
 import { Skeleton } from '@/src/components/ui/skeleton';
 import { columns } from './columns';
 

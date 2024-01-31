@@ -1,4 +1,4 @@
-// src/app/(dashboards)/dashboard/gtm/workspaces/delete.tsx
+// src/app/(dashboards)/dashboard/gtm/accounts/delete.tsx
 'use client';
 
 import {
@@ -7,8 +7,8 @@ import {
   setIsLimitReached,
   setNotFoundError,
 } from '@/src/lib/redux/tableSlice';
-import { DeleteWorkspaces } from '@/src/lib/fetch/dashboard/actions/ga/workspaces';
-import { WorkspaceType, FeatureResponse } from '@/src/lib/types/types';
+import { deleteAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
+import { GA4AccountType, FeatureResponse } from '@/src/lib/types/types';
 import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
 
@@ -16,29 +16,29 @@ export const useDeleteHook = (selectedRows, table) => {
   const dispatch = useDispatch();
 
   const handleDelete = async () => {
-    toast('Deleting workspaces...', {
+    toast('Deleting accounts...', {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
       },
     });
 
-    // Use Object.values to get the values from the selectedRows object and cast them to WorkspaceType
-    const workspacesToDelete = Object.values(
-      selectedRows as Record<string, WorkspaceType>
-    ).map((workspace) => {
-      return `${workspace.accountId}-${workspace.containerId}-${workspace.workspaceId}`;
+    // Use Object.values to get the values from the selectedRows object and cast them to GA4AccountType
+    const ga4AccountsToDelete = Object.values(
+      selectedRows as Record<string, GA4AccountType>
+    ).map((account) => {
+      return account.name;
     });
 
-    const workspaceNames = workspacesToDelete.map((workspaceId) => {
-      // Extract the workspaceId part from the concatenated string
-      // Find the workspace by its workspaceId and return its name or 'Unknown'
-      return selectedRows[workspaceId]?.name || 'Unknown';
+    const accountNames = ga4AccountsToDelete.map((name) => {
+      // Extract the accountId part from the concatenated string
+      // Find the account by its accountId and return its name or 'Unknown'
+      return selectedRows[name]?.name || 'Unknown';
     });
 
-    const response: FeatureResponse = await DeleteWorkspaces(
-      new Set(workspacesToDelete),
-      workspaceNames
+    const response: FeatureResponse = await deleteAccounts(
+      new Set(ga4AccountsToDelete),
+      accountNames
     );
 
     if (!response.success) {

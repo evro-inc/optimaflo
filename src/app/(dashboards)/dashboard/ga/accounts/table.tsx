@@ -37,6 +37,8 @@ import { ReloadIcon } from '@radix-ui/react-icons';
 import { toggleUpdate } from '@/src/lib/redux/sharedSlice';
 import { useDispatch } from 'react-redux';
 import AccountForms from '@/src/components/client/UI/AccountForms';
+import { ButtonDelete } from '@/src/components/client/Button/Button';
+import { useDeleteHook } from './delete';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -104,7 +106,9 @@ export function DataTable<TData, TValue>({
   const selectedRowsData = table
     .getSelectedRowModel()
     .rows.map((row) => row.original);
-
+  const handleDelete = useDeleteHook(selectedRowsData, table);   
+  
+  
   return (
     <div>
       <div className="flex items-center py-4">
@@ -122,13 +126,17 @@ export function DataTable<TData, TValue>({
             <ReloadIcon className="h-4 w-4" />
           </Button>
 
-          {/* <ButtonUpdate selectedRows={table.getState().rowSelection} /> */}
           <Button
             disabled={Object.keys(table.getState().rowSelection).length === 0}
             onClick={() => dispatch(toggleUpdate())}
           >
             Update
           </Button>
+
+          <ButtonDelete 
+            disabled={Object.keys(table.getState().rowSelection).length === 0}  
+            onDelete={handleDelete}
+          />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

@@ -13,7 +13,7 @@ import { selectIsLoading, setLoading } from '@/src/lib/redux/globalSlice';
 import { useEffect, useRef } from 'react';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { updateAccounts } from '@/src/lib/fetch/dashboard/ga/actions/accounts';
+import { updateAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
 import { z } from 'zod';
 import { UpdateAccountSchema } from '@/src/lib/schemas/ga/accounts';
 import { AnimatePresence, motion } from 'framer-motion';

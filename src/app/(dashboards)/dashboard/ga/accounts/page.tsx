@@ -4,7 +4,7 @@ import { auth } from '@clerk/nextjs';
 import { Skeleton } from '@/src/components/ui/skeleton';
 import { DataTable } from './table';
 import { columns } from './columns';
-import { listGaAccounts } from '@/src/lib/fetch/dashboard/ga/actions/accounts';
+import { listGaAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
 
 export default async function AccountPage({
   searchParams,
@@ -19,8 +19,6 @@ export default async function AccountPage({
   const { userId } = auth();
   if (!userId) return notFound();
   const accounts = await listGaAccounts();
-
-  console.log('accounts', accounts);
 
   return (
     <>

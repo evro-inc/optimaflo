@@ -246,3 +246,9 @@ export type Workspace = {
   workspaceId: string;
   name: string;
 };
+
+
+export type GA4AccountType = {
+  name: string;
+  displayName: string;
+};
