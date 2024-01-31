@@ -31,7 +31,8 @@ export async function listGaAccounts() {
   // If user ID is not found, return a 'not found' error
   if (!userId) return notFound();
 
-  const token = await currentUserOauthAccessToken(userId);
+  const token: any = await currentUserOauthAccessToken(userId);
+  
   const accessToken = token[0].token;
 
   const cacheKey = `ga:accounts:userId:${userId}`;
