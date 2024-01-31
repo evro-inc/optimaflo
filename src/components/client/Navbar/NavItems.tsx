@@ -52,6 +52,12 @@ export const NavItems = [
         color: 'text-pink-500',
         href: '/dashboard/ga/accounts',
       },
+      {
+        title: 'Properties',
+        icon: BarChartIcon,
+        color: 'text-pink-500',
+        href: '/dashboard/ga/properties',
+      },
     ],
   },
 ];

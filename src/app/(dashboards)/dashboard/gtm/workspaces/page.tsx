@@ -3,7 +3,7 @@ import { DataTable } from '@/src/app/(dashboards)/dashboard/gtm/workspaces/table
 import { auth } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
 import { listGtmWorkspaces } from '@/src/lib/fetch/dashboard/actions/ga/workspaces';
-import { listGtmContainers } from '@/src/lib/fetch/dashboard/actions/ga/containers';
+import { listGtmContainers } from '@/src/lib/fetch/dashboard/actions/ga/properties';
 import { listGtmAccounts } from '@/src/lib/fetch/dashboard/actions/gtm/accounts';
 import { Skeleton } from '@/src/components/ui/skeleton';
 import { columns } from './columns';

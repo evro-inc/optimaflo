@@ -5,33 +5,31 @@ import dynamic from 'next/dynamic';
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 const LimitReached = dynamic(
-  () => import('../modals/limitReached').then((mod) => mod.LimitReached),
+  () =>
+    import('../../../../../components/client/modals/limitReached').then(
+      (mod) => mod.LimitReached
+    ),
   { ssr: false }
 );
 
 const AccountFormUpdate = dynamic(
-  () => import('../../../app/(dashboards)/dashboard/ga/accounts/update'),
+  () => import('../../../../../app/(dashboards)/dashboard/gtm/accounts/update'),
   {
     ssr: false,
   }
 );
 const NotFoundErrorModal = dynamic(
   () =>
-    import('../../../components/client/modals/notFoundError').then(
+    import('../../../../../components/client/modals/notFoundError').then(
       (mod) => mod.NotFoundError
     ),
   { ssr: false }
 );
 
-interface Account {
-  name: string;
-  displayName: string;
-  accountId: string; // Add the accountId property to the Account type
-}
-
-function AccountForms({ selectedRows }: { selectedRows: Account[] }) {
+function AccountForms() {
   const dispatch = useDispatch();
-  const { isLimitReached, notFoundError } = useSelector(selectTable);
+  const { selectedRows, isLimitReached, notFoundError } =
+    useSelector(selectTable);
   const { showUpdate } = useSelector(selectEntity);
   const [, setAccountInfo] = useState({ accountId: [], name: [] }); // Update state initialization
 

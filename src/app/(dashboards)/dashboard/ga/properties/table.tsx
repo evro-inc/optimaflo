@@ -32,37 +32,27 @@ import {
 } from '@/src/components/ui/dropdown-menu';
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
-import {
-  revalidate,
-  tierCreateLimit,
-  tierUpdateLimit,
-} from '@/src/lib/helpers/server';
+import { revalidate } from '@/src/lib/helpers/server';
 import { ReloadIcon } from '@radix-ui/react-icons';
+import { toggleUpdate } from '@/src/lib/redux/sharedSlice';
 import { useDispatch } from 'react-redux';
-import ContainerForms from '@/src/app/(dashboards)/dashboard/gtm/containers/ContainerForms';
-import { setIsLimitReached } from '@/src/lib/redux/tableSlice';
-import { notFound } from 'next/navigation';
-import { toggleCreate, toggleUpdate } from '@/src/lib/redux/globalSlice';
-import { useDeleteHook } from './delete';
+import AccountForms from '@/src/app/(dashboards)/dashboard/ga/accounts/AccountForms';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
+import { useDeleteHook } from './delete';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
-  accounts: any;
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
-  accounts,
 }: DataTableProps<TData, TValue>) {
   const dispatch = useDispatch();
 
   const { user } = useUser();
-
   const userId = user?.id;
-
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
@@ -92,14 +82,16 @@ export function DataTable<TData, TValue>({
     },
   });
 
+  // log selected rows
+
   const refreshAllCache = async () => {
     // Assuming you want to refresh cache for each workspace
     const keys = [
-      `gtm:accounts:userId:${userId}`,
-      `gtm:containers:userId:${userId}`,
-      `gtm:workspaces:userId:${userId}`,
+      `ga:accounts:userId:${userId}`,
+      `ga:containers:userId:${userId}`,
+      `ga:workspaces:userId:${userId}`,
     ];
-    await revalidate(keys, '/dashboard/gtm/containers', userId);
+    await revalidate(keys, '/dashboard/ga/accounts', userId);
     toast.info(
       'Updating our systems. This may take a minute or two to update on screen.',
       {
@@ -111,58 +103,16 @@ export function DataTable<TData, TValue>({
     );
   };
 
-  const handleCreateClick = async () => {
-    try {
-      if (!userId) {
-        return notFound();
-      }
-      const handleCreateLimit: any = await tierCreateLimit(
-        userId,
-        'GTMContainer'
-      );
-
-      if (handleCreateLimit && handleCreateLimit.limitReached) {
-        // Directly show the limit reached modal
-        dispatch(setIsLimitReached(true)); // Assuming you have an action to explicitly set this
-      } else {
-        // Otherwise, proceed with normal creation process
-        dispatch(toggleCreate());
-      }
-    } catch (error: any) {
-      throw new Error('Error in handleCreateClick:', error);
-    }
-  };
-
   const selectedRowsData = table
     .getSelectedRowModel()
     .rows.map((row) => row.original);
-
   const handleDelete = useDeleteHook(selectedRowsData, table);
 
-  const handleUpdateClick = async () => {
-    try {
-      if (!userId) {
-        return notFound();
-      }
-      const limitResponse: any = await tierUpdateLimit(userId, 'GTMContainer');
-
-      if (limitResponse && limitResponse.limitReached) {
-        // Directly show the limit reached modal
-        dispatch(setIsLimitReached(true)); // Assuming you have an action to explicitly set this
-      } else {
-        // Otherwise, proceed with normal creation process
-        dispatch(toggleUpdate());
-      }
-    } catch (error: any) {
-      throw new Error('Error in handleUpdateClick:', error);
-    }
-  };
-
   return (
-    <>
+    <div>
       <div className="flex items-center py-4">
         <Input
-          placeholder="Filter container names..."
+          placeholder="Filter account names..."
           value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
           onChange={(event) =>
             table.getColumn('name')?.setFilterValue(event.target.value)
@@ -175,11 +125,9 @@ export function DataTable<TData, TValue>({
             <ReloadIcon className="h-4 w-4" />
           </Button>
 
-          <Button onClick={handleCreateClick}>Create</Button>
-
           <Button
             disabled={Object.keys(table.getState().rowSelection).length === 0}
-            onClick={handleUpdateClick}
+            onClick={() => dispatch(toggleUpdate())}
           >
             Update
           </Button>
@@ -215,7 +163,7 @@ export function DataTable<TData, TValue>({
           </DropdownMenu>
         </div>
       </div>
-      <div className="border bg-white border-gray-200 rounded-xl shadow-sm overflow-hidden dark:bg-slate-900 dark:border-gray-700">
+      <div className="rounded-md border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -287,11 +235,7 @@ export function DataTable<TData, TValue>({
           Next
         </Button>
       </div>
-      <ContainerForms
-        accounts={accounts}
-        selectedRows={selectedRowsData}
-        table={table}
-      />
-    </>
+      <AccountForms selectedRows={selectedRowsData} />
+    </div>
   );
 }

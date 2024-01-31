@@ -179,7 +179,7 @@ export type CreateResult = {
   errors?: string;
 };
 
-export type FormCreateContainerProps = {
+export type FormCreateAccountProps = {
   showOptions: boolean;
   onClose: () => void;
   accounts: any;
@@ -246,7 +246,6 @@ export type Workspace = {
   workspaceId: string;
   name: string;
 };
-
 
 export type GA4AccountType = {
   name: string;

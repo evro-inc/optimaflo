@@ -1,13 +1,10 @@
 'use client';
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CreateContainers } from '@/src/lib/fetch/dashboard/actions/ga/containers';
+import { CreateContainers } from '@/src/lib/fetch/dashboard/actions/ga/properties';
 import { LimitReached } from '../../../../../components/client/modals/limitReached';
 import { ButtonGroup } from '../../../../../components/client/ButtonGroup/ButtonGroup';
-import {
-  FeatureResponse,
-  FormCreateContainerProps,
-} from '@/src/lib/types/types';
+import { FeatureResponse, FormCreateAccountProps } from '@/src/lib/types/types';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   selectTable,
@@ -62,7 +59,7 @@ const NotFoundErrorModal = dynamic(
 
 type Forms = z.infer<typeof CreateContainerSchema>;
 
-const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
+const FormCreateContainer: React.FC<FormCreateAccountProps> = ({
   showOptions,
   onClose,
   accounts = [],

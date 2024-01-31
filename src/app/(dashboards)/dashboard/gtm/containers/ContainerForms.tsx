@@ -15,7 +15,7 @@ import { ErrorMessage } from '@/src/components/client/modals/Error';
 //dynamic import for buttons
 const LimitReachedModal = dynamic(
   () =>
-    import('../../../components/client/modals/limitReached').then(
+    import('../../../../../components/client/modals/limitReached').then(
       (mod) => mod.LimitReached
     ),
   { ssr: false }
@@ -23,25 +23,19 @@ const LimitReachedModal = dynamic(
 
 const NotFoundErrorModal = dynamic(
   () =>
-    import('../../../components/client/modals/notFoundError').then(
+    import('../../../../../components/client/modals/notFoundError').then(
       (mod) => mod.NotFoundError
     ),
   { ssr: false }
 );
 
-const FormCreateContainer = dynamic(
-  () => import('../../../app/(dashboards)/dashboard/gtm/containers/create'),
-  {
-    ssr: false,
-  }
-);
+const FormCreateContainer = dynamic(() => import('./create'), {
+  ssr: false,
+});
 
-const FormUpdateContainer = dynamic(
-  () => import('../../../app/(dashboards)/dashboard/gtm/containers/update'),
-  {
-    ssr: false,
-  }
-);
+const FormUpdateContainer = dynamic(() => import('./update'), {
+  ssr: false,
+});
 
 // In the component render method
 

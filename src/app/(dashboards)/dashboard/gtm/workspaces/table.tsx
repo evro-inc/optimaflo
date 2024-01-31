@@ -194,11 +194,10 @@ export function DataTable<TData, TValue>({
           >
             Update
           </Button>
-          <ButtonDelete 
-            disabled={Object.keys(table.getState().rowSelection).length === 0}  
+          <ButtonDelete
+            disabled={Object.keys(table.getState().rowSelection).length === 0}
             onDelete={handleDelete}
           />
-
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

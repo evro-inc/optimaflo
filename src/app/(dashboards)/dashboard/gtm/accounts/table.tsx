@@ -36,7 +36,7 @@ import { revalidate } from '@/src/lib/helpers/server';
 import { ReloadIcon } from '@radix-ui/react-icons';
 import { toggleUpdate } from '@/src/lib/redux/sharedSlice';
 import { useDispatch } from 'react-redux';
-import AccountForms from '@/src/components/client/UI/AccountForms';
+import AccountForms from '@/src/app/(dashboards)/dashboard/ga/accounts/AccountForms';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];

@@ -4,18 +4,27 @@
 import { auth } from '@clerk/nextjs'; // Importing authentication function from Clerk
 import { limiter } from '../../../../bottleneck'; // Importing rate limiter configuration
 import { gaRateLimit } from '../../../../redis/rateLimits'; // Importing rate limiting utility for Google Tag Manager
-import { UpdateAccountSchema } from '../../../../schemas/ga/accounts'; // Importing schema for account updates
+import {
+  UpdateAccountSchema,
+  CreateAccountSchema,
+} from '../../../../schemas/ga/accounts'; // Importing schema for account updates
 import { z } from 'zod'; // Importing Zod for schema validation
 import { revalidatePath } from 'next/cache'; // Importing function to revalidate cached paths in Next.js
 import { currentUserOauthAccessToken } from '@/src/lib/clerk'; // Importing function to get the current user's OAuth access token
 import { redis } from '@/src/lib/redis/cache'; // Importing Redis cache instance
 import { notFound } from 'next/navigation'; // Importing utility for handling 'not found' navigation in Next.js
-import { handleApiResponseError, tierDeleteLimit, tierUpdateLimit } from '@/src/lib/helpers/server';
-import { FeatureResponse } from '@/src/lib/types/types';
+import {
+  handleApiResponseError,
+  tierCreateLimit,
+  tierDeleteLimit,
+  tierUpdateLimit,
+} from '@/src/lib/helpers/server';
+import { FeatureResponse, FeatureResult } from '@/src/lib/types/types';
 import prisma from '@/src/lib/prisma';
 
 // Defining a type for form update schema using Zod
 type FormUpdateSchema = z.infer<typeof UpdateAccountSchema>;
+type FormCreateSchema = z.infer<typeof CreateAccountSchema>;
 
 /************************************************************************************
  * List All Google Tag Manager Accounts
@@ -27,12 +36,12 @@ export async function listGaAccounts() {
   let delay = 1000;
 
   // Authenticating the user and getting the user ID
-  const { userId } : { userId: string | null } = auth();
+  const { userId }: { userId: string | null } = auth();
   // If user ID is not found, return a 'not found' error
   if (!userId) return notFound();
 
   const token: any = await currentUserOauthAccessToken(userId);
-  
+
   const accessToken = token[0].token;
 
   const cacheKey = `ga:accounts:userId:${userId}`;
@@ -178,7 +187,7 @@ export async function updateAccounts(
           await limiter.schedule(async () => {
             // Creating promises for each account deletion
             const updatePromises = Array.from(toUpdateAccounts).map(
-              async (combinedId) => {                
+              async (combinedId) => {
                 const [name] = combinedId.split('-');
 
                 const url = `https://analyticsadmin.googleapis.com/v1beta/${name}?updateMask=displayName`;
@@ -200,7 +209,7 @@ export async function updateAccounts(
                     successfulUpdates.push(name);
                     toUpdateAccounts.delete(name);
 
-                   /*  await prisma.ga.updateMany({
+                    /*  await prisma.ga.updateMany({
                       where: {
                         accountId: accountId,
                         accountId: accountId,
@@ -269,8 +278,7 @@ export async function updateAccounts(
               results: notFoundLimit.map((name) => ({
                 id: [name], // Ensure id is an array
                 name: [
-                  accountNames.find((name) => name.includes(name)) ||
-                    'Unknown',
+                  accountNames.find((name) => name.includes(name)) || 'Unknown',
                 ], // Ensure name is an array, match by accountId or default to 'Unknown'
                 success: false,
                 notFound: true,
@@ -288,8 +296,7 @@ export async function updateAccounts(
               results: featureLimitReached.map((name) => ({
                 id: [name], // Ensure id is an array
                 name: [
-                  accountNames.find((name) => name.includes(name)) ||
-                    'Unknown',
+                  accountNames.find((name) => name.includes(name)) || 'Unknown',
                 ], // Ensure name is an array, match by accountId or default to 'Unknown'
                 success: false,
                 featureLimitReached: true,
@@ -376,9 +383,6 @@ export async function updateAccounts(
   };
 }
 
-
-
-
 /************************************************************************************
   Delete a single or multiple accounts
 ************************************************************************************/
@@ -454,7 +458,7 @@ export async function deleteAccounts(
           await limiter.schedule(async () => {
             // Creating promises for each account deletion
             const deletePromises = Array.from(toDeleteAccounts).map(
-              async (combinedId) => {                
+              async (combinedId) => {
                 const [name] = combinedId.split('-');
 
                 const url = `https://analyticsadmin.googleapis.com/v1beta/${name}`;
@@ -476,7 +480,7 @@ export async function deleteAccounts(
                     successfulDeletions.push(name);
                     toDeleteAccounts.delete(name);
 
-                   /*  await prisma.ga.deleteMany({
+                    /*  await prisma.ga.deleteMany({
                       where: {
                         accountId: accountId,
                         accountId: accountId,
@@ -545,8 +549,7 @@ export async function deleteAccounts(
               results: notFoundLimit.map((accountId) => ({
                 id: [accountId], // Ensure id is an array
                 name: [
-                  accountNames.find((name) => name.includes(name)) ||
-                    'Unknown',
+                  accountNames.find((name) => name.includes(name)) || 'Unknown',
                 ], // Ensure name is an array, match by accountId or default to 'Unknown'
                 success: false,
                 notFound: true,
@@ -564,8 +567,7 @@ export async function deleteAccounts(
               results: featureLimitReached.map((accountId) => ({
                 id: [accountId], // Ensure id is an array
                 name: [
-                  accountNames.find((name) => name.includes(name)) ||
-                    'Unknown',
+                  accountNames.find((name) => name.includes(name)) || 'Unknown',
                 ], // Ensure name is an array, match by accountId or default to 'Unknown'
                 success: false,
                 featureLimitReached: true,
@@ -649,5 +651,352 @@ export async function deleteAccounts(
       name: [accountNames.find((name) => name.includes(name)) || 'Unknown'], // Ensure name is an array
       success: true,
     })),
+  };
+}
+
+/************************************************************************************
+  Create a single account or multiple accounts
+************************************************************************************/
+export async function createAccounts(formData: FormCreateSchema) {
+  const { userId } = await auth();
+  if (!userId) return notFound();
+  const token = await currentUserOauthAccessToken(userId);
+
+  let retries = 0;
+  const MAX_RETRIES = 3;
+  let delay = 1000;
+  const errors: string[] = [];
+  const successfulCreations: string[] = [];
+  const featureLimitReached: string[] = [];
+  const notFoundLimit: { id: string; name: string }[] = [];
+
+  // Refactor: Use string identifiers in the set
+  const toCreateAccounts = new Set(
+    formData.forms.map((acct) => `${acct.displayName}`)
+  );
+
+  const tierLimitResponse: any = await tierCreateLimit(userId, 'GA4Accounts');
+  const limit = Number(tierLimitResponse.createLimit);
+  const createUsage = Number(tierLimitResponse.createUsage);
+  const availableCreateUsage = limit - createUsage;
+
+  const creationResults: {
+    accountName: string;
+    success: boolean;
+    message?: string;
+  }[] = [];
+
+  // Handling feature limit
+  if (tierLimitResponse && tierLimitResponse.limitReached) {
+    return {
+      success: false,
+      limitReached: true,
+      message: 'Feature limit reached for Creating Accounts',
+      results: [],
+    };
+  }
+
+  if (toCreateAccounts.size > availableCreateUsage) {
+    const attemptedCreations = Array.from(toCreateAccounts).map(
+      (identifier) => {
+        const [displayName] = identifier.split('-');
+        return {
+          id: [], // No account ID since creation did not happen
+          name: displayName, // Include the account name from the identifier
+          success: false,
+          message: `Creation limit reached. Cannot create account "${displayName}".`,
+          // remaining creation limit
+          remaining: availableCreateUsage,
+          limitReached: true,
+        };
+      }
+    );
+    return {
+      success: false,
+      features: [],
+      message: `Cannot create ${toCreateAccounts.size} accounts as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
+      errors: [
+        `Cannot create ${toCreateAccounts.size} accounts as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
+      ],
+      results: attemptedCreations,
+      limitReached: true,
+    };
+  }
+
+  let permissionDenied = false;
+  let accountTicketId = '';
+  const accountNames = formData.forms.map((acct) => acct.displayName);
+
+  if (toCreateAccounts.size <= availableCreateUsage) {
+    while (
+      retries < MAX_RETRIES &&
+      toCreateAccounts.size > 0 &&
+      !permissionDenied
+    ) {
+      try {
+        const { remaining } = await gaRateLimit.blockUntilReady(
+          `user:${userId}`,
+          1000
+        );
+        if (remaining > 0) {
+          await limiter.schedule(async () => {
+            const createPromises = Array.from(toCreateAccounts).map(
+              async (identifier: any) => {
+                const [displayName] = identifier.split('-');
+                const accountData = formData.forms.find(
+                  (acct) => acct.displayName === displayName
+                );
+
+                if (!accountData) {
+                  errors.push(`Account data not found for ${identifier}`);
+                  toCreateAccounts.delete(identifier);
+                  return;
+                }
+
+                const url = `https://analyticsadmin.googleapis.com/v1beta/accounts:provisionAccountTicket`;
+                const headers = {
+                  Authorization: `Bearer ${token[0].token}`,
+                  'Content-Type': 'application/json',
+                  'Accept-Encoding': 'gzip',
+                };
+
+                try {
+                  const formDataToValidate = { forms: [accountData] };
+
+                  const validationResult =
+                    CreateAccountSchema.safeParse(formDataToValidate);
+
+                  if (!validationResult.success) {
+                    let errorMessage = validationResult.error.issues
+                      .map((issue) => `${issue.path[0]}: ${issue.message}`)
+                      .join('. ');
+                    errors.push(errorMessage);
+                    toCreateAccounts.delete(identifier);
+                    return {
+                      accountData,
+                      success: false,
+                      error: errorMessage,
+                    };
+                  }
+
+                  // Accessing the validated account data
+                  const validatedAccountData = validationResult.data.forms[0];
+                  console.log('validatedAccountData', validatedAccountData);
+
+                  const requestBody = {
+                    account: {
+                      displayName: validatedAccountData.displayName,
+                      regionCode: 'US',
+                    }, // Populate with the account details
+                    redirectUri: 'https://www.optimaflo.io', // Provide the redirectUri for ToS acceptance
+                  };
+
+                  const response = await fetch(url, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(requestBody),
+                  });
+
+                  let parsedResponse;
+
+                  if (response.ok) {
+                    // redirect user
+                    console.log('redirecting user to accept ToS');
+                    const ticket = await response.json();
+                    accountTicketId = ticket.accountTicketId;
+                    console.log('ticketUrl', accountTicketId);
+
+                    successfulCreations.push(accountData.displayName);
+                    toCreateAccounts.delete(identifier);
+                    //fetchGtmSettings(userId);
+
+                    await prisma.tierLimit.update({
+                      where: { id: tierLimitResponse.id },
+                      data: { createUsage: { increment: 1 } },
+                    });
+                    creationResults.push({
+                      accountName: accountTicketId,
+                      success: true,
+                      message: `Successfully created account ${accountData.displayName}`,
+                    });
+                  } else {
+                    parsedResponse = await response.json();
+
+                    const errorResult = await handleApiResponseError(
+                      response,
+                      parsedResponse,
+                      'GA4Account',
+                      [accountData.displayName]
+                    );
+
+                    if (errorResult) {
+                      errors.push(`${errorResult.message}`);
+                      if (
+                        errorResult.errorCode === 403 &&
+                        parsedResponse.message === 'Feature limit reached'
+                      ) {
+                        featureLimitReached.push(displayName);
+                      } else if (errorResult.errorCode === 404) {
+                        const accountName =
+                          accountNames.find((name) =>
+                            name.includes(identifier.split('-')[1])
+                          ) || 'Unknown';
+                        notFoundLimit.push({
+                          id: identifier.split('-')[1],
+                          name: accountName,
+                        });
+                      }
+                    } else {
+                      errors.push(
+                        `An unknown error occurred for account ${accountData.displayName}.`
+                      );
+                    }
+
+                    toCreateAccounts.delete(identifier);
+                    permissionDenied = errorResult ? true : permissionDenied;
+                    creationResults.push({
+                      accountName: accountData.displayName,
+                      success: false,
+                      message: errorResult?.message,
+                    });
+                  }
+                } catch (error: any) {
+                  errors.push(
+                    `Exception creating account ${accountData.displayName}: ${error.message}`
+                  );
+                  toCreateAccounts.delete(identifier);
+                  creationResults.push({
+                    accountName: accountData.displayName,
+                    success: false,
+                    message: error.message,
+                  });
+                }
+              }
+            );
+
+            await Promise.all(createPromises);
+          });
+
+          if (notFoundLimit.length > 0) {
+            return {
+              success: false,
+              limitReached: false,
+              notFoundError: true, // Set the notFoundError flag
+              features: [],
+
+              results: notFoundLimit.map((item) => ({
+                id: item.id,
+                name: item.name,
+                success: false,
+                notFound: true,
+              })),
+            };
+          }
+
+          if (featureLimitReached.length > 0) {
+            return {
+              success: false,
+              limitReached: true,
+              notFoundError: false,
+              message: `Feature limit reached for accounts: ${featureLimitReached.join(
+                ', '
+              )}`,
+              results: featureLimitReached.map((accountId) => {
+                // Find the name associated with the accountId
+                const accountName =
+                  accountNames.find((name) => name.includes(accountId)) ||
+                  'Unknown';
+                return {
+                  id: [accountId], // Ensure id is an array
+                  name: [accountName], // Ensure name is an array, match by accountId or default to 'Unknown'
+                  success: false,
+                  featureLimitReached: true,
+                };
+              }),
+            };
+          }
+
+          if (successfulCreations.length === formData.forms.length) {
+            break;
+          }
+
+          if (toCreateAccounts.size === 0) {
+            break;
+          }
+        } else {
+          throw new Error('Rate limit exceeded');
+        }
+      } catch (error: any) {
+        if (error.code === 429 || error.status === 429) {
+          await new Promise((resolve) =>
+            setTimeout(resolve, delay + Math.random() * 200)
+          );
+          delay *= 2;
+          retries++;
+        } else {
+          break;
+        }
+      } finally {
+        // This block will run regardless of the outcome of the try...catch
+        if (userId) {
+          const cacheKey = `ga:accounts:userId:${userId}`;
+          await redis.del(cacheKey);
+          await revalidatePath(`/dashboard/ga/accounts`);
+        }
+      }
+    }
+  }
+
+  if (permissionDenied) {
+    return {
+      success: false,
+      errors: errors,
+      results: [],
+      message: errors.join(', '),
+    };
+  }
+
+  if (errors.length > 0) {
+    return {
+      success: false,
+      features: successfulCreations,
+      errors: errors,
+      results: successfulCreations.map((accountTicketId) => ({
+        accountTicketId,
+        success: true,
+      })),
+      message: errors.join(', '),
+    };
+  }
+
+  if (successfulCreations.length > 0) {
+    const cacheKey = `ga:accounts:userId:${userId}`;
+
+    await redis.del(cacheKey);
+    revalidatePath(`/dashboard/ga/accounts`);
+  }
+
+  // Map over formData.forms to create the results array
+  const results: FeatureResult[] = formData.forms.map((form) => {
+    // Ensure that form.accountId is defined before adding it to the array
+    const accountUrl = accountTicketId;
+    return {
+      id: accountUrl, // Ensure id is an array of strings
+      name: [form.displayName], // Wrap the string in an array
+      success: true, // or false, depending on the actual result
+      // Include `notFound` if applicable
+      notFound: false, // Set this to the appropriate value based on your logic
+    };
+  });
+
+  // Return the response with the correctly typed results
+  return {
+    success: true, // or false, depending on the actual results
+    features: [accountTicketId], // Populate with actual account IDs if applicable
+    errors: [], // Populate with actual error messages if applicable
+    limitReached: false, // Set based on actual limit status
+    message: 'Accounts created successfully', // Customize the message as needed
+    results: results, // Use the correctly typed results
+    notFoundError: false, // Set based on actual not found status
   };
 }

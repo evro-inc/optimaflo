@@ -1,13 +1,12 @@
 import React, { Suspense } from 'react';
-import { DataTable } from '@/src/app/(dashboards)/dashboard/gtm/containers/table';
-import { auth } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
-import { listGtmContainers } from '@/src/lib/fetch/dashboard/actions/ga/properties';
-import { listGtmAccounts } from '@/src/lib/fetch/dashboard/actions/gtm/accounts';
+import { auth } from '@clerk/nextjs';
 import { Skeleton } from '@/src/components/ui/skeleton';
+import { DataTable } from './table';
 import { columns } from './columns';
+import { listGAProperties } from '@/src/lib/fetch/dashboard/actions/ga/properties';
 
-export default async function ContainerPage({
+export default async function PropertyPage({
   searchParams,
 }: {
   searchParams?: {
@@ -19,29 +18,7 @@ export default async function ContainerPage({
   const currentPage = Number(searchParams?.page) || 1;
   const { userId } = auth();
   if (!userId) return notFound();
-
-  const accountData = await listGtmAccounts();
-  const containerData = await listGtmContainers();
-
-  const [accounts, containers] = await Promise.all([
-    accountData,
-    containerData,
-  ]);
-
-  const combinedData = containers.flat().map((container) => {
-    const account = accounts.find((a) => a.accountId === container.accountId);
-    if (account) {
-      return {
-        ...container,
-        accountName: account.name,
-      };
-    } else {
-      return {
-        ...container,
-        accountName: 'Unknown Account',
-      };
-    }
-  });
+  const properties = await listGAProperties();
 
   return (
     <>
@@ -69,11 +46,7 @@ export default async function ContainerPage({
         }
       >
         <div className="container mx-auto py-10">
-          <DataTable
-            columns={columns}
-            data={combinedData}
-            accounts={accounts}
-          />
+          <DataTable columns={columns} data={properties} />
         </div>
       </Suspense>
     </>

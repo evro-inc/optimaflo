@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { combineContainers } from '@/src/lib/fetch/dashboard/actions/ga/containers';
+import { combineContainers } from '@/src/lib/fetch/dashboard/actions/ga/properties';
 import { LimitReached } from '../../modals/limitReached';
 import { ButtonGroup } from '../../ButtonGroup/ButtonGroup';
 import { XMarkIcon } from '@heroicons/react/24/solid';

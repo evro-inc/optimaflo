@@ -4,7 +4,7 @@ import Select from '../../UI/Select';
 import ButtonPrev from '../../UI/ButtonPrevious';
 import ButtonNext from '../../UI/ButtonNext';
 import ButtonUpdate from '../../UI/ButtonUpdate';
-import AccountForms from '../../UI/AccountForms';
+import AccountForms from '../../../../app/(dashboards)/dashboard/ga/accounts/AccountForms';
 import { currentUser } from '@clerk/nextjs';
 import { listGtmAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
 
