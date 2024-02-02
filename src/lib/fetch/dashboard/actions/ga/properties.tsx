@@ -85,8 +85,6 @@ export async function listGAProperties() {
             try {
               const response = await fetch(url, { headers });
 
-              console.log('response', response);
-
               if (!response.ok) {
                 throw new Error(
                   `HTTP error! status: ${response.status}. ${response.statusText}`

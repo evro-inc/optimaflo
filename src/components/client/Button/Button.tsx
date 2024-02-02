@@ -376,3 +376,39 @@ export const ButtonDelete = ({ onDelete, disabled }) => {
     </AlertDialog>
   );
 };
+
+export const ButtonSubmitAlert = ({
+  text,
+  form,
+}: {
+  text: string;
+  form: string;
+}) => {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button type="submit">{text}</Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Create New GA4 Account(s)</AlertDialogTitle>
+          <AlertDialogDescription>
+            Once you click continue, you have see tabs open in your browser.
+            These tabs will be for you to accept the Google Analytics terms of
+            service for each account you want to create. Once you have accepted,
+            you will need to come back here and refresh the table to see you're
+            updated account(s).
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction asChild>
+            <Button type="submit" form={form}>
+              Continue
+            </Button>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+};

@@ -37,9 +37,8 @@ import {
   FormMessage,
 } from '@/src/components/ui/form';
 import { Input } from '@/src/components/ui/input';
-import { Icon } from '@/src/components/client/Button/Button';
+import { ButtonSubmitAlert, Icon } from '@/src/components/client/Button/Button';
 import dynamic from 'next/dynamic';
-import { redirect, useRouter } from 'next/navigation';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -102,6 +101,7 @@ const FormCreateAccount: React.FC<FormCreateAccountProps> = ({
 
     // Check for duplicate account names for the same account
     const uniqueAccounts = new Set();
+
     for (const form of forms) {
       const identifier = form.displayName;
       if (uniqueAccounts.has(identifier)) {
@@ -120,33 +120,27 @@ const FormCreateAccount: React.FC<FormCreateAccountProps> = ({
     try {
       const response: any = (await createAccounts({
         forms,
-      })) as FeatureResponse;      
+      })) as FeatureResponse;
 
       if (response.success) {
-        response.results.forEach((result) => {
-          if (result.success) {
-            console.log('result', result.id);
-            
-            const router = useRouter();
-            const accountTicketId = result.id;
-            console.log('accountTicketId success', accountTicketId);
+        const accountTicketIds = response.results.map((result) => result.id);
+        const newUrls = accountTicketIds.map(
+          (accountTicketId) =>
+            `https://analytics.google.com/analytics/web/?provisioningSignup=false#/termsofservice/${accountTicketId}`
+        );
+        const openUrlsInNewTab = (urls: string[]) => {
+          urls.forEach((url) => {
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.target = '_blank';
+            anchor.rel = 'noopener noreferrer'; // Security best practice
+            document.body.appendChild(anchor);
+            anchor.click();
+            document.body.removeChild(anchor);
+          });
+        };
 
-/*             toast.success(
-              `Successfully created account: ${result.displayName}`,
-              {
-                action: {
-                  label: 'Close',
-                  onClick: () => toast.dismiss(),
-                },
-              }
-            ); */
-
-            //redirect(`https://analytics.google.com/analytics/web/?provisioningSignup=false#/termsofservice/${accountTicketId}`);
-            router.push(
-              `https://analytics.google.com/analytics/web/?provisioningSignup=false#/termsofservice/${accountTicketId}`
-            );
-          }
-        });
+        openUrlsInNewTab(newUrls);
       } else {
         // If a notFoundError is present, override the message
         if (response.notFoundError) {
@@ -253,18 +247,19 @@ const FormCreateAccount: React.FC<FormCreateAccountProps> = ({
               onClick={handleClose}
               billingInterval={undefined}
             />
+            <div className="flex items-center justify-between py-3 px-4 mt-5 gap-4">
+              <ButtonGroup
+                buttons={[
+                  { text: 'Add Form', onClick: addForm },
+                  { text: 'Remove Form', onClick: removeForm },
+                ]}
+              />
 
-            <ButtonGroup
-              buttons={[
-                { text: 'Add Form', onClick: addForm },
-                { text: 'Remove Form', onClick: removeForm },
-                {
-                  text: loading ? 'Submitting...' : 'Submit',
-                  type: 'submit',
-                  form: 'createAccount',
-                },
-              ]}
-            />
+              <ButtonSubmitAlert
+                text={loading ? 'Submitting...' : 'Submit'}
+                form="createAccount"
+              />
+            </div>
 
             <div className="account mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-end">
               {fields.map((field, index) => (

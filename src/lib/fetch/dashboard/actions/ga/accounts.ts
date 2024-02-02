@@ -724,7 +724,7 @@ export async function createAccounts(formData: FormCreateSchema) {
   }
 
   let permissionDenied = false;
-  let accountTicketId = '';
+  let accountTicketIds = [] as string[];
   const accountNames = formData.forms.map((acct) => acct.displayName);
 
   if (toCreateAccounts.size <= availableCreateUsage) {
@@ -781,14 +781,13 @@ export async function createAccounts(formData: FormCreateSchema) {
 
                   // Accessing the validated account data
                   const validatedAccountData = validationResult.data.forms[0];
-                  console.log('validatedAccountData', validatedAccountData);
-
                   const requestBody = {
                     account: {
                       displayName: validatedAccountData.displayName,
                       regionCode: 'US',
                     }, // Populate with the account details
-                    redirectUri: 'https://www.optimaflo.io', // Provide the redirectUri for ToS acceptance
+                    redirectUri:
+                      'https://www.optimaflo.io/dashboard/ga/accounts', // Provide the redirectUri for ToS acceptance
                   };
 
                   const response = await fetch(url, {
@@ -800,11 +799,8 @@ export async function createAccounts(formData: FormCreateSchema) {
                   let parsedResponse;
 
                   if (response.ok) {
-                    // redirect user
-                    console.log('redirecting user to accept ToS');
                     const ticket = await response.json();
-                    accountTicketId = ticket.accountTicketId;
-                    console.log('ticketUrl', accountTicketId);
+                    accountTicketIds.push(ticket.accountTicketId);
 
                     successfulCreations.push(accountData.displayName);
                     toCreateAccounts.delete(identifier);
@@ -815,7 +811,7 @@ export async function createAccounts(formData: FormCreateSchema) {
                       data: { createUsage: { increment: 1 } },
                     });
                     creationResults.push({
-                      accountName: accountTicketId,
+                      accountName: accountData.displayName,
                       success: true,
                       message: `Successfully created account ${accountData.displayName}`,
                     });
@@ -961,8 +957,8 @@ export async function createAccounts(formData: FormCreateSchema) {
       success: false,
       features: successfulCreations,
       errors: errors,
-      results: successfulCreations.map((accountTicketId) => ({
-        accountTicketId,
+      results: successfulCreations.map((accountTicketIds) => ({
+        accountTicketIds,
         success: true,
       })),
       message: errors.join(', '),
@@ -977,11 +973,12 @@ export async function createAccounts(formData: FormCreateSchema) {
   }
 
   // Map over formData.forms to create the results array
-  const results: FeatureResult[] = formData.forms.map((form) => {
+  const results: FeatureResult[] = formData.forms.map((form, index) => {
     // Ensure that form.accountId is defined before adding it to the array
-    const accountUrl = accountTicketId;
+    const accountTicketId = accountTicketIds[index];
+
     return {
-      id: accountUrl, // Ensure id is an array of strings
+      id: accountTicketId, // Ensure id is an array of strings
       name: [form.displayName], // Wrap the string in an array
       success: true, // or false, depending on the actual result
       // Include `notFound` if applicable
@@ -989,14 +986,15 @@ export async function createAccounts(formData: FormCreateSchema) {
     };
   });
 
-  // Return the response with the correctly typed results
-  return {
+  const finalResults = {
     success: true, // or false, depending on the actual results
-    features: [accountTicketId], // Populate with actual account IDs if applicable
+    features: [], // Populate with actual account IDs if applicable
     errors: [], // Populate with actual error messages if applicable
     limitReached: false, // Set based on actual limit status
     message: 'Accounts created successfully', // Customize the message as needed
     results: results, // Use the correctly typed results
     notFoundError: false, // Set based on actual not found status
   };
+  // Return the response with the correctly typed results
+  return finalResults;
 }
