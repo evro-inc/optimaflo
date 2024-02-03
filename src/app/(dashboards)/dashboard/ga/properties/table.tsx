@@ -32,13 +32,15 @@ import {
 } from '@/src/components/ui/dropdown-menu';
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
-import { revalidate } from '@/src/lib/helpers/server';
+import { revalidate, tierCreateLimit } from '@/src/lib/helpers/server';
 import { ReloadIcon } from '@radix-ui/react-icons';
-import { toggleUpdate } from '@/src/lib/redux/sharedSlice';
+import { toggleCreate, toggleUpdate } from '@/src/lib/redux/sharedSlice';
 import { useDispatch } from 'react-redux';
-import AccountForms from '@/src/app/(dashboards)/dashboard/ga/accounts/AccountForms';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
 import { useDeleteHook } from './delete';
+import { notFound } from 'next/navigation';
+import { setIsLimitReached } from '@/src/lib/redux/tableSlice';
+import PropertyForms from './forms';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -83,7 +85,28 @@ export function DataTable<TData, TValue>({
   });
 
   // log selected rows
+  const handleCreateClick = async () => {
+    try {
+      if (!userId) {
+        return notFound();
+      }
+      const handleCreateLimit: any = await tierCreateLimit(
+        userId,
+        'GA4Properties'
+      );
 
+      if (handleCreateLimit && handleCreateLimit.limitReached) {
+        // Directly show the limit reached modal
+        dispatch(setIsLimitReached(true)); // Assuming you have an action to explicitly set this
+      } else {
+        // Otherwise, proceed with normal creation process
+        dispatch(toggleCreate());
+      }
+    } catch (error: any) {
+      throw new Error('Error in handleCreateClick:', error);
+    }
+  };
+  
   const refreshAllCache = async () => {
     // Assuming you want to refresh cache for each workspace
     const keys = [
@@ -123,6 +146,8 @@ export function DataTable<TData, TValue>({
           <Button variant="outline" size="icon" onClick={refreshAllCache}>
             <ReloadIcon className="h-4 w-4" />
           </Button>
+
+          <Button onClick={handleCreateClick}>Create</Button>
 
           <Button
             disabled={Object.keys(table.getState().rowSelection).length === 0}
@@ -234,7 +259,7 @@ export function DataTable<TData, TValue>({
           Next
         </Button>
       </div>
-      <AccountForms selectedRows={selectedRowsData} />
+      <PropertyForms selectedRows={selectedRowsData} />
     </div>
   );
 }

@@ -43,7 +43,7 @@ import { setIsLimitReached } from '@/src/lib/redux/tableSlice';
 import { notFound } from 'next/navigation';
 import { toggleCreate, toggleUpdate } from '@/src/lib/redux/globalSlice';
 import { useDeleteHook } from './delete';
-import WorkspaceForms from '@/src/app/(dashboards)/dashboard/gtm/workspaces/WorkspaceForms';
+import WorkspaceForms from '@/src/app/(dashboards)/dashboard/gtm/workspaces/forms';
 import {
   AlertDialog,
   AlertDialogAction,

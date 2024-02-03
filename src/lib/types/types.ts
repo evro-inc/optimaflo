@@ -150,7 +150,14 @@ export type FormUpdateWorkspaceProps = {
   workspaces?: any;
   table: any;
 };
-
+export type FormUpdateProps = {
+  showOptions: boolean;
+  onClose: () => void;
+  accounts: any; // Replace 'any' with the actual type if known
+  selectedRows: Map<string, ContainerType>;
+  workspaces?: any;
+  table: any;
+};
 export type ResultType = {
   data: tagmanager_v2.Schema$Container[] | undefined;
   meta: {
@@ -191,6 +198,14 @@ export type FormCreateWorkspaceProps = {
   accounts: any;
   table: any;
 };
+
+export type FormCreateProps = {
+  showOptions: boolean;
+  onClose: () => void;
+  accounts: any;
+  table: any;
+};
+
 
 export type WorkspaceType = {
   accountId: string;

@@ -8,7 +8,6 @@ import {
 import dynamic from 'next/dynamic';
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { getDisplayName } from 'next/dist/shared/lib/utils';
 const LimitReached = dynamic(
   () =>
     import('../../../../../components/client/modals/limitReached').then(
@@ -17,11 +16,11 @@ const LimitReached = dynamic(
   { ssr: false }
 );
 
-const AccountFormUpdate = dynamic(() => import('./update'), {
+const FormUpdate = dynamic(() => import('./update'), {
   ssr: false,
 });
 
-const AccountFormCreate = dynamic(() => import('./create'), {
+const FormCreate = dynamic(() => import('./create'), {
   ssr: false,
 });
 
@@ -38,11 +37,11 @@ interface Account {
   displayName: string;
 }
 
-function AccountForms({
-  accounts,
+function PropertyForms({
+  feature,
   selectedRows,
 }: {
-  accounts;
+  feature;
   selectedRows: Account[];
 }) {
   const dispatch = useDispatch();
@@ -59,7 +58,7 @@ function AccountForms({
       {notFoundError && <NotFoundErrorModal />}
 
       {showUpdate && (
-        <AccountFormUpdate
+        <FormUpdate
           showOptions={showUpdate}
           onClose={() => dispatch(toggleUpdate())}
           selectedRows={selectedRows}
@@ -68,14 +67,14 @@ function AccountForms({
       )}
 
       {showCreate && (
-        <AccountFormCreate
+        <FormCreate
           showOptions={showCreate}
           onClose={() => dispatch(toggleCreate())}
-          accounts={accounts}
+          feature={feature}
         />
       )}
     </>
   );
 }
 
-export default AccountForms;
+export default PropertyForms;

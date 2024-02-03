@@ -39,7 +39,7 @@ import {
 } from '@/src/lib/helpers/server';
 import { ReloadIcon } from '@radix-ui/react-icons';
 import { useDispatch } from 'react-redux';
-import ContainerForms from '@/src/app/(dashboards)/dashboard/gtm/containers/ContainerForms';
+import ContainerForms from '@/src/app/(dashboards)/dashboard/gtm/containers/forms';
 import { setIsLimitReached } from '@/src/lib/redux/tableSlice';
 import { notFound } from 'next/navigation';
 import { toggleCreate, toggleUpdate } from '@/src/lib/redux/globalSlice';

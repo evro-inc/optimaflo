@@ -116,82 +116,113 @@ export async function listGaAccounts() {
 /************************************************************************************
  * Update Google Tag Manager Accounts
  ************************************************************************************/
-export async function updateAccounts(
-  selectedAccounts: Set<string>,
-  accountNames: string[]
-): Promise<FeatureResponse> {
-  // Initialization of retry mechanism
-  let retries = 0;
-  const MAX_RETRIES = 3;
-  let delay = 1000;
-
-  // Arrays to track various outcomes
-  const errors: string[] = [];
-  const successfulUpdates: string[] = [];
-  const featureLimitReached: string[] = [];
-  const notFoundLimit: string[] = [];
-  const toUpdateAccounts = new Set(selectedAccounts);
-
-  // Authenticating user and getting user ID
+export async function UpdateGaAccounts(formData: FormUpdateSchema) {
   const { userId } = await auth();
-  // If user ID is not found, return a 'not found' error
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
 
-  // Check for feature limit using Prisma ORM
+
+  console.log("formData", formData);
+  
+  let retries = 0;
+  const MAX_RETRIES = 3;
+  let delay = 1000;
+  const errors: string[] = [];
+  const successfulUpdates: string[] = [];
+  const featureLimitReached: string[] = [];
+  const notFoundLimit: { id: string; name: string }[] = [];
+
+  let accountIdForCache: string | undefined;
+  let containerIdForCache: string | undefined;
+
+  // Refactor: Use string identifiers in the set
+  const toUpdateAccounts = new Set(
+    formData.forms.map((acct) => ({
+      displayName: acct.displayName,
+      name: acct.name,
+    }))
+  );
+
   const tierLimitResponse: any = await tierUpdateLimit(userId, 'GA4Accounts');
   const limit = Number(tierLimitResponse.updateLimit);
   const updateUsage = Number(tierLimitResponse.updateUsage);
   const availableUpdateUsage = limit - updateUsage;
+
+  const UpdateResults: {
+    accountName: string;
+    success: boolean;
+    message?: string;
+  }[] = [];
 
   // Handling feature limit
   if (tierLimitResponse && tierLimitResponse.limitReached) {
     return {
       success: false,
       limitReached: true,
-      errors: [],
-      message: 'Feature limit reached for updating accounts',
+      message: 'Feature limit reached for updating Accounts',
       results: [],
     };
   }
 
   if (toUpdateAccounts.size > availableUpdateUsage) {
-    // If the deletion request exceeds the available limit
+    const attemptedUpdates = Array.from(toUpdateAccounts).map(
+      (identifier) => {
+        const { displayName: accountName } = identifier;
+        return {
+          id: [], // No account ID since update did not happen
+          name: accountName, // Include the account name from the identifier
+          success: false,
+          message: `Update limit reached. Cannot update account "${accountName}".`,
+          // remaining update limit
+          remaining: availableUpdateUsage,
+          limitReached: true,
+        };
+      }
+    );
     return {
       success: false,
       features: [],
+      message: `Cannot update ${toUpdateAccounts.size} accounts as it exceeds the available limit. You have ${availableUpdateUsage} more update(s) available.`,
       errors: [
-        `Cannot update ${toUpdateAccounts.size} accounts as it exceeds the available limit. You have ${availableUpdateUsage} more deletion(s) available.`,
+        `Cannot update ${toUpdateAccounts.size} accounts as it exceeds the available limit. You have ${availableUpdateUsage} more update(s) available.`,
       ],
-      results: [],
+      results: attemptedUpdates,
       limitReached: true,
-      message: `Cannot update ${toUpdateAccounts.size} accounts as it exceeds the available limit. You have ${availableUpdateUsage} more deletion(s) available.`,
     };
   }
+
   let permissionDenied = false;
+  const accountNames = formData.forms.map((acct) => acct.displayName);
 
   if (toUpdateAccounts.size <= availableUpdateUsage) {
-    // Retry loop for deletion requests
     while (
       retries < MAX_RETRIES &&
       toUpdateAccounts.size > 0 &&
       !permissionDenied
     ) {
       try {
-        // Enforcing rate limit
         const { remaining } = await gaRateLimit.blockUntilReady(
           `user:${userId}`,
           1000
         );
-
         if (remaining > 0) {
           await limiter.schedule(async () => {
-            // Creating promises for each account deletion
             const updatePromises = Array.from(toUpdateAccounts).map(
-              async (combinedId) => {
-                const [name] = combinedId.split('-');
+              async (identifier) => {                
+                accountIdForCache = identifier.displayName;
+                const accountIdentifier = identifier.name;
+                const accountData = formData.forms.find(
+                  (acct) =>
+                    acct.displayName === identifier.displayName
+                );
 
-                const url = `https://analyticsadmin.googleapis.com/v1beta/${name}?updateMask=displayName`;
+                if (!accountData) {
+                  errors.push(`Container data not found for ${identifier}`);
+                  toUpdateAccounts.delete(identifier);
+                  return;
+                }
+
+                const url = `https://analyticsadmin.googleapis.com/v1beta/${accountIdentifier}?updateMask=displayName`;
                 const headers = {
                   Authorization: `Bearer ${token[0].token}`,
                   'Content-Type': 'application/json',
@@ -199,37 +230,70 @@ export async function updateAccounts(
                 };
 
                 try {
-                  const response = await fetch(url, {
-                    method: 'DELETE',
-                    headers: headers,
+                  const formDataToValidate = { forms: [accountData] };
+
+                  const validationResult =
+                    UpdateAccountSchema.safeParse(formDataToValidate);
+
+                  if (!validationResult.success) {
+                    let errorMessage = validationResult.error.issues
+                      .map((issue) => `${issue.path[0]}: ${issue.message}`)
+                      .join('. ');
+                    errors.push(errorMessage);
+                    toUpdateAccounts.delete(identifier);
+                    return {
+                      accountData,
+                      success: false,
+                      error: errorMessage,
+                    };
+                  }
+
+                  // Accessing the validated account data
+                  const validatedaccountData = validationResult.data.forms[0];
+                  const payload = JSON.stringify({
+                    displayName: validatedaccountData.displayName,
                   });
 
+                  const response = await fetch(url, {
+                    method: 'PATCH',
+                    headers: headers,
+                    body: payload,
+                  });
+
+                  console.log('response back', response);
+                  
+
                   let parsedResponse;
+                  const accountName = accountData.displayName;
 
                   if (response.ok) {
-                    successfulUpdates.push(name);
-                    toUpdateAccounts.delete(name);
-                    /* 
-                      await prisma.ga.updateMany({
-                      where: {
-                        accountId: accountId,
-                        userId: userId, // Ensure this matches the user ID
-                      },
-                    }); */
+                    if (response.ok) {
+                      // Push a string into the array, for example, a concatenation of accountId and containerId
+                      successfulUpdates.push(
+                        `${validatedaccountData.displayName}`
+                      );
+                      // ... rest of your code
+                    }
+                    toUpdateAccounts.delete(identifier);
 
                     await prisma.tierLimit.update({
                       where: { id: tierLimitResponse.id },
                       data: { updateUsage: { increment: 1 } },
                     });
 
-                    return { name, success: true };
+                    UpdateResults.push({
+                      accountName: accountName,
+                      success: true,
+                      message: `Successfully updated account ${accountName}`,
+                    });
                   } else {
                     parsedResponse = await response.json();
+
                     const errorResult = await handleApiResponseError(
                       response,
                       parsedResponse,
-                      'ga4Account',
-                      accountNames
+                      'account',
+                      [accountName]
                     );
 
                     if (errorResult) {
@@ -238,31 +302,45 @@ export async function updateAccounts(
                         errorResult.errorCode === 403 &&
                         parsedResponse.message === 'Feature limit reached'
                       ) {
-                        featureLimitReached.push(name);
+                        featureLimitReached.push(accountName);
                       } else if (errorResult.errorCode === 404) {
-                        notFoundLimit.push(name); // Track 404 errors
+                        const accountName =
+                          accountNames.find((name) =>
+                            name.includes(identifier.name)
+                          ) || 'Unknown';
+                        notFoundLimit.push({
+                          id: identifier.containerId,
+                          name: accountName,
+                        });
                       }
                     } else {
                       errors.push(
-                        `An unknown error occurred for account ${accountNames}.`
+                        `An unknown error occurred for account ${accountName}.`
                       );
                     }
 
-                    toUpdateAccounts.delete(name);
+                    toUpdateAccounts.delete(identifier);
                     permissionDenied = errorResult ? true : permissionDenied;
+                    UpdateResults.push({
+                      accountName: accountName,
+                      success: false,
+                      message: errorResult?.message,
+                    });
                   }
                 } catch (error: any) {
-                  // Handling exceptions during fetch
                   errors.push(
-                    `Error deleting account ${name}: ${error.message}`
+                    `Exception updating account ${accountData.displayName}: ${error.message}`
                   );
+                  toUpdateAccounts.delete(identifier);
+                  UpdateResults.push({
+                    accountName: accountData.displayName,
+                    success: false,
+                    message: error.message,
+                  });
                 }
-                toUpdateAccounts.delete(name);
-                return { name, success: false };
               }
             );
 
-            // Awaiting all deletion promises
             await Promise.all(updatePromises);
           });
 
@@ -271,20 +349,17 @@ export async function updateAccounts(
               success: false,
               limitReached: false,
               notFoundError: true, // Set the notFoundError flag
-              message: `Could not update account. Please check your permissions. Account Name: 
-              ${accountNames.find((name) =>
-                name.includes(name)
-              )}. All other accounts were successfully updated.`,
-              results: notFoundLimit.map((name) => ({
-                id: [name], // Ensure id is an array
-                name: [
-                  accountNames.find((name) => name.includes(name)) || 'Unknown',
-                ], // Ensure name is an array, match by accountId or default to 'Unknown'
+              features: [],
+
+              results: notFoundLimit.map((item) => ({
+                id: item.id,
+                name: item.name,
                 success: false,
                 notFound: true,
               })),
             };
           }
+
           if (featureLimitReached.length > 0) {
             return {
               success: false,
@@ -293,31 +368,59 @@ export async function updateAccounts(
               message: `Feature limit reached for accounts: ${featureLimitReached.join(
                 ', '
               )}`,
-              results: featureLimitReached.map((name) => ({
-                id: [name], // Ensure id is an array
-                name: [
-                  accountNames.find((name) => name.includes(name)) || 'Unknown',
-                ], // Ensure name is an array, match by accountId or default to 'Unknown'
-                success: false,
-                featureLimitReached: true,
-              })),
+              results: featureLimitReached.map((accountId) => {
+                // Find the name associated with the accountId
+                const accountName =
+                  accountNames.find((name) => name.includes(accountId)) ||
+                  'Unknown';
+                return {
+                  id: [accountId], // Ensure id is an array
+                  name: [accountName], // Ensure name is an array, match by accountId or default to 'Unknown'
+                  success: false,
+                  featureLimitReached: true,
+                };
+              }),
             };
           }
-          // Update tier limit usage as before (not shown in code snippet)
-          if (successfulUpdates.length === selectedAccounts.size) {
-            break; // Exit loop if all accounts are processed successfully
+
+          if (featureLimitReached.length > 0) {
+            return {
+              success: false,
+              limitReached: true,
+              notFoundError: false,
+              message: `Feature limit reached for accounts: ${featureLimitReached.join(
+                ', '
+              )}`,
+              results: featureLimitReached.map((accountId) => {
+                // Find the name associated with the accountId
+                const accountName =
+                  accountNames.find((name) => name.includes(accountId)) ||
+                  'Unknown';
+                return {
+                  id: [accountId], // Ensure id is an array
+                  name: [accountName], // Ensure name is an array, match by accountId or default to 'Unknown'
+                  success: false,
+                  featureLimitReached: true,
+                };
+              }),
+            };
           }
-          if (permissionDenied) {
-            break; // Exit the loop if a permission error was encountered
+
+          if (successfulUpdates.length === formData.forms.length) {
+            break;
+          }
+
+          if (toUpdateAccounts.size === 0) {
+            break;
           }
         } else {
           throw new Error('Rate limit exceeded');
         }
       } catch (error: any) {
-        // Handling rate limit exceeded error
         if (error.code === 429 || error.status === 429) {
-          const jitter = Math.random() * 200;
-          await new Promise((resolve) => setTimeout(resolve, delay + jitter));
+          await new Promise((resolve) =>
+            setTimeout(resolve, delay + Math.random() * 200)
+          );
           delay *= 2;
           retries++;
         } else {
@@ -325,16 +428,15 @@ export async function updateAccounts(
         }
       } finally {
         // This block will run regardless of the outcome of the try...catch
-        if (userId) {
-          // Invalidate cache for all accounts if accounts belong to multiple accounts
-          // Otherwise, just invalidate cache for the single account
-          const cacheKey = `ga:accounts:userId:${userId}`;
+        if (accountIdForCache && containerIdForCache && userId) {
+          const cacheKey = `gtm:accounts:userId:${userId}`;
           await redis.del(cacheKey);
-          await revalidatePath(`/dashboard/ga/accounts`);
+          await revalidatePath(`/dashboard/gtm/accounts`);
         }
       }
     }
   }
+
   if (permissionDenied) {
     return {
       success: false,
@@ -349,40 +451,48 @@ export async function updateAccounts(
       success: false,
       features: successfulUpdates,
       errors: errors,
-      results: successfulUpdates.map((name) => ({
-        id: [name], // Ensure id is an array
-        name: [accountNames.find((name) => name.includes(name)) || 'Unknown'], // Ensure name is an array and provide a default value
+      results: successfulUpdates.map((accountName) => ({
+        accountName,
         success: true,
       })),
-      // Add a general message if needed
       message: errors.join(', '),
     };
   }
-  // If there are successful deletions, update the updateUsage
-  if (successfulUpdates.length > 0) {
-    const cacheKey = `ga:accounts:userId:${userId}`;
 
-    // Update the Redis cache
+  if (
+    successfulUpdates.length > 0 &&
+    accountIdForCache &&
+    containerIdForCache
+  ) {
+    const cacheKey = `gtm:accounts:userId:${userId}`;
     await redis.del(cacheKey);
-    // Revalidate paths if needed
-    revalidatePath(`/dashboard/ga/accounts`);
+    revalidatePath(`/dashboard/gtm/accounts`);
   }
 
-  // Returning the result of the deletion process
+  // Map over formData.forms to update the results array
+  const results: FeatureResult[] = formData.forms.map((form) => {
+    // Ensure that form.accountId is defined before adding it to the array
+    const accountId = form.displayName ? [form.displayName] : []; // Provide an empty array as a fallback
+    return {
+      id: accountId, // Ensure id is an array of strings
+      name: [form.displayName], // Wrap the string in an array
+      success: true, // or false, depending on the actual result
+      // Include `notFound` if applicable
+      notFound: false, // Set this to the appropriate value based on your logic
+    };
+  });
+
+  // Return the response with the correctly typed results
   return {
-    success: errors.length === 0,
-    message: `Successfully updated ${successfulUpdates.length} account(s)`,
-    features: successfulUpdates,
-    errors: errors,
-    notFoundError: notFoundLimit.length > 0,
-    results: successfulUpdates.map((accountId) => ({
-      id: [accountId], // Ensure id is an array
-      name: [accountNames.find((name) => name.includes(name)) || 'Unknown'], // Ensure name is an array
-      success: true,
-    })),
+    success: true, // or false, depending on the actual results
+    features: [], // Populate with actual account IDs if applicable
+    errors: [], // Populate with actual error messages if applicable
+    limitReached: false, // Set based on actual limit status
+    message: 'Accounts updated successfully', // Customize the message as needed
+    results: results, // Use the correctly typed results
+    notFoundError: false, // Set based on actual not found status
   };
 }
-
 /************************************************************************************
   Delete a single or multiple accounts
 ************************************************************************************/

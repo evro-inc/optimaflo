@@ -36,7 +36,7 @@ import { revalidate, tierCreateLimit } from '@/src/lib/helpers/server';
 import { ReloadIcon } from '@radix-ui/react-icons';
 
 import { useDispatch } from 'react-redux';
-import AccountForms from '@/src/app/(dashboards)/dashboard/ga/accounts/AccountForms';
+import AccountForms from '@/src/app/(dashboards)/dashboard/ga/accounts/forms';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
 import { useDeleteHook } from './delete';
 import { notFound } from 'next/navigation';
@@ -259,7 +259,7 @@ export function DataTable<TData, TValue>({
           Next
         </Button>
       </div>
-      <AccountForms selectedRows={selectedRowsData} accounts={data} />
+      <AccountForms selectedRows={selectedRowsData} accounts={data} table={table} />
     </div>
   );
 }

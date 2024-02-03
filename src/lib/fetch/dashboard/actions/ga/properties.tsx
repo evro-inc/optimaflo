@@ -20,9 +20,10 @@ import {
   tierUpdateLimit,
 } from '@/src/lib/helpers/server';
 import { fetchGASettings, fetchGtmSettings } from '../..';
+import { CreatePropertySchema } from '@/src/lib/schemas/ga/properties';
 
 // Define the types for the form data
-type FormCreateSchema = z.infer<typeof CreateContainerSchema>;
+type FormCreateSchema = z.infer<typeof CreatePropertySchema>;
 
 /************************************************************************************
   Function to list GA properties
@@ -393,7 +394,7 @@ export async function DeleteContainers(
 /************************************************************************************
   Create a single container or multiple containers
 ************************************************************************************/
-export async function CreateContainers(formData: FormCreateSchema) {
+export async function createProperties(formData: FormCreateSchema) {
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
@@ -407,17 +408,17 @@ export async function CreateContainers(formData: FormCreateSchema) {
   const notFoundLimit: { id: string; name: string }[] = [];
 
   // Refactor: Use string identifiers in the set
-  const toCreateContainers = new Set(
-    formData.forms.map((cd) => `${cd.accountId}-${cd.containerName}`)
+  const toCreateProperties = new Set(
+    formData.forms.map((cd) => `${cd.accountId}-${cd.propertyName}`)
   );
 
-  const tierLimitResponse: any = await tierCreateLimit(userId, 'GTMContainer');
+  const tierLimitResponse: any = await tierCreateLimit(userId, 'GA4Properties');
   const limit = Number(tierLimitResponse.createLimit);
   const createUsage = Number(tierLimitResponse.createUsage);
   const availableCreateUsage = limit - createUsage;
 
   const creationResults: {
-    containerName: string;
+    propertyName: string;
     success: boolean;
     message?: string;
   }[] = [];
@@ -427,20 +428,20 @@ export async function CreateContainers(formData: FormCreateSchema) {
     return {
       success: false,
       limitReached: true,
-      message: 'Feature limit reached for Creating Containers',
+      message: 'Feature limit reached for Creating Properties',
       results: [],
     };
   }
 
-  if (toCreateContainers.size > availableCreateUsage) {
-    const attemptedCreations = Array.from(toCreateContainers).map(
+  if (toCreateProperties.size > availableCreateUsage) {
+    const attemptedCreations = Array.from(toCreateProperties).map(
       (identifier) => {
-        const [containerName] = identifier.split('-');
+        const [propertyName] = identifier.split('-');
         return {
-          id: [], // No container ID since creation did not happen
-          name: containerName, // Include the container name from the identifier
+          id: [], // No property ID since creation did not happen
+          name: propertyName, // Include the property name from the identifier
           success: false,
-          message: `Creation limit reached. Cannot create container "${containerName}".`,
+          message: `Creation limit reached. Cannot create property "${propertyName}".`,
           // remaining creation limit
           remaining: availableCreateUsage,
           limitReached: true,
@@ -450,9 +451,9 @@ export async function CreateContainers(formData: FormCreateSchema) {
     return {
       success: false,
       features: [],
-      message: `Cannot create ${toCreateContainers.size} containers as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
+      message: `Cannot create ${toCreateProperties.size} properties as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
       errors: [
-        `Cannot create ${toCreateContainers.size} containers as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
+        `Cannot create ${toCreateProperties.size} properties as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
       ],
       results: attemptedCreations,
       limitReached: true,
@@ -460,37 +461,39 @@ export async function CreateContainers(formData: FormCreateSchema) {
   }
 
   let permissionDenied = false;
-  const containerNames = formData.forms.map((cd) => cd.containerName);
+  const propertyNames = formData.forms.map((cd) => cd.displayName);
 
-  if (toCreateContainers.size <= availableCreateUsage) {
+  if (toCreateProperties.size <= availableCreateUsage) {
     while (
       retries < MAX_RETRIES &&
-      toCreateContainers.size > 0 &&
+      toCreateProperties.size > 0 &&
       !permissionDenied
     ) {
       try {
-        const { remaining } = await gtmRateLimit.blockUntilReady(
+        const { remaining } = await gaRateLimit.blockUntilReady(
           `user:${userId}`,
           1000
         );
         if (remaining > 0) {
           await limiter.schedule(async () => {
-            const createPromises = Array.from(toCreateContainers).map(
+            const createPromises = Array.from(toCreateProperties).map(
               async (identifier) => {
-                const [accountId, containerName] = identifier.split('-');
-                const containerData = formData.forms.find(
+                const [accountId, propertyName] = identifier.split('-');
+                const propertyData = formData.forms.find(
                   (cd) =>
                     cd.accountId === accountId &&
-                    cd.containerName === containerName
+                    cd.displayName === propertyName
                 );
+                console.log('propertyData', propertyData);
+                
 
-                if (!containerData) {
+                if (!propertyData) {
                   errors.push(`Container data not found for ${identifier}`);
-                  toCreateContainers.delete(identifier);
+                  toCreateProperties.delete(identifier);
                   return;
                 }
 
-                const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/`;
+                const url = `https://analyticsadmin.googleapis.com/v1beta/properties`;
                 const headers = {
                   Authorization: `Bearer ${token[0].token}`,
                   'Content-Type': 'application/json',
@@ -498,7 +501,10 @@ export async function CreateContainers(formData: FormCreateSchema) {
                 };
 
                 try {
-                  const formDataToValidate = { forms: [containerData] };
+                  const formDataToValidate = { forms: [propertyData] };
+
+                  console.log('formDataToValidate', formDataToValidate);
+                  
 
                   const validationResult =
                     CreateContainerSchema.safeParse(formDataToValidate);
@@ -508,34 +514,33 @@ export async function CreateContainers(formData: FormCreateSchema) {
                       .map((issue) => `${issue.path[0]}: ${issue.message}`)
                       .join('. ');
                     errors.push(errorMessage);
-                    toCreateContainers.delete(identifier);
+                    toCreateProperties.delete(identifier);
                     return {
-                      containerData,
+                      propertyData,
                       success: false,
                       error: errorMessage,
                     };
                   }
 
-                  // Accessing the validated container data
+                  // Accessing the validated property data
                   const validatedContainerData = validationResult.data.forms[0];
 
                   const response = await fetch(url, {
                     method: 'POST',
                     headers: headers,
                     body: JSON.stringify({
-                      accountId: accountId,
-                      name: containerName,
-                      usageContext: validatedContainerData.usageContext,
-                      domainName: validatedContainerData.domainName,
-                      notes: validatedContainerData.notes,
+                      displayName: validatedContainerData.displayName,
+                      timeZone: validatedContainerData.timeZone,
+                      industryCategory: validatedContainerData.industryCategory,
+                      currencyCode: validatedContainerData.currencyCode,
                     }),
                   });
 
                   let parsedResponse;
 
                   if (response.ok) {
-                    successfulCreations.push(containerName);
-                    toCreateContainers.delete(identifier);
+                    successfulCreations.push(propertyName);
+                    toCreateProperties.delete(identifier);
                     fetchGtmSettings(userId);
                     fetchGASettings(userId);
 
@@ -544,9 +549,9 @@ export async function CreateContainers(formData: FormCreateSchema) {
                       data: { createUsage: { increment: 1 } },
                     });
                     creationResults.push({
-                      containerName: containerName,
+                      propertyName: propertyName,
                       success: true,
-                      message: `Successfully created container ${containerName}`,
+                      message: `Successfully created property ${propertyName}`,
                     });
                   } else {
                     parsedResponse = await response.json();
@@ -554,8 +559,8 @@ export async function CreateContainers(formData: FormCreateSchema) {
                     const errorResult = await handleApiResponseError(
                       response,
                       parsedResponse,
-                      'container',
-                      [containerName]
+                      'property',
+                      [propertyName]
                     );
 
                     if (errorResult) {
@@ -564,38 +569,38 @@ export async function CreateContainers(formData: FormCreateSchema) {
                         errorResult.errorCode === 403 &&
                         parsedResponse.message === 'Feature limit reached'
                       ) {
-                        featureLimitReached.push(containerName);
+                        featureLimitReached.push(propertyName);
                       } else if (errorResult.errorCode === 404) {
-                        const containerName =
-                          containerNames.find((name) =>
+                        const propertyName =
+                          propertyNames.find((name) =>
                             name.includes(identifier.split('-')[1])
                           ) || 'Unknown';
                         notFoundLimit.push({
                           id: identifier.split('-')[1],
-                          name: containerName,
+                          name: propertyName,
                         });
                       }
                     } else {
                       errors.push(
-                        `An unknown error occurred for container ${containerName}.`
+                        `An unknown error occurred for property ${propertyName}.`
                       );
                     }
 
-                    toCreateContainers.delete(identifier);
+                    toCreateProperties.delete(identifier);
                     permissionDenied = errorResult ? true : permissionDenied;
                     creationResults.push({
-                      containerName: containerName,
+                      propertyName: propertyName,
                       success: false,
                       message: errorResult?.message,
                     });
                   }
                 } catch (error: any) {
                   errors.push(
-                    `Exception creating container ${containerName}: ${error.message}`
+                    `Exception creating property ${propertyName}: ${error.message}`
                   );
-                  toCreateContainers.delete(identifier);
+                  toCreateProperties.delete(identifier);
                   creationResults.push({
-                    containerName: containerName,
+                    propertyName: propertyName,
                     success: false,
                     message: error.message,
                   });
@@ -627,17 +632,17 @@ export async function CreateContainers(formData: FormCreateSchema) {
               success: false,
               limitReached: true,
               notFoundError: false,
-              message: `Feature limit reached for containers: ${featureLimitReached.join(
+              message: `Feature limit reached for properties: ${featureLimitReached.join(
                 ', '
               )}`,
-              results: featureLimitReached.map((containerId) => {
-                // Find the name associated with the containerId
-                const containerName =
-                  containerNames.find((name) => name.includes(containerId)) ||
+              results: featureLimitReached.map((propertyId) => {
+                // Find the name associated with the propertyId
+                const propertyName =
+                  propertyNames.find((name) => name.includes(propertyId)) ||
                   'Unknown';
                 return {
-                  id: [containerId], // Ensure id is an array
-                  name: [containerName], // Ensure name is an array, match by containerId or default to 'Unknown'
+                  id: [propertyId], // Ensure id is an array
+                  name: [propertyName], // Ensure name is an array, match by propertyId or default to 'Unknown'
                   success: false,
                   featureLimitReached: true,
                 };
@@ -649,7 +654,7 @@ export async function CreateContainers(formData: FormCreateSchema) {
             break;
           }
 
-          if (toCreateContainers.size === 0) {
+          if (toCreateProperties.size === 0) {
             break;
           }
         } else {
@@ -668,9 +673,9 @@ export async function CreateContainers(formData: FormCreateSchema) {
       } finally {
         // This block will run regardless of the outcome of the try...catch
         if (userId) {
-          const cacheKey = `gtm:containers:userId:${userId}`;
+          const cacheKey = `ga:properties:userId:${userId}`;
           await redis.del(cacheKey);
-          await revalidatePath(`/dashboard/gtm/containers`);
+          await revalidatePath(`/dashboard/ga/properties`);
         }
       }
     }
@@ -690,8 +695,8 @@ export async function CreateContainers(formData: FormCreateSchema) {
       success: false,
       features: successfulCreations,
       errors: errors,
-      results: successfulCreations.map((containerName) => ({
-        containerName,
+      results: successfulCreations.map((propertyName) => ({
+        propertyName,
         success: true,
       })),
       message: errors.join(', '),
@@ -699,19 +704,19 @@ export async function CreateContainers(formData: FormCreateSchema) {
   }
 
   if (successfulCreations.length > 0) {
-    const cacheKey = `gtm:containers:userId:${userId}`;
+    const cacheKey = `ga:properties:userId:${userId}`;
 
     await redis.del(cacheKey);
-    revalidatePath(`/dashboard/gtm/containers`);
+    revalidatePath(`/dashboard/ga/properties`);
   }
 
   // Map over formData.forms to create the results array
   const results: FeatureResult[] = formData.forms.map((form) => {
-    // Ensure that form.containerId is defined before adding it to the array
-    const containerId = form.containerId ? [form.containerId] : []; // Provide an empty array as a fallback
+    // Ensure that form.propertyId is defined before adding it to the array
+    const propertyId = form.propertyId ? [form.propertyId] : []; // Provide an empty array as a fallback
     return {
-      id: containerId, // Ensure id is an array of strings
-      name: [form.containerName], // Wrap the string in an array
+      id: propertyId, // Ensure id is an array of strings
+      name: [form.propertyName], // Wrap the string in an array
       success: true, // or false, depending on the actual result
       // Include `notFound` if applicable
       notFound: false, // Set this to the appropriate value based on your logic
@@ -721,10 +726,10 @@ export async function CreateContainers(formData: FormCreateSchema) {
   // Return the response with the correctly typed results
   return {
     success: true, // or false, depending on the actual results
-    features: [], // Populate with actual container IDs if applicable
+    features: [], // Populate with actual property IDs if applicable
     errors: [], // Populate with actual error messages if applicable
     limitReached: false, // Set based on actual limit status
-    message: 'Containers created successfully', // Customize the message as needed
+    message: 'Properties created successfully', // Customize the message as needed
     results: results, // Use the correctly typed results
     notFoundError: false, // Set based on actual not found status
   };
