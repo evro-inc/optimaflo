@@ -19,7 +19,7 @@ import {
   tierDeleteLimit,
   tierUpdateLimit,
 } from '@/src/lib/helpers/server';
-import { fetchGtmSettings } from '../..';
+import { fetchGASettings, fetchGtmSettings } from '../..';
 
 // Define the types for the form data
 type FormCreateSchema = z.infer<typeof CreateWorkspaceSchema>;
@@ -574,6 +574,7 @@ export async function CreateWorkspaces(formData: FormCreateSchema) {
                     successfulCreations.push(workspaceName);
                     toCreateWorkspaces.delete(identifier);
                     fetchGtmSettings(userId);
+                    fetchGASettings(userId);
                     await prisma.tierLimit.update({
                       where: { id: tierLimitResponse.id },
                       data: { createUsage: { increment: 1 } },

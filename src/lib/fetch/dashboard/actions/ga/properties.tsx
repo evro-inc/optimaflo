@@ -19,7 +19,7 @@ import {
   tierDeleteLimit,
   tierUpdateLimit,
 } from '@/src/lib/helpers/server';
-import { fetchGtmSettings } from '../..';
+import { fetchGASettings, fetchGtmSettings } from '../..';
 
 // Define the types for the form data
 type FormCreateSchema = z.infer<typeof CreateContainerSchema>;
@@ -45,9 +45,12 @@ export async function listGAProperties() {
       id: userId,
     },
     include: {
-      gtm: true,
+      ga: true,
     },
   });
+
+  console.log(gaData);
+  
 
   const cacheKey = `ga:properties:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
@@ -67,13 +70,16 @@ export async function listGAProperties() {
 
         await limiter.schedule(async () => {
           const uniqueAccountIds = Array.from(
-            new Set(gaData.gtm.map((item) => item.accountId))
+            new Set(gaData.ga.map((item) => item.accountId))
           );
+          console.log("uniqueAccountIds", uniqueAccountIds);
+          
 
           const urls = uniqueAccountIds.map(
             (accountId) =>
-              `https://analyticsadmin.googleapis.com/v1beta/properties`
+              `https://analyticsadmin.googleapis.com/v1beta/properties?filter=parent:accounts/${accountId}`
           );
+          
 
           const headers = {
             Authorization: `Bearer ${accessToken}`,
@@ -83,7 +89,10 @@ export async function listGAProperties() {
 
           for (const url of urls) {
             try {
-              const response = await fetch(url, { headers });
+              const response = await fetch(url, { headers });     
+              console.log("response", response);ç
+                   
+                  
 
               if (!response.ok) {
                 throw new Error(
@@ -92,8 +101,9 @@ export async function listGAProperties() {
               }
 
               const responseBody = await response.json();
+                            
 
-              allData.push(responseBody.container || []);
+              allData.push(responseBody.properties || []);
             } catch (error: any) {
               throw new Error(`Error fetching data: ${error.message}`);
             }
@@ -538,6 +548,7 @@ export async function CreateContainers(formData: FormCreateSchema) {
                     successfulCreations.push(containerName);
                     toCreateContainers.delete(identifier);
                     fetchGtmSettings(userId);
+                    fetchGASettings(userId);
 
                     await prisma.tierLimit.update({
                       where: { id: tierLimitResponse.id },

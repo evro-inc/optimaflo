@@ -3,9 +3,9 @@ import Stripe from 'stripe';
 import prisma from '@/src/lib/prisma';
 import { stripe } from '@/src/lib/stripe';
 import {
+  fetchGASettings,
   fetchGtmSettings,
-  grantGAAccess,
-  grantGtmAccess,
+  grantProductAccess,
 } from '@/src/lib/fetch/dashboard';
 
 // List of relevant Stripe webhook events
@@ -169,7 +169,7 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
 
     const createFeatureLimitsByTier = {
       /* Basic Tier */
-      prod_PR67hSV5IpooDJ: {
+      prod_PUV4HNwx8EuHOi: {
         create: {
           GTMContainer: 3,
           GTMTags: 30,
@@ -238,7 +238,7 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
         },
       },
       /* Pro Tier */
-      prod_PR68ixfux75cGT: {
+      prod_PUV5bXKCjMOpz8: {
         create: {
           GTMContainer: 10,
           GTMTags: 60,
@@ -307,7 +307,7 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
         },
       },
       /* Enterprise Tier */
-      prod_PR6ETKqabgOXDt: {
+      prod_PUV6oomP5QRnkp: {
         create: {
           GTMContainer: 10000,
           GTMTags: 10000,
@@ -387,6 +387,8 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
       update: subscriptionData,
       create: subscriptionData,
     });
+    console.log('createdOrUpdatedSubscription', createdOrUpdatedSubscription);
+    
 
     // Confirm that the subscription was created or updated
     if (!createdOrUpdatedSubscription) {
@@ -786,15 +788,11 @@ async function upsertInvoiceRecord(invoice: Stripe.Invoice) {
 }
 
 async function grantAccessToContent(invoice: Stripe.Invoice) {
-  // needs to match ids for grantGtmAccess function
+  // needs to match ids for grantAccess function
   const productAccessGranters = {
-    prod_PR67hSV5IpooDJ: grantGtmAccess,
-    prod_PR68ixfux75cGT: grantGtmAccess,
-    prod_PR6ETKqabgOXDt: grantGtmAccess,
-
-    prod_PR67hSV5IpooDJ_GA4: grantGAAccess,
-    prod_PR68ixfux75cGT_GA4: grantGAAccess,
-    prod_PR6ETKqabgOXDt_GA4: grantGAAccess,
+    prod_PUV4HNwx8EuHOi: grantProductAccess,
+    prod_PUV5bXKCjMOpz8: grantProductAccess,
+    prod_PUV6oomP5QRnkp: grantProductAccess,
   };
 
   // Get the product IDs associated with the invoice
@@ -834,6 +832,7 @@ async function fetchGTM(invoice: Stripe.Invoice) {
   }
   if (customerRecord) {
     await fetchGtmSettings(userId);
+    await fetchGASettings(userId);
   }
 }
 
@@ -880,6 +879,8 @@ async function deleteCustomerAndRelatedRecords(stripeCustomerId: string) {
 
       // Delete related gtm records
       await prisma.gtm.deleteMany({ where: { userId: stripeCustomerId } });
+
+      await prisma.ga.deleteMany({ where: { userId: stripeCustomerId } });
 
       await prisma.tierLimit.deleteMany({
         where: { subscriptionId: stripeCustomerId },

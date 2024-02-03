@@ -19,7 +19,7 @@ import {
   tierDeleteLimit,
   tierUpdateLimit,
 } from '@/src/lib/helpers/server';
-import { fetchGtmSettings } from '../..';
+import { fetchGASettings, fetchGtmSettings } from '../..';
 
 // Define the types for the form data
 type FormCreateSchema = z.infer<typeof CreateContainerSchema>;
@@ -537,6 +537,7 @@ export async function CreateContainers(formData: FormCreateSchema) {
                     successfulCreations.push(containerName);
                     toCreateContainers.delete(identifier);
                     fetchGtmSettings(userId);
+                    fetchGASettings(userId);
 
                     await prisma.tierLimit.update({
                       where: { id: tierLimitResponse.id },

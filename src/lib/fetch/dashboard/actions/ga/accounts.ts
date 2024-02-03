@@ -21,6 +21,7 @@ import {
 } from '@/src/lib/helpers/server';
 import { FeatureResponse, FeatureResult } from '@/src/lib/types/types';
 import prisma from '@/src/lib/prisma';
+import { fetchGASettings, fetchGtmSettings } from '../..';
 
 // Defining a type for form update schema using Zod
 type FormUpdateSchema = z.infer<typeof UpdateAccountSchema>;
@@ -208,10 +209,9 @@ export async function updateAccounts(
                   if (response.ok) {
                     successfulUpdates.push(name);
                     toUpdateAccounts.delete(name);
-
-                    /*  await prisma.ga.updateMany({
+/* 
+                      await prisma.ga.updateMany({
                       where: {
-                        accountId: accountId,
                         accountId: accountId,
                         userId: userId, // Ensure this matches the user ID
                       },
@@ -804,7 +804,8 @@ export async function createAccounts(formData: FormCreateSchema) {
 
                     successfulCreations.push(accountData.displayName);
                     toCreateAccounts.delete(identifier);
-                    //fetchGtmSettings(userId);
+                    fetchGtmSettings(userId);
+                    fetchGASettings(userId);
 
                     await prisma.tierLimit.update({
                       where: { id: tierLimitResponse.id },

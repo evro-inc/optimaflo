@@ -28,14 +28,14 @@ export default authMiddleware({
         // Define a mapping between paths and product IDs
         const regexToProductIds = {
           '^/dashboard/gtm.*': [
-            'prod_PR6ETKqabgOXDt',
-            'prod_PR68ixfux75cGT',
-            'prod_PR67hSV5IpooDJ',
+            'prod_PUV6oomP5QRnkp',
+            'prod_PUV5bXKCjMOpz8',
+            'prod_PUV4HNwx8EuHOi',
           ],
           '^/dashboard/ga.*': [
-            'prod_PR67hSV5IpooDJ',
-            'prod_PR68ixfux75cGT',
-            'prod_PR6ETKqabgOXDt',
+            'prod_PUV4HNwx8EuHOi',
+            'prod_PUV5bXKCjMOpz8',
+            'prod_PUV6oomP5QRnkp',
           ],
         };
 

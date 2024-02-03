@@ -88,8 +88,7 @@ export function DataTable<TData, TValue>({
     // Assuming you want to refresh cache for each workspace
     const keys = [
       `ga:accounts:userId:${userId}`,
-      `ga:containers:userId:${userId}`,
-      `ga:workspaces:userId:${userId}`,
+      `ga:properties:userId:${userId}`,
     ];
     await revalidate(keys, '/dashboard/ga/accounts', userId);
     toast.info(

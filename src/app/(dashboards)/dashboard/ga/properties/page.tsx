@@ -18,7 +18,7 @@ export default async function PropertyPage({
   const currentPage = Number(searchParams?.page) || 1;
   const { userId } = auth();
   if (!userId) return notFound();
-  const properties = await listGAProperties();
+  const properties = await listGAProperties();  
 
   return (
     <>
