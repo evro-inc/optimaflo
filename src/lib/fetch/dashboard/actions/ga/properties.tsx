@@ -49,9 +49,6 @@ export async function listGAProperties() {
     },
   });
 
-  console.log(gaData);
-  
-
   const cacheKey = `ga:properties:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
 
@@ -72,14 +69,11 @@ export async function listGAProperties() {
           const uniqueAccountIds = Array.from(
             new Set(gaData.ga.map((item) => item.accountId))
           );
-          console.log("uniqueAccountIds", uniqueAccountIds);
-          
 
           const urls = uniqueAccountIds.map(
             (accountId) =>
-              `https://analyticsadmin.googleapis.com/v1beta/properties?filter=parent:accounts/${accountId}`
+              `https://analyticsadmin.googleapis.com/v1beta/properties?filter=parent:${accountId}`
           );
-          
 
           const headers = {
             Authorization: `Bearer ${accessToken}`,
@@ -89,11 +83,7 @@ export async function listGAProperties() {
 
           for (const url of urls) {
             try {
-              const response = await fetch(url, { headers });     
-              console.log("response", response);ç
-                   
-                  
-
+              const response = await fetch(url, { headers });
               if (!response.ok) {
                 throw new Error(
                   `HTTP error! status: ${response.status}. ${response.statusText}`
@@ -101,7 +91,6 @@ export async function listGAProperties() {
               }
 
               const responseBody = await response.json();
-                            
 
               allData.push(responseBody.properties || []);
             } catch (error: any) {
@@ -112,7 +101,7 @@ export async function listGAProperties() {
 
         redis.set(cacheKey, JSON.stringify(allData.flat()));
 
-        return allData;
+        return allData.flat();
       }
     } catch (error: any) {
       if (error.code === 429 || error.status === 429) {

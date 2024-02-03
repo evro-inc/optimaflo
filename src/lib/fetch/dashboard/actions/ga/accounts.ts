@@ -209,7 +209,7 @@ export async function updateAccounts(
                   if (response.ok) {
                     successfulUpdates.push(name);
                     toUpdateAccounts.delete(name);
-/* 
+                    /* 
                       await prisma.ga.updateMany({
                       where: {
                         accountId: accountId,

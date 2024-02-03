@@ -387,8 +387,6 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
       update: subscriptionData,
       create: subscriptionData,
     });
-    console.log('createdOrUpdatedSubscription', createdOrUpdatedSubscription);
-    
 
     // Confirm that the subscription was created or updated
     if (!createdOrUpdatedSubscription) {
@@ -443,6 +441,7 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
     }
 
     await prisma.$transaction(operations);
+
     if (createdOrUpdatedSubscription.status) {
       await prisma.subscription.upsert({
         where: {
@@ -813,7 +812,7 @@ async function grantAccessToContent(invoice: Stripe.Invoice) {
 }
 
 // Fetch GTM Settings
-async function fetchGTM(invoice: Stripe.Invoice) {
+async function fetchGoogle(invoice: Stripe.Invoice) {
   // Fetch user ID using the Stripe Customer ID
   const customerRecord = await prisma.customer.findFirst({
     where: {
@@ -951,7 +950,7 @@ export async function POST(req: NextRequest) {
         case 'invoice.paid':
           await upsertInvoiceRecord(event.data.object as Stripe.Invoice);
           await grantAccessToContent(event.data.object as Stripe.Invoice);
-          await fetchGTM(event.data.object as Stripe.Invoice);
+          await fetchGoogle(event.data.object as Stripe.Invoice);
           await resetUsageForSubscription(
             (event.data.object as Stripe.Invoice).subscription as string
           );

@@ -221,69 +221,51 @@ export async function fetchGASettings(userId: string) {
         'https://analyticsadmin.googleapis.com/v1beta/accounts?fields=accounts(name,displayName,regionCode)',
         { headers }
       );
-      console.log("accountsResponse", accountsResponse);
-      
       const accountsData = await accountsResponse.json();
-      console.log("accountsData", accountsData);
-      
-
 
       const accountNames =
         accountsData.accounts?.map((account) => account.name) || [];
-      console.log("accountNames", accountNames);
-      
 
       for (const accountId of accountNames) {
-
-        console.log("accountId", accountId);
-
         const uniqueAccountId = accountId.split('/')[1];
-        
+
         // Fetch containers for each account
         const propertyResponse = await fetch(
           `https://analyticsadmin.googleapis.com/v1beta/properties?filter=parent:accounts/${uniqueAccountId}`,
           { headers }
         );
-        console.log("propertyResponse", propertyResponse);
-        
+
         const propertyData = await propertyResponse.json();
-        console.log("propertyData", propertyData);
-        
-        const propertyIds = propertyData.properties?.map((property) => {
-          // Split the property.name at '/' and take the second part ([1]), which is the ID
-          return property.name.split('/')[1];
-        }) || [];
 
-        console.log("propertyIds", propertyIds);
-        
+        const propertyIds =
+          propertyData.properties?.map((property) => {
+            // Split the property.name at '/' and take the second part ([1]), which is the ID
+            return property.name.split('/')[1];
+          }) || [];
 
-          for (const propertyId of propertyIds) {
-            if (
-              !existingCompositeKeySet.has(
-                `${accountId}-${propertyId}`
-              )
-            ) {
-              await prisma.ga.upsert({
-                where: {
-                  userId_accountId_propertyId: {
-                    userId,
-                    accountId,
-                    propertyId,
-                  },
-                },
-                update: {
+        for (const propertyId of propertyIds) {
+          if (!existingCompositeKeySet.has(`${accountId}-${propertyId}`)) {
+            await prisma.ga.upsert({
+              where: {
+                userId_accountId_propertyId: {
+                  userId,
                   accountId,
                   propertyId,
-                  User: { connect: { id: userId } },
                 },
-                create: {
-                  accountId,
-                  propertyId,
-                  User: { connect: { id: userId } },
-                },
-              });
-            }
+              },
+              update: {
+                accountId,
+                propertyId,
+                User: { connect: { id: userId } },
+              },
+              create: {
+                accountId,
+                propertyId,
+                User: { connect: { id: userId } },
+              },
+            });
           }
+        }
       }
       success = true;
     } catch (error: any) {

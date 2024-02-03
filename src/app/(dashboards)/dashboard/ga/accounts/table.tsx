@@ -147,7 +147,7 @@ export function DataTable<TData, TValue>({
             <ReloadIcon className="h-4 w-4" />
           </Button>
 
-          <Button onClick={handleCreateClick}>Create</Button>
+          {/* <Button onClick={handleCreateClick}>Create</Button> */}
 
           <Button
             disabled={Object.keys(table.getState().rowSelection).length === 0}
