@@ -121,8 +121,6 @@ export async function UpdateGaAccounts(formData: FormUpdateSchema) {
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
 
-
-  console.log("formData", formData);
   
   let retries = 0;
   const MAX_RETRIES = 3;
@@ -309,7 +307,7 @@ export async function UpdateGaAccounts(formData: FormUpdateSchema) {
                             name.includes(identifier.name)
                           ) || 'Unknown';
                         notFoundLimit.push({
-                          id: identifier.containerId,
+                          id: identifier.displayName,
                           name: accountName,
                         });
                       }
@@ -429,9 +427,9 @@ export async function UpdateGaAccounts(formData: FormUpdateSchema) {
       } finally {
         // This block will run regardless of the outcome of the try...catch
         if (accountIdForCache && containerIdForCache && userId) {
-          const cacheKey = `gtm:accounts:userId:${userId}`;
+          const cacheKey = `ga:accounts:userId:${userId}`;
           await redis.del(cacheKey);
-          await revalidatePath(`/dashboard/gtm/accounts`);
+          revalidatePath(`/dashboard/ga/accounts`);
         }
       }
     }
@@ -460,13 +458,12 @@ export async function UpdateGaAccounts(formData: FormUpdateSchema) {
   }
 
   if (
-    successfulUpdates.length > 0 &&
-    accountIdForCache &&
-    containerIdForCache
+    successfulUpdates.length > 0
+
   ) {
-    const cacheKey = `gtm:accounts:userId:${userId}`;
+    const cacheKey = `ga:accounts:userId:${userId}`;
     await redis.del(cacheKey);
-    revalidatePath(`/dashboard/gtm/accounts`);
+    revalidatePath(`/dashboard/ga/accounts`);
   }
 
   // Map over formData.forms to update the results array
