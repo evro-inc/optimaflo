@@ -3,10 +3,7 @@ import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LimitReached } from '../../../../../components/client/modals/limitReached';
 import { ButtonGroup } from '../../../../../components/client/ButtonGroup/ButtonGroup';
-import {
-  FeatureResponse,
-  FormCreateProps,
-} from '@/src/lib/types/types';
+import { FeatureResponse, FormCreateProps } from '@/src/lib/types/types';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   selectTable,
@@ -76,10 +73,13 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
     defaultValues: {
       forms: [
         {
-          accountId: table[0].accountId,
-          name: '',
-          description: '',
-          containerId: '',
+          name: table[0].name,
+          parent: table[0].parent,
+          currencyCode: 'USD',
+          displayName: '',
+          industryCategory: 'AUTOMOTIVE',
+          timezone: 'America/New_York',
+          propertyType: 'PROPERTY_TYPE_ORDINARY',
         },
       ],
     },
@@ -93,10 +93,13 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
 
   const addForm = () => {
     append({
-      accountId: table[0].accountId,
-      name: '',
-      description: '',
-      containerId: '',
+      name: table[0].name,
+      parent: table[0].parent,
+      currencyCode: 'USD',
+      displayName: '',
+      industryCategory: 'AUTOMOTIVE',
+      timezone: 'America/New_York',
+      propertyType: 'PROPERTY_TYPE_ORDINARY',
     });
   };
 
@@ -110,19 +113,20 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
     const { forms } = data;
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
-    toast('Creating propertys...', {
+    toast('Creating properties...', {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
       },
     });
 
-    const uniquePropertys = new Set(forms.map((form) => form.containerId));
+    const uniqueProperties = new Set(forms.map((form) => form.parent));
+
     for (const form of forms) {
-      const identifier = `${form.accountId}-${form.containerId}-${form.name}`;
-      if (uniquePropertys.has(identifier)) {
+      const identifier = `${form.parent} - ${form.name} - ${form.displayName}`;
+      if (uniqueProperties.has(identifier)) {
         toast.error(
-          `Duplicate property found for ${form.accountId} - ${form.containerId} - ${form.name}`,
+          `Duplicate property found for ${form.name} - ${form.displayName}`,
           {
             action: {
               label: 'Close',
@@ -133,7 +137,7 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
         dispatch(setLoading(false));
         return;
       }
-      uniquePropertys.add(identifier);
+      uniqueProperties.add(identifier);
     }
 
     try {
@@ -196,10 +200,13 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
         form.reset({
           forms: [
             {
-              accountId: '',
-              name: '',
-              description: '',
-              containerId: '',
+              name: table[0].name,
+              parent: table[0].parent,
+              currencyCode: 'USD',
+              displayName: '',
+              industryCategory: 'AUTOMOTIVE',
+              timezone: 'America/New_York',
+              propertyType: 'PROPERTY_TYPE_ORDINARY',
             },
           ],
         });
@@ -211,10 +218,13 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
       form.reset({
         forms: [
           {
-            accountId: '',
-            name: '',
-            description: '',
-            containerId: '',
+            name: table[0].name,
+            parent: table[0].parent,
+            currencyCode: 'USD',
+            displayName: '',
+            industryCategory: 'AUTOMOTIVE',
+            timezone: 'America/New_York',
+            propertyType: 'PROPERTY_TYPE_ORDINARY',
           },
         ],
       });
@@ -236,10 +246,13 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
     form.reset({
       forms: [
         {
-          accountId: '',
-          name: '',
-          description: '',
-          containerId: '',
+          name: table[0].name,
+          parent: table[0].parent,
+          currencyCode: 'USD',
+          displayName: '',
+          industryCategory: 'AUTOMOTIVE',
+          timezone: 'America/New_York',
+          propertyType: 'PROPERTY_TYPE_ORDINARY',
         },
       ],
     });
@@ -248,12 +261,83 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
     onClose();
   };
 
-  const accountIdsWithContainers = new Set(
-    table.map((property) => property.accountId)
+  const currencyCodes = [
+    'USD',
+    'EUR',
+    'JPY',
+    'GBP',
+    'AUD',
+    'CAD',
+    'CHF',
+    'CNY',
+    'SEK',
+    'NZD',
+  ];
+  const timezones = [
+    'America/New_York',
+    'America/Los_Angeles',
+    'America/Chicago',
+    'America/Denver',
+    'Asia/Tokyo',
+    'Asia/Shanghai',
+    'Asia/Dubai',
+    'Europe/London',
+    'Europe/Berlin',
+    'Europe/Moscow',
+    'Africa/Cairo',
+    'Africa/Johannesburg',
+    'Australia/Sydney',
+    'Australia/Perth',
+    'America/Sao_Paulo',
+    'Asia/Kolkata',
+    'Asia/Singapore',
+    'Europe/Paris',
+    'Asia/Seoul',
+    'Europe/Istanbul',
+  ];
+
+  const industryCategories = [
+    'AUTOMOTIVE',
+    'BUSINESS_AND_INDUSTRIAL_MARKETS',
+    'FINANCE',
+    'HEALTHCARE',
+    'TECHNOLOGY',
+    'TRAVEL',
+    'OTHER',
+    'ARTS_AND_ENTERTAINMENT',
+    'BEAUTY_AND_FITNESS',
+    'BOOKS_AND_LITERATURE',
+    'FOOD_AND_DRINK',
+    'GAMES',
+    'HOBBIES_AND_LEISURE',
+    'HOME_AND_GARDEN',
+    'INTERNET_AND_TELECOM',
+    'LAW_AND_GOVERNMENT',
+    'NEWS',
+    'ONLINE_COMMUNITIES',
+    'PEOPLE_AND_SOCIETY',
+    'PETS_AND_ANIMALS',
+    'REAL_ESTATE',
+    'REFERENCE',
+    'SCIENCE',
+    'SPORTS',
+    'JOBS_AND_EDUCATION',
+    'SHOPPING',
+  ];
+
+  const propertyType = [
+    'PROPERTY_TYPE_ORDINARY',
+    'PROPERTY_TYPE_SUBPROPERTY',
+    'PROPERTY_TYPE_ROLLUP',
+  ];
+
+  const accountIdsWithProperties = new Set(
+    table.map((property) => property.parent)
   );
 
-  const accountsWithContainers = accounts.filter((account) =>
-    accountIdsWithContainers.has(account.accountId)
+  // match parent with account
+  const accountsWithProperties = accounts.filter((account) =>
+    accountIdsWithProperties.has(account.name)
   );
 
   return (
@@ -278,42 +362,42 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
               <span className="sr-only">Close</span>
             </Button>
 
-            <ButtonGroup
-              buttons={[
-                { text: 'Add Form', onClick: addForm },
-                { text: 'Remove Form', onClick: removeForm },
-                {
-                  text: loading ? 'Submitting...' : 'Submit',
-                  type: 'submit',
-                  form: 'createProperty',
-                },
-              ]}
-            />
+            <div className="flex items-center justify-between py-3 px-4 mt-5 gap-4">
+              <ButtonGroup
+                buttons={[
+                  { text: 'Add Form', onClick: addForm },
+                  { text: 'Remove Form', onClick: removeForm },
+                  {
+                    text: loading ? 'Submitting...' : 'Submit',
+                    type: 'submit',
+                    form: 'createProperty',
+                  },
+                ]}
+              />
+            </div>
 
             <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-end">
               {fields.map((field, index) => {
-                const selectedAccountId = form.watch(
-                  `forms.${index}.accountId`
-                );
+                const selectedPropertyId = form.watch(`forms.${index}.parent`);
 
                 // Filter propertys to only include those that belong to the selected account
-                const filteredPropertys = table.filter(
-                  (property) => property.accountId === selectedAccountId
+                const filteredProperties = table.filter(
+                  (property) => property.parent === selectedPropertyId
                 );
 
                 // Create a Set to store unique container IDs
-                const uniqueContainerIds = new Set(
-                  filteredPropertys.map((ws) => ws.containerId)
+                const uniquePropertyIds = new Set(
+                  filteredProperties.map((property) => property.parent)
                 );
 
-                // Filter the propertys again to only include unique containers
-                const uniqueFilteredPropertys = filteredPropertys.filter(
+                // Filter the properties again to only include unique properties
+                const uniqueFilteredProperties = filteredProperties.filter(
                   (property, idx, self) =>
                     idx ===
                     self.findIndex(
-                      (w) =>
-                        w.containerId === property.containerId &&
-                        uniqueContainerIds.has(w.containerId)
+                      (p) =>
+                        p.parent === property.parent &&
+                        uniquePropertyIds.has(p.parent)
                     )
                 );
 
@@ -342,7 +426,7 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
                               >
                                 <FormField
                                   control={form.control}
-                                  name={`forms.${index}.name`}
+                                  name={`forms.${index}.displayName`}
                                   render={({ field }) => (
                                     <FormItem>
                                       <FormLabel>New Property Name</FormLabel>
@@ -354,7 +438,7 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
                                         <Input
                                           placeholder="Name of the property"
                                           {...form.register(
-                                            `forms.${index}.name`
+                                            `forms.${index}.displayName`
                                           )}
                                           {...field}
                                         />
@@ -367,18 +451,18 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
 
                                 <FormField
                                   control={form.control}
-                                  name={`forms.${index}.accountId`}
+                                  name={`forms.${index}.parent`}
                                   render={({ field }) => (
                                     <FormItem>
                                       <FormLabel>Account</FormLabel>
                                       <FormDescription>
                                         This is the account you want to create
-                                        the container in.
+                                        the property in.
                                       </FormDescription>
                                       <FormControl>
                                         <Select
                                           {...form.register(
-                                            `forms.${index}.accountId`
+                                            `forms.${index}.parent`
                                           )}
                                           {...field}
                                           onValueChange={field.onChange}
@@ -389,13 +473,13 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
                                           <SelectContent>
                                             <SelectGroup>
                                               <SelectLabel>Account</SelectLabel>
-                                              {accountsWithContainers.map(
+                                              {accountsWithProperties.map(
                                                 (account) => (
                                                   <SelectItem
-                                                    key={account.accountId}
-                                                    value={account.accountId}
+                                                    key={account.name}
+                                                    value={account.name}
                                                   >
-                                                    {account.name}
+                                                    {account.displayName}
                                                   </SelectItem>
                                                 )
                                               )}
@@ -411,52 +495,39 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
 
                                 <FormField
                                   control={form.control}
-                                  name={`forms.${index}.containerId`}
+                                  name={`forms.${index}.currencyCode`}
                                   render={({ field }) => (
                                     <FormItem>
-                                      <FormLabel>Container</FormLabel>
+                                      <FormLabel>Currency</FormLabel>
                                       <FormDescription>
-                                        Which container do you want to create
-                                        the property in?
+                                        Which currency do you want to include in
+                                        the property?
                                       </FormDescription>
                                       <FormControl>
                                         <Select
                                           {...form.register(
-                                            `forms.${index}.containerId`
+                                            `forms.${index}.currencyCode`
                                           )}
                                           {...field}
                                           onValueChange={field.onChange}
                                         >
                                           <SelectTrigger className="w-[180px]">
-                                            <SelectValue placeholder="Select a container." />
+                                            <SelectValue placeholder="Select a currency." />
                                           </SelectTrigger>
 
                                           <SelectContent>
                                             <SelectGroup>
                                               <SelectLabel>
-                                                Containers
+                                                Currency
                                               </SelectLabel>
-                                              {uniqueFilteredPropertys.length >
-                                              0 ? (
-                                                uniqueFilteredPropertys.map(
-                                                  (property) => (
-                                                    <SelectItem
-                                                      key={
-                                                        property.containerId
-                                                      }
-                                                      value={
-                                                        property.containerId
-                                                      }
-                                                    >
-                                                      {property.containerName}
-                                                    </SelectItem>
-                                                  )
-                                                )
-                                              ) : (
-                                                <SelectItem value="" disabled>
-                                                  No containers available
+                                              {currencyCodes.map((code) => (
+                                                <SelectItem
+                                                  key={code}
+                                                  value={code}
+                                                >
+                                                  {code}
                                                 </SelectItem>
-                                              )}
+                                              ))}
                                             </SelectGroup>
                                           </SelectContent>
                                         </Select>
@@ -469,27 +540,135 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
 
                                 <FormField
                                   control={form.control}
-                                  name={`forms.${index}.description`}
+                                  name={`forms.${index}.timezone`}
                                   render={({ field }) => (
                                     <FormItem>
-                                      <FormLabel>Description:</FormLabel>
+                                      <FormLabel>Time Zone</FormLabel>
                                       <FormDescription>
-                                        This is a description of the property.
+                                        Which timezone do you want to include in
+                                        the property?
                                       </FormDescription>
                                       <FormControl>
-                                        <Input
-                                          placeholder="Enter your description"
+                                        <Select
                                           {...form.register(
-                                            `forms.${index}.description`
+                                            `forms.${index}.timezone`
                                           )}
                                           {...field}
-                                        />
+                                          onValueChange={field.onChange}
+                                        >
+                                          <SelectTrigger className="w-[180px]">
+                                            <SelectValue placeholder="Select a timezone." />
+                                          </SelectTrigger>
+
+                                          <SelectContent>
+                                            <SelectGroup>
+                                              <SelectLabel>
+                                                Timezone
+                                              </SelectLabel>
+                                              {timezones.map((timezone) => (
+                                                <SelectItem
+                                                  key={timezone}
+                                                  value={timezone}
+                                                >
+                                                  {timezone}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectGroup>
+                                          </SelectContent>
+                                        </Select>
                                       </FormControl>
 
                                       <FormMessage />
                                     </FormItem>
                                   )}
                                 />
+                                <FormField
+                                  control={form.control}
+                                  name={`forms.${index}.industryCategory`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Category</FormLabel>
+                                      <FormDescription>
+                                        Which category do you want to include in
+                                        the property?
+                                      </FormDescription>
+                                      <FormControl>
+                                        <Select
+                                          {...form.register(
+                                            `forms.${index}.industryCategory`
+                                          )}
+                                          {...field}
+                                          onValueChange={field.onChange}
+                                        >
+                                          <SelectTrigger className="w-[180px]">
+                                            <SelectValue placeholder="Select a category." />
+                                          </SelectTrigger>
+
+                                          <SelectContent>
+                                            <SelectGroup>
+                                              <SelectLabel>
+                                                Timezone
+                                              </SelectLabel>
+                                              {industryCategories.map((cat) => (
+                                                <SelectItem
+                                                  key={cat}
+                                                  value={cat}
+                                                >
+                                                  {cat}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectGroup>
+                                          </SelectContent>
+                                        </Select>
+                                      </FormControl>
+
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                {/* <FormField
+                                  control={form.control}
+                                  name={`forms.${index}.propertyType`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Property Type</FormLabel>
+                                      <FormDescription>
+                                        Which type of property do you want to include?
+                                      </FormDescription>
+                                      <FormControl>
+                                        <Select
+                                          {...form.register(
+                                            `forms.${index}.propertyType`
+                                          )}
+                                          {...field}
+                                          onValueChange={field.onChange}
+                                        >
+                                          <SelectTrigger className="w-[180px]">
+                                            <SelectValue placeholder="Select a property." />
+                                          </SelectTrigger>
+
+                                          <SelectContent>
+                                            <SelectGroup>
+                                              <SelectLabel>
+                                                Property Type
+                                              </SelectLabel>
+                                              {propertyType.map((type) => (
+                                                <SelectItem
+                                                  key={type}
+                                                  value={type}
+                                                >
+                                                  {type}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectGroup>
+                                          </SelectContent>
+                                        </Select>
+                                      </FormControl>
+
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                /> */}
                               </form>
                             </Form>
                           </CardContent>

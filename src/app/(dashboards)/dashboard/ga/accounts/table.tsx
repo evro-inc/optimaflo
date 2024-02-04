@@ -259,7 +259,11 @@ export function DataTable<TData, TValue>({
           Next
         </Button>
       </div>
-      <AccountForms selectedRows={selectedRowsData} accounts={data} table={table} />
+      <AccountForms
+        selectedRows={selectedRowsData}
+        accounts={data}
+        table={table}
+      />
     </div>
   );
 }

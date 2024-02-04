@@ -38,17 +38,13 @@ interface Account {
   displayName: string;
 }
 
-function AccountForms({
-  accounts,
-  selectedRows,
-  table,
-}) {
+function AccountForms({ accounts, selectedRows, table }) {
   const dispatch = useDispatch();
   const { isLimitReached, notFoundError } = useSelector(selectTable);
   const { showUpdate, showCreate } = useSelector(selectGlobal);
   const [, setAccountInfo] = useState({ name: [], displayName: [] }); // Update state initialization
 
-  const tableData = table.getRowModel().rows.map((row) => row.original);
+  //const tableData = table.getRowModel().rows.map((row) => row.original);
 
   return (
     <>
@@ -63,8 +59,8 @@ function AccountForms({
           showOptions={showUpdate}
           onClose={() => dispatch(toggleUpdate())}
           selectedRows={selectedRows}
-          table={table} 
-          accounts={accounts}        
+          table={table}
+          accounts={accounts}
         />
       )}
 

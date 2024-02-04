@@ -121,7 +121,6 @@ export async function UpdateGaAccounts(formData: FormUpdateSchema) {
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
 
-  
   let retries = 0;
   const MAX_RETRIES = 3;
   let delay = 1000;
@@ -163,20 +162,18 @@ export async function UpdateGaAccounts(formData: FormUpdateSchema) {
   }
 
   if (toUpdateAccounts.size > availableUpdateUsage) {
-    const attemptedUpdates = Array.from(toUpdateAccounts).map(
-      (identifier) => {
-        const { displayName: accountName } = identifier;
-        return {
-          id: [], // No account ID since update did not happen
-          name: accountName, // Include the account name from the identifier
-          success: false,
-          message: `Update limit reached. Cannot update account "${accountName}".`,
-          // remaining update limit
-          remaining: availableUpdateUsage,
-          limitReached: true,
-        };
-      }
-    );
+    const attemptedUpdates = Array.from(toUpdateAccounts).map((identifier) => {
+      const { displayName: accountName } = identifier;
+      return {
+        id: [], // No account ID since update did not happen
+        name: accountName, // Include the account name from the identifier
+        success: false,
+        message: `Update limit reached. Cannot update account "${accountName}".`,
+        // remaining update limit
+        remaining: availableUpdateUsage,
+        limitReached: true,
+      };
+    });
     return {
       success: false,
       features: [],
@@ -206,12 +203,11 @@ export async function UpdateGaAccounts(formData: FormUpdateSchema) {
         if (remaining > 0) {
           await limiter.schedule(async () => {
             const updatePromises = Array.from(toUpdateAccounts).map(
-              async (identifier) => {                
+              async (identifier) => {
                 accountIdForCache = identifier.displayName;
                 const accountIdentifier = identifier.name;
                 const accountData = formData.forms.find(
-                  (acct) =>
-                    acct.displayName === identifier.displayName
+                  (acct) => acct.displayName === identifier.displayName
                 );
 
                 if (!accountData) {
@@ -257,9 +253,6 @@ export async function UpdateGaAccounts(formData: FormUpdateSchema) {
                     headers: headers,
                     body: payload,
                   });
-
-                  console.log('response back', response);
-                  
 
                   let parsedResponse;
                   const accountName = accountData.displayName;
@@ -457,10 +450,7 @@ export async function UpdateGaAccounts(formData: FormUpdateSchema) {
     };
   }
 
-  if (
-    successfulUpdates.length > 0
-
-  ) {
+  if (successfulUpdates.length > 0) {
     const cacheKey = `ga:accounts:userId:${userId}`;
     await redis.del(cacheKey);
     revalidatePath(`/dashboard/ga/accounts`);

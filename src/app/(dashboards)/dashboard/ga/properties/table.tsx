@@ -34,7 +34,7 @@ import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
 import { revalidate, tierCreateLimit } from '@/src/lib/helpers/server';
 import { ReloadIcon } from '@radix-ui/react-icons';
-import { toggleCreate, toggleUpdate } from '@/src/lib/redux/sharedSlice';
+import { toggleCreate, toggleUpdate } from '@/src/lib/redux/globalSlice';
 import { useDispatch } from 'react-redux';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
 import { useDeleteHook } from './delete';
@@ -45,11 +45,13 @@ import PropertyForms from './forms';
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  accounts: any;
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
+  accounts,
 }: DataTableProps<TData, TValue>) {
   const dispatch = useDispatch();
 
@@ -106,7 +108,7 @@ export function DataTable<TData, TValue>({
       throw new Error('Error in handleCreateClick:', error);
     }
   };
-  
+
   const refreshAllCache = async () => {
     // Assuming you want to refresh cache for each workspace
     const keys = [
@@ -259,7 +261,11 @@ export function DataTable<TData, TValue>({
           Next
         </Button>
       </div>
-      <PropertyForms selectedRows={selectedRowsData} />
+      <PropertyForms
+        selectedRows={selectedRowsData}
+        table={data}
+        accounts={accounts}
+      />
     </div>
   );
 }

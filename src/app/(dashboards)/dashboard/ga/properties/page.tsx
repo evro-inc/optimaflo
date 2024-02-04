@@ -5,6 +5,7 @@ import { Skeleton } from '@/src/components/ui/skeleton';
 import { DataTable } from './table';
 import { columns } from './columns';
 import { listGAProperties } from '@/src/lib/fetch/dashboard/actions/ga/properties';
+import { listGaAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
 
 export default async function PropertyPage({
   searchParams,
@@ -18,7 +19,11 @@ export default async function PropertyPage({
   const currentPage = Number(searchParams?.page) || 1;
   const { userId } = auth();
   if (!userId) return notFound();
-  const properties = await listGAProperties();
+
+  const accountData = await listGaAccounts();
+  const propertyData = await listGAProperties();
+
+  const [accounts, properties] = await Promise.all([accountData, propertyData]);
 
   return (
     <>
@@ -46,7 +51,7 @@ export default async function PropertyPage({
         }
       >
         <div className="container mx-auto py-10">
-          <DataTable columns={columns} data={properties} />
+          <DataTable columns={columns} data={properties} accounts={accounts} />
         </div>
       </Suspense>
     </>

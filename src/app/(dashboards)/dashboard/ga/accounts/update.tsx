@@ -16,10 +16,7 @@ import { selectIsLoading, setLoading } from '@/src/lib/redux/globalSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  FeatureResponse,
-  FormUpdateProps,
-} from '@/src/lib/types/types';
+import { FeatureResponse, FormUpdateProps } from '@/src/lib/types/types';
 
 import { UpdateGaAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
 import { toast } from 'sonner';
@@ -112,9 +109,6 @@ const FormUpdateAccount: React.FC<FormUpdateProps> = ({
     try {
       // If you're here, validation succeeded. Proceed with updateContainers.
       const res = (await UpdateGaAccounts({ forms })) as FeatureResponse;
-
-      console.log('res', res);
-      
 
       dispatch(clearSelectedRows()); // Clear selectedRows
 
@@ -304,8 +298,6 @@ const FormUpdateAccount: React.FC<FormUpdateProps> = ({
                                   </FormItem>
                                 )}
                               />
-
-                
                             </form>
                           </Form>
                         </CardContent>

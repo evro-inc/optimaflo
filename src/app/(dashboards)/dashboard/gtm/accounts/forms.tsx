@@ -12,12 +12,9 @@ const LimitReached = dynamic(
   { ssr: false }
 );
 
-const AccountFormUpdate = dynamic(
-  () => import('./update'),
-  {
-    ssr: false,
-  }
-);
+const AccountFormUpdate = dynamic(() => import('./update'), {
+  ssr: false,
+});
 const NotFoundErrorModal = dynamic(
   () =>
     import('../../../../../components/client/modals/notFoundError').then(

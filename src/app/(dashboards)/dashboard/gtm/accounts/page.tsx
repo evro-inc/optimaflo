@@ -45,7 +45,6 @@ export default async function AccountPage({
           </div>
         }
       >
-
         <div className="container mx-auto py-10">
           <DataTable columns={columns} data={accounts} />
         </div>

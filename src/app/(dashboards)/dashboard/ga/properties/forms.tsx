@@ -1,28 +1,25 @@
 'use client';
-import { selectTable, setIsLimitReached } from '@/src/lib/redux/tableSlice';
-import {
-  selectGlobal,
-  toggleCreate,
-  toggleUpdate,
-} from '@/src/lib/redux/globalSlice';
 import dynamic from 'next/dynamic';
-import React, { useState } from 'react';
+import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-const LimitReached = dynamic(
+import {
+  selectGlobal, // This was changed from selectEntity
+  toggleCreate, // This was changed to be specific for properties
+  toggleUpdate, // This was changed to be specific for properties
+} from '@/src/lib/redux/globalSlice'; // This was changed from sharedSlice
+import { selectTable, setIsLimitReached } from '@/src/lib/redux/tableSlice';
+import { useError } from '@/src/lib/helpers/client';
+
+import { ErrorMessage } from '@/src/components/client/modals/Error';
+
+// Dynamic imports for modals and forms
+const LimitReachedModal = dynamic(
   () =>
     import('../../../../../components/client/modals/limitReached').then(
       (mod) => mod.LimitReached
     ),
   { ssr: false }
 );
-
-const FormUpdate = dynamic(() => import('./update'), {
-  ssr: false,
-});
-
-const FormCreate = dynamic(() => import('./create'), {
-  ssr: false,
-});
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -32,45 +29,47 @@ const NotFoundErrorModal = dynamic(
   { ssr: false }
 );
 
-interface Account {
-  name: string;
-  displayName: string;
-}
+const FormCreateProperty = dynamic(() => import('./create'), {
+  ssr: false,
+});
 
-function PropertyForms({
-  feature,
-  selectedRows,
-}: {
-  feature;
-  selectedRows: Account[];
-}) {
+const FormUpdateProperty = dynamic(() => import('./update'), {
+  ssr: false,
+});
+
+function PropertyForms({ accounts, selectedRows, table }) {
   const dispatch = useDispatch();
+  const { showCreate, showUpdate } = useSelector(selectGlobal);
   const { isLimitReached, notFoundError } = useSelector(selectTable);
-  const { showUpdate, showCreate } = useSelector(selectGlobal);
-  const [, setAccountInfo] = useState({ name: [], displayName: [] }); // Update state initialization
+  const { error, clearError } = useError();
 
   return (
     <>
+      {/* Modals */}
       {isLimitReached && (
-        <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
+        <LimitReachedModal onClose={() => dispatch(setIsLimitReached(false))} />
       )}
 
       {notFoundError && <NotFoundErrorModal />}
 
-      {showUpdate && (
-        <FormUpdate
-          showOptions={showUpdate}
-          onClose={() => dispatch(toggleUpdate())}
-          selectedRows={selectedRows}
-          setAccountInfo={setAccountInfo}
-        />
-      )}
+      {error && <ErrorMessage onClose={clearError} />}
 
+      {/* Forms */}
       {showCreate && (
-        <FormCreate
+        <FormCreateProperty
           showOptions={showCreate}
           onClose={() => dispatch(toggleCreate())}
-          feature={feature}
+          accounts={accounts}
+          table={table}
+        />
+      )}
+      {showUpdate && (
+        <FormUpdateProperty
+          showOptions={showUpdate}
+          onClose={() => dispatch(toggleUpdate())}
+          accounts={accounts}
+          selectedRows={selectedRows}
+          table={table}
         />
       )}
     </>

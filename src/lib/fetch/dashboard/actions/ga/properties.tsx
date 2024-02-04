@@ -408,9 +408,7 @@ export async function createProperties(formData: FormCreateSchema) {
   const notFoundLimit: { id: string; name: string }[] = [];
 
   // Refactor: Use string identifiers in the set
-  const toCreateProperties = new Set(
-    formData.forms.map((cd) => `${cd.accountId}-${cd.propertyName}`)
-  );
+  const toCreateProperties = new Set(formData.forms.map((cd) => cd));
 
   const tierLimitResponse: any = await tierCreateLimit(userId, 'GA4Properties');
   const limit = Number(tierLimitResponse.createLimit);
@@ -436,12 +434,12 @@ export async function createProperties(formData: FormCreateSchema) {
   if (toCreateProperties.size > availableCreateUsage) {
     const attemptedCreations = Array.from(toCreateProperties).map(
       (identifier) => {
-        const [propertyName] = identifier.split('-');
+        const [displayName] = identifier[0];
         return {
           id: [], // No property ID since creation did not happen
-          name: propertyName, // Include the property name from the identifier
+          name: displayName, // Include the property name from the identifier
           success: false,
-          message: `Creation limit reached. Cannot create property "${propertyName}".`,
+          message: `Creation limit reached. Cannot create property "${displayName}".`,
           // remaining creation limit
           remaining: availableCreateUsage,
           limitReached: true,
@@ -478,17 +476,19 @@ export async function createProperties(formData: FormCreateSchema) {
           await limiter.schedule(async () => {
             const createPromises = Array.from(toCreateProperties).map(
               async (identifier) => {
-                const [accountId, propertyName] = identifier.split('-');
                 const propertyData = formData.forms.find(
-                  (cd) =>
-                    cd.accountId === accountId &&
-                    cd.displayName === propertyName
+                  (prop) =>
+                    prop.parent === identifier.parent &&
+                    prop.displayName === identifier.displayName &&
+                    prop.name === identifier.name &&
+                    prop.timezone === identifier.timezone &&
+                    prop.currencyCode === identifier.currencyCode &&
+                    prop.industryCategory === identifier.industryCategory &&
+                    prop.propertyType === identifier.propertyType
                 );
-                console.log('propertyData', propertyData);
-                
 
                 if (!propertyData) {
-                  errors.push(`Container data not found for ${identifier}`);
+                  errors.push(`Property data not found for ${identifier}`);
                   toCreateProperties.delete(identifier);
                   return;
                 }
@@ -503,11 +503,8 @@ export async function createProperties(formData: FormCreateSchema) {
                 try {
                   const formDataToValidate = { forms: [propertyData] };
 
-                  console.log('formDataToValidate', formDataToValidate);
-                  
-
                   const validationResult =
-                    CreateContainerSchema.safeParse(formDataToValidate);
+                    CreatePropertySchema.safeParse(formDataToValidate);
 
                   if (!validationResult.success) {
                     let errorMessage = validationResult.error.issues
@@ -530,16 +527,20 @@ export async function createProperties(formData: FormCreateSchema) {
                     headers: headers,
                     body: JSON.stringify({
                       displayName: validatedContainerData.displayName,
-                      timeZone: validatedContainerData.timeZone,
+                      timeZone: validatedContainerData.timezone,
                       industryCategory: validatedContainerData.industryCategory,
                       currencyCode: validatedContainerData.currencyCode,
+                      propertyType: validatedContainerData.propertyType,
+                      parent: validatedContainerData.parent,
                     }),
                   });
 
                   let parsedResponse;
 
                   if (response.ok) {
-                    successfulCreations.push(propertyName);
+                    successfulCreations.push(
+                      validatedContainerData.displayName
+                    );
                     toCreateProperties.delete(identifier);
                     fetchGtmSettings(userId);
                     fetchGASettings(userId);
@@ -549,9 +550,9 @@ export async function createProperties(formData: FormCreateSchema) {
                       data: { createUsage: { increment: 1 } },
                     });
                     creationResults.push({
-                      propertyName: propertyName,
+                      propertyName: validatedContainerData.displayName,
                       success: true,
-                      message: `Successfully created property ${propertyName}`,
+                      message: `Successfully created property ${validatedContainerData.displayName}`,
                     });
                   } else {
                     parsedResponse = await response.json();
@@ -560,7 +561,7 @@ export async function createProperties(formData: FormCreateSchema) {
                       response,
                       parsedResponse,
                       'property',
-                      [propertyName]
+                      [validatedContainerData.displayName]
                     );
 
                     if (errorResult) {
@@ -569,38 +570,36 @@ export async function createProperties(formData: FormCreateSchema) {
                         errorResult.errorCode === 403 &&
                         parsedResponse.message === 'Feature limit reached'
                       ) {
-                        featureLimitReached.push(propertyName);
+                        featureLimitReached.push(
+                          validatedContainerData.displayName
+                        );
                       } else if (errorResult.errorCode === 404) {
-                        const propertyName =
-                          propertyNames.find((name) =>
-                            name.includes(identifier.split('-')[1])
-                          ) || 'Unknown';
                         notFoundLimit.push({
-                          id: identifier.split('-')[1],
-                          name: propertyName,
+                          id: identifier.name,
+                          name: validatedContainerData.displayName,
                         });
                       }
                     } else {
                       errors.push(
-                        `An unknown error occurred for property ${propertyName}.`
+                        `An unknown error occurred for property ${validatedContainerData.displayName}.`
                       );
                     }
 
                     toCreateProperties.delete(identifier);
                     permissionDenied = errorResult ? true : permissionDenied;
                     creationResults.push({
-                      propertyName: propertyName,
+                      propertyName: validatedContainerData.displayName,
                       success: false,
                       message: errorResult?.message,
                     });
                   }
                 } catch (error: any) {
                   errors.push(
-                    `Exception creating property ${propertyName}: ${error.message}`
+                    `Exception creating property ${propertyData.displayName}: ${error.message}`
                   );
                   toCreateProperties.delete(identifier);
                   creationResults.push({
-                    propertyName: propertyName,
+                    propertyName: propertyData.displayName,
                     success: false,
                     message: error.message,
                   });
@@ -713,10 +712,10 @@ export async function createProperties(formData: FormCreateSchema) {
   // Map over formData.forms to create the results array
   const results: FeatureResult[] = formData.forms.map((form) => {
     // Ensure that form.propertyId is defined before adding it to the array
-    const propertyId = form.propertyId ? [form.propertyId] : []; // Provide an empty array as a fallback
+    const propertyId = form.name ? [form.name] : []; // Provide an empty array as a fallback
     return {
       id: propertyId, // Ensure id is an array of strings
-      name: [form.propertyName], // Wrap the string in an array
+      name: [form.displayName], // Wrap the string in an array
       success: true, // or false, depending on the actual result
       // Include `notFound` if applicable
       notFound: false, // Set this to the appropriate value based on your logic
