@@ -46,7 +46,7 @@ export const columns: ColumnDef<Account>[] = [
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Account Name
+          Name
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
@@ -60,7 +60,35 @@ export const columns: ColumnDef<Account>[] = [
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Property Identifier
+          Property ID
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+  },
+  {
+    accessorKey: 'timeZone',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Time Zone
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+  },
+  {
+    accessorKey: 'propertyType',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Property Type
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
@@ -81,14 +109,14 @@ export const columns: ColumnDef<Account>[] = [
     },
   },
   {
-    accessorKey: 'parent',
+    accessorKey: 'accountName',
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Account Identifier
+          Account Name
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );

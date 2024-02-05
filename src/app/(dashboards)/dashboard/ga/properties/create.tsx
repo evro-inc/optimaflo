@@ -46,6 +46,7 @@ import {
   SelectValue,
 } from '@/src/components/ui/select';
 import { Button } from '@/src/components/ui/button';
+import { CurrencyCodes, IndustryCategories, TimeZones } from './propertyItems';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -261,83 +262,16 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
     onClose();
   };
 
-  const currencyCodes = [
-    'USD',
-    'EUR',
-    'JPY',
-    'GBP',
-    'AUD',
-    'CAD',
-    'CHF',
-    'CNY',
-    'SEK',
-    'NZD',
-  ];
-  const timezones = [
-    'America/New_York',
-    'America/Los_Angeles',
-    'America/Chicago',
-    'America/Denver',
-    'Asia/Tokyo',
-    'Asia/Shanghai',
-    'Asia/Dubai',
-    'Europe/London',
-    'Europe/Berlin',
-    'Europe/Moscow',
-    'Africa/Cairo',
-    'Africa/Johannesburg',
-    'Australia/Sydney',
-    'Australia/Perth',
-    'America/Sao_Paulo',
-    'Asia/Kolkata',
-    'Asia/Singapore',
-    'Europe/Paris',
-    'Asia/Seoul',
-    'Europe/Istanbul',
-  ];
-
-  const industryCategories = [
-    'AUTOMOTIVE',
-    'BUSINESS_AND_INDUSTRIAL_MARKETS',
-    'FINANCE',
-    'HEALTHCARE',
-    'TECHNOLOGY',
-    'TRAVEL',
-    'OTHER',
-    'ARTS_AND_ENTERTAINMENT',
-    'BEAUTY_AND_FITNESS',
-    'BOOKS_AND_LITERATURE',
-    'FOOD_AND_DRINK',
-    'GAMES',
-    'HOBBIES_AND_LEISURE',
-    'HOME_AND_GARDEN',
-    'INTERNET_AND_TELECOM',
-    'LAW_AND_GOVERNMENT',
-    'NEWS',
-    'ONLINE_COMMUNITIES',
-    'PEOPLE_AND_SOCIETY',
-    'PETS_AND_ANIMALS',
-    'REAL_ESTATE',
-    'REFERENCE',
-    'SCIENCE',
-    'SPORTS',
-    'JOBS_AND_EDUCATION',
-    'SHOPPING',
-  ];
-
-  const propertyType = [
-    'PROPERTY_TYPE_ORDINARY',
-    'PROPERTY_TYPE_SUBPROPERTY',
-    'PROPERTY_TYPE_ROLLUP',
-  ];
-
   const accountIdsWithProperties = new Set(
     table.map((property) => property.parent)
+  );
+  const transformedSet = new Set(
+    Array.from(accountIdsWithProperties, (value) => `accounts/${value}`)
   );
 
   // match parent with account
   const accountsWithProperties = accounts.filter((account) =>
-    accountIdsWithProperties.has(account.name)
+    transformedSet.has(account.name)
   );
 
   return (
@@ -520,7 +454,7 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
                                               <SelectLabel>
                                                 Currency
                                               </SelectLabel>
-                                              {currencyCodes.map((code) => (
+                                              {CurrencyCodes.map((code) => (
                                                 <SelectItem
                                                   key={code}
                                                   value={code}
@@ -565,7 +499,7 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
                                               <SelectLabel>
                                                 Timezone
                                               </SelectLabel>
-                                              {timezones.map((timezone) => (
+                                              {TimeZones.map((timezone) => (
                                                 <SelectItem
                                                   key={timezone}
                                                   value={timezone}
@@ -609,7 +543,7 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
                                               <SelectLabel>
                                                 Timezone
                                               </SelectLabel>
-                                              {industryCategories.map((cat) => (
+                                              {IndustryCategories.map((cat) => (
                                                 <SelectItem
                                                   key={cat}
                                                   value={cat}

@@ -25,6 +25,38 @@ export default async function PropertyPage({
 
   const [accounts, properties] = await Promise.all([accountData, propertyData]);
 
+  const flatAccounts = accounts.flat();
+  const flatProperties = properties.flat();
+
+  const combinedData = flatProperties.map((property) => {
+    // Find the matching account
+    const account = flatAccounts.find((a) => a.name === property.parent);
+
+    // Transformation functions
+    const extractId = (path) => path.split('/')[1];
+    const formatType = (propertyType) => {
+      // Split the string into parts based on underscores
+      const parts = propertyType.split('_');
+
+      // Take the last part of the split string, which should be "ORDINARY" in your example
+      const lastPart = parts[parts.length - 1];
+
+      // Convert that part to lowercase, then capitalize the first letter
+      return lastPart[0] + lastPart.slice(1).toLowerCase();
+    };
+
+    // Apply transformations
+    return {
+      ...property,
+      name: extractId(property.name), // Transforming the 'name' property
+      parent: property.parent ? extractId(property.parent) : 'Unknown', // Conditional transformation if 'parent' exists
+      serviceLevel: formatType(property.serviceLevel), // Transforming the 'serviceLevel'
+      propertyType: formatType(property.propertyType), // Transforming the 'propertyType'
+      accountName: account ? account.displayName : 'Unknown Account', // Setting 'accountName' from 'flatAccounts' or default
+      // Add other transformations as needed
+    };
+  });
+
   return (
     <>
       <Suspense
@@ -51,7 +83,11 @@ export default async function PropertyPage({
         }
       >
         <div className="container mx-auto py-10">
-          <DataTable columns={columns} data={properties} accounts={accounts} />
+          <DataTable
+            columns={columns}
+            data={combinedData}
+            accounts={accounts}
+          />
         </div>
       </Suspense>
     </>

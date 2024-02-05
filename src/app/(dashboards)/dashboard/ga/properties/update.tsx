@@ -1,26 +1,23 @@
-'use client'; // Ensures that this file is only used in a client-side environment
-
-// Importing necessary hooks and functions from Redux and other libraries
-import { useDispatch, useSelector } from 'react-redux';
+'use client';
+import React, { useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { LimitReached } from '../../../../../components/client/modals/limitReached';
+import { ButtonGroup } from '../../../../../components/client/ButtonGroup/ButtonGroup';
+import { z } from 'zod';
 import {
   clearSelectedRows,
   selectTable,
+  setErrorDetails,
   setIsLimitReached,
   setNotFoundError,
-  toggleAllSelected,
 } from '@/src/lib/redux/tableSlice';
 import { selectIsLoading, setLoading } from '@/src/lib/redux/globalSlice';
-import { useEffect, useRef } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { updateAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
-import { z } from 'zod';
-import { UpdateAccountSchema } from '@/src/lib/schemas/ga/accounts';
-import { AnimatePresence, motion } from 'framer-motion';
-import { ButtonGroup } from '../../../../../components/client/ButtonGroup/ButtonGroup';
-import { LimitReached } from '../../../../../components/client/modals/limitReached';
-import { GAUpdateAccountResult } from '@/src/lib/types/types';
-import { Icon } from '@/src/components/client/Button/Button';
+import { FeatureResponse, FormUpdateProps } from '@/src/lib/types/types';
+import { toast } from 'sonner';
+import { Icon } from '../../../../../components/client/Button/Button';
 import { Cross1Icon } from '@radix-ui/react-icons';
 import {
   Card,
@@ -38,237 +35,454 @@ import {
   FormMessage,
 } from '@/src/components/ui/form';
 import { Input } from '@/src/components/ui/input';
-import { toast } from 'sonner';
-import { NotFoundError } from '@/src/components/client/modals/notFoundError';
+import dynamic from 'next/dynamic';
+import { UpdatePropertySchema } from '@/src/lib/schemas/ga/properties';
+import { updateProperties } from '@/src/lib/fetch/dashboard/actions/ga/properties';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '@/src/components/ui/select';
+import { CurrencyCodes, IndustryCategories, TimeZones } from './propertyItems';
 
-// Defining the type for form data using Zod
-type Forms = z.infer<typeof UpdateAccountSchema>;
+const NotFoundErrorModal = dynamic(
+  () =>
+    import('../../../../../components/client/modals/notFoundError').then(
+      (mod) => mod.NotFoundError
+    ),
+  { ssr: false }
+);
 
-interface Account {
-  name: string;
-  displayName: string;
-}
+// Type for the entire form data
+type Forms = z.infer<typeof UpdatePropertySchema>;
 
-interface AccountFormUpdateProps {
-  showOptions: boolean;
-  onClose: () => void;
-  selectedRows: Account[];
-  setAccountInfo: any;
-}
-// Functional component for updating account forms
-function AccountFormUpdate({
+// Component
+const FormUpdateProperty: React.FC<FormUpdateProps> = ({
   showOptions,
   onClose,
   selectedRows,
-  setAccountInfo,
-}: AccountFormUpdateProps) {
-  // Using Redux hooks for dispatching actions and selecting state
-  const dispatch = useDispatch();
-  const { isLimitReached, notFoundError } = useSelector(selectTable);
+  table,
+}) => {
   const isLoading = useSelector(selectIsLoading);
-
-  // useRef to keep track of form elements
   const formRefs = useRef<(HTMLFormElement | null)[]>([]);
+  const dispatch = useDispatch();
+  const isLimitReached = useSelector(selectTable).isLimitReached;
+  const notFoundError = useSelector(selectTable).notFoundError;
 
-  // Setting up form handling using react-hook-form with Zod for validation
   const form = useForm<Forms>({
     defaultValues: {
-      forms: selectedRows.map((account) => ({
-        name: account.name,
-        displayName: account.displayName,
-      })),
+      forms: [
+        {
+          name: table[0].name,
+          parent: table[0].parent,
+          currencyCode: 'USD',
+          displayName: '',
+          industryCategory: 'AUTOMOTIVE',
+          timezone: 'America/New_York',
+          propertyType: 'PROPERTY_TYPE_ORDINARY',
+        },
+      ],
     },
-    resolver: zodResolver(UpdateAccountSchema),
+    resolver: zodResolver(UpdatePropertySchema),
   });
 
-  // Managing dynamic form fields using react-hook-form
-  const { fields } = useFieldArray({ control: form.control, name: 'forms' });
+  const { fields } = useFieldArray({
+    control: form.control,
+    name: 'forms',
+  });
 
-  // useEffect to reset form values based on selected rows
   useEffect(() => {
-    form.reset({
-      forms: selectedRows.map((account) => ({
-        name: account.name,
-        displayName: account.displayName,
-      })),
-    });
-  }, [selectedRows, form.reset, form]);
+    const initialForms = Object.values(selectedRows).map((rowData: any) => {
+      const name = rowData.name;
+      const parent = rowData.parent;
+      const currencyCode = rowData.currencyCode;
+      const displayName = rowData.displayName;
+      const industryCategory = rowData.industryCategory;
+      const timezone = rowData.timezone;
+      const propertyType = rowData.propertyType;
 
-  // Function to process form submission
-  // Function to process form submission
+      return {
+        name,
+        parent,
+        currencyCode,
+        displayName,
+        industryCategory,
+        timezone,
+        propertyType,
+      };
+    });
+
+    form.reset({ forms: initialForms });
+  }, [selectedRows, form]);
+
   const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
+    dispatch(setLoading(true)); // Set loading to true
 
-    // Dispatching loading state
-    dispatch(setLoading(true));
+    toast('Updating properties...', {
+      action: {
+        label: 'Close',
+        onClick: () => toast.dismiss(),
+      },
+    });
 
     try {
-      // Updating accounts with the API call
-      const res = (await updateAccounts({ forms })) as GAUpdateAccountResult;
+      // If you're here, validation succeeded. Proceed with updateContainers.
+      const res = (await updateProperties({ forms })) as FeatureResponse;
 
-      // Check for successful updates and show toasts
-      if (res && res.updatedAccounts) {
-        res.updatedAccounts.forEach((account) => {
-          toast.success(
-            `Account ${account.displayName} updated successfully.`,
-            {
-              action: {
-                label: 'Close',
-                onClick: () => toast.dismiss(),
-              },
+      dispatch(clearSelectedRows()); // Clear selectedRows
+
+      if (res.success) {
+        res.results.forEach((result) => {
+          if (result.success) {
+            toast.success(
+              `Property ${result.name} created successfully. The table will update shortly.`,
+              {
+                action: {
+                  label: 'Close',
+                  onClick: () => toast.dismiss(),
+                },
+              }
+            );
+          }
+        });
+      } else {
+        if (res.notFoundError) {
+          res.results.forEach((result) => {
+            if (result.notFound) {
+              toast.error(
+                `Unable to create property ${result.name}. Please check your access permissions. Any other properties created were successful.`,
+                {
+                  action: {
+                    label: 'Close',
+                    onClick: () => toast.dismiss(),
+                  },
+                }
+              );
             }
-          );
+          });
+
+          dispatch(setErrorDetails(res.results)); // Assuming results contain the error details
+          dispatch(setNotFoundError(true)); // Dispatch the not found error action
+          onClose();
+        }
+
+        if (res.limitReached) {
+          res.results.forEach((result) => {
+            if (result.limitReached) {
+              toast.error(
+                `Unable to create property ${result.name}. You have ${result.remaining} more property(s) you can create.`,
+                {
+                  action: {
+                    label: 'Close',
+                    onClick: () => toast.dismiss(),
+                  },
+                }
+              );
+            }
+          });
+          dispatch(setIsLimitReached(true));
+          onClose();
+        }
+
+        onClose(); // Close the form
+        form.reset({
+          forms: [
+            {
+              name: table[0].name,
+              parent: table[0].parent,
+              currencyCode: 'USD',
+              displayName: '',
+              industryCategory: 'AUTOMOTIVE',
+              timezone: 'America/New_York',
+              propertyType: 'PROPERTY_TYPE_ORDINARY',
+            },
+          ],
         });
       }
+      onClose();
 
-      // Then check if there's a limit reached error
-      if (res && res.limitReached) {
-        dispatch(setIsLimitReached(true));
-      }
-
-      // Lastly, check for not found errors
-      if (res && res.notFoundError) {
-        const notFoundAccounts = forms.filter((form) =>
-          res?.notFoundIds?.includes(form.name)
-        );
-
-        if (notFoundAccounts.length > 0) {
-          setAccountInfo(notFoundAccounts);
-          dispatch(setNotFoundError(true));
-          toast.error(res.message || 'Some accounts were not found.', {
-            action: {
-              label: 'Close',
-              onClick: () => toast.dismiss(),
-            },
-          });
-        } else {
-          toast.error(res.message || 'Unknown Error.', {
-            action: {
-              label: 'Close',
-              onClick: () => toast.dismiss(),
-            },
-          });
-        }
-      }
+      // Reset the forms here, regardless of success or limit reached
+      form.reset({
+        forms: [
+          {
+            name: table[0].name,
+            parent: table[0].parent,
+            currencyCode: 'USD',
+            displayName: '',
+            industryCategory: 'AUTOMOTIVE',
+            timezone: 'America/New_York',
+            propertyType: 'PROPERTY_TYPE_ORDINARY',
+          },
+        ],
+      });
     } catch (error: any) {
       throw new Error(error);
     } finally {
-      // Always clear selected rows and close the form
-      dispatch(clearSelectedRows());
-      dispatch(toggleAllSelected(false));
-      onClose();
-      form.reset({ forms: [{ name: '', displayName: '' }] });
-      dispatch(setLoading(false));
+      //table.setRowSelection({});
+      dispatch(setLoading(false)); // Set loading to false
     }
   };
 
-  // Function to handle form close
   const handleClose = () => {
-    dispatch(toggleAllSelected(false));
-    form.reset({ forms: [{ name: '', displayName: '' }] });
-    dispatch(clearSelectedRows());
+    // Reset the forms to their initial state
+    form.reset({
+      forms: [
+        {
+          name: table[0].name,
+          parent: table[0].parent,
+          currencyCode: 'USD',
+          displayName: '',
+          industryCategory: 'AUTOMOTIVE',
+          timezone: 'America/New_York',
+          propertyType: 'PROPERTY_TYPE_ORDINARY',
+        },
+      ],
+    });
+
+    dispatch(clearSelectedRows()); // Clear selectedRows
+    //table.setRowSelection({});
+
+    // Close the modal
     onClose();
   };
 
   return (
-    <AnimatePresence>
-      {showOptions && (
-        <motion.div
-          initial={{ opacity: 0, y: -50 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -50 }}
-          className="fixed top-0 left-0 w-full h-full flex flex-col items-center justify-start z-50 bg-white overflow-y-auto"
-        >
-          {/* Close Button */}
-          <Icon
-            className="absolute top-5 right-5 font-bold py-2 px-4"
-            text="Close"
-            icon={<Cross1Icon />}
-            variant="create"
-            onClick={handleClose}
-            billingInterval={undefined}
-          />
+    <>
+      <AnimatePresence>
+        {showOptions && (
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            className="fixed top-0 left-0 w-full h-full flex flex-col items-center justify-start z-50 bg-white overflow-y-auto"
+          >
+            {/* Close Button */}
+            <Icon
+              className="absolute top-5 right-5 font-bold py-2 px-4"
+              text="Close"
+              icon={<Cross1Icon />}
+              variant="create"
+              onClick={handleClose}
+              billingInterval={undefined}
+            />
+            <ButtonGroup
+              buttons={[
+                {
+                  text: isLoading ? 'Submitting...' : 'Submit',
+                  type: 'submit',
+                  form: 'updateProperty',
+                },
+              ]}
+            />
 
-          <ButtonGroup
-            buttons={[
-              {
-                text: isLoading ? 'Submitting...' : 'Submit',
-                type: 'submit',
-                form: `updateAccount-${selectedRows[0]?.name}`,
-              },
-            ]}
-          />
+            {/* Hire Us */}
+            <div className="property mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-end">
+              {fields.map((field, index) => (
+                <div
+                  key={field.id}
+                  className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
+                >
+                  <div className="max-w-xl mx-auto">
+                    <div className="text-center">
+                      <p className="text-3xl font-bold text-gray-800 sm:text-4xl dark:text-white">
+                        {field.displayName || `Property ${index + 1}`}
+                      </p>
+                    </div>
 
-          <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-end">
-            {fields.map((field, index) => (
-              <div
-                key={field.id}
-                className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-              >
-                <div className="max-w-xl mx-auto">
-                  <div className="mt-12"></div>
-                  <Card
-                    key={field.id}
-                    className="w-full max-w-xl mx-auto bg-white shadow-md rounded-lg overflow-hidden"
-                  >
-                    <CardHeader className="bg-gray-100 p-4">
-                      <CardTitle className="text-lg font-semibold">
-                        Account {field.displayName}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Form {...form}>
-                        <form
-                          className="space-y-6"
-                          ref={(el) => (formRefs.current[index] = el)}
-                          onSubmit={form.handleSubmit(processForm)}
-                          id={`updateAccount-${selectedRows[0]?.name}`}
-                        >
-                          <FormField
-                            control={form.control}
-                            name={`forms.${index}.displayName`}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>New Account Name</FormLabel>
-                                <FormDescription>
-                                  Enter the new name of the account
-                                </FormDescription>
-                                <FormControl>
-                                  <Input
-                                    placeholder="Name of the account"
-                                    {...form.register(
-                                      `forms.${index}.displayName`
-                                    )}
-                                    {...field}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
+                    <div className="mt-12">
+                      {/* Form */}
 
-                          {/* Add any additional fields following the same pattern */}
-                        </form>
-                      </Form>
-                    </CardContent>
-                  </Card>
+                      <Card className="w-full max-w-xl mx-auto bg-white shadow-md rounded-lg overflow-hidden">
+                        <CardHeader className="bg-gray-100 p-4">
+                          <CardTitle className="text-lg font-semibold">
+                            Property {index + 1}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4">
+                          <Form {...form}>
+                            <form
+                              ref={(el) => (formRefs.current[index] = el)}
+                              onSubmit={form.handleSubmit(processForm)}
+                              id="updateProperty"
+                              className="space-y-6"
+                            >
+                              <FormField
+                                control={form.control}
+                                name={`forms.${index}.displayName`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>New Property Name</FormLabel>
+                                    <FormDescription>
+                                      This is the property name you want to
+                                      create.
+                                    </FormDescription>
+                                    <FormControl>
+                                      <Input
+                                        placeholder="Name of the property"
+                                        {...form.register(
+                                          `forms.${index}.displayName`
+                                        )}
+                                        {...field}
+                                      />
+                                    </FormControl>
+
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+
+                              <FormField
+                                control={form.control}
+                                name={`forms.${index}.currencyCode`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Currency</FormLabel>
+                                    <FormDescription>
+                                      Which currency do you want to include in
+                                      the property?
+                                    </FormDescription>
+                                    <FormControl>
+                                      <Select
+                                        {...form.register(
+                                          `forms.${index}.currencyCode`
+                                        )}
+                                        {...field}
+                                        onValueChange={field.onChange}
+                                      >
+                                        <SelectTrigger className="w-[180px]">
+                                          <SelectValue placeholder="Select a currency." />
+                                        </SelectTrigger>
+
+                                        <SelectContent>
+                                          <SelectGroup>
+                                            <SelectLabel>Currency</SelectLabel>
+                                            {CurrencyCodes.map((code) => (
+                                              <SelectItem
+                                                key={code}
+                                                value={code}
+                                              >
+                                                {code}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectGroup>
+                                        </SelectContent>
+                                      </Select>
+                                    </FormControl>
+
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+
+                              <FormField
+                                control={form.control}
+                                name={`forms.${index}.timezone`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Time Zone</FormLabel>
+                                    <FormDescription>
+                                      Which timezone do you want to include in
+                                      the property?
+                                    </FormDescription>
+                                    <FormControl>
+                                      <Select
+                                        {...form.register(
+                                          `forms.${index}.timezone`
+                                        )}
+                                        {...field}
+                                        onValueChange={field.onChange}
+                                      >
+                                        <SelectTrigger className="w-[180px]">
+                                          <SelectValue placeholder="Select a timezone." />
+                                        </SelectTrigger>
+
+                                        <SelectContent>
+                                          <SelectGroup>
+                                            <SelectLabel>Timezone</SelectLabel>
+                                            {TimeZones.map((timezone) => (
+                                              <SelectItem
+                                                key={timezone}
+                                                value={timezone}
+                                              >
+                                                {timezone}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectGroup>
+                                        </SelectContent>
+                                      </Select>
+                                    </FormControl>
+
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name={`forms.${index}.industryCategory`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Category</FormLabel>
+                                    <FormDescription>
+                                      Which category do you want to include in
+                                      the property?
+                                    </FormDescription>
+                                    <FormControl>
+                                      <Select
+                                        {...form.register(
+                                          `forms.${index}.industryCategory`
+                                        )}
+                                        {...field}
+                                        onValueChange={field.onChange}
+                                      >
+                                        <SelectTrigger className="w-[180px]">
+                                          <SelectValue placeholder="Select a category." />
+                                        </SelectTrigger>
+
+                                        <SelectContent>
+                                          <SelectGroup>
+                                            <SelectLabel>Timezone</SelectLabel>
+                                            {IndustryCategories.map((cat) => (
+                                              <SelectItem key={cat} value={cat}>
+                                                {cat}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectGroup>
+                                        </SelectContent>
+                                      </Select>
+                                    </FormControl>
+
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </form>
+                          </Form>
+                        </CardContent>
+                      </Card>
+                      {/* End Form */}
+                    </div>
+                  </div>
                 </div>
+              ))}
+            </div>
 
-                {/* Form and other UI elements */}
-              </div>
-            ))}
-          </div>
-        </motion.div>
-      )}
+            {/* End Hire Us */}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {isLimitReached && (
         <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
       )}
 
-      {notFoundError && (
-        <NotFoundError onClose={() => dispatch(setNotFoundError(false))} />
-      )}
-    </AnimatePresence>
+      {notFoundError && <NotFoundErrorModal />}
+    </>
   );
-}
+};
 
-export default AccountFormUpdate;
+export default FormUpdateProperty;

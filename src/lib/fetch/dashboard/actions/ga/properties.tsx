@@ -20,10 +20,14 @@ import {
   tierUpdateLimit,
 } from '@/src/lib/helpers/server';
 import { fetchGASettings, fetchGtmSettings } from '../..';
-import { CreatePropertySchema } from '@/src/lib/schemas/ga/properties';
+import {
+  CreatePropertySchema,
+  UpdatePropertySchema,
+} from '@/src/lib/schemas/ga/properties';
 
 // Define the types for the form data
 type FormCreateSchema = z.infer<typeof CreatePropertySchema>;
+type FormUpdateSchema = z.infer<typeof UpdatePropertySchema>;
 
 /************************************************************************************
   Function to list GA properties
@@ -434,7 +438,7 @@ export async function createProperties(formData: FormCreateSchema) {
   if (toCreateProperties.size > availableCreateUsage) {
     const attemptedCreations = Array.from(toCreateProperties).map(
       (identifier) => {
-        const [displayName] = identifier[0];
+        const displayName = identifier.displayName;
         return {
           id: [], // No property ID since creation did not happen
           name: displayName, // Include the property name from the identifier
@@ -737,7 +741,7 @@ export async function createProperties(formData: FormCreateSchema) {
 /************************************************************************************
   Create a single container or multiple containers
 ************************************************************************************/
-export async function UpdateContainers(formData: FormCreateSchema) {
+export async function updateProperties(formData: FormUpdateSchema) {
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
@@ -750,20 +754,29 @@ export async function UpdateContainers(formData: FormCreateSchema) {
   const featureLimitReached: string[] = [];
   const notFoundLimit: { id: string; name: string }[] = [];
 
-  let accountIdsForCache = new Set<string>();
+  let accountIdForCache: string | undefined;
+  let propertyIdForCache: string | undefined;
 
   // Refactor: Use string identifiers in the set
-  const toUpdateContainers = new Set(
-    formData.forms.map((cd) => `${cd.accountId}-${cd.containerName}`)
+  const toUpdateProperties = new Set(
+    formData.forms.map((prop) => ({
+      parent: prop.parent,
+      displayName: prop.displayName,
+      name: prop.name,
+      timezone: prop.timezone,
+      currencyCode: prop.currencyCode,
+      industryCategory: prop.industryCategory,
+      propertyType: prop.propertyType,
+    }))
   );
 
-  const tierLimitResponse: any = await tierUpdateLimit(userId, 'GTMContainer');
+  const tierLimitResponse: any = await tierUpdateLimit(userId, 'GA4Properties');
   const limit = Number(tierLimitResponse.updateLimit);
   const updateUsage = Number(tierLimitResponse.updateUsage);
   const availableUpdateUsage = limit - updateUsage;
 
   const UpdateResults: {
-    containerName: string;
+    propertyName: string;
     success: boolean;
     message?: string;
   }[] = [];
@@ -773,20 +786,20 @@ export async function UpdateContainers(formData: FormCreateSchema) {
     return {
       success: false,
       limitReached: true,
-      message: 'Feature limit reached for Updating Containers',
+      message: 'Feature limit reached for updating Workspaces',
       results: [],
     };
   }
 
-  if (toUpdateContainers.size > availableUpdateUsage) {
-    const attemptedUpdates = Array.from(toUpdateContainers).map(
+  if (toUpdateProperties.size > availableUpdateUsage) {
+    const attemptedUpdates = Array.from(toUpdateProperties).map(
       (identifier) => {
-        const [containerName] = identifier.split('-');
+        const displayName = identifier.displayName;
         return {
-          id: [], // No container ID since update did not happen
-          name: containerName, // Include the container name from the identifier
+          id: [], // No workspace ID since update did not happen
+          name: displayName, // Include the workspace name from the identifier
           success: false,
-          message: `Update limit reached. Cannot update container "${containerName}".`,
+          message: `Update limit reached. Cannot update workspace "${displayName}".`,
           // remaining update limit
           remaining: availableUpdateUsage,
           limitReached: true,
@@ -796,9 +809,9 @@ export async function UpdateContainers(formData: FormCreateSchema) {
     return {
       success: false,
       features: [],
-      message: `Cannot update ${toUpdateContainers.size} containers as it exceeds the available limit. You have ${availableUpdateUsage} more update(s) available.`,
+      message: `Cannot update ${toUpdateProperties.size} properties as it exceeds the available limit. You have ${availableUpdateUsage} more update(s) available.`,
       errors: [
-        `Cannot update ${toUpdateContainers.size} containers as it exceeds the available limit. You have ${availableUpdateUsage} more update(s) available.`,
+        `Cannot update ${toUpdateProperties.size} properties as it exceeds the available limit. You have ${availableUpdateUsage} more update(s) available.`,
       ],
       results: attemptedUpdates,
       limitReached: true,
@@ -806,38 +819,51 @@ export async function UpdateContainers(formData: FormCreateSchema) {
   }
 
   let permissionDenied = false;
-  const containerNames = formData.forms.map((cd) => cd.containerName);
+  const propertyNames = formData.forms.map((prop) => prop.displayName);
 
-  if (toUpdateContainers.size <= availableUpdateUsage) {
+  if (toUpdateProperties.size <= availableUpdateUsage) {
     while (
       retries < MAX_RETRIES &&
-      toUpdateContainers.size > 0 &&
+      toUpdateProperties.size > 0 &&
       !permissionDenied
     ) {
       try {
-        const { remaining } = await gtmRateLimit.blockUntilReady(
+        const { remaining } = await gaRateLimit.blockUntilReady(
           `user:${userId}`,
           1000
         );
         if (remaining > 0) {
           await limiter.schedule(async () => {
-            const updatePromises = Array.from(toUpdateContainers).map(
+            const updatePromises = Array.from(toUpdateProperties).map(
               async (identifier) => {
-                const [accountId, containerName] = identifier.split('-');
-                accountIdsForCache.add(accountId);
-                const containerData = formData.forms.find(
-                  (cd) =>
-                    cd.accountId === accountId &&
-                    cd.containerName === containerName
+                accountIdForCache = identifier.parent;
+                propertyIdForCache = identifier.name;
+                const propertyData = formData.forms.find(
+                  (prop) =>
+                    prop.parent === identifier.parent &&
+                    prop.displayName === identifier.displayName &&
+                    prop.name === identifier.name &&
+                    prop.timezone === identifier.timezone &&
+                    prop.currencyCode === identifier.currencyCode &&
+                    prop.industryCategory === identifier.industryCategory &&
+                    prop.propertyType === identifier.propertyType
                 );
 
-                if (!containerData) {
-                  errors.push(`Container data not found for ${identifier}`);
-                  toUpdateContainers.delete(identifier);
+                if (!propertyData) {
+                  errors.push(`Property data not found for ${identifier}`);
+                  toUpdateProperties.delete(identifier);
                   return;
                 }
 
-                const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerData.containerId}`;
+                const updateFields = [
+                  'displayName',
+                  'timeZone',
+                  'currencyCode',
+                  'industryCategory',
+                ];
+                const updateMask = updateFields.join(',');
+
+                const url = `https://analyticsadmin.googleapis.com/v1beta/properties/${identifier.name}?updateMask=${updateMask}`;
                 const headers = {
                   Authorization: `Bearer ${token[0].token}`,
                   'Content-Type': 'application/json',
@@ -845,44 +871,52 @@ export async function UpdateContainers(formData: FormCreateSchema) {
                 };
 
                 try {
-                  const formDataToValidate = { forms: [containerData] };
+                  const formDataToValidate = { forms: [propertyData] };
 
                   const validationResult =
-                    UpdateContainerSchema.safeParse(formDataToValidate);
+                    UpdatePropertySchema.safeParse(formDataToValidate);
 
                   if (!validationResult.success) {
                     let errorMessage = validationResult.error.issues
                       .map((issue) => `${issue.path[0]}: ${issue.message}`)
                       .join('. ');
                     errors.push(errorMessage);
-                    toUpdateContainers.delete(identifier);
+                    toUpdateProperties.delete(identifier);
                     return {
-                      containerData,
+                      propertyData,
                       success: false,
                       error: errorMessage,
                     };
                   }
 
-                  // Accessing the validated container data
-                  const validatedContainerData = validationResult.data.forms[0];
+                  // Accessing the validated workspace data
+                  const validatedpropertyData = validationResult.data.forms[0];
+                  const payload = JSON.stringify({
+                    parent: `accounts/${validatedpropertyData.parent}`,
+                    displayName: validatedpropertyData.displayName,
+                    timeZone: validatedpropertyData.timezone,
+                    currencyCode: validatedpropertyData.currencyCode,
+                    industryCategory: validatedpropertyData.industryCategory,
+                  });
 
                   const response = await fetch(url, {
-                    method: 'PUT',
+                    method: 'PATCH',
                     headers: headers,
-                    body: JSON.stringify({
-                      accountId: accountId,
-                      name: containerName,
-                      usageContext: validatedContainerData.usageContext,
-                      domainName: validatedContainerData.domainName,
-                      notes: validatedContainerData.notes,
-                    }),
+                    body: payload,
                   });
 
                   let parsedResponse;
+                  const propertyName = propertyData.name;
 
                   if (response.ok) {
-                    successfulUpdates.push(containerName);
-                    toUpdateContainers.delete(identifier);
+                    if (response.ok) {
+                      // Push a string into the array, for example, a concatenation of propertyId and propertyId
+                      successfulUpdates.push(
+                        `${validatedpropertyData.parent}-${validatedpropertyData.name}`
+                      );
+                      // ... rest of your code
+                    }
+                    toUpdateProperties.delete(identifier);
 
                     await prisma.tierLimit.update({
                       where: { id: tierLimitResponse.id },
@@ -890,9 +924,9 @@ export async function UpdateContainers(formData: FormCreateSchema) {
                     });
 
                     UpdateResults.push({
-                      containerName: containerName,
+                      propertyName: propertyName,
                       success: true,
-                      message: `Successfully updated container ${containerName}`,
+                      message: `Successfully updated workspace ${propertyName}`,
                     });
                   } else {
                     parsedResponse = await response.json();
@@ -900,8 +934,8 @@ export async function UpdateContainers(formData: FormCreateSchema) {
                     const errorResult = await handleApiResponseError(
                       response,
                       parsedResponse,
-                      'container',
-                      [containerName]
+                      'property',
+                      [propertyName]
                     );
 
                     if (errorResult) {
@@ -910,38 +944,38 @@ export async function UpdateContainers(formData: FormCreateSchema) {
                         errorResult.errorCode === 403 &&
                         parsedResponse.message === 'Feature limit reached'
                       ) {
-                        featureLimitReached.push(containerName);
+                        featureLimitReached.push(propertyName);
                       } else if (errorResult.errorCode === 404) {
-                        const containerName =
-                          containerNames.find((name) =>
-                            name.includes(identifier.split('-')[1])
+                        const propertyName =
+                          propertyNames.find((name) =>
+                            name.includes(identifier.name)
                           ) || 'Unknown';
                         notFoundLimit.push({
-                          id: identifier.split('-')[1],
-                          name: containerName,
+                          id: identifier.propertyId,
+                          name: propertyName,
                         });
                       }
                     } else {
                       errors.push(
-                        `An unknown error occurred for container ${containerName}.`
+                        `An unknown error occurred for workspace ${propertyName}.`
                       );
                     }
 
-                    toUpdateContainers.delete(identifier);
+                    toUpdateProperties.delete(identifier);
                     permissionDenied = errorResult ? true : permissionDenied;
                     UpdateResults.push({
-                      containerName: containerName,
+                      propertyName: propertyName,
                       success: false,
                       message: errorResult?.message,
                     });
                   }
                 } catch (error: any) {
                   errors.push(
-                    `Exception updating container ${containerName}: ${error.message}`
+                    `Exception updating workspace ${propertyData.name}: ${error.message}`
                   );
-                  toUpdateContainers.delete(identifier);
+                  toUpdateProperties.delete(identifier);
                   UpdateResults.push({
-                    containerName: containerName,
+                    propertyName: propertyData.name,
                     success: false,
                     message: error.message,
                   });
@@ -951,10 +985,6 @@ export async function UpdateContainers(formData: FormCreateSchema) {
 
             await Promise.all(updatePromises);
           });
-
-          const cacheKey = `gtm:containers:userId:${userId}`;
-          await redis.del(cacheKey);
-          await revalidatePath(`/dashboard/gtm/containers`);
 
           if (notFoundLimit.length > 0) {
             return {
@@ -977,17 +1007,40 @@ export async function UpdateContainers(formData: FormCreateSchema) {
               success: false,
               limitReached: true,
               notFoundError: false,
-              message: `Feature limit reached for containers: ${featureLimitReached.join(
+              message: `Feature limit reached for properties: ${featureLimitReached.join(
                 ', '
               )}`,
-              results: featureLimitReached.map((containerId) => {
-                // Find the name associated with the containerId
-                const containerName =
-                  containerNames.find((name) => name.includes(containerId)) ||
+              results: featureLimitReached.map((propertyId) => {
+                // Find the name associated with the propertyId
+                const propertyName =
+                  propertyNames.find((name) => name.includes(propertyId)) ||
                   'Unknown';
                 return {
-                  id: [containerId], // Ensure id is an array
-                  name: [containerName], // Ensure name is an array, match by containerId or default to 'Unknown'
+                  id: [propertyId], // Ensure id is an array
+                  name: [propertyName], // Ensure name is an array, match by propertyId or default to 'Unknown'
+                  success: false,
+                  featureLimitReached: true,
+                };
+              }),
+            };
+          }
+
+          if (featureLimitReached.length > 0) {
+            return {
+              success: false,
+              limitReached: true,
+              notFoundError: false,
+              message: `Feature limit reached for properties: ${featureLimitReached.join(
+                ', '
+              )}`,
+              results: featureLimitReached.map((propertyId) => {
+                // Find the name associated with the propertyId
+                const propertyName =
+                  propertyNames.find((name) => name.includes(propertyId)) ||
+                  'Unknown';
+                return {
+                  id: [propertyId], // Ensure id is an array
+                  name: [propertyName], // Ensure name is an array, match by propertyId or default to 'Unknown'
                   success: false,
                   featureLimitReached: true,
                 };
@@ -999,7 +1052,7 @@ export async function UpdateContainers(formData: FormCreateSchema) {
             break;
           }
 
-          if (toUpdateContainers.size === 0) {
+          if (toUpdateProperties.size === 0) {
             break;
           }
         } else {
@@ -1017,11 +1070,10 @@ export async function UpdateContainers(formData: FormCreateSchema) {
         }
       } finally {
         // This block will run regardless of the outcome of the try...catch
-        if (accountIdsForCache && userId) {
-          await redis.del(
-            `gtm:containers:accountId:${accountIdsForCache}:userId:${userId}`
-          );
-          await revalidatePath(`/dashboard/gtm/containers`);
+        if (accountIdForCache && propertyIdForCache && userId) {
+          const cacheKey = `ga:properties:userId:${userId}`;
+          await redis.del(cacheKey);
+          await revalidatePath(`/dashboard/ga/properties`);
         }
       }
     }
@@ -1041,28 +1093,27 @@ export async function UpdateContainers(formData: FormCreateSchema) {
       success: false,
       features: successfulUpdates,
       errors: errors,
-      results: successfulUpdates.map((containerName) => ({
-        containerName,
+      results: successfulUpdates.map((propertyName) => ({
+        propertyName,
         success: true,
       })),
       message: errors.join(', '),
     };
   }
 
-  if (successfulUpdates.length > 0) {
-    await redis.del(
-      `gtm:containers:accountId:${accountIdsForCache}:userId:${userId}`
-    );
-    revalidatePath(`/dashboard/gtm/containers`);
+  if (successfulUpdates.length > 0 && accountIdForCache && propertyIdForCache) {
+    const cacheKey = `ga:properties:userId:${userId}`;
+    await redis.del(cacheKey);
+    revalidatePath(`/dashboard/ga/properties`);
   }
 
   // Map over formData.forms to update the results array
   const results: FeatureResult[] = formData.forms.map((form) => {
-    // Ensure that form.containerId is defined before adding it to the array
-    const containerId = form.containerId ? [form.containerId] : []; // Provide an empty array as a fallback
+    // Ensure that form.propertyId is defined before adding it to the array
+    const propertyId = form.name ? [form.name] : []; // Provide an empty array as a fallback
     return {
-      id: containerId, // Ensure id is an array of strings
-      name: [form.containerName], // Wrap the string in an array
+      id: propertyId, // Ensure id is an array of strings
+      name: [form.name], // Wrap the string in an array
       success: true, // or false, depending on the actual result
       // Include `notFound` if applicable
       notFound: false, // Set this to the appropriate value based on your logic
@@ -1072,10 +1123,10 @@ export async function UpdateContainers(formData: FormCreateSchema) {
   // Return the response with the correctly typed results
   return {
     success: true, // or false, depending on the actual results
-    features: [], // Populate with actual container IDs if applicable
+    features: [], // Populate with actual workspace IDs if applicable
     errors: [], // Populate with actual error messages if applicable
     limitReached: false, // Set based on actual limit status
-    message: 'Containers updated successfully', // Customize the message as needed
+    message: 'Propertys updated successfully', // Customize the message as needed
     results: results, // Use the correctly typed results
     notFoundError: false, // Set based on actual not found status
   };
