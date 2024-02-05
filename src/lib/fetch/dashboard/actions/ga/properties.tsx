@@ -1,18 +1,18 @@
 'use server';
 import { revalidatePath } from 'next/cache';
-import {
-  CreateContainerSchema,
-  UpdateContainerSchema,
-} from '@/src/lib/schemas/gtm/containers';
 import z from 'zod';
 import { auth } from '@clerk/nextjs';
-import { gaRateLimit, gtmRateLimit } from '../../../../redis/rateLimits';
+import { gaRateLimit } from '../../../../redis/rateLimits';
 import { limiter } from '../../../../bottleneck';
 import { redis } from '@/src/lib/redis/cache';
 import { notFound } from 'next/navigation';
 import { currentUserOauthAccessToken } from '@/src/lib/clerk';
 import prisma from '@/src/lib/prisma';
-import { FeatureResult, FeatureResponse } from '@/src/lib/types/types';
+import {
+  FeatureResult,
+  FeatureResponse,
+  GA4PropertyType,
+} from '@/src/lib/types/types';
 import {
   handleApiResponseError,
   tierCreateLimit,
@@ -123,11 +123,11 @@ export async function listGAProperties() {
 }
 
 /************************************************************************************
-  Delete a single or multiple containers
+  Delete a single or multiple properties
 ************************************************************************************/
-export async function DeleteContainers(
-  selectedContainers: Set<string>,
-  containerNames: string[]
+export async function DeleteProperties(
+  selectedProperties: Set<GA4PropertyType>,
+  propertyNames: string[]
 ): Promise<FeatureResponse> {
   // Initialization of retry mechanism
   let retries = 0;
@@ -136,10 +136,15 @@ export async function DeleteContainers(
 
   // Arrays to track various outcomes
   const errors: string[] = [];
-  const successfulDeletions: string[] = [];
-  const featureLimitReached: string[] = [];
-  const notFoundLimit: string[] = [];
-  const toDeleteContainers = new Set(selectedContainers);
+  const successfulDeletions: Array<{
+    accountId: string;
+    propertyId: string;
+  }> = [];
+  const featureLimitReached: { accountId: string; propertyId: string }[] = [];
+  const notFoundLimit: { accountId: string; propertyId: string }[] = [];
+  const toDeleteProperties = new Set<GA4PropertyType>(selectedProperties);
+  let accountIdForCache: string | undefined;
+  let propertyIdForCache: string | undefined;
 
   // Authenticating user and getting user ID
   const { userId } = await auth();
@@ -148,10 +153,11 @@ export async function DeleteContainers(
   const token = await currentUserOauthAccessToken(userId);
 
   // Check for feature limit using Prisma ORM
-  const tierLimitResponse: any = await tierDeleteLimit(userId, 'GTMContainer');
+  const tierLimitResponse: any = await tierDeleteLimit(userId, 'GA4Properties');
   const limit = Number(tierLimitResponse.deleteLimit);
   const deleteUsage = Number(tierLimitResponse.deleteUsage);
   const availableDeleteUsage = limit - deleteUsage;
+  const accountIdsProcessed = new Set<string>();
 
   // Handling feature limit
   if (tierLimitResponse && tierLimitResponse.limitReached) {
@@ -159,48 +165,49 @@ export async function DeleteContainers(
       success: false,
       limitReached: true,
       errors: [],
-      message: 'Feature limit reached for Deleting Containers',
+      message: 'Feature limit reached for Deleting Properties',
       results: [],
     };
   }
 
-  if (toDeleteContainers.size > availableDeleteUsage) {
+  if (toDeleteProperties.size > availableDeleteUsage) {
     // If the deletion request exceeds the available limit
     return {
       success: false,
       features: [],
       errors: [
-        `Cannot delete ${toDeleteContainers.size} containers as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
+        `Cannot delete ${toDeleteProperties.size} properties as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
       ],
       results: [],
       limitReached: true,
-      message: `Cannot delete ${toDeleteContainers.size} containers as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
+      message: `Cannot delete ${toDeleteProperties.size} properties as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
     };
   }
   let permissionDenied = false;
 
-  if (toDeleteContainers.size <= availableDeleteUsage) {
+  if (toDeleteProperties.size <= availableDeleteUsage) {
     // Retry loop for deletion requests
     while (
       retries < MAX_RETRIES &&
-      toDeleteContainers.size > 0 &&
+      toDeleteProperties.size > 0 &&
       !permissionDenied
     ) {
       try {
         // Enforcing rate limit
-        const { remaining } = await gtmRateLimit.blockUntilReady(
+        const { remaining } = await gaRateLimit.blockUntilReady(
           `user:${userId}`,
           1000
         );
 
         if (remaining > 0) {
           await limiter.schedule(async () => {
-            // Creating promises for each container deletion
-            const deletePromises = Array.from(toDeleteContainers).map(
-              async (combinedId) => {
-                const [accountId, containerId] = combinedId.split('-');
+            // Creating promises for each property deletion
+            const deletePromises = Array.from(toDeleteProperties).map(
+              async (identifier) => {
+                accountIdForCache = identifier.parent;
+                propertyIdForCache = identifier.name;
 
-                const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}`;
+                const url = `https://analyticsadmin.googleapis.com/v1beta/properties/${identifier.name}`;
                 const headers = {
                   Authorization: `Bearer ${token[0].token}`,
                   'Content-Type': 'application/json',
@@ -216,30 +223,36 @@ export async function DeleteContainers(
                   let parsedResponse;
 
                   if (response.ok) {
-                    successfulDeletions.push(containerId);
-                    toDeleteContainers.delete(containerId);
-
-                    await prisma.gtm.deleteMany({
+                    accountIdsProcessed.add(identifier.parent);
+                    successfulDeletions.push({
+                      accountId: identifier.parent,
+                      propertyId: identifier.name,
+                    });
+                    toDeleteProperties.delete(identifier);
+                    await prisma.ga.deleteMany({
                       where: {
-                        accountId: accountId,
-                        containerId: containerId,
+                        accountId: `accounts/${identifier.parent}`,
+                        propertyId: identifier.name,
                         userId: userId, // Ensure this matches the user ID
                       },
                     });
-
                     await prisma.tierLimit.update({
                       where: { id: tierLimitResponse.id },
                       data: { deleteUsage: { increment: 1 } },
                     });
 
-                    return { containerId, success: true };
+                    return {
+                      accountId: identifier.parent,
+                      propertyId: identifier.name,
+                      success: true,
+                    };
                   } else {
                     parsedResponse = await response.json();
                     const errorResult = await handleApiResponseError(
                       response,
                       parsedResponse,
-                      'container',
-                      containerNames
+                      'property',
+                      propertyNames
                     );
 
                     if (errorResult) {
@@ -248,27 +261,41 @@ export async function DeleteContainers(
                         errorResult.errorCode === 403 &&
                         parsedResponse.message === 'Feature limit reached'
                       ) {
-                        featureLimitReached.push(containerId);
+                        featureLimitReached.push({
+                          accountId: identifier.parent,
+                          propertyId: identifier.name,
+                        });
                       } else if (errorResult.errorCode === 404) {
-                        notFoundLimit.push(containerId); // Track 404 errors
+                        notFoundLimit.push({
+                          accountId: identifier.parent,
+                          propertyId: identifier.name,
+                        }); // Track 404 errors
                       }
                     } else {
                       errors.push(
-                        `An unknown error occurred for container ${containerNames}.`
+                        `An unknown error occurred for property ${propertyNames}.`
                       );
                     }
 
-                    toDeleteContainers.delete(containerId);
+                    toDeleteProperties.delete(identifier);
                     permissionDenied = errorResult ? true : permissionDenied;
+
+                    if (selectedProperties.size > 0) {
+                      const firstPropertyId = selectedProperties
+                        .values()
+                        .next().value;
+                      accountIdForCache = firstPropertyId.split('-')[0];
+                    }
                   }
                 } catch (error: any) {
                   // Handling exceptions during fetch
                   errors.push(
-                    `Error deleting container ${containerId}: ${error.message}`
+                    `Error deleting property ${identifier.parent}: ${error.message}`
                   );
                 }
-                toDeleteContainers.delete(containerId);
-                return { containerId, success: false };
+                accountIdsProcessed.add(identifier.parent);
+                toDeleteProperties.delete(identifier);
+                return { accountId: identifier.parent, success: false };
               }
             );
 
@@ -281,16 +308,16 @@ export async function DeleteContainers(
               success: false,
               limitReached: false,
               notFoundError: true, // Set the notFoundError flag
-              message: `Could not delete container. Please check your permissions. Container Name: 
-              ${containerNames.find((name) =>
+              message: `Could not delete property. Please check your permissions. Container Name: 
+              ${propertyNames.find((name) =>
                 name.includes(name)
-              )}. All other containers were successfully deleted.`,
-              results: notFoundLimit.map((containerId) => ({
-                id: [containerId], // Ensure id is an array
+              )}. All other properties were successfully deleted.`,
+              results: notFoundLimit.map(({ accountId, propertyId }) => ({
+                id: [accountId, propertyId], // Combine accountId and propertyId into a single array of strings
                 name: [
-                  containerNames.find((name) => name.includes(name)) ||
+                  propertyNames.find((name) => name.includes(propertyId)) ||
                     'Unknown',
-                ], // Ensure name is an array, match by containerId or default to 'Unknown'
+                ], // Ensure name is an array, match by propertyId or default to 'Unknown'
                 success: false,
                 notFound: true,
               })),
@@ -301,23 +328,23 @@ export async function DeleteContainers(
               success: false,
               limitReached: true,
               notFoundError: false,
-              message: `Feature limit reached for containers: ${featureLimitReached.join(
+              message: `Feature limit reached for properties: ${featureLimitReached.join(
                 ', '
               )}`,
-              results: featureLimitReached.map((containerId) => ({
-                id: [containerId], // Ensure id is an array
+              results: featureLimitReached.map(({ accountId, propertyId }) => ({
+                id: [accountId, propertyId], // Ensure id is an array
                 name: [
-                  containerNames.find((name) => name.includes(name)) ||
+                  propertyNames.find((name) => name.includes(name)) ||
                     'Unknown',
-                ], // Ensure name is an array, match by containerId or default to 'Unknown'
+                ], // Ensure name is an array, match by accountId or default to 'Unknown'
                 success: false,
                 featureLimitReached: true,
               })),
             };
           }
           // Update tier limit usage as before (not shown in code snippet)
-          if (successfulDeletions.length === selectedContainers.size) {
-            break; // Exit loop if all containers are processed successfully
+          if (successfulDeletions.length === selectedProperties.size) {
+            break; // Exit loop if all properties are processed successfully
           }
           if (permissionDenied) {
             break; // Exit the loop if a permission error was encountered
@@ -337,13 +364,11 @@ export async function DeleteContainers(
         }
       } finally {
         // This block will run regardless of the outcome of the try...catch
-        if (userId) {
-          // Invalidate cache for all accounts if containers belong to multiple accounts
-          // Otherwise, just invalidate cache for the single account
-          const cacheKey = `gtm:containers:userId:${userId}`;
-          await redis.del(cacheKey);
-          await revalidatePath(`/dashboard/gtm/containers`);
-        }
+
+        const cacheKey = `ga:properties:userId:${userId}`;
+        await redis.del(cacheKey);
+
+        await revalidatePath(`/dashboard/ga/properties`);
       }
     }
   }
@@ -359,11 +384,13 @@ export async function DeleteContainers(
   if (errors.length > 0) {
     return {
       success: false,
-      features: successfulDeletions,
+      features: successfulDeletions.map(
+        ({ accountId, propertyId }) => `${accountId}-${propertyId}`
+      ),
       errors: errors,
-      results: successfulDeletions.map((containerId) => ({
-        id: [containerId], // Ensure id is an array
-        name: [containerNames.find((name) => name.includes(name)) || 'Unknown'], // Ensure name is an array and provide a default value
+      results: successfulDeletions.map(({ accountId, propertyId }) => ({
+        id: [accountId, propertyId], // Ensure id is an array
+        name: [propertyNames.find((name) => name.includes(name)) || 'Unknown'], // Ensure name is an array and provide a default value
         success: true,
       })),
       // Add a general message if needed
@@ -372,31 +399,31 @@ export async function DeleteContainers(
   }
   // If there are successful deletions, update the deleteUsage
   if (successfulDeletions.length > 0) {
-    const cacheKey = `gtm:containers:userId:${userId}`;
-
-    // Update the Redis cache
-    await redis.del(cacheKey);
+    const specificCacheKey = `ga:properties:userId:${userId}`;
+    await redis.del(specificCacheKey);
     // Revalidate paths if needed
-    revalidatePath(`/dashboard/gtm/containers`);
+    revalidatePath(`/dashboard/ga/properties`);
   }
 
   // Returning the result of the deletion process
   return {
     success: errors.length === 0,
-    message: `Successfully deleted ${successfulDeletions.length} container(s)`,
-    features: successfulDeletions,
+    message: `Successfully deleted ${successfulDeletions.length} property(s)`,
+    features: successfulDeletions.map(
+      ({ accountId, propertyId }) => `${accountId}-${propertyId}`
+    ),
     errors: errors,
     notFoundError: notFoundLimit.length > 0,
-    results: successfulDeletions.map((containerId) => ({
-      id: [containerId], // Ensure id is an array
-      name: [containerNames.find((name) => name.includes(name)) || 'Unknown'], // Ensure name is an array
+    results: successfulDeletions.map(({ accountId, propertyId }) => ({
+      id: [accountId, propertyId], // Ensure id is an array
+      name: [propertyNames.find((name) => name.includes(name)) || 'Unknown'], // Ensure name is an array
       success: true,
     })),
   };
 }
 
 /************************************************************************************
-  Create a single container or multiple containers
+  Create a single property or multiple properties
 ************************************************************************************/
 export async function createProperties(formData: FormCreateSchema) {
   const { userId } = await auth();
@@ -739,7 +766,7 @@ export async function createProperties(formData: FormCreateSchema) {
 }
 
 /************************************************************************************
-  Create a single container or multiple containers
+  Create a single property or multiple properties
 ************************************************************************************/
 export async function updateProperties(formData: FormUpdateSchema) {
   const { userId } = await auth();
@@ -796,10 +823,10 @@ export async function updateProperties(formData: FormUpdateSchema) {
       (identifier) => {
         const displayName = identifier.displayName;
         return {
-          id: [], // No workspace ID since update did not happen
-          name: displayName, // Include the workspace name from the identifier
+          id: [], // No property ID since update did not happen
+          name: displayName, // Include the property name from the identifier
           success: false,
-          message: `Update limit reached. Cannot update workspace "${displayName}".`,
+          message: `Update limit reached. Cannot update property "${displayName}".`,
           // remaining update limit
           remaining: availableUpdateUsage,
           limitReached: true,
@@ -889,7 +916,7 @@ export async function updateProperties(formData: FormUpdateSchema) {
                     };
                   }
 
-                  // Accessing the validated workspace data
+                  // Accessing the validated property data
                   const validatedpropertyData = validationResult.data.forms[0];
                   const payload = JSON.stringify({
                     parent: `accounts/${validatedpropertyData.parent}`,
@@ -926,7 +953,7 @@ export async function updateProperties(formData: FormUpdateSchema) {
                     UpdateResults.push({
                       propertyName: propertyName,
                       success: true,
-                      message: `Successfully updated workspace ${propertyName}`,
+                      message: `Successfully updated property ${propertyName}`,
                     });
                   } else {
                     parsedResponse = await response.json();
@@ -957,7 +984,7 @@ export async function updateProperties(formData: FormUpdateSchema) {
                       }
                     } else {
                       errors.push(
-                        `An unknown error occurred for workspace ${propertyName}.`
+                        `An unknown error occurred for property ${propertyName}.`
                       );
                     }
 
@@ -971,7 +998,7 @@ export async function updateProperties(formData: FormUpdateSchema) {
                   }
                 } catch (error: any) {
                   errors.push(
-                    `Exception updating workspace ${propertyData.name}: ${error.message}`
+                    `Exception updating property ${propertyData.name}: ${error.message}`
                   );
                   toUpdateProperties.delete(identifier);
                   UpdateResults.push({
@@ -1123,7 +1150,7 @@ export async function updateProperties(formData: FormUpdateSchema) {
   // Return the response with the correctly typed results
   return {
     success: true, // or false, depending on the actual results
-    features: [], // Populate with actual workspace IDs if applicable
+    features: [], // Populate with actual property IDs if applicable
     errors: [], // Populate with actual error messages if applicable
     limitReached: false, // Set based on actual limit status
     message: 'Propertys updated successfully', // Customize the message as needed

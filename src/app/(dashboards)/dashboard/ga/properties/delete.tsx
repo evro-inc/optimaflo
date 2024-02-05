@@ -8,9 +8,14 @@ import {
   setNotFoundError,
 } from '@/src/lib/redux/tableSlice';
 import { deleteAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
-import { GA4AccountType, FeatureResponse } from '@/src/lib/types/types';
+import {
+  GA4AccountType,
+  FeatureResponse,
+  GA4PropertyType,
+} from '@/src/lib/types/types';
 import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
+import { DeleteProperties } from '@/src/lib/fetch/dashboard/actions/ga/properties';
 
 export const useDeleteHook = (selectedRows, table) => {
   const dispatch = useDispatch();
@@ -25,18 +30,18 @@ export const useDeleteHook = (selectedRows, table) => {
 
     // Use Object.values to get the values from the selectedRows object and cast them to GA4AccountType
     const ga4AccountsToDelete = Object.values(
-      selectedRows as Record<string, GA4AccountType>
-    ).map((account) => {
-      return account.name;
+      selectedRows as Record<string, GA4PropertyType>
+    ).map((prop) => {
+      return prop;
     });
+
+    console.log('ga4AccountsToDelete', ga4AccountsToDelete);
 
     const accountNames = ga4AccountsToDelete.map((name) => {
-      // Extract the accountId part from the concatenated string
-      // Find the account by its accountId and return its name or 'Unknown'
-      return selectedRows[name]?.name || 'Unknown';
+      return `properties/${name}`;
     });
 
-    const response: FeatureResponse = await deleteAccounts(
+    const response: FeatureResponse = await DeleteProperties(
       new Set(ga4AccountsToDelete),
       accountNames
     );

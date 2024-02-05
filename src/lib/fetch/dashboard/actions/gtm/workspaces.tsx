@@ -392,10 +392,9 @@ export async function DeleteWorkspaces(
   }
   // If there are successful deletions, update the deleteUsage
   if (successfulDeletions.length > 0) {
-    for (const { containerId } of successfulDeletions) {
-      const specificCacheKey = `gtm:workspaces:accountId:${accountIdForCache}:containerId:${containerId}:userId:${userId}`;
-      await redis.del(specificCacheKey);
-    }
+    const specificCacheKey = `gtm:workspaces:userId:${userId}`;
+    await redis.del(specificCacheKey);
+
     // Revalidate paths if needed
     revalidatePath(`/dashboard/gtm/workspaces`);
   }

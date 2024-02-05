@@ -265,3 +265,12 @@ export type GA4AccountType = {
   name: string;
   displayName: string;
 };
+export type GA4PropertyType = {
+  name: string;
+  parent: string;
+  displayName: string;
+  timeZone: string;
+  currencyCode: string;
+  serviceLevel: string;
+  account: string;
+};
