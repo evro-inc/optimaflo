@@ -68,3 +68,16 @@ export const CurrencyCodes = [
   'SEK',
   'NZD',
 ];
+
+export const retentionSettings360 = {
+  'Two Months': 'TWO_MONTHS',
+  'Fourteen Months': 'FOURTEEN_MONTHS',
+  'Twenty-Six Months': 'TWENTY_SIX_MONTHS', // Note: Available to 360 properties only
+  'Thirty-Eight Months': 'THIRTY_EIGHT_MONTHS', // Note: Available to 360 properties only
+  'Fifty Months': 'FIFTY_MONTHS', // Note: Available to 360 properties only
+};
+
+export const retentionSettingsStandard = {
+  'Two Months': 'TWO_MONTHS',
+  'Fourteen Months': 'FOURTEEN_MONTHS',
+};

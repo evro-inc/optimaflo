@@ -35,8 +35,6 @@ export const useDeleteHook = (selectedRows, table) => {
       return prop;
     });
 
-    console.log('ga4AccountsToDelete', ga4AccountsToDelete);
-
     const accountNames = ga4AccountsToDelete.map((name) => {
       return `properties/${name}`;
     });

@@ -560,8 +560,8 @@ export async function CreateWorkspaces(formData: FormCreateSchema) {
                     method: 'POST',
                     headers: headers,
                     body: JSON.stringify({
-                      accountId: accountId,
-                      name: workspaceName,
+                      accountId: validatedContainerData.accountId,
+                      name: validatedContainerData.name,
                       description: validatedContainerData.description,
                       containerId: validatedContainerData.containerId,
                     }),

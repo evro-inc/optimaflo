@@ -96,17 +96,41 @@ export async function listGAProperties() {
               }
 
               const responseBody = await response.json();
-
-              allData.push(responseBody.properties || []);
+              const properties = responseBody.properties || [];
+              for (const property of properties) {
+                const retentionSettingsUrl = `https://analyticsadmin.googleapis.com/v1beta/${property.name}/dataRetentionSettings`;
+                try {
+                  const retentionResponse = await fetch(retentionSettingsUrl, {
+                    headers,
+                  });
+                  if (!retentionResponse.ok) {
+                    throw new Error(
+                      `HTTP error! status: ${retentionResponse.status}. ${retentionResponse.statusText}`
+                    );
+                  }
+                  const retentionSettings = await retentionResponse.json();
+                  allData.push({
+                    ...property,
+                    dataRetentionSettings: retentionSettings,
+                  });
+                } catch (error: any) {
+                  // In case of an error, push the property without data retention settings
+                  allData.push(property);
+                  throw new Error(
+                    `Error fetching data retention settings: ${error.message}`
+                  );
+                }
+              }
+              // Removed the problematic line here
             } catch (error: any) {
               throw new Error(`Error fetching data: ${error.message}`);
             }
           }
         });
 
-        redis.set(cacheKey, JSON.stringify(allData.flat()));
+        redis.set(cacheKey, JSON.stringify(allData));
 
-        return allData.flat();
+        return allData;
       }
     } catch (error: any) {
       if (error.code === 429 || error.status === 429) {
@@ -1133,6 +1157,392 @@ export async function updateProperties(formData: FormUpdateSchema) {
     await redis.del(cacheKey);
     revalidatePath(`/dashboard/ga/properties`);
   }
+
+  // Map over formData.forms to update the results array
+  const results: FeatureResult[] = formData.forms.map((form) => {
+    // Ensure that form.propertyId is defined before adding it to the array
+    const propertyId = form.name ? [form.name] : []; // Provide an empty array as a fallback
+    return {
+      id: propertyId, // Ensure id is an array of strings
+      name: [form.name], // Wrap the string in an array
+      success: true, // or false, depending on the actual result
+      // Include `notFound` if applicable
+      notFound: false, // Set this to the appropriate value based on your logic
+    };
+  });
+
+  // Return the response with the correctly typed results
+  return {
+    success: true, // or false, depending on the actual results
+    features: [], // Populate with actual property IDs if applicable
+    errors: [], // Populate with actual error messages if applicable
+    limitReached: false, // Set based on actual limit status
+    message: 'Propertys updated successfully', // Customize the message as needed
+    results: results, // Use the correctly typed results
+    notFoundError: false, // Set based on actual not found status
+  };
+}
+
+/************************************************************************************
+  Update user data retention settings for a Google Analytics 4 property
+************************************************************************************/
+export async function updateDataRetentionSettings(formData: FormUpdateSchema) {
+  const { userId } = await auth();
+  if (!userId) return notFound();
+  const token = await currentUserOauthAccessToken(userId);
+
+  let retries = 0;
+  const MAX_RETRIES = 3;
+  let delay = 1000;
+  const errors: string[] = [];
+  const successfulUpdates: string[] = [];
+  const featureLimitReached: string[] = [];
+  const notFoundLimit: { id: string; name: string }[] = [];
+
+  let accountIdForCache: string | undefined;
+  let propertyIdForCache: string | undefined;
+
+  // Refactor: Use string identifiers in the set
+  const toUpdateProperties = new Set(
+    formData.forms.map((prop) => ({
+      parent: prop.parent,
+      displayName: prop.displayName,
+      name: prop.name,
+      timezone: prop.timezone,
+      currencyCode: prop.currencyCode,
+      industryCategory: prop.industryCategory,
+      propertyType: prop.propertyType,
+      retention: prop.retention,
+      retentionReset: prop.resetOnNewActivity,
+    }))
+  );
+
+  const tierLimitResponse: any = await tierUpdateLimit(userId, 'GA4Properties');
+  const limit = Number(tierLimitResponse.updateLimit);
+  const updateUsage = Number(tierLimitResponse.updateUsage);
+  const availableUpdateUsage = limit - updateUsage;
+
+  const UpdateResults: {
+    propertyName: string;
+    success: boolean;
+    message?: string;
+  }[] = [];
+
+  // Handling feature limit
+  if (tierLimitResponse && tierLimitResponse.limitReached) {
+    return {
+      success: false,
+      limitReached: true,
+      message: 'Feature limit reached for updating Workspaces',
+      results: [],
+    };
+  }
+
+  if (toUpdateProperties.size > availableUpdateUsage) {
+    const attemptedUpdates = Array.from(toUpdateProperties).map(
+      (identifier) => {
+        const displayName = identifier.displayName;
+        return {
+          id: [], // No property ID since update did not happen
+          name: displayName, // Include the property name from the identifier
+          success: false,
+          message: `Update limit reached. Cannot update property "${displayName}".`,
+          // remaining update limit
+          remaining: availableUpdateUsage,
+          limitReached: true,
+        };
+      }
+    );
+    return {
+      success: false,
+      features: [],
+      message: `Cannot update ${toUpdateProperties.size} properties as it exceeds the available limit. You have ${availableUpdateUsage} more update(s) available.`,
+      errors: [
+        `Cannot update ${toUpdateProperties.size} properties as it exceeds the available limit. You have ${availableUpdateUsage} more update(s) available.`,
+      ],
+      results: attemptedUpdates,
+      limitReached: true,
+    };
+  }
+
+  let permissionDenied = false;
+  const propertyNames = formData.forms.map((prop) => prop.displayName);
+
+  if (toUpdateProperties.size <= availableUpdateUsage) {
+    while (
+      retries < MAX_RETRIES &&
+      toUpdateProperties.size > 0 &&
+      !permissionDenied
+    ) {
+      try {
+        const { remaining } = await gaRateLimit.blockUntilReady(
+          `user:${userId}`,
+          1000
+        );
+        if (remaining > 0) {
+          await limiter.schedule(async () => {
+            const updatePromises = Array.from(toUpdateProperties).map(
+              async (identifier) => {
+                accountIdForCache = identifier.parent;
+                propertyIdForCache = identifier.name;
+                const propertyData = formData.forms.find(
+                  (prop) =>
+                    prop.parent === identifier.parent &&
+                    prop.displayName === identifier.displayName &&
+                    prop.name === identifier.name &&
+                    prop.timezone === identifier.timezone &&
+                    prop.currencyCode === identifier.currencyCode &&
+                    prop.industryCategory === identifier.industryCategory &&
+                    prop.propertyType === identifier.propertyType &&
+                    prop.retention === identifier.retention &&
+                    prop.resetOnNewActivity === identifier.retentionReset
+                );
+
+                if (!propertyData) {
+                  errors.push(`Property data not found for ${identifier}`);
+                  toUpdateProperties.delete(identifier);
+                  return;
+                }
+
+                const updateFields = ['eventDataRetention'];
+                const updateMask = updateFields.join(',');
+
+                const url = `https://analyticsadmin.googleapis.com/v1beta/properties/${identifier.name}/dataRetentionSettings?updateMask=${updateMask}`;
+                const headers = {
+                  Authorization: `Bearer ${token[0].token}`,
+                  'Content-Type': 'application/json',
+                  'Accept-Encoding': 'gzip',
+                };
+
+                try {
+                  const formDataToValidate = { forms: [propertyData] };
+
+                  const validationResult =
+                    UpdatePropertySchema.safeParse(formDataToValidate);
+
+                  if (!validationResult.success) {
+                    let errorMessage = validationResult.error.issues
+                      .map((issue) => `${issue.path[0]}: ${issue.message}`)
+                      .join('. ');
+                    errors.push(errorMessage);
+                    toUpdateProperties.delete(identifier);
+                    return {
+                      propertyData,
+                      success: false,
+                      error: errorMessage,
+                    };
+                  }
+
+                  // Accessing the validated property data
+                  const validatedpropertyData = validationResult.data.forms[0];
+                  const payload = JSON.stringify({
+                    name: `accounts/${validatedpropertyData.parent}`,
+                    eventDataRetention: validatedpropertyData.retention,
+                    resetUserDataOnNewActivity:
+                      validatedpropertyData.resetOnNewActivity,
+                  });
+
+                  const response = await fetch(url, {
+                    method: 'PATCH',
+                    headers: headers,
+                    body: payload,
+                  });
+
+                  const parsedResponse = await response.json();
+
+                  const propertyName = propertyData.name;
+
+                  if (response.ok) {
+                    // Push a string into the array, for example, a concatenation of propertyId and propertyId
+                    successfulUpdates.push(
+                      `${validatedpropertyData.parent}-${validatedpropertyData.name}`
+                    );
+                    // ... rest of your code
+
+                    toUpdateProperties.delete(identifier);
+                    redis.append('ga:properties:userId:', parsedResponse);
+
+                    UpdateResults.push({
+                      propertyName: propertyName,
+                      success: true,
+                      message: `Successfully updated property ${propertyName}`,
+                    });
+                  } else {
+                    const errorResult = await handleApiResponseError(
+                      response,
+                      parsedResponse,
+                      'property',
+                      [propertyName]
+                    );
+
+                    if (errorResult) {
+                      errors.push(`${errorResult.message}`);
+                      if (
+                        errorResult.errorCode === 403 &&
+                        parsedResponse.message === 'Feature limit reached'
+                      ) {
+                        featureLimitReached.push(propertyName);
+                      } else if (errorResult.errorCode === 404) {
+                        const propertyName =
+                          propertyNames.find((name) =>
+                            name.includes(identifier.name)
+                          ) || 'Unknown';
+                        notFoundLimit.push({
+                          id: identifier.propertyId,
+                          name: propertyName,
+                        });
+                      }
+                    } else {
+                      errors.push(
+                        `An unknown error occurred for property ${propertyName}.`
+                      );
+                    }
+
+                    toUpdateProperties.delete(identifier);
+                    permissionDenied = errorResult ? true : permissionDenied;
+                    UpdateResults.push({
+                      propertyName: propertyName,
+                      success: false,
+                      message: errorResult?.message,
+                    });
+                  }
+                } catch (error: any) {
+                  errors.push(
+                    `Exception updating property ${propertyData.name}: ${error.message}`
+                  );
+                  toUpdateProperties.delete(identifier);
+                  UpdateResults.push({
+                    propertyName: propertyData.name,
+                    success: false,
+                    message: error.message,
+                  });
+                }
+              }
+            );
+
+            await Promise.all(updatePromises);
+          });
+
+          if (notFoundLimit.length > 0) {
+            return {
+              success: false,
+              limitReached: false,
+              notFoundError: true, // Set the notFoundError flag
+              features: [],
+
+              results: notFoundLimit.map((item) => ({
+                id: item.id,
+                name: item.name,
+                success: false,
+                notFound: true,
+              })),
+            };
+          }
+
+          if (featureLimitReached.length > 0) {
+            return {
+              success: false,
+              limitReached: true,
+              notFoundError: false,
+              message: `Feature limit reached for properties: ${featureLimitReached.join(
+                ', '
+              )}`,
+              results: featureLimitReached.map((propertyId) => {
+                // Find the name associated with the propertyId
+                const propertyName =
+                  propertyNames.find((name) => name.includes(propertyId)) ||
+                  'Unknown';
+                return {
+                  id: [propertyId], // Ensure id is an array
+                  name: [propertyName], // Ensure name is an array, match by propertyId or default to 'Unknown'
+                  success: false,
+                  featureLimitReached: true,
+                };
+              }),
+            };
+          }
+
+          if (featureLimitReached.length > 0) {
+            return {
+              success: false,
+              limitReached: true,
+              notFoundError: false,
+              message: `Feature limit reached for properties: ${featureLimitReached.join(
+                ', '
+              )}`,
+              results: featureLimitReached.map((propertyId) => {
+                // Find the name associated with the propertyId
+                const propertyName =
+                  propertyNames.find((name) => name.includes(propertyId)) ||
+                  'Unknown';
+                return {
+                  id: [propertyId], // Ensure id is an array
+                  name: [propertyName], // Ensure name is an array, match by propertyId or default to 'Unknown'
+                  success: false,
+                  featureLimitReached: true,
+                };
+              }),
+            };
+          }
+
+          if (successfulUpdates.length === formData.forms.length) {
+            break;
+          }
+
+          if (toUpdateProperties.size === 0) {
+            break;
+          }
+        } else {
+          throw new Error('Rate limit exceeded');
+        }
+      } catch (error: any) {
+        if (error.code === 429 || error.status === 429) {
+          await new Promise((resolve) =>
+            setTimeout(resolve, delay + Math.random() * 200)
+          );
+          delay *= 2;
+          retries++;
+        } else {
+          break;
+        }
+      } /* finally {
+        // This block will run regardless of the outcome of the try...catch
+        if (accountIdForCache && propertyIdForCache && userId) {
+          const cacheKey = `ga:properties:userId:${userId}`;
+          await redis.del(cacheKey);
+          await revalidatePath(`/dashboard/ga/properties`);
+        }
+      } */
+    }
+  }
+
+  if (permissionDenied) {
+    return {
+      success: false,
+      errors: errors,
+      results: [],
+      message: errors.join(', '),
+    };
+  }
+
+  if (errors.length > 0) {
+    return {
+      success: false,
+      features: successfulUpdates,
+      errors: errors,
+      results: successfulUpdates.map((propertyName) => ({
+        propertyName,
+        success: true,
+      })),
+      message: errors.join(', '),
+    };
+  }
+
+  /*   if (successfulUpdates.length > 0 && accountIdForCache && propertyIdForCache) {
+    const cacheKey = `ga:properties:userId:${userId}`;
+    await redis.del(cacheKey);
+    revalidatePath(`/dashboard/ga/properties`);
+  } */
 
   // Map over formData.forms to update the results array
   const results: FeatureResult[] = formData.forms.map((form) => {

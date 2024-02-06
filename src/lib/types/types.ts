@@ -154,7 +154,7 @@ export type FormUpdateProps = {
   showOptions: boolean;
   onClose: () => void;
   accounts: any; // Replace 'any' with the actual type if known
-  selectedRows: Map<string, ContainerType>;
+  selectedRows: Map<string, GA4PropertyType>;
   workspaces?: any;
   table: any;
 };

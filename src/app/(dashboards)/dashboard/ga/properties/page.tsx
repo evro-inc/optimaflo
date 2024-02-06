@@ -45,6 +45,17 @@ export default async function PropertyPage({
       return lastPart[0] + lastPart.slice(1).toLowerCase();
     };
 
+    const formatRetention = (retention) => {
+      const parts = retention.split('_');
+      // capitalize the first letter of each part rest to lowercase
+      return parts
+        .map((part) => part[0] + part.slice(1).toLowerCase())
+        .join(' ');
+    };
+    const formatResetOnNewActivity = (resetOnNewActivity) => {
+      return resetOnNewActivity == true ? 'Enable' : 'Disabled';
+    };
+
     // Apply transformations
     return {
       ...property,
@@ -53,7 +64,12 @@ export default async function PropertyPage({
       serviceLevel: formatType(property.serviceLevel), // Transforming the 'serviceLevel'
       propertyType: formatType(property.propertyType), // Transforming the 'propertyType'
       accountName: account ? account.displayName : 'Unknown Account', // Setting 'accountName' from 'flatAccounts' or default
-      // Add other transformations as needed
+      retention: formatRetention(
+        property.dataRetentionSettings.eventDataRetention
+      ),
+      resetOnNewActivity: formatResetOnNewActivity(
+        property.dataRetentionSettings.resetUserDataOnNewActivity
+      ),
     };
   });
 

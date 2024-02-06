@@ -37,7 +37,10 @@ import {
 import { Input } from '@/src/components/ui/input';
 import dynamic from 'next/dynamic';
 import { UpdatePropertySchema } from '@/src/lib/schemas/ga/properties';
-import { updateProperties } from '@/src/lib/fetch/dashboard/actions/ga/properties';
+import {
+  updateDataRetentionSettings,
+  updateProperties,
+} from '@/src/lib/fetch/dashboard/actions/ga/properties';
 import {
   Select,
   SelectContent,
@@ -47,7 +50,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/src/components/ui/select';
-import { CurrencyCodes, IndustryCategories, TimeZones } from './propertyItems';
+import {
+  CurrencyCodes,
+  IndustryCategories,
+  TimeZones,
+  retentionSettings360,
+  retentionSettingsStandard,
+} from './propertyItems';
+import { Switch } from '@/src/components/ui/switch';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -84,6 +94,8 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
           industryCategory: 'AUTOMOTIVE',
           timezone: 'America/New_York',
           propertyType: 'PROPERTY_TYPE_ORDINARY',
+          retention: table[0].retention,
+          resetOnNewActivity: table[0].resetOnNewActivity,
         },
       ],
     },
@@ -104,6 +116,8 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
       const industryCategory = rowData.industryCategory;
       const timezone = rowData.timezone;
       const propertyType = rowData.propertyType;
+      const retention = rowData.retention;
+      const resetOnNewActivity = rowData.resetOnNewActivity;
 
       return {
         name,
@@ -113,6 +127,8 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
         industryCategory,
         timezone,
         propertyType,
+        retention,
+        resetOnNewActivity,
       };
     });
 
@@ -133,10 +149,11 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
     try {
       // If you're here, validation succeeded. Proceed with updateContainers.
       const res = (await updateProperties({ forms })) as FeatureResponse;
+      const resUserDataRetention = await updateDataRetentionSettings({ forms });
 
       dispatch(clearSelectedRows()); // Clear selectedRows
 
-      if (res.success) {
+      if (res.success && resUserDataRetention.success) {
         res.results.forEach((result) => {
           if (result.success) {
             toast.success(
@@ -151,7 +168,7 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
           }
         });
       } else {
-        if (res.notFoundError) {
+        if (res.notFoundError || resUserDataRetention.notFoundError) {
           res.results.forEach((result) => {
             if (result.notFound) {
               toast.error(
@@ -171,7 +188,7 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
           onClose();
         }
 
-        if (res.limitReached) {
+        if (res.limitReached || resUserDataRetention.limitReached) {
           res.results.forEach((result) => {
             if (result.limitReached) {
               toast.error(
@@ -200,6 +217,7 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
               industryCategory: 'AUTOMOTIVE',
               timezone: 'America/New_York',
               propertyType: 'PROPERTY_TYPE_ORDINARY',
+              retention: table[0].retention,
             },
           ],
         });
@@ -217,6 +235,7 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
             industryCategory: 'AUTOMOTIVE',
             timezone: 'America/New_York',
             propertyType: 'PROPERTY_TYPE_ORDINARY',
+            retention: table[0].retention,
           },
         ],
       });
@@ -240,6 +259,7 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
           industryCategory: 'AUTOMOTIVE',
           timezone: 'America/New_York',
           propertyType: 'PROPERTY_TYPE_ORDINARY',
+          retention: table[0].retention,
         },
       ],
     });
@@ -250,6 +270,13 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
     // Close the modal
     onClose();
   };
+  const retentionSettings = Array.from(selectedRows.values()).map(
+    (row) => row.serviceLevel
+  );
+
+  const retentionByServiceLevel = retentionSettings.map((setting) =>
+    setting === 'Standard' ? retentionSettingsStandard : retentionSettings360
+  );
 
   return (
     <>
@@ -445,7 +472,9 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
 
                                         <SelectContent>
                                           <SelectGroup>
-                                            <SelectLabel>Timezone</SelectLabel>
+                                            <SelectLabel>
+                                              Industry Category
+                                            </SelectLabel>
                                             {IndustryCategories.map((cat) => (
                                               <SelectItem key={cat} value={cat}>
                                                 {cat}
@@ -457,6 +486,78 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
                                     </FormControl>
 
                                     <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+
+                              <FormField
+                                control={form.control}
+                                name={`forms.${index}.retention`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Retention Setting</FormLabel>
+                                    <FormDescription>
+                                      Set the retention setting for the
+                                      property.
+                                    </FormDescription>
+                                    <FormControl>
+                                      <Select
+                                        {...form.register(
+                                          `forms.${index}.retention`
+                                        )}
+                                        {...field}
+                                        onValueChange={field.onChange}
+                                      >
+                                        <SelectTrigger className="w-[180px]">
+                                          <SelectValue placeholder="Select a category." />
+                                        </SelectTrigger>
+
+                                        <SelectContent>
+                                          <SelectGroup>
+                                            <SelectLabel>
+                                              Retention Setting
+                                            </SelectLabel>
+                                            {Object.entries(
+                                              retentionByServiceLevel[index]
+                                            ).map(([label, value]) => (
+                                              <SelectItem
+                                                key={value}
+                                                value={value}
+                                              >
+                                                {label}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectGroup>
+                                        </SelectContent>
+                                      </Select>
+                                    </FormControl>
+
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+
+                              <FormField
+                                control={form.control}
+                                name={`forms.${index}.resetOnNewActivity`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <div className="space-y-0.5">
+                                      <FormLabel>
+                                        Reset user data on new activity
+                                      </FormLabel>
+                                      <FormDescription>
+                                        If enabled, reset the retention period
+                                        for the user identifier with every event
+                                        from that user.
+                                      </FormDescription>
+                                    </div>
+                                    <FormControl>
+                                      <Switch
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                      />
+                                    </FormControl>
                                   </FormItem>
                                 )}
                               />
