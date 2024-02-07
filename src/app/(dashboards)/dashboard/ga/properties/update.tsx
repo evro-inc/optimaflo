@@ -87,20 +87,22 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
     defaultValues: {
       forms: [
         {
-          name: table[0].name,
-          parent: table[0].parent,
-          currencyCode: 'USD',
+          name: selectedRows[0].name,
+          parent: selectedRows[0].parent,
+          currencyCode: selectedRows[0].currencyCode,
           displayName: '',
-          industryCategory: 'AUTOMOTIVE',
-          timezone: 'America/New_York',
-          propertyType: 'PROPERTY_TYPE_ORDINARY',
-          retention: table[0].retention,
-          resetOnNewActivity: table[0].resetOnNewActivity,
+          industryCategory: selectedRows[0].industryCategory,
+          timeZone: selectedRows[0].timeZone,
+          propertyType: selectedRows[0].propertyType,
+          retention: selectedRows[0].retention,
+          resetOnNewActivity: selectedRows[0].resetOnNewActivity,
         },
       ],
     },
     resolver: zodResolver(UpdatePropertySchema),
   });
+
+  console.log('form', form.getValues());
 
   const { fields } = useFieldArray({
     control: form.control,
@@ -114,7 +116,7 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
       const currencyCode = rowData.currencyCode;
       const displayName = rowData.displayName;
       const industryCategory = rowData.industryCategory;
-      const timezone = rowData.timezone;
+      const timeZone = rowData.timeZone;
       const propertyType = rowData.propertyType;
       const retention = rowData.retention;
       const resetOnNewActivity = rowData.resetOnNewActivity;
@@ -125,7 +127,7 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
         currencyCode,
         displayName,
         industryCategory,
-        timezone,
+        timeZone,
         propertyType,
         retention,
         resetOnNewActivity,
@@ -210,14 +212,15 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
         form.reset({
           forms: [
             {
-              name: table[0].name,
-              parent: table[0].parent,
-              currencyCode: 'USD',
+              name: selectedRows[0].name,
+              parent: selectedRows[0].parent,
+              currencyCode: selectedRows[0].currencyCode,
               displayName: '',
-              industryCategory: 'AUTOMOTIVE',
-              timezone: 'America/New_York',
-              propertyType: 'PROPERTY_TYPE_ORDINARY',
-              retention: table[0].retention,
+              industryCategory: selectedRows[0].industryCategory,
+              timeZone: selectedRows[0].timeZone,
+              propertyType: selectedRows[0].propertyType,
+              retention: selectedRows[0].retention,
+              resetOnNewActivity: selectedRows[0].resetOnNewActivity,
             },
           ],
         });
@@ -228,14 +231,15 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
       form.reset({
         forms: [
           {
-            name: table[0].name,
-            parent: table[0].parent,
-            currencyCode: 'USD',
+            name: selectedRows[0].name,
+            parent: selectedRows[0].parent,
+            currencyCode: selectedRows[0].currencyCode,
             displayName: '',
-            industryCategory: 'AUTOMOTIVE',
-            timezone: 'America/New_York',
-            propertyType: 'PROPERTY_TYPE_ORDINARY',
-            retention: table[0].retention,
+            industryCategory: selectedRows[0].industryCategory,
+            timeZone: selectedRows[0].timeZone,
+            propertyType: selectedRows[0].propertyType,
+            retention: selectedRows[0].retention,
+            resetOnNewActivity: selectedRows[0].resetOnNewActivity,
           },
         ],
       });
@@ -252,14 +256,15 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
     form.reset({
       forms: [
         {
-          name: table[0].name,
-          parent: table[0].parent,
-          currencyCode: 'USD',
+          name: selectedRows[0].name,
+          parent: selectedRows[0].parent,
+          currencyCode: selectedRows[0].currencyCode,
           displayName: '',
-          industryCategory: 'AUTOMOTIVE',
-          timezone: 'America/New_York',
-          propertyType: 'PROPERTY_TYPE_ORDINARY',
-          retention: table[0].retention,
+          industryCategory: selectedRows[0].industryCategory,
+          timeZone: selectedRows[0].timeZone,
+          propertyType: selectedRows[0].propertyType,
+          retention: selectedRows[0].retention,
+          resetOnNewActivity: selectedRows[0].resetOnNewActivity,
         },
       ],
     });
@@ -408,35 +413,35 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
 
                               <FormField
                                 control={form.control}
-                                name={`forms.${index}.timezone`}
+                                name={`forms.${index}.timeZone`}
                                 render={({ field }) => (
                                   <FormItem>
                                     <FormLabel>Time Zone</FormLabel>
                                     <FormDescription>
-                                      Which timezone do you want to include in
+                                      Which timeZone do you want to include in
                                       the property?
                                     </FormDescription>
                                     <FormControl>
                                       <Select
                                         {...form.register(
-                                          `forms.${index}.timezone`
+                                          `forms.${index}.timeZone`
                                         )}
                                         {...field}
                                         onValueChange={field.onChange}
                                       >
                                         <SelectTrigger className="w-[180px]">
-                                          <SelectValue placeholder="Select a timezone." />
+                                          <SelectValue placeholder="Select a timeZone." />
                                         </SelectTrigger>
 
                                         <SelectContent>
                                           <SelectGroup>
                                             <SelectLabel>Timezone</SelectLabel>
-                                            {TimeZones.map((timezone) => (
+                                            {TimeZones.map((timeZone) => (
                                               <SelectItem
-                                                key={timezone}
-                                                value={timezone}
+                                                key={timeZone}
+                                                value={timeZone}
                                               >
-                                                {timezone}
+                                                {timeZone}
                                               </SelectItem>
                                             ))}
                                           </SelectGroup>

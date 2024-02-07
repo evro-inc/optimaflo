@@ -4,7 +4,7 @@ import { z } from 'zod';
 // Define the schema for a single form
 const SingleFormSchema = z.object({
   displayName: z.string().min(1, 'Display Name is required'),
-  timezone: z.string().min(1, 'Timezone is required'),
+  timeZone: z.string().min(1, 'Timezone is required'),
   currencyCode: z.string().min(1, 'Currency is required'),
   industryCategory: z.string().min(1, 'Industry Category is required'),
   name: z.string().min(1, 'Name is required'),

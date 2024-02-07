@@ -1304,7 +1304,9 @@ export async function updateDataRetentionSettings(formData: FormUpdateSchema) {
                   return;
                 }
 
-                const updateFields = ['eventDataRetention'];
+                const updateFields = [
+                  'eventDataRetention, resetUserDataOnNewActivity',
+                ];
                 const updateMask = updateFields.join(',');
 
                 const url = `https://analyticsadmin.googleapis.com/v1beta/properties/${identifier.name}/dataRetentionSettings?updateMask=${updateMask}`;
@@ -1335,6 +1337,7 @@ export async function updateDataRetentionSettings(formData: FormUpdateSchema) {
 
                   // Accessing the validated property data
                   const validatedpropertyData = validationResult.data.forms[0];
+
                   const payload = JSON.stringify({
                     name: `accounts/${validatedpropertyData.parent}`,
                     eventDataRetention: validatedpropertyData.retention,
