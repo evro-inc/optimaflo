@@ -36,7 +36,7 @@ import { revalidate } from '@/src/lib/helpers/server';
 import { ReloadIcon } from '@radix-ui/react-icons';
 import { toggleUpdate } from '@/src/lib/redux/sharedSlice';
 import { useDispatch } from 'react-redux';
-import AccountForms from '@/src/app/(dashboards)/dashboard/ga/accounts/forms';
+import AccountForms from '@/src/app/(dashboards)/dashboard/gtm/accounts/forms';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -228,7 +228,7 @@ export function DataTable<TData, TValue>({
           Next
         </Button>
       </div>
-      <AccountForms selectedRows={selectedRowsData} />
+      <AccountForms selectedRows={selectedRowsData} table={table} />
     </div>
   );
 }

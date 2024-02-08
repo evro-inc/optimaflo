@@ -23,10 +23,9 @@ const NotFoundErrorModal = dynamic(
   { ssr: false }
 );
 
-function AccountForms() {
+function AccountForms({ selectedRows, table }) {
   const dispatch = useDispatch();
-  const { selectedRows, isLimitReached, notFoundError } =
-    useSelector(selectTable);
+  const { isLimitReached, notFoundError } = useSelector(selectTable);
   const { showUpdate } = useSelector(selectEntity);
   const [, setAccountInfo] = useState({ accountId: [], name: [] }); // Update state initialization
 
@@ -44,6 +43,7 @@ function AccountForms() {
           onClose={() => dispatch(toggleUpdate())}
           selectedRows={selectedRows}
           setAccountInfo={setAccountInfo}
+          table={table}
         />
       )}
     </>

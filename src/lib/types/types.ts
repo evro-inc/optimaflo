@@ -273,4 +273,5 @@ export type GA4PropertyType = {
   currencyCode: string;
   serviceLevel: string;
   account: string;
+  propertyType: string;
 };

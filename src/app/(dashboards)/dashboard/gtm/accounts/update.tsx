@@ -3,7 +3,6 @@
 // Importing necessary hooks and functions from Redux and other libraries
 import { useDispatch, useSelector } from 'react-redux';
 import {
-  clearSelectedRows,
   selectTable,
   setIsLimitReached,
   setNotFoundError,
@@ -54,6 +53,7 @@ interface AccountFormUpdateProps {
   onClose: () => void;
   selectedRows: Account[];
   setAccountInfo: any;
+  table: any;
 }
 // Functional component for updating account forms
 function AccountFormUpdate({
@@ -61,6 +61,7 @@ function AccountFormUpdate({
   onClose,
   selectedRows,
   setAccountInfo,
+  table,
 }: AccountFormUpdateProps) {
   // Using Redux hooks for dispatching actions and selecting state
   const dispatch = useDispatch();
@@ -153,7 +154,7 @@ function AccountFormUpdate({
       throw new Error(error);
     } finally {
       // Always clear selected rows and close the form
-      dispatch(clearSelectedRows());
+      table.resetRowSelection({});
       dispatch(toggleAllSelected(false));
       onClose();
       form.reset({ forms: [{ accountId: '', name: '' }] });
@@ -165,7 +166,7 @@ function AccountFormUpdate({
   const handleClose = () => {
     dispatch(toggleAllSelected(false));
     form.reset({ forms: [{ accountId: '', name: '' }] });
-    dispatch(clearSelectedRows());
+    table.resetRowSelection({});
     onClose();
   };
 

@@ -79,7 +79,7 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
           currencyCode: 'USD',
           displayName: '',
           industryCategory: 'AUTOMOTIVE',
-          timezone: 'America/New_York',
+          timeZone: 'America/New_York',
           propertyType: 'PROPERTY_TYPE_ORDINARY',
         },
       ],
@@ -99,8 +99,10 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
       currencyCode: 'USD',
       displayName: '',
       industryCategory: 'AUTOMOTIVE',
-      timezone: 'America/New_York',
+      timeZone: 'America/New_York',
       propertyType: 'PROPERTY_TYPE_ORDINARY',
+      retention: 'FOURTEEN_MONTHS',
+      resetOnNewActivity: true,
     });
   };
 
@@ -206,7 +208,7 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
               currencyCode: 'USD',
               displayName: '',
               industryCategory: 'AUTOMOTIVE',
-              timezone: 'America/New_York',
+              timeZone: 'America/New_York',
               propertyType: 'PROPERTY_TYPE_ORDINARY',
             },
           ],
@@ -224,7 +226,7 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
             currencyCode: 'USD',
             displayName: '',
             industryCategory: 'AUTOMOTIVE',
-            timezone: 'America/New_York',
+            timeZone: 'America/New_York',
             propertyType: 'PROPERTY_TYPE_ORDINARY',
           },
         ],
@@ -252,7 +254,7 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
           currencyCode: 'USD',
           displayName: '',
           industryCategory: 'AUTOMOTIVE',
-          timezone: 'America/New_York',
+          timeZone: 'America/New_York',
           propertyType: 'PROPERTY_TYPE_ORDINARY',
         },
       ],
@@ -474,24 +476,24 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
 
                                 <FormField
                                   control={form.control}
-                                  name={`forms.${index}.timezone`}
+                                  name={`forms.${index}.timeZone`}
                                   render={({ field }) => (
                                     <FormItem>
                                       <FormLabel>Time Zone</FormLabel>
                                       <FormDescription>
-                                        Which timezone do you want to include in
+                                        Which timeZone do you want to include in
                                         the property?
                                       </FormDescription>
                                       <FormControl>
                                         <Select
                                           {...form.register(
-                                            `forms.${index}.timezone`
+                                            `forms.${index}.timeZone`
                                           )}
                                           {...field}
                                           onValueChange={field.onChange}
                                         >
                                           <SelectTrigger className="w-[180px]">
-                                            <SelectValue placeholder="Select a timezone." />
+                                            <SelectValue placeholder="Select a timeZone." />
                                           </SelectTrigger>
 
                                           <SelectContent>
@@ -499,12 +501,12 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
                                               <SelectLabel>
                                                 Timezone
                                               </SelectLabel>
-                                              {TimeZones.map((timezone) => (
+                                              {TimeZones.map((timeZone) => (
                                                 <SelectItem
-                                                  key={timezone}
-                                                  value={timezone}
+                                                  key={timeZone}
+                                                  value={timeZone}
                                                 >
-                                                  {timezone}
+                                                  {timeZone}
                                                 </SelectItem>
                                               ))}
                                             </SelectGroup>

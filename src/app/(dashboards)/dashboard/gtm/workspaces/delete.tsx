@@ -76,8 +76,7 @@ export const useDeleteHook = (selectedRows, table) => {
       dispatch(setNotFoundError(true));
     }
 
-    dispatch(clearSelectedRows());
-    table.setRowSelection({});
+    table.resetRowSelection({});
   };
 
   return handleDelete;

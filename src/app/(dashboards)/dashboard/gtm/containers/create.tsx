@@ -1,7 +1,7 @@
 'use client';
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CreateContainers } from '@/src/lib/fetch/dashboard/actions/ga/properties';
+import { CreateContainers } from '@/src/lib/fetch/dashboard/actions/gtm/containers';
 import { LimitReached } from '../../../../../components/client/modals/limitReached';
 import { ButtonGroup } from '../../../../../components/client/ButtonGroup/ButtonGroup';
 import { FeatureResponse, FormCreateAccountProps } from '@/src/lib/types/types';
@@ -275,18 +275,19 @@ const FormCreateContainer: React.FC<FormCreateAccountProps> = ({
               onClick={handleClose}
               billingInterval={undefined}
             />
-
-            <ButtonGroup
-              buttons={[
-                { text: 'Add Form', onClick: addForm },
-                { text: 'Remove Form', onClick: removeForm },
-                {
-                  text: loading ? 'Submitting...' : 'Submit',
-                  type: 'submit',
-                  form: 'createContainer',
-                },
-              ]}
-            />
+            <div className="flex items-center justify-between py-3 px-4 mt-5 gap-4">
+              <ButtonGroup
+                buttons={[
+                  { text: 'Add Form', onClick: addForm },
+                  { text: 'Remove Form', onClick: removeForm },
+                  {
+                    text: loading ? 'Submitting...' : 'Submit',
+                    type: 'submit',
+                    form: 'createContainer',
+                  },
+                ]}
+              />
+            </div>
 
             <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-end">
               {fields.map((field, index) => (

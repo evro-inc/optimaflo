@@ -536,7 +536,7 @@ export async function createProperties(formData: FormCreateSchema) {
                     prop.parent === identifier.parent &&
                     prop.displayName === identifier.displayName &&
                     prop.name === identifier.name &&
-                    prop.timezone === identifier.timezone &&
+                    prop.timeZone === identifier.timeZone &&
                     prop.currencyCode === identifier.currencyCode &&
                     prop.industryCategory === identifier.industryCategory &&
                     prop.propertyType === identifier.propertyType
@@ -582,7 +582,7 @@ export async function createProperties(formData: FormCreateSchema) {
                     headers: headers,
                     body: JSON.stringify({
                       displayName: validatedContainerData.displayName,
-                      timeZone: validatedContainerData.timezone,
+                      timeZone: validatedContainerData.timeZone,
                       industryCategory: validatedContainerData.industryCategory,
                       currencyCode: validatedContainerData.currencyCode,
                       propertyType: validatedContainerData.propertyType,
@@ -814,7 +814,7 @@ export async function updateProperties(formData: FormUpdateSchema) {
       parent: prop.parent,
       displayName: prop.displayName,
       name: prop.name,
-      timezone: prop.timezone,
+      timeZone: prop.timeZone,
       currencyCode: prop.currencyCode,
       industryCategory: prop.industryCategory,
       propertyType: prop.propertyType,
@@ -894,7 +894,7 @@ export async function updateProperties(formData: FormUpdateSchema) {
                     prop.parent === identifier.parent &&
                     prop.displayName === identifier.displayName &&
                     prop.name === identifier.name &&
-                    prop.timezone === identifier.timezone &&
+                    prop.timeZone === identifier.timeZone &&
                     prop.currencyCode === identifier.currencyCode &&
                     prop.industryCategory === identifier.industryCategory &&
                     prop.propertyType === identifier.propertyType
@@ -945,7 +945,7 @@ export async function updateProperties(formData: FormUpdateSchema) {
                   const payload = JSON.stringify({
                     parent: `accounts/${validatedpropertyData.parent}`,
                     displayName: validatedpropertyData.displayName,
-                    timeZone: validatedpropertyData.timezone,
+                    timeZone: validatedpropertyData.timeZone,
                     currencyCode: validatedpropertyData.currencyCode,
                     industryCategory: validatedpropertyData.industryCategory,
                   });
@@ -1208,7 +1208,7 @@ export async function updateDataRetentionSettings(formData: FormUpdateSchema) {
       parent: prop.parent,
       displayName: prop.displayName,
       name: prop.name,
-      timezone: prop.timezone,
+      timeZone: prop.timeZone,
       currencyCode: prop.currencyCode,
       industryCategory: prop.industryCategory,
       propertyType: prop.propertyType,
@@ -1290,7 +1290,7 @@ export async function updateDataRetentionSettings(formData: FormUpdateSchema) {
                     prop.parent === identifier.parent &&
                     prop.displayName === identifier.displayName &&
                     prop.name === identifier.name &&
-                    prop.timezone === identifier.timezone &&
+                    prop.timeZone === identifier.timeZone &&
                     prop.currencyCode === identifier.currencyCode &&
                     prop.industryCategory === identifier.industryCategory &&
                     prop.propertyType === identifier.propertyType &&
@@ -1305,7 +1305,8 @@ export async function updateDataRetentionSettings(formData: FormUpdateSchema) {
                 }
 
                 const updateFields = [
-                  'eventDataRetention, resetUserDataOnNewActivity',
+                  'eventDataRetention', // Include the fields that need to be updated
+                  'resetUserDataOnNewActivity',
                 ];
                 const updateMask = updateFields.join(',');
 
@@ -1391,7 +1392,7 @@ export async function updateDataRetentionSettings(formData: FormUpdateSchema) {
                             name.includes(identifier.name)
                           ) || 'Unknown';
                         notFoundLimit.push({
-                          id: identifier.propertyId,
+                          id: identifier.name,
                           name: propertyName,
                         });
                       }
@@ -1508,14 +1509,12 @@ export async function updateDataRetentionSettings(formData: FormUpdateSchema) {
         } else {
           break;
         }
-      } /* finally {
+      } finally {
         // This block will run regardless of the outcome of the try...catch
         if (accountIdForCache && propertyIdForCache && userId) {
-          const cacheKey = `ga:properties:userId:${userId}`;
-          await redis.del(cacheKey);
           await revalidatePath(`/dashboard/ga/properties`);
         }
-      } */
+      }
     }
   }
 
@@ -1541,11 +1540,9 @@ export async function updateDataRetentionSettings(formData: FormUpdateSchema) {
     };
   }
 
-  /*   if (successfulUpdates.length > 0 && accountIdForCache && propertyIdForCache) {
-    const cacheKey = `ga:properties:userId:${userId}`;
-    await redis.del(cacheKey);
+  if (successfulUpdates.length > 0 && accountIdForCache && propertyIdForCache) {
     revalidatePath(`/dashboard/ga/properties`);
-  } */
+  }
 
   // Map over formData.forms to update the results array
   const results: FeatureResult[] = formData.forms.map((form) => {

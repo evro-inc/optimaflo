@@ -83,26 +83,24 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
   const isLimitReached = useSelector(selectTable).isLimitReached;
   const notFoundError = useSelector(selectTable).notFoundError;
 
+  const formData = {
+    name: selectedRows[0].name,
+    parent: selectedRows[0].parent,
+    currencyCode: selectedRows[0].currencyCode,
+    displayName: selectedRows[0].displayName,
+    industryCategory: selectedRows[0].industryCategory,
+    timeZone: selectedRows[0].timeZone,
+    propertyType: selectedRows[0].propertyType,
+    retention: selectedRows[0].retention,
+    resetOnNewActivity: selectedRows[0].resetOnNewActivity,
+  };
+
   const form = useForm<Forms>({
     defaultValues: {
-      forms: [
-        {
-          name: selectedRows[0].name,
-          parent: selectedRows[0].parent,
-          currencyCode: selectedRows[0].currencyCode,
-          displayName: '',
-          industryCategory: selectedRows[0].industryCategory,
-          timeZone: selectedRows[0].timeZone,
-          propertyType: selectedRows[0].propertyType,
-          retention: selectedRows[0].retention,
-          resetOnNewActivity: selectedRows[0].resetOnNewActivity,
-        },
-      ],
+      forms: [formData],
     },
     resolver: zodResolver(UpdatePropertySchema),
   });
-
-  console.log('form', form.getValues());
 
   const { fields } = useFieldArray({
     control: form.control,
@@ -210,78 +208,33 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
 
         onClose(); // Close the form
         form.reset({
-          forms: [
-            {
-              name: selectedRows[0].name,
-              parent: selectedRows[0].parent,
-              currencyCode: selectedRows[0].currencyCode,
-              displayName: '',
-              industryCategory: selectedRows[0].industryCategory,
-              timeZone: selectedRows[0].timeZone,
-              propertyType: selectedRows[0].propertyType,
-              retention: selectedRows[0].retention,
-              resetOnNewActivity: selectedRows[0].resetOnNewActivity,
-            },
-          ],
+          forms: [formData],
         });
       }
       onClose();
 
       // Reset the forms here, regardless of success or limit reached
       form.reset({
-        forms: [
-          {
-            name: selectedRows[0].name,
-            parent: selectedRows[0].parent,
-            currencyCode: selectedRows[0].currencyCode,
-            displayName: '',
-            industryCategory: selectedRows[0].industryCategory,
-            timeZone: selectedRows[0].timeZone,
-            propertyType: selectedRows[0].propertyType,
-            retention: selectedRows[0].retention,
-            resetOnNewActivity: selectedRows[0].resetOnNewActivity,
-          },
-        ],
+        forms: [formData],
       });
     } catch (error: any) {
       throw new Error(error);
     } finally {
-      //table.setRowSelection({});
-      dispatch(setLoading(false)); // Set loading to false
+      table.resetRowSelection({});
     }
   };
 
   const handleClose = () => {
     // Reset the forms to their initial state
     form.reset({
-      forms: [
-        {
-          name: selectedRows[0].name,
-          parent: selectedRows[0].parent,
-          currencyCode: selectedRows[0].currencyCode,
-          displayName: '',
-          industryCategory: selectedRows[0].industryCategory,
-          timeZone: selectedRows[0].timeZone,
-          propertyType: selectedRows[0].propertyType,
-          retention: selectedRows[0].retention,
-          resetOnNewActivity: selectedRows[0].resetOnNewActivity,
-        },
-      ],
+      forms: [formData],
     });
 
-    dispatch(clearSelectedRows()); // Clear selectedRows
-    //table.setRowSelection({});
+    table.resetRowSelection({});
 
     // Close the modal
     onClose();
   };
-  const retentionSettings = Array.from(selectedRows.values()).map(
-    (row) => row.serviceLevel
-  );
-
-  const retentionByServiceLevel = retentionSettings.map((setting) =>
-    setting === 'Standard' ? retentionSettingsStandard : retentionSettings360
-  );
 
   return (
     <>
@@ -480,9 +433,15 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
                                             <SelectLabel>
                                               Industry Category
                                             </SelectLabel>
-                                            {IndustryCategories.map((cat) => (
-                                              <SelectItem key={cat} value={cat}>
-                                                {cat}
+
+                                            {Object.entries(
+                                              IndustryCategories
+                                            ).map(([label, value]) => (
+                                              <SelectItem
+                                                key={value}
+                                                value={value}
+                                              >
+                                                {label}
                                               </SelectItem>
                                             ))}
                                           </SelectGroup>
@@ -514,16 +473,20 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
                                         onValueChange={field.onChange}
                                       >
                                         <SelectTrigger className="w-[180px]">
-                                          <SelectValue placeholder="Select a category." />
+                                          <SelectValue placeholder="Select a retention setting." />
                                         </SelectTrigger>
-
                                         <SelectContent>
                                           <SelectGroup>
                                             <SelectLabel>
                                               Retention Setting
                                             </SelectLabel>
                                             {Object.entries(
-                                              retentionByServiceLevel[index]
+                                              selectedRows[index] &&
+                                                selectedRows[index]
+                                                  .serviceLevel === 'Standard'
+                                                ? retentionSettingsStandard ||
+                                                    {}
+                                                : retentionSettings360 || {}
                                             ).map(([label, value]) => (
                                               <SelectItem
                                                 key={value}
@@ -536,7 +499,6 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
                                         </SelectContent>
                                       </Select>
                                     </FormControl>
-
                                     <FormMessage />
                                   </FormItem>
                                 )}

@@ -86,7 +86,6 @@ export function DataTable<TData, TValue>({
     },
   });
 
-  // log selected rows
   const handleCreateClick = async () => {
     try {
       if (!userId) {
@@ -136,10 +135,12 @@ export function DataTable<TData, TValue>({
     <div>
       <div className="flex items-center py-4">
         <Input
-          placeholder="Filter account names..."
-          value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
+          placeholder="Filter property names..."
+          value={
+            (table.getColumn('displayName')?.getFilterValue() as string) ?? ''
+          }
           onChange={(event) =>
-            table.getColumn('name')?.setFilterValue(event.target.value)
+            table.getColumn('displayName')?.setFilterValue(event.target.value)
           }
           className="max-w-sm"
         />
@@ -263,7 +264,7 @@ export function DataTable<TData, TValue>({
       </div>
       <PropertyForms
         selectedRows={selectedRowsData}
-        table={data}
+        table={table}
         accounts={accounts}
       />
     </div>
