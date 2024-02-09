@@ -41,6 +41,16 @@ import { useDeleteHook } from './delete';
 import { notFound } from 'next/navigation';
 import { setIsLimitReached } from '@/src/lib/redux/tableSlice';
 import PropertyForms from './forms';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/src/components/ui/dialog';
+import { acknowledgeUserDataCollection } from '@/src/lib/fetch/dashboard/actions/ga/properties';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -86,6 +96,10 @@ export function DataTable<TData, TValue>({
     },
   });
 
+  const selectedRowsData = table
+    .getSelectedRowModel()
+    .rows.map((row) => row.original);
+
   const handleCreateClick = async () => {
     try {
       if (!userId) {
@@ -126,9 +140,70 @@ export function DataTable<TData, TValue>({
     );
   };
 
-  const selectedRowsData = table
-    .getSelectedRowModel()
-    .rows.map((row) => row.original);
+  const handleAcknowledgement = async () => {
+    console.log('selectedProperties', selectedRowsData);
+
+    try {
+      // If you're here, validation succeeded. Proceed with updateContainers.
+      const res = await acknowledgeUserDataCollection(selectedRowsData);
+      console.log('res', res);
+
+      if (res.success) {
+        res.results.forEach((result) => {
+          if (result.success) {
+            toast.success(`Property ${result.name} acknowledged.`, {
+              action: {
+                label: 'Close',
+                onClick: () => toast.dismiss(),
+              },
+            });
+          }
+        });
+      } else {
+        if (res.notFoundError) {
+          res.results.forEach((result) => {
+            if (result.notFound) {
+              toast.error(
+                `Unable to acknowledged property ${result.name}. Please check your access permissions. Any other properties created were successful.`,
+                {
+                  action: {
+                    label: 'Close',
+                    onClick: () => toast.dismiss(),
+                  },
+                }
+              );
+            }
+          });
+
+          /*  dispatch(setErrorDetails(res.results)); // Assuming results contain the error details
+          dispatch(setNotFoundError(true)); // Dispatch the not found error action */
+        }
+
+        if (res.limitReached) {
+          res.results.forEach((result) => {
+            if (result.limitReached) {
+              toast.error(
+                `Unable to create property ${result.name}. You have ${result.remaining} more property(s) you can create.`,
+                {
+                  action: {
+                    label: 'Close',
+                    onClick: () => toast.dismiss(),
+                  },
+                }
+              );
+            }
+          });
+          dispatch(setIsLimitReached(true));
+        }
+      }
+    } catch (error: any) {
+      console.log('error', error);
+      throw new Error(error);
+    } finally {
+      table.resetRowSelection();
+    }
+  };
+
   const handleDelete = useDeleteHook(selectedRowsData, table);
 
   return (
@@ -163,6 +238,38 @@ export function DataTable<TData, TValue>({
             disabled={Object.keys(table.getState().rowSelection).length === 0}
             onDelete={handleDelete}
           />
+
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button
+                disabled={
+                  Object.keys(table.getState().rowSelection).length === 0
+                }
+                variant="outline"
+              >
+                Data Acknowledgement
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>User Data Collection Acknowledgement</DialogTitle>
+                <DialogDescription>
+                  I acknowledge that I have the necessary privacy disclosures
+                  and rights from my end users for the collection and processing
+                  of their data, including the association of such data with the
+                  visitation information Google Analytics collects from my site
+                  and/or app property. This acknowledgement is required and will
+                  be applied to all selected properties.
+                </DialogDescription>
+              </DialogHeader>
+
+              <DialogFooter>
+                <Button type="submit" onClick={handleAcknowledgement}>
+                  Acknowledge
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

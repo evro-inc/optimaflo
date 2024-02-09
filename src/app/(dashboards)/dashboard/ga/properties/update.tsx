@@ -157,7 +157,7 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
         res.results.forEach((result) => {
           if (result.success) {
             toast.success(
-              `Property ${result.name} created successfully. The table will update shortly.`,
+              `Property ${result.name} updated successfully. The table will update shortly.`,
               {
                 action: {
                   label: 'Close',

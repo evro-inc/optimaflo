@@ -12,6 +12,7 @@ const SingleFormSchema = z.object({
   propertyType: z.string().min(1, 'Property Type is required'),
   retention: z.string().min(1, 'Retention is required'),
   resetOnNewActivity: z.boolean().default(false),
+  acknowledgment: z.boolean().default(false),
 });
 
 // Define the schema for the entire update form with field array

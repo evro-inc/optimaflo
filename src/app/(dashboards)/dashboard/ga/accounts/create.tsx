@@ -53,7 +53,6 @@ type Forms = z.infer<typeof CreateAccountSchema>;
 const FormCreateAccount: React.FC<FormCreateAccountProps> = ({
   showOptions,
   onClose,
-  accounts = [],
 }) => {
   const formRefs = useRef<(HTMLFormElement | null)[]>([]);
   const dispatch = useDispatch();

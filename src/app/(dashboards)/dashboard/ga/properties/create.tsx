@@ -69,20 +69,23 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
   const { loading } = useSelector(selectGlobal);
   const isLimitReached = useSelector(selectTable).isLimitReached;
   const notFoundError = useSelector(selectTable).notFoundError;
+  const data = table.getRowModel().rows.map((row) => row.original);
+
+  const formData = {
+    name: data[0].displayName,
+    parent: data[0].parent,
+    currencyCode: 'USD',
+    displayName: '',
+    industryCategory: 'AUTOMOTIVE',
+    timeZone: 'America/New_York',
+    propertyType: 'PROPERTY_TYPE_ORDINARY',
+    retention: 'FOURTEEN_MONTHS',
+    resetOnNewActivity: true,
+  };
 
   const form = useForm<Forms>({
     defaultValues: {
-      forms: [
-        {
-          name: table[0].name,
-          parent: table[0].parent,
-          currencyCode: 'USD',
-          displayName: '',
-          industryCategory: 'AUTOMOTIVE',
-          timeZone: 'America/New_York',
-          propertyType: 'PROPERTY_TYPE_ORDINARY',
-        },
-      ],
+      forms: [formData],
     },
     resolver: zodResolver(CreatePropertySchema),
   });
@@ -93,17 +96,7 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
   });
 
   const addForm = () => {
-    append({
-      name: table[0].name,
-      parent: table[0].parent,
-      currencyCode: 'USD',
-      displayName: '',
-      industryCategory: 'AUTOMOTIVE',
-      timeZone: 'America/New_York',
-      propertyType: 'PROPERTY_TYPE_ORDINARY',
-      retention: 'FOURTEEN_MONTHS',
-      resetOnNewActivity: true,
-    });
+    append(formData);
   };
 
   const removeForm = () => {
@@ -201,17 +194,7 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
 
         onClose(); // Close the form
         form.reset({
-          forms: [
-            {
-              name: table[0].name,
-              parent: table[0].parent,
-              currencyCode: 'USD',
-              displayName: '',
-              industryCategory: 'AUTOMOTIVE',
-              timeZone: 'America/New_York',
-              propertyType: 'PROPERTY_TYPE_ORDINARY',
-            },
-          ],
+          forms: [formData],
         });
       }
 
@@ -219,17 +202,7 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
 
       // Reset the forms here, regardless of success or limit reached
       form.reset({
-        forms: [
-          {
-            name: table[0].name,
-            parent: table[0].parent,
-            currencyCode: 'USD',
-            displayName: '',
-            industryCategory: 'AUTOMOTIVE',
-            timeZone: 'America/New_York',
-            propertyType: 'PROPERTY_TYPE_ORDINARY',
-          },
-        ],
+        forms: [formData],
       });
     } catch (error) {
       toast.error('An unexpected error occurred.', {
@@ -247,17 +220,7 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
   const handleClose = () => {
     // Reset the forms to their initial state
     form.reset({
-      forms: [
-        {
-          name: table[0].name,
-          parent: table[0].parent,
-          currencyCode: 'USD',
-          displayName: '',
-          industryCategory: 'AUTOMOTIVE',
-          timeZone: 'America/New_York',
-          propertyType: 'PROPERTY_TYPE_ORDINARY',
-        },
-      ],
+      forms: [formData],
     });
 
     // Close the modal
@@ -265,7 +228,7 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
   };
 
   const accountIdsWithProperties = new Set(
-    table.map((property) => property.parent)
+    data.map((property) => property.parent)
   );
   const transformedSet = new Set(
     Array.from(accountIdsWithProperties, (value) => `accounts/${value}`)
@@ -317,7 +280,7 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
                 const selectedPropertyId = form.watch(`forms.${index}.parent`);
 
                 // Filter propertys to only include those that belong to the selected account
-                const filteredProperties = table.filter(
+                const filteredProperties = data.filter(
                   (property) => property.parent === selectedPropertyId
                 );
 
@@ -545,12 +508,14 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
                                               <SelectLabel>
                                                 Timezone
                                               </SelectLabel>
-                                              {IndustryCategories.map((cat) => (
+                                              {Object.entries(
+                                                IndustryCategories
+                                              ).map(([label, value]) => (
                                                 <SelectItem
-                                                  key={cat}
-                                                  value={cat}
+                                                  key={value}
+                                                  value={value}
                                                 >
-                                                  {cat}
+                                                  {label}
                                                 </SelectItem>
                                               ))}
                                             </SelectGroup>
@@ -562,49 +527,6 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
                                     </FormItem>
                                   )}
                                 />
-                                {/* <FormField
-                                  control={form.control}
-                                  name={`forms.${index}.propertyType`}
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Property Type</FormLabel>
-                                      <FormDescription>
-                                        Which type of property do you want to include?
-                                      </FormDescription>
-                                      <FormControl>
-                                        <Select
-                                          {...form.register(
-                                            `forms.${index}.propertyType`
-                                          )}
-                                          {...field}
-                                          onValueChange={field.onChange}
-                                        >
-                                          <SelectTrigger className="w-[180px]">
-                                            <SelectValue placeholder="Select a property." />
-                                          </SelectTrigger>
-
-                                          <SelectContent>
-                                            <SelectGroup>
-                                              <SelectLabel>
-                                                Property Type
-                                              </SelectLabel>
-                                              {propertyType.map((type) => (
-                                                <SelectItem
-                                                  key={type}
-                                                  value={type}
-                                                >
-                                                  {type}
-                                                </SelectItem>
-                                              ))}
-                                            </SelectGroup>
-                                          </SelectContent>
-                                        </Select>
-                                      </FormControl>
-
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                /> */}
                               </form>
                             </Form>
                           </CardContent>
