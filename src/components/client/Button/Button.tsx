@@ -343,7 +343,7 @@ export const ButtonDelete = ({ onDelete, disabled }) => {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="destructive" disabled={disabled}>
+        <Button variant="destructive" disabled={disabled} className="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm">
           <svg
             className="w-3 h-3"
             xmlns="http://www.w3.org/2000/svg"

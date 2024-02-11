@@ -1218,10 +1218,7 @@ export async function updateDataRetentionSettings(formData: FormUpdateSchema) {
     }))
   );
 
-  const tierLimitResponse: any = await tierUpdateLimit(userId, 'GA4Properties');
-  const limit = Number(tierLimitResponse.updateLimit);
-  const updateUsage = Number(tierLimitResponse.updateUsage);
-  const availableUpdateUsage = limit - updateUsage;
+
 
   const UpdateResults: {
     propertyName: string;
@@ -1229,47 +1226,10 @@ export async function updateDataRetentionSettings(formData: FormUpdateSchema) {
     message?: string;
   }[] = [];
 
-  // Handling feature limit
-  if (tierLimitResponse && tierLimitResponse.limitReached) {
-    return {
-      success: false,
-      limitReached: true,
-      message: 'Feature limit reached for updating Workspaces',
-      results: [],
-    };
-  }
-
-  if (toUpdateProperties.size > availableUpdateUsage) {
-    const attemptedUpdates = Array.from(toUpdateProperties).map(
-      (identifier) => {
-        const displayName = identifier.displayName;
-        return {
-          id: [], // No property ID since update did not happen
-          name: displayName, // Include the property name from the identifier
-          success: false,
-          message: `Update limit reached. Cannot update property "${displayName}".`,
-          // remaining update limit
-          remaining: availableUpdateUsage,
-          limitReached: true,
-        };
-      }
-    );
-    return {
-      success: false,
-      features: [],
-      message: `Cannot update ${toUpdateProperties.size} properties as it exceeds the available limit. You have ${availableUpdateUsage} more update(s) available.`,
-      errors: [
-        `Cannot update ${toUpdateProperties.size} properties as it exceeds the available limit. You have ${availableUpdateUsage} more update(s) available.`,
-      ],
-      results: attemptedUpdates,
-      limitReached: true,
-    };
-  }
-
   let permissionDenied = false;
   const propertyNames = formData.forms.map((prop) => prop.displayName);
 
-  if (toUpdateProperties.size <= availableUpdateUsage) {
+
     while (
       retries < MAX_RETRIES &&
       toUpdateProperties.size > 0 &&
@@ -1518,7 +1478,7 @@ export async function updateDataRetentionSettings(formData: FormUpdateSchema) {
         }
       }
     }
-  }
+  
 
   if (permissionDenied) {
     return {
@@ -1598,10 +1558,6 @@ export async function acknowledgeUserDataCollection(selectedRows) {
     }))
   );
 
-  const tierLimitResponse: any = await tierUpdateLimit(userId, 'GA4Properties');
-  const limit = Number(tierLimitResponse.updateLimit);
-  const updateUsage = Number(tierLimitResponse.updateUsage);
-  const availableUpdateUsage = limit - updateUsage;
 
   const UpdateResults: {
     propertyName: string;
@@ -1609,47 +1565,12 @@ export async function acknowledgeUserDataCollection(selectedRows) {
     message?: string;
   }[] = [];
 
-  // Handling feature limit
-  if (tierLimitResponse && tierLimitResponse.limitReached) {
-    return {
-      success: false,
-      limitReached: true,
-      message: 'Feature limit reached for updating Workspaces',
-      results: [],
-    };
-  }
 
-  if (toUpdateProperties.size > availableUpdateUsage) {
-    const attemptedUpdates = Array.from(toUpdateProperties).map(
-      (identifier) => {
-        const displayName = identifier.displayName;
-        return {
-          id: [], // No property ID since update did not happen
-          name: displayName, // Include the property name from the identifier
-          success: false,
-          message: `Update limit reached. Cannot update property "${displayName}".`,
-          // remaining update limit
-          remaining: availableUpdateUsage,
-          limitReached: true,
-        };
-      }
-    );
-    return {
-      success: false,
-      features: [],
-      message: `Cannot update ${toUpdateProperties.size} properties as it exceeds the available limit. You have ${availableUpdateUsage} more update(s) available.`,
-      errors: [
-        `Cannot update ${toUpdateProperties.size} properties as it exceeds the available limit. You have ${availableUpdateUsage} more update(s) available.`,
-      ],
-      results: attemptedUpdates,
-      limitReached: true,
-    };
-  }
 
   let permissionDenied = false;
   const propertyNames = selectedRows.map((prop) => prop.displayName);
 
-  if (toUpdateProperties.size <= availableUpdateUsage) {
+
     while (
       retries < MAX_RETRIES &&
       toUpdateProperties.size > 0 &&
@@ -1699,10 +1620,7 @@ export async function acknowledgeUserDataCollection(selectedRows) {
                       error: errorMessage,
                     };
                   }
-
-                  // Accessing the validated property data
-                  const validatedpropertyData = validationResult.data[0];
-
+                  
                   const payload = JSON.stringify({
                     acknowledgement:
                       'I acknowledge that I have the necessary privacy disclosures and rights from my end users for the collection and processing of their data, including the association of such data with the visitation information Google Analytics collects from my site and/or app property.',
@@ -1876,7 +1794,7 @@ export async function acknowledgeUserDataCollection(selectedRows) {
         }
       }
     }
-  }
+  
 
   if (permissionDenied) {
     return {

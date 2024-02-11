@@ -55,13 +55,13 @@ import { acknowledgeUserDataCollection } from '@/src/lib/fetch/dashboard/actions
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
-  accounts: any;
+  parentData: any;
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
-  accounts,
+  parentData,
 }: DataTableProps<TData, TValue>) {
   const dispatch = useDispatch();
 
@@ -372,7 +372,7 @@ export function DataTable<TData, TValue>({
       <PropertyForms
         selectedRows={selectedRowsData}
         table={table}
-        accounts={accounts}
+        accounts={parentData}
       />
     </div>
   );
