@@ -59,7 +59,7 @@ function PropertyForms({ accounts, selectedRows, table }) {
         <FormCreateProperty
           showOptions={showCreate}
           onClose={() => dispatch(toggleCreate())}
-          accounts={accounts}
+          parentData={accounts}
           table={table}
         />
       )}

@@ -19,7 +19,7 @@ import {
   tierDeleteLimit,
   tierUpdateLimit,
 } from '@/src/lib/helpers/server';
-import { fetchGASettings, fetchGtmSettings } from '../..';
+import { fetchGASettings } from '../..';
 import { DataStreamType} from '@/src/lib/schemas/ga/streams';
 
 /************************************************************************************
@@ -128,6 +128,9 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
+
+  console.log("formData", formData);
+  
 
   let retries = 0;
   const MAX_RETRIES = 3;

@@ -40,7 +40,6 @@ import { ButtonDelete } from '@/src/components/client/Button/Button';
 import { useDeleteHook } from './delete';
 import { notFound } from 'next/navigation';
 import { setIsLimitReached } from '@/src/lib/redux/tableSlice';
-import PropertyForms from './forms';
 import {
   Dialog,
   DialogContent,
@@ -51,6 +50,7 @@ import {
   DialogTrigger,
 } from '@/src/components/ui/dialog';
 import { acknowledgeUserDataCollection } from '@/src/lib/fetch/dashboard/actions/ga/properties';
+import PropertyForms from './forms';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];

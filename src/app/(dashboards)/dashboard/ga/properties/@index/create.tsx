@@ -61,7 +61,7 @@ type Forms = z.infer<typeof CreatePropertySchema>;
 const FormCreateProperty: React.FC<FormCreateProps> = ({
   showOptions,
   onClose,
-  accounts = [],
+  parentData = [],
   table = [],
 }) => {
   const formRefs = useRef<(HTMLFormElement | null)[]>([]);
@@ -81,6 +81,7 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
     propertyType: 'PROPERTY_TYPE_ORDINARY',
     retention: 'FOURTEEN_MONTHS',
     resetOnNewActivity: true,
+    acknowledgment: true,
   };
 
   const form = useForm<Forms>({
@@ -235,7 +236,7 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
   );
 
   // match parent with account
-  const accountsWithProperties = accounts.filter((account) =>
+  const accountsWithProperties = parentData.filter((account) =>
     transformedSet.has(account.name)
   );
 

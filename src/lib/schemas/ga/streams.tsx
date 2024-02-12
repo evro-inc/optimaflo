@@ -1,34 +1,30 @@
 import { z } from 'zod';
 
-const WebStreamDataSchema = z.object({
-  measurementId: z.string(),
-  firebaseAppId: z.string(),
-  defaultUri: z.string(),
-});
 
-const AndroidAppStreamDataSchema = z.object({
-  firebaseAppId: z.string(),
-  packageName: z.string(),
-});
-
-const IosAppStreamDataSchema = z.object({
-  firebaseAppId: z.string(),
-  bundleId: z.string(),
-});
-
-export const DataStreamSchema = z.object({
-  type: z.enum(['WEB_DATA_STREAM', 'ANDROID_APP_DATA_STREAM', 'IOS_APP_DATA_STREAM']),
+const SingleFormSchema = z.object({
+  type: z.enum(["WEB_DATA_STREAM", "ANDROID_APP_DATA_STREAM", "IOS_APP_DATA_STREAM"]),
+  property: z.string(), 
+  account: z.string(),
   displayName: z.string(),
-  webStreamData: z.optional(WebStreamDataSchema),
-  androidAppStreamData: z.optional(AndroidAppStreamDataSchema),
-  iosAppStreamData: z.optional(IosAppStreamDataSchema),
+  webStreamData: z.object({
+    measurementId: z.string(),
+    firebaseAppId: z.string(),
+    defaultUri: z.string(),
+  }),
+  androidAppStreamData: z.object({
+    firebaseAppId: z.string(),
+    packageName: z.string(),
+  }),
+  iosAppStreamData: z.object({
+    firebaseAppId: z.string(),
+    bundleId: z.string(),
+  }),
 });
 
 export const FormsSchema = z.object({
-  forms: z.array(DataStreamSchema),
+  forms: z.array(SingleFormSchema),
 });
 
 
 // Export the type inferred from FormsSchema for type safety in your form handling
-export type FormsType = z.infer<typeof FormsSchema>;
-export type DataStreamType = z.infer<typeof DataStreamSchema>;
+export type DataStreamType = z.infer<typeof FormsSchema>;

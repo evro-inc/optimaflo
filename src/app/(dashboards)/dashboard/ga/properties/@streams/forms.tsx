@@ -29,7 +29,7 @@ const NotFoundErrorModal = dynamic(
   { ssr: false }
 );
 
-const FormCreateProperty = dynamic(() => import('./create'), {
+const FormCreateStream = dynamic(() => import('./create'), {
   ssr: false,
 });
 
@@ -37,7 +37,7 @@ const FormCreateProperty = dynamic(() => import('./create'), {
   ssr: false,
 }); */
 
-function StreamForms({ accounts, selectedRows, table }) {
+function StreamForms({ accounts, parentData, selectedRows, table }) {
   const dispatch = useDispatch();
   const { showCreate, showUpdate } = useSelector(selectGlobal);
   const { isLimitReached, notFoundError } = useSelector(selectTable);
@@ -56,10 +56,11 @@ function StreamForms({ accounts, selectedRows, table }) {
 
       {/* Forms */}
       {showCreate && (
-        <FormCreateProperty
+        <FormCreateStream
           showOptions={showCreate}
           onClose={() => dispatch(toggleCreate())}
           accounts={accounts}
+          parentData={parentData}
           table={table}
         />
       )}

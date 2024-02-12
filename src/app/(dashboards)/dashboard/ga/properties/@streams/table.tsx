@@ -57,12 +57,14 @@ interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   parentData: any;
+  accounts: any;
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
   parentData,
+  accounts,
 }: DataTableProps<TData, TValue>) {
   const dispatch = useDispatch();
 
@@ -108,7 +110,7 @@ export function DataTable<TData, TValue>({
       }
       const handleCreateLimit: any = await tierCreateLimit(
         userId,
-        'GA4Properties'
+        'GA4Streams'
       );
 
       if (handleCreateLimit && handleCreateLimit.limitReached) {
@@ -141,69 +143,7 @@ export function DataTable<TData, TValue>({
     );
   };
 
-  const handleAcknowledgement = async () => {
-    console.log('selectedProperties', selectedRowsData);
 
-    try {
-      // If you're here, validation succeeded. Proceed with updateContainers.
-      const res = await acknowledgeUserDataCollection(selectedRowsData);
-      console.log('res', res);
-
-      if (res.success) {
-        res.results.forEach((result) => {
-          if (result.success) {
-            toast.success(`Property ${result.name} acknowledged.`, {
-              action: {
-                label: 'Close',
-                onClick: () => toast.dismiss(),
-              },
-            });
-          }
-        });
-      } else {
-        if (res.notFoundError) {
-          res.results.forEach((result) => {
-            if (result.notFound) {
-              toast.error(
-                `Unable to acknowledged property ${result.name}. Please check your access permissions. Any other properties created were successful.`,
-                {
-                  action: {
-                    label: 'Close',
-                    onClick: () => toast.dismiss(),
-                  },
-                }
-              );
-            }
-          });
-
-          /*  dispatch(setErrorDetails(res.results)); // Assuming results contain the error details
-          dispatch(setNotFoundError(true)); // Dispatch the not found error action */
-        }
-
-        if (res.limitReached) {
-          res.results.forEach((result) => {
-            if (result.limitReached) {
-              toast.error(
-                `Unable to create property ${result.name}. You have ${result.remaining} more property(s) you can create.`,
-                {
-                  action: {
-                    label: 'Close',
-                    onClick: () => toast.dismiss(),
-                  },
-                }
-              );
-            }
-          });
-          dispatch(setIsLimitReached(true));
-        }
-      }
-    } catch (error: any) {
-      console.log('error', error);
-      throw new Error(error);
-    } finally {
-      table.resetRowSelection();
-    }
-  };
 
   const handleDelete = useDeleteHook(selectedRowsData, table);
 
@@ -240,37 +180,7 @@ export function DataTable<TData, TValue>({
             onDelete={handleDelete}
           />
 
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button
-                disabled={
-                  Object.keys(table.getState().rowSelection).length === 0
-                }
-                variant="outline"
-              >
-                Data Acknowledgement
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>User Data Collection Acknowledgement</DialogTitle>
-                <DialogDescription>
-                  I acknowledge that I have the necessary privacy disclosures
-                  and rights from my end users for the collection and processing
-                  of their data, including the association of such data with the
-                  visitation information Google Analytics collects from my site
-                  and/or app property. This acknowledgement is required and will
-                  be applied to all selected properties.
-                </DialogDescription>
-              </DialogHeader>
 
-              <DialogFooter>
-                <Button type="submit" onClick={handleAcknowledgement}>
-                  Acknowledge
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -373,7 +283,8 @@ export function DataTable<TData, TValue>({
       <StreamForms
         selectedRows={selectedRowsData}
         table={table}
-        accounts={parentData}
+        parentData={parentData}
+        accounts={accounts}
       />
     </div>
   );

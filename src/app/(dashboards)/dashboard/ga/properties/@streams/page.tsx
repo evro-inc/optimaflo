@@ -6,6 +6,7 @@ import { columns } from './columns';
 import { listGAProperties } from '@/src/lib/fetch/dashboard/actions/ga/properties';
 import { listGAPropertyStreams } from '@/src/lib/fetch/dashboard/actions/ga/streams';
 import { DataTable } from './table';
+import { listGaAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
 
 export default async function PropertyPage({
   searchParams,
@@ -20,18 +21,17 @@ export default async function PropertyPage({
   const { userId } = auth();
   if (!userId) return notFound();
 
+  const accountData = await listGaAccounts();
   const propertyData = await listGAProperties();
-  const streamData = await listGAPropertyStreams();
+  const streamData = await listGAPropertyStreams();  
 
-  const [properties, streams] = await Promise.all([ propertyData, streamData]);
+  const [accounts, properties, streams] = await Promise.all([accountData, propertyData, streamData]);
 
   const flatProperties = properties.flat();  
   const dataStreamsArray = streams.filter(stream => stream.dataStreams).flatMap(stream => stream.dataStreams).flat();
 
   const combinedData = dataStreamsArray.map((stream) => {
-    const property = flatProperties.find((p) => p.name);
-    console.log("property", property);
-    
+    const property = flatProperties.find((p) => p.name);    
     return {
       ...stream,
       name: stream.name,
@@ -42,6 +42,9 @@ export default async function PropertyPage({
       property: property ? property.displayName : 'Unknown Property',
     };
   });  
+
+  console.log('combinedData', combinedData);
+  
 
   return (
     <>
@@ -74,6 +77,7 @@ export default async function PropertyPage({
             columns={columns}
             data={combinedData}
             parentData={properties}
+            accounts={accounts}
           />
         </div>
       </Suspense>
