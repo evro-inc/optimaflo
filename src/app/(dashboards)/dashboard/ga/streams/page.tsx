@@ -23,28 +23,41 @@ export default async function PropertyPage({
 
   const accountData = await listGaAccounts();
   const propertyData = await listGAProperties();
-  const streamData = await listGAPropertyStreams();  
+  const streamData = await listGAPropertyStreams();
 
-  const [accounts, properties, streams] = await Promise.all([accountData, propertyData, streamData]);
+  const [accounts, properties, streams] = await Promise.all([
+    accountData,
+    propertyData,
+    streamData,
+  ]);
 
-  const flatProperties = properties.flat();  
-  const dataStreamsArray = streams.filter(stream => stream.dataStreams).flatMap(stream => stream.dataStreams).flat();
+  const flatProperties = properties.flat();
+  const dataStreamsArray = streams
+    .filter((stream) => stream.dataStreams)
+    .flatMap((stream) => stream.dataStreams)
+    .flat();
+  console.log('dataStreamsArray', dataStreamsArray);
+
+  console.log('flatProperties', flatProperties);
 
   const combinedData = dataStreamsArray.map((stream) => {
-    const property = flatProperties.find((p) => p.name);    
+    const propertyId = stream.name.split('/')[1];
+    const property = flatProperties.find((p) => p.name.includes(propertyId));
+
     return {
       ...stream,
       name: stream.name,
-      parent: property.name ? property.name : 'Unknown',
+      parent: property.name,
       createTime: stream.createTime,
       updateTime: stream.updateTime,
       displayName: stream.displayName,
-      property: property ? property.displayName : 'Unknown Property',
+      property: property.displayName,
+      accountId: accounts ? accounts[0].name : 'Unknown Account ID',
+      accountName: accounts ? accounts[0].displayName : 'Unknown Account Name',
     };
-  });  
+  });
 
   console.log('combinedData', combinedData);
-  
 
   return (
     <>
@@ -71,12 +84,11 @@ export default async function PropertyPage({
           </div>
         }
       >
-
         <div className="container mx-auto py-10">
           <DataTable
             columns={columns}
             data={combinedData}
-            parentData={properties}
+            properties={properties}
             accounts={accounts}
           />
         </div>

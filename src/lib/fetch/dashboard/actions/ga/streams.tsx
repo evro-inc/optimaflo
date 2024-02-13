@@ -20,7 +20,7 @@ import {
   tierUpdateLimit,
 } from '@/src/lib/helpers/server';
 import { fetchGASettings } from '../..';
-import { DataStreamType} from '@/src/lib/schemas/ga/streams';
+import { DataStreamType, FormsSchema } from '@/src/lib/schemas/ga/streams';
 
 /************************************************************************************
   Function to list GA properties
@@ -47,7 +47,7 @@ export async function listGAPropertyStreams() {
     },
   });
 
-  const cacheKey = `ga:property-streams:userId:${userId}`;
+  const cacheKey = `ga:streams:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
 
   if (cachedValue) {
@@ -72,7 +72,6 @@ export async function listGAPropertyStreams() {
             (propertyId) =>
               `https://analyticsadmin.googleapis.com/v1beta/properties/${propertyId}/dataStreams`
           );
-          
 
           const headers = {
             Authorization: `Bearer ${accessToken}`,
@@ -92,8 +91,6 @@ export async function listGAPropertyStreams() {
               const responseBody = await response.json();
               allData.push(responseBody);
 
-              
-
               // Removed the problematic line here
             } catch (error: any) {
               throw new Error(`Error fetching data: ${error.message}`);
@@ -102,8 +99,7 @@ export async function listGAPropertyStreams() {
         });
 
         redis.set(cacheKey, JSON.stringify(allData), 'EX', 3600);
-                      console.log("allData", allData);
-
+        console.log('allData', allData);
 
         return allData;
       }
@@ -129,8 +125,7 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
 
-  console.log("formData", formData);
-  
+  console.log('formData', formData);
 
   let retries = 0;
   const MAX_RETRIES = 3;
@@ -142,6 +137,8 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
 
   // Refactor: Use string identifiers in the set
   const toCreateStreams = new Set(formData.forms.map((cd) => cd));
+
+  console.log('toCreateStreams', toCreateStreams);
 
   const tierLimitResponse: any = await tierCreateLimit(userId, 'GA4Streams');
   const limit = Number(tierLimitResponse.createLimit);
@@ -165,20 +162,18 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
   }
 
   if (toCreateStreams.size > availableCreateUsage) {
-    const attemptedCreations = Array.from(toCreateStreams).map(
-      (identifier) => {
-        const displayName = identifier.displayName;
-        return {
-          id: [], // No property ID since creation did not happen
-          name: displayName, // Include the property name from the identifier
-          success: false,
-          message: `Creation limit reached. Cannot create stream "${displayName}".`,
-          // remaining creation limit
-          remaining: availableCreateUsage,
-          limitReached: true,
-        };
-      }
-    );
+    const attemptedCreations = Array.from(toCreateStreams).map((identifier) => {
+      const displayName = identifier.displayName;
+      return {
+        id: [], // No property ID since creation did not happen
+        name: displayName, // Include the property name from the identifier
+        success: false,
+        message: `Creation limit reached. Cannot create stream "${displayName}".`,
+        // remaining creation limit
+        remaining: availableCreateUsage,
+        limitReached: true,
+      };
+    });
     return {
       success: false,
       features: [],
@@ -193,6 +188,8 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
 
   let permissionDenied = false;
   const streamNames = formData.forms.map((cd) => cd.displayName);
+
+  console.log('streamNames', streamNames);
 
   if (toCreateStreams.size <= availableCreateUsage) {
     while (
@@ -209,21 +206,15 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
           await limiter.schedule(async () => {
             const createPromises = Array.from(toCreateStreams).map(
               async (identifier) => {
-                const streamData = formData.forms.find(
-                  (prop) =>
-                    prop.parent === identifier.parent &&
-                    prop.displayName === identifier.displayName &&
-                    prop.type === identifier.type &&
-                    prop.streamData === identifier.streamData
-                );
+                console.log('identifier', identifier);
 
-                if (!streamData) {
+                if (!identifier) {
                   errors.push(`Stream data not found for ${identifier}`);
                   toCreateStreams.delete(identifier);
                   return;
                 }
 
-                const url = `https://analyticsadmin.googleapis.com/v1beta/properties/${identifier.parent}/dataStreams`;
+                const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.property}/dataStreams`;
 
                 const headers = {
                   Authorization: `Bearer ${token[0].token}`,
@@ -232,10 +223,10 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
                 };
 
                 try {
-                  const formDataToValidate = { forms: [streamData] };
+                  const formDataToValidate = { forms: [identifier] };
 
                   const validationResult =
-                    CreateStreamSchema.safeParse(formDataToValidate);
+                    FormsSchema.safeParse(formDataToValidate);
 
                   if (!validationResult.success) {
                     let errorMessage = validationResult.error.issues
@@ -244,7 +235,7 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
                     errors.push(errorMessage);
                     toCreateStreams.delete(identifier);
                     return {
-                      streamData,
+                      identifier,
                       success: false,
                       error: errorMessage,
                     };
@@ -253,9 +244,8 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
                   // Accessing the validated property data
                   const validatedContainerData = validationResult.data.forms[0];
 
-                  let requestBody = {
+                  let requestBody: any = {
                     displayName: validatedContainerData.displayName,
-                    parent: validatedContainerData.parent,
                     type: validatedContainerData.type,
                   };
 
@@ -265,7 +255,8 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
                       requestBody = {
                         ...requestBody,
                         webStreamData: {
-                          defaultUri: validatedContainerData.webStreamData.defaultUri,
+                          defaultUri:
+                            validatedContainerData.webStreamData.defaultUri,
                         },
                       };
                       break;
@@ -273,7 +264,9 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
                       requestBody = {
                         ...requestBody,
                         androidAppStreamData: {
-                          packageName: validatedContainerData.androidAppStreamData.packageName,
+                          packageName:
+                            validatedContainerData.androidAppStreamData
+                              .packageName,
                         },
                       };
                       break;
@@ -281,7 +274,8 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
                       requestBody = {
                         ...requestBody,
                         iosAppStreamData: {
-                          bundleId: validatedContainerData.iosAppStreamData.bundleId,
+                          bundleId:
+                            validatedContainerData.iosAppStreamData.bundleId,
                         },
                       };
                       break;
@@ -291,13 +285,14 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
                       console.error('Unsupported stream type');
                   }
 
+                  console.log('requestBody', requestBody);
+
                   // Now, requestBody is prepared with the right structure based on the type
                   const response = await fetch(url, {
                     method: 'POST',
                     headers: headers,
                     body: JSON.stringify(requestBody),
                   });
-
 
                   let parsedResponse;
 
@@ -338,7 +333,7 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
                         );
                       } else if (errorResult.errorCode === 404) {
                         notFoundLimit.push({
-                          id: identifier.name,
+                          id: identifier.property,
                           name: validatedContainerData.displayName,
                         });
                       }
@@ -358,11 +353,11 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
                   }
                 } catch (error: any) {
                   errors.push(
-                    `Exception creating property ${streamData.displayName}: ${error.message}`
+                    `Exception creating property ${identifier.displayName}: ${error.message}`
                   );
                   toCreateStreams.delete(identifier);
                   creationResults.push({
-                    streamName: streamData.displayName,
+                    streamName: identifier.displayName,
                     success: false,
                     message: error.message,
                   });
@@ -400,8 +395,9 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
               results: featureLimitReached.map((displayName) => {
                 // Find the name associated with the propertyId
                 const streamName =
-                  streamNames.find((displayName) => displayName.includes(displayName)) ||
-                  'Unknown';
+                  streamNames.find((displayName) =>
+                    displayName.includes(displayName)
+                  ) || 'Unknown';
                 return {
                   id: [streamName], // Ensure id is an array
                   name: [streamName], // Ensure name is an array, match by propertyId or default to 'Unknown'

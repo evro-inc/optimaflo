@@ -15,7 +15,7 @@ import { ErrorMessage } from '@/src/components/client/modals/Error';
 // Dynamic imports for modals and forms
 const LimitReachedModal = dynamic(
   () =>
-    import('../../../../../../components/client/modals/limitReached').then(
+    import('../../../../../components/client/modals/limitReached').then(
       (mod) => mod.LimitReached
     ),
   { ssr: false }
@@ -23,26 +23,26 @@ const LimitReachedModal = dynamic(
 
 const NotFoundErrorModal = dynamic(
   () =>
-    import('../../../../../../components/client/modals/notFoundError').then(
+    import('../../../../../components/client/modals/notFoundError').then(
       (mod) => mod.NotFoundError
     ),
   { ssr: false }
 );
 
-const FormCreateProperty = dynamic(() => import('./create'), {
+const FormCreateStream = dynamic(() => import('./create'), {
   ssr: false,
 });
 
-const FormUpdateProperty = dynamic(() => import('./update'), {
+/* const FormUpdateProperty = dynamic(() => import('./update'), {
   ssr: false,
-});
+}); */
 
-function PropertyForms({ accounts, selectedRows, table }) {
+function StreamForms({ accounts, properties, selectedRows, table }) {
   const dispatch = useDispatch();
   const { showCreate, showUpdate } = useSelector(selectGlobal);
   const { isLimitReached, notFoundError } = useSelector(selectTable);
   const { error, clearError } = useError();
-
+  const tableData = table.getRowModel().rows.map((row) => row.original);
   return (
     <>
       {/* Modals */}
@@ -56,14 +56,15 @@ function PropertyForms({ accounts, selectedRows, table }) {
 
       {/* Forms */}
       {showCreate && (
-        <FormCreateProperty
+        <FormCreateStream
           showOptions={showCreate}
           onClose={() => dispatch(toggleCreate())}
-          parentData={accounts}
-          table={table}
+          accounts={accounts}
+          properties={properties}
+          table={tableData}
         />
       )}
-      {showUpdate && (
+      {/* {showUpdate && (
         <FormUpdateProperty
           showOptions={showUpdate}
           onClose={() => dispatch(toggleUpdate())}
@@ -71,9 +72,9 @@ function PropertyForms({ accounts, selectedRows, table }) {
           selectedRows={selectedRows}
           table={table}
         />
-      )}
+      )} */}
     </>
   );
 }
 
-export default PropertyForms;
+export default StreamForms;

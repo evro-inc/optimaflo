@@ -202,9 +202,9 @@ export type FormCreateWorkspaceProps = {
 export type FormCreateProps = {
   showOptions: boolean;
   onClose: () => void;
-  parentData: any;
   table: any;
   accounts?: any;
+  properties?: any;
 };
 
 export type WorkspaceType = {
@@ -282,7 +282,7 @@ export type GA4StreamType = {
   accountName?: string;
   property: string;
   displayName: string;
-  type: "WEB_DATA_STREAM" | "ANDROID_APP_DATA_STREAM" | "IOS_APP_DATA_STREAM";
+  type: 'WEB_DATA_STREAM' | 'ANDROID_APP_DATA_STREAM' | 'IOS_APP_DATA_STREAM';
   webStreamData: {
     measurementId: string;
     firebaseAppId: string;
@@ -296,4 +296,4 @@ export type GA4StreamType = {
     firebaseAppId: string;
     bundleId: string;
   };
-}
+};

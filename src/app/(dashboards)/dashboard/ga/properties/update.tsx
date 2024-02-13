@@ -1,8 +1,8 @@
 'use client';
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LimitReached } from '../../../../../../components/client/modals/limitReached';
-import { ButtonGroup } from '../../../../../../components/client/ButtonGroup/ButtonGroup';
+import { LimitReached } from '../../../../../components/client/modals/limitReached';
+import { ButtonGroup } from '../../../../../components/client/ButtonGroup/ButtonGroup';
 import { z } from 'zod';
 import {
   clearSelectedRows,
@@ -17,7 +17,7 @@ import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { FeatureResponse, FormUpdateProps } from '@/src/lib/types/types';
 import { toast } from 'sonner';
-import { Icon } from '../../../../../../components/client/Button/Button';
+import { Icon } from '../../../../../components/client/Button/Button';
 import { Cross1Icon } from '@radix-ui/react-icons';
 import {
   Card,
@@ -61,7 +61,7 @@ import { Switch } from '@/src/components/ui/switch';
 
 const NotFoundErrorModal = dynamic(
   () =>
-    import('../../../../../../components/client/modals/notFoundError').then(
+    import('../../../../../components/client/modals/notFoundError').then(
       (mod) => mod.NotFoundError
     ),
   { ssr: false }

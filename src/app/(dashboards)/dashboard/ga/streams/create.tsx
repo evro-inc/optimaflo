@@ -65,43 +65,52 @@ type Forms = z.infer<typeof FormsSchema>;
 const FormCreateStream: React.FC<FormCreateProps> = ({
   showOptions,
   onClose,
-  accounts = [],
-  parentData = [],
+  properties = [],
   table = [],
+  accounts = [],
 }) => {
   const formRefs = useRef<(HTMLFormElement | null)[]>([]);
   const dispatch = useDispatch();
   const { loading } = useSelector(selectGlobal);
   const isLimitReached = useSelector(selectTable).isLimitReached;
   const notFoundError = useSelector(selectTable).notFoundError;
-  const tableData = table.getRowModel().rows.map((row) => row.original);
-  
 
-const formDataDefaults: GA4StreamType = {
-  account: tableData[0].account,
-  property: tableData[0].parent,
-  displayName: "",
-  type: tableData[0].type, // Replace with the appropriate default type
-  webStreamData: {
-    measurementId: "",
-    firebaseAppId: "",
-    defaultUri: ""
-  },
-  androidAppStreamData: {
-    firebaseAppId: "",
-    packageName: ""
-  },
-  iosAppStreamData: {
-    firebaseAppId: "",
-    bundleId: ""
-  }
-};
+  const accountsWithProperties = accounts
+    .map((account) => {
+      const accountProperties = properties.filter(
+        (property) => property.parent === account.name
+      );
+
+      return {
+        ...account,
+        properties: accountProperties,
+      };
+    })
+    .filter((account) => account.properties.length > 0);
+
+  const formDataDefaults: GA4StreamType = {
+    account: accountsWithProperties[0].name,
+    property: table[0].parent,
+    displayName: '',
+    type: table[0].type,
+    webStreamData: {
+      measurementId: '',
+      firebaseAppId: '',
+      defaultUri: '',
+    },
+    androidAppStreamData: {
+      firebaseAppId: '',
+      packageName: '',
+    },
+    iosAppStreamData: {
+      firebaseAppId: '',
+      bundleId: '',
+    },
+  };
 
   const form = useForm<Forms>({
     defaultValues: {
-      forms: [
-        formDataDefaults,
-      ],
+      forms: [formDataDefaults],
     },
     resolver: zodResolver(FormsSchema),
   });
@@ -124,7 +133,7 @@ const formDataDefaults: GA4StreamType = {
   const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
     dispatch(setLoading(true)); // Set loading to true using Redux action
-    
+
     console.log('forms', forms);
 
     toast('Creating streams...', {
@@ -211,9 +220,7 @@ const formDataDefaults: GA4StreamType = {
 
         onClose(); // Close the form
         form.reset({
-          forms: [
-            formDataDefaults,
-          ],
+          forms: [formDataDefaults],
         });
       }
 
@@ -221,9 +228,7 @@ const formDataDefaults: GA4StreamType = {
 
       // Reset the forms here, regardless of success or limit reached
       form.reset({
-        forms: [
-         formDataDefaults,
-        ],
+        forms: [formDataDefaults],
       });
     } catch (error) {
       toast.error('An unexpected error occurred.', {
@@ -241,29 +246,12 @@ const formDataDefaults: GA4StreamType = {
   const handleClose = () => {
     // Reset the forms to their initial state
     form.reset({
-      forms: [
-        formDataDefaults,
-      ],
+      forms: [formDataDefaults],
     });
 
     // Close the modal
     onClose();
   };
-
-  /* const accountIds = accounts.map((account) => {
-    const parts = account.name.split('/');
-    return parts[1]; // Assuming the ID is always the second part after splitting
-  }); 
-   */
-
-  const propertyIdsWithStreams = new Set(
-    tableData.map((stream) => stream.parent)
-  );  
-
-  const propertyWithStreams = parentData.filter((property) =>
-    propertyIdsWithStreams.has(property.name)
-  );
-  
 
   return (
     <>
@@ -303,36 +291,16 @@ const formDataDefaults: GA4StreamType = {
 
             <div className="stream mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-end">
               {fields.map((field, index) => {
-                const selectedPropertyId = form.watch(
-                  `forms.${index}.account`
+                const selectedAccountId = form.watch(`forms.${index}.account`);
+                console.log('selectedAccountId', selectedAccountId);
+
+                console.log('property', properties);
+
+                const filteredProperties = properties.filter(
+                  (property) => property.parent === selectedAccountId
                 );
 
-                // Filter streams to only include those that belong to the selected property
-                const filteredStreams = parentData.filter(
-                  (stream) => stream.account === selectedPropertyId
-                );
-
-                console.log('filteredStreams', filteredStreams);
-                
-
-                // Create a Set to store unique stream IDs
-                const uniqueStreamIds = new Set(
-                  filteredStreams.map((stream) => {
-                    // Split the stream.parent string by '/' and take the last element
-                    const parts = stream.parent.split('/');
-                    const id = parts[parts.length - 1]; // Get the last part, which should be the ID
-                    return id;
-                  })
-                );
-                console.log('uniqueStreamIds', uniqueStreamIds);
-                
-                
-
-                //const uniqueStreamIdsArray = Array.from(uniqueStreamIds);
-               //const accountId = uniqueStreamIdsArray[0].split('/')[1];
-                                
-
-                
+                console.log('filteredProperties', filteredProperties);
 
                 return (
                   <div
@@ -382,7 +350,7 @@ const formDataDefaults: GA4StreamType = {
                                   )}
                                 />
 
-                                 <FormField
+                                <FormField
                                   control={form.control}
                                   name={`forms.${index}.account`}
                                   render={({ field }) => (
@@ -406,7 +374,7 @@ const formDataDefaults: GA4StreamType = {
                                           <SelectContent>
                                             <SelectGroup>
                                               <SelectLabel>Account</SelectLabel>
-                                              {accounts.map(
+                                              {accountsWithProperties.map(
                                                 (account) => (
                                                   <SelectItem
                                                     key={account.name}
@@ -433,8 +401,8 @@ const formDataDefaults: GA4StreamType = {
                                     <FormItem>
                                       <FormLabel>Property</FormLabel>
                                       <FormDescription>
-                                        This is the property you want to create
-                                        the stream in.
+                                        Which property do you want to create the
+                                        stream in?
                                       </FormDescription>
                                       <FormControl>
                                         <Select
@@ -445,20 +413,29 @@ const formDataDefaults: GA4StreamType = {
                                           onValueChange={field.onChange}
                                         >
                                           <SelectTrigger className="w-[180px]">
-                                            <SelectValue placeholder="Select an property." />
+                                            <SelectValue placeholder="Select a property." />
                                           </SelectTrigger>
+
                                           <SelectContent>
                                             <SelectGroup>
-                                              <SelectLabel>Property</SelectLabel>
-                                              {propertyWithStreams.map(
-                                                (property) => (
-                                                  <SelectItem
-                                                    key={property.parent}
-                                                    value={property.parent}
-                                                  >
-                                                    {property.displayName}
-                                                  </SelectItem>
+                                              <SelectLabel>
+                                                Property
+                                              </SelectLabel>
+                                              {filteredProperties.length > 0 ? (
+                                                filteredProperties.map(
+                                                  (property) => (
+                                                    <SelectItem
+                                                      key={property.name}
+                                                      value={property.name}
+                                                    >
+                                                      {property.displayName}
+                                                    </SelectItem>
+                                                  )
                                                 )
+                                              ) : (
+                                                <SelectItem value="" disabled>
+                                                  No properties available
+                                                </SelectItem>
                                               )}
                                             </SelectGroup>
                                           </SelectContent>
@@ -470,50 +447,91 @@ const formDataDefaults: GA4StreamType = {
                                   )}
                                 />
 
+                                <FormField
+                                  control={form.control}
+                                  name={`forms.${index}.type`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Stream Type</FormLabel>
+                                      <FormDescription>
+                                        Set the stream type.
+                                      </FormDescription>
+                                      <FormControl>
+                                        <Select
+                                          {...form.register(
+                                            `forms.${index}.type`
+                                          )}
+                                          {...field}
+                                          onValueChange={field.onChange}
+                                        >
+                                          <SelectTrigger className="w-[180px]">
+                                            <SelectValue placeholder="Select a stream type." />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectGroup>
+                                              <SelectLabel>
+                                                Retention Setting
+                                              </SelectLabel>
+                                              {Object.entries(streamType).map(
+                                                ([label, value]) => (
+                                                  <SelectItem
+                                                    key={value}
+                                                    value={value}
+                                                  >
+                                                    {label}
+                                                  </SelectItem>
+                                                )
+                                              )}
+                                            </SelectGroup>
+                                          </SelectContent>
+                                        </Select>
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
 
-                              {/*<FormField
-                                control={form.control}
-                                name={`forms.${index}.type`}
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>Stream Type</FormLabel>
-                                    <FormDescription>
-                                      Set the stream type.
-                                    </FormDescription>
-                                    <FormControl>
-                                      <Select
-                                        {...form.register(
-                                          `forms.${index}.type`
+                                {Object.keys(streamType).map(
+                                  (type) =>
+                                    form.watch(`forms.${index}.type`) ===
+                                      streamType[type] && (
+                                      <FormField
+                                        control={form.control}
+                                        name={`forms.${index}.${
+                                          type.toLowerCase() === 'web'
+                                            ? 'webStreamData.defaultUri'
+                                            : type.toLowerCase() === 'android'
+                                            ? 'androidAppStreamData.packageName'
+                                            : 'iosAppStreamData.bundleId'
+                                        }`}
+                                        render={({ field }) => (
+                                          <FormItem>
+                                            <FormLabel>{type} Input</FormLabel>
+                                            <FormDescription>
+                                              This is the input for {type}.
+                                            </FormDescription>
+                                            <FormControl>
+                                              <Input
+                                                placeholder={`Enter ${type} input`}
+                                                {...form.register(
+                                                  `forms.${index}.${
+                                                    type.toLowerCase() === 'web'
+                                                      ? 'webStreamData.defaultUri'
+                                                      : type.toLowerCase() ===
+                                                        'android'
+                                                      ? 'androidAppStreamData.packageName'
+                                                      : 'iosAppStreamData.bundleId'
+                                                  }`
+                                                )}
+                                                {...field}
+                                              />
+                                            </FormControl>
+                                            <FormMessage />
+                                          </FormItem>
                                         )}
-                                        {...field}
-                                        onValueChange={field.onChange}
-                                      >
-                                        <SelectTrigger className="w-[180px]">
-                                          <SelectValue placeholder="Select a stream type." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectGroup>
-                                            <SelectLabel>
-                                              Retention Setting
-                                            </SelectLabel>
-                                            {Object.entries(streamType).map(([label, value]) => (
-                                              <SelectItem
-                                                key={value}
-                                                value={value}
-                                              >
-                                                {label}
-                                              </SelectItem>
-                                            ))}
-                                          </SelectGroup>
-                                        </SelectContent>
-                                      </Select>
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
+                                      />
+                                    )
                                 )}
-                              />    */}            
-
-              
                               </form>
                             </Form>
                           </CardContent>

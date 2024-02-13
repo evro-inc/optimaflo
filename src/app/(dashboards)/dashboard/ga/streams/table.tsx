@@ -37,7 +37,7 @@ import { ReloadIcon } from '@radix-ui/react-icons';
 import { toggleCreate, toggleUpdate } from '@/src/lib/redux/globalSlice';
 import { useDispatch } from 'react-redux';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
-import { useDeleteHook } from '../@index/delete';
+import { useDeleteHook } from '../properties/delete';
 import { notFound } from 'next/navigation';
 import { setIsLimitReached } from '@/src/lib/redux/tableSlice';
 import StreamForms from './forms';
@@ -56,14 +56,14 @@ import { acknowledgeUserDataCollection } from '@/src/lib/fetch/dashboard/actions
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
-  parentData: any;
+  properties: any;
   accounts: any;
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
-  parentData,
+  properties,
   accounts,
 }: DataTableProps<TData, TValue>) {
   const dispatch = useDispatch();
@@ -143,8 +143,6 @@ export function DataTable<TData, TValue>({
     );
   };
 
-
-
   const handleDelete = useDeleteHook(selectedRowsData, table);
 
   return (
@@ -179,8 +177,6 @@ export function DataTable<TData, TValue>({
             disabled={Object.keys(table.getState().rowSelection).length === 0}
             onDelete={handleDelete}
           />
-
-
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -283,7 +279,7 @@ export function DataTable<TData, TValue>({
       <StreamForms
         selectedRows={selectedRowsData}
         table={table}
-        parentData={parentData}
+        properties={properties}
         accounts={accounts}
       />
     </div>
