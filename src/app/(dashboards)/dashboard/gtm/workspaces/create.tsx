@@ -255,7 +255,6 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
   const accountsWithContainers = accounts.filter((account) =>
     accountIdsWithContainers.has(account.accountId)
   );
-  console.log('accountsWithContainers', accountsWithContainers);
 
   return (
     <>

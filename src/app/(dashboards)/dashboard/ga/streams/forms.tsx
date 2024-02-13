@@ -33,9 +33,9 @@ const FormCreateStream = dynamic(() => import('./create'), {
   ssr: false,
 });
 
-/* const FormUpdateProperty = dynamic(() => import('./update'), {
+const FormUpdateStream = dynamic(() => import('./update'), {
   ssr: false,
-}); */
+});
 
 function StreamForms({ accounts, properties, selectedRows, table }) {
   const dispatch = useDispatch();
@@ -64,15 +64,13 @@ function StreamForms({ accounts, properties, selectedRows, table }) {
           table={tableData}
         />
       )}
-      {/* {showUpdate && (
-        <FormUpdateProperty
+      {showUpdate && (
+        <FormUpdateStream
           showOptions={showUpdate}
           onClose={() => dispatch(toggleUpdate())}
-          accounts={accounts}
           selectedRows={selectedRows}
-          table={table}
         />
-      )} */}
+      )}
     </>
   );
 }

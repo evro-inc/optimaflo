@@ -153,11 +153,11 @@ export type FormUpdateWorkspaceProps = {
 export type FormUpdateProps = {
   showOptions: boolean;
   onClose: () => void;
-  accounts: any; // Replace 'any' with the actual type if known
   selectedRows: Map<string, GA4PropertyType>;
   workspaces?: any;
-  table: any;
+  table?: any;
 };
+
 export type ResultType = {
   data: tagmanager_v2.Schema$Container[] | undefined;
   meta: {
@@ -283,6 +283,7 @@ export type GA4StreamType = {
   property: string;
   displayName: string;
   type: 'WEB_DATA_STREAM' | 'ANDROID_APP_DATA_STREAM' | 'IOS_APP_DATA_STREAM';
+  parentURL: string;
   webStreamData: {
     measurementId: string;
     firebaseAppId: string;

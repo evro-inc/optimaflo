@@ -7,6 +7,7 @@ import { listGAProperties } from '@/src/lib/fetch/dashboard/actions/ga/propertie
 import { listGAPropertyStreams } from '@/src/lib/fetch/dashboard/actions/ga/streams';
 import { DataTable } from './table';
 import { listGaAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
+import { dataStreamTypeMapping } from './streamItems';
 
 export default async function PropertyPage({
   searchParams,
@@ -31,22 +32,23 @@ export default async function PropertyPage({
     streamData,
   ]);
 
+  const flatAccounts = accounts.flat();
   const flatProperties = properties.flat();
   const dataStreamsArray = streams
     .filter((stream) => stream.dataStreams)
     .flatMap((stream) => stream.dataStreams)
     .flat();
-  console.log('dataStreamsArray', dataStreamsArray);
-
-  console.log('flatProperties', flatProperties);
 
   const combinedData = dataStreamsArray.map((stream) => {
     const propertyId = stream.name.split('/')[1];
     const property = flatProperties.find((p) => p.name.includes(propertyId));
+    const accounts = flatAccounts.filter((a) => a.name === property?.parent);
+    const readableType = dataStreamTypeMapping[stream.type] || stream.type; // Fallback to the original type if no mapping found
 
     return {
       ...stream,
       name: stream.name,
+      type: readableType,
       parent: property.name,
       createTime: stream.createTime,
       updateTime: stream.updateTime,
@@ -56,8 +58,6 @@ export default async function PropertyPage({
       accountName: accounts ? accounts[0].displayName : 'Unknown Account Name',
     };
   });
-
-  console.log('combinedData', combinedData);
 
   return (
     <>

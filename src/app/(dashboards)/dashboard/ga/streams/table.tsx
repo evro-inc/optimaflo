@@ -130,6 +130,7 @@ export function DataTable<TData, TValue>({
     const keys = [
       `ga:accounts:userId:${userId}`,
       `ga:properties:userId:${userId}`,
+      `ga:streams:userId:${userId}`,
     ];
     await revalidate(keys, '/dashboard/ga/accounts', userId);
     toast.info(

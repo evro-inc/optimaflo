@@ -7,6 +7,7 @@ const SingleFormSchema = z.object({
     'IOS_APP_DATA_STREAM',
   ]),
   property: z.string(),
+  parentURL: z.string(),
   account: z.string(),
   displayName: z.string(),
   webStreamData: z.object({

@@ -141,12 +141,9 @@ export function DataTable<TData, TValue>({
   };
 
   const handleAcknowledgement = async () => {
-    console.log('selectedProperties', selectedRowsData);
-
     try {
       // If you're here, validation succeeded. Proceed with updateContainers.
       const res = await acknowledgeUserDataCollection(selectedRowsData);
-      console.log('res', res);
 
       if (res.success) {
         res.results.forEach((result) => {

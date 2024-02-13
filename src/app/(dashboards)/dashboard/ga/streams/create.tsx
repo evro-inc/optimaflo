@@ -92,6 +92,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
     account: accountsWithProperties[0].name,
     property: table[0].parent,
     displayName: '',
+    parentURL: '',
     type: table[0].type,
     webStreamData: {
       measurementId: '',
@@ -133,8 +134,6 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
   const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
     dispatch(setLoading(true)); // Set loading to true using Redux action
-
-    console.log('forms', forms);
 
     toast('Creating streams...', {
       action: {
@@ -292,15 +291,10 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
             <div className="stream mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-end">
               {fields.map((field, index) => {
                 const selectedAccountId = form.watch(`forms.${index}.account`);
-                console.log('selectedAccountId', selectedAccountId);
-
-                console.log('property', properties);
 
                 const filteredProperties = properties.filter(
                   (property) => property.parent === selectedAccountId
                 );
-
-                console.log('filteredProperties', filteredProperties);
 
                 return (
                   <div
