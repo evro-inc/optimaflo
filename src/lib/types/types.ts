@@ -288,16 +288,12 @@ export type GA4StreamType = {
   type: 'WEB_DATA_STREAM' | 'ANDROID_APP_DATA_STREAM' | 'IOS_APP_DATA_STREAM';
   parentURL: string;
   webStreamData: {
-    measurementId: string;
-    firebaseAppId: string;
     defaultUri: string;
   };
   androidAppStreamData: {
-    firebaseAppId: string;
     packageName: string;
   };
   iosAppStreamData: {
-    firebaseAppId: string;
     bundleId: string;
   };
 };

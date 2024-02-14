@@ -42,17 +42,6 @@ import { notFound } from 'next/navigation';
 import { setIsLimitReached } from '@/src/lib/redux/tableSlice';
 import StreamForms from './forms';
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/src/components/ui/dialog';
-import { acknowledgeUserDataCollection } from '@/src/lib/fetch/dashboard/actions/ga/properties';
-
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];

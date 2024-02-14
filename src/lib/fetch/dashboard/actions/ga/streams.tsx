@@ -69,9 +69,10 @@ export async function listGAPropertyStreams() {
             new Set(gaData.ga.map((item) => item.propertyId))
           );
 
+
           const urls = uniquePropertyIds.map(
             (propertyId) =>
-              `https://analyticsadmin.googleapis.com/v1beta/streams/${propertyId}/dataStreams`
+              `https://analyticsadmin.googleapis.com/v1beta/properties/${propertyId}/dataStreams`
           );
 
           const headers = {
@@ -83,6 +84,7 @@ export async function listGAPropertyStreams() {
           for (const url of urls) {
             try {
               const response = await fetch(url, { headers });
+
               if (!response.ok) {
                 throw new Error(
                   `HTTP error! status: ${response.status}. ${response.statusText}`
@@ -90,6 +92,7 @@ export async function listGAPropertyStreams() {
               }
 
               const responseBody = await response.json();
+
               allData.push(responseBody);
 
               // Removed the problematic line here
@@ -277,6 +280,7 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
                       console.error('Unsupported stream type');
                   }
 
+
                   // Now, requestBody is prepared with the right structure based on the type
                   const response = await fetch(url, {
                     method: 'POST',
@@ -284,7 +288,9 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
                     body: JSON.stringify(requestBody),
                   });
 
-                  let parsedResponse;
+
+                  const parsedResponse = await response.json();
+
 
                   if (response.ok) {
                     successfulCreations.push(
@@ -303,8 +309,6 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
                       message: `Successfully created property ${validatedContainerData.displayName}`,
                     });
                   } else {
-                    parsedResponse = await response.json();
-
                     const errorResult = await handleApiResponseError(
                       response,
                       parsedResponse,
@@ -501,6 +505,9 @@ export async function updateGAPropertyStreams(formData: DataStreamType) {
 
   // Refactor: Use string identifiers in the set
   const toCreateStreams = new Set(formData.forms.map((cd) => cd));
+
+  console.log('toCreateStreams', toCreateStreams);
+  
 
   const tierLimitResponse: any = await tierCreateLimit(userId, 'GA4Streams');
   const limit = Number(tierLimitResponse.createLimit);

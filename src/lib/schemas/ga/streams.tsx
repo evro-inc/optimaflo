@@ -11,17 +11,13 @@ const SingleFormSchema = z.object({
   account: z.string(),
   displayName: z.string(),
   webStreamData: z.object({
-    measurementId: z.string(),
-    firebaseAppId: z.string(),
-    defaultUri: z.string(),
+    defaultUri: z.string().url(),
   }),
   androidAppStreamData: z.object({
-    firebaseAppId: z.string(),
-    packageName: z.string(),
+    packageName: z.string().regex(/^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)+[0-9a-zA-Z_]$/),
   }),
   iosAppStreamData: z.object({
-    firebaseAppId: z.string(),
-    bundleId: z.string(),
+    bundleId: z.string().regex(/^([a-zA-Z0-9]+\.)*[a-zA-Z0-9]+$/),
   }),
 });
 

@@ -63,6 +63,9 @@ const FormUpdateStream: React.FC<FormUpdateProps> = ({
   const isLimitReached = useSelector(selectTable).isLimitReached;
   const notFoundError = useSelector(selectTable).notFoundError;
 
+  console.log('selectedRows', selectedRows);
+  
+
   const formDataDefaults: GA4StreamType = {
     account: selectedRows[0].accountName,
     property: selectedRows[0].parent,
@@ -70,16 +73,12 @@ const FormUpdateStream: React.FC<FormUpdateProps> = ({
     parentURL: selectedRows[0].name,
     type: selectedRows[0].type,
     webStreamData: {
-      measurementId: '',
-      firebaseAppId: '',
       defaultUri: '',
     },
     androidAppStreamData: {
-      firebaseAppId: '',
       packageName: '',
     },
     iosAppStreamData: {
-      firebaseAppId: '',
       bundleId: '',
     },
     name: '',
@@ -94,7 +93,7 @@ const FormUpdateStream: React.FC<FormUpdateProps> = ({
     resolver: zodResolver(FormsSchema),
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields } = useFieldArray({
     control: form.control,
     name: 'forms',
   });
@@ -109,16 +108,12 @@ const FormUpdateStream: React.FC<FormUpdateProps> = ({
         parentURL: name,
         type,
         webStreamData: {
-          measurementId: '',
-          firebaseAppId: '',
           defaultUri: '',
         },
         androidAppStreamData: {
-          firebaseAppId: '',
           packageName: '',
         },
         iosAppStreamData: {
-          firebaseAppId: '',
           bundleId: '',
         },
       };
@@ -127,6 +122,8 @@ const FormUpdateStream: React.FC<FormUpdateProps> = ({
   }, [selectedRows, form]);
 
   const processForm: SubmitHandler<Forms> = async (data) => {
+    console.log('processForm');
+    
     const { forms } = data;
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
@@ -269,20 +266,10 @@ const FormUpdateStream: React.FC<FormUpdateProps> = ({
               <span className="sr-only">Close</span>
             </Button>
 
-            <div className="flex items-center justify-between py-3 px-4 mt-5 gap-4">
-              <ButtonGroup
-                buttons={[
-                  {
-                    text: loading ? 'Submitting...' : 'Submit',
-                    type: 'submit',
-                    form: 'updateStream',
-                  },
-                ]}
-              />
-            </div>
+
 
             <div className="stream mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-end">
-              {fields.map((field, index) => {
+              {fields.map((field, index) => {     
                 return (
                   <div
                     key={field.id}
@@ -333,7 +320,7 @@ const FormUpdateStream: React.FC<FormUpdateProps> = ({
 
                                 <FormField
                                   control={form.control}
-                                  name={`forms.${index}.type`}
+                                  name={`forms.${index}.webStreamData.defaultUri`}
                                   render={({ field }) => (
                                     <FormItem>
                                       <FormLabel>
@@ -346,9 +333,9 @@ const FormUpdateStream: React.FC<FormUpdateProps> = ({
                                       </FormDescription>
                                       <FormControl>
                                         <Input
-                                          placeholder={`Enter ${selectedRows[index].type} input`}
+                                          placeholder={`Enter `}
                                           {...form.register(
-                                            `forms.${index}.type`
+                                            `forms.${index}.webStreamData.defaultUri`
                                           )}
                                           {...field}
                                         />
@@ -369,7 +356,17 @@ const FormUpdateStream: React.FC<FormUpdateProps> = ({
               })}
             </div>
 
-            {/* End Hire Us */}
+            <div className="flex items-center justify-center py-3 px-4 mt-5 gap-4">
+              <ButtonGroup
+                buttons={[
+                  {
+                    text: loading ? 'Submitting...' : 'Submit',
+                    type: 'submit',
+                    form: 'updateStream',
+                  },
+                ]}
+              />
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
