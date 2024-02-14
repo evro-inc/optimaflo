@@ -1,13 +1,10 @@
 'use client';
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CreateContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containers';
+import { CreateContainers } from '@/src/lib/fetch/dashboard/actions/gtm/containers';
 import { LimitReached } from '../../../../../components/client/modals/limitReached';
 import { ButtonGroup } from '../../../../../components/client/ButtonGroup/ButtonGroup';
-import {
-  FeatureResponse,
-  FormCreateContainerProps,
-} from '@/src/lib/types/types';
+import { FeatureResponse, FormCreateAccountProps } from '@/src/lib/types/types';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   selectTable,
@@ -17,7 +14,7 @@ import {
 } from '@/src/lib/redux/tableSlice';
 import { selectGlobal, setLoading } from '@/src/lib/redux/globalSlice';
 import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
-import { CreateContainerSchema } from '@/src/lib/schemas/containers';
+import { CreateContainerSchema } from '@/src/lib/schemas/gtm/containers';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
@@ -62,7 +59,7 @@ const NotFoundErrorModal = dynamic(
 
 type Forms = z.infer<typeof CreateContainerSchema>;
 
-const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
+const FormCreateContainer: React.FC<FormCreateAccountProps> = ({
   showOptions,
   onClose,
   accounts = [],
@@ -278,18 +275,19 @@ const FormCreateContainer: React.FC<FormCreateContainerProps> = ({
               onClick={handleClose}
               billingInterval={undefined}
             />
-
-            <ButtonGroup
-              buttons={[
-                { text: 'Add Form', onClick: addForm },
-                { text: 'Remove Form', onClick: removeForm },
-                {
-                  text: loading ? 'Submitting...' : 'Submit',
-                  type: 'submit',
-                  form: 'createContainer',
-                },
-              ]}
-            />
+            <div className="flex items-center justify-between py-3 px-4 mt-5 gap-4">
+              <ButtonGroup
+                buttons={[
+                  { text: 'Add Form', onClick: addForm },
+                  { text: 'Remove Form', onClick: removeForm },
+                  {
+                    text: loading ? 'Submitting...' : 'Submit',
+                    type: 'submit',
+                    form: 'createContainer',
+                  },
+                ]}
+              />
+            </div>
 
             <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-end">
               {fields.map((field, index) => (

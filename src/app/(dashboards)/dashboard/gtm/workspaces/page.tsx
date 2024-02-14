@@ -2,9 +2,9 @@ import React, { Suspense } from 'react';
 import { DataTable } from '@/src/app/(dashboards)/dashboard/gtm/workspaces/table';
 import { auth } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
-import { listGtmWorkspaces } from '@/src/lib/fetch/dashboard/gtm/actions/workspaces';
-import { listGtmContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containers';
-import { listGtmAccounts } from '@/src/lib/fetch/dashboard/gtm/actions/accounts';
+import { listGtmWorkspaces } from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
+import { listGtmContainers } from '@/src/lib/fetch/dashboard/actions/gtm/containers';
+import { listGtmAccounts } from '@/src/lib/fetch/dashboard/actions/gtm/accounts';
 import { Skeleton } from '@/src/components/ui/skeleton';
 import { columns } from './columns';
 

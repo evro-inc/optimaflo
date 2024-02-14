@@ -72,3 +72,10 @@ export const gtmRateLimit = new Ratelimit({
   redis: redis,
   limiter: Ratelimit.slidingWindow(10000, '1 d'), // 10,000 requests per day
 });
+
+export const gaRateLimit = new Ratelimit({
+  redis: redis,
+  limiter: Ratelimit.slidingWindow(1200, '1 m'), // 1,200 requests per minute
+  // Optionally, if tracking per user
+  //userLimiter: Ratelimit.slidingWindow(600, '1 m') // 600 requests per minute per user
+});

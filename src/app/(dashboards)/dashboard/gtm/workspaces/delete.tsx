@@ -7,7 +7,7 @@ import {
   setIsLimitReached,
   setNotFoundError,
 } from '@/src/lib/redux/tableSlice';
-import { DeleteWorkspaces } from '@/src/lib/fetch/dashboard/gtm/actions/workspaces';
+import { DeleteWorkspaces } from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
 import { WorkspaceType, FeatureResponse } from '@/src/lib/types/types';
 import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
@@ -76,8 +76,7 @@ export const useDeleteHook = (selectedRows, table) => {
       dispatch(setNotFoundError(true));
     }
 
-    dispatch(clearSelectedRows());
-    table.setRowSelection({});
+    table.resetRowSelection({});
   };
 
   return handleDelete;

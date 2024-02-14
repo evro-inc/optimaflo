@@ -1,11 +1,11 @@
 'use client';
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UpdateContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containers';
+import { UpdateContainers } from '@/src/lib/fetch/dashboard/actions/gtm/containers';
 import { LimitReached } from '../../../../../components/client/modals/limitReached';
 import { ButtonGroup } from '../../../../../components/client/ButtonGroup/ButtonGroup';
 import { z } from 'zod';
-import { UpdateContainerSchema } from '@/src/lib/schemas/containers';
+import { UpdateContainerSchema } from '@/src/lib/schemas/gtm/containers';
 import {
   clearSelectedRows,
   selectTable,
@@ -206,7 +206,7 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
     } catch (error: any) {
       throw new Error(error);
     } finally {
-      table.setRowSelection({});
+      table.resetRowSelection({}); // Reset the table row selection
       dispatch(setLoading(false)); // Set loading to false
     }
   };
@@ -227,7 +227,7 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
     });
 
     dispatch(clearSelectedRows()); // Clear selectedRows
-    table.setRowSelection({});
+    table.resetRowSelection({});
 
     // Close the modal
     onClose();

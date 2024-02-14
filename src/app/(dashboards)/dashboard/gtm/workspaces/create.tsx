@@ -16,10 +16,10 @@ import {
 } from '@/src/lib/redux/tableSlice';
 import { selectGlobal, setLoading } from '@/src/lib/redux/globalSlice';
 import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
-import { CreateWorkspaceSchema } from '@/src/lib/schemas/workspaces';
+import { CreateWorkspaceSchema } from '@/src/lib/schemas/gtm/workspaces';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { CreateWorkspaces } from '@/src/lib/fetch/dashboard/gtm/actions/workspaces';
+import { CreateWorkspaces } from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
 import dynamic from 'next/dynamic';
 import { toast } from 'sonner';
 import { Cross1Icon } from '@radix-ui/react-icons';
@@ -278,17 +278,19 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
               <span className="sr-only">Close</span>
             </Button>
 
-            <ButtonGroup
-              buttons={[
-                { text: 'Add Form', onClick: addForm },
-                { text: 'Remove Form', onClick: removeForm },
-                {
-                  text: loading ? 'Submitting...' : 'Submit',
-                  type: 'submit',
-                  form: 'createWorkspace',
-                },
-              ]}
-            />
+            <div className="flex items-center justify-between py-3 px-4 mt-5 gap-4">
+              <ButtonGroup
+                buttons={[
+                  { text: 'Add Form', onClick: addForm },
+                  { text: 'Remove Form', onClick: removeForm },
+                  {
+                    text: loading ? 'Submitting...' : 'Submit',
+                    type: 'submit',
+                    form: 'createWorkspace',
+                  },
+                ]}
+              />
+            </div>
 
             <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-end">
               {fields.map((field, index) => {

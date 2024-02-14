@@ -1,8 +1,7 @@
 import React, { Suspense } from 'react';
 import { notFound } from 'next/navigation';
-//import AccountTable from './table';
 import { auth } from '@clerk/nextjs';
-import { listGtmAccounts } from '@/src/lib/fetch/dashboard/gtm/actions/accounts';
+import { listGtmAccounts } from '@/src/lib/fetch/dashboard/actions/gtm/accounts';
 import { Skeleton } from '@/src/components/ui/skeleton';
 import { DataTable } from './table';
 import { columns } from './columns';
@@ -46,12 +45,6 @@ export default async function AccountPage({
           </div>
         }
       >
-        {/* <AccountTable
-          accounts={accounts}
-          query={query}
-          currentPage={currentPage}
-        /> */}
-
         <div className="container mx-auto py-10">
           <DataTable columns={columns} data={accounts} />
         </div>

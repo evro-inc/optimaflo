@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LimitReached } from '../../../../../components/client/modals/limitReached';
 import { ButtonGroup } from '../../../../../components/client/ButtonGroup/ButtonGroup';
 import { z } from 'zod';
-import { UpdateWorkspaceSchema } from '@/src/lib/schemas/workspaces';
+import { UpdateWorkspaceSchema } from '@/src/lib/schemas/gtm/workspaces';
 import {
   clearSelectedRows,
   selectTable,
@@ -21,7 +21,7 @@ import {
   FormUpdateWorkspaceProps,
 } from '@/src/lib/types/types';
 
-import { UpdateWorkspaces } from '@/src/lib/fetch/dashboard/gtm/actions/workspaces';
+import { UpdateWorkspaces } from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
 import { toast } from 'sonner';
 import { Icon } from '../../../../../components/client/Button/Button';
 import { Cross1Icon } from '@radix-ui/react-icons';
@@ -205,8 +205,7 @@ const FormUpdateWorkspace: React.FC<FormUpdateWorkspaceProps> = ({
     } catch (error: any) {
       throw new Error(error);
     } finally {
-      table.setRowSelection({});
-      dispatch(setLoading(false)); // Set loading to false
+      table.resetSelectedRows({}); // Reset selected rows
     }
   };
 
@@ -224,8 +223,7 @@ const FormUpdateWorkspace: React.FC<FormUpdateWorkspaceProps> = ({
       ],
     });
 
-    dispatch(clearSelectedRows()); // Clear selectedRows
-    table.setRowSelection({});
+    table.resetSelectedRows({}); // Reset selected rows
 
     // Close the modal
     onClose();

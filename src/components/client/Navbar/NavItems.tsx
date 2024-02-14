@@ -1,4 +1,9 @@
-import { PersonIcon, MixIcon } from '@radix-ui/react-icons';
+import {
+  PersonIcon,
+  MixIcon,
+  BarChartIcon,
+  Component1Icon,
+} from '@radix-ui/react-icons';
 
 export const NavItems = [
   {
@@ -9,7 +14,7 @@ export const NavItems = [
   },
   {
     title: 'Google Tag Manager',
-    icon: MixIcon,
+    icon: Component1Icon,
     href: '/dashboard/gtm',
     color: 'text-orange-500',
     isChidren: true,
@@ -34,19 +39,25 @@ export const NavItems = [
       },
     ],
   },
-  /*  {
+  {
     title: 'Google Analytics 4',
-    icon: MixIcon,
+    icon: BarChartIcon,
     href: '/dashboard/ga',
     color: 'text-orange-500',
     isChidren: true,
     children: [
       {
         title: 'Accounts',
-        icon: MixIcon,
+        icon: BarChartIcon,
         color: 'text-pink-500',
-        href: '/dashboard/gtm/accounts',
+        href: '/dashboard/ga/accounts',
+      },
+      {
+        title: 'Properties',
+        icon: BarChartIcon,
+        color: 'text-pink-500',
+        href: '/dashboard/ga/properties',
       },
     ],
-  }, */
+  },
 ];

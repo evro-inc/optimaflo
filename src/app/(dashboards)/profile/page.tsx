@@ -22,6 +22,8 @@ import {
   TableRow,
 } from '@/src/components/ui/table';
 import { getTierLimit } from '@/src/lib/fetch/feature';
+import { Button } from '@/src/components/ui/button';
+import Link from 'next/link';
 
 export default async function Profile() {
   const user = await currentUser();
@@ -42,7 +44,9 @@ export default async function Profile() {
             </div>
           </CardContent>
           <CardFooter>
-            <ButtonCustomerPortal text="Change Plan" variant="create" />
+            <Button asChild>
+              <Link href="/pricing">Subscribe</Link>
+            </Button>
           </CardFooter>
         </Card>
       </div>

@@ -3,7 +3,6 @@
 // Importing necessary hooks and functions from Redux and other libraries
 import { useDispatch, useSelector } from 'react-redux';
 import {
-  clearSelectedRows,
   selectTable,
   setIsLimitReached,
   setNotFoundError,
@@ -13,9 +12,9 @@ import { selectIsLoading, setLoading } from '@/src/lib/redux/globalSlice';
 import { useEffect, useRef } from 'react';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { updateAccounts } from '@/src/lib/fetch/dashboard/gtm/actions/accounts';
+import { updateAccounts } from '@/src/lib/fetch/dashboard/actions/gtm/accounts';
 import { z } from 'zod';
-import { UpdateAccountSchema } from '@/src/lib/schemas/accounts';
+import { UpdateAccountSchema } from '@/src/lib/schemas/gtm/accounts';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ButtonGroup } from '../../../../../components/client/ButtonGroup/ButtonGroup';
 import { LimitReached } from '../../../../../components/client/modals/limitReached';
@@ -54,6 +53,7 @@ interface AccountFormUpdateProps {
   onClose: () => void;
   selectedRows: Account[];
   setAccountInfo: any;
+  table: any;
 }
 // Functional component for updating account forms
 function AccountFormUpdate({
@@ -61,6 +61,7 @@ function AccountFormUpdate({
   onClose,
   selectedRows,
   setAccountInfo,
+  table,
 }: AccountFormUpdateProps) {
   // Using Redux hooks for dispatching actions and selecting state
   const dispatch = useDispatch();
@@ -95,7 +96,6 @@ function AccountFormUpdate({
   }, [selectedRows, form.reset, form]);
 
   // Function to process form submission
-  // Function to process form submission
   const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
 
@@ -127,7 +127,7 @@ function AccountFormUpdate({
       }
 
       // Lastly, check for not found errors
-      if (res && res.notFoundError && res.notFoundIds) {
+      if (res && res.notFoundError) {
         const notFoundAccounts = forms.filter((form) =>
           res?.notFoundIds?.includes(form.accountId)
         );
@@ -141,13 +141,20 @@ function AccountFormUpdate({
               onClick: () => toast.dismiss(),
             },
           });
+        } else {
+          toast.error(res.message || 'Unknown Error.', {
+            action: {
+              label: 'Close',
+              onClick: () => toast.dismiss(),
+            },
+          });
         }
       }
     } catch (error: any) {
       throw new Error(error);
     } finally {
       // Always clear selected rows and close the form
-      dispatch(clearSelectedRows());
+      table.resetRowSelection({});
       dispatch(toggleAllSelected(false));
       onClose();
       form.reset({ forms: [{ accountId: '', name: '' }] });
@@ -159,7 +166,7 @@ function AccountFormUpdate({
   const handleClose = () => {
     dispatch(toggleAllSelected(false));
     form.reset({ forms: [{ accountId: '', name: '' }] });
-    dispatch(clearSelectedRows());
+    table.resetRowSelection({});
     onClose();
   };
 

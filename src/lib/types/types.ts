@@ -122,6 +122,18 @@ export type UpdateAccountResult = {
   names?: string[];
 };
 
+export type GAUpdateAccountResult = {
+  success: boolean;
+  updatedAccounts?: { name: string; displayName: string }[];
+  limitReached?: boolean;
+  message?: string;
+  error?: string;
+  notFoundError?: boolean;
+  notFoundIds?: string[];
+  accountIds?: string[];
+  names?: string[];
+};
+
 export type FormUpdateContainerProps = {
   showOptions: boolean;
   onClose: () => void;
@@ -137,6 +149,13 @@ export type FormUpdateWorkspaceProps = {
   selectedRows: Map<string, ContainerType>;
   workspaces?: any;
   table: any;
+};
+export type FormUpdateProps = {
+  showOptions: boolean;
+  onClose: () => void;
+  selectedRows: Map<string, GA4PropertyType>;
+  workspaces?: any;
+  table?: any;
 };
 
 export type ResultType = {
@@ -167,7 +186,7 @@ export type CreateResult = {
   errors?: string;
 };
 
-export type FormCreateContainerProps = {
+export type FormCreateAccountProps = {
   showOptions: boolean;
   onClose: () => void;
   accounts: any;
@@ -178,6 +197,14 @@ export type FormCreateWorkspaceProps = {
   onClose: () => void;
   accounts: any;
   table: any;
+};
+
+export type FormCreateProps = {
+  showOptions: boolean;
+  onClose: () => void;
+  table: any;
+  accounts?: any;
+  properties?: any;
 };
 
 export type WorkspaceType = {
@@ -233,4 +260,44 @@ export type Workspace = {
   containerId: string;
   workspaceId: string;
   name: string;
+};
+
+export type GA4AccountType = {
+  name: string;
+  displayName: string;
+};
+export type GA4PropertyType = {
+  name: string;
+  parent: string;
+  displayName: string;
+  timeZone: string;
+  currencyCode: string;
+  serviceLevel: string;
+  account: string;
+  propertyType: string;
+};
+
+export type GA4StreamType = {
+  account: string;
+  accountName?: string;
+  name: string;
+  property: string;
+  displayName: string;
+  accountId: string;
+  parent: string;
+  type: 'WEB_DATA_STREAM' | 'ANDROID_APP_DATA_STREAM' | 'IOS_APP_DATA_STREAM';
+  parentURL: string;
+  webStreamData: {
+    measurementId: string;
+    firebaseAppId: string;
+    defaultUri: string;
+  };
+  androidAppStreamData: {
+    firebaseAppId: string;
+    packageName: string;
+  };
+  iosAppStreamData: {
+    firebaseAppId: string;
+    bundleId: string;
+  };
 };

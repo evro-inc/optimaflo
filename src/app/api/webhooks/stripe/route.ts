@@ -3,9 +3,9 @@ import Stripe from 'stripe';
 import prisma from '@/src/lib/prisma';
 import { stripe } from '@/src/lib/stripe';
 import {
+  fetchGASettings,
   fetchGtmSettings,
-  grantGAAccess,
-  grantGtmAccess,
+  grantProductAccess,
 } from '@/src/lib/fetch/dashboard';
 
 // List of relevant Stripe webhook events
@@ -169,7 +169,7 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
 
     const createFeatureLimitsByTier = {
       /* Basic Tier */
-      prod_PR67hSV5IpooDJ: {
+      prod_PUV4HNwx8EuHOi: {
         create: {
           GTMContainer: 3,
           GTMTags: 30,
@@ -183,6 +183,14 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
           GTMTransformations: 9,
           GTMZones: 4,
           GTMVersions: 50,
+          GA4Accounts: 3,
+          GA4Properties: 6,
+          GA4ConversionEvents: 20,
+          GA4CustomDimensions: 20,
+          GA4CustomMetrics: 20,
+          GA4Streams: 3,
+          GA4FBLinks: 2,
+          GA4AdLinks: 2,
         },
         update: {
           GTMContainer: 3,
@@ -197,6 +205,14 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
           GTMTransformations: 9,
           GTMZones: 4,
           GTMVersions: 50,
+          GA4Accounts: 3,
+          GA4Properties: 6,
+          GA4ConversionEvents: 20,
+          GA4CustomDimensions: 20,
+          GA4CustomMetrics: 20,
+          GA4Streams: 3,
+          GA4FBLinks: 2,
+          GA4AdLinks: 2,
         },
         delete: {
           GTMContainer: 3,
@@ -211,10 +227,18 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
           GTMTransformations: 9,
           GTMZones: 5,
           GTMVersions: 50,
+          GA4Accounts: 3,
+          GA4Properties: 6,
+          GA4ConversionEvents: 20,
+          GA4CustomDimensions: 20,
+          GA4CustomMetrics: 20,
+          GA4Streams: 3,
+          GA4FBLinks: 2,
+          GA4AdLinks: 2,
         },
       },
       /* Pro Tier */
-      prod_PR68ixfux75cGT: {
+      prod_PUV5bXKCjMOpz8: {
         create: {
           GTMContainer: 10,
           GTMTags: 60,
@@ -228,6 +252,14 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
           GTMTransformations: 20,
           GTMZones: 15,
           GTMVersions: 150,
+          GA4Accounts: 6,
+          GA4Properties: 12,
+          GA4ConversionEvents: 40,
+          GA4CustomDimensions: 40,
+          GA4CustomMetrics: 40,
+          GA4Streams: 12,
+          GA4FBLinks: 6,
+          GA4AdLinks: 6,
         },
         update: {
           GTMContainer: 10,
@@ -242,6 +274,14 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
           GTMTransformations: 20,
           GTMZones: 15,
           GTMVersions: 150,
+          GA4Accounts: 6,
+          GA4Properties: 12,
+          GA4ConversionEvents: 40,
+          GA4CustomDimensions: 40,
+          GA4CustomMetrics: 40,
+          GA4Streams: 12,
+          GA4FBLinks: 6,
+          GA4AdLinks: 6,
         },
         delete: {
           GTMContainer: 10,
@@ -256,10 +296,18 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
           GTMTransformations: 20,
           GTMZones: 15,
           GTMVersions: 150,
+          GA4Accounts: 6,
+          GA4Properties: 12,
+          GA4ConversionEvents: 40,
+          GA4CustomDimensions: 40,
+          GA4CustomMetrics: 40,
+          GA4Streams: 12,
+          GA4FBLinks: 6,
+          GA4AdLinks: 6,
         },
       },
       /* Enterprise Tier */
-      prod_PR6ETKqabgOXDt: {
+      prod_PUV6oomP5QRnkp: {
         create: {
           GTMContainer: 10000,
           GTMTags: 10000,
@@ -273,6 +321,14 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
           GTMTransformations: 10000,
           GTMZones: 10000,
           GTMVersions: 10000,
+          GA4Accounts: 10000,
+          GA4Properties: 10000,
+          GA4ConversionEvents: 10000,
+          GA4CustomDimensions: 10000,
+          GA4CustomMetrics: 10000,
+          GA4Streams: 10000,
+          GA4FBLinks: 10000,
+          GA4AdLinks: 10000,
         },
         update: {
           GTMContainer: 10000,
@@ -287,6 +343,14 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
           GTMTransformations: 10000,
           GTMZones: 10000,
           GTMVersions: 10000,
+          GA4Accounts: 10000,
+          GA4Properties: 10000,
+          GA4ConversionEvents: 10000,
+          GA4CustomDimensions: 10000,
+          GA4CustomMetrics: 10000,
+          GA4Streams: 10000,
+          GA4FBLinks: 10000,
+          GA4AdLinks: 10000,
         },
         delete: {
           GTMContainer: 10000,
@@ -301,6 +365,14 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
           GTMTransformations: 10000,
           GTMZones: 10000,
           GTMVersions: 10000,
+          GA4Accounts: 10000,
+          GA4Properties: 10000,
+          GA4ConversionEvents: 10000,
+          GA4CustomDimensions: 10000,
+          GA4CustomMetrics: 10000,
+          GA4Streams: 10000,
+          GA4FBLinks: 10000,
+          GA4AdLinks: 10000,
         },
       },
     };
@@ -369,6 +441,7 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
     }
 
     await prisma.$transaction(operations);
+
     if (createdOrUpdatedSubscription.status) {
       await prisma.subscription.upsert({
         where: {
@@ -714,15 +787,11 @@ async function upsertInvoiceRecord(invoice: Stripe.Invoice) {
 }
 
 async function grantAccessToContent(invoice: Stripe.Invoice) {
-  // needs to match ids for grantGtmAccess function
+  // needs to match ids for grantAccess function
   const productAccessGranters = {
-    prod_PR67hSV5IpooDJ: grantGtmAccess,
-    prod_PR68ixfux75cGT: grantGtmAccess,
-    prod_PR6ETKqabgOXDt: grantGtmAccess,
-
-    prod_PR67hSV5IpooDJ_GA4: grantGAAccess,
-    prod_PR68ixfux75cGT_GA4: grantGAAccess,
-    prod_PR6ETKqabgOXDt_GA4: grantGAAccess,
+    prod_PUV4HNwx8EuHOi: grantProductAccess,
+    prod_PUV5bXKCjMOpz8: grantProductAccess,
+    prod_PUV6oomP5QRnkp: grantProductAccess,
   };
 
   // Get the product IDs associated with the invoice
@@ -743,7 +812,7 @@ async function grantAccessToContent(invoice: Stripe.Invoice) {
 }
 
 // Fetch GTM Settings
-async function fetchGTM(invoice: Stripe.Invoice) {
+async function fetchGoogle(invoice: Stripe.Invoice) {
   // Fetch user ID using the Stripe Customer ID
   const customerRecord = await prisma.customer.findFirst({
     where: {
@@ -762,6 +831,7 @@ async function fetchGTM(invoice: Stripe.Invoice) {
   }
   if (customerRecord) {
     await fetchGtmSettings(userId);
+    await fetchGASettings(userId);
   }
 }
 
@@ -808,6 +878,8 @@ async function deleteCustomerAndRelatedRecords(stripeCustomerId: string) {
 
       // Delete related gtm records
       await prisma.gtm.deleteMany({ where: { userId: stripeCustomerId } });
+
+      await prisma.ga.deleteMany({ where: { userId: stripeCustomerId } });
 
       await prisma.tierLimit.deleteMany({
         where: { subscriptionId: stripeCustomerId },
@@ -878,7 +950,7 @@ export async function POST(req: NextRequest) {
         case 'invoice.paid':
           await upsertInvoiceRecord(event.data.object as Stripe.Invoice);
           await grantAccessToContent(event.data.object as Stripe.Invoice);
-          await fetchGTM(event.data.object as Stripe.Invoice);
+          await fetchGoogle(event.data.object as Stripe.Invoice);
           await resetUsageForSubscription(
             (event.data.object as Stripe.Invoice).subscription as string
           );

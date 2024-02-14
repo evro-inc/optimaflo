@@ -252,58 +252,6 @@ export const ButtonSubscribe = ({
   );
 };
 
-export const ButtonDelete = ({
-  variant = 'primary',
-  text,
-  billingInterval,
-  onDelete,
-  ...props
-}) => {
-  const computedClasses = useMemo(() => {
-    const modeClass = getModeClasses(variant, billingInterval);
-    return [modeClass].join(' ');
-  }, [variant, billingInterval]);
-
-  return (
-    <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button
-          className={`${BASE_BUTTON_CLASSES} ${computedClasses}`}
-          {...props}
-        >
-          <svg
-            className="w-3 h-3"
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            fill="currentColor"
-            viewBox="0 0 16 16"
-          >
-            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z" />
-            <path
-              fillRule="evenodd"
-              d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"
-            />
-          </svg>
-          {text}
-        </Button>
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This action cannot be undone. This will permanently be deleted.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={onDelete}>Continue</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  );
-};
-
 export const ButtonWithIcon = ({
   variant = 'primary',
   text,
@@ -386,5 +334,85 @@ export const ButtonCustomerPortal = ({
     >
       {text}
     </Button>
+  );
+};
+
+/* SHADUI */
+
+export const ButtonDelete = ({ onDelete, disabled }) => {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button
+          variant="destructive"
+          disabled={disabled}
+          className="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm"
+        >
+          <svg
+            className="w-3 h-3"
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            fill="currentColor"
+            viewBox="0 0 16 16"
+          >
+            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z" />
+            <path
+              fillRule="evenodd"
+              d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"
+            />
+          </svg>
+          Delete
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This action cannot be undone. This will permanently be deleted.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={onDelete}>Continue</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+};
+
+export const ButtonSubmitAlert = ({
+  text,
+  form,
+}: {
+  text: string;
+  form: string;
+}) => {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button type="submit">{text}</Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Create New GA4 Account(s)</AlertDialogTitle>
+          <AlertDialogDescription>
+            Once you click continue, you have see tabs open in your browser.
+            These tabs will be for you to accept the Google Analytics terms of
+            service for each account you want to create. Once you have accepted,
+            you will need to come back here and refresh the table to see you're
+            updated account(s).
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction asChild>
+            <Button type="submit" form={form}>
+              Continue
+            </Button>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 };

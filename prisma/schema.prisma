@@ -1,13 +1,11 @@
 datasource db {
-  provider   = "postgresql"
-  url        = env("DATABASE_URL")
-  directUrl  = env("DIRECT_URL")
-  extensions = [hstore(schema: "myHstoreSchema"), pg_trgm, postgis(version: "2.1")]
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["postgresqlExtensions"]
+  provider = "prisma-client-js"
 }
 
 model Session {
@@ -59,6 +57,7 @@ model User {
   Invoice            Invoice[]
   ProductAccess      ProductAccess[]
   gtm                gtm[]
+  ga                 ga[]
 }
 
 model Customer {
@@ -215,4 +214,15 @@ model gtm {
 
   @@unique([userId, accountId, containerId, workspaceId], name: "userId_accountId_containerId_workspaceId")
   @@index([userId], name: "gtmSettingsUserId")
+}
+
+model ga {
+  id         String @id @default(cuid())
+  userId     String @map("user_id")
+  accountId  String @map("account_id")
+  propertyId String @map("property_id")
+  User       User   @relation(fields: [userId], references: [id])
+
+  @@unique([userId, accountId, propertyId], name: "userId_accountId_propertyId")
+  @@index([userId], name: "gaSettingsUserId")
 }

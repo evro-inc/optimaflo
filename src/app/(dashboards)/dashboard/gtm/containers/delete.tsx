@@ -6,7 +6,7 @@ import {
   setIsLimitReached,
   setNotFoundError,
 } from '@/src/lib/redux/tableSlice';
-import { DeleteContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containers';
+import { DeleteContainers } from '@/src/lib/fetch/dashboard/actions/gtm/containers';
 import { FeatureResponse } from '@/src/lib/types/types';
 import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
@@ -99,7 +99,7 @@ export const useDeleteHook = (selectedRows, table) => {
     }
 
     dispatch(clearSelectedRows());
-    table.setRowSelection({});
+    table.resetRowSelection({});
   };
   return handleDelete;
 };

@@ -1,12 +1,12 @@
 'use client';
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { combineContainers } from '@/src/lib/fetch/dashboard/gtm/actions/containers';
+import { combineContainers } from '@/src/lib/fetch/dashboard/actions/ga/properties';
 import { LimitReached } from '../../modals/limitReached';
 import { ButtonGroup } from '../../ButtonGroup/ButtonGroup';
 import { XMarkIcon } from '@heroicons/react/24/solid';
 import { z } from 'zod';
-import { UpdateContainerSchema } from '@/src/lib/schemas/containers';
+import { UpdateContainerSchema } from '@/src/lib/schemas/gtm/containers';
 import {
   clearSelectedRows,
   selectTable,

@@ -5,30 +5,25 @@ import dynamic from 'next/dynamic';
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 const LimitReached = dynamic(
-  () => import('../modals/limitReached').then((mod) => mod.LimitReached),
+  () =>
+    import('../../../../../components/client/modals/limitReached').then(
+      (mod) => mod.LimitReached
+    ),
   { ssr: false }
 );
 
-const AccountFormUpdate = dynamic(
-  () => import('../../../app/(dashboards)/dashboard/gtm/accounts/update'),
-  {
-    ssr: false,
-  }
-);
+const AccountFormUpdate = dynamic(() => import('./update'), {
+  ssr: false,
+});
 const NotFoundErrorModal = dynamic(
   () =>
-    import('../../../components/client/modals/notFoundError').then(
+    import('../../../../../components/client/modals/notFoundError').then(
       (mod) => mod.NotFoundError
     ),
   { ssr: false }
 );
 
-interface Account {
-  accountId: string;
-  name: string;
-}
-
-function AccountForms({ selectedRows }: { selectedRows: Account[] }) {
+function AccountForms({ selectedRows, table }) {
   const dispatch = useDispatch();
   const { isLimitReached, notFoundError } = useSelector(selectTable);
   const { showUpdate } = useSelector(selectEntity);
@@ -48,6 +43,7 @@ function AccountForms({ selectedRows }: { selectedRows: Account[] }) {
           onClose={() => dispatch(toggleUpdate())}
           selectedRows={selectedRows}
           setAccountInfo={setAccountInfo}
+          table={table}
         />
       )}
     </>

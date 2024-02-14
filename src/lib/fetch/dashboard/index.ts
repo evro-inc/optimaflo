@@ -16,7 +16,7 @@ export function cleanWorkspaceFeatures(workspaces: any[] | undefined) {
 }
 
 /* GTM UTILS */
-export async function grantGtmAccess(customerId: string) {
+export async function grantProductAccess(customerId: string) {
   // Fetch user ID using the Stripe Customer ID
   const customerRecord = await prisma.customer.findFirst({
     where: {
@@ -31,14 +31,14 @@ export async function grantGtmAccess(customerId: string) {
   const userId = customerRecord.userId;
 
   // Get the product IDs for the GTM products - Needs to make IDs from Stripe webhook - see function grantAccessToContent
-  const gtmProductIds = [
-    'prod_PR67hSV5IpooDJ',
-    'prod_PR68ixfux75cGT',
-    'prod_PR6ETKqabgOXDt',
+  const productIds = [
+    'prod_PUV4HNwx8EuHOi',
+    'prod_PUV5bXKCjMOpz8',
+    'prod_PUV6oomP5QRnkp',
   ];
 
   // Iterate over the product IDs
-  for (const productId of gtmProductIds) {
+  for (const productId of productIds) {
     // Update the ProductAccess record for this user and product to grant access
     await prisma.productAccess.upsert({
       where: { userId_productId: { userId, productId } },
@@ -158,7 +158,7 @@ export async function fetchGtmSettings(userId: string) {
 
 /* GA UTILS */
 
-export async function grantGAAccess(customerId: string) {
+/* export async function grantGAAccess(customerId: string) {
   // Fetch user ID using the Stripe Customer ID
   const customerRecord = await prisma.customer.findFirst({
     where: {
@@ -184,125 +184,92 @@ export async function grantGAAccess(customerId: string) {
       create: { userId, productId, granted: true },
     });
   }
-}
+} */
 
 /* NEEDS TO BE REFACTORED FOR GA4 */
-export async function fetchGASettings(userId) {
-  // Fetch the user from your database using the Stripe customer ID
-  const user = await prisma.account.findFirst({
-    where: {
-      userId: userId,
-    },
-  });
-
-  // Create an OAuth2 client
-  const oauth2Client = new OAuth2Client(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET,
-    'http://localhost:3000/api/auth/callback/google'
-  );
-
-  oauth2Client.setCredentials({
-    access_token: user.accessToken,
-    refresh_token: user.refreshToken,
-  });
-
-  // This will refresh the access token if it's expired
-  const { token } = await oauth2Client.getAccessToken();
-
-  // Update the access token in your database
-  await prisma.account.update({
-    where: {
-      id: user.userId,
-    },
-    data: {
-      access_token: token,
-    },
-  });
-
+export async function fetchGASettings(userId: string) {
   // Check if the User record exists
-  const existingUser = await prisma.User.findFirst({
-    where: {
-      id: user.id,
-    },
-  });
+  const existingUser = await prisma.User.findFirst({ where: { id: userId } });
 
   if (!existingUser) {
     // Create the User record if it doesn't exist
-    await prisma.User.create({
-      data: {
-        id: user.id,
-      },
-    });
+    await prisma.User.create({ data: { id: userId } });
   }
+
+  const token = await clerkClient.users.getUserOauthAccessToken(
+    userId,
+    'oauth_google'
+  );
+  const tokenValue = token[0].token;
+  const headers = { Authorization: `Bearer ${tokenValue}` };
+
+  const existingRecords = await prisma.gtm.findMany({ where: { userId } });
+  const existingCompositeKeySet = new Set(
+    existingRecords.map(
+      (rec) => `${rec.accountId}-${rec.containerId}-${rec.workspaceId}`
+    )
+  );
 
   let retries = 0;
   const MAX_RETRIES = 3;
+  let success = false;
 
-  while (retries < MAX_RETRIES) {
-    //try catch block
+  while (retries < MAX_RETRIES && !success) {
     try {
-      // Create a Tag Manager service client
-      const gtm = new tagmanager_v2.Tagmanager({
-        auth: oauth2Client,
-      });
-
       // Fetch the list of accounts
-      const accountsRes = await gtm.accounts.list();
-      const accountIds =
-        accountsRes.data.account?.map((account) => account.accountId) || [];
+      const accountsResponse = await fetch(
+        'https://analyticsadmin.googleapis.com/v1beta/accounts?fields=accounts(name,displayName,regionCode)',
+        { headers }
+      );
+      const accountsData = await accountsResponse.json();
 
-      for (const accountId of accountIds) {
-        const containersRes = await gtm.accounts.containers.list({
-          parent: `accounts/${accountId}`,
-        });
-        const containerIds =
-          containersRes.data.container?.map(
-            (container) => container.containerId
-          ) || [];
+      const accountNames =
+        accountsData.accounts?.map((account) => account.name) || [];
 
-        for (const containerId of containerIds) {
-          const workspacesRes = await gtm.accounts.containers.workspaces.list({
-            parent: `accounts/${accountId}/containers/${containerId}`,
-          });
-          const workspaceIds =
-            workspacesRes.data.workspace?.map(
-              (workspace) => workspace.workspaceId
-            ) || [];
+      for (const accountId of accountNames) {
+        const uniqueAccountId = accountId.split('/')[1];
 
-          // Store the account, container, and workspace IDs in the database
-          for (const workspaceId of workspaceIds) {
-            // Check if the record already exists
-            const existingRecord = await prisma.gtm.findFirst({
+        // Fetch containers for each account
+        const propertyResponse = await fetch(
+          `https://analyticsadmin.googleapis.com/v1beta/properties?filter=parent:accounts/${uniqueAccountId}`,
+          { headers }
+        );
+
+        const propertyData = await propertyResponse.json();
+
+        const propertyIds =
+          propertyData.properties?.map((property) => {
+            // Split the property.name at '/' and take the second part ([1]), which is the ID
+            return property.name.split('/')[1];
+          }) || [];
+
+        for (const propertyId of propertyIds) {
+          if (!existingCompositeKeySet.has(`${accountId}-${propertyId}`)) {
+            await prisma.ga.upsert({
               where: {
-                userId: userId,
-                accountId: accountId,
-                containerId: containerId,
-                workspaceId: workspaceId,
+                userId_accountId_propertyId: {
+                  userId,
+                  accountId,
+                  propertyId,
+                },
+              },
+              update: {
+                accountId,
+                propertyId,
+                User: { connect: { id: userId } },
+              },
+              create: {
+                accountId,
+                propertyId,
+                User: { connect: { id: userId } },
               },
             });
-
-            // If the record does not exist, insert it
-            if (!existingRecord) {
-              await prisma.gtm.create({
-                data: {
-                  accountId: accountId,
-                  containerId: containerId,
-                  workspaceId: workspaceId,
-                  User: {
-                    connect: {
-                      id: userId,
-                    },
-                  },
-                },
-              });
-            }
           }
         }
       }
+      success = true;
     } catch (error: any) {
       if (error.message.includes('Quota exceeded')) {
-        // Wait for 2^retries * 1000 milliseconds and then retry
         await new Promise((resolve) =>
           setTimeout(resolve, Math.pow(2, retries) * 1000)
         );
