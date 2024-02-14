@@ -82,6 +82,9 @@ const FormUpdateStream: React.FC<FormUpdateProps> = ({
       firebaseAppId: '',
       bundleId: '',
     },
+    name: '',
+    accountId: '',
+    parent: '',
   };
 
   const form = useForm<Forms>({

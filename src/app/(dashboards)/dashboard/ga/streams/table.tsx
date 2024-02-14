@@ -37,7 +37,7 @@ import { ReloadIcon } from '@radix-ui/react-icons';
 import { toggleCreate, toggleUpdate } from '@/src/lib/redux/globalSlice';
 import { useDispatch } from 'react-redux';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
-import { useDeleteHook } from '../properties/delete';
+import { useDeleteHook } from '../streams/delete';
 import { notFound } from 'next/navigation';
 import { setIsLimitReached } from '@/src/lib/redux/tableSlice';
 import StreamForms from './forms';

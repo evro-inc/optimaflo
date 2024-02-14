@@ -12,6 +12,7 @@ import {
   FeatureResult,
   FeatureResponse,
   GA4PropertyType,
+  GA4StreamType,
 } from '@/src/lib/types/types';
 import {
   handleApiResponseError,
@@ -23,7 +24,7 @@ import { fetchGASettings } from '../..';
 import { DataStreamType, FormsSchema } from '@/src/lib/schemas/ga/streams';
 
 /************************************************************************************
-  Function to list GA properties
+  Function to list GA streams
 ************************************************************************************/
 export async function listGAPropertyStreams() {
   let retries = 0;
@@ -70,7 +71,7 @@ export async function listGAPropertyStreams() {
 
           const urls = uniquePropertyIds.map(
             (propertyId) =>
-              `https://analyticsadmin.googleapis.com/v1beta/properties/${propertyId}/dataStreams`
+              `https://analyticsadmin.googleapis.com/v1beta/streams/${propertyId}/dataStreams`
           );
 
           const headers = {
@@ -117,7 +118,7 @@ export async function listGAPropertyStreams() {
 }
 
 /************************************************************************************
-  Create a single property or multiple properties
+  Create a single property or multiple streams
 ************************************************************************************/
 export async function createGAPropertyStreams(formData: DataStreamType) {
   const { userId } = await auth();
@@ -483,7 +484,7 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
 }
 
 /************************************************************************************
-  Update a single property or multiple properties
+  Update a single property or multiple streams
 ************************************************************************************/
 export async function updateGAPropertyStreams(formData: DataStreamType) {
   const { userId } = await auth();
@@ -863,5 +864,283 @@ export async function updateGAPropertyStreams(formData: DataStreamType) {
     message: 'Streams created successfully', // Customize the message as needed
     results: results, // Use the correctly typed results
     notFoundError: false, // Set based on actual not found status
+  };
+}
+
+/************************************************************************************
+  Delete a single property or multiple streams
+************************************************************************************/
+export async function deleteGAPropertyStreams(
+  selectedStreams: Set<GA4StreamType>,
+  streamNames: string[]
+): Promise<FeatureResponse> {
+  // Initialization of retry mechanism
+  let retries = 0;
+  const MAX_RETRIES = 3;
+  let delay = 1000;
+
+  // Arrays to track various outcomes
+  const errors: string[] = [];
+  const successfulDeletions: Array<{
+    name: string;
+  }> = [];
+  const featureLimitReached: { name: string }[] = [];
+  const notFoundLimit: { name: string }[] = [];
+  const toDeleteStreams = new Set<GA4StreamType>(selectedStreams);
+  // Authenticating user and getting user ID
+  const { userId } = await auth();
+  // If user ID is not found, return a 'not found' error
+  if (!userId) return notFound();
+  const token = await currentUserOauthAccessToken(userId);
+
+  // Check for feature limit using Prisma ORM
+  const tierLimitResponse: any = await tierDeleteLimit(userId, 'GA4Streams');
+  const limit = Number(tierLimitResponse.deleteLimit);
+  const deleteUsage = Number(tierLimitResponse.deleteUsage);
+  const availableDeleteUsage = limit - deleteUsage;
+  const IdsProcessed = new Set<string>();
+
+  // Handling feature limit
+  if (tierLimitResponse && tierLimitResponse.limitReached) {
+    return {
+      success: false,
+      limitReached: true,
+      errors: [],
+      message: 'Feature limit reached for Deleting Streams',
+      results: [],
+    };
+  }
+
+  if (toDeleteStreams.size > availableDeleteUsage) {
+    // If the deletion request exceeds the available limit
+    return {
+      success: false,
+      features: [],
+      errors: [
+        `Cannot delete ${toDeleteStreams.size} streams as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
+      ],
+      results: [],
+      limitReached: true,
+      message: `Cannot delete ${toDeleteStreams.size} streams as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
+    };
+  }
+  let permissionDenied = false;
+
+  if (toDeleteStreams.size <= availableDeleteUsage) {
+    // Retry loop for deletion requests
+    while (
+      retries < MAX_RETRIES &&
+      toDeleteStreams.size > 0 &&
+      !permissionDenied
+    ) {
+      try {
+        // Enforcing rate limit
+        const { remaining } = await gaRateLimit.blockUntilReady(
+          `user:${userId}`,
+          1000
+        );
+
+        if (remaining > 0) {
+          await limiter.schedule(async () => {
+            // Creating promises for each property deletion
+            const deletePromises = Array.from(toDeleteStreams).map(
+              async (identifier) => {
+                const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.name}`;
+                const headers = {
+                  Authorization: `Bearer ${token[0].token}`,
+                  'Content-Type': 'application/json',
+                  'Accept-Encoding': 'gzip',
+                };
+
+                try {
+                  const response = await fetch(url, {
+                    method: 'DELETE',
+                    headers: headers,
+                  });
+
+                  const parsedResponse = await response.json();
+
+                  const cleanedParentId = identifier.parent.split('/')[1];
+
+                  if (response.ok) {
+                    IdsProcessed.add(identifier.name);
+                    successfulDeletions.push({
+                      name: identifier.name,
+                    });
+                    toDeleteStreams.delete(identifier);
+                    await prisma.ga.deleteMany({
+                      where: {
+                        accountId: `${identifier.accountId}`,
+                        propertyId: cleanedParentId,
+                        userId: userId, // Ensure this matches the user ID
+                      },
+                    });
+                    await prisma.tierLimit.update({
+                      where: { id: tierLimitResponse.id },
+                      data: { deleteUsage: { increment: 1 } },
+                    });
+
+                    return {
+                      name: identifier.name,
+                      displayName: identifier.displayName,
+                      success: true,
+                    };
+                  } else {
+                    const errorResult = await handleApiResponseError(
+                      response,
+                      parsedResponse,
+                      'GA4Stream',
+                      streamNames
+                    );
+
+                    if (errorResult) {
+                      errors.push(`${errorResult.message}`);
+                      if (
+                        errorResult.errorCode === 403 &&
+                        parsedResponse.message === 'Feature limit reached'
+                      ) {
+                        featureLimitReached.push({
+                          name: identifier.name,
+                        });
+                      } else if (errorResult.errorCode === 404) {
+                        notFoundLimit.push({
+                          name: identifier.name,
+                        });
+                      } else {
+                        errors.push(
+                          `An unknown error occurred for property ${streamNames}.`
+                        );
+                      }
+
+                      toDeleteStreams.delete(identifier);
+                      permissionDenied = errorResult ? true : permissionDenied;
+                    }
+                  }
+                } catch (error: any) {
+                  // Handling exceptions during fetch
+                  errors.push(
+                    `Error deleting property ${identifier.parent}: ${error.message}`
+                  );
+                }
+                IdsProcessed.add(identifier.parent);
+                toDeleteStreams.delete(identifier);
+                return { name: identifier.parent, success: false };
+              }
+            );
+
+            // Awaiting all deletion promises
+            await Promise.all(deletePromises);
+          });
+
+          if (notFoundLimit.length > 0) {
+            return {
+              success: false,
+              limitReached: false,
+              notFoundError: true, // Set the notFoundError flag
+              message: `Could not delete stream. Please check your permissions. Property Name: 
+              ${streamNames.find((name) =>
+                name.includes(name)
+              )}. All other streams were successfully deleted.`,
+              results: notFoundLimit.map(({ name }) => ({
+                id: [name], // Combine accountId and propertyId into a single array of strings
+                name: [
+                  streamNames.find((name) => name.includes(name)) || 'Unknown',
+                ], // Ensure name is an array, match by propertyId or default to 'Unknown'
+                success: false,
+                notFound: true,
+              })),
+            };
+          }
+          if (featureLimitReached.length > 0) {
+            return {
+              success: false,
+              limitReached: true,
+              notFoundError: false,
+              message: `Feature limit reached for streams: ${featureLimitReached.join(
+                ', '
+              )}`,
+              results: featureLimitReached.map(({ name }) => ({
+                id: [name], // Ensure id is an array
+                name: [
+                  streamNames.find((name) => name.includes(name)) || 'Unknown',
+                ], // Ensure name is an array, match by accountId or default to 'Unknown'
+                success: false,
+                featureLimitReached: true,
+              })),
+            };
+          }
+          // Update tier limit usage as before (not shown in code snippet)
+          if (successfulDeletions.length === selectedStreams.size) {
+            break; // Exit loop if all streams are processed successfully
+          }
+          if (permissionDenied) {
+            break; // Exit the loop if a permission error was encountered
+          }
+        } else {
+          throw new Error('Rate limit exceeded');
+        }
+      } catch (error: any) {
+        // Handling rate limit exceeded error
+        if (error.code === 429 || error.status === 429) {
+          const jitter = Math.random() * 200;
+          await new Promise((resolve) => setTimeout(resolve, delay + jitter));
+          delay *= 2;
+          retries++;
+        } else {
+          break;
+        }
+      } finally {
+        // This block will run regardless of the outcome of the try...catch
+
+        const cacheKey = `ga:streams:userId:${userId}`;
+        await redis.del(cacheKey);
+
+        await revalidatePath(`/dashboard/ga/streams`);
+      }
+    }
+  }
+  if (permissionDenied) {
+    return {
+      success: false,
+      errors: errors,
+      results: [],
+      message: errors.join(', '),
+    };
+  }
+
+  if (errors.length > 0) {
+    return {
+      success: false,
+      features: successfulDeletions.map(({ name }) => `${name}`),
+      errors: errors,
+      results: successfulDeletions.map(({ name }) => ({
+        id: [name], // Ensure id is an array
+        name: [streamNames.find((name) => name.includes(name)) || 'Unknown'], // Ensure name is an array and provide a default value
+        success: true,
+      })),
+      // Add a general message if needed
+      message: errors.join(', '),
+    };
+  }
+  // If there are successful deletions, update the deleteUsage
+  if (successfulDeletions.length > 0) {
+    const specificCacheKey = `ga:streams:userId:${userId}`;
+    await redis.del(specificCacheKey);
+    // Revalidate paths if needed
+    revalidatePath(`/dashboard/ga/streams`);
+  }
+
+  // Returning the result of the deletion process
+  return {
+    success: errors.length === 0,
+    message: `Successfully deleted ${successfulDeletions.length} stream(s)`,
+    features: successfulDeletions.map(({ name }) => `${name}`),
+    errors: errors,
+    notFoundError: notFoundLimit.length > 0,
+    results: successfulDeletions.map(({ name }) => ({
+      id: [name], // Ensure id is an array
+      name: [streamNames.find((name) => name.includes(name)) || 'Unknown'], // Ensure name is an array
+      success: true,
+    })),
   };
 }

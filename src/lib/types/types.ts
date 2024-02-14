@@ -280,8 +280,11 @@ export type GA4PropertyType = {
 export type GA4StreamType = {
   account: string;
   accountName?: string;
+  name: string;
   property: string;
   displayName: string;
+  accountId: string;
+  parent: string;
   type: 'WEB_DATA_STREAM' | 'ANDROID_APP_DATA_STREAM' | 'IOS_APP_DATA_STREAM';
   parentURL: string;
   webStreamData: {

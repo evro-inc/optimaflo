@@ -107,6 +107,9 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
       firebaseAppId: '',
       bundleId: '',
     },
+    name: '',
+    accountId: '',
+    parent: '',
   };
 
   const form = useForm<Forms>({
