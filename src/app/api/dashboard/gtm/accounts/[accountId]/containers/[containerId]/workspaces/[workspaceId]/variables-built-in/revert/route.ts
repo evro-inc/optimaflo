@@ -8,7 +8,7 @@ import prisma from '@/src/lib/prisma';
 import Joi from 'joi';
 import { isErrorWithStatus } from '@/src/lib/fetch/dashboard';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
-import { BuiltInVariableType } from '@/src/lib/types/gtm';
+import { BuiltInVariableType } from '@/src/types/gtm';
 
 import { useSession } from '@clerk/nextjs';
 

@@ -1,4 +1,4 @@
-import { getURL } from '../helpers';
+import { getURL } from '../../utils/helpers';
 import prisma from '../prisma';
 
 // get subscriptions

@@ -6,13 +6,13 @@ import {
   setErrorDetails,
   setIsLimitReached,
   setNotFoundError,
-} from '@/src/lib/redux/tableSlice';
+} from '@/src/redux/tableSlice';
 import { deleteAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
 import {
   GA4AccountType,
   FeatureResponse,
   GA4PropertyType,
-} from '@/src/lib/types/types';
+} from '@/src/types/types';
 import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
 import { DeleteProperties } from '@/src/lib/fetch/dashboard/actions/ga/properties';

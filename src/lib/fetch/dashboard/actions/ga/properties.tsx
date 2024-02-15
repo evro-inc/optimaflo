@@ -12,13 +12,13 @@ import {
   FeatureResult,
   FeatureResponse,
   GA4PropertyType,
-} from '@/src/lib/types/types';
+} from '@/src/types/types';
 import {
   handleApiResponseError,
   tierCreateLimit,
   tierDeleteLimit,
   tierUpdateLimit,
-} from '@/src/lib/helpers/server';
+} from '@/src/utils/server';
 import { fetchGASettings, fetchGtmSettings } from '../..';
 import {
   CreatePropertySchema,

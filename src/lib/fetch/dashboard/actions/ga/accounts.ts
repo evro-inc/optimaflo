@@ -18,8 +18,8 @@ import {
   tierCreateLimit,
   tierDeleteLimit,
   tierUpdateLimit,
-} from '@/src/lib/helpers/server';
-import { FeatureResponse, FeatureResult } from '@/src/lib/types/types';
+} from '@/src/utils/server';
+import { FeatureResponse, FeatureResult } from '@/src/types/types';
 import prisma from '@/src/lib/prisma';
 import { fetchGASettings, fetchGtmSettings } from '../..';
 

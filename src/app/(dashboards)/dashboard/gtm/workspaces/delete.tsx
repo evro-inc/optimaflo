@@ -6,9 +6,9 @@ import {
   setErrorDetails,
   setIsLimitReached,
   setNotFoundError,
-} from '@/src/lib/redux/tableSlice';
+} from '@/src/redux/tableSlice';
 import { DeleteWorkspaces } from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
-import { WorkspaceType, FeatureResponse } from '@/src/lib/types/types';
+import { WorkspaceType, FeatureResponse } from '@/src/types/types';
 import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
 

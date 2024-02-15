@@ -7,10 +7,10 @@ import {
   selectTable,
   setIsLimitReached,
   setNotFoundError,
-} from '@/src/lib/redux/tableSlice';
+} from '@/src/redux/tableSlice';
 import { DeleteWorkspaces } from '@/src/lib/fetch/dashboard/actions/ga/workspaces';
 
-import { DeleteWorkspacesResponse, WorkspaceType } from '@/src/lib/types/types';
+import { DeleteWorkspacesResponse, WorkspaceType } from '@/src/types/types';
 
 function ButtonDel() {
   const dispatch = useDispatch();

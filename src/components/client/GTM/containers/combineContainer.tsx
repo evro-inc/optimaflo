@@ -11,15 +11,15 @@ import {
   clearSelectedRows,
   selectTable,
   setIsLimitReached,
-} from '@/src/lib/redux/tableSlice';
-import { selectIsLoading, setLoading } from '@/src/lib/redux/globalSlice';
+} from '@/src/redux/tableSlice';
+import { selectIsLoading, setLoading } from '@/src/redux/globalSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   FormUpdateContainerProps,
   UpdateContainersResult,
-} from '@/src/lib/types/types';
+} from '@/src/types/types';
 
 // Type for the entire form data
 type Forms = z.infer<typeof UpdateContainerSchema>;

@@ -1,10 +1,10 @@
 'use client';
-import { selectTable, setIsLimitReached } from '@/src/lib/redux/tableSlice';
+import { selectTable, setIsLimitReached } from '@/src/redux/tableSlice';
 import {
   selectGlobal,
   toggleCreate,
   toggleUpdate,
-} from '@/src/lib/redux/globalSlice';
+} from '@/src/redux/globalSlice';
 import dynamic from 'next/dynamic';
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';

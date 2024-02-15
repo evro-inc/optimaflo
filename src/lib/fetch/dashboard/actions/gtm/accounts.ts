@@ -10,7 +10,7 @@ import { revalidatePath } from 'next/cache'; // Importing function to revalidate
 import { currentUserOauthAccessToken } from '@/src/lib/clerk'; // Importing function to get the current user's OAuth access token
 import { redis } from '@/src/lib/redis/cache'; // Importing Redis cache instance
 import { notFound } from 'next/navigation'; // Importing utility for handling 'not found' navigation in Next.js
-import { handleApiResponseError } from '@/src/lib/helpers/server';
+import { handleApiResponseError } from '@/src/utils/server';
 
 // Defining a type for form update schema using Zod
 type FormUpdateSchema = z.infer<typeof UpdateAccountSchema>;

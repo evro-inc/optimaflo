@@ -3,7 +3,7 @@ import {
   selectTable,
   setSelectedRows,
   toggleAllSelected,
-} from '@/src/lib/redux/tableSlice';
+} from '@/src/redux/tableSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { Checkbox } from '../../ui/checkbox';
 

@@ -3,14 +3,14 @@ import React, { useState } from 'react';
 import { Separator } from '@/src/components/ui/separator';
 import { Button } from '@/src/components/ui/button';
 import { ChevronRightIcon } from '@radix-ui/react-icons';
-import { cn } from '@/src/lib/utils';
+import { cn } from '@/src/utils/utils';
 import { SideNav } from './side-nav';
 import { NavItems } from './NavItems';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   selectIsSidebarOpen,
   toggleSidebar,
-} from '@/src/lib/redux/sidebarSlice';
+} from '@/src/redux/sidebarSlice';
 
 interface SidebarProps {
   className?: string;

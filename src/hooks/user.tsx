@@ -1,8 +1,8 @@
-import { setUserDetails } from '@/src/lib/redux/userSlice';
-import { setSubscription } from '@/src/lib/redux/subscriberSlice';
+import { setUserDetails } from '@/src/redux/userSlice';
+import { setSubscription } from '@/src/redux/subscriberSlice';
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { setLoading } from '@/src/lib/redux/globalSlice';
+import { setLoading } from '@/src/redux/globalSlice';
 
 // hooks/useUserDetails.js
 export const useUserDetails = (userId) => {

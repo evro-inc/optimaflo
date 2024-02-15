@@ -6,9 +6,9 @@ import {
   setErrorDetails,
   setIsLimitReached,
   setNotFoundError,
-} from '@/src/lib/redux/tableSlice';
+} from '@/src/redux/tableSlice';
 import { deleteAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
-import { GA4AccountType, FeatureResponse } from '@/src/lib/types/types';
+import { GA4AccountType, FeatureResponse } from '@/src/types/types';
 import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
 

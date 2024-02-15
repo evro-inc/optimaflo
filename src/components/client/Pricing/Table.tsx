@@ -1,6 +1,6 @@
 'use server';
 import React from 'react';
-import { ProductWithPrice } from '@/src/lib/types/types';
+import { ProductWithPrice } from '@/src/types/types';
 import {
   Table,
   TableBody,

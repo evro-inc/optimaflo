@@ -32,14 +32,14 @@ import {
 } from '@/src/components/ui/dropdown-menu';
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
-import { revalidate, tierCreateLimit } from '@/src/lib/helpers/server';
+import { revalidate, tierCreateLimit } from '@/src/utils/server';
 import { ReloadIcon } from '@radix-ui/react-icons';
-import { toggleCreate, toggleUpdate } from '@/src/lib/redux/globalSlice';
+import { toggleCreate, toggleUpdate } from '@/src/redux/globalSlice';
 import { useDispatch } from 'react-redux';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
 import { useDeleteHook } from '../streams/delete';
 import { notFound } from 'next/navigation';
-import { setIsLimitReached } from '@/src/lib/redux/tableSlice';
+import { setIsLimitReached } from '@/src/redux/tableSlice';
 import StreamForms from './forms';
 
 interface DataTableProps<TData, TValue> {

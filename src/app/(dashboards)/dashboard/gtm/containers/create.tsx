@@ -4,15 +4,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CreateContainers } from '@/src/lib/fetch/dashboard/actions/gtm/containers';
 import { LimitReached } from '../../../../../components/client/modals/limitReached';
 import { ButtonGroup } from '../../../../../components/client/ButtonGroup/ButtonGroup';
-import { FeatureResponse, FormCreateAccountProps } from '@/src/lib/types/types';
+import { FeatureResponse, FormCreateAccountProps } from '@/src/types/types';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   selectTable,
   setErrorDetails,
   setIsLimitReached,
   setNotFoundError,
-} from '@/src/lib/redux/tableSlice';
-import { selectGlobal, setLoading } from '@/src/lib/redux/globalSlice';
+} from '@/src/redux/tableSlice';
+import { selectGlobal, setLoading } from '@/src/redux/globalSlice';
 import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
 import { CreateContainerSchema } from '@/src/lib/schemas/gtm/containers';
 import { zodResolver } from '@hookform/resolvers/zod';

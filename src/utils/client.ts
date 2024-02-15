@@ -8,10 +8,10 @@ import {
   setError,
   setSelectedRows,
   toggleAllSelected,
-} from '@/src/lib/redux/tableSlice';
+} from '@/src/redux/tableSlice';
 import { toast } from 'sonner';
 import { useDispatch, useSelector } from 'react-redux';
-import { usePaginate } from '../paginate';
+import { usePaginate } from '../hooks/paginate';
 
 export const handleGenericDelete = async (
   selectedRows,

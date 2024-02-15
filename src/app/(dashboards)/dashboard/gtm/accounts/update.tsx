@@ -7,8 +7,8 @@ import {
   setIsLimitReached,
   setNotFoundError,
   toggleAllSelected,
-} from '@/src/lib/redux/tableSlice';
-import { selectIsLoading, setLoading } from '@/src/lib/redux/globalSlice';
+} from '@/src/redux/tableSlice';
+import { selectIsLoading, setLoading } from '@/src/redux/globalSlice';
 import { useEffect, useRef } from 'react';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -18,7 +18,7 @@ import { UpdateAccountSchema } from '@/src/lib/schemas/gtm/accounts';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ButtonGroup } from '../../../../../components/client/ButtonGroup/ButtonGroup';
 import { LimitReached } from '../../../../../components/client/modals/limitReached';
-import { UpdateAccountResult } from '@/src/lib/types/types';
+import { UpdateAccountResult } from '@/src/types/types';
 import { Icon } from '@/src/components/client/Button/Button';
 import { Cross1Icon } from '@radix-ui/react-icons';
 import {

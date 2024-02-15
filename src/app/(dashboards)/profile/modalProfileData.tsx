@@ -19,7 +19,7 @@ import {
   setFirstName,
   setLastName,
   setUsername,
-} from '../../../lib/redux/profileSlice';
+} from '../../../redux/profileSlice';
 import { useState } from 'react';
 
 export default function ProfileInformation() {

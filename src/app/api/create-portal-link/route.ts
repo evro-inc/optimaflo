@@ -1,5 +1,5 @@
 import { stripe } from '@/src/lib/stripe';
-import { getURL } from '@/src/lib/helpers';
+import { getURL } from '@/src/utils/helpers';
 import { NextResponse } from 'next/server';
 import prisma from '@/src/lib/prisma';
 import { currentUser } from '@clerk/nextjs';

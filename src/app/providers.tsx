@@ -2,7 +2,7 @@
 'use client';
 import { useEffect } from 'react';
 import { Provider } from 'react-redux';
-import { store } from '../lib/redux/store';
+import { store } from '../redux/store';
 
 export const ReduxProvider = ({ children }) => {
   useEffect(() => {

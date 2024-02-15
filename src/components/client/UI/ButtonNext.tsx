@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { selectTable, setCurrentPage } from '@/src/lib/redux/tableSlice';
+import { selectTable, setCurrentPage } from '@/src/redux/tableSlice';
 
 function ButtonNext({ workspaces }) {
   const dispatch = useDispatch();

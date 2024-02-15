@@ -6,9 +6,9 @@ import {
   selectGlobal, // This was changed from selectEntity
   toggleCreate, // This was changed to be specific for workspaces
   toggleUpdate, // This was changed to be specific for workspaces
-} from '@/src/lib/redux/globalSlice'; // This was changed from sharedSlice
-import { selectTable, setIsLimitReached } from '@/src/lib/redux/tableSlice';
-import { useError } from '@/src/lib/helpers/client';
+} from '@/src/redux/globalSlice'; // This was changed from sharedSlice
+import { selectTable, setIsLimitReached } from '@/src/redux/tableSlice';
+import { useError } from '@/src/utils/client';
 
 import { ErrorMessage } from '@/src/components/client/modals/Error';
 

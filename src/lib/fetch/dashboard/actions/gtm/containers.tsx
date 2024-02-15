@@ -12,13 +12,13 @@ import { redis } from '@/src/lib/redis/cache';
 import { notFound } from 'next/navigation';
 import { currentUserOauthAccessToken } from '@/src/lib/clerk';
 import prisma from '@/src/lib/prisma';
-import { FeatureResult, FeatureResponse } from '@/src/lib/types/types';
+import { FeatureResult, FeatureResponse } from '@/src/types/types';
 import {
   handleApiResponseError,
   tierCreateLimit,
   tierDeleteLimit,
   tierUpdateLimit,
-} from '@/src/lib/helpers/server';
+} from '@/src/utils/server';
 import { fetchGASettings, fetchGtmSettings } from '../..';
 
 // Define the types for the form data

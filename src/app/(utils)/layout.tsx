@@ -1,4 +1,4 @@
-import { openSans } from '@/src/lib/fonts';
+import { openSans } from '@/src/utils/fonts';
 import '../../styles/globals.css';
 import '../../styles/tailwind.css';
 

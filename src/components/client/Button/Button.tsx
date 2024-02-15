@@ -21,9 +21,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/src/components/ui/alert-dialog';
-import { setLoading } from '@/src/lib/redux/globalSlice';
+import { setLoading } from '@/src/redux/globalSlice';
 import { useDispatch } from 'react-redux';
-import { postData } from '@/src/lib/helpers';
+import { postData } from '@/src/utils/helpers';
 
 const getModeClasses = (variant, billingInterval?) => {
   let baseClasses = '';

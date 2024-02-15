@@ -13,13 +13,13 @@ import {
   FeatureResponse,
   GA4PropertyType,
   GA4StreamType,
-} from '@/src/lib/types/types';
+} from '@/src/types/types';
 import {
   handleApiResponseError,
   tierCreateLimit,
   tierDeleteLimit,
   tierUpdateLimit,
-} from '@/src/lib/helpers/server';
+} from '@/src/utils/server';
 import { fetchGASettings } from '../..';
 import { DataStreamType, FormsSchema } from '@/src/lib/schemas/ga/streams';
 

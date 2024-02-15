@@ -1,10 +1,10 @@
 'use server';
 import { notFound } from 'next/navigation';
-import prisma from '../prisma';
+import prisma from '../lib/prisma';
 import { auth } from '@clerk/nextjs';
 import { revalidatePath } from 'next/cache';
-import { redis } from '../redis/cache';
-import { fetchGASettings, fetchGtmSettings } from '../fetch/dashboard';
+import { redis } from '../lib/redis/cache';
+import { fetchGASettings, fetchGtmSettings } from '../lib/fetch/dashboard';
 
 // Define the type for the pagination and filtering result
 type PaginatedFilteredResult<T> = {

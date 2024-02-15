@@ -6,15 +6,15 @@ import {
   FeatureResponse,
   FormCreateProps,
   GA4StreamType,
-} from '@/src/lib/types/types';
+} from '@/src/types/types';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   selectTable,
   setErrorDetails,
   setIsLimitReached,
   setNotFoundError,
-} from '@/src/lib/redux/tableSlice';
-import { selectGlobal, setLoading } from '@/src/lib/redux/globalSlice';
+} from '@/src/redux/tableSlice';
+import { selectGlobal, setLoading } from '@/src/redux/globalSlice';
 import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import dynamic from 'next/dynamic';

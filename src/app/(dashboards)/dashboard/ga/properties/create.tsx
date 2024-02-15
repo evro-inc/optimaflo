@@ -3,15 +3,15 @@ import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LimitReached } from '../../../../../components/client/modals/limitReached';
 import { ButtonGroup } from '../../../../../components/client/ButtonGroup/ButtonGroup';
-import { FeatureResponse, FormCreateProps } from '@/src/lib/types/types';
+import { FeatureResponse, FormCreateProps } from '@/src/types/types';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   selectTable,
   setErrorDetails,
   setIsLimitReached,
   setNotFoundError,
-} from '@/src/lib/redux/tableSlice';
-import { selectGlobal, setLoading } from '@/src/lib/redux/globalSlice';
+} from '@/src/redux/tableSlice';
+import { selectGlobal, setLoading } from '@/src/redux/globalSlice';
 import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
 import { CreatePropertySchema } from '@/src/lib/schemas/ga/properties';
 import { zodResolver } from '@hookform/resolvers/zod';

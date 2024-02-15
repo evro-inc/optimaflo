@@ -6,9 +6,9 @@ import {
   selectGlobal,
   toggleCreate,
   toggleUpdate,
-} from '@/src/lib/redux/globalSlice';
-import { selectTable, setIsLimitReached } from '@/src/lib/redux/tableSlice';
-import { useError } from '@/src/lib/helpers/client';
+} from '@/src/redux/globalSlice';
+import { selectTable, setIsLimitReached } from '@/src/redux/tableSlice';
+import { useError } from '@/src/utils/client';
 
 import { ErrorMessage } from '@/src/components/client/modals/Error';
 

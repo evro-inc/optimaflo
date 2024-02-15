@@ -6,15 +6,15 @@ import { ButtonGroup } from '../../../../../components/client/ButtonGroup/Button
 import {
   FeatureResponse,
   FormCreateWorkspaceProps,
-} from '@/src/lib/types/types';
+} from '@/src/types/types';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   selectTable,
   setErrorDetails,
   setIsLimitReached,
   setNotFoundError,
-} from '@/src/lib/redux/tableSlice';
-import { selectGlobal, setLoading } from '@/src/lib/redux/globalSlice';
+} from '@/src/redux/tableSlice';
+import { selectGlobal, setLoading } from '@/src/redux/globalSlice';
 import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
 import { CreateWorkspaceSchema } from '@/src/lib/schemas/gtm/workspaces';
 import { zodResolver } from '@hookform/resolvers/zod';

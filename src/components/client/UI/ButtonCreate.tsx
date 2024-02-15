@@ -2,7 +2,7 @@
 import React from 'react';
 import { ButtonWithIcon } from '../Button/Button';
 import { useDispatch } from 'react-redux';
-import { toggleCreate } from '@/src/lib/redux/sharedSlice';
+import { toggleCreate } from '@/src/redux/sharedSlice';
 
 function ButtonCreate() {
   const dispatch = useDispatch();

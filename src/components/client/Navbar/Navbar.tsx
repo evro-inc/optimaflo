@@ -2,11 +2,10 @@
 import Link from 'next/link';
 
 import React from 'react';
-import Logo from '../../icons/Logo';
 import { ButtonSignIn } from '../../client/Button/Button';
 import { LinkSignUp, LinkNav } from '../Links/Links';
 import { SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
-import { HamburgerMenuIcon } from '@radix-ui/react-icons';
+import { HamburgerMenuIcon, PlayIcon } from '@radix-ui/react-icons';
 import { Sheet, SheetClose, SheetContent, SheetTrigger } from '../../ui/sheet';
 import { Button } from '../../ui/button';
 
@@ -27,7 +26,7 @@ export default function Navbar() {
           href="/"
           aria-label="Brand"
         >
-          <Logo />
+          <PlayIcon />
           <span className="sr-only">OptimaFlo</span>
         </Link>
       </div>

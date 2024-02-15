@@ -10,17 +10,17 @@ import {
   AccordionTrigger,
 } from './subnav-accordion';
 import { ChevronDownIcon } from '@radix-ui/react-icons';
-import { cn } from '@/src/lib/utils';
+import { cn } from '@/src/utils/utils';
 import { Accordion } from './subnav-accordion';
 import {
   selectIsSidebarOpen,
   toggleSidebar,
-} from '@/src/lib/redux/sidebarSlice';
+} from '@/src/redux/sidebarSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   selectAccordionOpenItems,
   toggleAccordionItem,
-} from '@/src/lib/redux/globalSlice';
+} from '@/src/redux/globalSlice';
 
 export function SideNav({ items, setOpen, className }) {
   const path = usePathname();

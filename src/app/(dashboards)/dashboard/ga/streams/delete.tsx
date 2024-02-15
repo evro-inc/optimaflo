@@ -6,8 +6,8 @@ import {
   setErrorDetails,
   setIsLimitReached,
   setNotFoundError,
-} from '@/src/lib/redux/tableSlice';
-import { FeatureResponse, GA4StreamType } from '@/src/lib/types/types';
+} from '@/src/redux/tableSlice';
+import { FeatureResponse, GA4StreamType } from '@/src/types/types';
 import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
 

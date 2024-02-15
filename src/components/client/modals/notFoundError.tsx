@@ -14,7 +14,7 @@ import {
 
 import { useDispatch, useSelector } from 'react-redux';
 import { Button } from '../../ui/button';
-import { setNotFoundError } from '@/src/lib/redux/tableSlice';
+import { setNotFoundError } from '@/src/redux/tableSlice';
 
 export function NotFoundError() {
   // Use a selector to get the error details from the store

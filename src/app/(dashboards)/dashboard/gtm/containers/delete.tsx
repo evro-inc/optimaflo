@@ -5,9 +5,9 @@ import {
   setErrorDetails,
   setIsLimitReached,
   setNotFoundError,
-} from '@/src/lib/redux/tableSlice';
+} from '@/src/redux/tableSlice';
 import { DeleteContainers } from '@/src/lib/fetch/dashboard/actions/gtm/containers';
-import { FeatureResponse } from '@/src/lib/types/types';
+import { FeatureResponse } from '@/src/types/types';
 import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
 

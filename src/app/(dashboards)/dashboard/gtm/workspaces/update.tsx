@@ -11,15 +11,15 @@ import {
   setErrorDetails,
   setIsLimitReached,
   setNotFoundError,
-} from '@/src/lib/redux/tableSlice';
-import { selectIsLoading, setLoading } from '@/src/lib/redux/globalSlice';
+} from '@/src/redux/tableSlice';
+import { selectIsLoading, setLoading } from '@/src/redux/globalSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   FeatureResponse,
   FormUpdateWorkspaceProps,
-} from '@/src/lib/types/types';
+} from '@/src/types/types';
 
 import { UpdateWorkspaces } from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
 import { toast } from 'sonner';

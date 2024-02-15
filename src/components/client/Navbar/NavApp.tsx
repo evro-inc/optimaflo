@@ -13,7 +13,7 @@ import {
 } from '@/src/components/ui/navigation-menu';
 
 import React from 'react';
-import { cn } from '@/src/lib/utils';
+import { cn } from '@/src/utils/utils';
 import { MobileSidebar } from './mobile-sidebar';
 
 export default function Navbar() {

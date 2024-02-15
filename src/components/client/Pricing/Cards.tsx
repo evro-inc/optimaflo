@@ -2,11 +2,11 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Price } from '@prisma/client';
-import { ProductWithPrice } from '@/src/lib/types/types';
-import { postData } from '@/src/lib/helpers';
+import { ProductWithPrice } from '@/src/types/types';
+import { postData } from '@/src/utils/helpers';
 import { getStripe } from '@/src/lib/stripe-client';
 import { useSelector } from 'react-redux';
-import { selectUser } from '@/src/lib/redux/userSlice';
+import { selectUser } from '@/src/redux/userSlice';
 import { useAuth } from '@clerk/nextjs';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs';
 import {
