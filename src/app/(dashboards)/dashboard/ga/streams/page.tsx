@@ -43,12 +43,12 @@ export default async function PropertyPage({
     const propertyId = stream.name.split('/')[1];
     const property = flatProperties.find((p) => p.name.includes(propertyId));
     const accounts = flatAccounts.filter((a) => a.name === property?.parent);
-    const readableType = dataStreamTypeMapping[stream.type] || stream.type; // Fallback to the original type if no mapping found
 
     return {
       ...stream,
       name: stream.name,
-      type: readableType,
+      type: stream.type,
+      typeDisplayName: dataStreamTypeMapping[stream.type],
       parent: property.name,
       createTime: stream.createTime,
       updateTime: stream.updateTime,

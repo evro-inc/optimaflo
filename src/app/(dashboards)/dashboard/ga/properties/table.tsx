@@ -218,9 +218,7 @@ export function DataTable<TData, TValue>({
         />
 
         <div className="ml-auto space-x-4">
-          <Button variant="outline" size="icon" onClick={refreshAllCache}>
-            <ReloadIcon className="h-4 w-4" />
-          </Button>
+          <Button onClick={refreshAllCache}>Refresh</Button>
 
           <Button onClick={handleCreateClick}>Create</Button>
 

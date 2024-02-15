@@ -42,17 +42,6 @@ import { notFound } from 'next/navigation';
 import { setIsLimitReached } from '@/src/lib/redux/tableSlice';
 import StreamForms from './forms';
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/src/components/ui/dialog';
-import { acknowledgeUserDataCollection } from '@/src/lib/fetch/dashboard/actions/ga/properties';
-
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
@@ -161,9 +150,7 @@ export function DataTable<TData, TValue>({
         />
 
         <div className="ml-auto space-x-4">
-          <Button variant="outline" size="icon" onClick={refreshAllCache}>
-            <ReloadIcon className="h-4 w-4" />
-          </Button>
+          <Button onClick={refreshAllCache}>Refresh</Button>
 
           <Button onClick={handleCreateClick}>Create</Button>
 

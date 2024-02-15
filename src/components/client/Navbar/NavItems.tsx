@@ -58,6 +58,12 @@ export const NavItems = [
         color: 'text-pink-500',
         href: '/dashboard/ga/properties',
       },
+      {
+        title: 'Streams',
+        icon: BarChartIcon,
+        color: 'text-pink-500',
+        href: '/dashboard/ga/streams',
+      },
     ],
   },
 ];

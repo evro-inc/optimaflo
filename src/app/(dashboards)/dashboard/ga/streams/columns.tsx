@@ -54,7 +54,7 @@ export const columns: ColumnDef<Stream>[] = [
     },
   },
   {
-    accessorKey: 'type',
+    accessorKey: 'typeDisplayName',
     header: ({ column }) => {
       return (
         <Button

@@ -71,7 +71,7 @@ export async function listGAPropertyStreams() {
 
           const urls = uniquePropertyIds.map(
             (propertyId) =>
-              `https://analyticsadmin.googleapis.com/v1beta/streams/${propertyId}/dataStreams`
+              `https://analyticsadmin.googleapis.com/v1beta/properties/${propertyId}/dataStreams`
           );
 
           const headers = {
@@ -83,6 +83,7 @@ export async function listGAPropertyStreams() {
           for (const url of urls) {
             try {
               const response = await fetch(url, { headers });
+
               if (!response.ok) {
                 throw new Error(
                   `HTTP error! status: ${response.status}. ${response.statusText}`
@@ -90,6 +91,7 @@ export async function listGAPropertyStreams() {
               }
 
               const responseBody = await response.json();
+
               allData.push(responseBody);
 
               // Removed the problematic line here
@@ -274,7 +276,7 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
                     // You can add more cases here if there are other types
                     default:
                       // Handle unexpected type or throw an error
-                      console.error('Unsupported stream type');
+                      throw new Error('Unsupported stream type');
                   }
 
                   // Now, requestBody is prepared with the right structure based on the type
@@ -284,7 +286,7 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
                     body: JSON.stringify(requestBody),
                   });
 
-                  let parsedResponse;
+                  const parsedResponse = await response.json();
 
                   if (response.ok) {
                     successfulCreations.push(
@@ -303,8 +305,6 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
                       message: `Successfully created property ${validatedContainerData.displayName}`,
                     });
                   } else {
-                    parsedResponse = await response.json();
-
                     const errorResult = await handleApiResponseError(
                       response,
                       parsedResponse,
@@ -500,12 +500,12 @@ export async function updateGAPropertyStreams(formData: DataStreamType) {
   const notFoundLimit: { id: string; name: string }[] = [];
 
   // Refactor: Use string identifiers in the set
-  const toCreateStreams = new Set(formData.forms.map((cd) => cd));
+  const toUpdateStreams = new Set(formData.forms.map((cd) => cd));
 
-  const tierLimitResponse: any = await tierCreateLimit(userId, 'GA4Streams');
-  const limit = Number(tierLimitResponse.createLimit);
-  const createUsage = Number(tierLimitResponse.createUsage);
-  const availableCreateUsage = limit - createUsage;
+  const tierLimitResponse: any = await tierUpdateLimit(userId, 'GA4Streams');
+  const limit = Number(tierLimitResponse.updateLimit);
+  const updateUsage = Number(tierLimitResponse.updateUsage);
+  const availableUpdateUsage = limit - updateUsage;
 
   const creationResults: {
     streamName: string;
@@ -523,25 +523,25 @@ export async function updateGAPropertyStreams(formData: DataStreamType) {
     };
   }
 
-  if (toCreateStreams.size > availableCreateUsage) {
-    const attemptedCreations = Array.from(toCreateStreams).map((identifier) => {
+  if (toUpdateStreams.size > availableUpdateUsage) {
+    const attemptedCreations = Array.from(toUpdateStreams).map((identifier) => {
       const displayName = identifier.displayName;
       return {
         id: [], // No property ID since creation did not happen
         name: displayName, // Include the property name from the identifier
         success: false,
-        message: `Creation limit reached. Cannot create stream "${displayName}".`,
+        message: `Creation limit reached. Cannot update stream "${displayName}".`,
         // remaining creation limit
-        remaining: availableCreateUsage,
+        remaining: availableUpdateUsage,
         limitReached: true,
       };
     });
     return {
       success: false,
       features: [],
-      message: `Cannot create ${toCreateStreams.size} streams as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
+      message: `Cannot update ${toUpdateStreams.size} streams as it exceeds the available limit. You have ${availableUpdateUsage} more creation(s) available.`,
       errors: [
-        `Cannot create ${toCreateStreams.size} streams as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
+        `Cannot update ${toUpdateStreams.size} streams as it exceeds the available limit. You have ${availableUpdateUsage} more creation(s) available.`,
       ],
       results: attemptedCreations,
       limitReached: true,
@@ -551,10 +551,10 @@ export async function updateGAPropertyStreams(formData: DataStreamType) {
   let permissionDenied = false;
   const streamNames = formData.forms.map((cd) => cd.displayName);
 
-  if (toCreateStreams.size <= availableCreateUsage) {
+  if (toUpdateStreams.size <= availableUpdateUsage) {
     while (
       retries < MAX_RETRIES &&
-      toCreateStreams.size > 0 &&
+      toUpdateStreams.size > 0 &&
       !permissionDenied
     ) {
       try {
@@ -564,11 +564,11 @@ export async function updateGAPropertyStreams(formData: DataStreamType) {
         );
         if (remaining > 0) {
           await limiter.schedule(async () => {
-            const createPromises = Array.from(toCreateStreams).map(
+            const updatePromises = Array.from(toUpdateStreams).map(
               async (identifier) => {
                 if (!identifier) {
                   errors.push(`Stream data not found for ${identifier}`);
-                  toCreateStreams.delete(identifier);
+                  toUpdateStreams.delete(identifier);
                   return;
                 }
 
@@ -609,7 +609,7 @@ export async function updateGAPropertyStreams(formData: DataStreamType) {
                       .map((issue) => `${issue.path[0]}: ${issue.message}`)
                       .join('. ');
                     errors.push(errorMessage);
-                    toCreateStreams.delete(identifier);
+                    toUpdateStreams.delete(identifier);
                     return {
                       identifier,
                       success: false,
@@ -658,7 +658,7 @@ export async function updateGAPropertyStreams(formData: DataStreamType) {
                     // You can add more cases here if there are other types
                     default:
                       // Handle unexpected type or throw an error
-                      console.error('Unsupported stream type');
+                      throw new Error('Unsupported stream type');
                   }
 
                   // Now, requestBody is prepared with the right structure based on the type
@@ -674,17 +674,17 @@ export async function updateGAPropertyStreams(formData: DataStreamType) {
                     successfulCreations.push(
                       validatedContainerData.displayName
                     );
-                    toCreateStreams.delete(identifier);
+                    toUpdateStreams.delete(identifier);
                     fetchGASettings(userId);
 
                     await prisma.tierLimit.update({
                       where: { id: tierLimitResponse.id },
-                      data: { createUsage: { increment: 1 } },
+                      data: { updateUsage: { increment: 1 } },
                     });
                     creationResults.push({
                       streamName: validatedContainerData.displayName,
                       success: true,
-                      message: `Successfully created property ${validatedContainerData.displayName}`,
+                      message: `Successfully updated property ${validatedContainerData.displayName}`,
                     });
                   } else {
                     parsedResponse = await response.json();
@@ -717,7 +717,7 @@ export async function updateGAPropertyStreams(formData: DataStreamType) {
                       );
                     }
 
-                    toCreateStreams.delete(identifier);
+                    toUpdateStreams.delete(identifier);
                     permissionDenied = errorResult ? true : permissionDenied;
                     creationResults.push({
                       streamName: validatedContainerData.displayName,
@@ -729,7 +729,7 @@ export async function updateGAPropertyStreams(formData: DataStreamType) {
                   errors.push(
                     `Exception creating property ${identifier.displayName}: ${error.message}`
                   );
-                  toCreateStreams.delete(identifier);
+                  toUpdateStreams.delete(identifier);
                   creationResults.push({
                     streamName: identifier.displayName,
                     success: false,
@@ -739,7 +739,7 @@ export async function updateGAPropertyStreams(formData: DataStreamType) {
               }
             );
 
-            await Promise.all(createPromises);
+            await Promise.all(updatePromises);
           });
 
           if (notFoundLimit.length > 0) {
@@ -786,7 +786,7 @@ export async function updateGAPropertyStreams(formData: DataStreamType) {
             break;
           }
 
-          if (toCreateStreams.size === 0) {
+          if (toUpdateStreams.size === 0) {
             break;
           }
         } else {
@@ -801,13 +801,6 @@ export async function updateGAPropertyStreams(formData: DataStreamType) {
           retries++;
         } else {
           break;
-        }
-      } finally {
-        // This block will run regardless of the outcome of the try...catch
-        if (userId) {
-          const cacheKey = `ga:streams:userId:${userId}`;
-          await redis.del(cacheKey);
-          await revalidatePath(`/dashboard/ga/streams`);
         }
       }
     }
@@ -842,7 +835,7 @@ export async function updateGAPropertyStreams(formData: DataStreamType) {
     revalidatePath(`/dashboard/ga/streams`);
   }
 
-  // Map over formData.forms to create the results array
+  // Map over formData.forms to update the results array
   const results: FeatureResult[] = formData.forms.map((form) => {
     // Ensure that form.propertyId is defined before adding it to the array
     const streamId = form.displayName ? [form.displayName] : []; // Provide an empty array as a fallback
@@ -861,7 +854,7 @@ export async function updateGAPropertyStreams(formData: DataStreamType) {
     features: [], // Populate with actual property IDs if applicable
     errors: [], // Populate with actual error messages if applicable
     limitReached: false, // Set based on actual limit status
-    message: 'Streams created successfully', // Customize the message as needed
+    message: 'Streams updated successfully', // Customize the message as needed
     results: results, // Use the correctly typed results
     notFoundError: false, // Set based on actual not found status
   };

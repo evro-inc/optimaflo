@@ -12,7 +12,10 @@ import {
 import { ChevronDownIcon } from '@radix-ui/react-icons';
 import { cn } from '@/src/lib/utils';
 import { Accordion } from './subnav-accordion';
-import { selectIsSidebarOpen } from '@/src/lib/redux/sidebarSlice';
+import {
+  selectIsSidebarOpen,
+  toggleSidebar,
+} from '@/src/lib/redux/sidebarSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   selectAccordionOpenItems,
@@ -27,6 +30,10 @@ export function SideNav({ items, setOpen, className }) {
 
   const handleAccordionChange = (itemId) => {
     dispatch(toggleAccordionItem(itemId));
+  };
+
+  const openMinimizedSideBar = () => {
+    dispatch(toggleSidebar());
   };
 
   return (
@@ -49,7 +56,15 @@ export function SideNav({ items, setOpen, className }) {
                 )}
               >
                 <div>
-                  <item.icon className={cn('h-5 w-5', item.color)} />
+                  {!isOpen && (
+                    <item.icon
+                      className={cn('h-5 w-5', item.color)}
+                      onClick={openMinimizedSideBar}
+                    />
+                  )}
+                  {isOpen && (
+                    <item.icon className={cn('h-5 w-5', item.color)} />
+                  )}
                 </div>
                 <div
                   className={cn(
@@ -64,32 +79,35 @@ export function SideNav({ items, setOpen, className }) {
                   <ChevronDownIcon className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200" />
                 )}
               </AccordionTrigger>
-              <AccordionContent className="ml-4 mt-2 space-y-4 pb-1">
-                {item.children?.map((child) => (
-                  <Link
-                    key={child.title}
-                    href={child.href}
-                    onClick={() => {
-                      if (setOpen) setOpen(false);
-                    }}
-                    className={cn(
-                      buttonVariants({ variant: 'ghost' }),
-                      'group flex h-12 justify-start gap-x-3',
-                      path === child.href && 'bg-muted font-bold hover:bg-muted'
-                    )}
-                  >
-                    <item.icon className={cn('h-5 w-5', child.color)} />
-                    <div
+              {isOpen && (
+                <AccordionContent className="ml-4 mt-2 space-y-4 pb-1">
+                  {item.children?.map((child) => (
+                    <Link
+                      key={child.title}
+                      href={child.href}
+                      onClick={() => {
+                        if (setOpen) setOpen(false);
+                      }}
                       className={cn(
-                        'text-base duration-200',
-                        !isOpen && className
+                        buttonVariants({ variant: 'ghost' }),
+                        'group flex h-12 justify-start gap-x-3',
+                        path === child.href &&
+                          'bg-muted font-bold hover:bg-muted'
                       )}
                     >
-                      {child.title}
-                    </div>
-                  </Link>
-                ))}
-              </AccordionContent>
+                      <item.icon className={cn('h-5 w-5', child.color)} />
+                      <div
+                        className={cn(
+                          'text-base duration-200',
+                          !isOpen && className
+                        )}
+                      >
+                        {child.title}
+                      </div>
+                    </Link>
+                  ))}
+                </AccordionContent>
+              )}
             </AccordionItem>
           </Accordion>
         ) : (

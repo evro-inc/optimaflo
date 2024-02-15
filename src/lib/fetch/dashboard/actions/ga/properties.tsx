@@ -1322,7 +1322,10 @@ export async function updateDataRetentionSettings(formData: FormUpdateSchema) {
                   // ... rest of your code
 
                   toUpdateProperties.delete(identifier);
-                  redis.append('ga:properties:userId:', parsedResponse);
+                  redis.append(
+                    `ga:properties:userId:${userId}`,
+                    parsedResponse
+                  );
 
                   UpdateResults.push({
                     propertyName: propertyName,
@@ -1470,7 +1473,7 @@ export async function updateDataRetentionSettings(formData: FormUpdateSchema) {
     } finally {
       // This block will run regardless of the outcome of the try...catch
       if (accountIdForCache && propertyIdForCache && userId) {
-        redis.append('ga:properties:userId:', parsedResponse);
+        redis.append(`ga:properties:userId:${userId}`, parsedResponse);
         await revalidatePath(`/dashboard/ga/properties`);
       }
     }
@@ -1499,7 +1502,7 @@ export async function updateDataRetentionSettings(formData: FormUpdateSchema) {
   }
 
   if (successfulUpdates.length > 0 && accountIdForCache && propertyIdForCache) {
-    redis.append('ga:properties:userId:', parsedResponse);
+    redis.append(`ga:properties:userId:${userId}`, parsedResponse);
     revalidatePath(`/dashboard/ga/properties`);
   }
 
@@ -1781,7 +1784,7 @@ export async function acknowledgeUserDataCollection(selectedRows) {
     } finally {
       // This block will run regardless of the outcome of the try...catch
       if (propertyIdForCache && userId) {
-        redis.append('ga:properties:userId:', parsedResponse);
+        redis.append(`ga:properties:userId:${userId}`, parsedResponse);
         await revalidatePath(`/dashboard/ga/properties`);
       }
     }
@@ -1810,7 +1813,7 @@ export async function acknowledgeUserDataCollection(selectedRows) {
   }
 
   if (successfulUpdates.length > 0 && propertyIdForCache) {
-    redis.append('ga:properties:userId:', parsedResponse);
+    redis.append(`ga:properties:userId:${userId}`, parsedResponse);
     revalidatePath(`/dashboard/ga/properties`);
   }
 
