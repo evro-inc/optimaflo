@@ -57,14 +57,10 @@ const FormUpdateStream: React.FC<FormUpdateProps> = ({
   onClose,
   selectedRows = [],
 }) => {
-  const formRefs = useRef<(HTMLFormElement | null)[]>([]);
   const dispatch = useDispatch();
   const { loading } = useSelector(selectGlobal);
   const isLimitReached = useSelector(selectTable).isLimitReached;
   const notFoundError = useSelector(selectTable).notFoundError;
-
-  console.log('selectedRows', selectedRows);
-  
 
   const formDataDefaults: GA4StreamType = {
     account: selectedRows[0].accountName,
@@ -73,13 +69,13 @@ const FormUpdateStream: React.FC<FormUpdateProps> = ({
     parentURL: selectedRows[0].name,
     type: selectedRows[0].type,
     webStreamData: {
-      defaultUri: '',
+      defaultUri: selectedRows[0].webStreamData?.defaultUri || '',
     },
     androidAppStreamData: {
-      packageName: '',
+      packageName: selectedRows[0].androidAppStreamData?.packageName || '',
     },
     iosAppStreamData: {
-      bundleId: '',
+      bundleId: selectedRows[0].iosAppStreamData?.bundleId || '',
     },
     name: '',
     accountId: '',
@@ -122,8 +118,6 @@ const FormUpdateStream: React.FC<FormUpdateProps> = ({
   }, [selectedRows, form]);
 
   const processForm: SubmitHandler<Forms> = async (data) => {
-    console.log('processForm');
-    
     const { forms } = data;
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
@@ -266,10 +260,20 @@ const FormUpdateStream: React.FC<FormUpdateProps> = ({
               <span className="sr-only">Close</span>
             </Button>
 
-
+            <div className="flex items-center justify-between py-3 px-4 mt-5 gap-4">
+              <ButtonGroup
+                buttons={[
+                  {
+                    text: loading ? 'Submitting...' : 'Submit',
+                    type: 'submit',
+                    form: 'updateStream',
+                  },
+                ]}
+              />
+            </div>
 
             <div className="stream mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-end">
-              {fields.map((field, index) => {     
+              {fields.map((field, index) => {
                 return (
                   <div
                     key={field.id}
@@ -288,7 +292,6 @@ const FormUpdateStream: React.FC<FormUpdateProps> = ({
                           <CardContent className="p-4">
                             <Form {...form}>
                               <form
-                                ref={(el) => (formRefs.current[index] = el)}
                                 onSubmit={form.handleSubmit(processForm)}
                                 id="updateStream"
                                 className="space-y-6"
@@ -318,32 +321,86 @@ const FormUpdateStream: React.FC<FormUpdateProps> = ({
                                   )}
                                 />
 
-                                <FormField
-                                  control={form.control}
-                                  name={`forms.${index}.webStreamData.defaultUri`}
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>
-                                        {selectedRows[index].type} Input
-                                      </FormLabel>{' '}
-                                      {/* Use the type as the input label */}
-                                      <FormDescription>
-                                        This is the input for{' '}
-                                        {selectedRows[index].type}.
-                                      </FormDescription>
-                                      <FormControl>
-                                        <Input
-                                          placeholder={`Enter `}
-                                          {...form.register(
-                                            `forms.${index}.webStreamData.defaultUri`
-                                          )}
-                                          {...field}
-                                        />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
+                                {selectedRows[index].type ===
+                                  'WEB_DATA_STREAM' && (
+                                  <FormField
+                                    control={form.control}
+                                    name={`forms.${index}.webStreamData.defaultUri`}
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Default URI</FormLabel>
+                                        <FormDescription>
+                                          This is the default URI for the web
+                                          stream.
+                                        </FormDescription>
+                                        <FormControl>
+                                          <Input
+                                            placeholder="Enter default URI"
+                                            {...form.register(
+                                              `forms.${index}.webStreamData.defaultUri`
+                                            )}
+                                            {...field}
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                )}
+
+                                {selectedRows[index].type ===
+                                  'ANDROID_APP_DATA_STREAM' && (
+                                  <FormField
+                                    control={form.control}
+                                    name={`forms.${index}.androidAppStreamData.packageName`}
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Package Name</FormLabel>
+                                        <FormDescription>
+                                          This is the package name for the
+                                          Android app stream.
+                                        </FormDescription>
+                                        <FormControl>
+                                          <Input
+                                            placeholder="Enter package name"
+                                            {...form.register(
+                                              `forms.${index}.androidAppStreamData.packageName`
+                                            )}
+                                            {...field}
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                )}
+
+                                {selectedRows[index].type ===
+                                  'IOS_APP_DATA_STREAM' && (
+                                  <FormField
+                                    control={form.control}
+                                    name={`forms.${index}.iosAppStreamData.bundleId`}
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Bundle ID</FormLabel>
+                                        <FormDescription>
+                                          This is the bundle ID for the iOS app
+                                          stream.
+                                        </FormDescription>
+                                        <FormControl>
+                                          <Input
+                                            placeholder="Enter bundle ID"
+                                            {...form.register(
+                                              `forms.${index}.iosAppStreamData.bundleId`
+                                            )}
+                                            {...field}
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                )}
                               </form>
                             </Form>
                           </CardContent>
@@ -356,17 +413,7 @@ const FormUpdateStream: React.FC<FormUpdateProps> = ({
               })}
             </div>
 
-            <div className="flex items-center justify-center py-3 px-4 mt-5 gap-4">
-              <ButtonGroup
-                buttons={[
-                  {
-                    text: loading ? 'Submitting...' : 'Submit',
-                    type: 'submit',
-                    form: 'updateStream',
-                  },
-                ]}
-              />
-            </div>
+            {/* End Hire Us */}
           </motion.div>
         )}
       </AnimatePresence>

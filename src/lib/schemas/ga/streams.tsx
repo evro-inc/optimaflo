@@ -14,10 +14,10 @@ const SingleFormSchema = z.object({
     defaultUri: z.string().url(),
   }),
   androidAppStreamData: z.object({
-    packageName: z.string().regex(/^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)+[0-9a-zA-Z_]$/),
+    packageName: z.string().regex(/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/),
   }),
   iosAppStreamData: z.object({
-    bundleId: z.string().regex(/^([a-zA-Z0-9]+\.)*[a-zA-Z0-9]+$/),
+    bundleId: z.string().regex(/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/),
   }),
 });
 
