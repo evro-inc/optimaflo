@@ -276,7 +276,7 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
                     // You can add more cases here if there are other types
                     default:
                       // Handle unexpected type or throw an error
-                      console.error('Unsupported stream type');
+                      throw new Error('Unsupported stream type');
                   }
 
                   // Now, requestBody is prepared with the right structure based on the type
@@ -658,7 +658,7 @@ export async function updateGAPropertyStreams(formData: DataStreamType) {
                     // You can add more cases here if there are other types
                     default:
                       // Handle unexpected type or throw an error
-                      console.error('Unsupported stream type');
+                      throw new Error('Unsupported stream type');
                   }
 
                   // Now, requestBody is prepared with the right structure based on the type
