@@ -802,13 +802,6 @@ export async function updateGAPropertyStreams(formData: DataStreamType) {
         } else {
           break;
         }
-      } finally {
-        // This block will run regardless of the outcome of the try...catch
-        if (userId) {
-          const cacheKey = `ga:streams:userId:${userId}`;
-          await redis.del(cacheKey);
-          await revalidatePath(`/dashboard/ga/streams`);
-        }
       }
     }
   }
