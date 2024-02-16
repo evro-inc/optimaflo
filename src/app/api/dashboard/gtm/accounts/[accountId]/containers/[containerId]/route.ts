@@ -6,7 +6,7 @@ import prisma from '@/src/lib/prisma';
 import Joi from 'joi';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
 import { limiter } from '@/src/lib/bottleneck';
-\import { clerkClient, currentUser } from '@clerk/nextjs';
+import { clerkClient, currentUser } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
 
 /************************************************************************************
