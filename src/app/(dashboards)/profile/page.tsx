@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/src/components/ui/table';
-import { getTierLimit } from '@/src/lib/fetch/feature';
+import { getTierLimit } from '@/src/lib/fetch/tierLimit';
 import { Button } from '@/src/components/ui/button';
 import Link from 'next/link';
 

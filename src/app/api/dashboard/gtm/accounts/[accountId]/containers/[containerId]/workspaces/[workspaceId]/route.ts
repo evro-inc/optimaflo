@@ -7,7 +7,6 @@ import Joi from 'joi';
 import { isErrorWithStatus } from '@/src/lib/fetch/dashboard';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
 import { limiter } from '@/src/lib/bottleneck';
-import { handleError } from '@/src/lib/fetch/apiUtils';
 import { clerkClient, currentUser } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
@@ -160,7 +159,7 @@ export async function GET(
       });
     }
     // Return a 500 status code for internal server error
-    return handleError(error);
+    return NextResponse.error();
   }
 }
 

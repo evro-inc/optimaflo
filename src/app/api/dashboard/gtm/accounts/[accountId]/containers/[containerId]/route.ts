@@ -6,8 +6,7 @@ import prisma from '@/src/lib/prisma';
 import Joi from 'joi';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
 import { limiter } from '@/src/lib/bottleneck';
-import { handleError } from '@/src/lib/fetch/apiUtils';
-import { clerkClient, currentUser } from '@clerk/nextjs';
+\import { clerkClient, currentUser } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
 
 /************************************************************************************
@@ -394,7 +393,7 @@ async function deleteGtmData(
     }
 
     // Return a 500 status code for internal server error
-    return handleError(error);
+    return NextResponse.error();
   }
 }
 
@@ -456,7 +455,7 @@ export async function GET(
     }
 
     // Return a 500 status code for internal server error
-    return handleError(error);
+    return NextResponse.error();
   }
 }
 
@@ -514,7 +513,7 @@ export async function PUT(request: NextRequest) {
     );
   } catch (error) {
     // Return a 500 status code for internal server error
-    return handleError(error);
+    return NextResponse.error();
   }
 }
 
@@ -567,6 +566,6 @@ export async function DELETE(request: NextRequest) {
     );
   } catch (error) {
     // Return a 500 status code for internal server error
-    return handleError(error);
+    return NextResponse.error();
   }
 }
