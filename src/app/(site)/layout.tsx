@@ -20,11 +20,7 @@ export default function RootLayout({
   // added suppressHydrationWarning to html tag to prevent hydration mismatch error
   return (
     <>
-      <html
-        lang="en"
-        suppressHydrationWarning
-        className={`${openSans.className}`}
-      >
+      <html lang="en" suppressHydrationWarning className={`${openSans.className}`}>
         <ClerkProvider>
           <body>
             <ReduxProvider>
@@ -32,9 +28,8 @@ export default function RootLayout({
                 <ExclamationTriangleIcon className="h-4 w-4" />
                 <AlertTitle>Warning!!</AlertTitle>
                 <AlertDescription>
-                  This app, as of now, is solely for demo purposes. You may
-                  experience some bugs and errors. This is still a work in
-                  progress.
+                  This app, as of now, is solely for demo purposes. You may experience some bugs and
+                  errors. This is still a work in progress.
                 </AlertDescription>
               </Alert>
 

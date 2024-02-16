@@ -19,9 +19,7 @@ function ButtonDel() {
   const handleDelete = async () => {
     try {
       const uniqueAccountIds = Array.from(
-        new Set(
-          Object.values(selectedRows).map((rowData: any) => rowData.accountId)
-        )
+        new Set(Object.values(selectedRows).map((rowData: any) => rowData.accountId))
       );
       const deleteOperations = uniqueAccountIds.map(async (accountId) => {
         const workspacesToDeleteArray = Object.entries(
@@ -37,9 +35,7 @@ function ButtonDel() {
         return await DeleteWorkspaces(accountId, workspacesToDeleteSet);
       });
 
-      const responses: DeleteWorkspacesResponse[] = await Promise.all(
-        deleteOperations
-      );
+      const responses: DeleteWorkspacesResponse[] = await Promise.all(deleteOperations);
 
       const limitReached = responses.some((response) => response.limitReached);
       const notFoundErrorOccurred = responses.some((response) =>

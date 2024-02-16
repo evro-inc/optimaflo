@@ -201,15 +201,13 @@ const index = {
           },
         },
       ],
-      description:
-        'This image will be used when the page is shared on social media platforms.',
+      description: 'This image will be used when the page is shared on social media platforms.',
     },
     {
       name: 'socialTitle',
       title: 'Social Share Title',
       type: 'string',
-      description:
-        'This title will be used when the page is shared on social media platforms.',
+      description: 'This title will be used when the page is shared on social media platforms.',
     },
     {
       name: 'socialDescription',

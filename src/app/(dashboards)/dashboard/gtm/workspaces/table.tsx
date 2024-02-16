@@ -32,11 +32,7 @@ import {
 } from '@/src/components/ui/dropdown-menu';
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
-import {
-  revalidate,
-  tierCreateLimit,
-  tierUpdateLimit,
-} from '@/src/utils/server';
+import { revalidate, tierCreateLimit, tierUpdateLimit } from '@/src/utils/server';
 import { ReloadIcon } from '@radix-ui/react-icons';
 import { useDispatch } from 'react-redux';
 import { setIsLimitReached } from '@/src/redux/tableSlice';
@@ -75,12 +71,9 @@ export function DataTable<TData, TValue>({
   const userId = user?.id;
 
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  );
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
 
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
 
   const table = useReactTable({
@@ -111,15 +104,12 @@ export function DataTable<TData, TValue>({
       `gtm:workspaces:userId:${userId}`,
     ];
     await revalidate(keys, '/dashboard/gtm/workspaces', userId);
-    toast.info(
-      'Updating our systems. This may take a minute or two to update on screen.',
-      {
-        action: {
-          label: 'Close',
-          onClick: () => toast.dismiss(),
-        },
-      }
-    );
+    toast.info('Updating our systems. This may take a minute or two to update on screen.', {
+      action: {
+        label: 'Close',
+        onClick: () => toast.dismiss(),
+      },
+    });
   };
 
   const handleCreateClick = async () => {
@@ -127,10 +117,7 @@ export function DataTable<TData, TValue>({
       if (!userId) {
         return notFound();
       }
-      const handleCreateLimit: any = await tierCreateLimit(
-        userId,
-        'GTMWorkspaces'
-      );
+      const handleCreateLimit: any = await tierCreateLimit(userId, 'GTMWorkspaces');
 
       if (handleCreateLimit && handleCreateLimit.limitReached) {
         // Directly show the limit reached modal
@@ -144,9 +131,7 @@ export function DataTable<TData, TValue>({
     }
   };
 
-  const selectedRowsData = table
-    .getSelectedRowModel()
-    .rows.map((row) => row.original);
+  const selectedRowsData = table.getSelectedRowModel().rows.map((row) => row.original);
 
   const handleDelete = useDeleteHook(selectedRowsData, table);
 
@@ -175,9 +160,7 @@ export function DataTable<TData, TValue>({
         <Input
           placeholder="Filter workspace names..."
           value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
-          onChange={(event) =>
-            table.getColumn('name')?.setFilterValue(event.target.value)
-          }
+          onChange={(event) => table.getColumn('name')?.setFilterValue(event.target.value)}
           className="max-w-sm"
         />
 
@@ -211,9 +194,7 @@ export function DataTable<TData, TValue>({
                       key={column.id}
                       className="capitalize"
                       checked={column.getIsVisible()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(!!value)
-                      }
+                      onCheckedChange={(value) => column.toggleVisibility(!!value)}
                     >
                       {column.id}
                     </DropdownMenuCheckboxItem>
@@ -233,10 +214,7 @@ export function DataTable<TData, TValue>({
                     <TableHead key={header.id}>
                       {header.isPlaceholder
                         ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                        : flexRender(header.column.columnDef.header, header.getContext())}
                     </TableHead>
                   );
                 })}
@@ -246,26 +224,17 @@ export function DataTable<TData, TValue>({
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && 'selected'}
-                >
+                <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
+                <TableCell colSpan={columns.length} className="h-24 text-center">
                   No results.
                 </TableCell>
               </TableRow>
@@ -295,11 +264,7 @@ export function DataTable<TData, TValue>({
           Next
         </Button>
       </div>
-      <WorkspaceForms
-        selectedRows={selectedRowsData}
-        table={table}
-        accounts={accounts}
-      />
+      <WorkspaceForms selectedRows={selectedRowsData} table={table} accounts={accounts} />
     </>
   );
 }

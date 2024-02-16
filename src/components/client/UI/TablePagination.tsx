@@ -34,9 +34,7 @@ const TablePagination = ({ totalPages }) => {
             <PaginationPrevious
               onClick={() => !isPreviousDisabled && changePage(currentPage - 1)}
               aria-disabled={isPreviousDisabled}
-              className={
-                isPreviousDisabled ? 'opacity-50 cursor-not-allowed' : ''
-              }
+              className={isPreviousDisabled ? 'opacity-50 cursor-not-allowed' : ''}
               href="#"
             />
           </PaginationItem>

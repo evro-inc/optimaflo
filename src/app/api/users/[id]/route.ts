@@ -44,7 +44,7 @@ export async function GET(
         Customer: true,
         Subscription: {
           include: {
-            Invoice: true, 
+            Invoice: true,
             Product: true,
           },
         },
@@ -58,7 +58,7 @@ export async function GET(
     if (user.id !== id) {
       return NextResponse.json({ error: 'User ID mismatch' }, { status: 404 });
     }
-    
+
     const response = {
       data: user,
       meta: {

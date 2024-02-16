@@ -12,9 +12,7 @@ export function ErrorMessage({ onClose }) {
           {/* Modal Container */}
           <ExclamationTriangleIcon className="h-6 w-6 text-red-600" />
           <AlertTitle>OTHER ERROR</AlertTitle>
-          <AlertDescription className="text-center">
-            TEST ERROR
-          </AlertDescription>
+          <AlertDescription className="text-center">TEST ERROR</AlertDescription>
           <Button type="button" onClick={onClose}>
             Close
           </Button>

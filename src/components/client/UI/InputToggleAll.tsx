@@ -1,9 +1,5 @@
 'use client';
-import {
-  selectTable,
-  setSelectedRows,
-  toggleAllSelected,
-} from '@/src/redux/tableSlice';
+import { selectTable, setSelectedRows, toggleAllSelected } from '@/src/redux/tableSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { Checkbox } from '../../ui/checkbox';
 
@@ -30,11 +26,7 @@ function ToggleAll({ items, uniqueKeys }) {
 
   return (
     <div className="flex items-center space-x-2">
-      <Checkbox
-        id="select-all"
-        checked={allSelected}
-        onCheckedChange={toggleAll}
-      />
+      <Checkbox id="select-all" checked={allSelected} onCheckedChange={toggleAll} />
       <label
         htmlFor="select-all"
         className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"

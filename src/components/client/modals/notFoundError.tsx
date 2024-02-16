@@ -3,14 +3,7 @@
 import React from 'react';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { Alert, AlertTitle, AlertDescription } from '@/src/components/ui/alert';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '../../ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { Button } from '../../ui/button';
@@ -21,8 +14,7 @@ export function NotFoundError() {
   const errorDetails = useSelector((state: any) => state.table.errorDetails);
 
   // Check if errorDetails is an array and has at least one item
-  const hasErrorDetails =
-    Array.isArray(errorDetails) && errorDetails.length > 0;
+  const hasErrorDetails = Array.isArray(errorDetails) && errorDetails.length > 0;
 
   const dispatch = useDispatch();
 
@@ -39,9 +31,8 @@ export function NotFoundError() {
           <ExclamationTriangleIcon className="h-6 w-6 text-red-600" />
           <AlertTitle>Not Found</AlertTitle>
           <AlertDescription className="text-center">
-            Check if you have access to this account or container. If you do,
-            please contact the team that manages access to your GTM account(s)
-            or container(s).
+            Check if you have access to this account or container. If you do, please contact the
+            team that manages access to your GTM account(s) or container(s).
             {hasErrorDetails ? (
               <Table className="mt-5 mb-5">
                 <TableHeader>
@@ -52,9 +43,7 @@ export function NotFoundError() {
                 <TableBody>
                   {errorDetails.map((errorItem) => (
                     <TableRow key={errorItem.id}>
-                      <TableCell className="text-left">
-                        {errorItem.name}
-                      </TableCell>
+                      <TableCell className="text-left">{errorItem.name}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

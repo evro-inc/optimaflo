@@ -177,24 +177,14 @@ export default async function PricingTable({ products = [] }: Props) {
 
       <section className="flex justify-center my-28">
         <div className="md:w-3/5">
-          <h2 className="text-3xl font-bold text-center pb-5">
-            Compare Plan Limits
-          </h2>
+          <h2 className="text-3xl font-bold text-center pb-5">Compare Plan Limits</h2>
           <Table>
             <TableHeader>
               <TableRow className="bg-primary">
-                <TableHead className="font-bold text-lg text-secondary">
-                  Plan
-                </TableHead>
-                <TableHead className="font-bold text-lg text-secondary">
-                  Analyst
-                </TableHead>
-                <TableHead className="font-bold text-lg text-secondary">
-                  Consultancy
-                </TableHead>
-                <TableHead className="font-bold text-lg text-secondary">
-                  Enterprise
-                </TableHead>
+                <TableHead className="font-bold text-lg text-secondary">Plan</TableHead>
+                <TableHead className="font-bold text-lg text-secondary">Analyst</TableHead>
+                <TableHead className="font-bold text-lg text-secondary">Consultancy</TableHead>
+                <TableHead className="font-bold text-lg text-secondary">Enterprise</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -224,8 +214,8 @@ export default async function PricingTable({ products = [] }: Props) {
             <TableFooter>
               <TableRow>
                 <TableCell colSpan={4} className="text-center">
-                  GA4 APIs are still in beta so new features will be added
-                  regularly as the API becomes stable.
+                  GA4 APIs are still in beta so new features will be added regularly as the API
+                  becomes stable.
                 </TableCell>
               </TableRow>
             </TableFooter>

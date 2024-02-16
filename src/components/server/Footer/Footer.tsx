@@ -15,11 +15,7 @@ export default function Footer() {
       <div className="flex flex-col space-y-6 sm:space-y-0 sm:flex-row justify-around items-center border-b border-gray-300 pb-5">
         {/* First Column: Logo */}
         <div>
-          <Link
-            className="text-xl font-semibold text-black "
-            href="/"
-            aria-label="Brand"
-          >
+          <Link className="text-xl font-semibold text-black " href="/" aria-label="Brand">
             OptimaFlo
           </Link>
         </div>
@@ -28,15 +24,9 @@ export default function Footer() {
         <div>
           <nav className="hidden sm:flex ml-auto gap-4 sm:gap-6">
             {navigation.map((item) => (
-              <div
-                key={item.name}
-                className="flex sm:flex-row items-center font-medium"
-              >
+              <div key={item.name} className="flex sm:flex-row items-center font-medium">
                 <Button variant="ghost" asChild>
-                  <Link
-                    aria-label={`Navigate to ${item.name}`}
-                    href={item.href}
-                  >
+                  <Link aria-label={`Navigate to ${item.name}`} href={item.href}>
                     {item.name}
                   </Link>
                 </Button>
@@ -48,8 +38,7 @@ export default function Footer() {
 
       <div className="grid md:grid-cols-2 sm:grid-cols-1 gap-4 text-center pt-5">
         <p className="md:col-span-1 sm:col-span-1">
-          <span>Copyright ©{currentYear} OptimaFlo.</span>{' '}
-          <span> All Rights Reserved.</span>
+          <span>Copyright ©{currentYear} OptimaFlo.</span> <span> All Rights Reserved.</span>
         </p>
 
         {/* Third Column: Social Media Buttons */}

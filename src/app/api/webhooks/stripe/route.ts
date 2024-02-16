@@ -2,11 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import prisma from '@/src/lib/prisma';
 import { stripe } from '@/src/lib/stripe';
-import {
-  fetchGASettings,
-  fetchGtmSettings,
-  grantProductAccess,
-} from '@/src/lib/fetch/dashboard';
+import { fetchGASettings, fetchGtmSettings, grantProductAccess } from '@/src/lib/fetch/dashboard';
 
 // List of relevant Stripe webhook events
 const relevantEvents = new Set([
@@ -144,21 +140,11 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
       },
       currentPeriodStart: new Date(subscription.current_period_start * 1000),
       currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-      endedAt: subscription.ended_at
-        ? new Date(subscription.ended_at * 1000)
-        : null,
-      cancelAt: subscription.cancel_at
-        ? new Date(subscription.cancel_at * 1000)
-        : null,
-      canceledAt: subscription.canceled_at
-        ? new Date(subscription.canceled_at * 1000)
-        : null,
-      trialStart: subscription.trial_start
-        ? new Date(subscription.trial_start * 1000)
-        : null,
-      trialEnd: subscription.trial_end
-        ? new Date(subscription.trial_end * 1000)
-        : null,
+      endedAt: subscription.ended_at ? new Date(subscription.ended_at * 1000) : null,
+      cancelAt: subscription.cancel_at ? new Date(subscription.cancel_at * 1000) : null,
+      canceledAt: subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
+      trialStart: subscription.trial_start ? new Date(subscription.trial_start * 1000) : null,
+      trialEnd: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
       quantity: subscription.items.data[0]?.quantity || 1,
       User: {
         connect: {
@@ -464,9 +450,7 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
 }
 
 // Handle Checkout Session Events Created by Stripe
-async function upsertCheckoutSessionRecord(
-  checkoutSession: Stripe.Checkout.Session
-) {
+async function upsertCheckoutSessionRecord(checkoutSession: Stripe.Checkout.Session) {
   // Fetch user ID using the Stripe Customer ID
   const customerRecord = await prisma.customer.findFirst({
     where: {
@@ -519,15 +503,9 @@ async function upsertCheckoutSessionRecord(
             id: stripeSubscription.items.data[0].price.product as string,
           },
         },
-        currentPeriodStart: new Date(
-          stripeSubscription.current_period_start * 1000
-        ), // <-- Use stripeSubscription.current_period_start instead of subscription.current_period_start
-        currentPeriodEnd: new Date(
-          stripeSubscription.current_period_end * 1000
-        ), // <-- Use stripeSubscription.current_period_end instead of subscription.current_period_end
-        endedAt: stripeSubscription.ended_at
-          ? new Date(stripeSubscription.ended_at * 1000)
-          : null, // <-- Use stripeSubscription.ended_at instead of subscription.ended_at
+        currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000), // <-- Use stripeSubscription.current_period_start instead of subscription.current_period_start
+        currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000), // <-- Use stripeSubscription.current_period_end instead of subscription.current_period_end
+        endedAt: stripeSubscription.ended_at ? new Date(stripeSubscription.ended_at * 1000) : null, // <-- Use stripeSubscription.ended_at instead of subscription.ended_at
         cancelAt: stripeSubscription.cancel_at
           ? new Date(stripeSubscription.cancel_at * 1000)
           : null, // <-- Use stripeSubscription.cancel_at instead of subscription.cancel_at
@@ -562,15 +540,9 @@ async function upsertCheckoutSessionRecord(
             id: stripeSubscription.items.data[0].price.product as string,
           },
         },
-        currentPeriodStart: new Date(
-          stripeSubscription.current_period_start * 1000
-        ), // <-- Use stripeSubscription.current_period_start instead of subscription.current_period_start
-        currentPeriodEnd: new Date(
-          stripeSubscription.current_period_end * 1000
-        ), // <-- Use stripeSubscription.current_period_end instead of subscription.current_period_end
-        endedAt: stripeSubscription.ended_at
-          ? new Date(stripeSubscription.ended_at * 1000)
-          : null, // <-- Use stripeSubscription.ended_at instead of subscription.ended_at
+        currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000), // <-- Use stripeSubscription.current_period_start instead of subscription.current_period_start
+        currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000), // <-- Use stripeSubscription.current_period_end instead of subscription.current_period_end
+        endedAt: stripeSubscription.ended_at ? new Date(stripeSubscription.ended_at * 1000) : null, // <-- Use stripeSubscription.ended_at instead of subscription.ended_at
         cancelAt: stripeSubscription.cancel_at
           ? new Date(stripeSubscription.cancel_at * 1000)
           : null, // <-- Use stripeSubscription.cancel_at instead of subscription.cancel_at
@@ -598,24 +570,16 @@ async function upsertCheckoutSessionRecord(
     where: { id: subscription.id },
     update: {
       paymentStatus: checkoutSession.payment_status,
-      amountTotal:
-        checkoutSession.amount_total !== null
-          ? checkoutSession.amount_total
-          : 0, // default to 0 if null
-      currency:
-        checkoutSession.currency !== null ? checkoutSession.currency : 'usd', // default to 'usd' if null
+      amountTotal: checkoutSession.amount_total !== null ? checkoutSession.amount_total : 0, // default to 0 if null
+      currency: checkoutSession.currency !== null ? checkoutSession.currency : 'usd', // default to 'usd' if null
       userId: userId,
       subscriptionId: subscription.id,
     },
     create: {
       id: checkoutSession.id,
       paymentStatus: checkoutSession.payment_status,
-      amountTotal:
-        checkoutSession.amount_total !== null
-          ? checkoutSession.amount_total
-          : 0, // default to 0 if null
-      currency:
-        checkoutSession.currency !== null ? checkoutSession.currency : 'usd', // default to 'usd' if null
+      amountTotal: checkoutSession.amount_total !== null ? checkoutSession.amount_total : 0, // default to 0 if null
+      currency: checkoutSession.currency !== null ? checkoutSession.currency : 'usd', // default to 'usd' if null
       userId: userId,
       subscriptionId: subscription.id,
     },
@@ -638,9 +602,7 @@ async function upsertInvoiceRecord(invoice: Stripe.Invoice) {
   const userId = customerRecord.userId;
 
   // Retrieve the subscription from Stripe
-  const stripeSubscription = await stripe.subscriptions.retrieve(
-    invoice.subscription as string
-  );
+  const stripeSubscription = await stripe.subscriptions.retrieve(invoice.subscription as string);
 
   if (!stripeSubscription) {
     throw new Error('Stripe subscription not found');
@@ -677,15 +639,9 @@ async function upsertInvoiceRecord(invoice: Stripe.Invoice) {
             id: stripeSubscription.items.data[0].price.product as string,
           },
         },
-        currentPeriodStart: new Date(
-          stripeSubscription.current_period_start * 1000
-        ), // <-- Use stripeSubscription.current_period_start instead of subscription.current_period_start
-        currentPeriodEnd: new Date(
-          stripeSubscription.current_period_end * 1000
-        ), // <-- Use stripeSubscription.current_period_end instead of subscription.current_period_end
-        endedAt: stripeSubscription.ended_at
-          ? new Date(stripeSubscription.ended_at * 1000)
-          : null, // <-- Use stripeSubscription.ended_at instead of subscription.ended_at
+        currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000), // <-- Use stripeSubscription.current_period_start instead of subscription.current_period_start
+        currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000), // <-- Use stripeSubscription.current_period_end instead of subscription.current_period_end
+        endedAt: stripeSubscription.ended_at ? new Date(stripeSubscription.ended_at * 1000) : null, // <-- Use stripeSubscription.ended_at instead of subscription.ended_at
         cancelAt: stripeSubscription.cancel_at
           ? new Date(stripeSubscription.cancel_at * 1000)
           : null, // <-- Use stripeSubscription.cancel_at instead of subscription.cancel_at
@@ -720,15 +676,9 @@ async function upsertInvoiceRecord(invoice: Stripe.Invoice) {
             id: stripeSubscription.items.data[0].price.product as string,
           },
         },
-        currentPeriodStart: new Date(
-          stripeSubscription.current_period_start * 1000
-        ), // <-- Use stripeSubscription.current_period_start instead of subscription.current_period_start
-        currentPeriodEnd: new Date(
-          stripeSubscription.current_period_end * 1000
-        ), // <-- Use stripeSubscription.current_period_end instead of subscription.current_period_end
-        endedAt: stripeSubscription.ended_at
-          ? new Date(stripeSubscription.ended_at * 1000)
-          : null, // <-- Use stripeSubscription.ended_at instead of subscription.ended_at
+        currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000), // <-- Use stripeSubscription.current_period_start instead of subscription.current_period_start
+        currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000), // <-- Use stripeSubscription.current_period_end instead of subscription.current_period_end
+        endedAt: stripeSubscription.ended_at ? new Date(stripeSubscription.ended_at * 1000) : null, // <-- Use stripeSubscription.ended_at instead of subscription.ended_at
         cancelAt: stripeSubscription.cancel_at
           ? new Date(stripeSubscription.cancel_at * 1000)
           : null, // <-- Use stripeSubscription.cancel_at instead of subscription.cancel_at
@@ -898,18 +848,14 @@ async function deleteCustomerAndRelatedRecords(stripeCustomerId: string) {
 export async function POST(req: NextRequest) {
   const rawBody = await req.text();
   const sig = req.headers.get('stripe-signature');
-  const webhookSecret =
-    process.env.STRIPE_WEBHOOK_SECRET_LIVE ?? process.env.STRIPE_WEBHOOK_SECRET;
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET_LIVE ?? process.env.STRIPE_WEBHOOK_SECRET;
   let event: Stripe.Event;
 
   try {
     if (!sig || !webhookSecret) return;
     event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
   } catch (err: any) {
-    return NextResponse.json(
-      { error: `Webhook Error: ${err.message}` },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
   }
 
   if (relevantEvents.has(event.type)) {
@@ -932,15 +878,11 @@ export async function POST(req: NextRequest) {
         case 'customer.subscription.created':
         case 'customer.subscription.updated':
         case 'customer.subscription.deleted':
-          await upsertSubscriptionRecord(
-            event.data.object as Stripe.Subscription
-          );
+          await upsertSubscriptionRecord(event.data.object as Stripe.Subscription);
 
           break;
         case 'checkout.session.completed':
-          await upsertCheckoutSessionRecord(
-            event.data.object as Stripe.Checkout.Session
-          );
+          await upsertCheckoutSessionRecord(event.data.object as Stripe.Checkout.Session);
           break;
         case 'invoice.created':
         case 'invoice.updated':

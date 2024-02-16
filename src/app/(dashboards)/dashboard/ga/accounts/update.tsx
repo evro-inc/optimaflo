@@ -22,12 +22,7 @@ import { UpdateGaAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts'
 import { toast } from 'sonner';
 import { Icon } from '../../../../../components/client/Button/Button';
 import { Cross1Icon } from '@radix-ui/react-icons';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/src/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/card';
 import {
   Form,
   FormControl,
@@ -244,10 +239,7 @@ const FormUpdateAccount: React.FC<FormUpdateProps> = ({
             {/* Hire Us */}
             <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-end">
               {fields.map((field, index) => (
-                <div
-                  key={field.id}
-                  className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-                >
+                <div key={field.id} className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
                   <div className="max-w-xl mx-auto">
                     <div className="text-center">
                       <p className="text-3xl font-bold text-gray-800 sm:text-4xl dark:text-white">
@@ -276,20 +268,15 @@ const FormUpdateAccount: React.FC<FormUpdateProps> = ({
                                 name={`forms.${index}.displayName`}
                                 render={({ field }) => (
                                   <FormItem>
-                                    <FormLabel>
-                                      Account Name To Update
-                                    </FormLabel>
+                                    <FormLabel>Account Name To Update</FormLabel>
                                     <FormDescription>
-                                      This is the account name you want to
-                                      update.
+                                      This is the account name you want to update.
                                     </FormDescription>
                                     <FormControl>
                                       <Input
                                         defaultValue={field.name}
                                         placeholder="Name of the account"
-                                        {...form.register(
-                                          `forms.${index}.displayName`
-                                        )}
+                                        {...form.register(`forms.${index}.displayName`)}
                                         {...field}
                                       />
                                     </FormControl>
@@ -314,9 +301,7 @@ const FormUpdateAccount: React.FC<FormUpdateProps> = ({
         )}
       </AnimatePresence>
 
-      {isLimitReached && (
-        <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
-      )}
+      {isLimitReached && <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />}
 
       {notFoundError && <NotFoundErrorModal />}
     </>

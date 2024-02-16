@@ -16,21 +16,13 @@ import { selectIsLoading, setLoading } from '@/src/redux/globalSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  FeatureResponse,
-  FormUpdateWorkspaceProps,
-} from '@/src/types/types';
+import { FeatureResponse, FormUpdateWorkspaceProps } from '@/src/types/types';
 
 import { UpdateWorkspaces } from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
 import { toast } from 'sonner';
 import { Icon } from '../../../../../components/client/Button/Button';
 import { Cross1Icon } from '@radix-ui/react-icons';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/src/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/card';
 import {
   Form,
   FormControl,
@@ -261,10 +253,7 @@ const FormUpdateWorkspace: React.FC<FormUpdateWorkspaceProps> = ({
             {/* Hire Us */}
             <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-end">
               {fields.map((field, index) => (
-                <div
-                  key={field.id}
-                  className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-                >
+                <div key={field.id} className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
                   <div className="max-w-xl mx-auto">
                     <div className="text-center">
                       <p className="text-3xl font-bold text-gray-800 sm:text-4xl dark:text-white">
@@ -293,20 +282,15 @@ const FormUpdateWorkspace: React.FC<FormUpdateWorkspaceProps> = ({
                                 name={`forms.${index}.name`}
                                 render={({ field }) => (
                                   <FormItem>
-                                    <FormLabel>
-                                      Workspace Name To Update
-                                    </FormLabel>
+                                    <FormLabel>Workspace Name To Update</FormLabel>
                                     <FormDescription>
-                                      This is the workspace name you want to
-                                      update.
+                                      This is the workspace name you want to update.
                                     </FormDescription>
                                     <FormControl>
                                       <Input
                                         defaultValue={field.name}
                                         placeholder="Name of the workspace"
-                                        {...form.register(
-                                          `forms.${index}.name`
-                                        )}
+                                        {...form.register(`forms.${index}.name`)}
                                         {...field}
                                       />
                                     </FormControl>
@@ -328,9 +312,7 @@ const FormUpdateWorkspace: React.FC<FormUpdateWorkspaceProps> = ({
                                     <FormControl>
                                       <Input
                                         placeholder="Enter your description"
-                                        {...form.register(
-                                          `forms.${index}.description`
-                                        )}
+                                        {...form.register(`forms.${index}.description`)}
                                         {...field}
                                       />
                                     </FormControl>
@@ -355,9 +337,7 @@ const FormUpdateWorkspace: React.FC<FormUpdateWorkspaceProps> = ({
         )}
       </AnimatePresence>
 
-      {isLimitReached && (
-        <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
-      )}
+      {isLimitReached && <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />}
 
       {notFoundError && <NotFoundErrorModal />}
     </>

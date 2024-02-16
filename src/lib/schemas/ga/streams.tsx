@@ -1,11 +1,7 @@
 import { z } from 'zod';
 
 const SingleFormSchema = z.object({
-  type: z.enum([
-    'WEB_DATA_STREAM',
-    'ANDROID_APP_DATA_STREAM',
-    'IOS_APP_DATA_STREAM',
-  ]),
+  type: z.enum(['WEB_DATA_STREAM', 'ANDROID_APP_DATA_STREAM', 'IOS_APP_DATA_STREAM']),
   property: z.string(),
   parentURL: z.string(),
   account: z.string(),

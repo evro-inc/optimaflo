@@ -1,19 +1,13 @@
 'use client';
 import { selectTable, setIsLimitReached } from '@/src/redux/tableSlice';
-import {
-  selectGlobal,
-  toggleCreate,
-  toggleUpdate,
-} from '@/src/redux/globalSlice';
+import { selectGlobal, toggleCreate, toggleUpdate } from '@/src/redux/globalSlice';
 import dynamic from 'next/dynamic';
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { getDisplayName } from 'next/dist/shared/lib/utils';
 const LimitReached = dynamic(
   () =>
-    import('../../../../../components/client/modals/limitReached').then(
-      (mod) => mod.LimitReached
-    ),
+    import('../../../../../components/client/modals/limitReached').then((mod) => mod.LimitReached),
   { ssr: false }
 );
 
@@ -48,9 +42,7 @@ function AccountForms({ accounts, selectedRows, table }) {
 
   return (
     <>
-      {isLimitReached && (
-        <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
-      )}
+      {isLimitReached && <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />}
 
       {notFoundError && <NotFoundErrorModal />}
 

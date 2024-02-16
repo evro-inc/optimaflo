@@ -4,23 +4,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { buttonVariants } from '@/src/components/ui/button';
 
-import {
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from './subnav-accordion';
+import { AccordionContent, AccordionItem, AccordionTrigger } from './subnav-accordion';
 import { ChevronDownIcon } from '@radix-ui/react-icons';
 import { cn } from '@/src/utils/utils';
 import { Accordion } from './subnav-accordion';
-import {
-  selectIsSidebarOpen,
-  toggleSidebar,
-} from '@/src/redux/sidebarSlice';
+import { selectIsSidebarOpen, toggleSidebar } from '@/src/redux/sidebarSlice';
 import { useDispatch, useSelector } from 'react-redux';
-import {
-  selectAccordionOpenItems,
-  toggleAccordionItem,
-} from '@/src/redux/globalSlice';
+import { selectAccordionOpenItems, toggleAccordionItem } from '@/src/redux/globalSlice';
 
 export function SideNav({ items, setOpen, className }) {
   const path = usePathname();
@@ -62,15 +52,10 @@ export function SideNav({ items, setOpen, className }) {
                       onClick={openMinimizedSideBar}
                     />
                   )}
-                  {isOpen && (
-                    <item.icon className={cn('h-5 w-5', item.color)} />
-                  )}
+                  {isOpen && <item.icon className={cn('h-5 w-5', item.color)} />}
                 </div>
                 <div
-                  className={cn(
-                    'absolute left-12 text-base duration-200',
-                    !isOpen && className
-                  )}
+                  className={cn('absolute left-12 text-base duration-200', !isOpen && className)}
                 >
                   {item.title}
                 </div>
@@ -91,17 +76,11 @@ export function SideNav({ items, setOpen, className }) {
                       className={cn(
                         buttonVariants({ variant: 'ghost' }),
                         'group flex h-12 justify-start gap-x-3',
-                        path === child.href &&
-                          'bg-muted font-bold hover:bg-muted'
+                        path === child.href && 'bg-muted font-bold hover:bg-muted'
                       )}
                     >
                       <item.icon className={cn('h-5 w-5', child.color)} />
-                      <div
-                        className={cn(
-                          'text-base duration-200',
-                          !isOpen && className
-                        )}
-                      >
+                      <div className={cn('text-base duration-200', !isOpen && className)}>
                         {child.title}
                       </div>
                     </Link>
@@ -124,12 +103,7 @@ export function SideNav({ items, setOpen, className }) {
             )}
           >
             <item.icon className={cn('h-5 w-5', item.color)} />
-            <span
-              className={cn(
-                'absolute left-12 text-base duration-200',
-                !isOpen && className
-              )}
-            >
+            <span className={cn('absolute left-12 text-base duration-200', !isOpen && className)}>
               {item.title}
             </span>
           </Link>

@@ -51,10 +51,7 @@ export async function GET(
 
     if (response.length === 0) {
       // If the subscription is not found, return a 404 Not Found response
-      return NextResponse.json(
-        { error: 'Subscription not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Subscription not found' }, { status: 404 });
     }
 
     return NextResponse.json(response, {

@@ -7,19 +7,12 @@ import { ButtonGroup } from '../../ButtonGroup/ButtonGroup';
 import { XMarkIcon } from '@heroicons/react/24/solid';
 import { z } from 'zod';
 import { UpdateContainerSchema } from '@/src/lib/schemas/gtm/containers';
-import {
-  clearSelectedRows,
-  selectTable,
-  setIsLimitReached,
-} from '@/src/redux/tableSlice';
+import { clearSelectedRows, selectTable, setIsLimitReached } from '@/src/redux/tableSlice';
 import { selectIsLoading, setLoading } from '@/src/redux/globalSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  FormUpdateContainerProps,
-  UpdateContainersResult,
-} from '@/src/types/types';
+import { FormUpdateContainerProps, UpdateContainersResult } from '@/src/types/types';
 
 // Type for the entire form data
 type Forms = z.infer<typeof UpdateContainerSchema>;
@@ -161,21 +154,15 @@ const FormCombineContainer: React.FC<FormUpdateContainerProps> = ({
     onClose();
   };
 
-  const selectedAccountIds = Object.values(selectedRows).map(
-    (row: any) => row.accountId
-  );
+  const selectedAccountIds = Object.values(selectedRows).map((row: any) => row.accountId);
 
   const uniqueSelectedAccountIds = Array.from(new Set(selectedAccountIds));
 
   const filteredAccounts = Array.isArray(accounts?.data)
-    ? accounts.data.filter((account) =>
-        uniqueSelectedAccountIds.includes(account.accountId)
-      )
+    ? accounts.data.filter((account) => uniqueSelectedAccountIds.includes(account.accountId))
     : [];
 
-  const filteredUsageContexts = Object.values(selectedRows).map(
-    (row: any) => row.usageContext[0]
-  );
+  const filteredUsageContexts = Object.values(selectedRows).map((row: any) => row.usageContext[0]);
 
   return (
     <>
@@ -188,10 +175,7 @@ const FormCombineContainer: React.FC<FormUpdateContainerProps> = ({
             className="fixed top-0 left-0 w-full h-full flex flex-col items-center justify-start z-50 bg-white-500 overflow-y-auto"
           >
             {/* Close Button */}
-            <button
-              onClick={handleClose}
-              className="absolute top-0 right-0 font-bold py-2 px-4"
-            >
+            <button onClick={handleClose} className="absolute top-0 right-0 font-bold py-2 px-4">
               <XMarkIcon className="w-14 h-14" />
             </button>
 
@@ -208,10 +192,7 @@ const FormCombineContainer: React.FC<FormUpdateContainerProps> = ({
             {/* Hire Us */}
             <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-end">
               {fields.map((field, index) => (
-                <div
-                  key={field.id}
-                  className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-                >
+                <div key={field.id} className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
                   <div className="max-w-xl mx-auto">
                     <div className="text-center">
                       <p className="text-3xl font-bold text-gray-800 sm:text-4xl dark:text-white">
@@ -244,10 +225,7 @@ const FormCombineContainer: React.FC<FormUpdateContainerProps> = ({
                               />
                               {errors.forms?.[index]?.containerName && (
                                 <p className="text-red-500 text-xs italic">
-                                  {
-                                    errors.forms?.[index]?.containerName
-                                      ?.message
-                                  }
+                                  {errors.forms?.[index]?.containerName?.message}
                                 </p>
                               )}
                             </div>
@@ -265,9 +243,7 @@ const FormCombineContainer: React.FC<FormUpdateContainerProps> = ({
                                 className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
                               >
                                 {filteredAccounts.map((account: any) => (
-                                  <option key={account.accountId}>
-                                    {account.accountId}
-                                  </option>
+                                  <option key={account.accountId}>{account.accountId}</option>
                                 ))}
                               </select>
                               {errors.forms?.[index]?.accountId && (
@@ -293,9 +269,7 @@ const FormCombineContainer: React.FC<FormUpdateContainerProps> = ({
                               className="py-3 px-4 block w-full border-gray-200 rounded-md text-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-900 dark:border-gray-700 dark:text-gray-400"
                             >
                               {filteredUsageContexts.map((usageContext) => (
-                                <option key={usageContext}>
-                                  {usageContext}
-                                </option>
+                                <option key={usageContext}>{usageContext}</option>
                               ))}
                             </select>
                             {errors.forms?.[index]?.usageContext && (
@@ -367,9 +341,7 @@ const FormCombineContainer: React.FC<FormUpdateContainerProps> = ({
         )}
       </AnimatePresence>
 
-      {isLimitReached && (
-        <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
-      )}
+      {isLimitReached && <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />}
     </>
   );
 };

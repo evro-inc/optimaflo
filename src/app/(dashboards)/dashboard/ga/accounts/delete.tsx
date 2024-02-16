@@ -24,11 +24,11 @@ export const useDeleteHook = (selectedRows, table) => {
     });
 
     // Use Object.values to get the values from the selectedRows object and cast them to GA4AccountType
-    const ga4AccountsToDelete = Object.values(
-      selectedRows as Record<string, GA4AccountType>
-    ).map((account) => {
-      return account.name;
-    });
+    const ga4AccountsToDelete = Object.values(selectedRows as Record<string, GA4AccountType>).map(
+      (account) => {
+        return account.name;
+      }
+    );
 
     const accountNames = ga4AccountsToDelete.map((name) => {
       // Extract the accountId part from the concatenated string
@@ -69,9 +69,7 @@ export const useDeleteHook = (selectedRows, table) => {
     }
 
     if (response.notFoundError) {
-      const unsuccessfulResults = response.results.filter(
-        (result) => !result.success
-      );
+      const unsuccessfulResults = response.results.filter((result) => !result.success);
       dispatch(setErrorDetails(unsuccessfulResults));
       dispatch(setNotFoundError(true));
     }

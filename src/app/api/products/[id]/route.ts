@@ -14,9 +14,7 @@ export async function GET(
 ) {
   try {
     // Define a Joi schema for the product ID
-    const schema = Joi.string()
-      .pattern(new RegExp('^prod_[A-Za-z0-9]{14}$'))
-      .required();
+    const schema = Joi.string().pattern(new RegExp('^prod_[A-Za-z0-9]{14}$')).required();
 
     // Validate the product ID against the schema
     const { error } = schema.validate(params.id);
@@ -135,9 +133,7 @@ export async function DELETE(
     const id = params.id;
 
     // Define a Joi schema for the product ID
-    const schema = Joi.string()
-      .pattern(new RegExp('^prod_[A-Za-z0-9]{14}$'))
-      .required();
+    const schema = Joi.string().pattern(new RegExp('^prod_[A-Za-z0-9]{14}$')).required();
 
     // Validate the product ID against the schema
     const { error } = schema.validate(id);

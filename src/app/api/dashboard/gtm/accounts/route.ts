@@ -24,12 +24,7 @@ export async function GET() {
     const token = await currentUserOauthAccessToken(userId);
     const response = await listGtmAccounts(token[0].token);
 
-    redis.set(
-      `gtm:accounts-userId:${userId}`,
-      JSON.stringify(response),
-      'EX',
-      60 * 60 * 24 * 7
-    );
+    redis.set(`gtm:accounts-userId:${userId}`, JSON.stringify(response), 'EX', 60 * 60 * 24 * 7);
 
     return NextResponse.json(response, {
       headers: { 'Content-Type': 'application/json' },

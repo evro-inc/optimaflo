@@ -32,31 +32,20 @@ export default authMiddleware({
             'prod_PUV5bXKCjMOpz8',
             'prod_PUV4HNwx8EuHOi',
           ],
-          '^/dashboard/ga.*': [
-            'prod_PUV4HNwx8EuHOi',
-            'prod_PUV5bXKCjMOpz8',
-            'prod_PUV6oomP5QRnkp',
-          ],
+          '^/dashboard/ga.*': ['prod_PUV4HNwx8EuHOi', 'prod_PUV5bXKCjMOpz8', 'prod_PUV6oomP5QRnkp'],
         };
 
         // Subscription check
-        for (const [regexString, productIds] of Object.entries(
-          regexToProductIds
-        )) {
+        for (const [regexString, productIds] of Object.entries(regexToProductIds)) {
           const regex = new RegExp(regexString);
           if (regex.test(req.nextUrl.pathname)) {
-            
             const subscriptions = await getSubscriptions(auth.userId);
-            
+
             const activeProductIds = subscriptions
               .filter((subscription) => subscription.status === 'active')
               .map((subscription) => subscription.productId);
 
-            if (
-              !activeProductIds.some((productId) =>
-                productIds.includes(productId)
-              )
-            ) {
+            if (!activeProductIds.some((productId) => productIds.includes(productId))) {
               return NextResponse.redirect(new URL('/blocked', req.url));
             }
           }

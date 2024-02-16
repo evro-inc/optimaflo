@@ -32,10 +32,7 @@ export const tierDeleteLimit = async (userId: string, featureName: string) => {
     });
 
     // Handling feature limit
-    if (
-      !tierLimitRecord ||
-      tierLimitRecord.deleteUsage >= tierLimitRecord.deleteLimit
-    ) {
+    if (!tierLimitRecord || tierLimitRecord.deleteUsage >= tierLimitRecord.deleteLimit) {
       return {
         success: false,
         limitReached: true,
@@ -75,10 +72,7 @@ export const tierCreateLimit = async (userId: string, featureName: string) => {
     });
 
     // Handling feature limit
-    if (
-      !tierLimitRecord ||
-      tierLimitRecord.createUsage >= tierLimitRecord.createLimit
-    ) {
+    if (!tierLimitRecord || tierLimitRecord.createUsage >= tierLimitRecord.createLimit) {
       return {
         success: false,
         limitReached: true,
@@ -118,10 +112,7 @@ export const tierUpdateLimit = async (userId: string, featureName: string) => {
     });
 
     // Handling feature limit
-    if (
-      !tierLimitRecord ||
-      tierLimitRecord.updateUsage >= tierLimitRecord.updateLimit
-    ) {
+    if (!tierLimitRecord || tierLimitRecord.updateUsage >= tierLimitRecord.updateLimit) {
       return {
         success: false,
         limitReached: true,
@@ -154,9 +145,7 @@ export async function handleApiResponseError(
     case 400:
       if (
         parsedResponse.error &&
-        parsedResponse.error.message.includes(
-          'Returned an error response for your request'
-        )
+        parsedResponse.error.message.includes('Returned an error response for your request')
       ) {
         return {
           success: false,
@@ -244,10 +233,7 @@ export async function fetchFilteredRows<T>(
   };
 }
 
-export async function fetchAllFilteredRows<T>(
-  allItems: T[],
-  query: string
-): Promise<T[]> {
+export async function fetchAllFilteredRows<T>(allItems: T[], query: string): Promise<T[]> {
   const { userId } = auth();
   if (!userId) return notFound();
 
@@ -277,8 +263,7 @@ export async function fetchPages<T>(
   let filtered;
   if (query) {
     filtered = allItems.filter(
-      (item: any) =>
-        'name' in item && item.name.toLowerCase().includes(query.toLowerCase())
+      (item: any) => 'name' in item && item.name.toLowerCase().includes(query.toLowerCase())
     );
   } else {
     filtered = allItems;

@@ -59,12 +59,9 @@ export const ContactForm = () => {
 
   return isSubmitted ? (
     <div className="transition-all duration-500 ease-in-out text-xl md:text-3xl py-20">
-      <p className="text-center font-semibold  pb-5">
-        Thank you for your message!
-      </p>
+      <p className="text-center font-semibold  pb-5">Thank you for your message!</p>
       <p className="text-center text-gray-600">
-        We have received your inquiry and will get back to you in 3-5 business
-        days.
+        We have received your inquiry and will get back to you in 3-5 business days.
       </p>
     </div>
   ) : (
@@ -74,13 +71,11 @@ export const ContactForm = () => {
         <div className="mt-12 flex flex-col lg:flex-row items-center sm:items-start gap-6 lg:gap-16">
           <div className="divide-y divide-gray-200 order-1 w-6/12 flex items-end">
             <div>
-              <h1 className="text-2xl font-bold sm:text-4xl pb-5">
-                Get In Touch
-              </h1>
+              <h1 className="text-2xl font-bold sm:text-4xl pb-5">Get In Touch</h1>
               <p className="mt-1 text-gray-600">
-                We would love to talk about how we can help you. If you have any
-                questions, suggestions, feature requests, or would like to
-                discuss a project; please get in touch.
+                We would love to talk about how we can help you. If you have any questions,
+                suggestions, feature requests, or would like to discuss a project; please get in
+                touch.
               </p>
 
               <div className="mt-4 text-gray-600">
@@ -115,9 +110,7 @@ export const ContactForm = () => {
                     name="hs-name-contacts-1"
                     id="hs-name-contacts-1"
                     className={`py-3 px-4 block w-full rounded-md text-sm focus:outline-none focus:border-blue-500 focus:ring focus:ring-blue-200 transition duration-300 ease-in-out hover:border-gray-400 ${
-                      nameValid
-                        ? 'border-2 border-gray-300'
-                        : 'border-2 border-red-500'
+                      nameValid ? 'border-2 border-gray-300' : 'border-2 border-red-500'
                     }`}
                     placeholder="Full Name"
                   />
@@ -135,9 +128,7 @@ export const ContactForm = () => {
                     id="hs-email-contacts-1"
                     autoComplete="email"
                     className={`py-3 px-4 block w-full rounded-md text-sm focus:outline-none focus:border-blue-500 focus:ring focus:ring-blue-200 transition duration-300 ease-in-out hover:border-gray-400 ${
-                      emailValid
-                        ? 'border-2 border-gray-300'
-                        : 'border-2 border-red-500'
+                      emailValid ? 'border-2 border-gray-300' : 'border-2 border-red-500'
                     }`}
                     placeholder="Email"
                   />
@@ -153,9 +144,7 @@ export const ContactForm = () => {
                     id="hs-about-contacts-1"
                     name="hs-about-contacts-1"
                     className={`py-3 px-4 block w-full rounded-md text-sm focus:outline-none focus:border-blue-500 focus:ring focus:ring-blue-200 transition duration-300 ease-in-out hover:border-gray-400 ${
-                      messageValid
-                        ? 'border-2 border-gray-300'
-                        : 'border-2 border-red-500'
+                      messageValid ? 'border-2 border-gray-300' : 'border-2 border-red-500'
                     }`}
                     placeholder="Details"
                   ></textarea>
@@ -165,8 +154,8 @@ export const ContactForm = () => {
 
               <div className="mt-3 text-center">
                 <p className="text-sm text-gray-500">
-                  We collect your personal information here to be able to
-                  identify and contact you. Learn more in our{' '}
+                  We collect your personal information here to be able to identify and contact you.
+                  Learn more in our{' '}
                   <LinkBody
                     variant="link"
                     text="Privacy Policy"
@@ -178,12 +167,7 @@ export const ContactForm = () => {
               </div>
 
               <div className="flex justify-center pt-5">
-                <ButtonPrim
-                  variant="body"
-                  type="submit"
-                  text="Send"
-                  billingInterval={undefined}
-                />
+                <ButtonPrim variant="body" type="submit" text="Send" billingInterval={undefined} />
               </div>
 
               <div className="mt-3 text-center">

@@ -15,9 +15,7 @@ import { ErrorMessage } from '@/src/components/client/modals/Error';
 // Dynamic imports for modals and forms
 const LimitReachedModal = dynamic(
   () =>
-    import('../../../../../components/client/modals/limitReached').then(
-      (mod) => mod.LimitReached
-    ),
+    import('../../../../../components/client/modals/limitReached').then((mod) => mod.LimitReached),
   { ssr: false }
 );
 
@@ -49,9 +47,7 @@ function WorkspaceForms({ accounts, selectedRows, table }) {
   return (
     <>
       {/* Modals */}
-      {isLimitReached && (
-        <LimitReachedModal onClose={() => dispatch(setIsLimitReached(false))} />
-      )}
+      {isLimitReached && <LimitReachedModal onClose={() => dispatch(setIsLimitReached(false))} />}
 
       {notFoundError && <NotFoundErrorModal />}
 

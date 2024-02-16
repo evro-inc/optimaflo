@@ -22,9 +22,7 @@ export const useDeleteHook = (selectedRows, table) => {
       },
     });
     const uniqueAccountIds = Array.from(
-      new Set(
-        Object.values(selectedRows).map((rowData: any) => rowData.accountId)
-      )
+      new Set(Object.values(selectedRows).map((rowData: any) => rowData.accountId))
     );
 
     const deleteOperations = uniqueAccountIds.map(async (accountId) => {
@@ -35,9 +33,7 @@ export const useDeleteHook = (selectedRows, table) => {
       const containerNames = containersToDelete.map((combinedId) => {
         const [accountId, containerId] = combinedId.split('-');
         const container = selectedRows.find(
-          (rowData) =>
-            rowData.accountId === accountId &&
-            rowData.containerId === containerId
+          (rowData) => rowData.accountId === accountId && rowData.containerId === containerId
         );
         if (!container) {
           return undefined; // This will help identify which combinedId is problematic

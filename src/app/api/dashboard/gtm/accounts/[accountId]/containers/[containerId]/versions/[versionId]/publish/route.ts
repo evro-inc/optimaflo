@@ -67,12 +67,9 @@ export async function POST(
 
     if (!accessToken) {
       // If the access token is null or undefined, return an error response
-      return new NextResponse(
-        JSON.stringify({ message: 'Access token is missing' }),
-        {
-          status: 401,
-        }
-      );
+      return new NextResponse(JSON.stringify({ message: 'Access token is missing' }), {
+        status: 401,
+      });
     }
 
     // Fetch subscription data for the user
@@ -83,12 +80,9 @@ export async function POST(
     });
 
     if (!subscriptionData) {
-      return new NextResponse(
-        JSON.stringify({ message: 'Subscription data not found' }),
-        {
-          status: 403,
-        }
-      );
+      return new NextResponse(JSON.stringify({ message: 'Subscription data not found' }), {
+        status: 403,
+      });
     }
 
     const tierLimitRecord = await prisma.tierLimit.findFirst({
@@ -106,16 +100,10 @@ export async function POST(
       },
     });
 
-    if (
-      !tierLimitRecord ||
-      tierLimitRecord.createUsage >= tierLimitRecord.createLimit
-    ) {
-      return new NextResponse(
-        JSON.stringify({ message: 'Feature limit reached' }),
-        {
-          status: 403,
-        }
-      );
+    if (!tierLimitRecord || tierLimitRecord.createUsage >= tierLimitRecord.createLimit) {
+      return new NextResponse(JSON.stringify({ message: 'Feature limit reached' }), {
+        status: 403,
+      });
     }
 
     let retries = 0;
@@ -124,10 +112,7 @@ export async function POST(
     while (retries < MAX_RETRIES) {
       try {
         // Check if we've hit the rate limit
-        const { remaining } = await gtmRateLimit.blockUntilReady(
-          `user:${userId}`,
-          1000
-        );
+        const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
 
         if (remaining > 0) {
           // If we haven't hit the rate limit, proceed with the API request

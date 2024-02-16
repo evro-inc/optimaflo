@@ -6,9 +6,7 @@ import { selectTable, setCurrentPage } from '@/src/redux/tableSlice';
 function ButtonNext({ workspaces }) {
   const dispatch = useDispatch();
   const { currentPage, itemsPerPage } = useSelector(selectTable);
-  const totalPages = Math.ceil(
-    (workspaces ? workspaces.length : 0) / itemsPerPage
-  );
+  const totalPages = Math.ceil((workspaces ? workspaces.length : 0) / itemsPerPage);
 
   const nextPage = () => {
     if (currentPage < totalPages) {

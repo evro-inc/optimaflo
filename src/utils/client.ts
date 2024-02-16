@@ -72,9 +72,7 @@ export const useRowSelection = (getIdFromItem) => {
       dispatch(setSelectedRows(newSelectedRows));
     }
 
-    dispatch(
-      toggleAllSelected(items.length === Object.keys(selectedRows).length)
-    );
+    dispatch(toggleAllSelected(items.length === Object.keys(selectedRows).length));
   };
 
   return { toggleRow, toggleAll, selectedRows, allSelected };

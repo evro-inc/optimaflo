@@ -17,18 +17,10 @@ import { selectIsLoading, setLoading } from '@/src/redux/globalSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  FeatureResponse,
-  FormUpdateContainerProps,
-} from '@/src/types/types';
+import { FeatureResponse, FormUpdateContainerProps } from '@/src/types/types';
 
 import { Cross1Icon } from '@radix-ui/react-icons';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/src/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/card';
 
 import {
   Form,
@@ -265,10 +257,7 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
 
             <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-end">
               {fields.map((field, index) => (
-                <div
-                  key={field.id}
-                  className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-                >
+                <div key={field.id} className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
                   <div className="max-w-xl mx-auto">
                     <Card
                       key={field.id}
@@ -299,9 +288,7 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
                                   <FormControl>
                                     <Input
                                       placeholder="Name of the container"
-                                      {...form.register(
-                                        `forms.${index}.containerName`
-                                      )}
+                                      {...form.register(`forms.${index}.containerName`)}
                                       {...field}
                                     />
                                   </FormControl>
@@ -317,15 +304,12 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
                                 <FormItem>
                                   <FormLabel>Account</FormLabel>
                                   <FormDescription>
-                                    This is the account ID of the container
-                                    (read only)
+                                    This is the account ID of the container (read only)
                                   </FormDescription>
                                   <FormControl>
                                     <Input
                                       readOnly
-                                      {...form.register(
-                                        `forms.${index}.accountId`
-                                      )}
+                                      {...form.register(`forms.${index}.accountId`)}
                                       {...field}
                                     />
                                   </FormControl>
@@ -341,15 +325,12 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
                                 <FormItem>
                                   <FormLabel>Usage Context</FormLabel>
                                   <FormDescription>
-                                    This is the usage context of the container
-                                    (read only)
+                                    This is the usage context of the container (read only)
                                   </FormDescription>
                                   <FormControl>
                                     <Input
                                       readOnly
-                                      {...form.register(
-                                        `forms.${index}.usageContext`
-                                      )}
+                                      {...form.register(`forms.${index}.usageContext`)}
                                       {...field}
                                     />
                                   </FormControl>
@@ -364,15 +345,12 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
                               render={({ field }) => (
                                 <FormItem>
                                   <FormLabel>
-                                    Domain Name: Optional (Must be comma
-                                    separated)
+                                    Domain Name: Optional (Must be comma separated)
                                   </FormLabel>
                                   <FormControl>
                                     <Input
                                       placeholder="Enter domain names separated by commas"
-                                      {...form.register(
-                                        `forms.${index}.domainName`
-                                      )}
+                                      {...form.register(`forms.${index}.domainName`)}
                                       {...field}
                                     />
                                   </FormControl>
@@ -414,9 +392,7 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
         )}
       </AnimatePresence>
 
-      {isLimitReached && (
-        <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
-      )}
+      {isLimitReached && <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />}
     </>
   );
 };

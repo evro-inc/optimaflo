@@ -6,9 +6,7 @@ import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 const LimitReached = dynamic(
   () =>
-    import('../../../../../components/client/modals/limitReached').then(
-      (mod) => mod.LimitReached
-    ),
+    import('../../../../../components/client/modals/limitReached').then((mod) => mod.LimitReached),
   { ssr: false }
 );
 
@@ -31,9 +29,7 @@ function AccountForms({ selectedRows, table }) {
 
   return (
     <>
-      {isLimitReached && (
-        <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
-      )}
+      {isLimitReached && <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />}
 
       {notFoundError && <NotFoundErrorModal />}
 

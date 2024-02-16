@@ -68,12 +68,9 @@ export function DataTable<TData, TValue>({
   const { user } = useUser();
   const userId = user?.id;
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  );
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
 
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
 
   const table = useReactTable({
@@ -96,19 +93,14 @@ export function DataTable<TData, TValue>({
     },
   });
 
-  const selectedRowsData = table
-    .getSelectedRowModel()
-    .rows.map((row) => row.original);
+  const selectedRowsData = table.getSelectedRowModel().rows.map((row) => row.original);
 
   const handleCreateClick = async () => {
     try {
       if (!userId) {
         return notFound();
       }
-      const handleCreateLimit: any = await tierCreateLimit(
-        userId,
-        'GA4Properties'
-      );
+      const handleCreateLimit: any = await tierCreateLimit(userId, 'GA4Properties');
 
       if (handleCreateLimit && handleCreateLimit.limitReached) {
         // Directly show the limit reached modal
@@ -124,20 +116,14 @@ export function DataTable<TData, TValue>({
 
   const refreshAllCache = async () => {
     // Assuming you want to refresh cache for each workspace
-    const keys = [
-      `ga:accounts:userId:${userId}`,
-      `ga:properties:userId:${userId}`,
-    ];
+    const keys = [`ga:accounts:userId:${userId}`, `ga:properties:userId:${userId}`];
     await revalidate(keys, '/dashboard/ga/accounts', userId);
-    toast.info(
-      'Updating our systems. This may take a minute or two to update on screen.',
-      {
-        action: {
-          label: 'Close',
-          onClick: () => toast.dismiss(),
-        },
-      }
-    );
+    toast.info('Updating our systems. This may take a minute or two to update on screen.', {
+      action: {
+        label: 'Close',
+        onClick: () => toast.dismiss(),
+      },
+    });
   };
 
   const handleAcknowledgement = async () => {
@@ -207,12 +193,8 @@ export function DataTable<TData, TValue>({
       <div className="flex items-center py-4">
         <Input
           placeholder="Filter property names..."
-          value={
-            (table.getColumn('displayName')?.getFilterValue() as string) ?? ''
-          }
-          onChange={(event) =>
-            table.getColumn('displayName')?.setFilterValue(event.target.value)
-          }
+          value={(table.getColumn('displayName')?.getFilterValue() as string) ?? ''}
+          onChange={(event) => table.getColumn('displayName')?.setFilterValue(event.target.value)}
           className="max-w-sm"
         />
 
@@ -236,9 +218,7 @@ export function DataTable<TData, TValue>({
           <Dialog>
             <DialogTrigger asChild>
               <Button
-                disabled={
-                  Object.keys(table.getState().rowSelection).length === 0
-                }
+                disabled={Object.keys(table.getState().rowSelection).length === 0}
                 variant="outline"
               >
                 Data Acknowledgement
@@ -248,12 +228,11 @@ export function DataTable<TData, TValue>({
               <DialogHeader>
                 <DialogTitle>User Data Collection Acknowledgement</DialogTitle>
                 <DialogDescription>
-                  I acknowledge that I have the necessary privacy disclosures
-                  and rights from my end users for the collection and processing
-                  of their data, including the association of such data with the
-                  visitation information Google Analytics collects from my site
-                  and/or app property. This acknowledgement is required and will
-                  be applied to all selected properties.
+                  I acknowledge that I have the necessary privacy disclosures and rights from my end
+                  users for the collection and processing of their data, including the association
+                  of such data with the visitation information Google Analytics collects from my
+                  site and/or app property. This acknowledgement is required and will be applied to
+                  all selected properties.
                 </DialogDescription>
               </DialogHeader>
 
@@ -279,9 +258,7 @@ export function DataTable<TData, TValue>({
                       key={column.id}
                       className="capitalize"
                       checked={column.getIsVisible()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(!!value)
-                      }
+                      onCheckedChange={(value) => column.toggleVisibility(!!value)}
                     >
                       {column.id}
                     </DropdownMenuCheckboxItem>
@@ -301,10 +278,7 @@ export function DataTable<TData, TValue>({
                     <TableHead key={header.id}>
                       {header.isPlaceholder
                         ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                        : flexRender(header.column.columnDef.header, header.getContext())}
                     </TableHead>
                   );
                 })}
@@ -314,26 +288,17 @@ export function DataTable<TData, TValue>({
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && 'selected'}
-                >
+                <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
+                <TableCell colSpan={columns.length} className="h-24 text-center">
                   No results.
                 </TableCell>
               </TableRow>
@@ -363,11 +328,7 @@ export function DataTable<TData, TValue>({
           Next
         </Button>
       </div>
-      <PropertyForms
-        selectedRows={selectedRowsData}
-        table={table}
-        accounts={parentData}
-      />
+      <PropertyForms selectedRows={selectedRowsData} table={table} accounts={parentData} />
     </div>
   );
 }

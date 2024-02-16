@@ -24,11 +24,11 @@ export const useDeleteHook = (selectedRows, table) => {
     });
 
     // Use Object.values to get the values from the selectedRows object and cast them to WorkspaceType
-    const workspacesToDelete = Object.values(
-      selectedRows as Record<string, WorkspaceType>
-    ).map((workspace) => {
-      return `${workspace.accountId}-${workspace.containerId}-${workspace.workspaceId}`;
-    });
+    const workspacesToDelete = Object.values(selectedRows as Record<string, WorkspaceType>).map(
+      (workspace) => {
+        return `${workspace.accountId}-${workspace.containerId}-${workspace.workspaceId}`;
+      }
+    );
 
     const workspaceNames = workspacesToDelete.map((workspaceId) => {
       // Extract the workspaceId part from the concatenated string
@@ -69,9 +69,7 @@ export const useDeleteHook = (selectedRows, table) => {
     }
 
     if (response.notFoundError) {
-      const unsuccessfulResults = response.results.filter(
-        (result) => !result.success
-      );
+      const unsuccessfulResults = response.results.filter((result) => !result.success);
       dispatch(setErrorDetails(unsuccessfulResults));
       dispatch(setNotFoundError(true));
     }

@@ -20,12 +20,7 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 
 import { Cross1Icon } from '@radix-ui/react-icons';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/src/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/card';
 
 import {
   Form,
@@ -291,10 +286,7 @@ const FormCreateContainer: React.FC<FormCreateAccountProps> = ({
 
             <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-end">
               {fields.map((field, index) => (
-                <div
-                  key={field.id}
-                  className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-                >
+                <div key={field.id} className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
                   <div className="max-w-xl mx-auto">
                     <div className="mt-12">
                       {/* Form */}
@@ -320,15 +312,12 @@ const FormCreateContainer: React.FC<FormCreateAccountProps> = ({
                                   <FormItem>
                                     <FormLabel>New Container Name</FormLabel>
                                     <FormDescription>
-                                      This is the container name you want to
-                                      create.
+                                      This is the container name you want to create.
                                     </FormDescription>
                                     <FormControl>
                                       <Input
                                         placeholder="Name of the container"
-                                        {...form.register(
-                                          `forms.${index}.containerName`
-                                        )}
+                                        {...form.register(`forms.${index}.containerName`)}
                                         {...field}
                                       />
                                     </FormControl>
@@ -345,14 +334,11 @@ const FormCreateContainer: React.FC<FormCreateAccountProps> = ({
                                   <FormItem>
                                     <FormLabel>Account</FormLabel>
                                     <FormDescription>
-                                      This is the account you want to create the
-                                      container in.
+                                      This is the account you want to create the container in.
                                     </FormDescription>
                                     <FormControl>
                                       <Select
-                                        {...form.register(
-                                          `forms.${index}.accountId`
-                                        )}
+                                        {...form.register(`forms.${index}.accountId`)}
                                         {...field}
                                         onValueChange={field.onChange}
                                       >
@@ -392,9 +378,7 @@ const FormCreateContainer: React.FC<FormCreateAccountProps> = ({
                                     </FormDescription>
                                     <FormControl>
                                       <Select
-                                        {...form.register(
-                                          `forms.${index}.usageContext`
-                                        )}
+                                        {...form.register(`forms.${index}.usageContext`)}
                                         {...field}
                                         onValueChange={field.onChange}
                                       >
@@ -404,15 +388,9 @@ const FormCreateContainer: React.FC<FormCreateAccountProps> = ({
                                         <SelectContent>
                                           <SelectGroup>
                                             <SelectLabel>Account</SelectLabel>
-                                            <SelectItem value="web">
-                                              Web
-                                            </SelectItem>
-                                            <SelectItem value="androidSdk5">
-                                              Android
-                                            </SelectItem>
-                                            <SelectItem value="iosSdk5">
-                                              IOS
-                                            </SelectItem>
+                                            <SelectItem value="web">Web</SelectItem>
+                                            <SelectItem value="androidSdk5">Android</SelectItem>
+                                            <SelectItem value="iosSdk5">IOS</SelectItem>
                                           </SelectGroup>
                                         </SelectContent>
                                       </Select>
@@ -429,8 +407,7 @@ const FormCreateContainer: React.FC<FormCreateAccountProps> = ({
                                 render={({ field }) => (
                                   <FormItem>
                                     <FormLabel>
-                                      Domain Name: Optional (Must be comma
-                                      separated)
+                                      Domain Name: Optional (Must be comma separated)
                                     </FormLabel>
                                     <FormDescription>
                                       This is the domain name you want to add.
@@ -438,9 +415,7 @@ const FormCreateContainer: React.FC<FormCreateAccountProps> = ({
                                     <FormControl>
                                       <Input
                                         placeholder="Enter domain names separated by commas"
-                                        {...form.register(
-                                          `forms.${index}.domainName`
-                                        )}
+                                        {...form.register(`forms.${index}.domainName`)}
                                         {...field}
                                       />
                                     </FormControl>
@@ -462,9 +437,7 @@ const FormCreateContainer: React.FC<FormCreateAccountProps> = ({
                                     <FormControl>
                                       <Input
                                         placeholder="Enter any notes you want"
-                                        {...form.register(
-                                          `forms.${index}.notes`
-                                        )}
+                                        {...form.register(`forms.${index}.notes`)}
                                         {...field}
                                       />
                                     </FormControl>
@@ -489,9 +462,7 @@ const FormCreateContainer: React.FC<FormCreateAccountProps> = ({
         )}
       </AnimatePresence>
 
-      {isLimitReached && (
-        <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
-      )}
+      {isLimitReached && <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />}
 
       {notFoundError && <NotFoundErrorModal />}
     </>

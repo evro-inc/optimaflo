@@ -20,12 +20,7 @@ import { createProperties } from '@/src/lib/fetch/dashboard/actions/ga/propertie
 import dynamic from 'next/dynamic';
 import { toast } from 'sonner';
 import { Cross1Icon } from '@radix-ui/react-icons';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/src/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/card';
 import {
   Form,
   FormControl,
@@ -122,15 +117,12 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
     for (const form of forms) {
       const identifier = `${form.parent} - ${form.name} - ${form.displayName}`;
       if (uniqueProperties.has(identifier)) {
-        toast.error(
-          `Duplicate property found for ${form.name} - ${form.displayName}`,
-          {
-            action: {
-              label: 'Close',
-              onClick: () => toast.dismiss(),
-            },
-          }
-        );
+        toast.error(`Duplicate property found for ${form.name} - ${form.displayName}`, {
+          action: {
+            label: 'Close',
+            onClick: () => toast.dismiss(),
+          },
+        });
         dispatch(setLoading(false));
         return;
       }
@@ -228,17 +220,13 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
     onClose();
   };
 
-  const accountIdsWithProperties = new Set(
-    data.map((property) => property.parent)
-  );
+  const accountIdsWithProperties = new Set(data.map((property) => property.parent));
   const transformedSet = new Set(
     Array.from(accountIdsWithProperties, (value) => `accounts/${value}`)
   );
 
   // match parent with account
-  const accountsWithProperties = parentData.filter((account) =>
-    transformedSet.has(account.name)
-  );
+  const accountsWithProperties = parentData.filter((account) => transformedSet.has(account.name));
 
   return (
     <>
@@ -258,8 +246,7 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
               onClick={handleClose}
               className="absolute top-5 right-5 font-bold"
             >
-              <Cross1Icon className="h-4 w-4" />{' '}
-              <span className="sr-only">Close</span>
+              <Cross1Icon className="h-4 w-4" /> <span className="sr-only">Close</span>
             </Button>
 
             <div className="flex items-center justify-between py-3 px-4 mt-5 gap-4">
@@ -295,17 +282,12 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
                   (property, idx, self) =>
                     idx ===
                     self.findIndex(
-                      (p) =>
-                        p.parent === property.parent &&
-                        uniquePropertyIds.has(p.parent)
+                      (p) => p.parent === property.parent && uniquePropertyIds.has(p.parent)
                     )
                 );
 
                 return (
-                  <div
-                    key={field.id}
-                    className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-                  >
+                  <div key={field.id} className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
                     <div className="max-w-xl mx-auto">
                       <div className="mt-12">
                         {/* Form */}
@@ -331,15 +313,12 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
                                     <FormItem>
                                       <FormLabel>New Property Name</FormLabel>
                                       <FormDescription>
-                                        This is the property name you want to
-                                        create.
+                                        This is the property name you want to create.
                                       </FormDescription>
                                       <FormControl>
                                         <Input
                                           placeholder="Name of the property"
-                                          {...form.register(
-                                            `forms.${index}.displayName`
-                                          )}
+                                          {...form.register(`forms.${index}.displayName`)}
                                           {...field}
                                         />
                                       </FormControl>
@@ -356,14 +335,11 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
                                     <FormItem>
                                       <FormLabel>Account</FormLabel>
                                       <FormDescription>
-                                        This is the account you want to create
-                                        the property in.
+                                        This is the account you want to create the property in.
                                       </FormDescription>
                                       <FormControl>
                                         <Select
-                                          {...form.register(
-                                            `forms.${index}.parent`
-                                          )}
+                                          {...form.register(`forms.${index}.parent`)}
                                           {...field}
                                           onValueChange={field.onChange}
                                         >
@@ -373,16 +349,11 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
                                           <SelectContent>
                                             <SelectGroup>
                                               <SelectLabel>Account</SelectLabel>
-                                              {accountsWithProperties.map(
-                                                (account) => (
-                                                  <SelectItem
-                                                    key={account.name}
-                                                    value={account.name}
-                                                  >
-                                                    {account.displayName}
-                                                  </SelectItem>
-                                                )
-                                              )}
+                                              {accountsWithProperties.map((account) => (
+                                                <SelectItem key={account.name} value={account.name}>
+                                                  {account.displayName}
+                                                </SelectItem>
+                                              ))}
                                             </SelectGroup>
                                           </SelectContent>
                                         </Select>
@@ -400,14 +371,11 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
                                     <FormItem>
                                       <FormLabel>Currency</FormLabel>
                                       <FormDescription>
-                                        Which currency do you want to include in
-                                        the property?
+                                        Which currency do you want to include in the property?
                                       </FormDescription>
                                       <FormControl>
                                         <Select
-                                          {...form.register(
-                                            `forms.${index}.currencyCode`
-                                          )}
+                                          {...form.register(`forms.${index}.currencyCode`)}
                                           {...field}
                                           onValueChange={field.onChange}
                                         >
@@ -417,14 +385,9 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
 
                                           <SelectContent>
                                             <SelectGroup>
-                                              <SelectLabel>
-                                                Currency
-                                              </SelectLabel>
+                                              <SelectLabel>Currency</SelectLabel>
                                               {CurrencyCodes.map((code) => (
-                                                <SelectItem
-                                                  key={code}
-                                                  value={code}
-                                                >
+                                                <SelectItem key={code} value={code}>
                                                   {code}
                                                 </SelectItem>
                                               ))}
@@ -445,14 +408,11 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
                                     <FormItem>
                                       <FormLabel>Time Zone</FormLabel>
                                       <FormDescription>
-                                        Which timeZone do you want to include in
-                                        the property?
+                                        Which timeZone do you want to include in the property?
                                       </FormDescription>
                                       <FormControl>
                                         <Select
-                                          {...form.register(
-                                            `forms.${index}.timeZone`
-                                          )}
+                                          {...form.register(`forms.${index}.timeZone`)}
                                           {...field}
                                           onValueChange={field.onChange}
                                         >
@@ -462,14 +422,9 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
 
                                           <SelectContent>
                                             <SelectGroup>
-                                              <SelectLabel>
-                                                Timezone
-                                              </SelectLabel>
+                                              <SelectLabel>Timezone</SelectLabel>
                                               {TimeZones.map((timeZone) => (
-                                                <SelectItem
-                                                  key={timeZone}
-                                                  value={timeZone}
-                                                >
+                                                <SelectItem key={timeZone} value={timeZone}>
                                                   {timeZone}
                                                 </SelectItem>
                                               ))}
@@ -489,14 +444,11 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
                                     <FormItem>
                                       <FormLabel>Category</FormLabel>
                                       <FormDescription>
-                                        Which category do you want to include in
-                                        the property?
+                                        Which category do you want to include in the property?
                                       </FormDescription>
                                       <FormControl>
                                         <Select
-                                          {...form.register(
-                                            `forms.${index}.industryCategory`
-                                          )}
+                                          {...form.register(`forms.${index}.industryCategory`)}
                                           {...field}
                                           onValueChange={field.onChange}
                                         >
@@ -506,19 +458,14 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
 
                                           <SelectContent>
                                             <SelectGroup>
-                                              <SelectLabel>
-                                                Timezone
-                                              </SelectLabel>
-                                              {Object.entries(
-                                                IndustryCategories
-                                              ).map(([label, value]) => (
-                                                <SelectItem
-                                                  key={value}
-                                                  value={value}
-                                                >
-                                                  {label}
-                                                </SelectItem>
-                                              ))}
+                                              <SelectLabel>Timezone</SelectLabel>
+                                              {Object.entries(IndustryCategories).map(
+                                                ([label, value]) => (
+                                                  <SelectItem key={value} value={value}>
+                                                    {label}
+                                                  </SelectItem>
+                                                )
+                                              )}
                                             </SelectGroup>
                                           </SelectContent>
                                         </Select>
@@ -545,9 +492,7 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
         )}
       </AnimatePresence>
 
-      {isLimitReached && (
-        <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
-      )}
+      {isLimitReached && <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />}
 
       {notFoundError && <NotFoundErrorModal />}
     </>

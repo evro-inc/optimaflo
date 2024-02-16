@@ -7,9 +7,7 @@ export function usePaginate(param) {
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = param
-    ? param.slice(indexOfFirstItem, indexOfLastItem)
-    : [];
+  const currentItems = param ? param.slice(indexOfFirstItem, indexOfLastItem) : [];
 
   return currentItems;
 }

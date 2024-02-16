@@ -29,11 +29,7 @@ const BASE_LINK_CLASSES = 'cursor-pointer';
 export const LinkSignUp = ({ ...props }, variant?) => {
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <SignUpButton
-        mode="modal"
-        redirectUrl="/profile"
-        afterSignUpUrl="/pricing"
-      >
+      <SignUpButton mode="modal" redirectUrl="/profile" afterSignUpUrl="/pricing">
         <Button variant={variant} {...props} aria-label="Sign up with Google">
           Sign Up
         </Button>
@@ -63,13 +59,7 @@ export const LinkBody = ({ variant, text, href, ariaLabel, ...props }) => {
   }, [variant]);
 
   return (
-    <Link
-      className={computedClasses}
-      {...props}
-      href={href}
-      passHref
-      aria-label={ariaLabel}
-    >
+    <Link className={computedClasses} {...props} href={href} passHref aria-label={ariaLabel}>
       {text}
     </Link>
   );

@@ -48,21 +48,15 @@ interface DataTableProps<TData, TValue> {
   data: TData[];
 }
 
-export function DataTable<TData, TValue>({
-  columns,
-  data,
-}: DataTableProps<TData, TValue>) {
+export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData, TValue>) {
   const dispatch = useDispatch();
 
   const { user } = useUser();
   const userId = user?.id;
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  );
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
 
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
 
   const table = useReactTable({
@@ -90,10 +84,7 @@ export function DataTable<TData, TValue>({
       if (!userId) {
         return notFound();
       }
-      const handleCreateLimit: any = await tierCreateLimit(
-        userId,
-        'GA4Accounts'
-      );
+      const handleCreateLimit: any = await tierCreateLimit(userId, 'GA4Accounts');
 
       if (handleCreateLimit && handleCreateLimit.limitReached) {
         // Directly show the limit reached modal
@@ -109,25 +100,17 @@ export function DataTable<TData, TValue>({
 
   const refreshAllCache = async () => {
     // Assuming you want to refresh cache for each workspace
-    const keys = [
-      `ga:accounts:userId:${userId}`,
-      `ga:properties:userId:${userId}`,
-    ];
+    const keys = [`ga:accounts:userId:${userId}`, `ga:properties:userId:${userId}`];
     await revalidate(keys, '/dashboard/ga/accounts', userId);
-    toast.info(
-      'Updating our systems. This may take a minute or two to update on screen.',
-      {
-        action: {
-          label: 'Close',
-          onClick: () => toast.dismiss(),
-        },
-      }
-    );
+    toast.info('Updating our systems. This may take a minute or two to update on screen.', {
+      action: {
+        label: 'Close',
+        onClick: () => toast.dismiss(),
+      },
+    });
   };
 
-  const selectedRowsData = table
-    .getSelectedRowModel()
-    .rows.map((row) => row.original);
+  const selectedRowsData = table.getSelectedRowModel().rows.map((row) => row.original);
   const handleDelete = useDeleteHook(selectedRowsData, table);
 
   return (
@@ -136,9 +119,7 @@ export function DataTable<TData, TValue>({
         <Input
           placeholder="Filter account names..."
           value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
-          onChange={(event) =>
-            table.getColumn('name')?.setFilterValue(event.target.value)
-          }
+          onChange={(event) => table.getColumn('name')?.setFilterValue(event.target.value)}
           className="max-w-sm"
         />
 
@@ -173,9 +154,7 @@ export function DataTable<TData, TValue>({
                       key={column.id}
                       className="capitalize"
                       checked={column.getIsVisible()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(!!value)
-                      }
+                      onCheckedChange={(value) => column.toggleVisibility(!!value)}
                     >
                       {column.id}
                     </DropdownMenuCheckboxItem>
@@ -195,10 +174,7 @@ export function DataTable<TData, TValue>({
                     <TableHead key={header.id}>
                       {header.isPlaceholder
                         ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                        : flexRender(header.column.columnDef.header, header.getContext())}
                     </TableHead>
                   );
                 })}
@@ -208,26 +184,17 @@ export function DataTable<TData, TValue>({
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && 'selected'}
-                >
+                <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
+                <TableCell colSpan={columns.length} className="h-24 text-center">
                   No results.
                 </TableCell>
               </TableRow>
@@ -257,11 +224,7 @@ export function DataTable<TData, TValue>({
           Next
         </Button>
       </div>
-      <AccountForms
-        selectedRows={selectedRowsData}
-        accounts={data}
-        table={table}
-      />
+      <AccountForms selectedRows={selectedRowsData} accounts={data} table={table} />
     </div>
   );
 }

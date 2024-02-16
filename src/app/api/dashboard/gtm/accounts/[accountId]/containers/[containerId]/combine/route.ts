@@ -54,10 +54,7 @@ export async function combineGtmData(
 
   while (retries < MAX_RETRIES) {
     try {
-      const { remaining } = await gtmRateLimit.blockUntilReady(
-        `user:${userId}`,
-        1000
-      );
+      const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
 
       // Fetch subscription data for the user
       const subscriptionData = await prisma.subscription.findFirst({
@@ -67,12 +64,9 @@ export async function combineGtmData(
       });
 
       if (!subscriptionData) {
-        return new NextResponse(
-          JSON.stringify({ message: 'Subscription data not found' }),
-          {
-            status: 403,
-          }
-        );
+        return new NextResponse(JSON.stringify({ message: 'Subscription data not found' }), {
+          status: 403,
+        });
       }
 
       const tierLimitRecord = await prisma.tierLimit.findFirst({
@@ -90,16 +84,10 @@ export async function combineGtmData(
         },
       });
 
-      if (
-        !tierLimitRecord ||
-        tierLimitRecord.updateUsage >= tierLimitRecord.updateLimit
-      ) {
-        return new NextResponse(
-          JSON.stringify({ message: 'Feature limit reached' }),
-          {
-            status: 403,
-          }
-        );
+      if (!tierLimitRecord || tierLimitRecord.updateUsage >= tierLimitRecord.updateLimit) {
+        return new NextResponse(JSON.stringify({ message: 'Feature limit reached' }), {
+          status: 403,
+        });
       }
 
       if (remaining > 0) {
@@ -190,8 +178,7 @@ export async function POST(request: NextRequest) {
 
     const validateParams = await validatePostParams(paramsJOI);
 
-    const { accountId, containerId, containerIdToCombine, userId } =
-      validateParams;
+    const { accountId, containerId, containerIdToCombine, userId } = validateParams;
 
     const accessToken = await getAccessToken(userId);
 

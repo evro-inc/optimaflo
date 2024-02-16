@@ -21,12 +21,7 @@ import { LimitReached } from '../../../../../components/client/modals/limitReach
 import { UpdateAccountResult } from '@/src/types/types';
 import { Icon } from '@/src/components/client/Button/Button';
 import { Cross1Icon } from '@radix-ui/react-icons';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/src/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/card';
 import {
   Form,
   FormControl,
@@ -128,9 +123,7 @@ function AccountFormUpdate({
 
       // Lastly, check for not found errors
       if (res && res.notFoundError) {
-        const notFoundAccounts = forms.filter((form) =>
-          res?.notFoundIds?.includes(form.accountId)
-        );
+        const notFoundAccounts = forms.filter((form) => res?.notFoundIds?.includes(form.accountId));
 
         if (notFoundAccounts.length > 0) {
           setAccountInfo(notFoundAccounts);
@@ -201,10 +194,7 @@ function AccountFormUpdate({
 
           <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-end">
             {fields.map((field, index) => (
-              <div
-                key={field.id}
-                className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-              >
+              <div key={field.id} className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
                 <div className="max-w-xl mx-auto">
                   <div className="mt-12"></div>
                   <Card
@@ -212,9 +202,7 @@ function AccountFormUpdate({
                     className="w-full max-w-xl mx-auto bg-white shadow-md rounded-lg overflow-hidden"
                   >
                     <CardHeader className="bg-gray-100 p-4">
-                      <CardTitle className="text-lg font-semibold">
-                        Account {field.name}
-                      </CardTitle>
+                      <CardTitle className="text-lg font-semibold">Account {field.name}</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <Form {...form}>
@@ -230,9 +218,7 @@ function AccountFormUpdate({
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>New Container Name</FormLabel>
-                                <FormDescription>
-                                  Enter the new name of the account
-                                </FormDescription>
+                                <FormDescription>Enter the new name of the account</FormDescription>
                                 <FormControl>
                                   <Input
                                     placeholder="Name of the account"
@@ -258,13 +244,9 @@ function AccountFormUpdate({
           </div>
         </motion.div>
       )}
-      {isLimitReached && (
-        <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
-      )}
+      {isLimitReached && <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />}
 
-      {notFoundError && (
-        <NotFoundError onClose={() => dispatch(setNotFoundError(false))} />
-      )}
+      {notFoundError && <NotFoundError onClose={() => dispatch(setNotFoundError(false))} />}
     </AnimatePresence>
   );
 }

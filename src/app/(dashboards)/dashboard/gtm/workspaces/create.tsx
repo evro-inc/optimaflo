@@ -3,10 +3,7 @@ import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LimitReached } from '../../../../../components/client/modals/limitReached';
 import { ButtonGroup } from '../../../../../components/client/ButtonGroup/ButtonGroup';
-import {
-  FeatureResponse,
-  FormCreateWorkspaceProps,
-} from '@/src/types/types';
+import { FeatureResponse, FormCreateWorkspaceProps } from '@/src/types/types';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   selectTable,
@@ -23,12 +20,7 @@ import { CreateWorkspaces } from '@/src/lib/fetch/dashboard/actions/gtm/workspac
 import dynamic from 'next/dynamic';
 import { toast } from 'sonner';
 import { Cross1Icon } from '@radix-ui/react-icons';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/src/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/card';
 import {
   Form,
   FormControl,
@@ -248,9 +240,7 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
     onClose();
   };
 
-  const accountIdsWithContainers = new Set(
-    table.map((workspace) => workspace.accountId)
-  );
+  const accountIdsWithContainers = new Set(table.map((workspace) => workspace.accountId));
 
   const accountsWithContainers = accounts.filter((account) =>
     accountIdsWithContainers.has(account.accountId)
@@ -274,8 +264,7 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
               onClick={handleClose}
               className="absolute top-5 right-5 font-bold"
             >
-              <Cross1Icon className="h-4 w-4" />{' '}
-              <span className="sr-only">Close</span>
+              <Cross1Icon className="h-4 w-4" /> <span className="sr-only">Close</span>
             </Button>
 
             <div className="flex items-center justify-between py-3 px-4 mt-5 gap-4">
@@ -294,9 +283,7 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
 
             <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-end">
               {fields.map((field, index) => {
-                const selectedAccountId = form.watch(
-                  `forms.${index}.accountId`
-                );
+                const selectedAccountId = form.watch(`forms.${index}.accountId`);
 
                 // Filter workspaces to only include those that belong to the selected account
                 const filteredWorkspaces = table.filter(
@@ -304,9 +291,7 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
                 );
 
                 // Create a Set to store unique container IDs
-                const uniqueContainerIds = new Set(
-                  filteredWorkspaces.map((ws) => ws.containerId)
-                );
+                const uniqueContainerIds = new Set(filteredWorkspaces.map((ws) => ws.containerId));
 
                 // Filter the workspaces again to only include unique containers
                 const uniqueFilteredWorkspaces = filteredWorkspaces.filter(
@@ -320,10 +305,7 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
                 );
 
                 return (
-                  <div
-                    key={field.id}
-                    className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-                  >
+                  <div key={field.id} className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
                     <div className="max-w-xl mx-auto">
                       <div className="mt-12">
                         {/* Form */}
@@ -349,15 +331,12 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
                                     <FormItem>
                                       <FormLabel>New Workspace Name</FormLabel>
                                       <FormDescription>
-                                        This is the workspace name you want to
-                                        create.
+                                        This is the workspace name you want to create.
                                       </FormDescription>
                                       <FormControl>
                                         <Input
                                           placeholder="Name of the workspace"
-                                          {...form.register(
-                                            `forms.${index}.name`
-                                          )}
+                                          {...form.register(`forms.${index}.name`)}
                                           {...field}
                                         />
                                       </FormControl>
@@ -374,14 +353,11 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
                                     <FormItem>
                                       <FormLabel>Account</FormLabel>
                                       <FormDescription>
-                                        This is the account you want to create
-                                        the container in.
+                                        This is the account you want to create the container in.
                                       </FormDescription>
                                       <FormControl>
                                         <Select
-                                          {...form.register(
-                                            `forms.${index}.accountId`
-                                          )}
+                                          {...form.register(`forms.${index}.accountId`)}
                                           {...field}
                                           onValueChange={field.onChange}
                                         >
@@ -391,16 +367,14 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
                                           <SelectContent>
                                             <SelectGroup>
                                               <SelectLabel>Account</SelectLabel>
-                                              {accountsWithContainers.map(
-                                                (account) => (
-                                                  <SelectItem
-                                                    key={account.accountId}
-                                                    value={account.accountId}
-                                                  >
-                                                    {account.name}
-                                                  </SelectItem>
-                                                )
-                                              )}
+                                              {accountsWithContainers.map((account) => (
+                                                <SelectItem
+                                                  key={account.accountId}
+                                                  value={account.accountId}
+                                                >
+                                                  {account.name}
+                                                </SelectItem>
+                                              ))}
                                             </SelectGroup>
                                           </SelectContent>
                                         </Select>
@@ -418,14 +392,11 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
                                     <FormItem>
                                       <FormLabel>Container</FormLabel>
                                       <FormDescription>
-                                        Which container do you want to create
-                                        the workspace in?
+                                        Which container do you want to create the workspace in?
                                       </FormDescription>
                                       <FormControl>
                                         <Select
-                                          {...form.register(
-                                            `forms.${index}.containerId`
-                                          )}
+                                          {...form.register(`forms.${index}.containerId`)}
                                           {...field}
                                           onValueChange={field.onChange}
                                         >
@@ -435,25 +406,16 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
 
                                           <SelectContent>
                                             <SelectGroup>
-                                              <SelectLabel>
-                                                Containers
-                                              </SelectLabel>
-                                              {uniqueFilteredWorkspaces.length >
-                                              0 ? (
-                                                uniqueFilteredWorkspaces.map(
-                                                  (workspace) => (
-                                                    <SelectItem
-                                                      key={
-                                                        workspace.containerId
-                                                      }
-                                                      value={
-                                                        workspace.containerId
-                                                      }
-                                                    >
-                                                      {workspace.containerName}
-                                                    </SelectItem>
-                                                  )
-                                                )
+                                              <SelectLabel>Containers</SelectLabel>
+                                              {uniqueFilteredWorkspaces.length > 0 ? (
+                                                uniqueFilteredWorkspaces.map((workspace) => (
+                                                  <SelectItem
+                                                    key={workspace.containerId}
+                                                    value={workspace.containerId}
+                                                  >
+                                                    {workspace.containerName}
+                                                  </SelectItem>
+                                                ))
                                               ) : (
                                                 <SelectItem value="" disabled>
                                                   No containers available
@@ -481,9 +443,7 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
                                       <FormControl>
                                         <Input
                                           placeholder="Enter your description"
-                                          {...form.register(
-                                            `forms.${index}.description`
-                                          )}
+                                          {...form.register(`forms.${index}.description`)}
                                           {...field}
                                         />
                                       </FormControl>
@@ -509,9 +469,7 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
         )}
       </AnimatePresence>
 
-      {isLimitReached && (
-        <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
-      )}
+      {isLimitReached && <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />}
 
       {notFoundError && <NotFoundErrorModal />}
     </>

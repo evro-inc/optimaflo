@@ -44,10 +44,7 @@ async function PatchGtmAccount(accessToken, accountId, name, userId) {
   while (retries < MAX_RETRIES) {
     try {
       // Check if we've hit the rate limit
-      const { remaining } = await gtmRateLimit.blockUntilReady(
-        `user:${userId}`,
-        1000
-      );
+      const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
 
       if (remaining > 0) {
         const response = await fetch(url, {
@@ -59,9 +56,7 @@ async function PatchGtmAccount(accessToken, accountId, name, userId) {
         });
 
         if (!response.ok) {
-          throw new Error(
-            `HTTP error! status: ${response.status}. ${response.statusText}`
-          );
+          throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
         }
 
         return NextResponse.json(response, {
@@ -125,19 +120,13 @@ export async function GET(
       });
     }
 
-    const accessToken = await clerkClient.users.getUserOauthAccessToken(
-      user?.id,
-      'oauth_google'
-    );
+    const accessToken = await clerkClient.users.getUserOauthAccessToken(user?.id, 'oauth_google');
 
     if (!accessToken) {
       // If the access token is null or undefined, return an error response
-      return new NextResponse(
-        JSON.stringify({ message: 'Access token is missing' }),
-        {
-          status: 401,
-        }
-      );
+      return new NextResponse(JSON.stringify({ message: 'Access token is missing' }), {
+        status: 401,
+      });
     }
 
     let retries = 0;
@@ -145,10 +134,7 @@ export async function GET(
 
     while (retries < MAX_RETRIES) {
       try {
-        const { remaining } = await gtmRateLimit.blockUntilReady(
-          `user:${userId}`,
-          1000
-        );
+        const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
 
         if (remaining > 0) {
           // If the data is not in the cache, fetch it from the API
@@ -225,18 +211,12 @@ export async function PATCH(request: NextRequest) {
     };
 
     const validatedParams = await validatePatchParams(params);
-    const accessToken = await clerkClient.users.getUserOauthAccessToken(
-      userId,
-      'oauth_google'
-    );
+    const accessToken = await clerkClient.users.getUserOauthAccessToken(userId, 'oauth_google');
 
     if (!accessToken) {
-      return new NextResponse(
-        JSON.stringify({ message: 'Access token is missing' }),
-        {
-          status: 401,
-        }
-      );
+      return new NextResponse(JSON.stringify({ message: 'Access token is missing' }), {
+        status: 401,
+      });
     }
 
     const accountData = await PatchGtmAccount(

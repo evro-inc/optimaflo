@@ -11,20 +11,18 @@ export async function getSubscriptions(userId: string) {
     },
   };
 
-  const user = await fetch(userApi, options);  
+  const user = await fetch(userApi, options);
 
   if (!user.ok) {
     const responseText = await user.text();
-    throw new Error(
-      `Error: ${user.status} ${user.statusText}. Response: ${responseText}`
-    );
+    throw new Error(`Error: ${user.status} ${user.statusText}. Response: ${responseText}`);
   }
 
   const userText = await user.json();
-  
+
   const userSubscriptions = userText.data.Subscription;
 
-  if (!userSubscriptions) {    
+  if (!userSubscriptions) {
     throw new Error('User has no subscriptions');
   }
 

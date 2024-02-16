@@ -43,9 +43,8 @@ export default function Hero() {
                 </svg>
 
                 <p className="text-xl font-medium text-gray-800 lg:text-2xl lg:leading-normal ">
-                  To say that switching to Preline has been life-changing is an
-                  understatement. My business has tripled and I got my life
-                  back.
+                  To say that switching to Preline has been life-changing is an understatement. My
+                  business has tripled and I got my life back.
                 </p>
 
                 <footer className="mt-6">
@@ -60,9 +59,7 @@ export default function Hero() {
                       />
                     </div>
                     <div className="ml-4 lg:ml-0">
-                      <p className="font-medium text-gray-800 ">
-                        Nicole Grazioso
-                      </p>
+                      <p className="font-medium text-gray-800 ">Nicole Grazioso</p>
                       <p className="text-sm text-gray-600 ">Head of Finance</p>
                     </div>
                   </div>

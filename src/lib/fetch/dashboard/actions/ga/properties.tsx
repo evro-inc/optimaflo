@@ -8,11 +8,7 @@ import { redis } from '@/src/lib/redis/cache';
 import { notFound } from 'next/navigation';
 import { currentUserOauthAccessToken } from '@/src/lib/clerk';
 import prisma from '@/src/lib/prisma';
-import {
-  FeatureResult,
-  FeatureResponse,
-  GA4PropertyType,
-} from '@/src/types/types';
+import { FeatureResult, FeatureResponse, GA4PropertyType } from '@/src/types/types';
 import {
   handleApiResponseError,
   tierCreateLimit,
@@ -20,10 +16,7 @@ import {
   tierUpdateLimit,
 } from '@/src/utils/server';
 import { fetchGASettings, fetchGtmSettings } from '../..';
-import {
-  CreatePropertySchema,
-  UpdatePropertySchema,
-} from '@/src/lib/schemas/ga/properties';
+import { CreatePropertySchema, UpdatePropertySchema } from '@/src/lib/schemas/ga/properties';
 
 // Define the types for the form data
 type FormCreateSchema = z.infer<typeof CreatePropertySchema>;
@@ -63,17 +56,12 @@ export async function listGAProperties() {
 
   while (retries < MAX_RETRIES) {
     try {
-      const { remaining } = await gaRateLimit.blockUntilReady(
-        `user:${userId}`,
-        1000
-      );
+      const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
       if (remaining > 0) {
         let allData: any[] = [];
 
         await limiter.schedule(async () => {
-          const uniqueAccountIds = Array.from(
-            new Set(gaData.ga.map((item) => item.accountId))
-          );
+          const uniqueAccountIds = Array.from(new Set(gaData.ga.map((item) => item.accountId)));
 
           const urls = uniqueAccountIds.map(
             (accountId) =>
@@ -90,9 +78,7 @@ export async function listGAProperties() {
             try {
               const response = await fetch(url, { headers });
               if (!response.ok) {
-                throw new Error(
-                  `HTTP error! status: ${response.status}. ${response.statusText}`
-                );
+                throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
               }
 
               const responseBody = await response.json();
@@ -116,9 +102,7 @@ export async function listGAProperties() {
                 } catch (error: any) {
                   // In case of an error, push the property without data retention settings
                   allData.push(property);
-                  throw new Error(
-                    `Error fetching data retention settings: ${error.message}`
-                  );
+                  throw new Error(`Error fetching data retention settings: ${error.message}`);
                 }
               }
               // Removed the problematic line here
@@ -211,117 +195,102 @@ export async function DeleteProperties(
 
   if (toDeleteProperties.size <= availableDeleteUsage) {
     // Retry loop for deletion requests
-    while (
-      retries < MAX_RETRIES &&
-      toDeleteProperties.size > 0 &&
-      !permissionDenied
-    ) {
+    while (retries < MAX_RETRIES && toDeleteProperties.size > 0 && !permissionDenied) {
       try {
         // Enforcing rate limit
-        const { remaining } = await gaRateLimit.blockUntilReady(
-          `user:${userId}`,
-          1000
-        );
+        const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
 
         if (remaining > 0) {
           await limiter.schedule(async () => {
             // Creating promises for each property deletion
-            const deletePromises = Array.from(toDeleteProperties).map(
-              async (identifier) => {
-                accountIdForCache = identifier.parent;
-                propertyIdForCache = identifier.name;
+            const deletePromises = Array.from(toDeleteProperties).map(async (identifier) => {
+              accountIdForCache = identifier.parent;
+              propertyIdForCache = identifier.name;
 
-                const url = `https://analyticsadmin.googleapis.com/v1beta/properties/${identifier.name}`;
-                const headers = {
-                  Authorization: `Bearer ${token[0].token}`,
-                  'Content-Type': 'application/json',
-                  'Accept-Encoding': 'gzip',
-                };
+              const url = `https://analyticsadmin.googleapis.com/v1beta/properties/${identifier.name}`;
+              const headers = {
+                Authorization: `Bearer ${token[0].token}`,
+                'Content-Type': 'application/json',
+                'Accept-Encoding': 'gzip',
+              };
 
-                try {
-                  const response = await fetch(url, {
-                    method: 'DELETE',
-                    headers: headers,
+              try {
+                const response = await fetch(url, {
+                  method: 'DELETE',
+                  headers: headers,
+                });
+
+                let parsedResponse;
+
+                if (response.ok) {
+                  accountIdsProcessed.add(identifier.parent);
+                  successfulDeletions.push({
+                    accountId: identifier.parent,
+                    propertyId: identifier.name,
+                  });
+                  toDeleteProperties.delete(identifier);
+                  await prisma.ga.deleteMany({
+                    where: {
+                      accountId: `accounts/${identifier.parent}`,
+                      propertyId: identifier.name,
+                      userId: userId, // Ensure this matches the user ID
+                    },
+                  });
+                  await prisma.tierLimit.update({
+                    where: { id: tierLimitResponse.id },
+                    data: { deleteUsage: { increment: 1 } },
                   });
 
-                  let parsedResponse;
-
-                  if (response.ok) {
-                    accountIdsProcessed.add(identifier.parent);
-                    successfulDeletions.push({
-                      accountId: identifier.parent,
-                      propertyId: identifier.name,
-                    });
-                    toDeleteProperties.delete(identifier);
-                    await prisma.ga.deleteMany({
-                      where: {
-                        accountId: `accounts/${identifier.parent}`,
-                        propertyId: identifier.name,
-                        userId: userId, // Ensure this matches the user ID
-                      },
-                    });
-                    await prisma.tierLimit.update({
-                      where: { id: tierLimitResponse.id },
-                      data: { deleteUsage: { increment: 1 } },
-                    });
-
-                    return {
-                      accountId: identifier.parent,
-                      propertyId: identifier.name,
-                      success: true,
-                    };
-                  } else {
-                    parsedResponse = await response.json();
-                    const errorResult = await handleApiResponseError(
-                      response,
-                      parsedResponse,
-                      'property',
-                      propertyNames
-                    );
-
-                    if (errorResult) {
-                      errors.push(`${errorResult.message}`);
-                      if (
-                        errorResult.errorCode === 403 &&
-                        parsedResponse.message === 'Feature limit reached'
-                      ) {
-                        featureLimitReached.push({
-                          accountId: identifier.parent,
-                          propertyId: identifier.name,
-                        });
-                      } else if (errorResult.errorCode === 404) {
-                        notFoundLimit.push({
-                          accountId: identifier.parent,
-                          propertyId: identifier.name,
-                        }); // Track 404 errors
-                      }
-                    } else {
-                      errors.push(
-                        `An unknown error occurred for property ${propertyNames}.`
-                      );
-                    }
-
-                    toDeleteProperties.delete(identifier);
-                    permissionDenied = errorResult ? true : permissionDenied;
-
-                    if (selectedProperties.size > 0) {
-                      const firstPropertyId = selectedProperties
-                        .values()
-                        .next().value;
-                      accountIdForCache = firstPropertyId.split('-')[0];
-                    }
-                  }
-                } catch (error: any) {
-                  // Handling exceptions during fetch
-                  errors.push(
-                    `Error deleting property ${identifier.parent}: ${error.message}`
+                  return {
+                    accountId: identifier.parent,
+                    propertyId: identifier.name,
+                    success: true,
+                  };
+                } else {
+                  parsedResponse = await response.json();
+                  const errorResult = await handleApiResponseError(
+                    response,
+                    parsedResponse,
+                    'property',
+                    propertyNames
                   );
+
+                  if (errorResult) {
+                    errors.push(`${errorResult.message}`);
+                    if (
+                      errorResult.errorCode === 403 &&
+                      parsedResponse.message === 'Feature limit reached'
+                    ) {
+                      featureLimitReached.push({
+                        accountId: identifier.parent,
+                        propertyId: identifier.name,
+                      });
+                    } else if (errorResult.errorCode === 404) {
+                      notFoundLimit.push({
+                        accountId: identifier.parent,
+                        propertyId: identifier.name,
+                      }); // Track 404 errors
+                    }
+                  } else {
+                    errors.push(`An unknown error occurred for property ${propertyNames}.`);
+                  }
+
+                  toDeleteProperties.delete(identifier);
+                  permissionDenied = errorResult ? true : permissionDenied;
+
+                  if (selectedProperties.size > 0) {
+                    const firstPropertyId = selectedProperties.values().next().value;
+                    accountIdForCache = firstPropertyId.split('-')[0];
+                  }
                 }
-                accountIdsProcessed.add(identifier.parent);
-                toDeleteProperties.delete(identifier);
-                return { accountId: identifier.parent, success: false };
+              } catch (error: any) {
+                // Handling exceptions during fetch
+                errors.push(`Error deleting property ${identifier.parent}: ${error.message}`);
               }
-            );
+              accountIdsProcessed.add(identifier.parent);
+              toDeleteProperties.delete(identifier);
+              return { accountId: identifier.parent, success: false };
+            });
 
             // Awaiting all deletion promises
             await Promise.all(deletePromises);
@@ -338,10 +307,7 @@ export async function DeleteProperties(
               )}. All other properties were successfully deleted.`,
               results: notFoundLimit.map(({ accountId, propertyId }) => ({
                 id: [accountId, propertyId], // Combine accountId and propertyId into a single array of strings
-                name: [
-                  propertyNames.find((name) => name.includes(propertyId)) ||
-                    'Unknown',
-                ], // Ensure name is an array, match by propertyId or default to 'Unknown'
+                name: [propertyNames.find((name) => name.includes(propertyId)) || 'Unknown'], // Ensure name is an array, match by propertyId or default to 'Unknown'
                 success: false,
                 notFound: true,
               })),
@@ -352,15 +318,10 @@ export async function DeleteProperties(
               success: false,
               limitReached: true,
               notFoundError: false,
-              message: `Feature limit reached for properties: ${featureLimitReached.join(
-                ', '
-              )}`,
+              message: `Feature limit reached for properties: ${featureLimitReached.join(', ')}`,
               results: featureLimitReached.map(({ accountId, propertyId }) => ({
                 id: [accountId, propertyId], // Ensure id is an array
-                name: [
-                  propertyNames.find((name) => name.includes(name)) ||
-                    'Unknown',
-                ], // Ensure name is an array, match by accountId or default to 'Unknown'
+                name: [propertyNames.find((name) => name.includes(name)) || 'Unknown'], // Ensure name is an array, match by accountId or default to 'Unknown'
                 success: false,
                 featureLimitReached: true,
               })),
@@ -433,9 +394,7 @@ export async function DeleteProperties(
   return {
     success: errors.length === 0,
     message: `Successfully deleted ${successfulDeletions.length} property(s)`,
-    features: successfulDeletions.map(
-      ({ accountId, propertyId }) => `${accountId}-${propertyId}`
-    ),
+    features: successfulDeletions.map(({ accountId, propertyId }) => `${accountId}-${propertyId}`),
     errors: errors,
     notFoundError: notFoundLimit.length > 0,
     results: successfulDeletions.map(({ accountId, propertyId }) => ({
@@ -487,20 +446,18 @@ export async function createProperties(formData: FormCreateSchema) {
   }
 
   if (toCreateProperties.size > availableCreateUsage) {
-    const attemptedCreations = Array.from(toCreateProperties).map(
-      (identifier) => {
-        const displayName = identifier.displayName;
-        return {
-          id: [], // No property ID since creation did not happen
-          name: displayName, // Include the property name from the identifier
-          success: false,
-          message: `Creation limit reached. Cannot create property "${displayName}".`,
-          // remaining creation limit
-          remaining: availableCreateUsage,
-          limitReached: true,
-        };
-      }
-    );
+    const attemptedCreations = Array.from(toCreateProperties).map((identifier) => {
+      const displayName = identifier.displayName;
+      return {
+        id: [], // No property ID since creation did not happen
+        name: displayName, // Include the property name from the identifier
+        success: false,
+        message: `Creation limit reached. Cannot create property "${displayName}".`,
+        // remaining creation limit
+        remaining: availableCreateUsage,
+        limitReached: true,
+      };
+    });
     return {
       success: false,
       features: [],
@@ -517,150 +474,136 @@ export async function createProperties(formData: FormCreateSchema) {
   const propertyNames = formData.forms.map((cd) => cd.displayName);
 
   if (toCreateProperties.size <= availableCreateUsage) {
-    while (
-      retries < MAX_RETRIES &&
-      toCreateProperties.size > 0 &&
-      !permissionDenied
-    ) {
+    while (retries < MAX_RETRIES && toCreateProperties.size > 0 && !permissionDenied) {
       try {
-        const { remaining } = await gaRateLimit.blockUntilReady(
-          `user:${userId}`,
-          1000
-        );
+        const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
         if (remaining > 0) {
           await limiter.schedule(async () => {
-            const createPromises = Array.from(toCreateProperties).map(
-              async (identifier) => {
-                const propertyData = formData.forms.find(
-                  (prop) =>
-                    prop.parent === identifier.parent &&
-                    prop.displayName === identifier.displayName &&
-                    prop.name === identifier.name &&
-                    prop.timeZone === identifier.timeZone &&
-                    prop.currencyCode === identifier.currencyCode &&
-                    prop.industryCategory === identifier.industryCategory &&
-                    prop.propertyType === identifier.propertyType
-                );
+            const createPromises = Array.from(toCreateProperties).map(async (identifier) => {
+              const propertyData = formData.forms.find(
+                (prop) =>
+                  prop.parent === identifier.parent &&
+                  prop.displayName === identifier.displayName &&
+                  prop.name === identifier.name &&
+                  prop.timeZone === identifier.timeZone &&
+                  prop.currencyCode === identifier.currencyCode &&
+                  prop.industryCategory === identifier.industryCategory &&
+                  prop.propertyType === identifier.propertyType
+              );
 
-                if (!propertyData) {
-                  errors.push(`Property data not found for ${identifier}`);
-                  toCreateProperties.delete(identifier);
-                  return;
-                }
-
-                const url = `https://analyticsadmin.googleapis.com/v1beta/properties`;
-                const headers = {
-                  Authorization: `Bearer ${token[0].token}`,
-                  'Content-Type': 'application/json',
-                  'Accept-Encoding': 'gzip',
-                };
-
-                try {
-                  const formDataToValidate = { forms: [propertyData] };
-
-                  const validationResult =
-                    CreatePropertySchema.safeParse(formDataToValidate);
-
-                  if (!validationResult.success) {
-                    let errorMessage = validationResult.error.issues
-                      .map((issue) => `${issue.path[0]}: ${issue.message}`)
-                      .join('. ');
-                    errors.push(errorMessage);
-                    toCreateProperties.delete(identifier);
-                    return {
-                      propertyData,
-                      success: false,
-                      error: errorMessage,
-                    };
-                  }
-
-                  // Accessing the validated property data
-                  const validatedContainerData = validationResult.data.forms[0];
-
-                  const response = await fetch(url, {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify({
-                      displayName: validatedContainerData.displayName,
-                      timeZone: validatedContainerData.timeZone,
-                      industryCategory: validatedContainerData.industryCategory,
-                      currencyCode: validatedContainerData.currencyCode,
-                      propertyType: validatedContainerData.propertyType,
-                      parent: validatedContainerData.parent,
-                    }),
-                  });
-
-                  let parsedResponse;
-
-                  if (response.ok) {
-                    successfulCreations.push(
-                      validatedContainerData.displayName
-                    );
-                    toCreateProperties.delete(identifier);
-                    fetchGtmSettings(userId);
-                    fetchGASettings(userId);
-
-                    await prisma.tierLimit.update({
-                      where: { id: tierLimitResponse.id },
-                      data: { createUsage: { increment: 1 } },
-                    });
-                    creationResults.push({
-                      propertyName: validatedContainerData.displayName,
-                      success: true,
-                      message: `Successfully created property ${validatedContainerData.displayName}`,
-                    });
-                  } else {
-                    parsedResponse = await response.json();
-
-                    const errorResult = await handleApiResponseError(
-                      response,
-                      parsedResponse,
-                      'property',
-                      [validatedContainerData.displayName]
-                    );
-
-                    if (errorResult) {
-                      errors.push(`${errorResult.message}`);
-                      if (
-                        errorResult.errorCode === 403 &&
-                        parsedResponse.message === 'Feature limit reached'
-                      ) {
-                        featureLimitReached.push(
-                          validatedContainerData.displayName
-                        );
-                      } else if (errorResult.errorCode === 404) {
-                        notFoundLimit.push({
-                          id: identifier.name,
-                          name: validatedContainerData.displayName,
-                        });
-                      }
-                    } else {
-                      errors.push(
-                        `An unknown error occurred for property ${validatedContainerData.displayName}.`
-                      );
-                    }
-
-                    toCreateProperties.delete(identifier);
-                    permissionDenied = errorResult ? true : permissionDenied;
-                    creationResults.push({
-                      propertyName: validatedContainerData.displayName,
-                      success: false,
-                      message: errorResult?.message,
-                    });
-                  }
-                } catch (error: any) {
-                  errors.push(
-                    `Exception creating property ${propertyData.displayName}: ${error.message}`
-                  );
-                  toCreateProperties.delete(identifier);
-                  creationResults.push({
-                    propertyName: propertyData.displayName,
-                    success: false,
-                    message: error.message,
-                  });
-                }
+              if (!propertyData) {
+                errors.push(`Property data not found for ${identifier}`);
+                toCreateProperties.delete(identifier);
+                return;
               }
-            );
+
+              const url = `https://analyticsadmin.googleapis.com/v1beta/properties`;
+              const headers = {
+                Authorization: `Bearer ${token[0].token}`,
+                'Content-Type': 'application/json',
+                'Accept-Encoding': 'gzip',
+              };
+
+              try {
+                const formDataToValidate = { forms: [propertyData] };
+
+                const validationResult = CreatePropertySchema.safeParse(formDataToValidate);
+
+                if (!validationResult.success) {
+                  let errorMessage = validationResult.error.issues
+                    .map((issue) => `${issue.path[0]}: ${issue.message}`)
+                    .join('. ');
+                  errors.push(errorMessage);
+                  toCreateProperties.delete(identifier);
+                  return {
+                    propertyData,
+                    success: false,
+                    error: errorMessage,
+                  };
+                }
+
+                // Accessing the validated property data
+                const validatedContainerData = validationResult.data.forms[0];
+
+                const response = await fetch(url, {
+                  method: 'POST',
+                  headers: headers,
+                  body: JSON.stringify({
+                    displayName: validatedContainerData.displayName,
+                    timeZone: validatedContainerData.timeZone,
+                    industryCategory: validatedContainerData.industryCategory,
+                    currencyCode: validatedContainerData.currencyCode,
+                    propertyType: validatedContainerData.propertyType,
+                    parent: validatedContainerData.parent,
+                  }),
+                });
+
+                let parsedResponse;
+
+                if (response.ok) {
+                  successfulCreations.push(validatedContainerData.displayName);
+                  toCreateProperties.delete(identifier);
+                  fetchGtmSettings(userId);
+                  fetchGASettings(userId);
+
+                  await prisma.tierLimit.update({
+                    where: { id: tierLimitResponse.id },
+                    data: { createUsage: { increment: 1 } },
+                  });
+                  creationResults.push({
+                    propertyName: validatedContainerData.displayName,
+                    success: true,
+                    message: `Successfully created property ${validatedContainerData.displayName}`,
+                  });
+                } else {
+                  parsedResponse = await response.json();
+
+                  const errorResult = await handleApiResponseError(
+                    response,
+                    parsedResponse,
+                    'property',
+                    [validatedContainerData.displayName]
+                  );
+
+                  if (errorResult) {
+                    errors.push(`${errorResult.message}`);
+                    if (
+                      errorResult.errorCode === 403 &&
+                      parsedResponse.message === 'Feature limit reached'
+                    ) {
+                      featureLimitReached.push(validatedContainerData.displayName);
+                    } else if (errorResult.errorCode === 404) {
+                      notFoundLimit.push({
+                        id: identifier.name,
+                        name: validatedContainerData.displayName,
+                      });
+                    }
+                  } else {
+                    errors.push(
+                      `An unknown error occurred for property ${validatedContainerData.displayName}.`
+                    );
+                  }
+
+                  toCreateProperties.delete(identifier);
+                  permissionDenied = errorResult ? true : permissionDenied;
+                  creationResults.push({
+                    propertyName: validatedContainerData.displayName,
+                    success: false,
+                    message: errorResult?.message,
+                  });
+                }
+              } catch (error: any) {
+                errors.push(
+                  `Exception creating property ${propertyData.displayName}: ${error.message}`
+                );
+                toCreateProperties.delete(identifier);
+                creationResults.push({
+                  propertyName: propertyData.displayName,
+                  success: false,
+                  message: error.message,
+                });
+              }
+            });
 
             await Promise.all(createPromises);
           });
@@ -686,14 +629,11 @@ export async function createProperties(formData: FormCreateSchema) {
               success: false,
               limitReached: true,
               notFoundError: false,
-              message: `Feature limit reached for properties: ${featureLimitReached.join(
-                ', '
-              )}`,
+              message: `Feature limit reached for properties: ${featureLimitReached.join(', ')}`,
               results: featureLimitReached.map((propertyId) => {
                 // Find the name associated with the propertyId
                 const propertyName =
-                  propertyNames.find((name) => name.includes(propertyId)) ||
-                  'Unknown';
+                  propertyNames.find((name) => name.includes(propertyId)) || 'Unknown';
                 return {
                   id: [propertyId], // Ensure id is an array
                   name: [propertyName], // Ensure name is an array, match by propertyId or default to 'Unknown'
@@ -716,9 +656,7 @@ export async function createProperties(formData: FormCreateSchema) {
         }
       } catch (error: any) {
         if (error.code === 429 || error.status === 429) {
-          await new Promise((resolve) =>
-            setTimeout(resolve, delay + Math.random() * 200)
-          );
+          await new Promise((resolve) => setTimeout(resolve, delay + Math.random() * 200));
           delay *= 2;
           retries++;
         } else {
@@ -843,20 +781,18 @@ export async function updateProperties(formData: FormUpdateSchema) {
   }
 
   if (toUpdateProperties.size > availableUpdateUsage) {
-    const attemptedUpdates = Array.from(toUpdateProperties).map(
-      (identifier) => {
-        const displayName = identifier.displayName;
-        return {
-          id: [], // No property ID since update did not happen
-          name: displayName, // Include the property name from the identifier
-          success: false,
-          message: `Update limit reached. Cannot update property "${displayName}".`,
-          // remaining update limit
-          remaining: availableUpdateUsage,
-          limitReached: true,
-        };
-      }
-    );
+    const attemptedUpdates = Array.from(toUpdateProperties).map((identifier) => {
+      const displayName = identifier.displayName;
+      return {
+        id: [], // No property ID since update did not happen
+        name: displayName, // Include the property name from the identifier
+        success: false,
+        message: `Update limit reached. Cannot update property "${displayName}".`,
+        // remaining update limit
+        remaining: availableUpdateUsage,
+        limitReached: true,
+      };
+    });
     return {
       success: false,
       features: [],
@@ -873,166 +809,145 @@ export async function updateProperties(formData: FormUpdateSchema) {
   const propertyNames = formData.forms.map((prop) => prop.displayName);
 
   if (toUpdateProperties.size <= availableUpdateUsage) {
-    while (
-      retries < MAX_RETRIES &&
-      toUpdateProperties.size > 0 &&
-      !permissionDenied
-    ) {
+    while (retries < MAX_RETRIES && toUpdateProperties.size > 0 && !permissionDenied) {
       try {
-        const { remaining } = await gaRateLimit.blockUntilReady(
-          `user:${userId}`,
-          1000
-        );
+        const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
         if (remaining > 0) {
           await limiter.schedule(async () => {
-            const updatePromises = Array.from(toUpdateProperties).map(
-              async (identifier) => {
-                accountIdForCache = identifier.parent;
-                propertyIdForCache = identifier.name;
-                const propertyData = formData.forms.find(
-                  (prop) =>
-                    prop.parent === identifier.parent &&
-                    prop.displayName === identifier.displayName &&
-                    prop.name === identifier.name &&
-                    prop.timeZone === identifier.timeZone &&
-                    prop.currencyCode === identifier.currencyCode &&
-                    prop.industryCategory === identifier.industryCategory &&
-                    prop.propertyType === identifier.propertyType
-                );
+            const updatePromises = Array.from(toUpdateProperties).map(async (identifier) => {
+              accountIdForCache = identifier.parent;
+              propertyIdForCache = identifier.name;
+              const propertyData = formData.forms.find(
+                (prop) =>
+                  prop.parent === identifier.parent &&
+                  prop.displayName === identifier.displayName &&
+                  prop.name === identifier.name &&
+                  prop.timeZone === identifier.timeZone &&
+                  prop.currencyCode === identifier.currencyCode &&
+                  prop.industryCategory === identifier.industryCategory &&
+                  prop.propertyType === identifier.propertyType
+              );
 
-                if (!propertyData) {
-                  errors.push(`Property data not found for ${identifier}`);
-                  toUpdateProperties.delete(identifier);
-                  return;
-                }
-
-                const updateFields = [
-                  'displayName',
-                  'timeZone',
-                  'currencyCode',
-                  'industryCategory',
-                ];
-                const updateMask = updateFields.join(',');
-
-                const url = `https://analyticsadmin.googleapis.com/v1beta/properties/${identifier.name}?updateMask=${updateMask}`;
-                const headers = {
-                  Authorization: `Bearer ${token[0].token}`,
-                  'Content-Type': 'application/json',
-                  'Accept-Encoding': 'gzip',
-                };
-
-                try {
-                  const formDataToValidate = { forms: [propertyData] };
-
-                  const validationResult =
-                    UpdatePropertySchema.safeParse(formDataToValidate);
-
-                  if (!validationResult.success) {
-                    let errorMessage = validationResult.error.issues
-                      .map((issue) => `${issue.path[0]}: ${issue.message}`)
-                      .join('. ');
-                    errors.push(errorMessage);
-                    toUpdateProperties.delete(identifier);
-                    return {
-                      propertyData,
-                      success: false,
-                      error: errorMessage,
-                    };
-                  }
-
-                  // Accessing the validated property data
-                  const validatedpropertyData = validationResult.data.forms[0];
-                  const payload = JSON.stringify({
-                    parent: `accounts/${validatedpropertyData.parent}`,
-                    displayName: validatedpropertyData.displayName,
-                    timeZone: validatedpropertyData.timeZone,
-                    currencyCode: validatedpropertyData.currencyCode,
-                    industryCategory: validatedpropertyData.industryCategory,
-                  });
-
-                  const response = await fetch(url, {
-                    method: 'PATCH',
-                    headers: headers,
-                    body: payload,
-                  });
-
-                  let parsedResponse;
-                  const propertyName = propertyData.name;
-
-                  if (response.ok) {
-                    if (response.ok) {
-                      // Push a string into the array, for example, a concatenation of propertyId and propertyId
-                      successfulUpdates.push(
-                        `${validatedpropertyData.parent}-${validatedpropertyData.name}`
-                      );
-                      // ... rest of your code
-                    }
-                    toUpdateProperties.delete(identifier);
-
-                    await prisma.tierLimit.update({
-                      where: { id: tierLimitResponse.id },
-                      data: { updateUsage: { increment: 1 } },
-                    });
-
-                    UpdateResults.push({
-                      propertyName: propertyName,
-                      success: true,
-                      message: `Successfully updated property ${propertyName}`,
-                    });
-                  } else {
-                    parsedResponse = await response.json();
-
-                    const errorResult = await handleApiResponseError(
-                      response,
-                      parsedResponse,
-                      'property',
-                      [propertyName]
-                    );
-
-                    if (errorResult) {
-                      errors.push(`${errorResult.message}`);
-                      if (
-                        errorResult.errorCode === 403 &&
-                        parsedResponse.message === 'Feature limit reached'
-                      ) {
-                        featureLimitReached.push(propertyName);
-                      } else if (errorResult.errorCode === 404) {
-                        const propertyName =
-                          propertyNames.find((name) =>
-                            name.includes(identifier.name)
-                          ) || 'Unknown';
-                        notFoundLimit.push({
-                          id: identifier.propertyId,
-                          name: propertyName,
-                        });
-                      }
-                    } else {
-                      errors.push(
-                        `An unknown error occurred for property ${propertyName}.`
-                      );
-                    }
-
-                    toUpdateProperties.delete(identifier);
-                    permissionDenied = errorResult ? true : permissionDenied;
-                    UpdateResults.push({
-                      propertyName: propertyName,
-                      success: false,
-                      message: errorResult?.message,
-                    });
-                  }
-                } catch (error: any) {
-                  errors.push(
-                    `Exception updating property ${propertyData.name}: ${error.message}`
-                  );
-                  toUpdateProperties.delete(identifier);
-                  UpdateResults.push({
-                    propertyName: propertyData.name,
-                    success: false,
-                    message: error.message,
-                  });
-                }
+              if (!propertyData) {
+                errors.push(`Property data not found for ${identifier}`);
+                toUpdateProperties.delete(identifier);
+                return;
               }
-            );
+
+              const updateFields = ['displayName', 'timeZone', 'currencyCode', 'industryCategory'];
+              const updateMask = updateFields.join(',');
+
+              const url = `https://analyticsadmin.googleapis.com/v1beta/properties/${identifier.name}?updateMask=${updateMask}`;
+              const headers = {
+                Authorization: `Bearer ${token[0].token}`,
+                'Content-Type': 'application/json',
+                'Accept-Encoding': 'gzip',
+              };
+
+              try {
+                const formDataToValidate = { forms: [propertyData] };
+
+                const validationResult = UpdatePropertySchema.safeParse(formDataToValidate);
+
+                if (!validationResult.success) {
+                  let errorMessage = validationResult.error.issues
+                    .map((issue) => `${issue.path[0]}: ${issue.message}`)
+                    .join('. ');
+                  errors.push(errorMessage);
+                  toUpdateProperties.delete(identifier);
+                  return {
+                    propertyData,
+                    success: false,
+                    error: errorMessage,
+                  };
+                }
+
+                // Accessing the validated property data
+                const validatedpropertyData = validationResult.data.forms[0];
+                const payload = JSON.stringify({
+                  parent: `accounts/${validatedpropertyData.parent}`,
+                  displayName: validatedpropertyData.displayName,
+                  timeZone: validatedpropertyData.timeZone,
+                  currencyCode: validatedpropertyData.currencyCode,
+                  industryCategory: validatedpropertyData.industryCategory,
+                });
+
+                const response = await fetch(url, {
+                  method: 'PATCH',
+                  headers: headers,
+                  body: payload,
+                });
+
+                let parsedResponse;
+                const propertyName = propertyData.name;
+
+                if (response.ok) {
+                  if (response.ok) {
+                    // Push a string into the array, for example, a concatenation of propertyId and propertyId
+                    successfulUpdates.push(
+                      `${validatedpropertyData.parent}-${validatedpropertyData.name}`
+                    );
+                    // ... rest of your code
+                  }
+                  toUpdateProperties.delete(identifier);
+
+                  await prisma.tierLimit.update({
+                    where: { id: tierLimitResponse.id },
+                    data: { updateUsage: { increment: 1 } },
+                  });
+
+                  UpdateResults.push({
+                    propertyName: propertyName,
+                    success: true,
+                    message: `Successfully updated property ${propertyName}`,
+                  });
+                } else {
+                  parsedResponse = await response.json();
+
+                  const errorResult = await handleApiResponseError(
+                    response,
+                    parsedResponse,
+                    'property',
+                    [propertyName]
+                  );
+
+                  if (errorResult) {
+                    errors.push(`${errorResult.message}`);
+                    if (
+                      errorResult.errorCode === 403 &&
+                      parsedResponse.message === 'Feature limit reached'
+                    ) {
+                      featureLimitReached.push(propertyName);
+                    } else if (errorResult.errorCode === 404) {
+                      const propertyName =
+                        propertyNames.find((name) => name.includes(identifier.name)) || 'Unknown';
+                      notFoundLimit.push({
+                        id: identifier.propertyId,
+                        name: propertyName,
+                      });
+                    }
+                  } else {
+                    errors.push(`An unknown error occurred for property ${propertyName}.`);
+                  }
+
+                  toUpdateProperties.delete(identifier);
+                  permissionDenied = errorResult ? true : permissionDenied;
+                  UpdateResults.push({
+                    propertyName: propertyName,
+                    success: false,
+                    message: errorResult?.message,
+                  });
+                }
+              } catch (error: any) {
+                errors.push(`Exception updating property ${propertyData.name}: ${error.message}`);
+                toUpdateProperties.delete(identifier);
+                UpdateResults.push({
+                  propertyName: propertyData.name,
+                  success: false,
+                  message: error.message,
+                });
+              }
+            });
 
             await Promise.all(updatePromises);
           });
@@ -1058,14 +973,11 @@ export async function updateProperties(formData: FormUpdateSchema) {
               success: false,
               limitReached: true,
               notFoundError: false,
-              message: `Feature limit reached for properties: ${featureLimitReached.join(
-                ', '
-              )}`,
+              message: `Feature limit reached for properties: ${featureLimitReached.join(', ')}`,
               results: featureLimitReached.map((propertyId) => {
                 // Find the name associated with the propertyId
                 const propertyName =
-                  propertyNames.find((name) => name.includes(propertyId)) ||
-                  'Unknown';
+                  propertyNames.find((name) => name.includes(propertyId)) || 'Unknown';
                 return {
                   id: [propertyId], // Ensure id is an array
                   name: [propertyName], // Ensure name is an array, match by propertyId or default to 'Unknown'
@@ -1081,14 +993,11 @@ export async function updateProperties(formData: FormUpdateSchema) {
               success: false,
               limitReached: true,
               notFoundError: false,
-              message: `Feature limit reached for properties: ${featureLimitReached.join(
-                ', '
-              )}`,
+              message: `Feature limit reached for properties: ${featureLimitReached.join(', ')}`,
               results: featureLimitReached.map((propertyId) => {
                 // Find the name associated with the propertyId
                 const propertyName =
-                  propertyNames.find((name) => name.includes(propertyId)) ||
-                  'Unknown';
+                  propertyNames.find((name) => name.includes(propertyId)) || 'Unknown';
                 return {
                   id: [propertyId], // Ensure id is an array
                   name: [propertyName], // Ensure name is an array, match by propertyId or default to 'Unknown'
@@ -1111,9 +1020,7 @@ export async function updateProperties(formData: FormUpdateSchema) {
         }
       } catch (error: any) {
         if (error.code === 429 || error.status === 429) {
-          await new Promise((resolve) =>
-            setTimeout(resolve, delay + Math.random() * 200)
-          );
+          await new Promise((resolve) => setTimeout(resolve, delay + Math.random() * 200));
           delay *= 2;
           retries++;
         } else {
@@ -1227,163 +1134,143 @@ export async function updateDataRetentionSettings(formData: FormUpdateSchema) {
   let permissionDenied = false;
   const propertyNames = formData.forms.map((prop) => prop.displayName);
 
-  while (
-    retries < MAX_RETRIES &&
-    toUpdateProperties.size > 0 &&
-    !permissionDenied
-  ) {
+  while (retries < MAX_RETRIES && toUpdateProperties.size > 0 && !permissionDenied) {
     try {
-      const { remaining } = await gaRateLimit.blockUntilReady(
-        `user:${userId}`,
-        1000
-      );
+      const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
       if (remaining > 0) {
         await limiter.schedule(async () => {
-          const updatePromises = Array.from(toUpdateProperties).map(
-            async (identifier) => {
-              accountIdForCache = identifier.parent;
-              propertyIdForCache = identifier.name;
-              const propertyData = formData.forms.find(
-                (prop) =>
-                  prop.parent === identifier.parent &&
-                  prop.displayName === identifier.displayName &&
-                  prop.name === identifier.name &&
-                  prop.timeZone === identifier.timeZone &&
-                  prop.currencyCode === identifier.currencyCode &&
-                  prop.industryCategory === identifier.industryCategory &&
-                  prop.propertyType === identifier.propertyType &&
-                  prop.retention === identifier.retention &&
-                  prop.resetOnNewActivity === identifier.retentionReset
-              );
+          const updatePromises = Array.from(toUpdateProperties).map(async (identifier) => {
+            accountIdForCache = identifier.parent;
+            propertyIdForCache = identifier.name;
+            const propertyData = formData.forms.find(
+              (prop) =>
+                prop.parent === identifier.parent &&
+                prop.displayName === identifier.displayName &&
+                prop.name === identifier.name &&
+                prop.timeZone === identifier.timeZone &&
+                prop.currencyCode === identifier.currencyCode &&
+                prop.industryCategory === identifier.industryCategory &&
+                prop.propertyType === identifier.propertyType &&
+                prop.retention === identifier.retention &&
+                prop.resetOnNewActivity === identifier.retentionReset
+            );
 
-              if (!propertyData) {
-                errors.push(`Property data not found for ${identifier}`);
-                toUpdateProperties.delete(identifier);
-                return;
-              }
-
-              const updateFields = [
-                'eventDataRetention', // Include the fields that need to be updated
-                'resetUserDataOnNewActivity',
-              ];
-              const updateMask = updateFields.join(',');
-
-              const url = `https://analyticsadmin.googleapis.com/v1beta/properties/${identifier.name}/dataRetentionSettings?updateMask=${updateMask}`;
-              const headers = {
-                Authorization: `Bearer ${token[0].token}`,
-                'Content-Type': 'application/json',
-                'Accept-Encoding': 'gzip',
-              };
-
-              try {
-                const formDataToValidate = { forms: [propertyData] };
-
-                const validationResult =
-                  UpdatePropertySchema.safeParse(formDataToValidate);
-
-                if (!validationResult.success) {
-                  let errorMessage = validationResult.error.issues
-                    .map((issue) => `${issue.path[0]}: ${issue.message}`)
-                    .join('. ');
-                  errors.push(errorMessage);
-                  toUpdateProperties.delete(identifier);
-                  return {
-                    propertyData,
-                    success: false,
-                    error: errorMessage,
-                  };
-                }
-
-                // Accessing the validated property data
-                const validatedpropertyData = validationResult.data.forms[0];
-
-                const payload = JSON.stringify({
-                  name: `accounts/${validatedpropertyData.parent}`,
-                  eventDataRetention: validatedpropertyData.retention,
-                  resetUserDataOnNewActivity:
-                    validatedpropertyData.resetOnNewActivity,
-                });
-
-                const response = await fetch(url, {
-                  method: 'PATCH',
-                  headers: headers,
-                  body: payload,
-                });
-
-                parsedResponse = await response.json();
-
-                const propertyName = propertyData.name;
-
-                if (response.ok) {
-                  // Push a string into the array, for example, a concatenation of propertyId and propertyId
-                  successfulUpdates.push(
-                    `${validatedpropertyData.parent}-${validatedpropertyData.name}`
-                  );
-                  // ... rest of your code
-
-                  toUpdateProperties.delete(identifier);
-                  redis.append(
-                    `ga:properties:userId:${userId}`,
-                    parsedResponse
-                  );
-
-                  UpdateResults.push({
-                    propertyName: propertyName,
-                    success: true,
-                    message: `Successfully updated property ${propertyName}`,
-                  });
-                } else {
-                  const errorResult = await handleApiResponseError(
-                    response,
-                    parsedResponse,
-                    'property',
-                    [propertyName]
-                  );
-
-                  if (errorResult) {
-                    errors.push(`${errorResult.message}`);
-                    if (
-                      errorResult.errorCode === 403 &&
-                      parsedResponse.message === 'Feature limit reached'
-                    ) {
-                      featureLimitReached.push(propertyName);
-                    } else if (errorResult.errorCode === 404) {
-                      const propertyName =
-                        propertyNames.find((name) =>
-                          name.includes(identifier.name)
-                        ) || 'Unknown';
-                      notFoundLimit.push({
-                        id: identifier.name,
-                        name: propertyName,
-                      });
-                    }
-                  } else {
-                    errors.push(
-                      `An unknown error occurred for property ${propertyName}.`
-                    );
-                  }
-
-                  toUpdateProperties.delete(identifier);
-                  permissionDenied = errorResult ? true : permissionDenied;
-                  UpdateResults.push({
-                    propertyName: propertyName,
-                    success: false,
-                    message: errorResult?.message,
-                  });
-                }
-              } catch (error: any) {
-                errors.push(
-                  `Exception updating property ${propertyData.name}: ${error.message}`
-                );
-                toUpdateProperties.delete(identifier);
-                UpdateResults.push({
-                  propertyName: propertyData.name,
-                  success: false,
-                  message: error.message,
-                });
-              }
+            if (!propertyData) {
+              errors.push(`Property data not found for ${identifier}`);
+              toUpdateProperties.delete(identifier);
+              return;
             }
-          );
+
+            const updateFields = [
+              'eventDataRetention', // Include the fields that need to be updated
+              'resetUserDataOnNewActivity',
+            ];
+            const updateMask = updateFields.join(',');
+
+            const url = `https://analyticsadmin.googleapis.com/v1beta/properties/${identifier.name}/dataRetentionSettings?updateMask=${updateMask}`;
+            const headers = {
+              Authorization: `Bearer ${token[0].token}`,
+              'Content-Type': 'application/json',
+              'Accept-Encoding': 'gzip',
+            };
+
+            try {
+              const formDataToValidate = { forms: [propertyData] };
+
+              const validationResult = UpdatePropertySchema.safeParse(formDataToValidate);
+
+              if (!validationResult.success) {
+                let errorMessage = validationResult.error.issues
+                  .map((issue) => `${issue.path[0]}: ${issue.message}`)
+                  .join('. ');
+                errors.push(errorMessage);
+                toUpdateProperties.delete(identifier);
+                return {
+                  propertyData,
+                  success: false,
+                  error: errorMessage,
+                };
+              }
+
+              // Accessing the validated property data
+              const validatedpropertyData = validationResult.data.forms[0];
+
+              const payload = JSON.stringify({
+                name: `accounts/${validatedpropertyData.parent}`,
+                eventDataRetention: validatedpropertyData.retention,
+                resetUserDataOnNewActivity: validatedpropertyData.resetOnNewActivity,
+              });
+
+              const response = await fetch(url, {
+                method: 'PATCH',
+                headers: headers,
+                body: payload,
+              });
+
+              parsedResponse = await response.json();
+
+              const propertyName = propertyData.name;
+
+              if (response.ok) {
+                // Push a string into the array, for example, a concatenation of propertyId and propertyId
+                successfulUpdates.push(
+                  `${validatedpropertyData.parent}-${validatedpropertyData.name}`
+                );
+                // ... rest of your code
+
+                toUpdateProperties.delete(identifier);
+                redis.append(`ga:properties:userId:${userId}`, parsedResponse);
+
+                UpdateResults.push({
+                  propertyName: propertyName,
+                  success: true,
+                  message: `Successfully updated property ${propertyName}`,
+                });
+              } else {
+                const errorResult = await handleApiResponseError(
+                  response,
+                  parsedResponse,
+                  'property',
+                  [propertyName]
+                );
+
+                if (errorResult) {
+                  errors.push(`${errorResult.message}`);
+                  if (
+                    errorResult.errorCode === 403 &&
+                    parsedResponse.message === 'Feature limit reached'
+                  ) {
+                    featureLimitReached.push(propertyName);
+                  } else if (errorResult.errorCode === 404) {
+                    const propertyName =
+                      propertyNames.find((name) => name.includes(identifier.name)) || 'Unknown';
+                    notFoundLimit.push({
+                      id: identifier.name,
+                      name: propertyName,
+                    });
+                  }
+                } else {
+                  errors.push(`An unknown error occurred for property ${propertyName}.`);
+                }
+
+                toUpdateProperties.delete(identifier);
+                permissionDenied = errorResult ? true : permissionDenied;
+                UpdateResults.push({
+                  propertyName: propertyName,
+                  success: false,
+                  message: errorResult?.message,
+                });
+              }
+            } catch (error: any) {
+              errors.push(`Exception updating property ${propertyData.name}: ${error.message}`);
+              toUpdateProperties.delete(identifier);
+              UpdateResults.push({
+                propertyName: propertyData.name,
+                success: false,
+                message: error.message,
+              });
+            }
+          });
 
           await Promise.all(updatePromises);
         });
@@ -1409,14 +1296,11 @@ export async function updateDataRetentionSettings(formData: FormUpdateSchema) {
             success: false,
             limitReached: true,
             notFoundError: false,
-            message: `Feature limit reached for properties: ${featureLimitReached.join(
-              ', '
-            )}`,
+            message: `Feature limit reached for properties: ${featureLimitReached.join(', ')}`,
             results: featureLimitReached.map((propertyId) => {
               // Find the name associated with the propertyId
               const propertyName =
-                propertyNames.find((name) => name.includes(propertyId)) ||
-                'Unknown';
+                propertyNames.find((name) => name.includes(propertyId)) || 'Unknown';
               return {
                 id: [propertyId], // Ensure id is an array
                 name: [propertyName], // Ensure name is an array, match by propertyId or default to 'Unknown'
@@ -1432,14 +1316,11 @@ export async function updateDataRetentionSettings(formData: FormUpdateSchema) {
             success: false,
             limitReached: true,
             notFoundError: false,
-            message: `Feature limit reached for properties: ${featureLimitReached.join(
-              ', '
-            )}`,
+            message: `Feature limit reached for properties: ${featureLimitReached.join(', ')}`,
             results: featureLimitReached.map((propertyId) => {
               // Find the name associated with the propertyId
               const propertyName =
-                propertyNames.find((name) => name.includes(propertyId)) ||
-                'Unknown';
+                propertyNames.find((name) => name.includes(propertyId)) || 'Unknown';
               return {
                 id: [propertyId], // Ensure id is an array
                 name: [propertyName], // Ensure name is an array, match by propertyId or default to 'Unknown'
@@ -1462,9 +1343,7 @@ export async function updateDataRetentionSettings(formData: FormUpdateSchema) {
       }
     } catch (error: any) {
       if (error.code === 429 || error.status === 429) {
-        await new Promise((resolve) =>
-          setTimeout(resolve, delay + Math.random() * 200)
-        );
+        await new Promise((resolve) => setTimeout(resolve, delay + Math.random() * 200));
         delay *= 2;
         retries++;
       } else {
@@ -1566,23 +1445,14 @@ export async function acknowledgeUserDataCollection(selectedRows) {
   let permissionDenied = false;
   const propertyNames = selectedRows.map((prop) => prop.displayName);
 
-  while (
-    retries < MAX_RETRIES &&
-    toUpdateProperties.size > 0 &&
-    !permissionDenied
-  ) {
+  while (retries < MAX_RETRIES && toUpdateProperties.size > 0 && !permissionDenied) {
     try {
-      const { remaining } = await gaRateLimit.blockUntilReady(
-        `user:${userId}`,
-        1000
-      );
+      const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
       if (remaining > 0) {
         await limiter.schedule(async () => {
           const updatePromises = Array.from(toUpdateProperties).map(
             async (identifier: GA4PropertyType) => {
-              const propertyData = selectedRows.find(
-                (prop) => prop.name === identifier.name
-              );
+              const propertyData = selectedRows.find((prop) => prop.name === identifier.name);
 
               if (!propertyData) {
                 errors.push(`Property data not found for ${identifier}`);
@@ -1600,8 +1470,7 @@ export async function acknowledgeUserDataCollection(selectedRows) {
               try {
                 const rowDataToValidate = { forms: [propertyData] };
 
-                const validationResult =
-                  UpdatePropertySchema.safeParse(rowDataToValidate);
+                const validationResult = UpdatePropertySchema.safeParse(rowDataToValidate);
 
                 if (!validationResult.success) {
                   let errorMessage = validationResult.error.issues
@@ -1659,9 +1528,7 @@ export async function acknowledgeUserDataCollection(selectedRows) {
                       featureLimitReached.push(propertyName);
                     } else if (errorResult.errorCode === 404) {
                       const propertyName =
-                        propertyNames.find((name) =>
-                          name.includes(identifier.name)
-                        ) || 'Unknown';
+                        propertyNames.find((name) => name.includes(identifier.name)) || 'Unknown';
 
                       notFoundLimit.push({
                         id: identifier.name,
@@ -1669,9 +1536,7 @@ export async function acknowledgeUserDataCollection(selectedRows) {
                       });
                     }
                   } else {
-                    errors.push(
-                      `An unknown error occurred for property ${propertyName}.`
-                    );
+                    errors.push(`An unknown error occurred for property ${propertyName}.`);
                   }
 
                   toUpdateProperties.delete(identifier);
@@ -1683,9 +1548,7 @@ export async function acknowledgeUserDataCollection(selectedRows) {
                   });
                 }
               } catch (error: any) {
-                errors.push(
-                  `Exception updating property ${propertyData.name}: ${error.message}`
-                );
+                errors.push(`Exception updating property ${propertyData.name}: ${error.message}`);
                 toUpdateProperties.delete(identifier);
                 UpdateResults.push({
                   propertyName: propertyData.name,
@@ -1720,14 +1583,11 @@ export async function acknowledgeUserDataCollection(selectedRows) {
             success: false,
             limitReached: true,
             notFoundError: false,
-            message: `Feature limit reached for properties: ${featureLimitReached.join(
-              ', '
-            )}`,
+            message: `Feature limit reached for properties: ${featureLimitReached.join(', ')}`,
             results: featureLimitReached.map((propertyId) => {
               // Find the name associated with the propertyId
               const propertyName =
-                propertyNames.find((name) => name.includes(propertyId)) ||
-                'Unknown';
+                propertyNames.find((name) => name.includes(propertyId)) || 'Unknown';
               return {
                 id: [propertyId], // Ensure id is an array
                 name: [propertyName], // Ensure name is an array, match by propertyId or default to 'Unknown'
@@ -1743,14 +1603,11 @@ export async function acknowledgeUserDataCollection(selectedRows) {
             success: false,
             limitReached: true,
             notFoundError: false,
-            message: `Feature limit reached for properties: ${featureLimitReached.join(
-              ', '
-            )}`,
+            message: `Feature limit reached for properties: ${featureLimitReached.join(', ')}`,
             results: featureLimitReached.map((propertyId) => {
               // Find the name associated with the propertyId
               const propertyName =
-                propertyNames.find((name) => name.includes(propertyId)) ||
-                'Unknown';
+                propertyNames.find((name) => name.includes(propertyId)) || 'Unknown';
               return {
                 id: [propertyId], // Ensure id is an array
                 name: [propertyName], // Ensure name is an array, match by propertyId or default to 'Unknown'
@@ -1773,9 +1630,7 @@ export async function acknowledgeUserDataCollection(selectedRows) {
       }
     } catch (error: any) {
       if (error.code === 429 || error.status === 429) {
-        await new Promise((resolve) =>
-          setTimeout(resolve, delay + Math.random() * 200)
-        );
+        await new Promise((resolve) => setTimeout(resolve, delay + Math.random() * 200));
         delay *= 2;
         retries++;
       } else {

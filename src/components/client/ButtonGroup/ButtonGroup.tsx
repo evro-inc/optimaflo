@@ -17,10 +17,7 @@ interface ButtonGroupFourProps {
 /**
  * Primary UI component for user interaction
  */
-export const ButtonGroup: React.FC<ButtonGroupFourProps> = ({
-  buttons = [],
-  ...props
-}) => {
+export const ButtonGroup: React.FC<ButtonGroupFourProps> = ({ buttons = [], ...props }) => {
   return (
     <>
       {buttons.map((button, index) => (

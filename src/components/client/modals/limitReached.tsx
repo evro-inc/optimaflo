@@ -15,14 +15,11 @@ export function LimitReached({ onClose }) {
           <ExclamationTriangleIcon className="h-6 w-6 text-yellow" />
           <AlertTitle>Feature Limit Reached</AlertTitle>
           <AlertDescription className="text-center">
-            You have reached the limit for this feature. Upgrade now to continue
-            enjoying all the features.
+            You have reached the limit for this feature. Upgrade now to continue enjoying all the
+            features.
           </AlertDescription>
           <div className="flex space-x-4">
-            <Button
-              type="button"
-              onClick={() => (window.location.href = '/pricing')}
-            >
+            <Button type="button" onClick={() => (window.location.href = '/pricing')}>
               Upgrade
             </Button>
             <Button type="button" onClick={onClose}>

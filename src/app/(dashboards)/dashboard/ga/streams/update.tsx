@@ -2,11 +2,7 @@
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ButtonGroup } from '@/components/client/ButtonGroup/ButtonGroup';
-import {
-  FeatureResponse,
-  FormUpdateProps,
-  GA4StreamType,
-} from '@/src/types/types';
+import { FeatureResponse, FormUpdateProps, GA4StreamType } from '@/src/types/types';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   selectTable,
@@ -20,12 +16,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import dynamic from 'next/dynamic';
 import { toast } from 'sonner';
 import { Cross1Icon } from '@radix-ui/react-icons';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/src/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/card';
 import {
   Form,
   FormControl,
@@ -43,10 +34,7 @@ import { z } from 'zod';
 import { updateGAPropertyStreams } from '@/src/lib/fetch/dashboard/actions/ga/streams';
 
 const NotFoundErrorModal = dynamic(
-  () =>
-    import('@/components/client/modals/notFoundError').then(
-      (mod) => mod.NotFoundError
-    ),
+  () => import('@/components/client/modals/notFoundError').then((mod) => mod.NotFoundError),
   { ssr: false }
 );
 
@@ -132,15 +120,12 @@ const FormUpdateStream: React.FC<FormUpdateProps> = ({
     for (const form of forms) {
       const identifier = `${form.property}-${form.displayName}`;
       if (uniqueStreams.has(identifier)) {
-        toast.error(
-          `Duplicate stream found for ${form.property} - ${form.displayName}`,
-          {
-            action: {
-              label: 'Close',
-              onClick: () => toast.dismiss(),
-            },
-          }
-        );
+        toast.error(`Duplicate stream found for ${form.property} - ${form.displayName}`, {
+          action: {
+            label: 'Close',
+            onClick: () => toast.dismiss(),
+          },
+        });
         dispatch(setLoading(false));
         return;
       }
@@ -256,8 +241,7 @@ const FormUpdateStream: React.FC<FormUpdateProps> = ({
               onClick={handleClose}
               className="absolute top-5 right-5 font-bold"
             >
-              <Cross1Icon className="h-4 w-4" />{' '}
-              <span className="sr-only">Close</span>
+              <Cross1Icon className="h-4 w-4" /> <span className="sr-only">Close</span>
             </Button>
 
             <div className="flex items-center justify-between py-3 px-4 mt-5 gap-4">
@@ -275,10 +259,7 @@ const FormUpdateStream: React.FC<FormUpdateProps> = ({
             <div className="stream mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-end">
               {fields.map((field, index) => {
                 return (
-                  <div
-                    key={field.id}
-                    className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-                  >
+                  <div key={field.id} className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
                     <div className="max-w-xl mx-auto">
                       <div className="mt-12">
                         {/* Form */}
@@ -303,15 +284,12 @@ const FormUpdateStream: React.FC<FormUpdateProps> = ({
                                     <FormItem>
                                       <FormLabel>New Stream Name</FormLabel>
                                       <FormDescription>
-                                        This is the stream name you want to
-                                        create.
+                                        This is the stream name you want to create.
                                       </FormDescription>
                                       <FormControl>
                                         <Input
                                           placeholder="Name of the stream"
-                                          {...form.register(
-                                            `forms.${index}.displayName`
-                                          )}
+                                          {...form.register(`forms.${index}.displayName`)}
                                           {...field}
                                         />
                                       </FormControl>
@@ -321,8 +299,7 @@ const FormUpdateStream: React.FC<FormUpdateProps> = ({
                                   )}
                                 />
 
-                                {selectedRows[index].type ===
-                                  'WEB_DATA_STREAM' && (
+                                {selectedRows[index].type === 'WEB_DATA_STREAM' && (
                                   <FormField
                                     control={form.control}
                                     name={`forms.${index}.webStreamData.defaultUri`}
@@ -330,8 +307,7 @@ const FormUpdateStream: React.FC<FormUpdateProps> = ({
                                       <FormItem>
                                         <FormLabel>Default URI</FormLabel>
                                         <FormDescription>
-                                          This is the default URI for the web
-                                          stream.
+                                          This is the default URI for the web stream.
                                         </FormDescription>
                                         <FormControl>
                                           <Input
@@ -348,8 +324,7 @@ const FormUpdateStream: React.FC<FormUpdateProps> = ({
                                   />
                                 )}
 
-                                {selectedRows[index].type ===
-                                  'ANDROID_APP_DATA_STREAM' && (
+                                {selectedRows[index].type === 'ANDROID_APP_DATA_STREAM' && (
                                   <FormField
                                     control={form.control}
                                     name={`forms.${index}.androidAppStreamData.packageName`}
@@ -357,8 +332,7 @@ const FormUpdateStream: React.FC<FormUpdateProps> = ({
                                       <FormItem>
                                         <FormLabel>Package Name</FormLabel>
                                         <FormDescription>
-                                          This is the package name for the
-                                          Android app stream.
+                                          This is the package name for the Android app stream.
                                         </FormDescription>
                                         <FormControl>
                                           <Input
@@ -375,8 +349,7 @@ const FormUpdateStream: React.FC<FormUpdateProps> = ({
                                   />
                                 )}
 
-                                {selectedRows[index].type ===
-                                  'IOS_APP_DATA_STREAM' && (
+                                {selectedRows[index].type === 'IOS_APP_DATA_STREAM' && (
                                   <FormField
                                     control={form.control}
                                     name={`forms.${index}.iosAppStreamData.bundleId`}
@@ -384,8 +357,7 @@ const FormUpdateStream: React.FC<FormUpdateProps> = ({
                                       <FormItem>
                                         <FormLabel>Bundle ID</FormLabel>
                                         <FormDescription>
-                                          This is the bundle ID for the iOS app
-                                          stream.
+                                          This is the bundle ID for the iOS app stream.
                                         </FormDescription>
                                         <FormControl>
                                           <Input
@@ -418,9 +390,7 @@ const FormUpdateStream: React.FC<FormUpdateProps> = ({
         )}
       </AnimatePresence>
 
-      {isLimitReached && (
-        <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
-      )}
+      {isLimitReached && <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />}
 
       {notFoundError && <NotFoundErrorModal />}
     </>

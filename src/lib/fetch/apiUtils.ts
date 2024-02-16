@@ -18,12 +18,9 @@ export const getAccessToken = async (userId) => {
   });
   if (!user?.access_token) {
     // If the access token is null or undefined, return an error response
-    return new NextResponse(
-      JSON.stringify({ message: 'Access token is missing' }),
-      {
-        status: 401,
-      }
-    );
+    return new NextResponse(JSON.stringify({ message: 'Access token is missing' }), {
+      status: 401,
+    });
   }
   return user.access_token;
 };

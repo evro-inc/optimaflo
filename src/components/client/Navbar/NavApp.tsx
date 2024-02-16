@@ -20,10 +20,7 @@ export default function Navbar() {
   return (
     <div className="fixed top-0 left-0 w-full flex items-center justify-between px-4 py-2 bg-white shadow-md z-10">
       <div className="flex items-center">
-        <Link
-          href="/"
-          className="hidden items-center justify-between gap-2 md:flex"
-        >
+        <Link href="/" className="hidden items-center justify-between gap-2 md:flex">
           <MountainIcon className="h-6 w-6" />
           <h1 className="text-lg font-semibold pl-3">OptimaFlo</h1>
         </Link>

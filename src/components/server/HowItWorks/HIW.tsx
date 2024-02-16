@@ -53,19 +53,16 @@ export default async function HowItWorks() {
                       <div className="gap-y-4 text-left ">
                         <div>
                           <h2 className="block font-medium text-2xl md:text-3xl lg:text-4xl pt-5 pb-10">
-                            We make it easy to manage data flows across Google
-                            data products.
+                            We make it easy to manage data flows across Google data products.
                           </h2>
                         </div>
                         <div>
                           <p className="text-lg">
-                            OptimaFlo is not just a tool, but a comprehensive
-                            solution designed to address the common challenges
-                            faced in managing large-scale data flows. Our suite
-                            of features is built on the insights gained from
-                            extensive experience in the field, and each one is
-                            designed to streamline your workflows, enhance your
-                            data management, and provide you with actionable
+                            OptimaFlo is not just a tool, but a comprehensive solution designed to
+                            address the common challenges faced in managing large-scale data flows.
+                            Our suite of features is built on the insights gained from extensive
+                            experience in the field, and each one is designed to streamline your
+                            workflows, enhance your data management, and provide you with actionable
                             insights.
                           </p>
                         </div>
@@ -73,10 +70,7 @@ export default async function HowItWorks() {
                       <div className="pt-10 grid grid-cols-1 sm:grid-cols-2 gap-10">
                         {homePage[0].howItWorks.map((hiw, index) => {
                           return (
-                            <div
-                              key={index}
-                              className="items-left space-y-4 min-h-[200px] pb-10"
-                            >
+                            <div key={index} className="items-left space-y-4 min-h-[200px] pb-10">
                               <Images
                                 src={urlFor(hiw.image).url()}
                                 alt="Google Tag Manager Logo"

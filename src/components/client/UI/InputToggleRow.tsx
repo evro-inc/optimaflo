@@ -9,10 +9,7 @@ interface InputToggleRowProps {
   uniqueIdentifier: string[]; // e.g., 'accountId', 'containerId'
 }
 
-export const ToggleRow: React.FC<InputToggleRowProps> = ({
-  item,
-  uniqueIdentifier,
-}) => {
+export const ToggleRow: React.FC<InputToggleRowProps> = ({ item, uniqueIdentifier }) => {
   const dispatch = useDispatch();
   const { selectedRows } = useSelector(selectTable);
 
@@ -33,16 +30,9 @@ export const ToggleRow: React.FC<InputToggleRowProps> = ({
     dispatch(setSelectedRows(newSelectedRows));
   };
 
-  const isChecked = Object.prototype.hasOwnProperty.call(
-    selectedRows,
-    uniqueKey
-  );
+  const isChecked = Object.prototype.hasOwnProperty.call(selectedRows, uniqueKey);
 
   return (
-    <Checkbox
-      id={`select-row-${uniqueKey}`}
-      checked={isChecked}
-      onCheckedChange={toggleRow}
-    />
+    <Checkbox id={`select-row-${uniqueKey}`} checked={isChecked} onCheckedChange={toggleRow} />
   );
 };

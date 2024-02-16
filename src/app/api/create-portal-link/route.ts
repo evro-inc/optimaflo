@@ -27,9 +27,7 @@ export async function POST() {
     // If the customer record was found, use its ID in the fetch call
     if (customerRecord && customerRecord.stripeCustomerId) {
       try {
-        customer = await stripe.customers.retrieve(
-          customerRecord.stripeCustomerId
-        );
+        customer = await stripe.customers.retrieve(customerRecord.stripeCustomerId);
       } catch (error) {
         customer = await stripe.customers.create({ email });
 

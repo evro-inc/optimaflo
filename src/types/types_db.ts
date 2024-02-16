@@ -1,10 +1,4 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json }
-  | Json[];
+export type Json = string | number | boolean | null | { [key: string]: Json } | Json[];
 
 export interface Database {
   public: {
@@ -42,9 +36,7 @@ export interface Database {
           currency?: string | null;
           description?: string | null;
           id: string;
-          interval?:
-            | Database['public']['Enums']['pricing_plan_interval']
-            | null;
+          interval?: Database['public']['Enums']['pricing_plan_interval'] | null;
           interval_count?: number | null;
           metadata?: Json | null;
           product_id?: string | null;
@@ -57,9 +49,7 @@ export interface Database {
           currency?: string | null;
           description?: string | null;
           id?: string;
-          interval?:
-            | Database['public']['Enums']['pricing_plan_interval']
-            | null;
+          interval?: Database['public']['Enums']['pricing_plan_interval'] | null;
           interval_count?: number | null;
           metadata?: Json | null;
           product_id?: string | null;

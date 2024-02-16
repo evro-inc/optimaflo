@@ -38,12 +38,7 @@ export const profileSlice = createSlice({
   },
 });
 
-export const {
-  setFirstName,
-  setLastName,
-  setUsername,
-  openDialog,
-  closeDialog,
-} = profileSlice.actions;
+export const { setFirstName, setLastName, setUsername, openDialog, closeDialog } =
+  profileSlice.actions;
 
 export default profileSlice.reducer;

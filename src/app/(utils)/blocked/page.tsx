@@ -16,8 +16,8 @@ export default function Blocked() {
               Restricted Content
             </h2>
             <p className="max-w-[600px] text-gray-500 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed dark:text-gray-400">
-              The content you are trying to access is exclusive to our
-              subscribers. Please subscribe to gain access.
+              The content you are trying to access is exclusive to our subscribers. Please subscribe
+              to gain access.
             </p>
           </div>
           <Button asChild>
