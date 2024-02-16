@@ -42,6 +42,7 @@ import { useDeleteHook } from './delete';
 import { notFound } from 'next/navigation';
 import { setIsLimitReached } from '@/src/redux/tableSlice';
 import { toggleCreate, toggleUpdate } from '@/src/redux/globalSlice';
+import { useCreateHookForm, useUpdateHookForm } from '@/src/hooks/useCRUD';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -79,24 +80,11 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     },
   });
 
-  const handleCreateClick = async () => {
-    try {
-      if (!userId) {
-        return notFound();
-      }
-      const handleCreateLimit: any = await tierCreateLimit(userId, 'GA4Accounts');
+  const selectedRowsData = table.getSelectedRowModel().rows.map((row) => row.original);
 
-      if (handleCreateLimit && handleCreateLimit.limitReached) {
-        // Directly show the limit reached modal
-        dispatch(setIsLimitReached(true)); // Assuming you have an action to explicitly set this
-      } else {
-        // Otherwise, proceed with normal creation process
-        dispatch(toggleCreate());
-      }
-    } catch (error: any) {
-      throw new Error('Error in handleCreateClick:', error);
-    }
-  };
+  const handleCreateClick = useCreateHookForm(userId, 'GA4Accounts');
+  const handleUpdateClick = useUpdateHookForm(userId, 'GA4Accounts');
+  const handleDelete = useDeleteHook(selectedRowsData, table);
 
   const refreshAllCache = async () => {
     // Assuming you want to refresh cache for each workspace
@@ -109,9 +97,6 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
       },
     });
   };
-
-  const selectedRowsData = table.getSelectedRowModel().rows.map((row) => row.original);
-  const handleDelete = useDeleteHook(selectedRowsData, table);
 
   return (
     <div>
@@ -130,7 +115,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
 
           <Button
             disabled={Object.keys(table.getState().rowSelection).length === 0}
-            onClick={() => dispatch(toggleUpdate())}
+            onClick={handleUpdateClick}
           >
             Update
           </Button>

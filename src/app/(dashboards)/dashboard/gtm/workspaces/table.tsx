@@ -32,26 +32,12 @@ import {
 } from '@/src/components/ui/dropdown-menu';
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
-import { revalidate, tierCreateLimit, tierUpdateLimit } from '@/src/utils/server';
-import { ReloadIcon } from '@radix-ui/react-icons';
+import { revalidate } from '@/src/utils/server';
 import { useDispatch } from 'react-redux';
-import { setIsLimitReached } from '@/src/redux/tableSlice';
-import { notFound } from 'next/navigation';
-import { toggleCreate, toggleUpdate } from '@/src/redux/globalSlice';
 import { useDeleteHook } from './delete';
 import WorkspaceForms from '@/src/app/(dashboards)/dashboard/gtm/workspaces/forms';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/src/components/ui/alert-dialog';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
+import { useCreateHookForm, useUpdateHookForm } from '@/src/hooks/useCRUD';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -111,48 +97,15 @@ export function DataTable<TData, TValue>({
       },
     });
   };
-
-  const handleCreateClick = async () => {
-    try {
-      if (!userId) {
-        return notFound();
-      }
-      const handleCreateLimit: any = await tierCreateLimit(userId, 'GTMWorkspaces');
-
-      if (handleCreateLimit && handleCreateLimit.limitReached) {
-        // Directly show the limit reached modal
-        dispatch(setIsLimitReached(true)); // Assuming you have an action to explicitly set this
-      } else {
-        // Otherwise, proceed with normal creation process
-        dispatch(toggleCreate());
-      }
-    } catch (error: any) {
-      throw new Error('Error in handleCreateClick:', error);
-    }
-  };
-
+  
   const selectedRowsData = table.getSelectedRowModel().rows.map((row) => row.original);
 
   const handleDelete = useDeleteHook(selectedRowsData, table);
+  const handleCreateClick = useCreateHookForm(userId, 'GTMWorkspaces');
+  const handleUpdateClick = useUpdateHookForm(userId, 'GTMWorkspaces');
 
-  const handleUpdateClick = async () => {
-    try {
-      if (!userId) {
-        return notFound();
-      }
-      const limitResponse: any = await tierUpdateLimit(userId, 'GTMWorkspaces');
 
-      if (limitResponse && limitResponse.limitReached) {
-        // Directly show the limit reached modal
-        dispatch(setIsLimitReached(true)); // Assuming you have an action to explicitly set this
-      } else {
-        // Otherwise, proceed with normal creation process
-        dispatch(toggleUpdate());
-      }
-    } catch (error: any) {
-      throw new Error('Error in handleUpdateClick:', error);
-    }
-  };
+
 
   return (
     <>

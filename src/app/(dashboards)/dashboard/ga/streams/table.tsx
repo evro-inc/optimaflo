@@ -32,15 +32,12 @@ import {
 } from '@/src/components/ui/dropdown-menu';
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
-import { revalidate, tierCreateLimit } from '@/src/utils/server';
-import { ReloadIcon } from '@radix-ui/react-icons';
-import { toggleCreate, toggleUpdate } from '@/src/redux/globalSlice';
-import { useDispatch } from 'react-redux';
+import { revalidate } from '@/src/utils/server';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
 import { useDeleteHook } from '../streams/delete';
-import { notFound } from 'next/navigation';
-import { setIsLimitReached } from '@/src/redux/tableSlice';
+
 import StreamForms from './forms';
+import { useCreateHookForm, useUpdateHookForm } from '@/src/hooks/useCRUD';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -55,7 +52,6 @@ export function DataTable<TData, TValue>({
   properties,
   accounts,
 }: DataTableProps<TData, TValue>) {
-  const dispatch = useDispatch();
 
   const { user } = useUser();
   const userId = user?.id;
@@ -87,24 +83,9 @@ export function DataTable<TData, TValue>({
 
   const selectedRowsData = table.getSelectedRowModel().rows.map((row) => row.original);
 
-  const handleCreateClick = async () => {
-    try {
-      if (!userId) {
-        return notFound();
-      }
-      const handleCreateLimit: any = await tierCreateLimit(userId, 'GA4Streams');
-
-      if (handleCreateLimit && handleCreateLimit.limitReached) {
-        // Directly show the limit reached modal
-        dispatch(setIsLimitReached(true)); // Assuming you have an action to explicitly set this
-      } else {
-        // Otherwise, proceed with normal creation process
-        dispatch(toggleCreate());
-      }
-    } catch (error: any) {
-      throw new Error('Error in handleCreateClick:', error);
-    }
-  };
+  const handleCreateClick = useCreateHookForm(userId, 'GA4Streams');
+  const handleUpdateClick = useUpdateHookForm(userId, 'GA4Streams');
+  const handleDelete = useDeleteHook(selectedRowsData, table);
 
   const refreshAllCache = async () => {
     // Assuming you want to refresh cache for each workspace
@@ -121,8 +102,6 @@ export function DataTable<TData, TValue>({
       },
     });
   };
-
-  const handleDelete = useDeleteHook(selectedRowsData, table);
 
   return (
     <div>
@@ -141,7 +120,7 @@ export function DataTable<TData, TValue>({
 
           <Button
             disabled={Object.keys(table.getState().rowSelection).length === 0}
-            onClick={() => dispatch(toggleUpdate())}
+            onClick={handleUpdateClick}
           >
             Update
           </Button>

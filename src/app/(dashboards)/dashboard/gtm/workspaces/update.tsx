@@ -197,7 +197,7 @@ const FormUpdateWorkspace: React.FC<FormUpdateWorkspaceProps> = ({
     } catch (error: any) {
       throw new Error(error);
     } finally {
-      table.resetSelectedRows({}); // Reset selected rows
+      table.resetRowSelection({}); // Reset selected rows
     }
   };
 
@@ -213,9 +213,8 @@ const FormUpdateWorkspace: React.FC<FormUpdateWorkspaceProps> = ({
           containerId: '',
         },
       ],
-    });
-
-    table.resetSelectedRows({}); // Reset selected rows
+    });    
+    table.resetRowSelection({}); // Reset selected rows
 
     // Close the modal
     onClose();

@@ -51,6 +51,7 @@ import {
 } from '@/src/components/ui/dialog';
 import { acknowledgeUserDataCollection } from '@/src/lib/fetch/dashboard/actions/ga/properties';
 import PropertyForms from './forms';
+import { useCreateHookForm, useUpdateHookForm } from '@/src/hooks/useCRUD';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -94,25 +95,9 @@ export function DataTable<TData, TValue>({
   });
 
   const selectedRowsData = table.getSelectedRowModel().rows.map((row) => row.original);
-
-  const handleCreateClick = async () => {
-    try {
-      if (!userId) {
-        return notFound();
-      }
-      const handleCreateLimit: any = await tierCreateLimit(userId, 'GA4Properties');
-
-      if (handleCreateLimit && handleCreateLimit.limitReached) {
-        // Directly show the limit reached modal
-        dispatch(setIsLimitReached(true)); // Assuming you have an action to explicitly set this
-      } else {
-        // Otherwise, proceed with normal creation process
-        dispatch(toggleCreate());
-      }
-    } catch (error: any) {
-      throw new Error('Error in handleCreateClick:', error);
-    }
-  };
+  const handleCreateClick = useCreateHookForm(userId, 'GA4Properties');
+  const handleUpdateClick = useUpdateHookForm(userId, 'GA4Properties');
+  const handleDelete = useDeleteHook(selectedRowsData, table);
 
   const refreshAllCache = async () => {
     // Assuming you want to refresh cache for each workspace
@@ -186,7 +171,6 @@ export function DataTable<TData, TValue>({
     }
   };
 
-  const handleDelete = useDeleteHook(selectedRowsData, table);
 
   return (
     <div>
@@ -205,7 +189,7 @@ export function DataTable<TData, TValue>({
 
           <Button
             disabled={Object.keys(table.getState().rowSelection).length === 0}
-            onClick={() => dispatch(toggleUpdate())}
+            onClick={handleUpdateClick}
           >
             Update
           </Button>
