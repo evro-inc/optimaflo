@@ -1,5 +1,5 @@
 import { stripe } from '@/src/lib/stripe';
-import { getURL } from '@/src/lib/helpers';
+import { getURL } from '@/src/utils/helpers';
 import { NextResponse } from 'next/server';
 import prisma from '@/src/lib/prisma';
 import { currentUser } from '@clerk/nextjs';
@@ -27,9 +27,7 @@ export async function POST() {
     // If the customer record was found, use its ID in the fetch call
     if (customerRecord && customerRecord.stripeCustomerId) {
       try {
-        customer = await stripe.customers.retrieve(
-          customerRecord.stripeCustomerId
-        );
+        customer = await stripe.customers.retrieve(customerRecord.stripeCustomerId);
       } catch (error) {
         customer = await stripe.customers.create({ email });
 

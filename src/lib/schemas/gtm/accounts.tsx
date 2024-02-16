@@ -3,9 +3,7 @@ import { z } from 'zod';
 // Schema for container create form data
 // Define the schema for a single form
 const SingleFormSchema = z.object({
-  accountId: z
-    .string()
-    .min(10, 'Account Id must be at least 10 characters long'),
+  accountId: z.string().min(10, 'Account Id must be at least 10 characters long'),
   name: z.string().min(1, 'Account Name is required'),
 });
 

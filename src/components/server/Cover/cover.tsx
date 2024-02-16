@@ -16,9 +16,7 @@ export default async function Cover() {
                 <h1 className="block text-2xl font-bold text-white-500 sm:text-4xl">
                   OptimaFlo - Coming Soon
                 </h1>
-                <p className="mt-3 text-lg text-gray-300">
-                  Our website is under construction.
-                </p>
+                <p className="mt-3 text-lg text-gray-300">Our website is under construction.</p>
               </div>
             </main>
             {/* ========== END MAIN CONTENT ========== */}

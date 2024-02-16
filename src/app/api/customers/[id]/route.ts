@@ -29,10 +29,7 @@ export async function GET(
 
     if (!customer) {
       // If the customer is not found, return a 404 Not Found response
-      return NextResponse.json(
-        { error: 'Customer not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
     }
 
     return NextResponse.json(customer, {

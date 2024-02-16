@@ -68,12 +68,9 @@ export async function POST(
 
     if (!accessToken) {
       // If the access token is null or undefined, return an error response
-      return new NextResponse(
-        JSON.stringify({ message: 'Access token is missing' }),
-        {
-          status: 401,
-        }
-      );
+      return new NextResponse(JSON.stringify({ message: 'Access token is missing' }), {
+        status: 401,
+      });
     }
 
     let retries = 0;
@@ -81,10 +78,7 @@ export async function POST(
 
     while (retries < MAX_RETRIES) {
       try {
-        const { remaining } = await gtmRateLimit.blockUntilReady(
-          `user:${userId}`,
-          1000
-        );
+        const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
 
         if (remaining > 0) {
           // If the data is not in the cache, fetch it from the API

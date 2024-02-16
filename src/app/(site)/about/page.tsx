@@ -22,9 +22,7 @@ type AboutPage = {
 
 export default async function HowItWorks() {
   try {
-    const aboutPage = await client.fetch<AboutPage[]>(
-      `*[_type == "aboutPage"]`
-    );
+    const aboutPage = await client.fetch<AboutPage[]>(`*[_type == "aboutPage"]`);
     if (aboutPage && Array.isArray(aboutPage)) {
       return (
         <div>

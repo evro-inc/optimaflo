@@ -1,4 +1,4 @@
-import { Page } from '@/src/lib/types/Page';
+import { Page } from '@/src/types/Page';
 import { createClient, groq } from 'next-sanity';
 
 export const client = createClient({

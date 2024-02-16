@@ -10,11 +10,10 @@ import { isErrorWithStatus } from '@/src/lib/fetch/dashboard';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
 
 import { limiter } from '@/src/lib/bottleneck';
-import { handleError } from '@/src/lib/fetch/apiUtils';
-import { PostParams, ResultType } from '@/src/lib/types/types';
+import { PostParams, ResultType } from '@/src/types/types';
 import { auth, clerkClient, currentUser, useSession } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
-import { listGtmContainers } from '@/src/lib/fetch/dashboard/actions/ga/properties';
+import { listGtmContainers } from '@/src/lib/fetch/dashboard/actions/gtm/containers';
 import { currentUserOauthAccessToken } from '@/src/lib/clerk';
 import { revalidatePath } from 'next/cache';
 
@@ -55,9 +54,7 @@ async function validatePostParams(params: any): Promise<PostParams> {
   const schema = Joi.object({
     accountId: Joi.string().required(),
     name: Joi.string().required(),
-    usageContext: Joi.array()
-      .items(Joi.string().valid('web', 'iosSdk5', 'androidSdk5'))
-      .required(),
+    usageContext: Joi.array().items(Joi.string().valid('web', 'iosSdk5', 'androidSdk5')).required(),
     domainName: Joi.array().items(Joi.string().required()).optional(),
     notes: Joi.string().allow('').optional(),
   });
@@ -91,10 +88,7 @@ async function createGtmContainer(
   while (retries < MAX_RETRIES && !success) {
     try {
       // Check if we've hit the rate limit
-      const { remaining } = await gtmRateLimit.blockUntilReady(
-        `user:${userId}`,
-        1000
-      );
+      const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
 
       // Fetch subscription data for the user
       const subscriptionData = await prisma.subscription.findFirst({
@@ -104,12 +98,9 @@ async function createGtmContainer(
       });
 
       if (!subscriptionData) {
-        return new NextResponse(
-          JSON.stringify({ message: 'Subscription data not found' }),
-          {
-            status: 403,
-          }
-        );
+        return new NextResponse(JSON.stringify({ message: 'Subscription data not found' }), {
+          status: 403,
+        });
       }
 
       const tierLimitRecord = await prisma.tierLimit.findFirst({
@@ -127,16 +118,10 @@ async function createGtmContainer(
         },
       });
 
-      if (
-        !tierLimitRecord ||
-        tierLimitRecord.createUsage >= tierLimitRecord.createLimit
-      ) {
-        return new NextResponse(
-          JSON.stringify({ message: 'Feature limit reached' }),
-          {
-            status: 403,
-          }
-        );
+      if (!tierLimitRecord || tierLimitRecord.createUsage >= tierLimitRecord.createLimit) {
+        return new NextResponse(JSON.stringify({ message: 'Feature limit reached' }), {
+          status: 403,
+        });
       }
 
       if (remaining > 0) {
@@ -304,8 +289,7 @@ export async function POST(
     };
 
     const validatedParams = await validatePostParams(paramsJOI);
-    const { name, usageContext, domainName, notes, accountId } =
-      validatedParams;
+    const { name, usageContext, domainName, notes, accountId } = validatedParams;
     const token = await currentUserOauthAccessToken(userId);
 
     // check tier limit
@@ -325,16 +309,10 @@ export async function POST(
     });
 
     // if tier limit is reached, return an error
-    if (
-      !tierLimitRecord ||
-      tierLimitRecord.createUsage >= tierLimitRecord.createLimit
-    ) {
-      return new NextResponse(
-        JSON.stringify({ message: 'Feature limit reached' }),
-        {
-          status: 403,
-        }
-      );
+    if (!tierLimitRecord || tierLimitRecord.createUsage >= tierLimitRecord.createLimit) {
+      return new NextResponse(JSON.stringify({ message: 'Feature limit reached' }), {
+        status: 403,
+      });
     }
 
     const response = await createGtmContainer(
@@ -358,8 +336,8 @@ export async function POST(
       },
       status: 200,
     });
-  } catch (error) {
+  } catch (error: any) {
     // Return a 500 status code for internal server error
-    return handleError(error);
+    throw new Error(error);
   }
 }

@@ -84,13 +84,11 @@ export async function POST(request: NextRequest) {
       unitAmount: Joi.number().integer().required(),
       currency: Joi.string().required(),
       type: Joi.string().valid('one_time', 'recurring').required(),
-      interval: Joi.string()
-        .valid('day', 'week', 'month', 'year')
-        .when('type', {
-          is: 'recurring',
-          then: Joi.required(),
-          otherwise: Joi.optional(),
-        }),
+      interval: Joi.string().valid('day', 'week', 'month', 'year').when('type', {
+        is: 'recurring',
+        then: Joi.required(),
+        otherwise: Joi.optional(),
+      }),
       intervalCount: Joi.number().integer().when('type', {
         is: 'recurring',
         then: Joi.required(),

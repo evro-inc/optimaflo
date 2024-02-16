@@ -1,11 +1,5 @@
 'use server';
-import {
-  CardTitle,
-  CardHeader,
-  CardContent,
-  Card,
-  CardFooter,
-} from '@/components/ui/card';
+import { CardTitle, CardHeader, CardContent, Card, CardFooter } from '@/components/ui/card';
 import { AvatarImage, AvatarFallback, Avatar } from '@/components/ui/avatar';
 import ProfileInformation from './modalProfileData';
 import { currentUser } from '@clerk/nextjs';
@@ -21,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/src/components/ui/table';
-import { getTierLimit } from '@/src/lib/fetch/feature';
+import { getTierLimit } from '@/src/lib/fetch/tierLimit';
 import { Button } from '@/src/components/ui/button';
 import Link from 'next/link';
 
@@ -149,9 +143,7 @@ export default async function Profile() {
               <TableBody>
                 {tierLimits.map((data) => (
                   <TableRow key={data.id}>
-                    <TableCell className="font-medium">
-                      {data.Feature.name}
-                    </TableCell>
+                    <TableCell className="font-medium">{data.Feature.name}</TableCell>
                     <TableCell>{data.createUsage}</TableCell>
                     <TableCell>{data.createLimit}</TableCell>
                     <TableCell>{data.updateUsage}</TableCell>

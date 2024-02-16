@@ -5,9 +5,7 @@ import Link from 'next/link';
 export default function Error() {
   return (
     <main className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-800 px-4 text-center">
-      <h1 className="text-6xl font-bold text-gray-900 dark:text-gray-100">
-        404
-      </h1>
+      <h1 className="text-6xl font-bold text-gray-900 dark:text-gray-100">404</h1>
       <p className="text-4xl mt-2 mb-4">😞</p>
       <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
         Oops, something went wrong!

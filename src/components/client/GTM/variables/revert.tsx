@@ -49,37 +49,21 @@ function FormRevertBuiltInVariable() {
       <form onSubmit={handleSubmit}>
         <label>
           Submit Account ID:
-          <input
-            type="text"
-            value={accountId}
-            onChange={(e) => setAccountId(e.target.value)}
-          />
+          <input type="text" value={accountId} onChange={(e) => setAccountId(e.target.value)} />
         </label>
         <label>
           Submit Container ID:
-          <input
-            type="text"
-            value={containerId}
-            onChange={(e) => setContainerId(e.target.value)}
-          />
+          <input type="text" value={containerId} onChange={(e) => setContainerId(e.target.value)} />
         </label>
 
         <label>
           WS ID:
-          <input
-            type="text"
-            value={workspaceId}
-            onChange={(e) => setWorkspaceId(e.target.value)}
-          />
+          <input type="text" value={workspaceId} onChange={(e) => setWorkspaceId(e.target.value)} />
         </label>
 
         <label>
           TYPE:
-          <input
-            type="text"
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-          />
+          <input type="text" value={type} onChange={(e) => setType(e.target.value)} />
         </label>
 
         <button type="submit">Submit</button>

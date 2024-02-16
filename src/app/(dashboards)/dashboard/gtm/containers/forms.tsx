@@ -2,22 +2,16 @@
 import dynamic from 'next/dynamic';
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import {
-  selectGlobal,
-  toggleCreate,
-  toggleUpdate,
-} from '@/src/lib/redux/globalSlice';
-import { selectTable, setIsLimitReached } from '@/src/lib/redux/tableSlice';
-import { useError } from '@/src/lib/helpers/client';
+import { selectGlobal, toggleCreate, toggleUpdate } from '@/src/redux/globalSlice';
+import { selectTable, setIsLimitReached } from '@/src/redux/tableSlice';
+import { useError } from '@/src/hooks/helpers';
 
 import { ErrorMessage } from '@/src/components/client/modals/Error';
 
 //dynamic import for buttons
 const LimitReachedModal = dynamic(
   () =>
-    import('../../../../../components/client/modals/limitReached').then(
-      (mod) => mod.LimitReached
-    ),
+    import('../../../../../components/client/modals/limitReached').then((mod) => mod.LimitReached),
   { ssr: false }
 );
 
@@ -49,9 +43,7 @@ export default function ContainerForms({ accounts, selectedRows, table }) {
   return (
     <>
       {/* Modals */}
-      {isLimitReached && (
-        <LimitReachedModal onClose={() => dispatch(setIsLimitReached(false))} />
-      )}
+      {isLimitReached && <LimitReachedModal onClose={() => dispatch(setIsLimitReached(false))} />}
 
       {notFoundError && <NotFoundErrorModal />}
 

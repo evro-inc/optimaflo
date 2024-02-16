@@ -34,10 +34,7 @@ export const tableSlice = createSlice({
   name: 'table',
   initialState,
   reducers: {
-    setSelectedRows: (
-      state,
-      action: PayloadAction<{ [id: string]: TableRow }>
-    ) => {
+    setSelectedRows: (state, action: PayloadAction<{ [id: string]: TableRow }>) => {
       state.selectedRows = action.payload;
     },
     setCurrentPage: (state, action: PayloadAction<number>) => {
@@ -51,8 +48,7 @@ export const tableSlice = createSlice({
     },
     toggleAllSelected: (state, action) => {
       // Add this reducer to toggle the allSelected state
-      state.allSelected =
-        action.payload !== undefined ? action.payload : !state.allSelected;
+      state.allSelected = action.payload !== undefined ? action.payload : !state.allSelected;
     },
     setNotFoundError: (state, action: PayloadAction<boolean>) => {
       state.notFoundError = action.payload;

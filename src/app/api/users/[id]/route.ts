@@ -42,12 +42,21 @@ export async function GET(
       },
       include: {
         Customer: true,
-        Subscription: true,
+        Subscription: {
+          include: {
+            Invoice: true,
+            Product: true,
+          },
+        },
       },
     });
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    if (user.id !== id) {
+      return NextResponse.json({ error: 'User ID mismatch' }, { status: 404 });
     }
 
     const response = {

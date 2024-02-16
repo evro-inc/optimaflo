@@ -31,11 +31,7 @@ export async function grantProductAccess(customerId: string) {
   const userId = customerRecord.userId;
 
   // Get the product IDs for the GTM products - Needs to make IDs from Stripe webhook - see function grantAccessToContent
-  const productIds = [
-    'prod_PUV4HNwx8EuHOi',
-    'prod_PUV5bXKCjMOpz8',
-    'prod_PUV6oomP5QRnkp',
-  ];
+  const productIds = ['prod_PUV4HNwx8EuHOi', 'prod_PUV5bXKCjMOpz8', 'prod_PUV6oomP5QRnkp'];
 
   // Iterate over the product IDs
   for (const productId of productIds) {
@@ -57,18 +53,13 @@ export async function fetchGtmSettings(userId: string) {
     await prisma.User.create({ data: { id: userId } });
   }
 
-  const token = await clerkClient.users.getUserOauthAccessToken(
-    userId,
-    'oauth_google'
-  );
+  const token = await clerkClient.users.getUserOauthAccessToken(userId, 'oauth_google');
   const tokenValue = token[0].token;
   const headers = { Authorization: `Bearer ${tokenValue}` };
 
   const existingRecords = await prisma.gtm.findMany({ where: { userId } });
   const existingCompositeKeySet = new Set(
-    existingRecords.map(
-      (rec) => `${rec.accountId}-${rec.containerId}-${rec.workspaceId}`
-    )
+    existingRecords.map((rec) => `${rec.accountId}-${rec.containerId}-${rec.workspaceId}`)
   );
 
   let retries = 0;
@@ -83,8 +74,7 @@ export async function fetchGtmSettings(userId: string) {
         { headers }
       );
       const accountsData = await accountsResponse.json();
-      const accountIds =
-        accountsData.account?.map((account) => account.accountId) || [];
+      const accountIds = accountsData.account?.map((account) => account.accountId) || [];
 
       for (const accountId of accountIds) {
         // Fetch containers for each account
@@ -94,8 +84,7 @@ export async function fetchGtmSettings(userId: string) {
         );
         const containersData = await containersResponse.json();
         const containerIds =
-          containersData.container?.map((container) => container.containerId) ||
-          [];
+          containersData.container?.map((container) => container.containerId) || [];
 
         for (const containerId of containerIds) {
           // Fetch workspaces for each container
@@ -105,17 +94,11 @@ export async function fetchGtmSettings(userId: string) {
           );
           const workspacesData = await workspacesResponse.json();
           const workspaceIds =
-            workspacesData.workspace?.map(
-              (workspace) => workspace.workspaceId
-            ) || [];
+            workspacesData.workspace?.map((workspace) => workspace.workspaceId) || [];
 
           // Inside the loop for workspaceIds
           for (const workspaceId of workspaceIds) {
-            if (
-              !existingCompositeKeySet.has(
-                `${accountId}-${containerId}-${workspaceId}`
-              )
-            ) {
+            if (!existingCompositeKeySet.has(`${accountId}-${containerId}-${workspaceId}`)) {
               await prisma.gtm.upsert({
                 where: {
                   userId_accountId_containerId_workspaceId: {
@@ -145,9 +128,7 @@ export async function fetchGtmSettings(userId: string) {
       success = true;
     } catch (error: any) {
       if (error.message.includes('Quota exceeded')) {
-        await new Promise((resolve) =>
-          setTimeout(resolve, Math.pow(2, retries) * 1000)
-        );
+        await new Promise((resolve) => setTimeout(resolve, Math.pow(2, retries) * 1000));
         retries++;
       } else {
         throw error;
@@ -157,34 +138,6 @@ export async function fetchGtmSettings(userId: string) {
 }
 
 /* GA UTILS */
-
-/* export async function grantGAAccess(customerId: string) {
-  // Fetch user ID using the Stripe Customer ID
-  const customerRecord = await prisma.customer.findFirst({
-    where: {
-      stripeCustomerId: customerId,
-    },
-  });
-
-  if (!customerRecord) {
-    throw new Error('Customer record not found');
-  }
-
-  const userId = customerRecord.userId;
-
-  // Get the product IDs for the GTM products
-  const GAProductIds = ['prod_OQ3TPC9yMxJAeN'];
-
-  // Iterate over the product IDs
-  for (const productId of GAProductIds) {
-    // Update the ProductAccess record for this user and product to grant access
-    await prisma.productAccess.upsert({
-      where: { userId_productId: { userId, productId } },
-      update: { granted: true },
-      create: { userId, productId, granted: true },
-    });
-  }
-} */
 
 /* NEEDS TO BE REFACTORED FOR GA4 */
 export async function fetchGASettings(userId: string) {
@@ -196,18 +149,13 @@ export async function fetchGASettings(userId: string) {
     await prisma.User.create({ data: { id: userId } });
   }
 
-  const token = await clerkClient.users.getUserOauthAccessToken(
-    userId,
-    'oauth_google'
-  );
+  const token = await clerkClient.users.getUserOauthAccessToken(userId, 'oauth_google');
   const tokenValue = token[0].token;
   const headers = { Authorization: `Bearer ${tokenValue}` };
 
   const existingRecords = await prisma.gtm.findMany({ where: { userId } });
   const existingCompositeKeySet = new Set(
-    existingRecords.map(
-      (rec) => `${rec.accountId}-${rec.containerId}-${rec.workspaceId}`
-    )
+    existingRecords.map((rec) => `${rec.accountId}-${rec.containerId}-${rec.workspaceId}`)
   );
 
   let retries = 0;
@@ -223,8 +171,7 @@ export async function fetchGASettings(userId: string) {
       );
       const accountsData = await accountsResponse.json();
 
-      const accountNames =
-        accountsData.accounts?.map((account) => account.name) || [];
+      const accountNames = accountsData.accounts?.map((account) => account.name) || [];
 
       for (const accountId of accountNames) {
         const uniqueAccountId = accountId.split('/')[1];
@@ -270,9 +217,7 @@ export async function fetchGASettings(userId: string) {
       success = true;
     } catch (error: any) {
       if (error.message.includes('Quota exceeded')) {
-        await new Promise((resolve) =>
-          setTimeout(resolve, Math.pow(2, retries) * 1000)
-        );
+        await new Promise((resolve) => setTimeout(resolve, Math.pow(2, retries) * 1000));
         retries++;
       } else {
         throw error;

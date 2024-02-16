@@ -9,11 +9,7 @@ interface TableHeaderProps {
   uniqueKeys: string[];
 }
 
-const TableHeaderRow: React.FC<TableHeaderProps> = ({
-  headers,
-  items,
-  uniqueKeys,
-}) => {
+const TableHeaderRow: React.FC<TableHeaderProps> = ({ headers, items, uniqueKeys }) => {
   return (
     <TableHeader>
       <TableRow>

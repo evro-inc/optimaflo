@@ -4,14 +4,7 @@ export const aevValidationSchema = Joi.array().items(
   Joi.object({
     type: Joi.string().valid('boolean', 'template').required(),
     key: Joi.string()
-      .valid(
-        'setDefaultValue',
-        'varType',
-        'defaultValue',
-        'attribute',
-        'stripWww',
-        'component'
-      )
+      .valid('setDefaultValue', 'varType', 'defaultValue', 'attribute', 'stripWww', 'component')
       .required(),
     value: Joi.alternatives().try(Joi.string(), Joi.boolean()).required(),
   }),

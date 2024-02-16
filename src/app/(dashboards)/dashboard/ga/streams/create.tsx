@@ -2,30 +2,21 @@
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ButtonGroup } from '@/components/client/ButtonGroup/ButtonGroup';
-import {
-  FeatureResponse,
-  FormCreateProps,
-  GA4StreamType,
-} from '@/src/lib/types/types';
+import { FeatureResponse, FormCreateProps, GA4StreamType } from '@/src/types/types';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   selectTable,
   setErrorDetails,
   setIsLimitReached,
   setNotFoundError,
-} from '@/src/lib/redux/tableSlice';
-import { selectGlobal, setLoading } from '@/src/lib/redux/globalSlice';
+} from '@/src/redux/tableSlice';
+import { selectGlobal, setLoading } from '@/src/redux/globalSlice';
 import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import dynamic from 'next/dynamic';
 import { toast } from 'sonner';
 import { Cross1Icon } from '@radix-ui/react-icons';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/src/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/card';
 import {
   Form,
   FormControl,
@@ -53,10 +44,7 @@ import { createGAPropertyStreams } from '@/src/lib/fetch/dashboard/actions/ga/st
 import { streamType } from './streamItems';
 
 const NotFoundErrorModal = dynamic(
-  () =>
-    import('@/components/client/modals/notFoundError').then(
-      (mod) => mod.NotFoundError
-    ),
+  () => import('@/components/client/modals/notFoundError').then((mod) => mod.NotFoundError),
   { ssr: false }
 );
 
@@ -77,9 +65,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
 
   const accountsWithProperties = accounts
     .map((account) => {
-      const accountProperties = properties.filter(
-        (property) => property.parent === account.name
-      );
+      const accountProperties = properties.filter((property) => property.parent === account.name);
 
       return {
         ...account,
@@ -149,15 +135,12 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
     for (const form of forms) {
       const identifier = `${form.property}-${form.displayName}`;
       if (uniqueStreams.has(identifier)) {
-        toast.error(
-          `Duplicate stream found for ${form.property} - ${form.displayName}`,
-          {
-            action: {
-              label: 'Close',
-              onClick: () => toast.dismiss(),
-            },
-          }
-        );
+        toast.error(`Duplicate stream found for ${form.property} - ${form.displayName}`, {
+          action: {
+            label: 'Close',
+            onClick: () => toast.dismiss(),
+          },
+        });
         dispatch(setLoading(false));
         return;
       }
@@ -273,8 +256,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
               onClick={handleClose}
               className="absolute top-5 right-5 font-bold"
             >
-              <Cross1Icon className="h-4 w-4" />{' '}
-              <span className="sr-only">Close</span>
+              <Cross1Icon className="h-4 w-4" /> <span className="sr-only">Close</span>
             </Button>
 
             <div className="flex items-center justify-between py-3 px-4 mt-5 gap-4">
@@ -300,10 +282,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                 );
 
                 return (
-                  <div
-                    key={field.id}
-                    className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-                  >
+                  <div key={field.id} className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
                     <div className="max-w-xl mx-auto">
                       <div className="mt-12">
                         {/* Form */}
@@ -329,15 +308,12 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                                     <FormItem>
                                       <FormLabel>New Stream Name</FormLabel>
                                       <FormDescription>
-                                        This is the stream name you want to
-                                        create.
+                                        This is the stream name you want to create.
                                       </FormDescription>
                                       <FormControl>
                                         <Input
                                           placeholder="Name of the stream"
-                                          {...form.register(
-                                            `forms.${index}.displayName`
-                                          )}
+                                          {...form.register(`forms.${index}.displayName`)}
                                           {...field}
                                         />
                                       </FormControl>
@@ -354,14 +330,11 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                                     <FormItem>
                                       <FormLabel>Account</FormLabel>
                                       <FormDescription>
-                                        This is the account you want to create
-                                        the property in.
+                                        This is the account you want to create the property in.
                                       </FormDescription>
                                       <FormControl>
                                         <Select
-                                          {...form.register(
-                                            `forms.${index}.account`
-                                          )}
+                                          {...form.register(`forms.${index}.account`)}
                                           {...field}
                                           onValueChange={field.onChange}
                                         >
@@ -371,16 +344,11 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                                           <SelectContent>
                                             <SelectGroup>
                                               <SelectLabel>Account</SelectLabel>
-                                              {accountsWithProperties.map(
-                                                (account) => (
-                                                  <SelectItem
-                                                    key={account.name}
-                                                    value={account.name}
-                                                  >
-                                                    {account.displayName}
-                                                  </SelectItem>
-                                                )
-                                              )}
+                                              {accountsWithProperties.map((account) => (
+                                                <SelectItem key={account.name} value={account.name}>
+                                                  {account.displayName}
+                                                </SelectItem>
+                                              ))}
                                             </SelectGroup>
                                           </SelectContent>
                                         </Select>
@@ -398,14 +366,11 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                                     <FormItem>
                                       <FormLabel>Property</FormLabel>
                                       <FormDescription>
-                                        Which property do you want to create the
-                                        stream in?
+                                        Which property do you want to create the stream in?
                                       </FormDescription>
                                       <FormControl>
                                         <Select
-                                          {...form.register(
-                                            `forms.${index}.property`
-                                          )}
+                                          {...form.register(`forms.${index}.property`)}
                                           {...field}
                                           onValueChange={field.onChange}
                                         >
@@ -415,20 +380,16 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
 
                                           <SelectContent>
                                             <SelectGroup>
-                                              <SelectLabel>
-                                                Property
-                                              </SelectLabel>
+                                              <SelectLabel>Property</SelectLabel>
                                               {filteredProperties.length > 0 ? (
-                                                filteredProperties.map(
-                                                  (property) => (
-                                                    <SelectItem
-                                                      key={property.name}
-                                                      value={property.name}
-                                                    >
-                                                      {property.displayName}
-                                                    </SelectItem>
-                                                  )
-                                                )
+                                                filteredProperties.map((property) => (
+                                                  <SelectItem
+                                                    key={property.name}
+                                                    value={property.name}
+                                                  >
+                                                    {property.displayName}
+                                                  </SelectItem>
+                                                ))
                                               ) : (
                                                 <SelectItem value="" disabled>
                                                   No properties available
@@ -450,14 +411,10 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                                   render={({ field }) => (
                                     <FormItem>
                                       <FormLabel>Stream Type</FormLabel>
-                                      <FormDescription>
-                                        Set the stream type.
-                                      </FormDescription>
+                                      <FormDescription>Set the stream type.</FormDescription>
                                       <FormControl>
                                         <Select
-                                          {...form.register(
-                                            `forms.${index}.type`
-                                          )}
+                                          {...form.register(`forms.${index}.type`)}
                                           {...field}
                                           onValueChange={field.onChange}
                                         >
@@ -466,19 +423,12 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                                           </SelectTrigger>
                                           <SelectContent>
                                             <SelectGroup>
-                                              <SelectLabel>
-                                                Retention Setting
-                                              </SelectLabel>
-                                              {Object.entries(streamType).map(
-                                                ([label, value]) => (
-                                                  <SelectItem
-                                                    key={value}
-                                                    value={value}
-                                                  >
-                                                    {label}
-                                                  </SelectItem>
-                                                )
-                                              )}
+                                              <SelectLabel>Retention Setting</SelectLabel>
+                                              {Object.entries(streamType).map(([label, value]) => (
+                                                <SelectItem key={value} value={value}>
+                                                  {label}
+                                                </SelectItem>
+                                              ))}
                                             </SelectGroup>
                                           </SelectContent>
                                         </Select>
@@ -490,8 +440,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
 
                                 {Object.keys(streamType).map(
                                   (type) =>
-                                    form.watch(`forms.${index}.type`) ===
-                                      streamType[type] && (
+                                    form.watch(`forms.${index}.type`) === streamType[type] && (
                                       <FormField
                                         control={form.control}
                                         name={`forms.${index}.${
@@ -514,8 +463,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                                                   `forms.${index}.${
                                                     type.toLowerCase() === 'web'
                                                       ? 'webStreamData.defaultUri'
-                                                      : type.toLowerCase() ===
-                                                        'android'
+                                                      : type.toLowerCase() === 'android'
                                                       ? 'androidAppStreamData.packageName'
                                                       : 'iosAppStreamData.bundleId'
                                                   }`
@@ -546,9 +494,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
         )}
       </AnimatePresence>
 
-      {isLimitReached && (
-        <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
-      )}
+      {isLimitReached && <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />}
 
       {notFoundError && <NotFoundErrorModal />}
     </>

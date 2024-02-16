@@ -54,8 +54,7 @@ export default async function StreamPage({
       propertyType: formatType(property.propertyType), // Transforming the 'propertyType'
       accountName: account ? account.displayName : 'Unknown Account', // Setting 'accountName' from 'flatAccounts' or default
       retention: property.dataRetentionSettings.eventDataRetention,
-      resetOnNewActivity:
-        property.dataRetentionSettings.resetUserDataOnNewActivity || false,
+      resetOnNewActivity: property.dataRetentionSettings.resetUserDataOnNewActivity || false,
     };
   });
 
@@ -85,11 +84,7 @@ export default async function StreamPage({
         }
       >
         <div className="container mx-auto py-10">
-          <DataTable
-            columns={columns}
-            data={combinedData}
-            parentData={accounts}
-          />
+          <DataTable columns={columns} data={combinedData} parentData={accounts} />
         </div>
       </Suspense>
     </>

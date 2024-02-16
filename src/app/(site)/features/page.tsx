@@ -27,9 +27,7 @@ type FeaturesPage = {
 
 export default async function FeaturePage() {
   try {
-    const feature = await client.fetch<FeaturesPage[]>(
-      `*[_type == "featuresPage"]`
-    );
+    const feature = await client.fetch<FeaturesPage[]>(`*[_type == "featuresPage"]`);
 
     if (feature && Array.isArray(feature)) {
       return (
@@ -79,14 +77,8 @@ export default async function FeaturePage() {
                         {Array.isArray(page.howItWorks) &&
                           page.howItWorks.map((step) => (
                             <>
-                              <ul
-                                role="list"
-                                className="space-y-2 sm:space-y-4"
-                              >
-                                <li
-                                  key={step.stepTitle}
-                                  className="flex space-x-3"
-                                >
+                              <ul role="list" className="space-y-2 sm:space-y-4">
+                                <li key={step.stepTitle} className="flex space-x-3">
                                   {/* Solid Check */}
                                   <svg
                                     className="flex-shrink-0 h-6 w-6"
@@ -109,9 +101,7 @@ export default async function FeaturePage() {
                                   {/* End Solid Check */}
 
                                   <span className="text-sm sm:text-base text-gray-500">
-                                    <span className="font-bold block">
-                                      {step.stepTitle}
-                                    </span>{' '}
+                                    <span className="font-bold block">{step.stepTitle}</span>{' '}
                                     {step.stepDescription}
                                   </span>
                                 </li>

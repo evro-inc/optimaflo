@@ -54,9 +54,18 @@ export async function GET(req: NextRequest) {
       },
       where: status ? { status: status } : {},
       include: {
-        User: true,
-        Price: true,
+        Invoice: true,
         Product: true,
+        Price: {
+          include: {
+            Product: true,
+          },
+        },
+        User: {
+          include: {
+            Customer: true, // Include the associated Customer through the User
+          },
+        },
       },
     });
 

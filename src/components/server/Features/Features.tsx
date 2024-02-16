@@ -54,13 +54,11 @@ export default async function Features() {
                     </h2>
 
                     <p className="text-lg">
-                      OptimaFlo is not just a tool, but a comprehensive solution
-                      designed to address the common challenges faced in
-                      managing large-scale data flows. Our suite of features is
-                      built on the insights gained from extensive experience in
-                      the field, and each one is designed to streamline your
-                      workflows, enhance your data management, and provide you
-                      with actionable insights.
+                      OptimaFlo is not just a tool, but a comprehensive solution designed to address
+                      the common challenges faced in managing large-scale data flows. Our suite of
+                      features is built on the insights gained from extensive experience in the
+                      field, and each one is designed to streamline your workflows, enhance your
+                      data management, and provide you with actionable insights.
                     </p>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-4 lg:gap-x-28 gap-y-10 pt-10 justify-items-center">

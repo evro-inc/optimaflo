@@ -56,18 +56,7 @@ export const TimeZones = [
   'Europe/Istanbul',
 ];
 
-export const CurrencyCodes = [
-  'USD',
-  'EUR',
-  'JPY',
-  'GBP',
-  'AUD',
-  'CAD',
-  'CHF',
-  'CNY',
-  'SEK',
-  'NZD',
-];
+export const CurrencyCodes = ['USD', 'EUR', 'JPY', 'GBP', 'AUD', 'CAD', 'CHF', 'CNY', 'SEK', 'NZD'];
 
 export const retentionSettings360 = {
   'Two Months': 'TWO_MONTHS',

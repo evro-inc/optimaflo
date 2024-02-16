@@ -32,7 +32,7 @@ import {
 } from '@/src/components/ui/dropdown-menu';
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
-import { revalidate, tierCreateLimit } from '@/src/lib/helpers/server';
+import { revalidate, tierCreateLimit } from '@/src/utils/server';
 import { ReloadIcon } from '@radix-ui/react-icons';
 
 import { useDispatch } from 'react-redux';
@@ -40,29 +40,24 @@ import AccountForms from '@/src/app/(dashboards)/dashboard/ga/accounts/forms';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
 import { useDeleteHook } from './delete';
 import { notFound } from 'next/navigation';
-import { setIsLimitReached } from '@/src/lib/redux/tableSlice';
-import { toggleCreate, toggleUpdate } from '@/src/lib/redux/globalSlice';
+import { setIsLimitReached } from '@/src/redux/tableSlice';
+import { toggleCreate, toggleUpdate } from '@/src/redux/globalSlice';
+import { useCreateHookForm, useUpdateHookForm } from '@/src/hooks/useCRUD';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
 }
 
-export function DataTable<TData, TValue>({
-  columns,
-  data,
-}: DataTableProps<TData, TValue>) {
+export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData, TValue>) {
   const dispatch = useDispatch();
 
   const { user } = useUser();
   const userId = user?.id;
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  );
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
 
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
 
   const table = useReactTable({
@@ -85,50 +80,23 @@ export function DataTable<TData, TValue>({
     },
   });
 
-  const handleCreateClick = async () => {
-    try {
-      if (!userId) {
-        return notFound();
-      }
-      const handleCreateLimit: any = await tierCreateLimit(
-        userId,
-        'GA4Accounts'
-      );
+  const selectedRowsData = table.getSelectedRowModel().rows.map((row) => row.original);
 
-      if (handleCreateLimit && handleCreateLimit.limitReached) {
-        // Directly show the limit reached modal
-        dispatch(setIsLimitReached(true)); // Assuming you have an action to explicitly set this
-      } else {
-        // Otherwise, proceed with normal creation process
-        dispatch(toggleCreate());
-      }
-    } catch (error: any) {
-      throw new Error('Error in handleCreateClick:', error);
-    }
-  };
+  const handleCreateClick = useCreateHookForm(userId, 'GA4Accounts');
+  const handleUpdateClick = useUpdateHookForm(userId, 'GA4Accounts');
+  const handleDelete = useDeleteHook(selectedRowsData, table);
 
   const refreshAllCache = async () => {
     // Assuming you want to refresh cache for each workspace
-    const keys = [
-      `ga:accounts:userId:${userId}`,
-      `ga:properties:userId:${userId}`,
-    ];
+    const keys = [`ga:accounts:userId:${userId}`, `ga:properties:userId:${userId}`];
     await revalidate(keys, '/dashboard/ga/accounts', userId);
-    toast.info(
-      'Updating our systems. This may take a minute or two to update on screen.',
-      {
-        action: {
-          label: 'Close',
-          onClick: () => toast.dismiss(),
-        },
-      }
-    );
+    toast.info('Updating our systems. This may take a minute or two to update on screen.', {
+      action: {
+        label: 'Close',
+        onClick: () => toast.dismiss(),
+      },
+    });
   };
-
-  const selectedRowsData = table
-    .getSelectedRowModel()
-    .rows.map((row) => row.original);
-  const handleDelete = useDeleteHook(selectedRowsData, table);
 
   return (
     <div>
@@ -136,9 +104,7 @@ export function DataTable<TData, TValue>({
         <Input
           placeholder="Filter account names..."
           value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
-          onChange={(event) =>
-            table.getColumn('name')?.setFilterValue(event.target.value)
-          }
+          onChange={(event) => table.getColumn('name')?.setFilterValue(event.target.value)}
           className="max-w-sm"
         />
 
@@ -149,7 +115,7 @@ export function DataTable<TData, TValue>({
 
           <Button
             disabled={Object.keys(table.getState().rowSelection).length === 0}
-            onClick={() => dispatch(toggleUpdate())}
+            onClick={handleUpdateClick}
           >
             Update
           </Button>
@@ -173,9 +139,7 @@ export function DataTable<TData, TValue>({
                       key={column.id}
                       className="capitalize"
                       checked={column.getIsVisible()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(!!value)
-                      }
+                      onCheckedChange={(value) => column.toggleVisibility(!!value)}
                     >
                       {column.id}
                     </DropdownMenuCheckboxItem>
@@ -195,10 +159,7 @@ export function DataTable<TData, TValue>({
                     <TableHead key={header.id}>
                       {header.isPlaceholder
                         ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                        : flexRender(header.column.columnDef.header, header.getContext())}
                     </TableHead>
                   );
                 })}
@@ -208,26 +169,17 @@ export function DataTable<TData, TValue>({
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && 'selected'}
-                >
+                <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
+                <TableCell colSpan={columns.length} className="h-24 text-center">
                   No results.
                 </TableCell>
               </TableRow>
@@ -257,11 +209,7 @@ export function DataTable<TData, TValue>({
           Next
         </Button>
       </div>
-      <AccountForms
-        selectedRows={selectedRowsData}
-        accounts={data}
-        table={table}
-      />
+      <AccountForms selectedRows={selectedRowsData} accounts={data} table={table} />
     </div>
   );
 }

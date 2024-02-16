@@ -1,13 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager/v2';
-import { ValidationError } from '@/src/lib/exceptions';
 import { createOAuth2Client } from '@/src/lib/oauth2Client';
 import prisma from '@/src/lib/prisma';
 import Joi from 'joi';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
-import { getAccessToken, handleError } from '@/src/lib/fetch/apiUtils';
 import { limiter } from '@/src/lib/bottleneck';
-import { useSession } from '@clerk/nextjs';
 
 /************************************************************************************
  * POST UTILITY FUNCTIONS
@@ -54,10 +51,7 @@ export async function combineGtmData(
 
   while (retries < MAX_RETRIES) {
     try {
-      const { remaining } = await gtmRateLimit.blockUntilReady(
-        `user:${userId}`,
-        1000
-      );
+      const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
 
       // Fetch subscription data for the user
       const subscriptionData = await prisma.subscription.findFirst({
@@ -67,12 +61,9 @@ export async function combineGtmData(
       });
 
       if (!subscriptionData) {
-        return new NextResponse(
-          JSON.stringify({ message: 'Subscription data not found' }),
-          {
-            status: 403,
-          }
-        );
+        return new NextResponse(JSON.stringify({ message: 'Subscription data not found' }), {
+          status: 403,
+        });
       }
 
       const tierLimitRecord = await prisma.tierLimit.findFirst({
@@ -90,16 +81,10 @@ export async function combineGtmData(
         },
       });
 
-      if (
-        !tierLimitRecord ||
-        tierLimitRecord.updateUsage >= tierLimitRecord.updateLimit
-      ) {
-        return new NextResponse(
-          JSON.stringify({ message: 'Feature limit reached' }),
-          {
-            status: 403,
-          }
-        );
+      if (!tierLimitRecord || tierLimitRecord.updateUsage >= tierLimitRecord.updateLimit) {
+        return new NextResponse(JSON.stringify({ message: 'Feature limit reached' }), {
+          status: 403,
+        });
       }
 
       if (remaining > 0) {
@@ -174,7 +159,7 @@ export async function combineGtmData(
 /************************************************************************************
   POST request handler
 ************************************************************************************/
-export async function POST(request: NextRequest) {
+/* export async function POST(request: NextRequest) {
   const { session } = useSession();
 
   try {
@@ -190,8 +175,7 @@ export async function POST(request: NextRequest) {
 
     const validateParams = await validatePostParams(paramsJOI);
 
-    const { accountId, containerId, containerIdToCombine, userId } =
-      validateParams;
+    const { accountId, containerId, containerIdToCombine, userId } = validateParams;
 
     const accessToken = await getAccessToken(userId);
 
@@ -228,4 +212,4 @@ export async function POST(request: NextRequest) {
     // Return a 500 status code for internal server error
     return handleError(error);
   }
-}
+} */

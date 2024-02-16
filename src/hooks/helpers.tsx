@@ -1,8 +1,9 @@
-import { setUserDetails } from '@/src/lib/redux/userSlice';
-import { setSubscription } from '@/src/lib/redux/subscriberSlice';
+import { setUserDetails } from '@/src/redux/userSlice';
+import { setSubscription } from '@/src/redux/subscriberSlice';
 import { useEffect } from 'react';
-import { useDispatch } from 'react-redux';
-import { setLoading } from '@/src/lib/redux/globalSlice';
+import { setLoading } from '@/src/redux/globalSlice';
+import { setError } from '@/src/redux/tableSlice';
+import { useDispatch, useSelector } from 'react-redux';
 
 // hooks/useUserDetails.js
 export const useUserDetails = (userId) => {
@@ -30,18 +31,31 @@ export const useSubscription = (userId) => {
   const dispatch = useDispatch();
 
   useEffect(() => {
+    if (!userId) return;
+
     const fetchSubscription = async () => {
-      dispatch(setLoading(true)); // Set loading state to true before fetching
+      dispatch(setLoading(true));
       try {
-        const res = await fetch(`/api/subscriptions/${userId}`);
-        const data = await res.json();
+        const response = await fetch(`/api/subscriptions/${userId}`);
+        const data = await response.json();
         dispatch(setSubscription(data));
-      } catch (error: any) {
+      } catch (error) {
         throw new Error('Failed to fetch subscription:', error);
+      } finally {
+        dispatch(setLoading(false));
       }
-      dispatch(setLoading(false)); // Set loading state to false after fetching
     };
 
-    if (userId) fetchSubscription();
+    fetchSubscription();
   }, [userId, dispatch]);
+};
+
+export const useError = () => {
+  const dispatch = useDispatch();
+  const error = useSelector((state: any) => state.table.error);
+
+  const setErrorState = (errorMessage) => dispatch(setError(errorMessage));
+  const clearError = () => dispatch(setError(null));
+
+  return { error, setErrorState, clearError };
 };

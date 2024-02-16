@@ -4,15 +4,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { createAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
 import { LimitReached } from '../../../../../components/client/modals/limitReached';
 import { ButtonGroup } from '../../../../../components/client/ButtonGroup/ButtonGroup';
-import { FeatureResponse, FormCreateAccountProps } from '@/src/lib/types/types';
+import { FeatureResponse, FormCreateAccountProps } from '@/src/types/types';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   selectTable,
   setErrorDetails,
   setIsLimitReached,
   setNotFoundError,
-} from '@/src/lib/redux/tableSlice';
-import { selectGlobal, setLoading } from '@/src/lib/redux/globalSlice';
+} from '@/src/redux/tableSlice';
+import { selectGlobal, setLoading } from '@/src/redux/globalSlice';
 import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
 import { CreateAccountSchema } from '@/src/lib/schemas/ga/accounts';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -20,12 +20,7 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 
 import { Cross1Icon } from '@radix-ui/react-icons';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/src/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/card';
 
 import {
   Form,
@@ -50,10 +45,7 @@ const NotFoundErrorModal = dynamic(
 
 type Forms = z.infer<typeof CreateAccountSchema>;
 
-const FormCreateAccount: React.FC<FormCreateAccountProps> = ({
-  showOptions,
-  onClose,
-}) => {
+const FormCreateAccount: React.FC<FormCreateAccountProps> = ({ showOptions, onClose }) => {
   const formRefs = useRef<(HTMLFormElement | null)[]>([]);
   const dispatch = useDispatch();
   const { loading } = useSelector(selectGlobal);
@@ -254,18 +246,12 @@ const FormCreateAccount: React.FC<FormCreateAccountProps> = ({
                 ]}
               />
 
-              <ButtonSubmitAlert
-                text={loading ? 'Submitting...' : 'Submit'}
-                form="createAccount"
-              />
+              <ButtonSubmitAlert text={loading ? 'Submitting...' : 'Submit'} form="createAccount" />
             </div>
 
             <div className="account mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-end">
               {fields.map((field, index) => (
-                <div
-                  key={field.id}
-                  className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-                >
+                <div key={field.id} className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
                   <div className="max-w-xl mx-auto">
                     <div className="mt-12">
                       {/* Form */}
@@ -291,15 +277,12 @@ const FormCreateAccount: React.FC<FormCreateAccountProps> = ({
                                   <FormItem>
                                     <FormLabel>New Account Name</FormLabel>
                                     <FormDescription>
-                                      This is the account name you want to
-                                      create.
+                                      This is the account name you want to create.
                                     </FormDescription>
                                     <FormControl>
                                       <Input
                                         placeholder="Name of the account"
-                                        {...form.register(
-                                          `forms.${index}.displayName`
-                                        )}
+                                        {...form.register(`forms.${index}.displayName`)}
                                         {...field}
                                       />
                                     </FormControl>
@@ -324,9 +307,7 @@ const FormCreateAccount: React.FC<FormCreateAccountProps> = ({
         )}
       </AnimatePresence>
 
-      {isLimitReached && (
-        <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
-      )}
+      {isLimitReached && <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />}
 
       {notFoundError && <NotFoundErrorModal />}
     </>

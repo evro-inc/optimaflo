@@ -6,18 +6,16 @@ import {
   selectGlobal, // This was changed from selectEntity
   toggleCreate, // This was changed to be specific for properties
   toggleUpdate, // This was changed to be specific for properties
-} from '@/src/lib/redux/globalSlice'; // This was changed from sharedSlice
-import { selectTable, setIsLimitReached } from '@/src/lib/redux/tableSlice';
-import { useError } from '@/src/lib/helpers/client';
+} from '@/src/redux/globalSlice'; // This was changed from sharedSlice
+import { selectTable, setIsLimitReached } from '@/src/redux/tableSlice';
+import { useError } from '@/src/hooks/helpers';
 
 import { ErrorMessage } from '@/src/components/client/modals/Error';
 
 // Dynamic imports for modals and forms
 const LimitReachedModal = dynamic(
   () =>
-    import('../../../../../components/client/modals/limitReached').then(
-      (mod) => mod.LimitReached
-    ),
+    import('../../../../../components/client/modals/limitReached').then((mod) => mod.LimitReached),
   { ssr: false }
 );
 
@@ -46,9 +44,7 @@ function StreamForms({ accounts, properties, selectedRows, table }) {
   return (
     <>
       {/* Modals */}
-      {isLimitReached && (
-        <LimitReachedModal onClose={() => dispatch(setIsLimitReached(false))} />
-      )}
+      {isLimitReached && <LimitReachedModal onClose={() => dispatch(setIsLimitReached(false))} />}
 
       {notFoundError && <NotFoundErrorModal />}
 

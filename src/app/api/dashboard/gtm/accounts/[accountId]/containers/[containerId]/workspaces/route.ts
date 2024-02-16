@@ -56,13 +56,7 @@ async function validatePostParams(params) {
 /************************************************************************************
   Function to create GTM containers
 ************************************************************************************/
-async function createGtmWorkspace(
-  accessToken,
-  accountId,
-  containerId,
-  name,
-  description
-) {
+async function createGtmWorkspace(accessToken, accountId, containerId, name, description) {
   const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces`;
   const headers = {
     Authorization: `Bearer ${accessToken}`,
@@ -79,9 +73,7 @@ async function createGtmWorkspace(
   });
 
   if (!response.ok) {
-    throw new Error(
-      `HTTP error! status: ${response.status}. ${response.statusText}`
-    );
+    throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
   }
 
   return await response.json();
@@ -114,9 +106,7 @@ export async function GET(
     const validateParams = await validateGetParams(paramsJOI);
     const { accountId, containerId } = validateParams;
 
-    const cachedValue = await redis.get(
-      `gtm:workspaces:${accountId}:${containerId}`
-    );
+    const cachedValue = await redis.get(`gtm:workspaces:${accountId}:${containerId}`);
 
     if (cachedValue) {
       return NextResponse.json(JSON.parse(cachedValue), {
@@ -125,11 +115,7 @@ export async function GET(
       });
     }
     const token = await currentUserOauthAccessToken(userId);
-    const data = await listGtmWorkspaces(
-      token[0].token,
-      accountId,
-      containerId
-    );
+    const data = await listGtmWorkspaces(token[0].token, accountId, containerId);
 
     redis.set(
       `gtm:workspaces:${accountId}:${containerId}`,
@@ -175,12 +161,9 @@ export async function POST(request: NextRequest) {
     const validatedParams = await validatePostParams(postParams);
 
     if (!accessToken) {
-      return new NextResponse(
-        JSON.stringify({ message: 'Access token is missing' }),
-        {
-          status: 401,
-        }
-      );
+      return new NextResponse(JSON.stringify({ message: 'Access token is missing' }), {
+        status: 401,
+      });
     }
 
     // Call the function to create a GTM workspace

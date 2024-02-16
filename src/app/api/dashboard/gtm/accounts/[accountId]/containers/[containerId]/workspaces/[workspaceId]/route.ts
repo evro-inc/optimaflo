@@ -7,7 +7,6 @@ import Joi from 'joi';
 import { isErrorWithStatus } from '@/src/lib/fetch/dashboard';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
 import { limiter } from '@/src/lib/bottleneck';
-import { handleError } from '@/src/lib/fetch/apiUtils';
 import { clerkClient, currentUser } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
@@ -63,10 +62,7 @@ async function getWorkspace(
 
   while (retries < MAX_RETRIES) {
     try {
-      const { remaining } = await gtmRateLimit.blockUntilReady(
-        `user:${userId}`,
-        1000
-      );
+      const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
 
       if (remaining > 0) {
         let data;
@@ -74,9 +70,7 @@ async function getWorkspace(
           const response = await fetch(url, { headers });
 
           if (!response.ok) {
-            throw new Error(
-              `HTTP error! status: ${response.status}. ${response.statusText}`
-            );
+            throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
           }
 
           data = await response.json();
@@ -133,10 +127,7 @@ export async function GET(
 
     const { accountId, containerId, workspaceId } = validateParams;
 
-    const accessToken = await clerkClient.users.getUserOauthAccessToken(
-      user?.id,
-      'oauth_google'
-    );
+    const accessToken = await clerkClient.users.getUserOauthAccessToken(user?.id, 'oauth_google');
 
     const data = await getWorkspace(
       userId,
@@ -168,7 +159,7 @@ export async function GET(
       });
     }
     // Return a 500 status code for internal server error
-    return handleError(error);
+    return NextResponse.error();
   }
 }
 
@@ -219,19 +210,13 @@ export async function PATCH(request: NextRequest) {
       });
     }
 
-    const accessToken = await clerkClient.users.getUserOauthAccessToken(
-      user?.id,
-      'oauth_google'
-    );
+    const accessToken = await clerkClient.users.getUserOauthAccessToken(user?.id, 'oauth_google');
 
     if (!accessToken) {
       // If the access token is null or undefined, return an error response
-      return new NextResponse(
-        JSON.stringify({ message: 'Access token is missing' }),
-        {
-          status: 401,
-        }
-      );
+      return new NextResponse(JSON.stringify({ message: 'Access token is missing' }), {
+        status: 401,
+      });
     }
 
     // Fetch subscription data for the user
@@ -242,12 +227,9 @@ export async function PATCH(request: NextRequest) {
     });
 
     if (!subscriptionData) {
-      return new NextResponse(
-        JSON.stringify({ message: 'Subscription data not found' }),
-        {
-          status: 403,
-        }
-      );
+      return new NextResponse(JSON.stringify({ message: 'Subscription data not found' }), {
+        status: 403,
+      });
     }
 
     const tierLimitRecord = await prisma.tierLimit.findFirst({
@@ -265,16 +247,10 @@ export async function PATCH(request: NextRequest) {
       },
     });
 
-    if (
-      !tierLimitRecord ||
-      tierLimitRecord.updateUsage >= tierLimitRecord.updateLimit
-    ) {
-      return new NextResponse(
-        JSON.stringify({ message: 'Feature limit reached' }),
-        {
-          status: 403,
-        }
-      );
+    if (!tierLimitRecord || tierLimitRecord.updateUsage >= tierLimitRecord.updateLimit) {
+      return new NextResponse(JSON.stringify({ message: 'Feature limit reached' }), {
+        status: 403,
+      });
     }
 
     let retries = 0;
@@ -283,10 +259,7 @@ export async function PATCH(request: NextRequest) {
     while (retries < MAX_RETRIES) {
       try {
         // Check if we've hit the rate limit
-        const { remaining } = await gtmRateLimit.blockUntilReady(
-          `user:${userId}`,
-          1000
-        );
+        const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
 
         if (remaining > 0) {
           // If we haven't hit the rate limit, proceed with the API request
@@ -375,8 +348,7 @@ export async function DELETE(request: NextRequest) {
 
   try {
     const url = request.url;
-    const regex =
-      /\/accounts\/([^/]+)\/containers\/([^/]+)\/workspaces\/([^/]+)/;
+    const regex = /\/accounts\/([^/]+)\/containers\/([^/]+)\/workspaces\/([^/]+)/;
     const match = url.match(regex);
 
     if (!match || match.length < 3) {
@@ -388,12 +360,9 @@ export async function DELETE(request: NextRequest) {
     const workspaceId = match[3];
 
     if (!accountId || !containerId || !workspaceId) {
-      return new NextResponse(
-        JSON.stringify({ error: 'Missing required parameters.' }),
-        {
-          status: 400,
-        }
-      );
+      return new NextResponse(JSON.stringify({ error: 'Missing required parameters.' }), {
+        status: 400,
+      });
     }
 
     const schema = Joi.object({
@@ -418,19 +387,13 @@ export async function DELETE(request: NextRequest) {
       });
     }
 
-    const accessToken = await clerkClient.users.getUserOauthAccessToken(
-      user?.id,
-      'oauth_google'
-    );
+    const accessToken = await clerkClient.users.getUserOauthAccessToken(user?.id, 'oauth_google');
 
     if (!accessToken) {
       // If the access token is null or undefined, return an error response
-      return new NextResponse(
-        JSON.stringify({ message: 'Access token is missing' }),
-        {
-          status: 401,
-        }
-      );
+      return new NextResponse(JSON.stringify({ message: 'Access token is missing' }), {
+        status: 401,
+      });
     }
 
     // Fetch subscription data for the user
@@ -441,12 +404,9 @@ export async function DELETE(request: NextRequest) {
     });
 
     if (!subscriptionData) {
-      return new NextResponse(
-        JSON.stringify({ message: 'Subscription data not found' }),
-        {
-          status: 403,
-        }
-      );
+      return new NextResponse(JSON.stringify({ message: 'Subscription data not found' }), {
+        status: 403,
+      });
     }
 
     const tierLimitRecord = await prisma.tierLimit.findFirst({
@@ -464,16 +424,10 @@ export async function DELETE(request: NextRequest) {
       },
     });
 
-    if (
-      !tierLimitRecord ||
-      tierLimitRecord.deleteUsage >= tierLimitRecord.deleteLimit
-    ) {
-      return new NextResponse(
-        JSON.stringify({ message: 'Feature limit reached' }),
-        {
-          status: 403,
-        }
-      );
+    if (!tierLimitRecord || tierLimitRecord.deleteUsage >= tierLimitRecord.deleteLimit) {
+      return new NextResponse(JSON.stringify({ message: 'Feature limit reached' }), {
+        status: 403,
+      });
     }
 
     let retries = 0;
@@ -482,10 +436,7 @@ export async function DELETE(request: NextRequest) {
     while (retries < MAX_RETRIES) {
       try {
         // Check if we've hit the rate limit
-        const { remaining } = await gtmRateLimit.blockUntilReady(
-          `user:${userId}`,
-          1000
-        );
+        const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
 
         if (remaining > 0) {
           // If we haven't hit the rate limit, proceed with the API request

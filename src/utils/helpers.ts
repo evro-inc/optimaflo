@@ -1,3 +1,4 @@
+// Function to get the URL. I've tried moving this function to a separate file, but it didn't work. I'm not sure why.
 export const getURL = () => {
   let vercelUrl = process.env.VERCEL_URL; // Assign VERCEL_URL to vercelUrl
 
@@ -15,25 +16,4 @@ export const getURL = () => {
   }
 
   return vercelUrl;
-};
-
-export const postData = async ({ url, data }: { url: string; data?: any }) => {
-  const res: Response = await fetch(url, {
-    method: 'POST',
-    headers: new Headers({ 'Content-Type': 'application/json' }),
-    credentials: 'same-origin',
-    body: JSON.stringify(data),
-  });
-
-  if (!res.ok) {
-    throw Error(res.statusText);
-  }
-
-  return res.json();
-};
-
-export const toDateTime = (secs: number) => {
-  var t = new Date('1970-01-01T00:30:00Z'); // Unix epoch start.
-  t.setSeconds(secs);
-  return t;
 };

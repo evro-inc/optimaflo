@@ -1,10 +1,10 @@
 'use server';
 import { notFound } from 'next/navigation';
-import prisma from '../prisma';
+import prisma from '../lib/prisma';
 import { auth } from '@clerk/nextjs';
 import { revalidatePath } from 'next/cache';
-import { redis } from '../redis/cache';
-import { fetchGASettings, fetchGtmSettings } from '../fetch/dashboard';
+import { redis } from '../lib/redis/cache';
+import { fetchGASettings, fetchGtmSettings } from '../lib/fetch/dashboard';
 
 // Define the type for the pagination and filtering result
 type PaginatedFilteredResult<T> = {
@@ -12,46 +12,6 @@ type PaginatedFilteredResult<T> = {
   total: number;
   page: number;
   pageSize: number;
-};
-
-export const getURL = () => {
-  let vercelUrl = process.env.VERCEL_URL; // Assign VERCEL_URL to vercelUrl
-
-  // Check if we're running locally or in Vercel's environment
-  if (typeof vercelUrl === 'undefined' || vercelUrl.startsWith('localhost')) {
-    // For local development, use the local server URL
-    vercelUrl = 'http://localhost:3000'; // Adjust if your local server uses a different port
-  } else {
-    // Ensure the URL uses https if deployed on Vercel
-    vercelUrl = `https://${vercelUrl}`;
-  }
-
-  if (!vercelUrl) {
-    throw new Error('Could not determine URL. VERCEL_URL is undefined');
-  }
-
-  return vercelUrl;
-};
-
-export const postData = async ({ url, data }: { url: string; data?: any }) => {
-  const res: Response = await fetch(url, {
-    method: 'POST',
-    headers: new Headers({ 'Content-Type': 'application/json' }),
-    credentials: 'same-origin',
-    body: JSON.stringify(data),
-  });
-
-  if (!res.ok) {
-    throw Error(res.statusText);
-  }
-
-  return res.json();
-};
-
-export const toDateTime = (secs: number) => {
-  var t = new Date('1970-01-01T00:30:00Z'); // Unix epoch start.
-  t.setSeconds(secs);
-  return t;
 };
 
 export const tierDeleteLimit = async (userId: string, featureName: string) => {
@@ -72,10 +32,7 @@ export const tierDeleteLimit = async (userId: string, featureName: string) => {
     });
 
     // Handling feature limit
-    if (
-      !tierLimitRecord ||
-      tierLimitRecord.deleteUsage >= tierLimitRecord.deleteLimit
-    ) {
+    if (!tierLimitRecord || tierLimitRecord.deleteUsage >= tierLimitRecord.deleteLimit) {
       return {
         success: false,
         limitReached: true,
@@ -115,10 +72,7 @@ export const tierCreateLimit = async (userId: string, featureName: string) => {
     });
 
     // Handling feature limit
-    if (
-      !tierLimitRecord ||
-      tierLimitRecord.createUsage >= tierLimitRecord.createLimit
-    ) {
+    if (!tierLimitRecord || tierLimitRecord.createUsage >= tierLimitRecord.createLimit) {
       return {
         success: false,
         limitReached: true,
@@ -158,10 +112,7 @@ export const tierUpdateLimit = async (userId: string, featureName: string) => {
     });
 
     // Handling feature limit
-    if (
-      !tierLimitRecord ||
-      tierLimitRecord.updateUsage >= tierLimitRecord.updateLimit
-    ) {
+    if (!tierLimitRecord || tierLimitRecord.updateUsage >= tierLimitRecord.updateLimit) {
       return {
         success: false,
         limitReached: true,
@@ -194,9 +145,7 @@ export async function handleApiResponseError(
     case 400:
       if (
         parsedResponse.error &&
-        parsedResponse.error.message.includes(
-          'Returned an error response for your request'
-        )
+        parsedResponse.error.message.includes('Returned an error response for your request')
       ) {
         return {
           success: false,
@@ -284,10 +233,7 @@ export async function fetchFilteredRows<T>(
   };
 }
 
-export async function fetchAllFilteredRows<T>(
-  allItems: T[],
-  query: string
-): Promise<T[]> {
+export async function fetchAllFilteredRows<T>(allItems: T[], query: string): Promise<T[]> {
   const { userId } = auth();
   if (!userId) return notFound();
 
@@ -317,8 +263,7 @@ export async function fetchPages<T>(
   let filtered;
   if (query) {
     filtered = allItems.filter(
-      (item: any) =>
-        'name' in item && item.name.toLowerCase().includes(query.toLowerCase())
+      (item: any) => 'name' in item && item.name.toLowerCase().includes(query.toLowerCase())
     );
   } else {
     filtered = allItems;

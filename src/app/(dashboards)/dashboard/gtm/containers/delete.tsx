@@ -5,9 +5,9 @@ import {
   setErrorDetails,
   setIsLimitReached,
   setNotFoundError,
-} from '@/src/lib/redux/tableSlice';
+} from '@/src/redux/tableSlice';
 import { DeleteContainers } from '@/src/lib/fetch/dashboard/actions/gtm/containers';
-import { FeatureResponse } from '@/src/lib/types/types';
+import { FeatureResponse } from '@/src/types/types';
 import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
 
@@ -22,9 +22,7 @@ export const useDeleteHook = (selectedRows, table) => {
       },
     });
     const uniqueAccountIds = Array.from(
-      new Set(
-        Object.values(selectedRows).map((rowData: any) => rowData.accountId)
-      )
+      new Set(Object.values(selectedRows).map((rowData: any) => rowData.accountId))
     );
 
     const deleteOperations = uniqueAccountIds.map(async (accountId) => {
@@ -35,9 +33,7 @@ export const useDeleteHook = (selectedRows, table) => {
       const containerNames = containersToDelete.map((combinedId) => {
         const [accountId, containerId] = combinedId.split('-');
         const container = selectedRows.find(
-          (rowData) =>
-            rowData.accountId === accountId &&
-            rowData.containerId === containerId
+          (rowData) => rowData.accountId === accountId && rowData.containerId === containerId
         );
         if (!container) {
           return undefined; // This will help identify which combinedId is problematic

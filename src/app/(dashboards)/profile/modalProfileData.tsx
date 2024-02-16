@@ -15,11 +15,7 @@ import {
 import { Label } from '@/src/components/ui/label';
 import { Input } from '@/src/components/ui/input';
 import { useDispatch, useSelector } from 'react-redux';
-import {
-  setFirstName,
-  setLastName,
-  setUsername,
-} from '../../../lib/redux/profileSlice';
+import { setFirstName, setLastName, setUsername } from '../../../redux/profileSlice';
 import { useState } from 'react';
 
 export default function ProfileInformation() {
@@ -64,8 +60,7 @@ export default function ProfileInformation() {
         <DialogHeader>
           <DialogTitle>Edit Personal Data</DialogTitle>
           <DialogDescription>
-            Make changes to your personal data here. Click save when you are
-            done.
+            Make changes to your personal data here. Click save when you are done.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">

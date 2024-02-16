@@ -10,21 +10,16 @@ import {
   setErrorDetails,
   setIsLimitReached,
   setNotFoundError,
-} from '@/src/lib/redux/tableSlice';
-import { selectIsLoading, setLoading } from '@/src/lib/redux/globalSlice';
+} from '@/src/redux/tableSlice';
+import { selectIsLoading, setLoading } from '@/src/redux/globalSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { FeatureResponse, FormUpdateProps } from '@/src/lib/types/types';
+import { FeatureResponse, FormUpdateProps } from '@/src/types/types';
 import { toast } from 'sonner';
 import { Icon } from '../../../../../components/client/Button/Button';
 import { Cross1Icon } from '@radix-ui/react-icons';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/src/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/card';
 import {
   Form,
   FormControl,
@@ -268,10 +263,7 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
             {/* Hire Us */}
             <div className="property mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-end">
               {fields.map((field, index) => (
-                <div
-                  key={field.id}
-                  className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-                >
+                <div key={field.id} className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
                   <div className="max-w-xl mx-auto">
                     <div className="text-center">
                       <p className="text-3xl font-bold text-gray-800 sm:text-4xl dark:text-white">
@@ -303,15 +295,12 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
                                   <FormItem>
                                     <FormLabel>New Property Name</FormLabel>
                                     <FormDescription>
-                                      This is the property name you want to
-                                      create.
+                                      This is the property name you want to create.
                                     </FormDescription>
                                     <FormControl>
                                       <Input
                                         placeholder="Name of the property"
-                                        {...form.register(
-                                          `forms.${index}.displayName`
-                                        )}
+                                        {...form.register(`forms.${index}.displayName`)}
                                         {...field}
                                       />
                                     </FormControl>
@@ -328,14 +317,11 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
                                   <FormItem>
                                     <FormLabel>Currency</FormLabel>
                                     <FormDescription>
-                                      Which currency do you want to include in
-                                      the property?
+                                      Which currency do you want to include in the property?
                                     </FormDescription>
                                     <FormControl>
                                       <Select
-                                        {...form.register(
-                                          `forms.${index}.currencyCode`
-                                        )}
+                                        {...form.register(`forms.${index}.currencyCode`)}
                                         {...field}
                                         onValueChange={field.onChange}
                                       >
@@ -347,10 +333,7 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
                                           <SelectGroup>
                                             <SelectLabel>Currency</SelectLabel>
                                             {CurrencyCodes.map((code) => (
-                                              <SelectItem
-                                                key={code}
-                                                value={code}
-                                              >
+                                              <SelectItem key={code} value={code}>
                                                 {code}
                                               </SelectItem>
                                             ))}
@@ -371,14 +354,11 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
                                   <FormItem>
                                     <FormLabel>Time Zone</FormLabel>
                                     <FormDescription>
-                                      Which timeZone do you want to include in
-                                      the property?
+                                      Which timeZone do you want to include in the property?
                                     </FormDescription>
                                     <FormControl>
                                       <Select
-                                        {...form.register(
-                                          `forms.${index}.timeZone`
-                                        )}
+                                        {...form.register(`forms.${index}.timeZone`)}
                                         {...field}
                                         onValueChange={field.onChange}
                                       >
@@ -390,10 +370,7 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
                                           <SelectGroup>
                                             <SelectLabel>Timezone</SelectLabel>
                                             {TimeZones.map((timeZone) => (
-                                              <SelectItem
-                                                key={timeZone}
-                                                value={timeZone}
-                                              >
+                                              <SelectItem key={timeZone} value={timeZone}>
                                                 {timeZone}
                                               </SelectItem>
                                             ))}
@@ -413,14 +390,11 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
                                   <FormItem>
                                     <FormLabel>Category</FormLabel>
                                     <FormDescription>
-                                      Which category do you want to include in
-                                      the property?
+                                      Which category do you want to include in the property?
                                     </FormDescription>
                                     <FormControl>
                                       <Select
-                                        {...form.register(
-                                          `forms.${index}.industryCategory`
-                                        )}
+                                        {...form.register(`forms.${index}.industryCategory`)}
                                         {...field}
                                         onValueChange={field.onChange}
                                       >
@@ -430,20 +404,15 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
 
                                         <SelectContent>
                                           <SelectGroup>
-                                            <SelectLabel>
-                                              Industry Category
-                                            </SelectLabel>
+                                            <SelectLabel>Industry Category</SelectLabel>
 
-                                            {Object.entries(
-                                              IndustryCategories
-                                            ).map(([label, value]) => (
-                                              <SelectItem
-                                                key={value}
-                                                value={value}
-                                              >
-                                                {label}
-                                              </SelectItem>
-                                            ))}
+                                            {Object.entries(IndustryCategories).map(
+                                              ([label, value]) => (
+                                                <SelectItem key={value} value={value}>
+                                                  {label}
+                                                </SelectItem>
+                                              )
+                                            )}
                                           </SelectGroup>
                                         </SelectContent>
                                       </Select>
@@ -461,14 +430,11 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
                                   <FormItem>
                                     <FormLabel>Retention Setting</FormLabel>
                                     <FormDescription>
-                                      Set the retention setting for the
-                                      property.
+                                      Set the retention setting for the property.
                                     </FormDescription>
                                     <FormControl>
                                       <Select
-                                        {...form.register(
-                                          `forms.${index}.retention`
-                                        )}
+                                        {...form.register(`forms.${index}.retention`)}
                                         {...field}
                                         onValueChange={field.onChange}
                                       >
@@ -477,21 +443,14 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
                                         </SelectTrigger>
                                         <SelectContent>
                                           <SelectGroup>
-                                            <SelectLabel>
-                                              Retention Setting
-                                            </SelectLabel>
+                                            <SelectLabel>Retention Setting</SelectLabel>
                                             {Object.entries(
                                               selectedRows[index] &&
-                                                selectedRows[index]
-                                                  .serviceLevel === 'Standard'
-                                                ? retentionSettingsStandard ||
-                                                    {}
+                                                selectedRows[index].serviceLevel === 'Standard'
+                                                ? retentionSettingsStandard || {}
                                                 : retentionSettings360 || {}
                                             ).map(([label, value]) => (
-                                              <SelectItem
-                                                key={value}
-                                                value={value}
-                                              >
+                                              <SelectItem key={value} value={value}>
                                                 {label}
                                               </SelectItem>
                                             ))}
@@ -510,13 +469,10 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
                                 render={({ field }) => (
                                   <FormItem>
                                     <div className="space-y-0.5">
-                                      <FormLabel>
-                                        Reset user data on new activity
-                                      </FormLabel>
+                                      <FormLabel>Reset user data on new activity</FormLabel>
                                       <FormDescription>
-                                        If enabled, reset the retention period
-                                        for the user identifier with every event
-                                        from that user.
+                                        If enabled, reset the retention period for the user
+                                        identifier with every event from that user.
                                       </FormDescription>
                                     </div>
                                     <FormControl>
@@ -544,9 +500,7 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = ({
         )}
       </AnimatePresence>
 
-      {isLimitReached && (
-        <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />
-      )}
+      {isLimitReached && <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />}
 
       {notFoundError && <NotFoundErrorModal />}
     </>

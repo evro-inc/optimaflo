@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { selectTable, setSelectedRows } from '@/src/lib/redux/tableSlice';
+import { selectTable, setSelectedRows } from '@/src/redux/tableSlice';
 import { Checkbox } from '../../ui/checkbox';
 
 interface InputToggleRowProps {
@@ -9,10 +9,7 @@ interface InputToggleRowProps {
   uniqueIdentifier: string[]; // e.g., 'accountId', 'containerId'
 }
 
-export const ToggleRow: React.FC<InputToggleRowProps> = ({
-  item,
-  uniqueIdentifier,
-}) => {
+export const ToggleRow: React.FC<InputToggleRowProps> = ({ item, uniqueIdentifier }) => {
   const dispatch = useDispatch();
   const { selectedRows } = useSelector(selectTable);
 
@@ -33,16 +30,9 @@ export const ToggleRow: React.FC<InputToggleRowProps> = ({
     dispatch(setSelectedRows(newSelectedRows));
   };
 
-  const isChecked = Object.prototype.hasOwnProperty.call(
-    selectedRows,
-    uniqueKey
-  );
+  const isChecked = Object.prototype.hasOwnProperty.call(selectedRows, uniqueKey);
 
   return (
-    <Checkbox
-      id={`select-row-${uniqueKey}`}
-      checked={isChecked}
-      onCheckedChange={toggleRow}
-    />
+    <Checkbox id={`select-row-${uniqueKey}`} checked={isChecked} onCheckedChange={toggleRow} />
   );
 };

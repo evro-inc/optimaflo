@@ -1,10 +1,5 @@
 import React from 'react';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '../../ui/accordion';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../../ui/accordion';
 import Link from 'next/link';
 import { client } from '@/src/lib/sanity/sanity-utils';
 
@@ -46,9 +41,7 @@ export default async function FAQ() {
 
                           return (
                             <AccordionItem value={displayIndex} key={index}>
-                              <AccordionTrigger>
-                                {faq.question}
-                              </AccordionTrigger>
+                              <AccordionTrigger>{faq.question}</AccordionTrigger>
                               <AccordionContent>{faq.answer}</AccordionContent>
                             </AccordionItem>
                           );

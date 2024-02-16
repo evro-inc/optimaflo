@@ -61,20 +61,14 @@ export default async function Hero() {
                       <LinkSignUp variant="default" />
 
                       <Button asChild>
-                        <Link
-                          href="/features"
-                          aria-label="Learn more about features button"
-                        >
+                        <Link href="/features" aria-label="Learn more about features button">
                           Learn more
                         </Link>
                       </Button>
                     </div>
 
                     <div className="max-w-[85rem] mx-auto flex justify-center items-center relative">
-                      <div
-                        className="relative w-full"
-                        style={{ maxWidth: '1000px' }}
-                      >
+                      <div className="relative w-full" style={{ maxWidth: '1000px' }}>
                         <Image
                           layout="responsive"
                           width={1000}
@@ -85,8 +79,8 @@ export default async function Hero() {
 
                         <div className="absolute left-1 sm:-left-1 md:-left-1 lg:-left-[1%] xl:-left-[5%] top-[20%] w-64">
                           <div className="flex flex-col bg-white-500 border shadow-sm rounded-xl p-3 sm:p-4 md:p-5 /[.7] ">
-                            Scale your Google Tag Manager and Google Analytics 4
-                            implementations with ease.
+                            Scale your Google Tag Manager and Google Analytics 4 implementations
+                            with ease.
                           </div>
                         </div>
 

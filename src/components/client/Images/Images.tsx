@@ -33,13 +33,7 @@ export const ImageIcon = ({ src, alt, width, height, ...props }) => {
 export const Images = ({ src, alt, width, height }) => {
   return (
     <div className={`${BASE_BUTTON_CLASSES}`}>
-      <Image
-        src={src}
-        alt={alt}
-        width={width}
-        height={height}
-        className="rounded-xl"
-      />
+      <Image src={src} alt={alt} width={width} height={height} className="rounded-xl" />
     </div>
   );
 };

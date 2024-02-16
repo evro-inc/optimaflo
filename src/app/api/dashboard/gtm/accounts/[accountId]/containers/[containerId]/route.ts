@@ -6,7 +6,6 @@ import prisma from '@/src/lib/prisma';
 import Joi from 'joi';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
 import { limiter } from '@/src/lib/bottleneck';
-import { handleError } from '@/src/lib/fetch/apiUtils';
 import { clerkClient, currentUser } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
 
@@ -57,10 +56,7 @@ async function fetchGtmData(
     };
 
     try {
-      const { remaining } = await gtmRateLimit.blockUntilReady(
-        `user:${userId}`,
-        1000
-      );
+      const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
 
       if (remaining > 0) {
         let res = await limiter.schedule(async () => {
@@ -138,10 +134,7 @@ export async function updateGtmData(
 
   while (retries < MAX_RETRIES) {
     try {
-      const { remaining } = await gtmRateLimit.blockUntilReady(
-        `user:${userId}`,
-        1000
-      );
+      const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
 
       // Fetch subscription data for the user
       const subscriptionData = await prisma.subscription.findFirst({
@@ -151,12 +144,9 @@ export async function updateGtmData(
       });
 
       if (!subscriptionData) {
-        return new NextResponse(
-          JSON.stringify({ message: 'Subscription data not found' }),
-          {
-            status: 403,
-          }
-        );
+        return new NextResponse(JSON.stringify({ message: 'Subscription data not found' }), {
+          status: 403,
+        });
       }
 
       const tierLimitRecord = await prisma.tierLimit.findFirst({
@@ -174,16 +164,10 @@ export async function updateGtmData(
         },
       });
 
-      if (
-        !tierLimitRecord ||
-        tierLimitRecord.updateUsage >= tierLimitRecord.updateLimit
-      ) {
-        return new NextResponse(
-          JSON.stringify({ message: 'Feature limit reached' }),
-          {
-            status: 403,
-          }
-        );
+      if (!tierLimitRecord || tierLimitRecord.updateUsage >= tierLimitRecord.updateLimit) {
+        return new NextResponse(JSON.stringify({ message: 'Feature limit reached' }), {
+          status: 403,
+        });
       }
 
       if (remaining > 0) {
@@ -297,12 +281,9 @@ async function deleteGtmData(
     });
 
     if (!subscriptionData) {
-      return new NextResponse(
-        JSON.stringify({ message: 'Subscription data not found' }),
-        {
-          status: 403,
-        }
-      );
+      return new NextResponse(JSON.stringify({ message: 'Subscription data not found' }), {
+        status: 403,
+      });
     }
 
     const tierLimitRecord = await prisma.tierLimit.findFirst({
@@ -320,16 +301,10 @@ async function deleteGtmData(
       },
     });
 
-    if (
-      !tierLimitRecord ||
-      tierLimitRecord.deleteUsage >= tierLimitRecord.deleteLimit
-    ) {
-      return new NextResponse(
-        JSON.stringify({ message: 'Feature limit reached' }),
-        {
-          status: 403,
-        }
-      );
+    if (!tierLimitRecord || tierLimitRecord.deleteUsage >= tierLimitRecord.deleteLimit) {
+      return new NextResponse(JSON.stringify({ message: 'Feature limit reached' }), {
+        status: 403,
+      });
     }
 
     let retries = 0;
@@ -341,10 +316,7 @@ async function deleteGtmData(
         // Wait for the rate limit to be available
 
         // Check if we've hit the rate limit
-        const { remaining } = await gtmRateLimit.blockUntilReady(
-          `user:${userId}`,
-          1000
-        );
+        const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
 
         if (remaining > 0) {
           let res;
@@ -421,7 +393,7 @@ async function deleteGtmData(
     }
 
     // Return a 500 status code for internal server error
-    return handleError(error);
+    return NextResponse.error();
   }
 }
 
@@ -456,17 +428,9 @@ export async function GET(
     const validatedParams = await validateGetParams(paramsJOI);
     const { accountId, containerId } = validatedParams;
 
-    const accessToken = await clerkClient.users.getUserOauthAccessToken(
-      user?.id,
-      'oauth_google'
-    );
+    const accessToken = await clerkClient.users.getUserOauthAccessToken(user?.id, 'oauth_google');
 
-    const data = await fetchGtmData(
-      userId,
-      accessToken[0].token,
-      accountId,
-      containerId
-    );
+    const data = await fetchGtmData(userId, accessToken[0].token, accountId, containerId);
 
     return NextResponse.json(
       {
@@ -491,7 +455,7 @@ export async function GET(
     }
 
     // Return a 500 status code for internal server error
-    return handleError(error);
+    return NextResponse.error();
   }
 }
 
@@ -518,14 +482,10 @@ export async function PUT(request: NextRequest) {
 
     const validateParams = await validatePutParams(paramsJOI);
 
-    const { accountId, containerId, containerName, usageContext } =
-      validateParams;
+    const { accountId, containerId, containerName, usageContext } = validateParams;
 
     // using userId get accessToken from prisma account table
-    const accessToken = await clerkClient.users.getUserOauthAccessToken(
-      user?.id,
-      'oauth_google'
-    );
+    const accessToken = await clerkClient.users.getUserOauthAccessToken(user?.id, 'oauth_google');
 
     const data = await updateGtmData(
       userId,
@@ -553,7 +513,7 @@ export async function PUT(request: NextRequest) {
     );
   } catch (error) {
     // Return a 500 status code for internal server error
-    return handleError(error);
+    return NextResponse.error();
   }
 }
 
@@ -585,17 +545,9 @@ export async function DELETE(request: NextRequest) {
     const { accountId, containerId } = validateParams;
 
     // using userId get accessToken from prisma account table
-    const accessToken = await clerkClient.users.getUserOauthAccessToken(
-      user?.id,
-      'oauth_google'
-    );
+    const accessToken = await clerkClient.users.getUserOauthAccessToken(user?.id, 'oauth_google');
 
-    const data = await deleteGtmData(
-      userId,
-      accessToken[0].token,
-      accountId,
-      containerId
-    );
+    const data = await deleteGtmData(userId, accessToken[0].token, accountId, containerId);
 
     return NextResponse.json(
       {
@@ -614,6 +566,6 @@ export async function DELETE(request: NextRequest) {
     );
   } catch (error) {
     // Return a 500 status code for internal server error
-    return handleError(error);
+    return NextResponse.error();
   }
 }

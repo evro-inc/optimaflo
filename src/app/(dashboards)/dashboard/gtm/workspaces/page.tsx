@@ -36,9 +36,7 @@ export default async function WorkspacePage({
 
   const combinedData = flatWorkspaces.map((workspace) => {
     const account = accounts.find((a) => a.accountId === workspace.accountId);
-    const container = flatContainers.find(
-      (c) => c.containerId === workspace.containerId
-    );
+    const container = flatContainers.find((c) => c.containerId === workspace.containerId);
     if (account && container) {
       return {
         ...workspace,
@@ -80,11 +78,7 @@ export default async function WorkspacePage({
         }
       >
         <div className="container mx-auto py-10">
-          <DataTable
-            columns={columns}
-            data={combinedData}
-            accounts={accounts}
-          />
+          <DataTable columns={columns} data={combinedData} accounts={accounts} />
         </div>
       </Suspense>
     </>

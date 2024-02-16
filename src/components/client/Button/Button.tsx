@@ -1,12 +1,7 @@
 'use client';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useTheme } from 'next-themes';
-import {
-  MoonIcon,
-  SunIcon,
-  Bars3BottomRightIcon,
-  XMarkIcon,
-} from '@heroicons/react/24/solid';
+import { MoonIcon, SunIcon, Bars3BottomRightIcon, XMarkIcon } from '@heroicons/react/24/solid';
 import Link from 'next/link';
 import { Button } from '@/src/components/ui/button';
 import { SignInButton } from '@clerk/nextjs';
@@ -21,9 +16,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/src/components/ui/alert-dialog';
-import { setLoading } from '@/src/lib/redux/globalSlice';
+import { setLoading } from '@/src/redux/globalSlice';
 import { useDispatch } from 'react-redux';
-import { postData } from '@/src/lib/helpers';
 
 const getModeClasses = (variant, billingInterval?) => {
   let baseClasses = '';
@@ -94,9 +88,7 @@ const getModeClasses = (variant, billingInterval?) => {
       baseClasses = '';
   }
 
-  return `${baseClasses} ${
-    billingInterval === 'year' ? activeClasses : inactiveClasses
-  }`;
+  return `${baseClasses} ${billingInterval === 'year' ? activeClasses : inactiveClasses}`;
 };
 
 const BASE_BUTTON_CLASSES = '';
@@ -104,12 +96,7 @@ const BASE_BUTTON_CLASSES = '';
 /**
  * Primary UI component for user interaction
  */
-export const ButtonPrim = ({
-  variant = 'primary',
-  text,
-  billingInterval,
-  ...props
-}) => {
+export const ButtonPrim = ({ variant = 'primary', text, billingInterval, ...props }) => {
   const computedClasses = useMemo(() => {
     const modeClass = getModeClasses(variant, billingInterval);
     return [modeClass].join(' ');
@@ -161,11 +148,7 @@ export const ButtonTheme = ({
  * TOGGLE BUTTON
  */
 
-export const ButtonToggle = ({
-  variant = 'toggle',
-  billingInterval,
-  ...props
-}) => {
+export const ButtonToggle = ({ variant = 'toggle', billingInterval, ...props }) => {
   const computedClasses = useMemo(() => {
     const modeClass = getModeClasses(variant, billingInterval);
     return [modeClass].join(' ');
@@ -186,13 +169,7 @@ export const ButtonToggle = ({
 
 /* Button Link */
 
-export const ButtonLink = ({
-  variant = 'primary',
-  href,
-  text,
-  billingInterval,
-  ...props
-}) => {
+export const ButtonLink = ({ variant = 'primary', href, text, billingInterval, ...props }) => {
   const computedClasses = useMemo(() => {
     const modeClass = getModeClasses(variant, billingInterval);
     return [modeClass].join(' ');
@@ -200,22 +177,14 @@ export const ButtonLink = ({
 
   return (
     <Link href={href}>
-      <Button
-        className={`${BASE_BUTTON_CLASSES} ${computedClasses}`}
-        {...props}
-      >
+      <Button className={`${BASE_BUTTON_CLASSES} ${computedClasses}`} {...props}>
         {text}
       </Button>
     </Link>
   );
 };
 
-export const ButtonNull = ({
-  variant = 'primary',
-  text,
-  billingInterval,
-  ...props
-}) => {
+export const ButtonNull = ({ variant = 'primary', text, billingInterval, ...props }) => {
   const computedClasses = useMemo(() => {
     const modeClass = getModeClasses(variant, billingInterval);
     return [modeClass].join(' ');
@@ -243,22 +212,13 @@ export const ButtonSubscribe = ({
   const selectedClasses = isselected ? 'bg-blue-500 ' : '';
 
   return (
-    <Button
-      className={`${BASE_BUTTON_CLASSES} ${computedClasses} ${selectedClasses}`}
-      {...props}
-    >
+    <Button className={`${BASE_BUTTON_CLASSES} ${computedClasses} ${selectedClasses}`} {...props}>
       {text}
     </Button>
   );
 };
 
-export const ButtonWithIcon = ({
-  variant = 'primary',
-  text,
-  icon,
-  billingInterval,
-  ...props
-}) => {
+export const ButtonWithIcon = ({ variant = 'primary', text, icon, billingInterval, ...props }) => {
   const computedClasses = useMemo(() => {
     const modeClass = getModeClasses(variant, billingInterval);
     return [modeClass].join(' ');
@@ -266,8 +226,7 @@ export const ButtonWithIcon = ({
 
   return (
     <Button className={`${BASE_BUTTON_CLASSES} ${computedClasses}`} {...props}>
-      {icon && <span className="mr-2">{icon}</span>}{' '}
-      {/* Conditionally render SVG */}
+      {icon && <span className="mr-2">{icon}</span>} {/* Conditionally render SVG */}
       {text}
     </Button>
   );
@@ -289,11 +248,7 @@ export const Icon = ({ variant = 'primary', icon, ...props }) => {
 export const ButtonSignIn = ({ ...props }) => {
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <SignInButton
-        mode="modal"
-        redirectUrl="/profile"
-        afterSignUpUrl="/pricing"
-      >
+      <SignInButton mode="modal" redirectUrl="/profile" afterSignUpUrl="/pricing">
         <Button {...props} aria-label="Log in with Google Sign In">
           Log In
         </Button>
@@ -302,11 +257,7 @@ export const ButtonSignIn = ({ ...props }) => {
   );
 };
 
-export const ButtonCustomerPortal = ({
-  variant = 'primary',
-  text,
-  ...props
-}) => {
+export const ButtonCustomerPortal = ({ variant = 'primary', text, ...props }) => {
   const computedClasses = useMemo(() => {
     const modeClass = getModeClasses(variant);
     return [modeClass].join(' ');
@@ -316,9 +267,10 @@ export const ButtonCustomerPortal = ({
   const redirectToCustomerPortal = async () => {
     dispatch(setLoading(true));
     try {
-      const { url } = await postData({
-        url: '/api/create-portal-link',
-      });
+      const { url } = await fetch('/api/create-portal-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      }).then((res) => res.json());
       window.location.assign(url);
     } catch (error: any) {
       if (error) throw new Error(error);
@@ -381,13 +333,7 @@ export const ButtonDelete = ({ onDelete, disabled }) => {
   );
 };
 
-export const ButtonSubmitAlert = ({
-  text,
-  form,
-}: {
-  text: string;
-  form: string;
-}) => {
+export const ButtonSubmitAlert = ({ text, form }: { text: string; form: string }) => {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
@@ -397,11 +343,10 @@ export const ButtonSubmitAlert = ({
         <AlertDialogHeader>
           <AlertDialogTitle>Create New GA4 Account(s)</AlertDialogTitle>
           <AlertDialogDescription>
-            Once you click continue, you have see tabs open in your browser.
-            These tabs will be for you to accept the Google Analytics terms of
-            service for each account you want to create. Once you have accepted,
-            you will need to come back here and refresh the table to see you're
-            updated account(s).
+            Once you click continue, you have see tabs open in your browser. These tabs will be for
+            you to accept the Google Analytics terms of service for each account you want to create.
+            Once you have accepted, you will need to come back here and refresh the table to see
+            you're updated account(s).
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

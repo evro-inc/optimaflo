@@ -2,8 +2,8 @@
 import React from 'react';
 import { ButtonWithIcon } from '../Button/Button';
 import { useDispatch, useSelector } from 'react-redux';
-import { toggleUpdate } from '@/src/lib/redux/sharedSlice';
-import { selectTable } from '@/src/lib/redux/tableSlice';
+import { toggleUpdate } from '@/src/redux/sharedSlice';
+import { selectTable } from '@/src/redux/tableSlice';
 
 function ButtonUpdate() {
   const dispatch = useDispatch();

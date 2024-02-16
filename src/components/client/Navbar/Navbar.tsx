@@ -2,11 +2,10 @@
 import Link from 'next/link';
 
 import React from 'react';
-import Logo from '../../icons/Logo';
 import { ButtonSignIn } from '../../client/Button/Button';
 import { LinkSignUp, LinkNav } from '../Links/Links';
 import { SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
-import { HamburgerMenuIcon } from '@radix-ui/react-icons';
+import { HamburgerMenuIcon, PlayIcon } from '@radix-ui/react-icons';
 import { Sheet, SheetClose, SheetContent, SheetTrigger } from '../../ui/sheet';
 import { Button } from '../../ui/button';
 
@@ -22,12 +21,8 @@ export default function Navbar() {
     <header className="flex flex-wrap lg:justify-start lg:flex-nowrap z-40 w-full text-sm py-3 lg:py-0">
       {/* Left side: Logo */}
       <div className="flex items-center">
-        <Link
-          className="flex-none text-xl font-semibold ml-5"
-          href="/"
-          aria-label="Brand"
-        >
-          <Logo />
+        <Link className="flex-none text-xl font-semibold ml-5" href="/" aria-label="Brand">
+          <PlayIcon />
           <span className="sr-only">OptimaFlo</span>
         </Link>
       </div>
@@ -83,10 +78,7 @@ export default function Navbar() {
 
       <nav className="hidden lg:flex ml-auto gap-4 sm:gap-6">
         {navigation.map((item) => (
-          <div
-            key={item.name}
-            className="flex lg:flex-row items-center font-medium"
-          >
+          <div key={item.name} className="flex lg:flex-row items-center font-medium">
             <Button variant="ghost" asChild>
               <Link aria-label={`Navigate to ${item.name}`} href={item.href}>
                 {item.name}
@@ -98,11 +90,7 @@ export default function Navbar() {
         <SignedIn>
           {/* Mount the UserButton component */}
           <div className="hidden lg:flex items-center font-medium p-0 sm:p-[10px]  w-full lg:w-auto">
-            <Link
-              href="/profile"
-              className="pr-10"
-              aria-label="profile page button"
-            >
+            <Link href="/profile" className="pr-10" aria-label="profile page button">
               Profile
             </Link>
             <UserButton afterSignOutUrl="/" />

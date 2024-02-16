@@ -23,10 +23,7 @@ export default async function ContainerPage({
   const accountData = await listGtmAccounts();
   const containerData = await listGtmContainers();
 
-  const [accounts, containers] = await Promise.all([
-    accountData,
-    containerData,
-  ]);
+  const [accounts, containers] = await Promise.all([accountData, containerData]);
 
   const combinedData = containers.flat().map((container) => {
     const account = accounts.find((a) => a.accountId === container.accountId);
@@ -69,11 +66,7 @@ export default async function ContainerPage({
         }
       >
         <div className="container mx-auto py-10">
-          <DataTable
-            columns={columns}
-            data={combinedData}
-            accounts={accounts}
-          />
+          <DataTable columns={columns} data={combinedData} accounts={accounts} />
         </div>
       </Suspense>
     </>

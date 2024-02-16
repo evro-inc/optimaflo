@@ -10,7 +10,7 @@ import { revalidatePath } from 'next/cache'; // Importing function to revalidate
 import { currentUserOauthAccessToken } from '@/src/lib/clerk'; // Importing function to get the current user's OAuth access token
 import { redis } from '@/src/lib/redis/cache'; // Importing Redis cache instance
 import { notFound } from 'next/navigation'; // Importing utility for handling 'not found' navigation in Next.js
-import { handleApiResponseError } from '@/src/lib/helpers/server';
+import { handleApiResponseError } from '@/src/utils/server';
 
 // Defining a type for form update schema using Zod
 type FormUpdateSchema = z.infer<typeof UpdateAccountSchema>;
@@ -44,10 +44,7 @@ export async function listGtmAccounts() {
   while (retries < MAX_RETRIES) {
     try {
       // Enforcing rate limit for the user
-      const { remaining } = await gtmRateLimit.blockUntilReady(
-        `user:${userId}`,
-        1000
-      );
+      const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
 
       if (remaining > 0) {
         let data;
@@ -66,9 +63,7 @@ export async function listGtmAccounts() {
 
           // Handling non-OK responses by throwing an error
           if (!response.ok) {
-            throw new Error(
-              `HTTP error! status: ${response.status}. ${response.statusText}`
-            );
+            throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
           }
           // Parsing the response body
           const responseBody = await response.json();
@@ -130,10 +125,7 @@ export async function updateAccounts(
   // Retry loop
   while (retries < MAX_RETRIES) {
     try {
-      const { remaining } = await gtmRateLimit.blockUntilReady(
-        `user:${userId}`,
-        1000
-      );
+      const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
       if (remaining > 0) {
         // Base URL and error tracking
         const errors: string[] = [];
@@ -143,9 +135,7 @@ export async function updateAccounts(
         await limiter.schedule(async () => {
           // Transforming and validating form data
           const plainDataArray = formData.forms.map((fd) => {
-            return Object.fromEntries(
-              Object.keys(fd).map((key) => [key, fd[key]])
-            );
+            return Object.fromEntries(Object.keys(fd).map((key) => [key, fd[key]]));
           });
 
           const validationResult = UpdateAccountSchema.safeParse({
@@ -157,14 +147,9 @@ export async function updateAccounts(
             let errorMessage = '';
             validationResult.error.format();
             validationResult.error.issues.forEach((issue) => {
-              errorMessage =
-                errorMessage + issue.path[0] + ': ' + issue.message + '. ';
+              errorMessage = errorMessage + issue.path[0] + ': ' + issue.message + '. ';
             });
-            const formattedErrorMessage = errorMessage
-              .split(':')
-              .slice(1)
-              .join(':')
-              .trim();
+            const formattedErrorMessage = errorMessage.split(':').slice(1).join(':').trim();
             return { error: formattedErrorMessage };
           }
 
@@ -221,18 +206,14 @@ export async function updateAccounts(
         const notFoundIds = results
           .filter((result) => result && result.notFound)
           .map((result) => result.accountId);
-        const successfulUpdates = results.filter(
-          (result) => result && result.success
-        );
+        const successfulUpdates = results.filter((result) => result && result.success);
 
         // Handling cases where feature limits are reached
         if (featureLimitReached.length > 0) {
           return {
             success: false,
             limitReached: true,
-            message: `Feature limit reached for workspaces: ${featureLimitReached.join(
-              ', '
-            )}`,
+            message: `Feature limit reached for workspaces: ${featureLimitReached.join(', ')}`,
           };
         } else if (notFoundIds.length > 0) {
           return {
@@ -261,12 +242,7 @@ export async function updateAccounts(
 
           // Optionally fetching and caching the updated list of workspaces
           const updatedAccounts = await listGtmAccounts();
-          await redis.set(
-            cacheKey,
-            JSON.stringify(updatedAccounts),
-            'EX',
-            60 * 60 * 2
-          );
+          await redis.set(cacheKey, JSON.stringify(updatedAccounts), 'EX', 60 * 60 * 2);
 
           // Revalidating the path to update the cached data
           const path = `/dashboard/gtm/accounts`;

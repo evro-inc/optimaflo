@@ -8,9 +8,7 @@ export async function handler(req: Request) {
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET as string;
 
   if (!WEBHOOK_SECRET) {
-    throw new Error(
-      'Please add WEBHOOK_SECRET from Clerk Dashboard to .env or .env.local'
-    );
+    throw new Error('Please add WEBHOOK_SECRET from Clerk Dashboard to .env or .env.local');
   }
 
   // Get the headers
@@ -108,9 +106,7 @@ export async function handler(req: Request) {
 
         // If the user does not exist, you might create it here or handle the error
         if (!existingUser) {
-          const clerkUserData = await clerkClient.users.getUser(
-            clerkSession.user_id
-          );
+          const clerkUserData = await clerkClient.users.getUser(clerkSession.user_id);
           await prisma.User.upsert({
             where: { email: clerkUserData.emailAddresses[0]?.emailAddress },
             update: {

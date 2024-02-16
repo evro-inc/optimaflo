@@ -21,17 +21,6 @@ export const subscriberSlice = createSlice({
 // Export your new setLoading action
 export const { setSubscription, setLoading } = subscriberSlice.actions;
 
-// Update your selector to return the subscription and isLoading properties
-export const selectSubscriber = createSelector(
-  // First, define input selectors. These should return the pieces of state you care about.
-  (state) => state.subscriber.subscription,
-  (state) => state.subscriber.isLoading,
-  // Then, define a result function. This function will receive the values
-  // of the input selectors in the order they were listed.
-  (subscription, isLoading) => ({
-    subscription,
-    isLoading,
-  })
-);
+export const selectSubscriptionState = (state) => state.subscriber;
 
 export default subscriberSlice.reducer;

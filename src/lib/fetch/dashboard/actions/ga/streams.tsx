@@ -8,18 +8,13 @@ import { redis } from '@/src/lib/redis/cache';
 import { notFound } from 'next/navigation';
 import { currentUserOauthAccessToken } from '@/src/lib/clerk';
 import prisma from '@/src/lib/prisma';
-import {
-  FeatureResult,
-  FeatureResponse,
-  GA4PropertyType,
-  GA4StreamType,
-} from '@/src/lib/types/types';
+import { FeatureResult, FeatureResponse, GA4PropertyType, GA4StreamType } from '@/src/types/types';
 import {
   handleApiResponseError,
   tierCreateLimit,
   tierDeleteLimit,
   tierUpdateLimit,
-} from '@/src/lib/helpers/server';
+} from '@/src/utils/server';
 import { fetchGASettings } from '../..';
 import { DataStreamType, FormsSchema } from '@/src/lib/schemas/ga/streams';
 
@@ -57,17 +52,12 @@ export async function listGAPropertyStreams() {
 
   while (retries < MAX_RETRIES) {
     try {
-      const { remaining } = await gaRateLimit.blockUntilReady(
-        `user:${userId}`,
-        1000
-      );
+      const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
       if (remaining > 0) {
         let allData: any[] = [];
 
         await limiter.schedule(async () => {
-          const uniquePropertyIds = Array.from(
-            new Set(gaData.ga.map((item) => item.propertyId))
-          );
+          const uniquePropertyIds = Array.from(new Set(gaData.ga.map((item) => item.propertyId)));
 
           const urls = uniquePropertyIds.map(
             (propertyId) =>
@@ -85,9 +75,7 @@ export async function listGAPropertyStreams() {
               const response = await fetch(url, { headers });
 
               if (!response.ok) {
-                throw new Error(
-                  `HTTP error! status: ${response.status}. ${response.statusText}`
-                );
+                throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
               }
 
               const responseBody = await response.json();
@@ -188,172 +176,154 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
   const streamNames = formData.forms.map((cd) => cd.displayName);
 
   if (toCreateStreams.size <= availableCreateUsage) {
-    while (
-      retries < MAX_RETRIES &&
-      toCreateStreams.size > 0 &&
-      !permissionDenied
-    ) {
+    while (retries < MAX_RETRIES && toCreateStreams.size > 0 && !permissionDenied) {
       try {
-        const { remaining } = await gaRateLimit.blockUntilReady(
-          `user:${userId}`,
-          1000
-        );
+        const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
         if (remaining > 0) {
           await limiter.schedule(async () => {
-            const createPromises = Array.from(toCreateStreams).map(
-              async (identifier) => {
-                if (!identifier) {
-                  errors.push(`Stream data not found for ${identifier}`);
+            const createPromises = Array.from(toCreateStreams).map(async (identifier) => {
+              if (!identifier) {
+                errors.push(`Stream data not found for ${identifier}`);
+                toCreateStreams.delete(identifier);
+                return;
+              }
+
+              const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.property}/dataStreams`;
+
+              const headers = {
+                Authorization: `Bearer ${token[0].token}`,
+                'Content-Type': 'application/json',
+                'Accept-Encoding': 'gzip',
+              };
+
+              try {
+                const formDataToValidate = { forms: [identifier] };
+
+                const validationResult = FormsSchema.safeParse(formDataToValidate);
+
+                if (!validationResult.success) {
+                  let errorMessage = validationResult.error.issues
+                    .map((issue) => `${issue.path[0]}: ${issue.message}`)
+                    .join('. ');
+                  errors.push(errorMessage);
                   toCreateStreams.delete(identifier);
-                  return;
+                  return {
+                    identifier,
+                    success: false,
+                    error: errorMessage,
+                  };
                 }
 
-                const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.property}/dataStreams`;
+                // Accessing the validated property data
+                const validatedContainerData = validationResult.data.forms[0];
 
-                const headers = {
-                  Authorization: `Bearer ${token[0].token}`,
-                  'Content-Type': 'application/json',
-                  'Accept-Encoding': 'gzip',
+                let requestBody: any = {
+                  displayName: validatedContainerData.displayName,
+                  type: validatedContainerData.type,
                 };
 
-                try {
-                  const formDataToValidate = { forms: [identifier] };
-
-                  const validationResult =
-                    FormsSchema.safeParse(formDataToValidate);
-
-                  if (!validationResult.success) {
-                    let errorMessage = validationResult.error.issues
-                      .map((issue) => `${issue.path[0]}: ${issue.message}`)
-                      .join('. ');
-                    errors.push(errorMessage);
-                    toCreateStreams.delete(identifier);
-                    return {
-                      identifier,
-                      success: false,
-                      error: errorMessage,
+                // Dynamically add the specific stream data based on the type
+                switch (validatedContainerData.type) {
+                  case 'WEB_DATA_STREAM':
+                    requestBody = {
+                      ...requestBody,
+                      webStreamData: {
+                        defaultUri: validatedContainerData.webStreamData.defaultUri,
+                      },
                     };
-                  }
+                    break;
+                  case 'ANDROID_APP_DATA_STREAM':
+                    requestBody = {
+                      ...requestBody,
+                      androidAppStreamData: {
+                        packageName: validatedContainerData.androidAppStreamData.packageName,
+                      },
+                    };
+                    break;
+                  case 'IOS_APP_DATA_STREAM':
+                    requestBody = {
+                      ...requestBody,
+                      iosAppStreamData: {
+                        bundleId: validatedContainerData.iosAppStreamData.bundleId,
+                      },
+                    };
+                    break;
+                  // You can add more cases here if there are other types
+                  default:
+                    // Handle unexpected type or throw an error
+                    throw new Error('Unsupported stream type');
+                }
 
-                  // Accessing the validated property data
-                  const validatedContainerData = validationResult.data.forms[0];
+                // Now, requestBody is prepared with the right structure based on the type
+                const response = await fetch(url, {
+                  method: 'POST',
+                  headers: headers,
+                  body: JSON.stringify(requestBody),
+                });
 
-                  let requestBody: any = {
-                    displayName: validatedContainerData.displayName,
-                    type: validatedContainerData.type,
-                  };
+                const parsedResponse = await response.json();
 
-                  // Dynamically add the specific stream data based on the type
-                  switch (validatedContainerData.type) {
-                    case 'WEB_DATA_STREAM':
-                      requestBody = {
-                        ...requestBody,
-                        webStreamData: {
-                          defaultUri:
-                            validatedContainerData.webStreamData.defaultUri,
-                        },
-                      };
-                      break;
-                    case 'ANDROID_APP_DATA_STREAM':
-                      requestBody = {
-                        ...requestBody,
-                        androidAppStreamData: {
-                          packageName:
-                            validatedContainerData.androidAppStreamData
-                              .packageName,
-                        },
-                      };
-                      break;
-                    case 'IOS_APP_DATA_STREAM':
-                      requestBody = {
-                        ...requestBody,
-                        iosAppStreamData: {
-                          bundleId:
-                            validatedContainerData.iosAppStreamData.bundleId,
-                        },
-                      };
-                      break;
-                    // You can add more cases here if there are other types
-                    default:
-                      // Handle unexpected type or throw an error
-                      throw new Error('Unsupported stream type');
-                  }
-
-                  // Now, requestBody is prepared with the right structure based on the type
-                  const response = await fetch(url, {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify(requestBody),
-                  });
-
-                  const parsedResponse = await response.json();
-
-                  if (response.ok) {
-                    successfulCreations.push(
-                      validatedContainerData.displayName
-                    );
-                    toCreateStreams.delete(identifier);
-                    fetchGASettings(userId);
-
-                    await prisma.tierLimit.update({
-                      where: { id: tierLimitResponse.id },
-                      data: { createUsage: { increment: 1 } },
-                    });
-                    creationResults.push({
-                      streamName: validatedContainerData.displayName,
-                      success: true,
-                      message: `Successfully created property ${validatedContainerData.displayName}`,
-                    });
-                  } else {
-                    const errorResult = await handleApiResponseError(
-                      response,
-                      parsedResponse,
-                      'property',
-                      [validatedContainerData.displayName]
-                    );
-
-                    if (errorResult) {
-                      errors.push(`${errorResult.message}`);
-                      if (
-                        errorResult.errorCode === 403 &&
-                        parsedResponse.message === 'Feature limit reached'
-                      ) {
-                        featureLimitReached.push(
-                          validatedContainerData.displayName
-                        );
-                      } else if (errorResult.errorCode === 404) {
-                        notFoundLimit.push({
-                          id: identifier.property,
-                          name: validatedContainerData.displayName,
-                        });
-                      }
-                    } else {
-                      errors.push(
-                        `An unknown error occurred for property ${validatedContainerData.displayName}.`
-                      );
-                    }
-
-                    toCreateStreams.delete(identifier);
-                    permissionDenied = errorResult ? true : permissionDenied;
-                    creationResults.push({
-                      streamName: validatedContainerData.displayName,
-                      success: false,
-                      message: errorResult?.message,
-                    });
-                  }
-                } catch (error: any) {
-                  errors.push(
-                    `Exception creating property ${identifier.displayName}: ${error.message}`
-                  );
+                if (response.ok) {
+                  successfulCreations.push(validatedContainerData.displayName);
                   toCreateStreams.delete(identifier);
+                  fetchGASettings(userId);
+
+                  await prisma.tierLimit.update({
+                    where: { id: tierLimitResponse.id },
+                    data: { createUsage: { increment: 1 } },
+                  });
                   creationResults.push({
-                    streamName: identifier.displayName,
+                    streamName: validatedContainerData.displayName,
+                    success: true,
+                    message: `Successfully created property ${validatedContainerData.displayName}`,
+                  });
+                } else {
+                  const errorResult = await handleApiResponseError(
+                    response,
+                    parsedResponse,
+                    'property',
+                    [validatedContainerData.displayName]
+                  );
+
+                  if (errorResult) {
+                    errors.push(`${errorResult.message}`);
+                    if (
+                      errorResult.errorCode === 403 &&
+                      parsedResponse.message === 'Feature limit reached'
+                    ) {
+                      featureLimitReached.push(validatedContainerData.displayName);
+                    } else if (errorResult.errorCode === 404) {
+                      notFoundLimit.push({
+                        id: identifier.property,
+                        name: validatedContainerData.displayName,
+                      });
+                    }
+                  } else {
+                    errors.push(
+                      `An unknown error occurred for property ${validatedContainerData.displayName}.`
+                    );
+                  }
+
+                  toCreateStreams.delete(identifier);
+                  permissionDenied = errorResult ? true : permissionDenied;
+                  creationResults.push({
+                    streamName: validatedContainerData.displayName,
                     success: false,
-                    message: error.message,
+                    message: errorResult?.message,
                   });
                 }
+              } catch (error: any) {
+                errors.push(
+                  `Exception creating property ${identifier.displayName}: ${error.message}`
+                );
+                toCreateStreams.delete(identifier);
+                creationResults.push({
+                  streamName: identifier.displayName,
+                  success: false,
+                  message: error.message,
+                });
               }
-            );
+            });
 
             await Promise.all(createPromises);
           });
@@ -379,15 +349,11 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
               success: false,
               limitReached: true,
               notFoundError: false,
-              message: `Feature limit reached for streams: ${featureLimitReached.join(
-                ', '
-              )}`,
+              message: `Feature limit reached for streams: ${featureLimitReached.join(', ')}`,
               results: featureLimitReached.map((displayName) => {
                 // Find the name associated with the propertyId
                 const streamName =
-                  streamNames.find((displayName) =>
-                    displayName.includes(displayName)
-                  ) || 'Unknown';
+                  streamNames.find((displayName) => displayName.includes(displayName)) || 'Unknown';
                 return {
                   id: [streamName], // Ensure id is an array
                   name: [streamName], // Ensure name is an array, match by propertyId or default to 'Unknown'
@@ -410,9 +376,7 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
         }
       } catch (error: any) {
         if (error.code === 429 || error.status === 429) {
-          await new Promise((resolve) =>
-            setTimeout(resolve, delay + Math.random() * 200)
-          );
+          await new Promise((resolve) => setTimeout(resolve, delay + Math.random() * 200));
           delay *= 2;
           retries++;
         } else {
@@ -552,192 +516,171 @@ export async function updateGAPropertyStreams(formData: DataStreamType) {
   const streamNames = formData.forms.map((cd) => cd.displayName);
 
   if (toUpdateStreams.size <= availableUpdateUsage) {
-    while (
-      retries < MAX_RETRIES &&
-      toUpdateStreams.size > 0 &&
-      !permissionDenied
-    ) {
+    while (retries < MAX_RETRIES && toUpdateStreams.size > 0 && !permissionDenied) {
       try {
-        const { remaining } = await gaRateLimit.blockUntilReady(
-          `user:${userId}`,
-          1000
-        );
+        const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
         if (remaining > 0) {
           await limiter.schedule(async () => {
-            const updatePromises = Array.from(toUpdateStreams).map(
-              async (identifier) => {
-                if (!identifier) {
-                  errors.push(`Stream data not found for ${identifier}`);
+            const updatePromises = Array.from(toUpdateStreams).map(async (identifier) => {
+              if (!identifier) {
+                errors.push(`Stream data not found for ${identifier}`);
+                toUpdateStreams.delete(identifier);
+                return;
+              }
+
+              let updateFields: string[] = [];
+
+              switch (identifier.type) {
+                case 'WEB_DATA_STREAM':
+                  updateFields = ['displayName', 'webStreamData.defaultUri'];
+                  break;
+                case 'ANDROID_APP_DATA_STREAM':
+                  updateFields = ['displayName', 'androidAppStreamData.packageName'];
+                  break;
+                case 'IOS_APP_DATA_STREAM':
+                  updateFields = ['displayName', 'iosAppStreamData.bundleId'];
+                  break;
+              }
+
+              const updateMask = updateFields.join(',');
+              const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.parentURL}?updateMask=${updateMask}`;
+
+              const headers = {
+                Authorization: `Bearer ${token[0].token}`,
+                'Content-Type': 'application/json',
+                'Accept-Encoding': 'gzip',
+              };
+
+              try {
+                const formDataToValidate = { forms: [identifier] };
+
+                const validationResult = FormsSchema.safeParse(formDataToValidate);
+
+                if (!validationResult.success) {
+                  let errorMessage = validationResult.error.issues
+                    .map((issue) => `${issue.path[0]}: ${issue.message}`)
+                    .join('. ');
+                  errors.push(errorMessage);
                   toUpdateStreams.delete(identifier);
-                  return;
+                  return {
+                    identifier,
+                    success: false,
+                    error: errorMessage,
+                  };
                 }
 
-                let updateFields: string[] = [];
+                // Accessing the validated property data
+                const validatedContainerData = validationResult.data.forms[0];
 
-                switch (identifier.type) {
-                  case 'WEB_DATA_STREAM':
-                    updateFields = ['displayName', 'webStreamData.defaultUri'];
-                    break;
-                  case 'ANDROID_APP_DATA_STREAM':
-                    updateFields = [
-                      'displayName',
-                      'androidAppStreamData.packageName',
-                    ];
-                    break;
-                  case 'IOS_APP_DATA_STREAM':
-                    updateFields = ['displayName', 'iosAppStreamData.bundleId'];
-                    break;
-                }
-
-                const updateMask = updateFields.join(',');
-                const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.parentURL}?updateMask=${updateMask}`;
-
-                const headers = {
-                  Authorization: `Bearer ${token[0].token}`,
-                  'Content-Type': 'application/json',
-                  'Accept-Encoding': 'gzip',
+                let requestBody: any = {
+                  displayName: validatedContainerData.displayName,
+                  type: validatedContainerData.type,
                 };
 
-                try {
-                  const formDataToValidate = { forms: [identifier] };
-
-                  const validationResult =
-                    FormsSchema.safeParse(formDataToValidate);
-
-                  if (!validationResult.success) {
-                    let errorMessage = validationResult.error.issues
-                      .map((issue) => `${issue.path[0]}: ${issue.message}`)
-                      .join('. ');
-                    errors.push(errorMessage);
-                    toUpdateStreams.delete(identifier);
-                    return {
-                      identifier,
-                      success: false,
-                      error: errorMessage,
+                // Dynamically add the specific stream data based on the type
+                switch (validatedContainerData.type) {
+                  case 'WEB_DATA_STREAM':
+                    requestBody = {
+                      ...requestBody,
+                      webStreamData: {
+                        defaultUri: validatedContainerData.webStreamData.defaultUri,
+                      },
                     };
-                  }
+                    break;
+                  case 'ANDROID_APP_DATA_STREAM':
+                    requestBody = {
+                      ...requestBody,
+                      androidAppStreamData: {
+                        packageName: validatedContainerData.androidAppStreamData.packageName,
+                      },
+                    };
+                    break;
+                  case 'IOS_APP_DATA_STREAM':
+                    requestBody = {
+                      ...requestBody,
+                      iosAppStreamData: {
+                        bundleId: validatedContainerData.iosAppStreamData.bundleId,
+                      },
+                    };
+                    break;
+                  // You can add more cases here if there are other types
+                  default:
+                    // Handle unexpected type or throw an error
+                    throw new Error('Unsupported stream type');
+                }
 
-                  // Accessing the validated property data
-                  const validatedContainerData = validationResult.data.forms[0];
+                // Now, requestBody is prepared with the right structure based on the type
+                const response = await fetch(url, {
+                  method: 'PATCH',
+                  headers: headers,
+                  body: JSON.stringify(requestBody),
+                });
 
-                  let requestBody: any = {
-                    displayName: validatedContainerData.displayName,
-                    type: validatedContainerData.type,
-                  };
+                let parsedResponse;
 
-                  // Dynamically add the specific stream data based on the type
-                  switch (validatedContainerData.type) {
-                    case 'WEB_DATA_STREAM':
-                      requestBody = {
-                        ...requestBody,
-                        webStreamData: {
-                          defaultUri:
-                            validatedContainerData.webStreamData.defaultUri,
-                        },
-                      };
-                      break;
-                    case 'ANDROID_APP_DATA_STREAM':
-                      requestBody = {
-                        ...requestBody,
-                        androidAppStreamData: {
-                          packageName:
-                            validatedContainerData.androidAppStreamData
-                              .packageName,
-                        },
-                      };
-                      break;
-                    case 'IOS_APP_DATA_STREAM':
-                      requestBody = {
-                        ...requestBody,
-                        iosAppStreamData: {
-                          bundleId:
-                            validatedContainerData.iosAppStreamData.bundleId,
-                        },
-                      };
-                      break;
-                    // You can add more cases here if there are other types
-                    default:
-                      // Handle unexpected type or throw an error
-                      throw new Error('Unsupported stream type');
-                  }
-
-                  // Now, requestBody is prepared with the right structure based on the type
-                  const response = await fetch(url, {
-                    method: 'PATCH',
-                    headers: headers,
-                    body: JSON.stringify(requestBody),
-                  });
-
-                  let parsedResponse;
-
-                  if (response.ok) {
-                    successfulCreations.push(
-                      validatedContainerData.displayName
-                    );
-                    toUpdateStreams.delete(identifier);
-                    fetchGASettings(userId);
-
-                    await prisma.tierLimit.update({
-                      where: { id: tierLimitResponse.id },
-                      data: { updateUsage: { increment: 1 } },
-                    });
-                    creationResults.push({
-                      streamName: validatedContainerData.displayName,
-                      success: true,
-                      message: `Successfully updated property ${validatedContainerData.displayName}`,
-                    });
-                  } else {
-                    parsedResponse = await response.json();
-
-                    const errorResult = await handleApiResponseError(
-                      response,
-                      parsedResponse,
-                      'property',
-                      [validatedContainerData.displayName]
-                    );
-
-                    if (errorResult) {
-                      errors.push(`${errorResult.message}`);
-                      if (
-                        errorResult.errorCode === 403 &&
-                        parsedResponse.message === 'Feature limit reached'
-                      ) {
-                        featureLimitReached.push(
-                          validatedContainerData.displayName
-                        );
-                      } else if (errorResult.errorCode === 404) {
-                        notFoundLimit.push({
-                          id: identifier.property,
-                          name: validatedContainerData.displayName,
-                        });
-                      }
-                    } else {
-                      errors.push(
-                        `An unknown error occurred for property ${validatedContainerData.displayName}.`
-                      );
-                    }
-
-                    toUpdateStreams.delete(identifier);
-                    permissionDenied = errorResult ? true : permissionDenied;
-                    creationResults.push({
-                      streamName: validatedContainerData.displayName,
-                      success: false,
-                      message: errorResult?.message,
-                    });
-                  }
-                } catch (error: any) {
-                  errors.push(
-                    `Exception creating property ${identifier.displayName}: ${error.message}`
-                  );
+                if (response.ok) {
+                  successfulCreations.push(validatedContainerData.displayName);
                   toUpdateStreams.delete(identifier);
+                  fetchGASettings(userId);
+
+                  await prisma.tierLimit.update({
+                    where: { id: tierLimitResponse.id },
+                    data: { updateUsage: { increment: 1 } },
+                  });
                   creationResults.push({
-                    streamName: identifier.displayName,
+                    streamName: validatedContainerData.displayName,
+                    success: true,
+                    message: `Successfully updated property ${validatedContainerData.displayName}`,
+                  });
+                } else {
+                  parsedResponse = await response.json();
+
+                  const errorResult = await handleApiResponseError(
+                    response,
+                    parsedResponse,
+                    'property',
+                    [validatedContainerData.displayName]
+                  );
+
+                  if (errorResult) {
+                    errors.push(`${errorResult.message}`);
+                    if (
+                      errorResult.errorCode === 403 &&
+                      parsedResponse.message === 'Feature limit reached'
+                    ) {
+                      featureLimitReached.push(validatedContainerData.displayName);
+                    } else if (errorResult.errorCode === 404) {
+                      notFoundLimit.push({
+                        id: identifier.property,
+                        name: validatedContainerData.displayName,
+                      });
+                    }
+                  } else {
+                    errors.push(
+                      `An unknown error occurred for property ${validatedContainerData.displayName}.`
+                    );
+                  }
+
+                  toUpdateStreams.delete(identifier);
+                  permissionDenied = errorResult ? true : permissionDenied;
+                  creationResults.push({
+                    streamName: validatedContainerData.displayName,
                     success: false,
-                    message: error.message,
+                    message: errorResult?.message,
                   });
                 }
+              } catch (error: any) {
+                errors.push(
+                  `Exception creating property ${identifier.displayName}: ${error.message}`
+                );
+                toUpdateStreams.delete(identifier);
+                creationResults.push({
+                  streamName: identifier.displayName,
+                  success: false,
+                  message: error.message,
+                });
               }
-            );
+            });
 
             await Promise.all(updatePromises);
           });
@@ -763,15 +706,11 @@ export async function updateGAPropertyStreams(formData: DataStreamType) {
               success: false,
               limitReached: true,
               notFoundError: false,
-              message: `Feature limit reached for streams: ${featureLimitReached.join(
-                ', '
-              )}`,
+              message: `Feature limit reached for streams: ${featureLimitReached.join(', ')}`,
               results: featureLimitReached.map((displayName) => {
                 // Find the name associated with the propertyId
                 const streamName =
-                  streamNames.find((displayName) =>
-                    displayName.includes(displayName)
-                  ) || 'Unknown';
+                  streamNames.find((displayName) => displayName.includes(displayName)) || 'Unknown';
                 return {
                   id: [streamName], // Ensure id is an array
                   name: [streamName], // Ensure name is an array, match by propertyId or default to 'Unknown'
@@ -794,9 +733,7 @@ export async function updateGAPropertyStreams(formData: DataStreamType) {
         }
       } catch (error: any) {
         if (error.code === 429 || error.status === 429) {
-          await new Promise((resolve) =>
-            setTimeout(resolve, delay + Math.random() * 200)
-          );
+          await new Promise((resolve) => setTimeout(resolve, delay + Math.random() * 200));
           delay *= 2;
           retries++;
         } else {
@@ -921,105 +858,92 @@ export async function deleteGAPropertyStreams(
 
   if (toDeleteStreams.size <= availableDeleteUsage) {
     // Retry loop for deletion requests
-    while (
-      retries < MAX_RETRIES &&
-      toDeleteStreams.size > 0 &&
-      !permissionDenied
-    ) {
+    while (retries < MAX_RETRIES && toDeleteStreams.size > 0 && !permissionDenied) {
       try {
         // Enforcing rate limit
-        const { remaining } = await gaRateLimit.blockUntilReady(
-          `user:${userId}`,
-          1000
-        );
+        const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
 
         if (remaining > 0) {
           await limiter.schedule(async () => {
             // Creating promises for each property deletion
-            const deletePromises = Array.from(toDeleteStreams).map(
-              async (identifier) => {
-                const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.name}`;
-                const headers = {
-                  Authorization: `Bearer ${token[0].token}`,
-                  'Content-Type': 'application/json',
-                  'Accept-Encoding': 'gzip',
-                };
+            const deletePromises = Array.from(toDeleteStreams).map(async (identifier) => {
+              const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.name}`;
+              const headers = {
+                Authorization: `Bearer ${token[0].token}`,
+                'Content-Type': 'application/json',
+                'Accept-Encoding': 'gzip',
+              };
 
-                try {
-                  const response = await fetch(url, {
-                    method: 'DELETE',
-                    headers: headers,
+              try {
+                const response = await fetch(url, {
+                  method: 'DELETE',
+                  headers: headers,
+                });
+
+                const parsedResponse = await response.json();
+
+                const cleanedParentId = identifier.parent.split('/')[1];
+
+                if (response.ok) {
+                  IdsProcessed.add(identifier.name);
+                  successfulDeletions.push({
+                    name: identifier.name,
+                  });
+                  toDeleteStreams.delete(identifier);
+                  await prisma.ga.deleteMany({
+                    where: {
+                      accountId: `${identifier.accountId}`,
+                      propertyId: cleanedParentId,
+                      userId: userId, // Ensure this matches the user ID
+                    },
+                  });
+                  await prisma.tierLimit.update({
+                    where: { id: tierLimitResponse.id },
+                    data: { deleteUsage: { increment: 1 } },
                   });
 
-                  const parsedResponse = await response.json();
-
-                  const cleanedParentId = identifier.parent.split('/')[1];
-
-                  if (response.ok) {
-                    IdsProcessed.add(identifier.name);
-                    successfulDeletions.push({
-                      name: identifier.name,
-                    });
-                    toDeleteStreams.delete(identifier);
-                    await prisma.ga.deleteMany({
-                      where: {
-                        accountId: `${identifier.accountId}`,
-                        propertyId: cleanedParentId,
-                        userId: userId, // Ensure this matches the user ID
-                      },
-                    });
-                    await prisma.tierLimit.update({
-                      where: { id: tierLimitResponse.id },
-                      data: { deleteUsage: { increment: 1 } },
-                    });
-
-                    return {
-                      name: identifier.name,
-                      displayName: identifier.displayName,
-                      success: true,
-                    };
-                  } else {
-                    const errorResult = await handleApiResponseError(
-                      response,
-                      parsedResponse,
-                      'GA4Stream',
-                      streamNames
-                    );
-
-                    if (errorResult) {
-                      errors.push(`${errorResult.message}`);
-                      if (
-                        errorResult.errorCode === 403 &&
-                        parsedResponse.message === 'Feature limit reached'
-                      ) {
-                        featureLimitReached.push({
-                          name: identifier.name,
-                        });
-                      } else if (errorResult.errorCode === 404) {
-                        notFoundLimit.push({
-                          name: identifier.name,
-                        });
-                      } else {
-                        errors.push(
-                          `An unknown error occurred for property ${streamNames}.`
-                        );
-                      }
-
-                      toDeleteStreams.delete(identifier);
-                      permissionDenied = errorResult ? true : permissionDenied;
-                    }
-                  }
-                } catch (error: any) {
-                  // Handling exceptions during fetch
-                  errors.push(
-                    `Error deleting property ${identifier.parent}: ${error.message}`
+                  return {
+                    name: identifier.name,
+                    displayName: identifier.displayName,
+                    success: true,
+                  };
+                } else {
+                  const errorResult = await handleApiResponseError(
+                    response,
+                    parsedResponse,
+                    'GA4Stream',
+                    streamNames
                   );
+
+                  if (errorResult) {
+                    errors.push(`${errorResult.message}`);
+                    if (
+                      errorResult.errorCode === 403 &&
+                      parsedResponse.message === 'Feature limit reached'
+                    ) {
+                      featureLimitReached.push({
+                        name: identifier.name,
+                      });
+                    } else if (errorResult.errorCode === 404) {
+                      notFoundLimit.push({
+                        name: identifier.name,
+                      });
+                    } else {
+                      errors.push(`An unknown error occurred for property ${streamNames}.`);
+                    }
+
+                    toDeleteStreams.delete(identifier);
+                    permissionDenied = errorResult ? true : permissionDenied;
+                  }
                 }
-                IdsProcessed.add(identifier.parent);
-                toDeleteStreams.delete(identifier);
-                return { name: identifier.parent, success: false };
+              } catch (error: any) {
+                // Handling exceptions during fetch
+                errors.push(`Error deleting property ${identifier.parent}: ${error.message}`);
               }
-            );
+              IdsProcessed.add(identifier.parent);
+              toDeleteStreams.delete(identifier);
+              return { name: identifier.parent, success: false };
+            });
 
             // Awaiting all deletion promises
             await Promise.all(deletePromises);
@@ -1036,9 +960,7 @@ export async function deleteGAPropertyStreams(
               )}. All other streams were successfully deleted.`,
               results: notFoundLimit.map(({ name }) => ({
                 id: [name], // Combine accountId and propertyId into a single array of strings
-                name: [
-                  streamNames.find((name) => name.includes(name)) || 'Unknown',
-                ], // Ensure name is an array, match by propertyId or default to 'Unknown'
+                name: [streamNames.find((name) => name.includes(name)) || 'Unknown'], // Ensure name is an array, match by propertyId or default to 'Unknown'
                 success: false,
                 notFound: true,
               })),
@@ -1049,14 +971,10 @@ export async function deleteGAPropertyStreams(
               success: false,
               limitReached: true,
               notFoundError: false,
-              message: `Feature limit reached for streams: ${featureLimitReached.join(
-                ', '
-              )}`,
+              message: `Feature limit reached for streams: ${featureLimitReached.join(', ')}`,
               results: featureLimitReached.map(({ name }) => ({
                 id: [name], // Ensure id is an array
-                name: [
-                  streamNames.find((name) => name.includes(name)) || 'Unknown',
-                ], // Ensure name is an array, match by accountId or default to 'Unknown'
+                name: [streamNames.find((name) => name.includes(name)) || 'Unknown'], // Ensure name is an array, match by accountId or default to 'Unknown'
                 success: false,
                 featureLimitReached: true,
               })),

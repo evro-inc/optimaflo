@@ -15,9 +15,7 @@ export async function GET(
 ) {
   try {
     // Define a Joi schema for the price ID
-    const schema = Joi.string()
-      .pattern(new RegExp('^price_[A-Za-z0-9]{14}$'))
-      .required();
+    const schema = Joi.string().pattern(new RegExp('^price_[A-Za-z0-9]{14}$')).required();
 
     // Validate the price ID against the schema
     const { error } = schema.validate(params.id);
@@ -130,10 +128,7 @@ export async function DELETE(
     });
   } catch (error: any) {
     // If the price is not found in the database, return a 404 Not Found response
-    if (
-      error instanceof prisma.PrismaClientKnownRequestError &&
-      error.code === 'P2016'
-    ) {
+    if (error instanceof prisma.PrismaClientKnownRequestError && error.code === 'P2016') {
       return NextResponse.json({ error: 'Price not found' }, { status: 404 });
     }
 
