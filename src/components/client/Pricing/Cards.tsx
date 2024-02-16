@@ -37,7 +37,17 @@ export default function PricingCards({ products = [] }: Props) {
 
   useSubscription(userId);
   const { subscription, isLoading } = useSelector(selectSubscriptionState);
-  const buttonText = subscription ? 'Manage' : 'Subscribe';
+
+  const currentSubscriptionProduct =
+    subscription && subscription.length > 0 ? subscription[0].Product : null;
+
+  // Find if any product matches the subscribed product's name
+  const isSubscribedToProduct = products.find(
+    (product) => currentSubscriptionProduct && product.name === currentSubscriptionProduct.name
+  );
+
+  // Set buttonText based on whether there is a subscribed product
+  const buttonText = isSubscribedToProduct ? 'Manage' : 'Subscribe';
 
   const handleCheckout = async (price: Price, product: ProductWithPrice) => {
     try {
@@ -49,7 +59,7 @@ export default function PricingCards({ products = [] }: Props) {
         setShowAlert(false); // Hide the alert if there is a session
       }
 
-      if (subscription) {
+      if (isSubscribedToProduct) {
         // If they do, redirect to the Stripe customer portal
 
         const { url } = await fetch('/api/create-portal-link', {

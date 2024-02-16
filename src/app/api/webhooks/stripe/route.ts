@@ -374,6 +374,8 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
       create: subscriptionData,
     });
 
+    console.log('createdOrUpdatedSubscription', createdOrUpdatedSubscription);
+
     // Confirm that the subscription was created or updated
     if (!createdOrUpdatedSubscription) {
       throw new Error('Failed to create or update subscription');
