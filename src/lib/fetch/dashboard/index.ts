@@ -139,7 +139,6 @@ export async function fetchGtmSettings(userId: string) {
 
 /* GA UTILS */
 
-
 /* NEEDS TO BE REFACTORED FOR GA4 */
 export async function fetchGASettings(userId: string) {
   // Check if the User record exists
