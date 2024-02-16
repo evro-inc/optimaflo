@@ -52,7 +52,6 @@ export function DataTable<TData, TValue>({
   properties,
   accounts,
 }: DataTableProps<TData, TValue>) {
-
   const { user } = useUser();
   const userId = user?.id;
   const [sorting, setSorting] = React.useState<SortingState>([]);

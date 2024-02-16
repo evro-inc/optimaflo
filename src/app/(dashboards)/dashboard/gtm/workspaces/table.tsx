@@ -97,15 +97,12 @@ export function DataTable<TData, TValue>({
       },
     });
   };
-  
+
   const selectedRowsData = table.getSelectedRowModel().rows.map((row) => row.original);
 
   const handleDelete = useDeleteHook(selectedRowsData, table);
   const handleCreateClick = useCreateHookForm(userId, 'GTMWorkspaces');
   const handleUpdateClick = useUpdateHookForm(userId, 'GTMWorkspaces');
-
-
-
 
   return (
     <>

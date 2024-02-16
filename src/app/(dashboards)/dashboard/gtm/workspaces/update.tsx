@@ -213,7 +213,7 @@ const FormUpdateWorkspace: React.FC<FormUpdateWorkspaceProps> = ({
           containerId: '',
         },
       ],
-    });    
+    });
     table.resetRowSelection({}); // Reset selected rows
 
     // Close the modal

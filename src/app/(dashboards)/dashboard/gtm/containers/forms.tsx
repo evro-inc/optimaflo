@@ -4,7 +4,7 @@ import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { selectGlobal, toggleCreate, toggleUpdate } from '@/src/redux/globalSlice';
 import { selectTable, setIsLimitReached } from '@/src/redux/tableSlice';
-import { useError } from '@/src/utils/client';
+import { useError } from '@/src/hooks/helpers';
 
 import { ErrorMessage } from '@/src/components/client/modals/Error';
 

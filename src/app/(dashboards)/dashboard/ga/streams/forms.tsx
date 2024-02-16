@@ -8,7 +8,7 @@ import {
   toggleUpdate, // This was changed to be specific for properties
 } from '@/src/redux/globalSlice'; // This was changed from sharedSlice
 import { selectTable, setIsLimitReached } from '@/src/redux/tableSlice';
-import { useError } from '@/src/utils/client';
+import { useError } from '@/src/hooks/helpers';
 
 import { ErrorMessage } from '@/src/components/client/modals/Error';
 

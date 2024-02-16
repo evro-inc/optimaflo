@@ -1,8 +1,9 @@
 import { setUserDetails } from '@/src/redux/userSlice';
 import { setSubscription } from '@/src/redux/subscriberSlice';
 import { useEffect } from 'react';
-import { useDispatch } from 'react-redux';
 import { setLoading } from '@/src/redux/globalSlice';
+import { setError } from '@/src/redux/tableSlice';
+import { useDispatch, useSelector } from 'react-redux';
 
 // hooks/useUserDetails.js
 export const useUserDetails = (userId) => {
@@ -47,4 +48,14 @@ export const useSubscription = (userId) => {
 
     fetchSubscription();
   }, [userId, dispatch]);
+};
+
+export const useError = () => {
+  const dispatch = useDispatch();
+  const error = useSelector((state: any) => state.table.error);
+
+  const setErrorState = (errorMessage) => dispatch(setError(errorMessage));
+  const clearError = () => dispatch(setError(null));
+
+  return { error, setErrorState, clearError };
 };

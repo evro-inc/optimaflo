@@ -50,7 +50,6 @@ export function DataTable<TData, TValue>({
   data,
   accounts,
 }: DataTableProps<TData, TValue>) {
-
   const { user } = useUser();
 
   const userId = user?.id;
@@ -101,9 +100,6 @@ export function DataTable<TData, TValue>({
   const handleDelete = useDeleteHook(selectedRowsData, table);
   const handleCreateClick = useCreateHookForm(userId, 'GTMContainer');
   const handleUpdateClick = useUpdateHookForm(userId, 'GTMContainer');
-
-
-
 
   return (
     <>
