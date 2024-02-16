@@ -34,6 +34,8 @@ export async function GET(
     const response = await prisma.subscription.findMany({
       where: { userId: userId },
       include: {
+        Invoice: true,
+        Product: true,
         Price: {
           include: {
             Product: true,

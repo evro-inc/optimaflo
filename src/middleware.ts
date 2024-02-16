@@ -45,7 +45,9 @@ export default authMiddleware({
         )) {
           const regex = new RegExp(regexString);
           if (regex.test(req.nextUrl.pathname)) {
+            
             const subscriptions = await getSubscriptions(auth.userId);
+            
             const activeProductIds = subscriptions
               .filter((subscription) => subscription.status === 'active')
               .map((subscription) => subscription.productId);

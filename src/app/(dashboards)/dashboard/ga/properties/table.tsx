@@ -194,7 +194,6 @@ export function DataTable<TData, TValue>({
         }
       }
     } catch (error: any) {
-      console.log('error', error);
       throw new Error(error);
     } finally {
       table.resetRowSelection();

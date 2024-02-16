@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Price } from '@prisma/client';
 import { ProductWithPrice } from '@/src/types/types';
-import { postData } from '@/src/utils/helpers';
 import { getStripe } from '@/src/lib/stripe-client';
 import { useSelector } from 'react-redux';
 import { selectUser } from '@/src/redux/userSlice';
@@ -46,10 +45,15 @@ export default function PricingCards({ products = [] }: Props) {
       }
       if (product.name === (subscription as any)?.Price?.Product?.name) {
         // If they do, redirect to the Stripe customer portal
-        const { url } = await postData({
-          url: '/api/create-portal-link',
-          data: { customerId: (subscription as any)?.User?.Customer?.id }, // replace with the actual customer id
-        });
+
+
+        const { url } = await fetch('/api/create-portal-link', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ customerId: (subscription as any)?.User?.Customer?.id  }),
+        }).then((res) => res.json());
+
+
 
         if (!url) {
           throw new Error('Failed to generate billing portal URL');
@@ -58,10 +62,11 @@ export default function PricingCards({ products = [] }: Props) {
         //nextjs redirect
         router.push(url);
       } else {
-        const { sessionId } = await postData({
-          url: '/api/create-checkout-session',
-          data: { price },
-        });
+        const { sessionId } = await fetch('/api/create-checkout-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ price }),
+        }).then((res) => res.json());
 
         const stripe = await getStripe();
         if (!stripe) {

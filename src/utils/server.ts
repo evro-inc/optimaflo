@@ -33,27 +33,6 @@ export const getURL = () => {
   return vercelUrl;
 };
 
-export const postData = async ({ url, data }: { url: string; data?: any }) => {
-  const res: Response = await fetch(url, {
-    method: 'POST',
-    headers: new Headers({ 'Content-Type': 'application/json' }),
-    credentials: 'same-origin',
-    body: JSON.stringify(data),
-  });
-
-  if (!res.ok) {
-    throw Error(res.statusText);
-  }
-
-  return res.json();
-};
-
-export const toDateTime = (secs: number) => {
-  var t = new Date('1970-01-01T00:30:00Z'); // Unix epoch start.
-  t.setSeconds(secs);
-  return t;
-};
-
 export const tierDeleteLimit = async (userId: string, featureName: string) => {
   try {
     const tierLimitRecord = await prisma.tierLimit.findFirst({

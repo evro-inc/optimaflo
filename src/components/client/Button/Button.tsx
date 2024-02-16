@@ -23,7 +23,6 @@ import {
 } from '@/src/components/ui/alert-dialog';
 import { setLoading } from '@/src/redux/globalSlice';
 import { useDispatch } from 'react-redux';
-import { postData } from '@/src/utils/helpers';
 
 const getModeClasses = (variant, billingInterval?) => {
   let baseClasses = '';
@@ -316,9 +315,10 @@ export const ButtonCustomerPortal = ({
   const redirectToCustomerPortal = async () => {
     dispatch(setLoading(true));
     try {
-      const { url } = await postData({
-        url: '/api/create-portal-link',
-      });
+        const { url } = await fetch('/api/create-portal-link', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        }).then((res) => res.json());
       window.location.assign(url);
     } catch (error: any) {
       if (error) throw new Error(error);

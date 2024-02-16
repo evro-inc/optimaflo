@@ -42,7 +42,12 @@ export async function GET(
       },
       include: {
         Customer: true,
-        Subscription: true,
+        Subscription: {
+          include: {
+            Invoice: true, 
+            Product: true,
+          },
+        },
       },
     });
 
@@ -50,6 +55,10 @@ export async function GET(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    if (user.id !== id) {
+      return NextResponse.json({ error: 'User ID mismatch' }, { status: 404 });
+    }
+    
     const response = {
       data: user,
       meta: {
