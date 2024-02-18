@@ -200,8 +200,8 @@ export type FormCreateWorkspaceProps = {
 };
 
 export type FormCreateProps = {
-  showOptions: boolean;
-  onClose: () => void;
+  showOptions?: boolean;
+  onClose?: () => void;
   table: any;
   accounts?: any;
   properties?: any;

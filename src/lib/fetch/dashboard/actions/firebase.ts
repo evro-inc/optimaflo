@@ -18,9 +18,6 @@ import { gaRateLimit } from '@/src/lib/redis/rateLimits';
 import { limiter } from '@/src/lib/bottleneck';
 import { fetchGASettings } from '..';
 
-
-
-
 /************************************************************************************
   Function to list projects
 ************************************************************************************/
@@ -48,11 +45,8 @@ export async function listGCPProjects() {
     try {
       const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
       if (remaining > 0) {
-
         await limiter.schedule(async () => {
-
-          const url = 'https://firebase.googleapis.com/v1beta1/availableProjects'
-
+          const url = 'https://firebase.googleapis.com/v1beta1/availableProjects';
 
           const headers = {
             Authorization: `Bearer ${accessToken}`,
@@ -60,35 +54,33 @@ export async function listGCPProjects() {
             'Accept-Encoding': 'gzip',
           };
 
-            try {
-              const response = await fetch(url, { headers });
+          try {
+            const response = await fetch(url, { headers });
 
-              if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
-              }
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
+            }
 
-              const responseBody = await response.json();
-              const projects = responseBody['projectInfo']
+            const responseBody = await response.json();
+            const projects = responseBody['projectInfo'];
 
-                 for (let i in projects) {
-      const project = projects[i];
-      console.log('Project ' + i);
-      console.log('ID: ' + project['project']);
-      console.log('Display Name: ' + project['displayName']);
-      console.log('');
-    }
+            for (let i in projects) {
+              const project = projects[i];
+              console.log('Project ' + i);
+              console.log('ID: ' + project['project']);
+              console.log('Display Name: ' + project['displayName']);
+              console.log('');
+            }
 
-                /* redis.set(cacheKey, JSON.stringify(projects), 'EX', 3600);
+            /* redis.set(cacheKey, JSON.stringify(projects), 'EX', 3600);
 
                 return projects; */
 
-              // Removed the problematic line here
-            } catch (error: any) {
-              throw new Error(`Error fetching data: ${error.message}`);
-            }
-         
+            // Removed the problematic line here
+          } catch (error: any) {
+            throw new Error(`Error fetching data: ${error.message}`);
+          }
         });
-
       }
     } catch (error: any) {
       if (error.code === 429 || error.status === 429) {
@@ -103,10 +95,6 @@ export async function listGCPProjects() {
   }
   throw new Error('Maximum retries reached without a successful response.');
 }
-
-
-
-
 
 /************************************************************************************
   Create a single property or multiple streams

@@ -15,21 +15,23 @@ import { ErrorMessage } from '@/src/components/client/modals/Error';
 // Dynamic imports for modals and forms
 const LimitReachedModal = dynamic(
   () =>
-    import('../../../../../components/client/modals/limitReached').then((mod) => mod.LimitReached),
+    import('../../../../../../components/client/modals/limitReached').then(
+      (mod) => mod.LimitReached
+    ),
   { ssr: false }
 );
 
 const NotFoundErrorModal = dynamic(
   () =>
-    import('../../../../../components/client/modals/notFoundError').then(
+    import('../../../../../../components/client/modals/notFoundError').then(
       (mod) => mod.NotFoundError
     ),
   { ssr: false }
 );
 
-const FormCreateStream = dynamic(() => import('./create'), {
+/* const FormCreateStream = dynamic(() => import('./(..)create/create'), {
   ssr: false,
-});
+}); */
 
 const FormUpdateStream = dynamic(() => import('./update'), {
   ssr: false,
@@ -51,7 +53,7 @@ function StreamForms({ accounts, properties, selectedRows, table }) {
       {error && <ErrorMessage onClose={clearError} />}
 
       {/* Forms */}
-      {showCreate && (
+      {/* {showCreate && (
         <FormCreateStream
           showOptions={showCreate}
           onClose={() => dispatch(toggleCreate())}
@@ -59,7 +61,7 @@ function StreamForms({ accounts, properties, selectedRows, table }) {
           properties={properties}
           table={tableData}
         />
-      )}
+      )} */}
       {showUpdate && (
         <FormUpdateStream
           showOptions={showUpdate}

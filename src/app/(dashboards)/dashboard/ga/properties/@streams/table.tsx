@@ -34,10 +34,11 @@ import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
 import { revalidate } from '@/src/utils/server';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
-import { useDeleteHook } from '../streams/delete';
+import { useDeleteHook } from './delete';
 
 import StreamForms from './forms';
 import { useCreateHookForm, useUpdateHookForm } from '@/src/hooks/useCRUD';
+import Link from 'next/link';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -115,7 +116,10 @@ export function DataTable<TData, TValue>({
         <div className="ml-auto space-x-4">
           <Button onClick={refreshAllCache}>Refresh</Button>
 
-          <Button onClick={handleCreateClick}>Create</Button>
+          {/* <Button onClick={handleCreateClick}>Create</Button> */}
+          <Button asChild>
+            <Link href="/dashboard/ga/wizards/stream/create">Create</Link>
+          </Button>
 
           <Button
             disabled={Object.keys(table.getState().rowSelection).length === 0}
@@ -213,12 +217,12 @@ export function DataTable<TData, TValue>({
           Next
         </Button>
       </div>
-      <StreamForms
+      {/* <StreamForms
         selectedRows={selectedRowsData}
         table={table}
         properties={properties}
         accounts={accounts}
-      />
+      /> */}
     </div>
   );
 }

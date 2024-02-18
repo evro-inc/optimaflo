@@ -1,8 +1,9 @@
 'use client';
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ButtonGroup } from '@/components/client/ButtonGroup/ButtonGroup';
-import { FeatureResponse, FormCreateProps, GA4StreamType } from '@/src/types/types';
+import { LimitReached } from '../../../../../../components/client/modals/limitReached';
+import { ButtonGroup } from '../../../../../../components/client/ButtonGroup/ButtonGroup';
+import { FeatureResponse, FormCreateProps } from '@/src/types/types';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   selectTable,
@@ -12,7 +13,10 @@ import {
 } from '@/src/redux/tableSlice';
 import { selectGlobal, setLoading } from '@/src/redux/globalSlice';
 import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
+import { CreatePropertySchema } from '@/src/lib/schemas/ga/properties';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { createProperties } from '@/src/lib/fetch/dashboard/actions/ga/properties';
 import dynamic from 'next/dynamic';
 import { toast } from 'sonner';
 import { Cross1Icon } from '@radix-ui/react-icons';
@@ -37,72 +41,49 @@ import {
   SelectValue,
 } from '@/src/components/ui/select';
 import { Button } from '@/src/components/ui/button';
-import { FormsSchema } from '@/src/lib/schemas/ga/streams';
-import { LimitReached } from '@/src/components/client/modals/limitReached';
-import { z } from 'zod';
-import { createGAPropertyStreams } from '@/src/lib/fetch/dashboard/actions/ga/streams';
-import { streamType } from './streamItems';
+import { CurrencyCodes, IndustryCategories, TimeZones } from './propertyItems';
 
 const NotFoundErrorModal = dynamic(
-  () => import('@/components/client/modals/notFoundError').then((mod) => mod.NotFoundError),
+  () =>
+    import('../../../../../../components/client/modals/notFoundError').then(
+      (mod) => mod.NotFoundError
+    ),
   { ssr: false }
 );
 
-type Forms = z.infer<typeof FormsSchema>;
+type Forms = z.infer<typeof CreatePropertySchema>;
 
-const FormCreateStream: React.FC<FormCreateProps> = ({
+const FormCreateProperty: React.FC<FormCreateProps> = ({
   showOptions,
   onClose,
-  properties = [],
+  parentData = [],
   table = [],
-  accounts = [],
 }) => {
   const formRefs = useRef<(HTMLFormElement | null)[]>([]);
   const dispatch = useDispatch();
   const { loading } = useSelector(selectGlobal);
   const isLimitReached = useSelector(selectTable).isLimitReached;
   const notFoundError = useSelector(selectTable).notFoundError;
+  const data = table.getRowModel().rows.map((row) => row.original);
 
-  const accountsWithProperties = accounts
-    .map((account) => {
-      const accountProperties = properties.filter((property) => property.parent === account.name);
-
-      return {
-        ...account,
-        properties: accountProperties,
-      };
-    })
-    .filter((account) => account.properties.length > 0);
-
-  const formDataDefaults: GA4StreamType = {
-    account: accountsWithProperties[0].name,
-    property: table[0].parent,
+  const formData = {
+    name: data[0].displayName,
+    parent: data[0].parent,
+    currencyCode: 'USD',
     displayName: '',
-    parentURL: '',
-    type: table[0].type,
-    webStreamData: {
-      measurementId: '',
-      firebaseAppId: '',
-      defaultUri: '',
-    },
-    androidAppStreamData: {
-      firebaseAppId: '',
-      packageName: '',
-    },
-    iosAppStreamData: {
-      firebaseAppId: '',
-      bundleId: '',
-    },
-    name: '',
-    accountId: '',
-    parent: '',
+    industryCategory: 'AUTOMOTIVE',
+    timeZone: 'America/New_York',
+    propertyType: 'PROPERTY_TYPE_ORDINARY',
+    retention: 'FOURTEEN_MONTHS',
+    resetOnNewActivity: true,
+    acknowledgment: true,
   };
 
   const form = useForm<Forms>({
     defaultValues: {
-      forms: [formDataDefaults],
+      forms: [formData],
     },
-    resolver: zodResolver(FormsSchema),
+    resolver: zodResolver(CreatePropertySchema),
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -111,7 +92,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
   });
 
   const addForm = () => {
-    append(formDataDefaults);
+    append(formData);
   };
 
   const removeForm = () => {
@@ -124,18 +105,19 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
     const { forms } = data;
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
-    toast('Creating streams...', {
+    toast('Creating properties...', {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
       },
     });
 
-    const uniqueStreams = new Set(forms.map((form) => form.property));
+    const uniqueProperties = new Set(forms.map((form) => form.parent));
+
     for (const form of forms) {
-      const identifier = `${form.property}-${form.displayName}`;
-      if (uniqueStreams.has(identifier)) {
-        toast.error(`Duplicate stream found for ${form.property} - ${form.displayName}`, {
+      const identifier = `${form.parent} - ${form.name} - ${form.displayName}`;
+      if (uniqueProperties.has(identifier)) {
+        toast.error(`Duplicate property found for ${form.name} - ${form.displayName}`, {
           action: {
             label: 'Close',
             onClick: () => toast.dismiss(),
@@ -144,17 +126,17 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
         dispatch(setLoading(false));
         return;
       }
-      uniqueStreams.add(identifier);
+      uniqueProperties.add(identifier);
     }
 
     try {
-      const res = (await createGAPropertyStreams({ forms })) as FeatureResponse;
+      const res = (await createProperties({ forms })) as FeatureResponse;
 
       if (res.success) {
         res.results.forEach((result) => {
           if (result.success) {
             toast.success(
-              `Stream ${result.name} created successfully. The table will update shortly.`,
+              `Property ${result.name} created successfully. The table will update shortly.`,
               {
                 action: {
                   label: 'Close',
@@ -169,7 +151,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
           res.results.forEach((result) => {
             if (result.notFound) {
               toast.error(
-                `Unable to create stream ${result.name}. Please check your access permissions. Any other streams created were successful.`,
+                `Unable to create container ${result.name}. Please check your access permissions. Any other containers created were successful.`,
                 {
                   action: {
                     label: 'Close',
@@ -189,7 +171,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
           res.results.forEach((result) => {
             if (result.limitReached) {
               toast.error(
-                `Unable to create stream ${result.name}. You have ${result.remaining} more stream(s) you can create.`,
+                `Unable to create container ${result.name}. You have ${result.remaining} more container(s) you can create.`,
                 {
                   action: {
                     label: 'Close',
@@ -205,7 +187,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
 
         onClose(); // Close the form
         form.reset({
-          forms: [formDataDefaults],
+          forms: [formData],
         });
       }
 
@@ -213,7 +195,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
 
       // Reset the forms here, regardless of success or limit reached
       form.reset({
-        forms: [formDataDefaults],
+        forms: [formData],
       });
     } catch (error) {
       toast.error('An unexpected error occurred.', {
@@ -231,12 +213,20 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
   const handleClose = () => {
     // Reset the forms to their initial state
     form.reset({
-      forms: [formDataDefaults],
+      forms: [formData],
     });
 
     // Close the modal
     onClose();
   };
+
+  const accountIdsWithProperties = new Set(data.map((property) => property.parent));
+  const transformedSet = new Set(
+    Array.from(accountIdsWithProperties, (value) => `accounts/${value}`)
+  );
+
+  // match parent with account
+  const accountsWithProperties = parentData.filter((account) => transformedSet.has(account.name));
 
   return (
     <>
@@ -267,18 +257,33 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                   {
                     text: loading ? 'Submitting...' : 'Submit',
                     type: 'submit',
-                    form: 'createStream',
+                    form: 'createProperty',
                   },
                 ]}
               />
             </div>
 
-            <div className="stream mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-end">
+            <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-end">
               {fields.map((field, index) => {
-                const selectedAccountId = form.watch(`forms.${index}.account`);
+                const selectedPropertyId = form.watch(`forms.${index}.parent`);
 
-                const filteredProperties = properties.filter(
-                  (property) => property.parent === selectedAccountId
+                // Filter propertys to only include those that belong to the selected account
+                const filteredProperties = data.filter(
+                  (property) => property.parent === selectedPropertyId
+                );
+
+                // Create a Set to store unique container IDs
+                const uniquePropertyIds = new Set(
+                  filteredProperties.map((property) => property.parent)
+                );
+
+                // Filter the properties again to only include unique properties
+                const uniqueFilteredProperties = filteredProperties.filter(
+                  (property, idx, self) =>
+                    idx ===
+                    self.findIndex(
+                      (p) => p.parent === property.parent && uniquePropertyIds.has(p.parent)
+                    )
                 );
 
                 return (
@@ -290,7 +295,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                         <Card className="w-full max-w-xl mx-auto bg-white shadow-md rounded-lg overflow-hidden">
                           <CardHeader className="bg-gray-100 p-4">
                             <CardTitle className="text-lg font-semibold">
-                              Stream {index + 1}
+                              Property {index + 1}
                             </CardTitle>
                           </CardHeader>
                           <CardContent className="p-4">
@@ -298,7 +303,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                               <form
                                 ref={(el) => (formRefs.current[index] = el)}
                                 onSubmit={form.handleSubmit(processForm)}
-                                id="createStream"
+                                id="createProperty"
                                 className="space-y-6"
                               >
                                 <FormField
@@ -306,13 +311,13 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                                   name={`forms.${index}.displayName`}
                                   render={({ field }) => (
                                     <FormItem>
-                                      <FormLabel>New Stream Name</FormLabel>
+                                      <FormLabel>New Property Name</FormLabel>
                                       <FormDescription>
-                                        This is the stream name you want to create.
+                                        This is the property name you want to create.
                                       </FormDescription>
                                       <FormControl>
                                         <Input
-                                          placeholder="Name of the stream"
+                                          placeholder="Name of the property"
                                           {...form.register(`forms.${index}.displayName`)}
                                           {...field}
                                         />
@@ -325,7 +330,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
 
                                 <FormField
                                   control={form.control}
-                                  name={`forms.${index}.account`}
+                                  name={`forms.${index}.parent`}
                                   render={({ field }) => (
                                     <FormItem>
                                       <FormLabel>Account</FormLabel>
@@ -334,7 +339,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                                       </FormDescription>
                                       <FormControl>
                                         <Select
-                                          {...form.register(`forms.${index}.account`)}
+                                          {...form.register(`forms.${index}.parent`)}
                                           {...field}
                                           onValueChange={field.onChange}
                                         >
@@ -361,40 +366,31 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
 
                                 <FormField
                                   control={form.control}
-                                  name={`forms.${index}.property`}
+                                  name={`forms.${index}.currencyCode`}
                                   render={({ field }) => (
                                     <FormItem>
-                                      <FormLabel>Property</FormLabel>
+                                      <FormLabel>Currency</FormLabel>
                                       <FormDescription>
-                                        Which property do you want to create the stream in?
+                                        Which currency do you want to include in the property?
                                       </FormDescription>
                                       <FormControl>
                                         <Select
-                                          {...form.register(`forms.${index}.property`)}
+                                          {...form.register(`forms.${index}.currencyCode`)}
                                           {...field}
                                           onValueChange={field.onChange}
                                         >
                                           <SelectTrigger className="w-[180px]">
-                                            <SelectValue placeholder="Select a property." />
+                                            <SelectValue placeholder="Select a currency." />
                                           </SelectTrigger>
 
                                           <SelectContent>
                                             <SelectGroup>
-                                              <SelectLabel>Property</SelectLabel>
-                                              {filteredProperties.length > 0 ? (
-                                                filteredProperties.map((property) => (
-                                                  <SelectItem
-                                                    key={property.name}
-                                                    value={property.name}
-                                                  >
-                                                    {property.displayName}
-                                                  </SelectItem>
-                                                ))
-                                              ) : (
-                                                <SelectItem value="" disabled>
-                                                  No properties available
+                                              <SelectLabel>Currency</SelectLabel>
+                                              {CurrencyCodes.map((code) => (
+                                                <SelectItem key={code} value={code}>
+                                                  {code}
                                                 </SelectItem>
-                                              )}
+                                              ))}
                                             </SelectGroup>
                                           </SelectContent>
                                         </Select>
@@ -407,76 +403,78 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
 
                                 <FormField
                                   control={form.control}
-                                  name={`forms.${index}.type`}
+                                  name={`forms.${index}.timeZone`}
                                   render={({ field }) => (
                                     <FormItem>
-                                      <FormLabel>Stream Type</FormLabel>
-                                      <FormDescription>Set the stream type.</FormDescription>
+                                      <FormLabel>Time Zone</FormLabel>
+                                      <FormDescription>
+                                        Which timeZone do you want to include in the property?
+                                      </FormDescription>
                                       <FormControl>
                                         <Select
-                                          {...form.register(`forms.${index}.type`)}
+                                          {...form.register(`forms.${index}.timeZone`)}
                                           {...field}
                                           onValueChange={field.onChange}
                                         >
                                           <SelectTrigger className="w-[180px]">
-                                            <SelectValue placeholder="Select a stream type." />
+                                            <SelectValue placeholder="Select a timeZone." />
                                           </SelectTrigger>
+
                                           <SelectContent>
                                             <SelectGroup>
-                                              <SelectLabel>Retention Setting</SelectLabel>
-                                              {Object.entries(streamType).map(([label, value]) => (
-                                                <SelectItem key={value} value={value}>
-                                                  {label}
+                                              <SelectLabel>Timezone</SelectLabel>
+                                              {TimeZones.map((timeZone) => (
+                                                <SelectItem key={timeZone} value={timeZone}>
+                                                  {timeZone}
                                                 </SelectItem>
                                               ))}
                                             </SelectGroup>
                                           </SelectContent>
                                         </Select>
                                       </FormControl>
+
                                       <FormMessage />
                                     </FormItem>
                                   )}
                                 />
+                                <FormField
+                                  control={form.control}
+                                  name={`forms.${index}.industryCategory`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Category</FormLabel>
+                                      <FormDescription>
+                                        Which category do you want to include in the property?
+                                      </FormDescription>
+                                      <FormControl>
+                                        <Select
+                                          {...form.register(`forms.${index}.industryCategory`)}
+                                          {...field}
+                                          onValueChange={field.onChange}
+                                        >
+                                          <SelectTrigger className="w-[180px]">
+                                            <SelectValue placeholder="Select a category." />
+                                          </SelectTrigger>
 
-                                {Object.keys(streamType).map(
-                                  (type) =>
-                                    form.watch(`forms.${index}.type`) === streamType[type] && (
-                                      <FormField
-                                        control={form.control}
-                                        name={`forms.${index}.${
-                                          type.toLowerCase() === 'web'
-                                            ? 'webStreamData.defaultUri'
-                                            : type.toLowerCase() === 'android'
-                                            ? 'androidAppStreamData.packageName'
-                                            : 'iosAppStreamData.bundleId'
-                                        }`}
-                                        render={({ field }) => (
-                                          <FormItem>
-                                            <FormLabel>{type} Input</FormLabel>
-                                            <FormDescription>
-                                              This is the input for {type}.
-                                            </FormDescription>
-                                            <FormControl>
-                                              <Input
-                                                placeholder={`Enter ${type} input`}
-                                                {...form.register(
-                                                  `forms.${index}.${
-                                                    type.toLowerCase() === 'web'
-                                                      ? 'webStreamData.defaultUri'
-                                                      : type.toLowerCase() === 'android'
-                                                      ? 'androidAppStreamData.packageName'
-                                                      : 'iosAppStreamData.bundleId'
-                                                  }`
-                                                )}
-                                                {...field}
-                                              />
-                                            </FormControl>
-                                            <FormMessage />
-                                          </FormItem>
-                                        )}
-                                      />
-                                    )
-                                )}
+                                          <SelectContent>
+                                            <SelectGroup>
+                                              <SelectLabel>Timezone</SelectLabel>
+                                              {Object.entries(IndustryCategories).map(
+                                                ([label, value]) => (
+                                                  <SelectItem key={value} value={value}>
+                                                    {label}
+                                                  </SelectItem>
+                                                )
+                                              )}
+                                            </SelectGroup>
+                                          </SelectContent>
+                                        </Select>
+                                      </FormControl>
+
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
                               </form>
                             </Form>
                           </CardContent>
@@ -501,4 +499,4 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
   );
 };
 
-export default FormCreateStream;
+export default FormCreateProperty;

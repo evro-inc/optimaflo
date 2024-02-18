@@ -15,13 +15,15 @@ import { useError } from '@/src/hooks/helpers';
 // Dynamic imports for modals and forms
 const LimitReachedModal = dynamic(
   () =>
-    import('../../../../../components/client/modals/limitReached').then((mod) => mod.LimitReached),
+    import('../../../../../../components/client/modals/limitReached').then(
+      (mod) => mod.LimitReached
+    ),
   { ssr: false }
 );
 
 const NotFoundErrorModal = dynamic(
   () =>
-    import('../../../../../components/client/modals/notFoundError').then(
+    import('../../../../../../components/client/modals/notFoundError').then(
       (mod) => mod.NotFoundError
     ),
   { ssr: false }
@@ -51,14 +53,14 @@ function PropertyForms({ accounts, selectedRows, table }) {
       {error && <ErrorMessage onClose={clearError} />}
 
       {/* Forms */}
-      {showCreate && (
+      {/* {showCreate && (
         <FormCreateProperty
           showOptions={showCreate}
           onClose={() => dispatch(toggleCreate())}
           parentData={accounts}
           table={table}
         />
-      )}
+      )} */}
       {showUpdate && (
         <FormUpdateProperty
           showOptions={showUpdate}
