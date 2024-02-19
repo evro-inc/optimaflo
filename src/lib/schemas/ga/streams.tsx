@@ -17,6 +17,10 @@ const SingleFormSchema = z.object({
   }),
 });
 
+export const FormCreateAmountSchema = z.object({
+  amount: z.number(),
+});
+
 export const FormsSchema = z.object({
   forms: z.array(SingleFormSchema),
 });
