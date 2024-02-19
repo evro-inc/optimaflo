@@ -2,7 +2,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface FormState {
   formData: FormData | null;
-  loading: boolean;
+
   error: string | null;
   currentStep: number;
   streamCount: number;
@@ -10,7 +10,7 @@ interface FormState {
 
 const initialState: FormState = {
   formData: null,
-  loading: false,
+
   error: null,
   currentStep: 1,
   streamCount: 1,
@@ -23,9 +23,7 @@ const formSlice = createSlice({
     setFormData: (state, action: PayloadAction<FormData>) => {
       state.formData = action.payload;
     },
-    setLoading: (state, action: PayloadAction<boolean>) => {
-      state.loading = action.payload;
-    },
+
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
     },
@@ -46,7 +44,7 @@ const formSlice = createSlice({
 
 export const {
   setFormData,
-  setLoading,
+
   setError,
   setCurrentStep,
   incrementStep,

@@ -205,6 +205,7 @@ export type FormCreateProps = {
   table: any;
   accounts?: any;
   properties?: any;
+  tierLimits?: any;
 };
 
 export type WorkspaceType = {

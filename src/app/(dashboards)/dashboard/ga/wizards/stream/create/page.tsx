@@ -71,7 +71,12 @@ export default async function CreateStreamPage({
     <>
       <div className="container mx-auto py-10">
         {/* <FormCreateStream accounts={accounts} properties={properties} table={combinedData} /> */}
-        <FormCreateStream tierLimits={tierLimits} />
+        <FormCreateStream
+          tierLimits={tierLimits}
+          table={combinedData}
+          accounts={accounts}
+          properties={properties}
+        />
       </div>
     </>
   );
