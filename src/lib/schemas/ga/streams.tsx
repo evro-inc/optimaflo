@@ -7,13 +7,15 @@ const SingleFormSchema = z.object({
   account: z.string(),
   displayName: z.string(),
   webStreamData: z.object({
-    defaultUri: z.string().url(),
+    defaultUri: z.string().url().optional(),
   }).optional(),
   androidAppStreamData: z.object({
-    packageName: z.string().regex(/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/),
+    packageName: z.string().optional(),
+
   }).optional(),
   iosAppStreamData: z.object({
-    bundleId: z.string().regex(/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/),
+    bundleId: z.string().optional(),
+
   }).optional(),
 });
 

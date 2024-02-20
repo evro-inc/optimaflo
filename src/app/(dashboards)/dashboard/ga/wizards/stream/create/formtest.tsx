@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { setError, incrementStep, decrementStep, setStreamCount } from '@/redux/formSlice';
+import { setError, setLoading, incrementStep, decrementStep, setStreamCount } from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -38,8 +38,9 @@ import {
   setIsLimitReached,
   setNotFoundError,
 } from '@/src/redux/tableSlice';
-import { selectGlobal, setLoading } from '@/src/redux/globalSlice';
+import { selectGlobal } from '@/src/redux/globalSlice';
 import { RootState, store } from '@/src/redux/store';
+import { useRouter } from 'next/navigation';
 
 type Forms = z.infer<typeof FormsSchema>;
 
@@ -50,13 +51,13 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
   accounts = [],
 }) => {
   const dispatch = useDispatch();
-  const { loading } = useSelector(selectGlobal);
+  const loading = useSelector((state: RootState) => state.form.loading);
   const error = useSelector((state: RootState) => state.form.error);
   const currentStep = useSelector((state: RootState) => state.form.currentStep);
   const streamCount = useSelector((state: RootState) => state.form.streamCount);
   const isLimitReached = useSelector(selectTable).isLimitReached;
   const notFoundError = useSelector(selectTable).notFoundError;
-
+  const router = useRouter()    
   const foundTierLimit = tierLimits[18];
 
 
@@ -71,11 +72,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
     },
   });
 
-
-
-
-
-
+  
   // Effect to update streamCount when amount changes
   useEffect(() => {
     const amount = parseInt(formCreateAmount.getValues('amount').toString());
@@ -201,6 +198,9 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
             );
           }
         });
+
+        router.push('/dashboard/ga/properties')
+
       } else {
         if (res.notFoundError) {
           res.results.forEach((result) => {
@@ -259,27 +259,6 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
       dispatch(setLoading(false)); // Set loading to false
     }
   };
-  useEffect(() => {
-  console.log("Current step:", currentStep);
-  console.log("Stream count:", streamCount);
-  console.log("Loading state:", loading);
-  // Log any other relevant state or props here
-}, [currentStep, streamCount, loading]);
-
-useEffect(() => {
-  console.log("Form default values:", form.getValues());
-}, [form]);
-useEffect(() => {
-  console.log("Current fields state:", fields);
-}, [fields]);
-useEffect(() => {
-  const unsubscribe = store.subscribe(() => {
-    console.log("Redux state after change:", store.getState());
-  });
-  return () => {
-    unsubscribe();
-  };
-}, []);
 
 
   return (
@@ -341,7 +320,7 @@ useEffect(() => {
                   {/* Form */}
 
                   <Form {...form}>
-                    <form onSubmit={(e) => { console.log("Form onSubmit triggered"); form.handleSubmit(processForm, (errors) => console.log(errors))(e); }}
+                    <form onSubmit={ form.handleSubmit(processForm) }
 
                       id={`createStream-${currentStep - 1}`}
                       className="space-y-6"
@@ -352,10 +331,6 @@ useEffect(() => {
                         const filteredProperties = properties.filter(
                           (property) => property.parent === selectedAccountId
                         );
-
-                        console.log("selectedAccountId", selectedAccountId);
-                        console.log("form", form.getValues());
-                        
                         
                         return (
                           <>
