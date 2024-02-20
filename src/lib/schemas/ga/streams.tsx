@@ -3,18 +3,18 @@ import { z } from 'zod';
 const SingleFormSchema = z.object({
   type: z.enum(['WEB_DATA_STREAM', 'ANDROID_APP_DATA_STREAM', 'IOS_APP_DATA_STREAM']),
   property: z.string(),
-  parentURL: z.string(),
+  parentURL: z.string().optional(),
   account: z.string(),
   displayName: z.string(),
   webStreamData: z.object({
     defaultUri: z.string().url(),
-  }),
+  }).optional(),
   androidAppStreamData: z.object({
     packageName: z.string().regex(/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/),
-  }),
+  }).optional(),
   iosAppStreamData: z.object({
     bundleId: z.string().regex(/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/),
-  }),
+  }).optional(),
 });
 
 export const FormCreateAmountSchema = z.object({

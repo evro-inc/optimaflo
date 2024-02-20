@@ -39,7 +39,7 @@ import {
   setNotFoundError,
 } from '@/src/redux/tableSlice';
 import { selectGlobal, setLoading } from '@/src/redux/globalSlice';
-import { RootState } from '@/src/redux/store';
+import { RootState, store } from '@/src/redux/store';
 
 type Forms = z.infer<typeof FormsSchema>;
 
@@ -59,12 +59,10 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
 
   const foundTierLimit = tierLimits[18];
 
-  console.log(foundTierLimit);
 
   const createLimit = foundTierLimit?.createLimit;
   const createUsage = foundTierLimit?.createUsage;
   const remainingCreate = createLimit - createUsage;
-  console.log('remainingCreate', remainingCreate);
 
   const formCreateAmount = useForm({
     resolver: zodResolver(FormCreateAmountSchema),
@@ -72,6 +70,11 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
       amount: 1,
     },
   });
+
+
+
+
+
 
   // Effect to update streamCount when amount changes
   useEffect(() => {
@@ -87,21 +90,6 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
     dispatch(decrementStep());
   };
 
-  const handleAmountSubmit = async (event) => {
-    event.preventDefault(); // Prevent form submission as it's handled within the component
-  };
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    dispatch(setLoading(true));
-    try {
-      // Perform form submission logic here
-    } catch (error) {
-      dispatch(setError('An error occurred while submitting the form.'));
-    } finally {
-      dispatch(setLoading(false));
-    }
-  };
 
   const accountsWithProperties = accounts
     .map((account) => {
@@ -169,6 +157,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
   };
 
   const processForm: SubmitHandler<Forms> = async (data) => {
+    console.log("Form submitted", data); 
     const { forms } = data;
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
@@ -270,6 +259,28 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
       dispatch(setLoading(false)); // Set loading to false
     }
   };
+  useEffect(() => {
+  console.log("Current step:", currentStep);
+  console.log("Stream count:", streamCount);
+  console.log("Loading state:", loading);
+  // Log any other relevant state or props here
+}, [currentStep, streamCount, loading]);
+
+useEffect(() => {
+  console.log("Form default values:", form.getValues());
+}, [form]);
+useEffect(() => {
+  console.log("Current fields state:", fields);
+}, [fields]);
+useEffect(() => {
+  const unsubscribe = store.subscribe(() => {
+    console.log("Redux state after change:", store.getState());
+  });
+  return () => {
+    unsubscribe();
+  };
+}, []);
+
 
   return (
     <div className="flex items-center justify-center h-screen">
@@ -277,7 +288,6 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
       {currentStep === 1 && (
         <Form {...formCreateAmount}>
           <form
-            onSubmit={formCreateAmount.handleSubmit(handleAmountSubmit)}
             className="w-2/3 space-y-6"
           >
             {/* Amount selection logic */}
@@ -331,8 +341,8 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                   {/* Form */}
 
                   <Form {...form}>
-                    <form
-                      onSubmit={form.handleSubmit(processForm)}
+                    <form onSubmit={(e) => { console.log("Form onSubmit triggered"); form.handleSubmit(processForm, (errors) => console.log(errors))(e); }}
+
                       id={`createStream-${currentStep - 1}`}
                       className="space-y-6"
                     >
@@ -342,6 +352,11 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                         const filteredProperties = properties.filter(
                           (property) => property.parent === selectedAccountId
                         );
+
+                        console.log("selectedAccountId", selectedAccountId);
+                        console.log("form", form.getValues());
+                        
+                        
                         return (
                           <>
                             <FormField
@@ -521,6 +536,21 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                           </>
                         );
                       })()}
+                        <div className="flex justify-between">
+                          <Button type="button" onClick={handlePrevious}>
+                            Previous
+                          </Button>
+                  
+                        {currentStep - 1 < streamCount ? (
+                          <Button type="button" onClick={handleNext}>
+                            Next
+                          </Button>
+                        ) : (
+                          <Button type="submit">
+                            {loading ? 'Submitting...' : 'Submit'}
+                          </Button>
+                        )}
+                      </div>
                     </form>
                   </Form>
 
@@ -530,21 +560,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
             </div>
           )}
 
-          <div className="flex justify-between">
-              <Button type="button" onClick={handlePrevious}>
-                Previous
-              </Button>
-       
-            {currentStep - 1 < streamCount ? (
-              <Button type="button" onClick={handleNext}>
-                Next
-              </Button>
-            ) : (
-              <Button type="submit" onClick={handleSubmit}>
-                Submit
-              </Button>
-            )}
-          </div>
+
         </div>
       )}
 
