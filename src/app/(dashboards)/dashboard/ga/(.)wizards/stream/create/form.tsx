@@ -49,6 +49,17 @@ import { RootState, store } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 
 type Forms = z.infer<typeof FormsSchema>;
+interface TierLimit {
+  id: string;
+  subscriptionId: string;
+  createLimit: number;
+  createUsage: number;
+  updateLimit: number;
+  updateUsage?: number; // Assuming updateUsage can be optional
+  featureId?: string;
+  name?: string;
+  description?: string;
+}
 
 const FormCreateStream: React.FC<FormCreateProps> = ({
   tierLimits,
@@ -64,7 +75,10 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
   const isLimitReached = useSelector(selectTable).isLimitReached;
   const notFoundError = useSelector(selectTable).notFoundError;
   const router = useRouter();
-  const foundTierLimit = tierLimits[18];
+
+  const foundTierLimit = tierLimits.find(
+    (subscription) => subscription.Feature?.name === 'GA4Streams'
+  );
 
   const createLimit = foundTierLimit?.createLimit;
   const createUsage = foundTierLimit?.createUsage;
