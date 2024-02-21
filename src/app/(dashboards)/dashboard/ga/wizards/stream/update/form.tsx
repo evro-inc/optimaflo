@@ -3,11 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
+  decrementStep,
+  incrementStep,
   setError,
   setLoading,
-  incrementStep,
-  decrementStep,
-  setStreamCount,
 } from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
@@ -49,6 +48,17 @@ import { RootState, store } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 
 type Forms = z.infer<typeof FormsSchema>;
+interface TierLimit {
+  id: string;
+  subscriptionId: string;
+  createLimit: number;
+  createUsage: number;
+  updateLimit: number;
+  updateUsage?: number; // Assuming updateUsage can be optional
+  featureId?: string;
+  name?: string;
+  description?: string;
+}
 
 const FormCreateStream: React.FC<FormCreateProps> = ({
   tierLimits,
@@ -64,25 +74,16 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
   const isLimitReached = useSelector(selectTable).isLimitReached;
   const notFoundError = useSelector(selectTable).notFoundError;
   const router = useRouter();
-  const foundTierLimit = tierLimits[18];
 
-  const createLimit = foundTierLimit?.createLimit;
-  const createUsage = foundTierLimit?.createUsage;
-  const remainingCreate = createLimit - createUsage;
+  const foundTierLimit = tierLimits.find(
+    (subscription) => subscription.Feature?.name === 'GA4Streams'
+  );
+  const selectedRowData = useSelector((state: RootState) => state.selectedRowData);
 
-  const formCreateAmount = useForm({
-    resolver: zodResolver(FormCreateAmountSchema),
-    defaultValues: {
-      amount: 1,
-    },
-  });
+  console.log("selectedRowData", selectedRowData);
+  
 
-  // Effect to update streamCount when amount changes
-  useEffect(() => {
-    const amount = parseInt(formCreateAmount.getValues('amount').toString());
-    dispatch(setStreamCount(amount));
-  }, [formCreateAmount.watch('amount'), dispatch]);
-
+ 
   const handleNext = () => {
     dispatch(incrementStep());
   };
@@ -90,6 +91,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
   const handlePrevious = () => {
     dispatch(decrementStep());
   };
+
 
   const accountsWithProperties = accounts
     .map((account) => {
@@ -137,24 +139,6 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
     append(formDataDefaults);
   };
 
-  // Adjust handleAmountSubmit or create a new function to handle selection change
-  const handleAmountChange = (selectedAmount) => {
-    // Convert the selected amount to a number
-    const amount = parseInt(selectedAmount);
-
-    // First, reset the current forms to start fresh
-    // Note: This step might need adjustment based on your exact requirements
-    // and the behavior you observe with your form state management
-    form.reset({ forms: [] }); // Clear existing forms
-
-    // Then, append new forms based on the selected amount
-    for (let i = 0; i < amount; i++) {
-      addForm(); // Use your existing addForm function that calls append
-    }
-
-    // Update the stream count in your state management (if necessary)
-    dispatch(setStreamCount(amount));
-  };
 
   const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
@@ -263,78 +247,41 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
 
   return (
     <div className="flex items-center justify-center h-screen">
-      {/* Conditional rendering based on the currentStep */}
-      {currentStep === 1 && (
-        <Form {...formCreateAmount}>
-          <form className="w-2/3 space-y-6">
-            {/* Amount selection logic */}
-            <FormField
-              control={formCreateAmount.control}
-              name="amount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>How many streams do you want to create?</FormLabel>
-                  <Select
-                    onValueChange={(value) => {
-                      handleAmountChange(value); // Call the modified handler
-                    }}
-                    defaultValue={streamCount.toString()}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select the amount of streams you want to create." />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {Array.from({ length: remainingCreate }, (_, i) => (
-                        <SelectItem key={i} value={`${i + 1}`}>
-                          {i + 1}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormItem>
-              )}
-            />
-            <Button type="button" onClick={handleNext}>
-              Next
-            </Button>
-          </form>
-        </Form>
-      )}
 
-      {currentStep > 1 && (
+
+      
         <div className="w-full">
           {/* Render only the form corresponding to the current step - 1 
               (since step 1 is for selecting the number of forms) */}
-          {fields.length >= currentStep - 1 && (
+          {fields.map((field, index) => {
+
+                        const selectedAccountId = form.watch(`forms.${index}.account`);
+
+                const filteredProperties = properties.filter(
+                  (property) => property.parent === selectedAccountId
+                );
+
+                return (
             <div
-              key={fields[currentStep - 2].id}
+              key={field.id}
               className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
             >
               <div className="max-w-xl mx-auto">
-                <h1>Stream {currentStep - 1}</h1>
+                <h1>Stream {index}</h1>
                 <div className="mt-12">
                   {/* Form */}
 
                   <Form {...form}>
                     <form
                       onSubmit={form.handleSubmit(processForm)}
-                      id={`createStream-${currentStep - 1}`}
+                      id={`createStream-${index}`}
                       className="space-y-6"
                     >
-                      {(() => {
-                        const currentIndex = currentStep - 2; // Adjust for zero-based index
-                        const selectedAccountId = form.watch(`forms.${currentIndex}.account`);
-                        const filteredProperties = properties.filter(
-                          (property) => property.parent === selectedAccountId
-                        );
-
-                        return (
+                 
                           <>
                             <FormField
                               control={form.control}
-                              name={`forms.${currentStep - 2}.displayName`}
+                              name={`forms.${index}.displayName`}
                               render={({ field }) => (
                                 <FormItem>
                                   <FormLabel>New Stream Name</FormLabel>
@@ -344,7 +291,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                                   <FormControl>
                                     <Input
                                       placeholder="Name of the stream"
-                                      {...form.register(`forms.${currentStep - 2}.displayName`)}
+                                      {...form.register(`forms.${index}.displayName`)}
                                       {...field}
                                     />
                                   </FormControl>
@@ -356,7 +303,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
 
                             <FormField
                               control={form.control}
-                              name={`forms.${currentStep - 2}.account`}
+                              name={`forms.${index}.account`}
                               render={({ field }) => (
                                 <FormItem>
                                   <FormLabel>Account</FormLabel>
@@ -365,7 +312,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                                   </FormDescription>
                                   <FormControl>
                                     <Select
-                                      {...form.register(`forms.${currentStep - 2}.account`)}
+                                      {...form.register(`forms.${index}.account`)}
                                       {...field}
                                       onValueChange={field.onChange}
                                     >
@@ -392,7 +339,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
 
                             <FormField
                               control={form.control}
-                              name={`forms.${currentStep - 2}.property`}
+                              name={`forms.${index}.property`}
                               render={({ field }) => (
                                 <FormItem>
                                   <FormLabel>Property</FormLabel>
@@ -401,7 +348,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                                   </FormDescription>
                                   <FormControl>
                                     <Select
-                                      {...form.register(`forms.${currentStep - 2}.property`)}
+                                      {...form.register(`forms.${index}.property`)}
                                       {...field}
                                       onValueChange={field.onChange}
                                     >
@@ -435,14 +382,14 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
 
                             <FormField
                               control={form.control}
-                              name={`forms.${currentStep - 2}.type`}
+                              name={`forms.${index}.type`}
                               render={({ field }) => (
                                 <FormItem>
                                   <FormLabel>Stream Type</FormLabel>
                                   <FormDescription>Set the stream type.</FormDescription>
                                   <FormControl>
                                     <Select
-                                      {...form.register(`forms.${currentStep - 2}.type`)}
+                                      {...form.register(`forms.${index}.type`)}
                                       {...field}
                                       onValueChange={field.onChange}
                                     >
@@ -468,11 +415,11 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
 
                             {Object.keys(streamType).map(
                               (type) =>
-                                form.watch(`forms.${currentStep - 2}.type`) ===
+                                form.watch(`forms.${index}.type`) ===
                                   streamType[type] && (
                                   <FormField
                                     control={form.control}
-                                    name={`forms.${currentStep - 2}.${
+                                    name={`forms.${index}.${
                                       type.toLowerCase() === 'web'
                                         ? 'webStreamData.defaultUri'
                                         : type.toLowerCase() === 'android'
@@ -489,7 +436,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                                           <Input
                                             placeholder={`Enter ${type} input`}
                                             {...form.register(
-                                              `forms.${currentStep - 2}.${
+                                              `forms.${index}.${
                                                 type.toLowerCase() === 'web'
                                                   ? 'webStreamData.defaultUri'
                                                   : type.toLowerCase() === 'android'
@@ -507,8 +454,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                                 )
                             )}
                           </>
-                        );
-                      })()}
+                    
                       <div className="flex justify-between">
                         <Button type="button" onClick={handlePrevious}>
                           Previous
@@ -529,9 +475,9 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                 </div>
               </div>
             </div>
-          )}
+          )})}
         </div>
-      )}
+   
     </div>
   );
 };

@@ -39,6 +39,8 @@ import { useDeleteHook } from './delete';
 import StreamForms from './forms';
 import { useCreateHookForm, useUpdateHookForm } from '@/src/hooks/useCRUD';
 import Link from 'next/link';
+import { setSelectedRows } from '@/src/redux/tableSlice';
+import { useDispatch } from 'react-redux';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -57,6 +59,7 @@ export function DataTable<TData, TValue>({
   const userId = user?.id;
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+  const dispatch = useDispatch()
 
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
@@ -81,15 +84,27 @@ export function DataTable<TData, TValue>({
     },
   });
 
-  const selectedRowsData = table.getSelectedRowModel().rows.map((row) => row.original);
+  const selectedRowData = table.getSelectedRowModel().rows.map((row) => row.original);
 
   const handleCreateClick = useCreateHookForm(
     userId,
     'GA4Streams',
     '/dashboard/ga/wizards/stream/create'
   );
-  const handleUpdateClick = useUpdateHookForm(userId, 'GA4Streams');
-  const handleDelete = useDeleteHook(selectedRowsData, table);
+  const handleUpdateClick = useUpdateHookForm(userId, 'GA4Streams','/dashboard/ga/wizards/stream/update');
+  const handleDelete = useDeleteHook(selectedRowData, table);
+
+
+  console.log("selectedRowData", selectedRowData); // Check the value of selectedRowData
+
+  // Dispatch an action to update selectedRowData
+  const handleRowSelection = (selectedRows) => {
+    dispatch(setSelectedRows(selectedRows)); // Update the selected rows in Redux
+  };
+  
+
+
+
 
   const refreshAllCache = async () => {
     // Assuming you want to refresh cache for each workspace
@@ -181,7 +196,7 @@ export function DataTable<TData, TValue>({
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'} onClick={() => handleRowSelection(row)}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -221,12 +236,7 @@ export function DataTable<TData, TValue>({
           Next
         </Button>
       </div>
-      {/* <StreamForms
-        selectedRows={selectedRowsData}
-        table={table}
-        properties={properties}
-        accounts={accounts}
-      /> */}
+
     </div>
   );
 }

@@ -35,7 +35,8 @@ export function useCreateHookForm(userId, createTierLimitType, url) {
   }
 }
 
-export function useUpdateHookForm(userId, updateTierLimitType) {
+export function useUpdateHookForm(userId, updateTierLimitType, url) {
+  const router = useRouter();
   try {
     const dispatch = useDispatch();
 
@@ -51,7 +52,7 @@ export function useUpdateHookForm(userId, updateTierLimitType) {
           dispatch(setIsLimitReached(true)); // Assuming you have an action to explicitly set this
         } else {
           // Otherwise, proceed with normal creation process
-          dispatch(toggleUpdate());
+          router.push(url);
         }
       } catch (error: any) {
         throw new Error('Error in handleUpdateClick:', error);
