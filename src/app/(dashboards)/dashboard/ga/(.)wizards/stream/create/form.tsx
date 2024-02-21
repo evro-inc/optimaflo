@@ -2,7 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { setError, setLoading, incrementStep, decrementStep, setStreamCount } from '@/redux/formSlice';
+import {
+  setError,
+  setLoading,
+  incrementStep,
+  decrementStep,
+  setStreamCount,
+} from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -57,9 +63,8 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
   const streamCount = useSelector((state: RootState) => state.form.streamCount);
   const isLimitReached = useSelector(selectTable).isLimitReached;
   const notFoundError = useSelector(selectTable).notFoundError;
-  const router = useRouter()    
+  const router = useRouter();
   const foundTierLimit = tierLimits[18];
-
 
   const createLimit = foundTierLimit?.createLimit;
   const createUsage = foundTierLimit?.createUsage;
@@ -72,7 +77,6 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
     },
   });
 
-  
   // Effect to update streamCount when amount changes
   useEffect(() => {
     const amount = parseInt(formCreateAmount.getValues('amount').toString());
@@ -86,7 +90,6 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
   const handlePrevious = () => {
     dispatch(decrementStep());
   };
-
 
   const accountsWithProperties = accounts
     .map((account) => {
@@ -154,7 +157,6 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
   };
 
   const processForm: SubmitHandler<Forms> = async (data) => {
-    console.log("Form submitted", data); 
     const { forms } = data;
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
@@ -199,8 +201,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
           }
         });
 
-        router.push('/dashboard/ga/properties')
-
+        router.push('/dashboard/ga/properties');
       } else {
         if (res.notFoundError) {
           res.results.forEach((result) => {
@@ -260,15 +261,12 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
     }
   };
 
-
   return (
     <div className="flex items-center justify-center h-screen">
       {/* Conditional rendering based on the currentStep */}
       {currentStep === 1 && (
         <Form {...formCreateAmount}>
-          <form
-            className="w-2/3 space-y-6"
-          >
+          <form className="w-2/3 space-y-6">
             {/* Amount selection logic */}
             <FormField
               control={formCreateAmount.control}
@@ -320,8 +318,8 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                   {/* Form */}
 
                   <Form {...form}>
-                    <form onSubmit={ form.handleSubmit(processForm) }
-
+                    <form
+                      onSubmit={form.handleSubmit(processForm)}
                       id={`createStream-${currentStep - 1}`}
                       className="space-y-6"
                     >
@@ -331,7 +329,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                         const filteredProperties = properties.filter(
                           (property) => property.parent === selectedAccountId
                         );
-                        
+
                         return (
                           <>
                             <FormField
@@ -511,19 +509,17 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                           </>
                         );
                       })()}
-                        <div className="flex justify-between">
-                          <Button type="button" onClick={handlePrevious}>
-                            Previous
-                          </Button>
-                  
+                      <div className="flex justify-between">
+                        <Button type="button" onClick={handlePrevious}>
+                          Previous
+                        </Button>
+
                         {currentStep - 1 < streamCount ? (
                           <Button type="button" onClick={handleNext}>
                             Next
                           </Button>
                         ) : (
-                          <Button type="submit">
-                            {loading ? 'Submitting...' : 'Submit'}
-                          </Button>
+                          <Button type="submit">{loading ? 'Submitting...' : 'Submit'}</Button>
                         )}
                       </div>
                     </form>
@@ -534,14 +530,8 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
               </div>
             </div>
           )}
-
-
         </div>
       )}
-
-      {/* Display loading or error messages */}
-      {loading && <div>Loading...</div>}
-      {error && <div>Error: {error}</div>}
     </div>
   );
 };

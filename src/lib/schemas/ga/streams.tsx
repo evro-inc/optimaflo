@@ -6,17 +6,21 @@ const SingleFormSchema = z.object({
   parentURL: z.string().optional(),
   account: z.string(),
   displayName: z.string(),
-  webStreamData: z.object({
-    defaultUri: z.string().url().optional(),
-  }).optional(),
-  androidAppStreamData: z.object({
-    packageName: z.string().optional(),
-
-  }).optional(),
-  iosAppStreamData: z.object({
-    bundleId: z.string().optional(),
-
-  }).optional(),
+  webStreamData: z
+    .object({
+      defaultUri: z.string().url().optional(),
+    })
+    .optional(),
+  androidAppStreamData: z
+    .object({
+      packageName: z.string().optional(),
+    })
+    .optional(),
+  iosAppStreamData: z
+    .object({
+      bundleId: z.string().optional(),
+    })
+    .optional(),
 });
 
 export const FormCreateAmountSchema = z.object({

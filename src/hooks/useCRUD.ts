@@ -1,10 +1,12 @@
 import { useDispatch } from 'react-redux';
 import { tierCreateLimit, tierUpdateLimit } from '../utils/server';
-import { notFound } from 'next/navigation';
+import { notFound, useRouter } from 'next/navigation';
+
 import { toggleCreate, toggleUpdate } from '@/src/redux/globalSlice';
 import { setIsLimitReached } from '@/src/redux/tableSlice';
 
-export function useCreateHookForm(userId, createTierLimitType) {
+export function useCreateHookForm(userId, createTierLimitType, url) {
+  const router = useRouter();
   try {
     const dispatch = useDispatch();
 
@@ -20,7 +22,7 @@ export function useCreateHookForm(userId, createTierLimitType) {
           dispatch(setIsLimitReached(true)); // Assuming you have an action to explicitly set this
         } else {
           // Otherwise, proceed with normal creation process
-          dispatch(toggleCreate());
+          router.push(url);
         }
       } catch (error: any) {
         throw new Error('Error in handleCreateClick:', error);

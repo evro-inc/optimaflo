@@ -83,7 +83,11 @@ export function DataTable<TData, TValue>({
 
   const selectedRowsData = table.getSelectedRowModel().rows.map((row) => row.original);
 
-  const handleCreateClick = useCreateHookForm(userId, 'GA4Streams');
+  const handleCreateClick = useCreateHookForm(
+    userId,
+    'GA4Streams',
+    '/dashboard/ga/wizards/stream/create'
+  );
   const handleUpdateClick = useUpdateHookForm(userId, 'GA4Streams');
   const handleDelete = useDeleteHook(selectedRowsData, table);
 
@@ -116,10 +120,10 @@ export function DataTable<TData, TValue>({
         <div className="ml-auto space-x-4">
           <Button onClick={refreshAllCache}>Refresh</Button>
 
-          {/* <Button onClick={handleCreateClick}>Create</Button> */}
-          <Button asChild>
+          <Button onClick={handleCreateClick}>Create</Button>
+          {/* <Button asChild>
             <Link href="/dashboard/ga/wizards/stream/create">Create</Link>
-          </Button>
+          </Button> */}
 
           <Button
             disabled={Object.keys(table.getState().rowSelection).length === 0}

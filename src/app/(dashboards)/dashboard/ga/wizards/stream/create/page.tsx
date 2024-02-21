@@ -8,7 +8,7 @@ import { listGAPropertyStreams } from '@/src/lib/fetch/dashboard/actions/ga/stre
 
 import { listGaAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
 import { dataStreamTypeMapping } from '../../../properties/@streams/streamItems';
-import FormCreateStream from './formtest';
+import FormCreateStream from './form';
 import { getTierLimit } from '@/src/lib/fetch/tierLimit';
 import { getSubscription } from '@/src/lib/fetch/subscriptions';
 
