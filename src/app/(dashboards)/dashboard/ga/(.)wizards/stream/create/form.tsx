@@ -1,14 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import {
-  setError,
-  setLoading,
-  incrementStep,
-  decrementStep,
-  setStreamCount,
-} from '@/redux/formSlice';
+import { setLoading, incrementStep, decrementStep, setStreamCount } from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -44,9 +38,23 @@ import {
   setIsLimitReached,
   setNotFoundError,
 } from '@/src/redux/tableSlice';
-import { selectGlobal } from '@/src/redux/globalSlice';
-import { RootState, store } from '@/src/redux/store';
+import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
+
+const NotFoundErrorModal = dynamic(
+  () =>
+    import('../../../../../../../components/client/modals/notFoundError').then(
+      (mod) => mod.NotFoundError
+    ),
+  { ssr: false }
+);
+
+const ErrorModal = dynamic(
+  () =>
+    import('../../../../../../../components/client/modals/Error').then((mod) => mod.ErrorMessage),
+  { ssr: false }
+);
 
 type Forms = z.infer<typeof FormsSchema>;
 interface TierLimit {
@@ -72,7 +80,6 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
   const error = useSelector((state: RootState) => state.form.error);
   const currentStep = useSelector((state: RootState) => state.form.currentStep);
   const streamCount = useSelector((state: RootState) => state.form.streamCount);
-  const isLimitReached = useSelector(selectTable).isLimitReached;
   const notFoundError = useSelector(selectTable).notFoundError;
   const router = useRouter();
 
@@ -83,27 +90,6 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
   const createLimit = foundTierLimit?.createLimit;
   const createUsage = foundTierLimit?.createUsage;
   const remainingCreate = createLimit - createUsage;
-
-  const formCreateAmount = useForm({
-    resolver: zodResolver(FormCreateAmountSchema),
-    defaultValues: {
-      amount: 1,
-    },
-  });
-
-  // Effect to update streamCount when amount changes
-  useEffect(() => {
-    const amount = parseInt(formCreateAmount.getValues('amount').toString());
-    dispatch(setStreamCount(amount));
-  }, [formCreateAmount.watch('amount'), dispatch]);
-
-  const handleNext = () => {
-    dispatch(incrementStep());
-  };
-
-  const handlePrevious = () => {
-    dispatch(decrementStep());
-  };
 
   const accountsWithProperties = accounts
     .map((account) => {
@@ -135,6 +121,26 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
     accountId: '',
     parent: '',
   };
+
+  const formCreateAmount = useForm({
+    resolver: zodResolver(FormCreateAmountSchema),
+    defaultValues: {
+      amount: 1,
+    },
+  });
+
+  // Effect to update streamCount when amount changes
+  useEffect(() => {
+    const amount = parseInt(formCreateAmount.getValues('amount').toString());
+    dispatch(setStreamCount(amount));
+  }, [formCreateAmount.watch('amount'), dispatch]);
+
+  if (notFoundError) {
+    return <NotFoundErrorModal />;
+  }
+  if (error) {
+    return <ErrorModal />;
+  }
 
   const form = useForm<Forms>({
     defaultValues: {
@@ -273,6 +279,45 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
     } finally {
       dispatch(setLoading(false)); // Set loading to false
     }
+  };
+
+  const handleNext = async () => {
+    const currentFormIndex = currentStep - 2; // Adjusting for the array index and step count
+    const currentFormPath = `forms.${currentFormIndex}`;
+    const currentFormData = form.getValues(currentFormPath as `forms.${number}`);
+
+    // Start with the common fields that are always present
+    const fieldsToValidate = [
+      `${currentFormPath}.displayName`,
+      `${currentFormPath}.account`,
+      `${currentFormPath}.property`,
+      `${currentFormPath}.type`,
+    ];
+
+    // Dynamically add fields based on the stream type
+    switch (currentFormData?.type) {
+      case 'WEB_DATA_STREAM':
+        fieldsToValidate.push(`${currentFormPath}.webStreamData.defaultUri`);
+        break;
+      case 'ANDROID_APP_DATA_STREAM':
+        fieldsToValidate.push(`${currentFormPath}.androidAppStreamData.packageName`);
+        break;
+      case 'IOS_APP_DATA_STREAM':
+        fieldsToValidate.push(`${currentFormPath}.iosAppStreamData.bundleId`);
+        break;
+      // Add more cases as needed for other stream types
+    }
+
+    // Now, trigger validation for these fields
+    const isFormValid = await form.trigger(fieldsToValidate as any);
+
+    if (isFormValid) {
+      dispatch(incrementStep());
+    }
+  };
+
+  const handlePrevious = () => {
+    dispatch(decrementStep());
   };
 
   return (

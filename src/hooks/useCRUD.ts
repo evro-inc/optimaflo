@@ -22,7 +22,6 @@ export function useCreateHookForm(userId: string, createTierLimitType: string, u
         router.push(url);
       }
     } catch (error) {
-      console.error('Error in creation process:', error);
       toast.error('An error occurred while creating. Please try again.'); // Optionally, display an error message to the user
       throw error; // Rethrow or handle as needed
     }
@@ -61,7 +60,6 @@ export function useUpdateHookForm(
         router.push(url);
       }
     } catch (error) {
-      console.error('Error in update operation:', error);
       throw error; // Rethrow or handle as needed
     }
   };

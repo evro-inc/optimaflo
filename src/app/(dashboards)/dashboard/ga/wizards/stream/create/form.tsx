@@ -2,12 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import {
-  setLoading,
-  incrementStep,
-  decrementStep,
-  setStreamCount,
-} from '@/redux/formSlice';
+import { setLoading, incrementStep, decrementStep, setStreamCount } from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -60,7 +55,6 @@ const ErrorModal = dynamic(
     import('../../../../../../../components/client/modals/Error').then((mod) => mod.ErrorMessage),
   { ssr: false }
 );
-
 
 type Forms = z.infer<typeof FormsSchema>;
 interface TierLimit {
@@ -287,41 +281,40 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
     }
   };
 
-const handleNext = async () => {
-  const currentFormIndex = currentStep - 2; // Adjusting for the array index and step count
-  const currentFormPath = `forms.${currentFormIndex}`;
-  const currentFormData = form.getValues(currentFormPath as `forms.${number}`); 
+  const handleNext = async () => {
+    const currentFormIndex = currentStep - 2; // Adjusting for the array index and step count
+    const currentFormPath = `forms.${currentFormIndex}`;
+    const currentFormData = form.getValues(currentFormPath as `forms.${number}`);
 
-  // Start with the common fields that are always present
-  const fieldsToValidate = [
-    `${currentFormPath}.displayName`,
-    `${currentFormPath}.account`,
-    `${currentFormPath}.property`,
-    `${currentFormPath}.type`,
-  ];
+    // Start with the common fields that are always present
+    const fieldsToValidate = [
+      `${currentFormPath}.displayName`,
+      `${currentFormPath}.account`,
+      `${currentFormPath}.property`,
+      `${currentFormPath}.type`,
+    ];
 
-  // Dynamically add fields based on the stream type
-  switch (currentFormData?.type) {
-    case 'WEB_DATA_STREAM':
-      fieldsToValidate.push(`${currentFormPath}.webStreamData.defaultUri`);
-      break;
-    case 'ANDROID_APP_DATA_STREAM':
-      fieldsToValidate.push(`${currentFormPath}.androidAppStreamData.packageName`);
-      break;
-    case 'IOS_APP_DATA_STREAM':
-      fieldsToValidate.push(`${currentFormPath}.iosAppStreamData.bundleId`);
-      break;
-    // Add more cases as needed for other stream types
-  }
+    // Dynamically add fields based on the stream type
+    switch (currentFormData?.type) {
+      case 'WEB_DATA_STREAM':
+        fieldsToValidate.push(`${currentFormPath}.webStreamData.defaultUri`);
+        break;
+      case 'ANDROID_APP_DATA_STREAM':
+        fieldsToValidate.push(`${currentFormPath}.androidAppStreamData.packageName`);
+        break;
+      case 'IOS_APP_DATA_STREAM':
+        fieldsToValidate.push(`${currentFormPath}.iosAppStreamData.bundleId`);
+        break;
+      // Add more cases as needed for other stream types
+    }
 
-  // Now, trigger validation for these fields
-  const isFormValid = await form.trigger(fieldsToValidate as any);
+    // Now, trigger validation for these fields
+    const isFormValid = await form.trigger(fieldsToValidate as any);
 
-  if (isFormValid) {
-    dispatch(incrementStep());
-  } 
-};
-
+    if (isFormValid) {
+      dispatch(incrementStep());
+    }
+  };
 
   const handlePrevious = () => {
     dispatch(decrementStep());
