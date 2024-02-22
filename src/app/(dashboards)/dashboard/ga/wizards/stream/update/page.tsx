@@ -1,27 +1,16 @@
 import React, { Suspense } from 'react';
 import { notFound } from 'next/navigation';
-import { auth, currentUser } from '@clerk/nextjs';
-import { Skeleton } from '@/src/components/ui/skeleton';
-
+import { currentUser } from '@clerk/nextjs';
 import { listGAProperties } from '@/src/lib/fetch/dashboard/actions/ga/properties';
 import { listGAPropertyStreams } from '@/src/lib/fetch/dashboard/actions/ga/streams';
-
 import { listGaAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
 import { dataStreamTypeMapping } from '../../../properties/@streams/streamItems';
 import FormUpdateStream from './form';
 import { getTierLimit } from '@/src/lib/fetch/tierLimit';
 import { getSubscription } from '@/src/lib/fetch/subscriptions';
 
-export default async function UpdateStreamPage({
-  searchParams,
-}: {
-  searchParams?: {
-    query?: string;
-    page?: string;
-  };
-}) {
-  const query = searchParams?.query || '';
-  const currentPage = Number(searchParams?.page) || 1;
+export default async function UpdateStreamPage() {
+
   const user = await currentUser();
   if (!user) return notFound();
 
@@ -70,7 +59,6 @@ export default async function UpdateStreamPage({
   return (
     <>
       <div className="container mx-auto py-10">
-        {/* <FormUpdateStream accounts={accounts} properties={properties} table={combinedData} /> */}
         <FormUpdateStream
           tierLimits={tierLimits}
           table={combinedData}
