@@ -41,6 +41,7 @@ import { useCreateHookForm, useUpdateHookForm } from '@/src/hooks/useCRUD';
 import Link from 'next/link';
 import { setSelectedRows } from '@/src/redux/tableSlice';
 import { useDispatch } from 'react-redux';
+import { useTransition } from 'react';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -56,10 +57,11 @@ export function DataTable<TData, TValue>({
   accounts,
 }: DataTableProps<TData, TValue>) {
   const { user } = useUser();
-  const userId = user?.id;
+  const userId = user?.id as string;
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const dispatch = useDispatch();
+  const [isPending, startTransition] = useTransition();
 
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
@@ -96,12 +98,23 @@ export function DataTable<TData, TValue>({
     'GA4Streams',
     '/dashboard/ga/wizards/stream/create'
   );
+
   const handleUpdateClick = useUpdateHookForm(
     userId,
     'GA4Streams',
     '/dashboard/ga/wizards/stream/update',
     rowSelectedCount
   );
+
+  const onUpdateButtonClick = () => {
+    startTransition(() => {
+      handleUpdateClick().catch((error) => {
+        console.error('Failed to update:', error);
+        // Handle or display error
+      });
+    });
+  };
+
   const handleDelete = useDeleteHook(selectedRowData, table);
 
   dispatch(setSelectedRows(selectedRowData)); // Update the selected rows in Redux
@@ -141,10 +154,10 @@ export function DataTable<TData, TValue>({
           </Button> */}
 
           <Button
-            disabled={Object.keys(table.getState().rowSelection).length === 0}
-            onClick={handleUpdateClick}
+            disabled={Object.keys(table.getState().rowSelection).length === 0 || isPending}
+            onClick={onUpdateButtonClick}
           >
-            Update
+            {isPending ? 'Updating...' : 'Update'}
           </Button>
 
           <ButtonDelete
