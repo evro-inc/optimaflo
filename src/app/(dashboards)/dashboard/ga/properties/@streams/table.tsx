@@ -61,7 +61,8 @@ export function DataTable<TData, TValue>({
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const dispatch = useDispatch();
-  const [isPending, startTransition] = useTransition();
+  const [isCreatePending, startCreateTransition] = useTransition();
+  const [isUpdatePending, startUpdateTransition] = useTransition();
 
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
@@ -99,6 +100,14 @@ export function DataTable<TData, TValue>({
     '/dashboard/ga/wizards/stream/create'
   );
 
+  const onCreateButtonClick = () => {
+    startCreateTransition(() => {
+      handleCreateClick().catch((error) => {
+        throw new Error(error);
+      });
+    });  
+  }
+
   const handleUpdateClick = useUpdateHookForm(
     userId,
     'GA4Streams',
@@ -107,10 +116,9 @@ export function DataTable<TData, TValue>({
   );
 
   const onUpdateButtonClick = () => {
-    startTransition(() => {
+    startUpdateTransition(() => {
       handleUpdateClick().catch((error) => {
-        console.error('Failed to update:', error);
-        // Handle or display error
+        throw new Error(error);
       });
     });
   };
@@ -120,19 +128,18 @@ export function DataTable<TData, TValue>({
   dispatch(setSelectedRows(selectedRowData)); // Update the selected rows in Redux
 
   const refreshAllCache = async () => {
-    // Assuming you want to refresh cache for each workspace
-    const keys = [
-      `ga:accounts:userId:${userId}`,
-      `ga:properties:userId:${userId}`,
-      `ga:streams:userId:${userId}`,
-    ];
-    await revalidate(keys, '/dashboard/ga/accounts', userId);
     toast.info('Updating our systems. This may take a minute or two to update on screen.', {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
       },
     });
+    const keys = [
+      `ga:accounts:userId:${userId}`,
+      `ga:properties:userId:${userId}`,
+      `ga:streams:userId:${userId}`,
+    ];
+    await revalidate(keys, '/dashboard/ga/accounts', userId);
   };
 
   return (
@@ -148,16 +155,14 @@ export function DataTable<TData, TValue>({
         <div className="ml-auto space-x-4">
           <Button onClick={refreshAllCache}>Refresh</Button>
 
-          <Button onClick={handleCreateClick}>Create</Button>
-          {/* <Button asChild>
-            <Link href="/dashboard/ga/wizards/stream/create">Create</Link>
-          </Button> */}
+          <Button disabled={isCreatePending} onClick={onCreateButtonClick}>{isCreatePending ? 'Creating...' : 'Create'}</Button>
+  
 
           <Button
-            disabled={Object.keys(table.getState().rowSelection).length === 0 || isPending}
+            disabled={Object.keys(table.getState().rowSelection).length === 0 || isUpdatePending}
             onClick={onUpdateButtonClick}
           >
-            {isPending ? 'Updating...' : 'Update'}
+            {isUpdatePending ? 'Updating...' : 'Update'}
           </Button>
 
           <ButtonDelete
