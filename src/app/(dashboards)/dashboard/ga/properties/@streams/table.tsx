@@ -105,8 +105,8 @@ export function DataTable<TData, TValue>({
       handleCreateClick().catch((error) => {
         throw new Error(error);
       });
-    });  
-  }
+    });
+  };
 
   const handleUpdateClick = useUpdateHookForm(
     userId,
@@ -155,8 +155,9 @@ export function DataTable<TData, TValue>({
         <div className="ml-auto space-x-4">
           <Button onClick={refreshAllCache}>Refresh</Button>
 
-          <Button disabled={isCreatePending} onClick={onCreateButtonClick}>{isCreatePending ? 'Creating...' : 'Create'}</Button>
-  
+          <Button disabled={isCreatePending} onClick={onCreateButtonClick}>
+            {isCreatePending ? 'Creating...' : 'Create'}
+          </Button>
 
           <Button
             disabled={Object.keys(table.getState().rowSelection).length === 0 || isUpdatePending}
