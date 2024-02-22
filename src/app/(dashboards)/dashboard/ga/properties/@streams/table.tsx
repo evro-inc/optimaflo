@@ -59,7 +59,7 @@ export function DataTable<TData, TValue>({
   const userId = user?.id;
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-  const dispatch = useDispatch()
+  const dispatch = useDispatch();
 
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
@@ -84,27 +84,24 @@ export function DataTable<TData, TValue>({
     },
   });
 
-  const selectedRowData = table.getSelectedRowModel().rows.map((row) => row.original);
+  const selectedRowData = table.getSelectedRowModel().rows.reduce((acc, row) => {
+    acc[row.id] = row.original;
+    return acc;
+  }, {});
 
   const handleCreateClick = useCreateHookForm(
     userId,
     'GA4Streams',
     '/dashboard/ga/wizards/stream/create'
   );
-  const handleUpdateClick = useUpdateHookForm(userId, 'GA4Streams','/dashboard/ga/wizards/stream/update');
+  const handleUpdateClick = useUpdateHookForm(
+    userId,
+    'GA4Streams',
+    '/dashboard/ga/wizards/stream/update'
+  );
   const handleDelete = useDeleteHook(selectedRowData, table);
 
-
-  console.log("selectedRowData", selectedRowData); // Check the value of selectedRowData
-
-  // Dispatch an action to update selectedRowData
-  const handleRowSelection = (selectedRows) => {
-    dispatch(setSelectedRows(selectedRows)); // Update the selected rows in Redux
-  };
-  
-
-
-
+  dispatch(setSelectedRows(selectedRowData)); // Update the selected rows in Redux
 
   const refreshAllCache = async () => {
     // Assuming you want to refresh cache for each workspace
@@ -196,7 +193,7 @@ export function DataTable<TData, TValue>({
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'} onClick={() => handleRowSelection(row)}>
+                <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -236,7 +233,6 @@ export function DataTable<TData, TValue>({
           Next
         </Button>
       </div>
-
     </div>
   );
 }

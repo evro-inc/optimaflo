@@ -3,10 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
-  decrementStep,
-  incrementStep,
   setError,
   setLoading,
+  incrementStep,
+  decrementStep,
+  setStreamCount,
 } from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
@@ -36,7 +37,7 @@ import { Input } from '@/src/components/ui/input';
 import { streamType } from '../../../properties/@streams/streamItems';
 import { FeatureResponse, FormCreateProps, GA4StreamType } from '@/src/types/types';
 import { toast } from 'sonner';
-import { createGAPropertyStreams } from '@/src/lib/fetch/dashboard/actions/ga/streams';
+import { updateGAPropertyStreams } from '@/src/lib/fetch/dashboard/actions/ga/streams';
 import {
   selectTable,
   setErrorDetails,
@@ -78,20 +79,17 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
   const foundTierLimit = tierLimits.find(
     (subscription) => subscription.Feature?.name === 'GA4Streams'
   );
-  const selectedRowData = useSelector((state: RootState) => state.selectedRowData);
 
-  console.log("selectedRowData", selectedRowData);
-  
+  const selectedRowData = useSelector((state: RootState) => state.table.selectedRows);
 
- 
-  const handleNext = () => {
-    dispatch(incrementStep());
-  };
+  console.log('selectedRowData', selectedRowData);
+  const totalForms = Object.keys(selectedRowData).length;
+  console.log('total forms', totalForms);
 
-  const handlePrevious = () => {
-    dispatch(decrementStep());
-  };
+  const currentFormIndex = currentStep - 1; // Adjust for 0-based index
+  const currentFormData = selectedRowData[currentFormIndex]; // Get data for the current step
 
+  console.log('currentFormData', currentFormData);
 
   const accountsWithProperties = accounts
     .map((account) => {
@@ -104,12 +102,12 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
     })
     .filter((account) => account.properties.length > 0);
 
-  const formDataDefaults: GA4StreamType = {
-    account: accountsWithProperties[0].name,
-    property: table[0].parent,
-    displayName: '',
+  const formDataDefaults: GA4StreamType[] = Object.values(selectedRowData).map((rowData) => ({
+    account: rowData.accountName,
+    property: rowData.parent,
+    displayName: rowData.displayName,
     parentURL: '',
-    type: table[0].type,
+    type: rowData.type,
     webStreamData: {
       defaultUri: '',
     },
@@ -119,14 +117,14 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
     iosAppStreamData: {
       bundleId: '',
     },
-    name: '',
-    accountId: '',
-    parent: '',
-  };
+    name: rowData.name,
+    accountId: rowData.accountId,
+    parent: rowData.parent,
+  }));
 
   const form = useForm<Forms>({
     defaultValues: {
-      forms: [formDataDefaults],
+      forms: formDataDefaults,
     },
     resolver: zodResolver(FormsSchema),
   });
@@ -135,10 +133,20 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
     control: form.control,
     name: 'forms',
   });
+
+  console.log('fields', fields);
+
   const addForm = () => {
     append(formDataDefaults);
   };
 
+  const handleNext = () => {
+    dispatch(incrementStep());
+  };
+
+  const handlePrevious = () => {
+    dispatch(decrementStep());
+  };
 
   const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
@@ -168,7 +176,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
     }
 
     try {
-      const res = (await createGAPropertyStreams({ forms })) as FeatureResponse;
+      const res = (await updateGAPropertyStreams({ forms })) as FeatureResponse;
 
       if (res.success) {
         res.results.forEach((result) => {
@@ -224,13 +232,13 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
         }
 
         form.reset({
-          forms: [formDataDefaults],
+          forms: formDataDefaults,
         });
       }
 
       // Reset the forms here, regardless of success or limit reached
       form.reset({
-        forms: [formDataDefaults],
+        forms: formDataDefaults,
       });
     } catch (error) {
       toast.error('An unexpected error occurred.', {
@@ -247,202 +255,72 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
 
   return (
     <div className="flex items-center justify-center h-screen">
+      {/* Conditional rendering based on the currentStep */}
 
-
-      
+      {currentStep && (
         <div className="w-full">
           {/* Render only the form corresponding to the current step - 1 
               (since step 1 is for selecting the number of forms) */}
-          {fields.map((field, index) => {
-
-                        const selectedAccountId = form.watch(`forms.${index}.account`);
-
-                const filteredProperties = properties.filter(
-                  (property) => property.parent === selectedAccountId
-                );
-
-                return (
+          {fields.length > 0 && fields.length >= currentStep && (
             <div
-              key={field.id}
+              key={fields[currentStep - 1].id}
               className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
             >
               <div className="max-w-xl mx-auto">
-                <h1>Stream {index}</h1>
+                <h1>Stream {currentStep}</h1>
                 <div className="mt-12">
                   {/* Form */}
 
                   <Form {...form}>
                     <form
                       onSubmit={form.handleSubmit(processForm)}
-                      id={`createStream-${index}`}
+                      id={`createStream-${currentFormIndex}`}
                       className="space-y-6"
                     >
-                 
-                          <>
-                            <FormField
-                              control={form.control}
-                              name={`forms.${index}.displayName`}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>New Stream Name</FormLabel>
-                                  <FormDescription>
-                                    This is the stream name you want to create.
-                                  </FormDescription>
-                                  <FormControl>
-                                    <Input
-                                      placeholder="Name of the stream"
-                                      {...form.register(`forms.${index}.displayName`)}
-                                      {...field}
-                                    />
-                                  </FormControl>
-
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-
-                            <FormField
-                              control={form.control}
-                              name={`forms.${index}.account`}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Account</FormLabel>
-                                  <FormDescription>
-                                    This is the account you want to create the property in.
-                                  </FormDescription>
-                                  <FormControl>
-                                    <Select
-                                      {...form.register(`forms.${index}.account`)}
-                                      {...field}
-                                      onValueChange={field.onChange}
-                                    >
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Select an account." />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectGroup>
-                                          <SelectLabel>Account</SelectLabel>
-                                          {accountsWithProperties.map((account) => (
-                                            <SelectItem key={account.name} value={account.name}>
-                                              {account.displayName}
-                                            </SelectItem>
-                                          ))}
-                                        </SelectGroup>
-                                      </SelectContent>
-                                    </Select>
-                                  </FormControl>
-
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-
-                            <FormField
-                              control={form.control}
-                              name={`forms.${index}.property`}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Property</FormLabel>
-                                  <FormDescription>
-                                    Which property do you want to create the stream in?
-                                  </FormDescription>
-                                  <FormControl>
-                                    <Select
-                                      {...form.register(`forms.${index}.property`)}
-                                      {...field}
-                                      onValueChange={field.onChange}
-                                    >
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Select a property." />
-                                      </SelectTrigger>
-
-                                      <SelectContent>
-                                        <SelectGroup>
-                                          <SelectLabel>Property</SelectLabel>
-                                          {filteredProperties.length > 0 ? (
-                                            filteredProperties.map((property) => (
-                                              <SelectItem key={property.name} value={property.name}>
-                                                {property.displayName}
-                                              </SelectItem>
-                                            ))
-                                          ) : (
-                                            <SelectItem value="" disabled>
-                                              No properties available
-                                            </SelectItem>
+                      {fields.length > 0 &&
+                        fields.map((field, index) => {
+                          if (index === currentStep - 1) {
+                            return (
+                              <>
+                                <FormField
+                                  control={form.control}
+                                  name={`forms.${currentFormIndex}.displayName`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>New Stream Name</FormLabel>
+                                      <FormDescription>
+                                        This is the stream name you want to create.
+                                      </FormDescription>
+                                      <FormControl>
+                                        <Input
+                                          placeholder="Name of the stream"
+                                          {...form.register(
+                                            `forms.${currentFormIndex}.displayName`
                                           )}
-                                        </SelectGroup>
-                                      </SelectContent>
-                                    </Select>
-                                  </FormControl>
+                                          {...field}
+                                        />
+                                      </FormControl>
 
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
 
-                            <FormField
-                              control={form.control}
-                              name={`forms.${index}.type`}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Stream Type</FormLabel>
-                                  <FormDescription>Set the stream type.</FormDescription>
-                                  <FormControl>
-                                    <Select
-                                      {...form.register(`forms.${index}.type`)}
-                                      {...field}
-                                      onValueChange={field.onChange}
-                                    >
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Select a stream type." />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectGroup>
-                                          <SelectLabel>Retention Setting</SelectLabel>
-                                          {Object.entries(streamType).map(([label, value]) => (
-                                            <SelectItem key={value} value={value}>
-                                              {label}
-                                            </SelectItem>
-                                          ))}
-                                        </SelectGroup>
-                                      </SelectContent>
-                                    </Select>
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-
-                            {Object.keys(streamType).map(
-                              (type) =>
-                                form.watch(`forms.${index}.type`) ===
-                                  streamType[type] && (
+                                {currentFormData.type === 'WEB_DATA_STREAM' && (
                                   <FormField
                                     control={form.control}
-                                    name={`forms.${index}.${
-                                      type.toLowerCase() === 'web'
-                                        ? 'webStreamData.defaultUri'
-                                        : type.toLowerCase() === 'android'
-                                        ? 'androidAppStreamData.packageName'
-                                        : 'iosAppStreamData.bundleId'
-                                    }`}
+                                    name={`forms.${currentFormIndex}.webStreamData.defaultUri`}
                                     render={({ field }) => (
                                       <FormItem>
-                                        <FormLabel>{type} Input</FormLabel>
+                                        <FormLabel>Default URI</FormLabel>
                                         <FormDescription>
-                                          This is the input for {type}.
+                                          This is the default URI for the web stream.
                                         </FormDescription>
                                         <FormControl>
                                           <Input
-                                            placeholder={`Enter ${type} input`}
+                                            placeholder="Enter default URI"
                                             {...form.register(
-                                              `forms.${index}.${
-                                                type.toLowerCase() === 'web'
-                                                  ? 'webStreamData.defaultUri'
-                                                  : type.toLowerCase() === 'android'
-                                                  ? 'androidAppStreamData.packageName'
-                                                  : 'iosAppStreamData.bundleId'
-                                              }`
+                                              `forms.${currentFormIndex}.webStreamData.defaultUri`
                                             )}
                                             {...field}
                                           />
@@ -451,10 +329,60 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                                       </FormItem>
                                     )}
                                   />
-                                )
-                            )}
-                          </>
-                    
+                                )}
+
+                                {/*      {selectedRowData[currentFormIndex].type === 'ANDROID_APP_DATA_STREAM' && (
+                        <FormField
+                          control={form.control}
+                          name={`forms.${currentFormIndex}.androidAppStreamData.packageName`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Package Name</FormLabel>
+                              <FormDescription>
+                                This is the package name for the Android app stream.
+                              </FormDescription>
+                              <FormControl>
+                                <Input
+                                  placeholder="Enter package name"
+                                  {...form.register(
+                                    `forms.${currentFormIndex}.androidAppStreamData.packageName`
+                                  )}
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
+
+                      {selectedRowData[currentFormIndex].type === 'IOS_APP_DATA_STREAM' && (
+                        <FormField
+                          control={form.control}
+                          name={`forms.${currentFormIndex}.iosAppStreamData.bundleId`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Bundle ID</FormLabel>
+                              <FormDescription>
+                                This is the bundle ID for the iOS app stream.
+                              </FormDescription>
+                              <FormControl>
+                                <Input
+                                  placeholder="Enter bundle ID"
+                                  {...form.register(`forms.${currentFormIndex}.iosAppStreamData.bundleId`)}
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )} */}
+                              </>
+                            );
+                          }
+                          return null;
+                        })}
                       <div className="flex justify-between">
                         <Button type="button" onClick={handlePrevious}>
                           Previous
@@ -475,9 +403,9 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                 </div>
               </div>
             </div>
-          )})}
+          )}
         </div>
-   
+      )}
     </div>
   );
 };
