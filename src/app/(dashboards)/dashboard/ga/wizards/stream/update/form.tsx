@@ -35,7 +35,7 @@ import {
 
 import { Input } from '@/src/components/ui/input';
 import { streamType } from '../../../properties/@streams/streamItems';
-import { FeatureResponse, FormCreateProps, GA4StreamType } from '@/src/types/types';
+import { FeatureResponse, FormWizardUpdateProps, GA4StreamType } from '@/src/types/types';
 import { toast } from 'sonner';
 import { updateGAPropertyStreams } from '@/src/lib/fetch/dashboard/actions/ga/streams';
 import {
@@ -61,7 +61,7 @@ interface TierLimit {
   description?: string;
 }
 
-const FormCreateStream: React.FC<FormCreateProps> = ({
+const FormUpdateStream: React.FC<FormWizardUpdateProps> = ({
   tierLimits,
   properties = [],
   table = [],
@@ -76,20 +76,23 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
   const notFoundError = useSelector(selectTable).notFoundError;
   const router = useRouter();
 
+  console.log("currentStep", currentStep);
+  console.log("streamCount", streamCount);
+  
+  
+
   const foundTierLimit = tierLimits.find(
     (subscription) => subscription.Feature?.name === 'GA4Streams'
   );
 
   const selectedRowData = useSelector((state: RootState) => state.table.selectedRows);
+console.log("selectedRowData",selectedRowData);
 
-  console.log('selectedRowData', selectedRowData);
   const totalForms = Object.keys(selectedRowData).length;
-  console.log('total forms', totalForms);
 
   const currentFormIndex = currentStep - 1; // Adjust for 0-based index
   const currentFormData = selectedRowData[currentFormIndex]; // Get data for the current step
 
-  console.log('currentFormData', currentFormData);
 
   const accountsWithProperties = accounts
     .map((account) => {
@@ -134,7 +137,6 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
     name: 'forms',
   });
 
-  console.log('fields', fields);
 
   const addForm = () => {
     append(formDataDefaults);
@@ -159,7 +161,10 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
       },
     });
 
-    const uniqueStreams = new Set(forms.map((form) => form.property));
+    console.log("formData", forms);
+    
+
+/*     const uniqueStreams = new Set(forms.map((form) => form.property));
     for (const form of forms) {
       const identifier = `${form.property}-${form.displayName}`;
       if (uniqueStreams.has(identifier)) {
@@ -173,10 +178,13 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
         return;
       }
       uniqueStreams.add(identifier);
-    }
+    } */
 
     try {
       const res = (await updateGAPropertyStreams({ forms })) as FeatureResponse;
+
+      console.log("res: ", res);
+      
 
       if (res.success) {
         res.results.forEach((result) => {
@@ -231,6 +239,21 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
           dispatch(setIsLimitReached(true));
         }
 
+        if (res.errors){
+          res.errors.forEach((error) => {
+              toast.error(
+                `Unable to create stream. ${error}`,
+                {
+                  action: {
+                    label: 'Close',
+                    onClick: () => toast.dismiss(),
+                  },
+                }
+              );
+       
+          });
+        }
+
         form.reset({
           forms: formDataDefaults,
         });
@@ -267,7 +290,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
               className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
             >
               <div className="max-w-xl mx-auto">
-                <h1>Stream {currentStep}</h1>
+                <h1>{currentFormData.displayName}</h1>
                 <div className="mt-12">
                   {/* Form */}
 
@@ -384,11 +407,11 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                           return null;
                         })}
                       <div className="flex justify-between">
-                        <Button type="button" onClick={handlePrevious}>
+                        <Button type="button" onClick={handlePrevious} disabled={currentStep === 1}>
                           Previous
                         </Button>
 
-                        {currentStep - 1 < streamCount ? (
+                        {currentStep < fields.length ? (
                           <Button type="button" onClick={handleNext}>
                             Next
                           </Button>
@@ -410,4 +433,4 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
   );
 };
 
-export default FormCreateStream;
+export default FormUpdateStream;

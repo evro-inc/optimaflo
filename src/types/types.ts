@@ -230,6 +230,8 @@ export interface FeatureResult {
   notFound?: boolean;
   limitReached?: boolean;
   remaining?: number;
+  message?: string;
+  errors?:  string[];
 }
 
 export interface FeatureResponse {
@@ -297,4 +299,109 @@ export type GA4StreamType = {
   iosAppStreamData: {
     bundleId: string;
   };
+};
+
+
+
+
+
+
+
+
+
+
+
+type TierLimit = {
+  id: string;
+  subscriptionId: string;
+  createLimit: number;
+  createUsage: number;
+  updateLimit: number;
+  updateUsage?: number;
+  deleteLimit?: number;
+  deleteUsage?: number;
+  productId: string;
+  featureId: string;
+  Feature: {
+    id: string;
+    name: string;
+    description: string;
+  };
+  Subscription: {
+    id: string;
+    subId: string;
+    userId: string;
+    status: string;
+    metadata: null;
+    priceId: string;
+    productId: string;
+    quantity: number;
+    cancelAtPeriodEnd: boolean;
+    created: Date;
+    currentPeriodStart: Date;
+    currentPeriodEnd: Date;
+    endedAt: null;
+    cancelAt: null;
+    canceledAt: null;
+    trialStart: null;
+    trialEnd: null;
+  };
+};
+
+type Account = {
+  name: string;
+  displayName: string;
+  regionCode: string;
+};
+
+type Property = {
+  name: string;
+  parent: string;
+  createTime: string;
+  updateTime: string;
+  displayName: string;
+  industryCategory: string;
+  timeZone: string;
+  currencyCode: string;
+  serviceLevel: string;
+  account: string;
+  propertyType: string;
+  dataRetentionSettings: {
+    name: string;
+    eventDataRetention: string;
+    resetUserDataOnNewActivity?: boolean;
+  };
+};
+
+type Stream = {
+  name: string;
+  type: string;
+  displayName: string;
+  createTime: string;
+  updateTime: string;
+  webStreamData?: {
+    measurementId: string;
+    defaultUri?: string;
+  };
+  androidAppStreamData?:{
+    firebaseAppId: string,
+    packageName: string
+  };
+  iosAppStreamData?:{
+    firebaseAppId: string,
+    bundleId: string
+  }
+  typeDisplayName: string;
+  parent: string;
+  property: string;
+  accountId: string;
+  accountName: string;
+};
+
+// Now, define the FormWizardUpdateProps type using the above types
+export type FormWizardUpdateProps = {
+  tierLimits: TierLimit[];
+  properties: Property[];
+  table: Stream[];
+  accounts: Account[];
 };

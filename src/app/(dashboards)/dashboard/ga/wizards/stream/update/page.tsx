@@ -8,11 +8,11 @@ import { listGAPropertyStreams } from '@/src/lib/fetch/dashboard/actions/ga/stre
 
 import { listGaAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
 import { dataStreamTypeMapping } from '../../../properties/@streams/streamItems';
-import FormCreateStream from './form';
+import FormUpdateStream from './form';
 import { getTierLimit } from '@/src/lib/fetch/tierLimit';
 import { getSubscription } from '@/src/lib/fetch/subscriptions';
 
-export default async function CreateStreamPage({
+export default async function UpdateStreamPage({
   searchParams,
 }: {
   searchParams?: {
@@ -33,6 +33,9 @@ export default async function CreateStreamPage({
   const accountData = await listGaAccounts();
   const propertyData = await listGAProperties();
   const streamData = await listGAPropertyStreams();
+
+  console.log("streamData", streamData);
+  
 
   const [accounts, properties, streams] = await Promise.all([
     accountData,
@@ -67,11 +70,17 @@ export default async function CreateStreamPage({
     };
   });
 
+  console.log("tierLimits: ", tierLimits);
+  console.log("accounts: ", accounts);
+  console.log("properties: ", properties);
+  console.log("combinedData: ", combinedData);
+  
+
   return (
     <>
       <div className="container mx-auto py-10">
-        {/* <FormCreateStream accounts={accounts} properties={properties} table={combinedData} /> */}
-        <FormCreateStream
+        {/* <FormUpdateStream accounts={accounts} properties={properties} table={combinedData} /> */}
+        <FormUpdateStream
           tierLimits={tierLimits}
           table={combinedData}
           accounts={accounts}
