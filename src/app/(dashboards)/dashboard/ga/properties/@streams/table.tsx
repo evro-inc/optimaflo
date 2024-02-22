@@ -89,8 +89,7 @@ export function DataTable<TData, TValue>({
     return acc;
   }, {});
 
-  
-  
+  const rowSelectedCount = Object.keys(selectedRowData).length;
 
   const handleCreateClick = useCreateHookForm(
     userId,
@@ -100,7 +99,8 @@ export function DataTable<TData, TValue>({
   const handleUpdateClick = useUpdateHookForm(
     userId,
     'GA4Streams',
-    '/dashboard/ga/wizards/stream/update'
+    '/dashboard/ga/wizards/stream/update',
+    rowSelectedCount
   );
   const handleDelete = useDeleteHook(selectedRowData, table);
 

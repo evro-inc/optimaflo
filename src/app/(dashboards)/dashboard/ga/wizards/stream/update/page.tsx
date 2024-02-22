@@ -34,9 +34,6 @@ export default async function UpdateStreamPage({
   const propertyData = await listGAProperties();
   const streamData = await listGAPropertyStreams();
 
-  console.log("streamData", streamData);
-  
-
   const [accounts, properties, streams] = await Promise.all([
     accountData,
     propertyData,
@@ -69,12 +66,6 @@ export default async function UpdateStreamPage({
       accountName: accounts ? accounts[0].displayName : 'Unknown Account Name',
     };
   });
-
-  console.log("tierLimits: ", tierLimits);
-  console.log("accounts: ", accounts);
-  console.log("properties: ", properties);
-  console.log("combinedData: ", combinedData);
-  
 
   return (
     <>

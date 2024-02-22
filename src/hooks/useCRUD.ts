@@ -4,6 +4,7 @@ import { notFound, useRouter } from 'next/navigation';
 
 import { toggleCreate, toggleUpdate } from '@/src/redux/globalSlice';
 import { setIsLimitReached } from '@/src/redux/tableSlice';
+import { toast } from 'sonner';
 
 export function useCreateHookForm(userId, createTierLimitType, url) {
   const router = useRouter();
@@ -35,7 +36,7 @@ export function useCreateHookForm(userId, createTierLimitType, url) {
   }
 }
 
-export function useUpdateHookForm(userId, updateTierLimitType, url) {
+export function useUpdateHookForm(userId, updateTierLimitType, url, rowSelectedCount) {
   const router = useRouter();
   try {
     const dispatch = useDispatch();
@@ -47,7 +48,21 @@ export function useUpdateHookForm(userId, updateTierLimitType, url) {
         }
         const handleUpdateLimit: any = await tierUpdateLimit(userId, updateTierLimitType);
 
-        if (handleUpdateLimit && handleUpdateLimit.limitReached) {
+        const limit = Number(handleUpdateLimit.updateLimit);
+        const updateUsage = Number(handleUpdateLimit.updateUsage);
+        const availableUpdateUsage = limit - updateUsage;
+
+        if (rowSelectedCount > availableUpdateUsage) {
+          toast.error(
+            `Cannot update ${rowSelectedCount} streams as it exceeds the available limit. You have ${availableUpdateUsage} more creation(s) available.`,
+            {
+              action: {
+                label: 'Close',
+                onClick: () => toast.dismiss(),
+              },
+            }
+          );
+        } else if (handleUpdateLimit && handleUpdateLimit.limitReached) {
           // Directly show the limit reached modal
           dispatch(setIsLimitReached(true)); // Assuming you have an action to explicitly set this
         } else {

@@ -76,23 +76,16 @@ const FormUpdateStream: React.FC<FormWizardUpdateProps> = ({
   const notFoundError = useSelector(selectTable).notFoundError;
   const router = useRouter();
 
-  console.log("currentStep", currentStep);
-  console.log("streamCount", streamCount);
-  
-  
-
   const foundTierLimit = tierLimits.find(
     (subscription) => subscription.Feature?.name === 'GA4Streams'
   );
 
   const selectedRowData = useSelector((state: RootState) => state.table.selectedRows);
-console.log("selectedRowData",selectedRowData);
 
   const totalForms = Object.keys(selectedRowData).length;
 
   const currentFormIndex = currentStep - 1; // Adjust for 0-based index
   const currentFormData = selectedRowData[currentFormIndex]; // Get data for the current step
-
 
   const accountsWithProperties = accounts
     .map((account) => {
@@ -109,7 +102,7 @@ console.log("selectedRowData",selectedRowData);
     account: rowData.accountName,
     property: rowData.parent,
     displayName: rowData.displayName,
-    parentURL: '',
+    parentURL: rowData.name,
     type: rowData.type,
     webStreamData: {
       defaultUri: '',
@@ -137,13 +130,33 @@ console.log("selectedRowData",selectedRowData);
     name: 'forms',
   });
 
-
   const addForm = () => {
     append(formDataDefaults);
   };
 
-  const handleNext = () => {
-    dispatch(incrementStep());
+  const handleNext = async () => {
+    // Determine the names of the fields in the current form to validate
+    const currentFormFields = [`forms.${currentFormIndex}.displayName`];
+
+    // Add additional fields based on the stream type of the current form
+    const currentFormData = selectedRowData[currentFormIndex];
+    if (currentFormData.type === 'WEB_DATA_STREAM') {
+      currentFormFields.push(`forms.${currentFormIndex}.webStreamData.defaultUri`);
+    } else if (currentFormData.type === 'ANDROID_APP_DATA_STREAM') {
+      currentFormFields.push(`forms.${currentFormIndex}.androidAppStreamData.packageName`);
+    } else if (currentFormData.type === 'IOS_APP_DATA_STREAM') {
+      currentFormFields.push(`forms.${currentFormIndex}.iosAppStreamData.bundleId`);
+    }
+
+    // Trigger validation for only the current form's fields
+    const isFormValid = await form.trigger(currentFormFields as any);
+
+    if (isFormValid) {
+      dispatch(incrementStep());
+    } else {
+      // Optionally handle the case where the form is not valid.
+      // You could display a message or log the error.
+    }
   };
 
   const handlePrevious = () => {
@@ -152,6 +165,7 @@ console.log("selectedRowData",selectedRowData);
 
   const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
+
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
     toast('Creating streams...', {
@@ -161,10 +175,7 @@ console.log("selectedRowData",selectedRowData);
       },
     });
 
-    console.log("formData", forms);
-    
-
-/*     const uniqueStreams = new Set(forms.map((form) => form.property));
+    const uniqueStreams = new Set(forms.map((form) => form.property));
     for (const form of forms) {
       const identifier = `${form.property}-${form.displayName}`;
       if (uniqueStreams.has(identifier)) {
@@ -178,13 +189,10 @@ console.log("selectedRowData",selectedRowData);
         return;
       }
       uniqueStreams.add(identifier);
-    } */
+    }
 
     try {
       const res = (await updateGAPropertyStreams({ forms })) as FeatureResponse;
-
-      console.log("res: ", res);
-      
 
       if (res.success) {
         res.results.forEach((result) => {
@@ -239,18 +247,14 @@ console.log("selectedRowData",selectedRowData);
           dispatch(setIsLimitReached(true));
         }
 
-        if (res.errors){
+        if (res.errors) {
           res.errors.forEach((error) => {
-              toast.error(
-                `Unable to create stream. ${error}`,
-                {
-                  action: {
-                    label: 'Close',
-                    onClick: () => toast.dismiss(),
-                  },
-                }
-              );
-       
+            toast.error(`Unable to create stream. ${error}`, {
+              action: {
+                label: 'Close',
+                onClick: () => toast.dismiss(),
+              },
+            });
           });
         }
 

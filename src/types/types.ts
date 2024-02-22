@@ -231,7 +231,7 @@ export interface FeatureResult {
   limitReached?: boolean;
   remaining?: number;
   message?: string;
-  errors?:  string[];
+  errors?: string[];
 }
 
 export interface FeatureResponse {
@@ -300,16 +300,6 @@ export type GA4StreamType = {
     bundleId: string;
   };
 };
-
-
-
-
-
-
-
-
-
-
 
 type TierLimit = {
   id: string;
@@ -383,14 +373,14 @@ type Stream = {
     measurementId: string;
     defaultUri?: string;
   };
-  androidAppStreamData?:{
-    firebaseAppId: string,
-    packageName: string
+  androidAppStreamData?: {
+    firebaseAppId: string;
+    packageName: string;
   };
-  iosAppStreamData?:{
-    firebaseAppId: string,
-    bundleId: string
-  }
+  iosAppStreamData?: {
+    firebaseAppId: string;
+    bundleId: string;
+  };
   typeDisplayName: string;
   parent: string;
   property: string;

@@ -465,8 +465,6 @@ export async function updateGAPropertyStreams(formData: DataStreamType) {
 
   // Refactor: Use string identifiers in the set
   const toUpdateStreams = new Set(formData.forms.map((cd) => cd));
-  console.log("toUpdateStreams", toUpdateStreams);
-  
 
   const tierLimitResponse: any = await tierUpdateLimit(userId, 'GA4Streams');
   const limit = Number(tierLimitResponse.updateLimit);
@@ -524,8 +522,6 @@ export async function updateGAPropertyStreams(formData: DataStreamType) {
         if (remaining > 0) {
           await limiter.schedule(async () => {
             const updatePromises = Array.from(toUpdateStreams).map(async (identifier) => {
-              console.log("identifier", identifier);
-              
               if (!identifier) {
                 errors.push(`Stream data not found for ${identifier}`);
                 toUpdateStreams.delete(identifier);
@@ -620,11 +616,7 @@ export async function updateGAPropertyStreams(formData: DataStreamType) {
                   body: JSON.stringify(requestBody),
                 });
 
-                console.log("resp: ", response)
-
                 const parsedResponse = await response.json();
-                console.log("parsedResponse", parsedResponse);
-                
 
                 if (response.ok) {
                   successfulCreations.push(validatedContainerData.displayName);
@@ -641,8 +633,6 @@ export async function updateGAPropertyStreams(formData: DataStreamType) {
                     message: `Successfully updated property ${validatedContainerData.displayName}`,
                   });
                 } else {
-                  
-
                   const errorResult = await handleApiResponseError(
                     response,
                     parsedResponse,
