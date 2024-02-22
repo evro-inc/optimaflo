@@ -54,8 +54,9 @@ export function useUpdateHookForm(
         toast.error(
           `Cannot update ${rowSelectedCount} streams as it exceeds the available limit. You have ${availableUpdateUsage} more creation(s) available.`
         );
+        dispatch(setIsLimitReached(true));
       } else if (handleUpdateLimit && handleUpdateLimit.limitReached) {
-        dispatch(setIsLimitReached(true)); // Make sure setIsLimitReached is imported or defined
+        dispatch(setIsLimitReached(true));
       } else {
         router.push(url);
       }

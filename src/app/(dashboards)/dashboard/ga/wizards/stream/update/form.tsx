@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { setError, setLoading, incrementStep, decrementStep } from '@/redux/formSlice';
+import { setLoading, incrementStep, decrementStep } from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -129,8 +129,12 @@ const FormUpdateStream: React.FC<FormWizardUpdateProps> = () => {
     if (isFormValid) {
       dispatch(incrementStep());
     } else {
-      // Optionally handle the case where the form is not valid.
-      // You could display a message or log the error.
+      toast.error('A form is invalid. Check all fields in your forms.', {
+        action: {
+          label: 'Close',
+          onClick: () => toast.dismiss(),
+        },
+      });
     }
   };
 

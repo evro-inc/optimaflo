@@ -5,7 +5,7 @@ const SingleFormSchema = z.object({
   property: z.string(),
   parentURL: z.string().optional(),
   account: z.string(),
-  displayName: z.string(),
+  displayName: z.string().min(3),
   webStreamData: z
     .object({
       defaultUri: z.string().url().optional(),
