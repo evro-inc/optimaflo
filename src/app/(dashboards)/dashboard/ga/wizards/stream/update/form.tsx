@@ -28,7 +28,7 @@ import {
   setIsLimitReached,
   setNotFoundError,
 } from '@/src/redux/tableSlice';
-import { RootState, store } from '@/src/redux/store';
+import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 
@@ -104,7 +104,7 @@ const FormUpdateStream: React.FC<FormWizardUpdateProps> = () => {
     resolver: zodResolver(FormsSchema),
   });
 
-  const { fields, append } = useFieldArray({
+  const { fields } = useFieldArray({
     control: form.control,
     name: 'forms',
   });
