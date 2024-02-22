@@ -35,10 +35,7 @@ import { toast } from 'sonner';
 import { revalidate } from '@/src/utils/server';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
 import { useDeleteHook } from './delete';
-
-import StreamForms from './forms';
 import { useCreateHookForm, useUpdateHookForm } from '@/src/hooks/useCRUD';
-import Link from 'next/link';
 import { setSelectedRows } from '@/src/redux/tableSlice';
 import { useDispatch } from 'react-redux';
 import { useTransition } from 'react';
@@ -46,15 +43,11 @@ import { useTransition } from 'react';
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
-  properties: any;
-  accounts: any;
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
-  properties,
-  accounts,
 }: DataTableProps<TData, TValue>) {
   const { user } = useUser();
   const userId = user?.id as string;

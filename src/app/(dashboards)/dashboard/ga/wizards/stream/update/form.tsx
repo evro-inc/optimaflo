@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   setError,
@@ -23,18 +23,8 @@ import {
   FormLabel,
   FormMessage,
 } from '@/src/components/ui/form';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from '@/src/components/ui/select';
 
 import { Input } from '@/src/components/ui/input';
-import { streamType } from '../../../properties/@streams/streamItems';
 import { FeatureResponse, FormWizardUpdateProps, GA4StreamType } from '@/src/types/types';
 import { toast } from 'sonner';
 import { updateGAPropertyStreams } from '@/src/lib/fetch/dashboard/actions/ga/streams';
@@ -44,7 +34,6 @@ import {
   setIsLimitReached,
   setNotFoundError,
 } from '@/src/redux/tableSlice';
-import { selectGlobal } from '@/src/redux/globalSlice';
 import { RootState, store } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 
@@ -61,42 +50,19 @@ interface TierLimit {
   description?: string;
 }
 
-const FormUpdateStream: React.FC<FormWizardUpdateProps> = ({
-  tierLimits,
-  properties = [],
-  table = [],
-  accounts = [],
-}) => {
+const FormUpdateStream: React.FC<FormWizardUpdateProps> = () => {
   const dispatch = useDispatch();
   const loading = useSelector((state: RootState) => state.form.loading);
   const error = useSelector((state: RootState) => state.form.error);
   const currentStep = useSelector((state: RootState) => state.form.currentStep);
-  const streamCount = useSelector((state: RootState) => state.form.streamCount);
   const isLimitReached = useSelector(selectTable).isLimitReached;
   const notFoundError = useSelector(selectTable).notFoundError;
-  const router = useRouter();
-
-  const foundTierLimit = tierLimits.find(
-    (subscription) => subscription.Feature?.name === 'GA4Streams'
-  );
+  const router = useRouter(); 
 
   const selectedRowData = useSelector((state: RootState) => state.table.selectedRows);
-
-  const totalForms = Object.keys(selectedRowData).length;
-
   const currentFormIndex = currentStep - 1; // Adjust for 0-based index
   const currentFormData = selectedRowData[currentFormIndex]; // Get data for the current step
 
-  const accountsWithProperties = accounts
-    .map((account) => {
-      const accountProperties = properties.filter((property) => property.parent === account.name);
-
-      return {
-        ...account,
-        properties: accountProperties,
-      };
-    })
-    .filter((account) => account.properties.length > 0);
 
   const formDataDefaults: GA4StreamType[] = Object.values(selectedRowData).map((rowData) => ({
     account: rowData.accountName,
@@ -129,10 +95,6 @@ const FormUpdateStream: React.FC<FormWizardUpdateProps> = ({
     control: form.control,
     name: 'forms',
   });
-
-  const addForm = () => {
-    append(formDataDefaults);
-  };
 
   const handleNext = async () => {
     // Determine the names of the fields in the current form to validate
