@@ -2,17 +2,11 @@
 
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import {
-  setError,
-  setLoading,
-  incrementStep,
-  decrementStep,
-  setStreamCount,
-} from '@/redux/formSlice';
+import { setError, setLoading, incrementStep, decrementStep } from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { FormCreateAmountSchema, FormsSchema } from '@/src/lib/schemas/ga/streams';
+import { FormsSchema } from '@/src/lib/schemas/ga/streams';
 import { Button } from '@/src/components/ui/button';
 import {
   Form,
@@ -36,6 +30,21 @@ import {
 } from '@/src/redux/tableSlice';
 import { RootState, store } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
+
+const NotFoundErrorModal = dynamic(
+  () =>
+    import('../../../../../../../components/client/modals/notFoundError').then(
+      (mod) => mod.NotFoundError
+    ),
+  { ssr: false }
+);
+
+const ErrorModal = dynamic(
+  () =>
+    import('../../../../../../../components/client/modals/Error').then((mod) => mod.ErrorMessage),
+  { ssr: false }
+);
 
 type Forms = z.infer<typeof FormsSchema>;
 interface TierLimit {
@@ -55,14 +64,12 @@ const FormUpdateStream: React.FC<FormWizardUpdateProps> = () => {
   const loading = useSelector((state: RootState) => state.form.loading);
   const error = useSelector((state: RootState) => state.form.error);
   const currentStep = useSelector((state: RootState) => state.form.currentStep);
-  const isLimitReached = useSelector(selectTable).isLimitReached;
   const notFoundError = useSelector(selectTable).notFoundError;
-  const router = useRouter(); 
+  const router = useRouter();
 
   const selectedRowData = useSelector((state: RootState) => state.table.selectedRows);
   const currentFormIndex = currentStep - 1; // Adjust for 0-based index
   const currentFormData = selectedRowData[currentFormIndex]; // Get data for the current step
-
 
   const formDataDefaults: GA4StreamType[] = Object.values(selectedRowData).map((rowData) => ({
     account: rowData.accountName,
@@ -84,6 +91,12 @@ const FormUpdateStream: React.FC<FormWizardUpdateProps> = () => {
     parent: rowData.parent,
   }));
 
+  if (notFoundError) {
+    return <NotFoundErrorModal />;
+  }
+  if (error) {
+    return <ErrorModal />;
+  }
   const form = useForm<Forms>({
     defaultValues: {
       forms: formDataDefaults,
@@ -319,54 +332,55 @@ const FormUpdateStream: React.FC<FormWizardUpdateProps> = () => {
                                     )}
                                   />
                                 )}
+                                {currentFormData.type === 'ANDROID_APP_DATA_STREAM' && (
+                                  <FormField
+                                    control={form.control}
+                                    name={`forms.${currentFormIndex}.androidAppStreamData.packageName`}
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Package Name</FormLabel>
+                                        <FormDescription>
+                                          This is the package name for the Android app stream.
+                                        </FormDescription>
+                                        <FormControl>
+                                          <Input
+                                            placeholder="Enter Package Name"
+                                            {...form.register(
+                                              `forms.${currentFormIndex}.androidAppStreamData.packageName`
+                                            )}
+                                            {...field}
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                )}
 
-                                {/*      {selectedRowData[currentFormIndex].type === 'ANDROID_APP_DATA_STREAM' && (
-                        <FormField
-                          control={form.control}
-                          name={`forms.${currentFormIndex}.androidAppStreamData.packageName`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Package Name</FormLabel>
-                              <FormDescription>
-                                This is the package name for the Android app stream.
-                              </FormDescription>
-                              <FormControl>
-                                <Input
-                                  placeholder="Enter package name"
-                                  {...form.register(
-                                    `forms.${currentFormIndex}.androidAppStreamData.packageName`
-                                  )}
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      )}
-
-                      {selectedRowData[currentFormIndex].type === 'IOS_APP_DATA_STREAM' && (
-                        <FormField
-                          control={form.control}
-                          name={`forms.${currentFormIndex}.iosAppStreamData.bundleId`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Bundle ID</FormLabel>
-                              <FormDescription>
-                                This is the bundle ID for the iOS app stream.
-                              </FormDescription>
-                              <FormControl>
-                                <Input
-                                  placeholder="Enter bundle ID"
-                                  {...form.register(`forms.${currentFormIndex}.iosAppStreamData.bundleId`)}
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      )} */}
+                                {currentFormData.type === 'IOS_APP_DATA_STREAM' && (
+                                  <FormField
+                                    control={form.control}
+                                    name={`forms.${currentFormIndex}.iosAppStreamData.bundleId`}
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Bundle ID</FormLabel>
+                                        <FormDescription>
+                                          This is the bundle ID for the iOS app stream.
+                                        </FormDescription>
+                                        <FormControl>
+                                          <Input
+                                            placeholder="Enter Bundle ID"
+                                            {...form.register(
+                                              `forms.${currentFormIndex}.iosAppStreamData.bundleId`
+                                            )}
+                                            {...field}
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                )}
                               </>
                             );
                           }
