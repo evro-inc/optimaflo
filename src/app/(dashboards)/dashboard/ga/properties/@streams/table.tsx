@@ -129,7 +129,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
       `ga:properties:userId:${userId}`,
       `ga:streams:userId:${userId}`,
     ];
-    await revalidate(keys, '/dashboard/ga/accounts', userId);
+    await revalidate(keys, '/dashboard/ga/properties', userId);
   };
 
   return (

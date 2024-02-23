@@ -1,4 +1,5 @@
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager';
+import { boolean } from 'joi';
 import Stripe from 'stripe';
 
 export interface PageMeta {
@@ -275,9 +276,13 @@ export type GA4PropertyType = {
   displayName: string;
   timeZone: string;
   currencyCode: string;
-  serviceLevel: string;
-  account: string;
+  serviceLevel?: string;
+  account?: string;
   propertyType: string;
+  industryCategory: string;
+  retention: string;
+  resetOnNewActivity: boolean;
+  acknowledgment: boolean;
 };
 
 export type GA4StreamType = {

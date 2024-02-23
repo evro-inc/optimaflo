@@ -15,16 +15,16 @@ const SingleFormSchema = z.object({
   acknowledgment: z.boolean().default(false),
 });
 
-// Define the schema for the entire update form with field array
-export const UpdatePropertySchema = z.object({
-  forms: z.array(SingleFormSchema),
+export const FormCreateAmountSchema = z.object({
+  amount: z.number(),
 });
 
-export const CreatePropertySchema = z.object({
+// Define the schema for the entire update form with field array
+export const FormsSchema = z.object({
   forms: z.array(SingleFormSchema),
 });
 
 // Type for the entire update form data
-export type UpdatePropertySchemaType = z.infer<typeof UpdatePropertySchema>;
+export type UpdatePropertySchemaType = z.infer<typeof FormsSchema>;
 
-export type CreateContainerSchemaType = z.infer<typeof CreatePropertySchema>;
+export type CreateContainerSchemaType = z.infer<typeof FormsSchema>;

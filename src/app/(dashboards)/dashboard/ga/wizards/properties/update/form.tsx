@@ -235,7 +235,6 @@ const FormUpdateStream: React.FC<FormWizardUpdateProps> = () => {
               },
             });
           });
-          router.push('/dashboard/ga/properties');
         }
 
         form.reset({

@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { setLoading, incrementStep, decrementStep, setStreamCount } from '@/redux/formSlice';
+import { setLoading, incrementStep, decrementStep, setCount } from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -79,7 +79,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
   const loading = useSelector((state: RootState) => state.form.loading);
   const error = useSelector((state: RootState) => state.form.error);
   const currentStep = useSelector((state: RootState) => state.form.currentStep);
-  const streamCount = useSelector((state: RootState) => state.form.streamCount);
+  const count = useSelector((state: RootState) => state.form.count);
   const notFoundError = useSelector(selectTable).notFoundError;
   const router = useRouter();
 
@@ -129,10 +129,10 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
     },
   });
 
-  // Effect to update streamCount when amount changes
+  // Effect to update count when amount changes
   useEffect(() => {
     const amount = parseInt(formCreateAmount.getValues('amount').toString());
-    dispatch(setStreamCount(amount));
+    dispatch(setCount(amount));
   }, [formCreateAmount.watch('amount'), dispatch]);
 
   if (notFoundError) {
@@ -173,7 +173,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
     }
 
     // Update the stream count in your state management (if necessary)
-    dispatch(setStreamCount(amount));
+    dispatch(setCount(amount));
   };
 
   const processForm: SubmitHandler<Forms> = async (data) => {
@@ -258,7 +258,17 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
           });
           dispatch(setIsLimitReached(true));
         }
-
+        if (res.errors) {
+          res.errors.forEach((error) => {
+            toast.error(`Unable to create stream. ${error}`, {
+              action: {
+                label: 'Close',
+                onClick: () => toast.dismiss(),
+              },
+            });
+          });
+          router.push('/dashboard/ga/properties');
+        }
         form.reset({
           forms: [formDataDefaults],
         });
@@ -337,7 +347,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                     onValueChange={(value) => {
                       handleAmountChange(value); // Call the modified handler
                     }}
-                    defaultValue={streamCount.toString()}
+                    defaultValue={count.toString()}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -573,7 +583,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                           Previous
                         </Button>
 
-                        {currentStep - 1 < streamCount ? (
+                        {currentStep - 1 < count ? (
                           <Button type="button" onClick={handleNext}>
                             Next
                           </Button>

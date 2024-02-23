@@ -85,12 +85,7 @@ export default async function PropertyPage({
         }
       >
         <div className="container mx-auto py-10">
-          <DataTable
-            columns={columns}
-            data={combinedData}
-            properties={properties}
-            accounts={accounts}
-          />
+          <DataTable columns={columns} data={combinedData} />
         </div>
       </Suspense>
     </>

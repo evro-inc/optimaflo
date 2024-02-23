@@ -52,6 +52,7 @@ import {
 import { acknowledgeUserDataCollection } from '@/src/lib/fetch/dashboard/actions/ga/properties';
 import PropertyForms from './forms';
 import { useCreateHookForm, useUpdateHookForm } from '@/src/hooks/useCRUD';
+import { useTransition } from 'react';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -65,9 +66,10 @@ export function DataTable<TData, TValue>({
   parentData,
 }: DataTableProps<TData, TValue>) {
   const dispatch = useDispatch();
-
+  const [isCreatePending, startCreateTransition] = useTransition();
+  const [isUpdatePending, startUpdateTransition] = useTransition();
   const { user } = useUser();
-  const userId = user?.id;
+  const userId = user?.id as string;
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
 
@@ -94,27 +96,57 @@ export function DataTable<TData, TValue>({
     },
   });
 
-  const selectedRowsData = table.getSelectedRowModel().rows.map((row) => row.original);
-  const handleCreateClick = useCreateHookForm(userId, 'GA4Properties');
-  const handleUpdateClick = useUpdateHookForm(userId, 'GA4Properties');
-  const handleDelete = useDeleteHook(selectedRowsData, table);
+  const selectedRowData = table.getSelectedRowModel().rows.reduce((acc, row) => {
+    acc[row.id] = row.original;
+    return acc;
+  }, {});
+  const rowSelectedCount = Object.keys(selectedRowData).length;
+
+  const handleCreateClick = useCreateHookForm(
+    userId,
+    'GA4Properties',
+    '/dashboard/ga/wizards/properties/create'
+  );
+
+  const onCreateButtonClick = () => {
+    startCreateTransition(() => {
+      handleCreateClick().catch((error) => {
+        throw new Error(error);
+      });
+    });
+  };
+
+  const handleUpdateClick = useUpdateHookForm(
+    userId,
+    'GA4Properties',
+    '/dashboard/ga/wizards/properties/update',
+    rowSelectedCount
+  );
+
+  const onUpdateButtonClick = () => {
+    startUpdateTransition(() => {
+      handleUpdateClick().catch((error) => {
+        throw new Error(error);
+      });
+    });
+  };
+  const handleDelete = useDeleteHook(selectedRowData, table);
 
   const refreshAllCache = async () => {
-    // Assuming you want to refresh cache for each workspace
-    const keys = [`ga:accounts:userId:${userId}`, `ga:properties:userId:${userId}`];
-    await revalidate(keys, '/dashboard/ga/accounts', userId);
     toast.info('Updating our systems. This may take a minute or two to update on screen.', {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
       },
     });
+    const keys = [`ga:accounts:userId:${userId}`, `ga:properties:userId:${userId}`];
+    await revalidate(keys, '/dashboard/ga/properties', userId);
   };
 
   const handleAcknowledgement = async () => {
     try {
       // If you're here, validation succeeded. Proceed with updateContainers.
-      const res = await acknowledgeUserDataCollection(selectedRowsData);
+      const res = await acknowledgeUserDataCollection(selectedRowData);
 
       if (res.success) {
         res.results.forEach((result) => {
@@ -184,13 +216,15 @@ export function DataTable<TData, TValue>({
         <div className="ml-auto space-x-4">
           <Button onClick={refreshAllCache}>Refresh</Button>
 
-          <Button onClick={handleCreateClick}>Create</Button>
+          <Button disabled={isCreatePending} onClick={onCreateButtonClick}>
+            {isCreatePending ? 'Creating...' : 'Create'}
+          </Button>
 
           <Button
-            disabled={Object.keys(table.getState().rowSelection).length === 0}
-            onClick={handleUpdateClick}
+            disabled={Object.keys(table.getState().rowSelection).length === 0 || isUpdatePending}
+            onClick={onUpdateButtonClick}
           >
-            Update
+            {isUpdatePending ? 'Updating...' : 'Update'}
           </Button>
 
           <ButtonDelete
@@ -311,7 +345,7 @@ export function DataTable<TData, TValue>({
           Next
         </Button>
       </div>
-      <PropertyForms selectedRows={selectedRowsData} table={table} accounts={parentData} />
+      <PropertyForms selectedRows={selectedRowData} table={table} accounts={parentData} />
     </div>
   );
 }

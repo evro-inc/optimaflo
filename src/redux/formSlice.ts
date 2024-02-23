@@ -5,7 +5,7 @@ interface FormState {
   loading: boolean;
   error: string | null;
   currentStep: number;
-  streamCount: number;
+  count: number;
 }
 
 const initialState: FormState = {
@@ -13,7 +13,7 @@ const initialState: FormState = {
   loading: false,
   error: null,
   currentStep: 1,
-  streamCount: 1,
+  count: 1,
 };
 const formSlice = createSlice({
   name: 'form',
@@ -37,8 +37,8 @@ const formSlice = createSlice({
     decrementStep: (state) => {
       state.currentStep -= 1;
     },
-    setStreamCount: (state, action: PayloadAction<number>) => {
-      state.streamCount = action.payload;
+    setCount: (state, action: PayloadAction<number>) => {
+      state.count = action.payload;
     },
   },
 });
@@ -50,7 +50,7 @@ export const {
   setCurrentStep,
   incrementStep,
   decrementStep,
-  setStreamCount,
+  setCount,
 } = formSlice.actions;
 
 export default formSlice.reducer;
