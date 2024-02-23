@@ -115,8 +115,6 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
 
   const handleDelete = useDeleteHook(selectedRowData, table);
 
-  dispatch(setSelectedRows(selectedRowData)); // Update the selected rows in Redux
-
   const refreshAllCache = async () => {
     toast.info('Updating our systems. This may take a minute or two to update on screen.', {
       action: {
@@ -131,6 +129,8 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     ];
     await revalidate(keys, '/dashboard/ga/properties', userId);
   };
+
+  dispatch(setSelectedRows(selectedRowData)); // Update the selected rows in Redux
 
   return (
     <div>

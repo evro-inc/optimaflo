@@ -837,7 +837,7 @@ export async function updateProperties(formData: FormUpdateSchema) {
               const updateFields = ['displayName', 'timeZone', 'currencyCode', 'industryCategory'];
               const updateMask = updateFields.join(',');
 
-              const url = `https://analyticsadmin.googleapis.com/v1beta/properties/${identifier.name}?updateMask=${updateMask}`;
+              const url = `https://analyticsadmin.googleapis.com/v1beta/properties/${identifier.parent}?updateMask=${updateMask}`;
               const headers = {
                 Authorization: `Bearer ${token[0].token}`,
                 'Content-Type': 'application/json',
@@ -878,7 +878,8 @@ export async function updateProperties(formData: FormUpdateSchema) {
                   body: payload,
                 });
 
-                let parsedResponse;
+                const parsedResponse = await response.json();
+
                 const propertyName = propertyData.name;
 
                 if (response.ok) {
@@ -902,8 +903,6 @@ export async function updateProperties(formData: FormUpdateSchema) {
                     message: `Successfully updated property ${propertyName}`,
                   });
                 } else {
-                  parsedResponse = await response.json();
-
                   const errorResult = await handleApiResponseError(
                     response,
                     parsedResponse,

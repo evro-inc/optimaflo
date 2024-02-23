@@ -59,7 +59,7 @@ interface TierLimit {
   description?: string;
 }
 
-const FormUpdateStream: React.FC<FormWizardUpdateProps> = () => {
+const FormUpdateStream = () => {
   const dispatch = useDispatch();
   const loading = useSelector((state: RootState) => state.form.loading);
   const error = useSelector((state: RootState) => state.form.error);
@@ -78,7 +78,7 @@ const FormUpdateStream: React.FC<FormWizardUpdateProps> = () => {
     parentURL: rowData.name,
     type: rowData.type,
     webStreamData: {
-      defaultUri: '',
+      defaultUri: rowData.webStreamData.defaultUri,
     },
     androidAppStreamData: {
       packageName: '',
@@ -281,7 +281,7 @@ const FormUpdateStream: React.FC<FormWizardUpdateProps> = () => {
                   <Form {...form}>
                     <form
                       onSubmit={form.handleSubmit(processForm)}
-                      id={`createStream-${currentFormIndex}`}
+                      id={`updateStream-${currentFormIndex}`}
                       className="space-y-6"
                     >
                       {fields.length > 0 &&

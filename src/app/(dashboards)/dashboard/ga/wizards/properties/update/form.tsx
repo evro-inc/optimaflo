@@ -6,7 +6,7 @@ import { setLoading, incrementStep, decrementStep } from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { FormsSchema } from '@/src/lib/schemas/ga/streams';
+import { FormsSchema } from '@/src/lib/schemas/ga/properties';
 import { Button } from '@/src/components/ui/button';
 import {
   Form,
@@ -19,9 +19,9 @@ import {
 } from '@/src/components/ui/form';
 
 import { Input } from '@/src/components/ui/input';
-import { FeatureResponse, FormWizardUpdateProps, GA4StreamType } from '@/src/types/types';
+import { FeatureResponse, FormWizardUpdateProps, GA4PropertyType } from '@/src/types/types';
 import { toast } from 'sonner';
-import { updateGAPropertyStreams } from '@/src/lib/fetch/dashboard/actions/ga/streams';
+import { updateProperties } from '@/src/lib/fetch/dashboard/actions/ga/properties';
 import {
   selectTable,
   setErrorDetails,
@@ -31,6 +31,23 @@ import {
 import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '@/src/components/ui/select';
+import {
+  CurrencyCodes,
+  IndustryCategories,
+  TimeZones,
+  retentionSettings360,
+  retentionSettingsStandard,
+} from '../../../properties/@index/propertyItems';
+import { Switch } from '@/src/components/ui/switch';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -59,7 +76,7 @@ interface TierLimit {
   description?: string;
 }
 
-const FormUpdateStream: React.FC<FormWizardUpdateProps> = () => {
+const FormUpdateProperty = () => {
   const dispatch = useDispatch();
   const loading = useSelector((state: RootState) => state.form.loading);
   const error = useSelector((state: RootState) => state.form.error);
@@ -71,24 +88,17 @@ const FormUpdateStream: React.FC<FormWizardUpdateProps> = () => {
   const currentFormIndex = currentStep - 1; // Adjust for 0-based index
   const currentFormData = selectedRowData[currentFormIndex]; // Get data for the current step
 
-  const formDataDefaults: GA4StreamType[] = Object.values(selectedRowData).map((rowData) => ({
-    account: rowData.accountName,
-    property: rowData.parent,
+  const formDataDefaults: GA4PropertyType[] = Object.values(selectedRowData).map((rowData) => ({
+    name: rowData.displayName,
+    parent: rowData.name,
+    currencyCode: rowData.currencyCode,
     displayName: rowData.displayName,
-    parentURL: rowData.name,
-    type: rowData.type,
-    webStreamData: {
-      defaultUri: '',
-    },
-    androidAppStreamData: {
-      packageName: '',
-    },
-    iosAppStreamData: {
-      bundleId: '',
-    },
-    name: rowData.name,
-    accountId: rowData.accountId,
-    parent: rowData.parent,
+    industryCategory: rowData.industryCategory,
+    timeZone: rowData.timeZone,
+    propertyType: rowData.propertyType,
+    retention: rowData.retention,
+    resetOnNewActivity: rowData.resetOnNewActivity,
+    acknowledgment: rowData.acknowledgment,
   }));
 
   if (notFoundError) {
@@ -110,31 +120,23 @@ const FormUpdateStream: React.FC<FormWizardUpdateProps> = () => {
   });
 
   const handleNext = async () => {
-    // Determine the names of the fields in the current form to validate
-    const currentFormFields = [`forms.${currentFormIndex}.displayName`];
+    const currentFormIndex = currentStep - 2; // Adjusting for the array index and step count
+    const currentFormPath = `forms.${currentFormIndex}`;
 
-    // Add additional fields based on the stream type of the current form
-    const currentFormData = selectedRowData[currentFormIndex];
-    if (currentFormData.type === 'WEB_DATA_STREAM') {
-      currentFormFields.push(`forms.${currentFormIndex}.webStreamData.defaultUri`);
-    } else if (currentFormData.type === 'ANDROID_APP_DATA_STREAM') {
-      currentFormFields.push(`forms.${currentFormIndex}.androidAppStreamData.packageName`);
-    } else if (currentFormData.type === 'IOS_APP_DATA_STREAM') {
-      currentFormFields.push(`forms.${currentFormIndex}.iosAppStreamData.bundleId`);
-    }
+    // Start with the common fields that are always present
+    const fieldsToValidate = [
+      `${currentFormPath}.displayName`,
+      `${currentFormPath}.parent`,
+      `${currentFormPath}.currencyCode`,
+      `${currentFormPath}.timeZone`,
+      `${currentFormPath}.industryCategory`,
+    ];
 
-    // Trigger validation for only the current form's fields
-    const isFormValid = await form.trigger(currentFormFields as any);
+    // Now, trigger validation for these fields
+    const isFormValid = await form.trigger(fieldsToValidate as any);
 
     if (isFormValid) {
       dispatch(incrementStep());
-    } else {
-      toast.error('A form is invalid. Check all fields in your forms.', {
-        action: {
-          label: 'Close',
-          onClick: () => toast.dismiss(),
-        },
-      });
     }
   };
 
@@ -147,18 +149,19 @@ const FormUpdateStream: React.FC<FormWizardUpdateProps> = () => {
 
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
-    toast('Creating streams...', {
+    toast('Creating properties...', {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
       },
     });
 
-    const uniqueStreams = new Set(forms.map((form) => form.property));
+    const uniqueProperties = new Set(forms.map((form) => form.parent));
+
     for (const form of forms) {
-      const identifier = `${form.property}-${form.displayName}`;
-      if (uniqueStreams.has(identifier)) {
-        toast.error(`Duplicate stream found for ${form.property} - ${form.displayName}`, {
+      const identifier = `${form.parent} - ${form.name} - ${form.displayName}`;
+      if (uniqueProperties.has(identifier)) {
+        toast.error(`Duplicate property found for ${form.name} - ${form.displayName}`, {
           action: {
             label: 'Close',
             onClick: () => toast.dismiss(),
@@ -167,17 +170,17 @@ const FormUpdateStream: React.FC<FormWizardUpdateProps> = () => {
         dispatch(setLoading(false));
         return;
       }
-      uniqueStreams.add(identifier);
+      uniqueProperties.add(identifier);
     }
 
     try {
-      const res = (await updateGAPropertyStreams({ forms })) as FeatureResponse;
+      const res = (await updateProperties({ forms })) as FeatureResponse;
 
       if (res.success) {
         res.results.forEach((result) => {
           if (result.success) {
             toast.success(
-              `Stream ${result.name} created successfully. The table will update shortly.`,
+              `Property ${result.name} created successfully. The table will update shortly.`,
               {
                 action: {
                   label: 'Close',
@@ -194,7 +197,7 @@ const FormUpdateStream: React.FC<FormWizardUpdateProps> = () => {
           res.results.forEach((result) => {
             if (result.notFound) {
               toast.error(
-                `Unable to create stream ${result.name}. Please check your access permissions. Any other streams created were successful.`,
+                `Unable to create property ${result.name}. Please check your access permissions. Any other properties created were successful.`,
                 {
                   action: {
                     label: 'Close',
@@ -213,7 +216,7 @@ const FormUpdateStream: React.FC<FormWizardUpdateProps> = () => {
           res.results.forEach((result) => {
             if (result.limitReached) {
               toast.error(
-                `Unable to create stream ${result.name}. You have ${result.remaining} more stream(s) you can create.`,
+                `Unable to create property ${result.name}. You have ${result.remaining} more feature(s) you can update.`,
                 {
                   action: {
                     label: 'Close',
@@ -228,7 +231,7 @@ const FormUpdateStream: React.FC<FormWizardUpdateProps> = () => {
 
         if (res.errors) {
           res.errors.forEach((error) => {
-            toast.error(`Unable to create stream. ${error}`, {
+            toast.error(`Unable to create property. ${error}`, {
               action: {
                 label: 'Close',
                 onClick: () => toast.dismiss(),
@@ -280,7 +283,7 @@ const FormUpdateStream: React.FC<FormWizardUpdateProps> = () => {
                   <Form {...form}>
                     <form
                       onSubmit={form.handleSubmit(processForm)}
-                      id={`createStream-${currentFormIndex}`}
+                      id={`updateProperty-${currentFormIndex}`}
                       className="space-y-6"
                     >
                       {fields.length > 0 &&
@@ -293,13 +296,13 @@ const FormUpdateStream: React.FC<FormWizardUpdateProps> = () => {
                                   name={`forms.${currentFormIndex}.displayName`}
                                   render={({ field }) => (
                                     <FormItem>
-                                      <FormLabel>New Stream Name</FormLabel>
+                                      <FormLabel>New Property Name</FormLabel>
                                       <FormDescription>
-                                        This is the stream name you want to create.
+                                        This is the property name you want to create.
                                       </FormDescription>
                                       <FormControl>
                                         <Input
-                                          placeholder="Name of the stream"
+                                          placeholder="Name of the property"
                                           {...form.register(
                                             `forms.${currentFormIndex}.displayName`
                                           )}
@@ -312,84 +315,191 @@ const FormUpdateStream: React.FC<FormWizardUpdateProps> = () => {
                                   )}
                                 />
 
-                                {currentFormData.type === 'WEB_DATA_STREAM' && (
-                                  <FormField
-                                    control={form.control}
-                                    name={`forms.${currentFormIndex}.webStreamData.defaultUri`}
-                                    render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel>Default URI</FormLabel>
-                                        <FormDescription>
-                                          This is the default URI for the web stream.
-                                        </FormDescription>
-                                        <FormControl>
-                                          <Input
-                                            placeholder="Enter default URI"
-                                            {...form.register(
-                                              `forms.${currentFormIndex}.webStreamData.defaultUri`
-                                            )}
-                                            {...field}
-                                          />
-                                        </FormControl>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
-                                )}
-                                {currentFormData.type === 'ANDROID_APP_DATA_STREAM' && (
-                                  <FormField
-                                    control={form.control}
-                                    name={`forms.${currentFormIndex}.androidAppStreamData.packageName`}
-                                    render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel>Package Name</FormLabel>
-                                        <FormDescription>
-                                          This is the package name for the Android app stream.
-                                        </FormDescription>
-                                        <FormControl>
-                                          <Input
-                                            placeholder="Enter Package Name"
-                                            {...form.register(
-                                              `forms.${currentFormIndex}.androidAppStreamData.packageName`
-                                            )}
-                                            {...field}
-                                          />
-                                        </FormControl>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
-                                )}
+                                <FormField
+                                  control={form.control}
+                                  name={`forms.${currentFormIndex}.currencyCode`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Currency</FormLabel>
+                                      <FormDescription>
+                                        Which currency do you want to include in the property?
+                                      </FormDescription>
+                                      <FormControl>
+                                        <Select
+                                          {...form.register(
+                                            `forms.${currentFormIndex}.currencyCode`
+                                          )}
+                                          {...field}
+                                          onValueChange={field.onChange}
+                                        >
+                                          <SelectTrigger className="w-[180px]">
+                                            <SelectValue placeholder="Select a currency." />
+                                          </SelectTrigger>
 
-                                {currentFormData.type === 'IOS_APP_DATA_STREAM' && (
-                                  <FormField
-                                    control={form.control}
-                                    name={`forms.${currentFormIndex}.iosAppStreamData.bundleId`}
-                                    render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel>Bundle ID</FormLabel>
+                                          <SelectContent>
+                                            <SelectGroup>
+                                              <SelectLabel>Currency</SelectLabel>
+                                              {CurrencyCodes.map((code) => (
+                                                <SelectItem key={code} value={code}>
+                                                  {code}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectGroup>
+                                          </SelectContent>
+                                        </Select>
+                                      </FormControl>
+
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+
+                                <FormField
+                                  control={form.control}
+                                  name={`forms.${currentFormIndex}.timeZone`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Time Zone</FormLabel>
+                                      <FormDescription>
+                                        Which timeZone do you want to include in the property?
+                                      </FormDescription>
+                                      <FormControl>
+                                        <Select
+                                          {...form.register(`forms.${currentFormIndex}.timeZone`)}
+                                          {...field}
+                                          onValueChange={field.onChange}
+                                        >
+                                          <SelectTrigger className="w-[180px]">
+                                            <SelectValue placeholder="Select a timeZone." />
+                                          </SelectTrigger>
+
+                                          <SelectContent>
+                                            <SelectGroup>
+                                              <SelectLabel>Timezone</SelectLabel>
+                                              {TimeZones.map((timeZone) => (
+                                                <SelectItem key={timeZone} value={timeZone}>
+                                                  {timeZone}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectGroup>
+                                          </SelectContent>
+                                        </Select>
+                                      </FormControl>
+
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={form.control}
+                                  name={`forms.${currentFormIndex}.industryCategory`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Category</FormLabel>
+                                      <FormDescription>
+                                        Which category do you want to include in the property?
+                                      </FormDescription>
+                                      <FormControl>
+                                        <Select
+                                          {...form.register(
+                                            `forms.${currentFormIndex}.industryCategory`
+                                          )}
+                                          {...field}
+                                          onValueChange={field.onChange}
+                                        >
+                                          <SelectTrigger className="w-[180px]">
+                                            <SelectValue placeholder="Select a category." />
+                                          </SelectTrigger>
+
+                                          <SelectContent>
+                                            <SelectGroup>
+                                              <SelectLabel>Industry Category</SelectLabel>
+
+                                              {Object.entries(IndustryCategories).map(
+                                                ([label, value]) => (
+                                                  <SelectItem key={value} value={value}>
+                                                    {label}
+                                                  </SelectItem>
+                                                )
+                                              )}
+                                            </SelectGroup>
+                                          </SelectContent>
+                                        </Select>
+                                      </FormControl>
+
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+
+                                <FormField
+                                  control={form.control}
+                                  name={`forms.${currentFormIndex}.retention`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Retention Setting</FormLabel>
+                                      <FormDescription>
+                                        Set the retention setting for the property.
+                                      </FormDescription>
+                                      <FormControl>
+                                        <Select
+                                          {...form.register(`forms.${currentFormIndex}.retention`)}
+                                          {...field}
+                                          onValueChange={field.onChange}
+                                        >
+                                          <SelectTrigger className="w-[180px]">
+                                            <SelectValue placeholder="Select a retention setting." />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectGroup>
+                                              <SelectLabel>Retention Setting</SelectLabel>
+                                              {Object.entries(
+                                                selectedRowData[currentFormIndex] &&
+                                                  selectedRowData[currentFormIndex].serviceLevel ===
+                                                    'Standard'
+                                                  ? retentionSettingsStandard || {}
+                                                  : retentionSettings360 || {}
+                                              ).map(([label, value]) => (
+                                                <SelectItem key={value} value={value}>
+                                                  {label}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectGroup>
+                                          </SelectContent>
+                                        </Select>
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+
+                                <FormField
+                                  control={form.control}
+                                  name={`forms.${currentFormIndex}.resetOnNewActivity`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <div className="space-y-0.5">
+                                        <FormLabel>Reset user data on new activity</FormLabel>
                                         <FormDescription>
-                                          This is the bundle ID for the iOS app stream.
+                                          If enabled, reset the retention period for the user
+                                          identifier with every event from that user.
                                         </FormDescription>
-                                        <FormControl>
-                                          <Input
-                                            placeholder="Enter Bundle ID"
-                                            {...form.register(
-                                              `forms.${currentFormIndex}.iosAppStreamData.bundleId`
-                                            )}
-                                            {...field}
-                                          />
-                                        </FormControl>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
-                                )}
+                                      </div>
+                                      <FormControl>
+                                        <Switch
+                                          checked={field.value}
+                                          onCheckedChange={field.onChange}
+                                        />
+                                      </FormControl>
+                                    </FormItem>
+                                  )}
+                                />
                               </>
                             );
                           }
                           return null;
                         })}
+
                       <div className="flex justify-between">
                         <Button type="button" onClick={handlePrevious} disabled={currentStep === 1}>
                           Previous
@@ -417,4 +527,4 @@ const FormUpdateStream: React.FC<FormWizardUpdateProps> = () => {
   );
 };
 
-export default FormUpdateStream;
+export default FormUpdateProperty;

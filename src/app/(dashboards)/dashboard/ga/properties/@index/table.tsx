@@ -39,7 +39,7 @@ import { useDispatch } from 'react-redux';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
 import { useDeleteHook } from './delete';
 import { notFound } from 'next/navigation';
-import { setIsLimitReached } from '@/src/redux/tableSlice';
+import { setIsLimitReached, setSelectedRows } from '@/src/redux/tableSlice';
 import {
   Dialog,
   DialogContent,
@@ -202,6 +202,8 @@ export function DataTable<TData, TValue>({
       table.resetRowSelection();
     }
   };
+
+  dispatch(setSelectedRows(selectedRowData)); // Update the selected rows in Redux
 
   return (
     <div>
