@@ -14,7 +14,7 @@ import {
 } from '@/src/redux/tableSlice';
 import { selectGlobal, setLoading } from '@/src/redux/globalSlice';
 import { useForm, useFieldArray, SubmitHandler } from 'react-hook-form';
-import { CreateAccountSchema } from '@/src/lib/schemas/ga/accounts';
+import { FormsSchema } from '@/src/lib/schemas/ga/accounts';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
@@ -43,7 +43,7 @@ const NotFoundErrorModal = dynamic(
   { ssr: false }
 );
 
-type Forms = z.infer<typeof CreateAccountSchema>;
+type Forms = z.infer<typeof FormsSchema>;
 
 const FormCreateAccount: React.FC<FormCreateAccountProps> = ({ showOptions, onClose }) => {
   const formRefs = useRef<(HTMLFormElement | null)[]>([]);
@@ -60,7 +60,7 @@ const FormCreateAccount: React.FC<FormCreateAccountProps> = ({ showOptions, onCl
         },
       ],
     },
-    resolver: zodResolver(CreateAccountSchema),
+    resolver: zodResolver(FormsSchema),
   });
 
   const { fields, append, remove } = useFieldArray({

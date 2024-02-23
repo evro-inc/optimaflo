@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LimitReached } from '../../../../../components/client/modals/limitReached';
 import { ButtonGroup } from '../../../../../components/client/ButtonGroup/ButtonGroup';
 import { z } from 'zod';
-import { UpdateAccountSchema } from '@/src/lib/schemas/ga/accounts';
+import { FormsSchema } from '@/src/lib/schemas/ga/accounts';
 import {
   clearSelectedRows,
   selectTable,
@@ -44,7 +44,7 @@ const NotFoundErrorModal = dynamic(
 );
 
 // Type for the entire form data
-type Forms = z.infer<typeof UpdateAccountSchema>;
+type Forms = z.infer<typeof FormsSchema>;
 
 // Component
 const FormUpdateAccount: React.FC<FormUpdateProps> = ({
@@ -68,7 +68,7 @@ const FormUpdateAccount: React.FC<FormUpdateProps> = ({
         },
       ],
     },
-    resolver: zodResolver(UpdateAccountSchema),
+    resolver: zodResolver(FormsSchema),
   });
 
   const { fields } = useFieldArray({

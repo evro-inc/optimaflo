@@ -14,7 +14,7 @@ import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { updateAccounts } from '@/src/lib/fetch/dashboard/actions/gtm/accounts';
 import { z } from 'zod';
-import { UpdateAccountSchema } from '@/src/lib/schemas/gtm/accounts';
+import { FormsSchema } from '@/src/lib/schemas/gtm/accounts';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ButtonGroup } from '../../../../../components/client/ButtonGroup/ButtonGroup';
 import { LimitReached } from '../../../../../components/client/modals/limitReached';
@@ -36,7 +36,7 @@ import { toast } from 'sonner';
 import { NotFoundError } from '@/src/components/client/modals/notFoundError';
 
 // Defining the type for form data using Zod
-type Forms = z.infer<typeof UpdateAccountSchema>;
+type Forms = z.infer<typeof FormsSchema>;
 
 interface Account {
   accountId: string;
@@ -74,7 +74,7 @@ function AccountFormUpdate({
         name: account.name,
       })),
     },
-    resolver: zodResolver(UpdateAccountSchema),
+    resolver: zodResolver(FormsSchema),
   });
 
   // Managing dynamic form fields using react-hook-form
