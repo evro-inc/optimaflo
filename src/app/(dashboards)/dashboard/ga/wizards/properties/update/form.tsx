@@ -64,17 +64,6 @@ const ErrorModal = dynamic(
 );
 
 type Forms = z.infer<typeof FormsSchema>;
-interface TierLimit {
-  id: string;
-  subscriptionId: string;
-  createLimit: number;
-  createUsage: number;
-  updateLimit: number;
-  updateUsage?: number; // Assuming updateUsage can be optional
-  featureId?: string;
-  name?: string;
-  description?: string;
-}
 
 const FormUpdateProperty = () => {
   const dispatch = useDispatch();
