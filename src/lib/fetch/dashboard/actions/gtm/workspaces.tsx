@@ -1,6 +1,6 @@
 'use server';
 import { revalidatePath } from 'next/cache';
-import { CreateWorkspaceSchema, UpdateWorkspaceSchema } from '@/src/lib/schemas/gtm/workspaces';
+import { FormSchema } from '@/src/lib/schemas/gtm/workspaces';
 import z from 'zod';
 import { auth } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
@@ -19,8 +19,8 @@ import {
 import { fetchGASettings, fetchGtmSettings } from '../..';
 
 // Define the types for the form data
-type FormCreateSchema = z.infer<typeof CreateWorkspaceSchema>;
-type FormUpdateSchema = z.infer<typeof UpdateWorkspaceSchema>;
+type FormCreateSchema = z.infer<typeof FormSchema>;
+type FormUpdateSchema = z.infer<typeof FormSchema>;
 
 /************************************************************************************
   Function to list or get one GTM workspaces
@@ -427,7 +427,7 @@ export async function CreateWorkspaces(formData: FormCreateSchema) {
 
   // refactor and verify
   if (toCreateWorkspaces.size > availableCreateUsage) {
-    const attemptedCreations = Array.from(toCreateWorkspaces).map((identifier) => {
+    const attemptedCreations = Array.from(toCreateWorkspaces).map((identifier: any) => {
       const { name: workspaceName } = identifier;
       return {
         id: [], // No workspace ID since creation did not happen
@@ -463,7 +463,7 @@ export async function CreateWorkspaces(formData: FormCreateSchema) {
         const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
         if (remaining > 0) {
           await limiter.schedule(async () => {
-            const createPromises = Array.from(toCreateWorkspaces).map(async (identifier) => {
+            const createPromises = Array.from(toCreateWorkspaces).map(async (identifier: any) => {
               const { accountId, name: workspaceName } = identifier;
               accountIdForCache = accountId;
               containerIdForCache = identifier.containerId;
@@ -487,7 +487,7 @@ export async function CreateWorkspaces(formData: FormCreateSchema) {
               try {
                 const formDataToValidate = { forms: [workspaceData] };
 
-                const validationResult = CreateWorkspaceSchema.safeParse(formDataToValidate);
+                const validationResult = FormSchema.safeParse(formDataToValidate);
 
                 if (!validationResult.success) {
                   let errorMessage = validationResult.error.issues
@@ -516,7 +516,7 @@ export async function CreateWorkspaces(formData: FormCreateSchema) {
                   }),
                 });
 
-                let parsedResponse;
+                const parsedResponse = await response.json();
 
                 if (response.ok) {
                   successfulCreations.push(workspaceName);
@@ -533,8 +533,6 @@ export async function CreateWorkspaces(formData: FormCreateSchema) {
                     message: `Successfully created workspace ${workspaceName}`,
                   });
                 } else {
-                  parsedResponse = await response.json();
-
                   const errorResult = await handleApiResponseError(
                     response,
                     parsedResponse,
@@ -813,7 +811,7 @@ export async function UpdateWorkspaces(formData: FormUpdateSchema) {
               try {
                 const formDataToValidate = { forms: [workspaceData] };
 
-                const validationResult = UpdateWorkspaceSchema.safeParse(formDataToValidate);
+                const validationResult = FormSchema.safeParse(formDataToValidate);
 
                 if (!validationResult.success) {
                   let errorMessage = validationResult.error.issues

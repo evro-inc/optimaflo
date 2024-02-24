@@ -217,6 +217,7 @@ export type WorkspaceType = {
   workspaceId: string;
   name: string;
   containerName: string;
+  description: string;
 };
 
 export type WorkspaceData = {
