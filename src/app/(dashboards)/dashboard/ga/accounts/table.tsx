@@ -129,7 +129,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
       },
     });
   };
-  
+
   dispatch(setSelectedRows(selectedRowData)); // Update the selected rows in Redux
 
   return (

@@ -37,6 +37,9 @@ import { ReloadIcon } from '@radix-ui/react-icons';
 import { toggleUpdate } from '@/src/redux/sharedSlice';
 import { useDispatch } from 'react-redux';
 import AccountForms from '@/src/app/(dashboards)/dashboard/gtm/accounts/forms';
+import { useTransition } from 'react';
+import { useUpdateHookForm } from '@/src/hooks/useCRUD';
+import { setSelectedRows } from '@/src/redux/tableSlice';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -45,9 +48,10 @@ interface DataTableProps<TData, TValue> {
 
 export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData, TValue>) {
   const dispatch = useDispatch();
-
+  const [isCreatePending, startCreateTransition] = useTransition();
+  const [isUpdatePending, startUpdateTransition] = useTransition();
   const { user } = useUser();
-  const userId = user?.id;
+  const userId = user?.id as string;
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
 
@@ -75,6 +79,26 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
   });
 
   // log selected rows
+  const selectedRowData = table.getSelectedRowModel().rows.reduce((acc, row) => {
+    acc[row.id] = row.original;
+    return acc;
+  }, {});
+  const rowSelectedCount = Object.keys(selectedRowData).length;
+
+  const handleUpdateClick = useUpdateHookForm(
+    userId,
+    'GA4Accounts',
+    '/dashboard/gtm/wizards/accounts/update',
+    rowSelectedCount
+  );
+
+  const onUpdateButtonClick = () => {
+    startUpdateTransition(() => {
+      handleUpdateClick().catch((error) => {
+        throw new Error(error);
+      });
+    });
+  };
 
   const refreshAllCache = async () => {
     // Assuming you want to refresh cache for each workspace
@@ -93,6 +117,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
   };
 
   const selectedRowsData = table.getSelectedRowModel().rows.map((row) => row.original);
+  dispatch(setSelectedRows(selectedRowData));
 
   return (
     <div>
@@ -110,7 +135,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
           {/* <ButtonUpdate selectedRows={table.getState().rowSelection} /> */}
           <Button
             disabled={Object.keys(table.getState().rowSelection).length === 0}
-            onClick={() => dispatch(toggleUpdate())}
+            onClick={onUpdateButtonClick}
           >
             Update
           </Button>

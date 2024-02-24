@@ -75,7 +75,6 @@ const FormUpdateProperty = () => {
 
   const selectedRowData = useSelector((state: RootState) => state.table.selectedRows);
   const currentFormIndex = currentStep - 1; // Adjust for 0-based index
-  const currentFormData = selectedRowData[currentFormIndex]; // Get data for the current step
 
   const formDataDefaults: GA4PropertyType[] = Object.values(selectedRowData).map((rowData) => ({
     name: rowData.displayName,
@@ -265,7 +264,7 @@ const FormUpdateProperty = () => {
               className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
             >
               <div className="max-w-xl mx-auto">
-                <h1>{currentFormData.displayName}</h1>
+                <h1>{fields[currentFormIndex]?.displayName}</h1>
                 <div className="mt-12">
                   {/* Form */}
 

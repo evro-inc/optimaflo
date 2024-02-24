@@ -6,7 +6,7 @@ import { setLoading, incrementStep, decrementStep } from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { FormsSchema } from '@/src/lib/schemas/ga/accounts';
+import { FormsSchema } from '@/src/lib/schemas/gtm/accounts';
 import { Button } from '@/src/components/ui/button';
 import {
   Form,
@@ -19,7 +19,7 @@ import {
 } from '@/src/components/ui/form';
 
 import { Input } from '@/src/components/ui/input';
-import { FeatureResponse, GA4AccountType } from '@/src/types/types';
+import { FeatureResponse, GA4AccountType, GTMAccountType } from '@/src/types/types';
 import { toast } from 'sonner';
 import {
   selectTable,
@@ -30,7 +30,7 @@ import {
 import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { UpdateGaAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
+import { updateAccounts } from '@/src/lib/fetch/dashboard/actions/gtm/accounts';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -59,9 +59,9 @@ const FormUpdateAccount = () => {
   const selectedRowData = useSelector((state: RootState) => state.table.selectedRows);
   const currentFormIndex = currentStep - 1; // Adjust for 0-based index
 
-  const formDataDefaults: GA4AccountType[] = Object.values(selectedRowData).map((rowData) => ({
-    displayName: '',
+  const formDataDefaults: GTMAccountType[] = Object.values(selectedRowData).map((rowData) => ({
     name: rowData.name,
+    accountId: rowData.accountId,
   }));
 
   if (notFoundError) {
@@ -110,19 +110,19 @@ const FormUpdateAccount = () => {
 
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
-    toast('Creating accounts...', {
+    toast('Updating GTM accounts...', {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
       },
     });
 
-    const uniqueAccounts = new Set(forms.map((form) => form.displayName));
+    const uniqueAccounts = new Set(forms.map((form) => form.name));
 
     for (const form of forms) {
-      const identifier = `${form.displayName}-${form.name}`;
+      const identifier = `${form.accountId}-${form.name}`;
       if (uniqueAccounts.has(identifier)) {
-        toast.error(`Duplicate account found for ${form.displayName}`, {
+        toast.error(`Duplicate account found for ${form.name}`, {
           action: {
             label: 'Close',
             onClick: () => toast.dismiss(),
@@ -134,13 +134,13 @@ const FormUpdateAccount = () => {
     }
 
     try {
-      const res = (await UpdateGaAccounts({ forms })) as FeatureResponse;
+      const res = (await updateAccounts({ forms })) as FeatureResponse;
 
       if (res.success) {
-        res.results.forEach((result) => {
+        res.results?.forEach((result) => {
           if (result.success) {
             toast.success(
-              `Account ${result.name} created successfully. The table will update shortly.`,
+              `Account ${result.name} updated successfully. The table will update shortly.`,
               {
                 action: {
                   label: 'Close',
@@ -151,13 +151,13 @@ const FormUpdateAccount = () => {
           }
         });
 
-        router.push('/dashboard/ga/accounts');
+        router.push('/dashboard/gtm/accounts');
       } else {
         if (res.notFoundError) {
           res.results.forEach((result) => {
             if (result.notFound) {
               toast.error(
-                `Unable to create account ${result.name}. Please check your access permissions. Any other accounts created were successful.`,
+                `Unable to update account ${result.name}. Please check your access permissions. Any other accounts created were successful.`,
                 {
                   action: {
                     label: 'Close',
@@ -176,7 +176,7 @@ const FormUpdateAccount = () => {
           res.results.forEach((result) => {
             if (result.limitReached) {
               toast.error(
-                `Unable to create account ${result.name}. You have ${result.remaining} more account(s) you can create.`,
+                `Unable to update account ${result.name}. You have ${result.remaining} more account(s) you can create.`,
                 {
                   action: {
                     label: 'Close',
@@ -191,14 +191,14 @@ const FormUpdateAccount = () => {
 
         if (res.errors) {
           res.errors.forEach((error) => {
-            toast.error(`Unable to create account. ${error}`, {
+            toast.error(`Unable to update account. ${error}`, {
               action: {
                 label: 'Close',
                 onClick: () => toast.dismiss(),
               },
             });
           });
-          router.push('/dashboard/ga/accounts');
+          router.push('/dashboard/gtm/accounts');
         }
 
         form.reset({
@@ -211,7 +211,7 @@ const FormUpdateAccount = () => {
         forms: formDataDefaults,
       });
     } catch (error) {
-      toast.error('An unexpected error occurred.', {
+      toast.error(`An unexpected error occurred. ${error}`, {
         action: {
           label: 'Close',
           onClick: () => toast.dismiss(),
@@ -225,31 +225,24 @@ const FormUpdateAccount = () => {
 
   return (
     <div className="flex items-center justify-center h-screen">
-      {/* Conditional rendering based on the currentStep */}
-
       {currentStep && (
         <div className="w-full">
-          {/* Render only the form corresponding to the current step - 1 
-              (since step 1 is for selecting the number of forms) */}
           {fields.length > 0 && fields.length >= currentStep && (
             <div
               key={fields[currentStep - 1].id}
               className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
             >
               <div className="max-w-xl mx-auto">
-                <h1>{fields[currentFormIndex]?.displayName}</h1>
+                <h1>{fields[currentFormIndex]?.name}</h1>
+
                 <div className="mt-12">
                   {/* Form */}
 
                   <Form {...form}>
-                    <form
-                      onSubmit={form.handleSubmit(processForm)}
-                      id={`updateAccount-${selectedRowData[0]?.accountId}`}
-                      className="space-y-6"
-                    >
+                    <form onSubmit={form.handleSubmit(processForm)} className="space-y-6">
                       <FormField
                         control={form.control}
-                        name={`forms.${currentFormIndex}.displayName`}
+                        name={`forms.${currentFormIndex}.name`}
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Account Name To Update</FormLabel>
@@ -260,7 +253,7 @@ const FormUpdateAccount = () => {
                               <Input
                                 defaultValue={field.name}
                                 placeholder="Name of the account"
-                                {...form.register(`forms.${currentFormIndex}.displayName`)}
+                                {...form.register(`forms.${currentFormIndex}.name`)}
                                 {...field}
                               />
                             </FormControl>

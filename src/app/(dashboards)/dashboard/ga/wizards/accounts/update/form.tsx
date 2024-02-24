@@ -58,11 +58,10 @@ const FormUpdateAccount = () => {
 
   const selectedRowData = useSelector((state: RootState) => state.table.selectedRows);
   const currentFormIndex = currentStep - 1; // Adjust for 0-based index
-  const currentFormData = selectedRowData[currentFormIndex]; // Get data for the current step
 
   const formDataDefaults: GA4AccountType[] = Object.values(selectedRowData).map((rowData) => ({
-          displayName: '',
-          name: rowData.name,
+    displayName: '',
+    name: rowData.name,
   }));
 
   if (notFoundError) {
@@ -86,7 +85,6 @@ const FormUpdateAccount = () => {
   const handleNext = async () => {
     // Determine the names of the fields in the current form to validate
     const currentFormFields = [`forms.${currentFormIndex}.displayName`];
-
 
     // Trigger validation for only the current form's fields
     const isFormValid = await form.trigger(currentFormFields as any);
@@ -121,7 +119,7 @@ const FormUpdateAccount = () => {
 
     const uniqueAccounts = new Set(forms.map((form) => form.displayName));
 
-    for ( const form of forms){
+    for (const form of forms) {
       const identifier = `${form.displayName}-${form.name}`;
       if (uniqueAccounts.has(identifier)) {
         toast.error(`Duplicate account found for ${form.displayName}`, {
@@ -239,53 +237,53 @@ const FormUpdateAccount = () => {
               className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
             >
               <div className="max-w-xl mx-auto">
-                <h1>{currentFormData.displayName}</h1>
+                <h1>{fields[currentFormIndex]?.displayName}</h1>
                 <div className="mt-12">
                   {/* Form */}
 
-                          <Form {...form}>
-                            <form
-                              onSubmit={form.handleSubmit(processForm)}
-                              id="updateContainer"
-                              className="space-y-6"
-                            >
-                              <FormField
-                                control={form.control}
-                                name={`forms.${currentFormIndex}.displayName`}
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>Account Name To Update</FormLabel>
-                                    <FormDescription>
-                                      This is the account name you want to update.
-                                    </FormDescription>
-                                    <FormControl>
-                                      <Input
-                                        defaultValue={field.name}
-                                        placeholder="Name of the account"
-                                        {...form.register(`forms.${currentFormIndex}.displayName`)}
-                                        {...field}
-                                      />
-                                    </FormControl>
-
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
+                  <Form {...form}>
+                    <form
+                      onSubmit={form.handleSubmit(processForm)}
+                      id={`updateAccount-${selectedRowData[0]?.accountId}`}
+                      className="space-y-6"
+                    >
+                      <FormField
+                        control={form.control}
+                        name={`forms.${currentFormIndex}.displayName`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Account Name To Update</FormLabel>
+                            <FormDescription>
+                              This is the account name you want to update.
+                            </FormDescription>
+                            <FormControl>
+                              <Input
+                                defaultValue={field.name}
+                                placeholder="Name of the account"
+                                {...form.register(`forms.${currentFormIndex}.displayName`)}
+                                {...field}
                               />
-                              <div className="flex justify-between">
-                                <Button type="button" onClick={handlePrevious} disabled={currentStep === 1}>
-                                  Previous
-                                </Button>
+                            </FormControl>
 
-                                {currentStep < fields.length ? (
-                                  <Button type="button" onClick={handleNext}>
-                                    Next
-                                  </Button>
-                                ) : (
-                                  <Button type="submit">{loading ? 'Submitting...' : 'Submit'}</Button>
-                                )}
-                              </div>
-                            </form>
-                          </Form>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <div className="flex justify-between">
+                        <Button type="button" onClick={handlePrevious} disabled={currentStep === 1}>
+                          Previous
+                        </Button>
+
+                        {currentStep < fields.length ? (
+                          <Button type="button" onClick={handleNext}>
+                            Next
+                          </Button>
+                        ) : (
+                          <Button type="submit">{loading ? 'Submitting...' : 'Submit'}</Button>
+                        )}
+                      </div>
+                    </form>
+                  </Form>
 
                   {/* End Form */}
                 </div>

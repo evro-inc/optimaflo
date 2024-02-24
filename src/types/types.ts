@@ -246,7 +246,7 @@ export interface FeatureResponse {
   notFoundError?: boolean;
   revalidationSuccess?: boolean;
 }
-export type Account = {
+export type GTMAccountType = {
   accountId: string;
   name: string;
 };
@@ -343,7 +343,7 @@ type TierLimit = {
   };
 };
 
-type Account = {
+type GA4Account = {
   name: string;
   displayName: string;
   regionCode: string;
@@ -398,5 +398,5 @@ export type FormWizardUpdateProps = {
   tierLimits: TierLimit[];
   properties: Property[];
   table: Stream[];
-  accounts: Account[];
+  accounts: GA4Account[];
 };
