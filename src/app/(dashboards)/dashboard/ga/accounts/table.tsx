@@ -118,15 +118,14 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
   const handleDelete = useDeleteHook(selectedRowData, table);
 
   const refreshAllCache = async () => {
-    // Assuming you want to refresh cache for each workspace
-    const keys = [`ga:accounts:userId:${userId}`, `ga:properties:userId:${userId}`];
-    await revalidate(keys, '/dashboard/ga/accounts', userId);
     toast.info('Updating our systems. This may take a minute or two to update on screen.', {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
       },
     });
+    const keys = [`ga:accounts:userId:${userId}`, `ga:properties:userId:${userId}`];
+    await revalidate(keys, '/dashboard/ga/accounts', userId);
   };
 
   dispatch(setSelectedRows(selectedRowData)); // Update the selected rows in Redux

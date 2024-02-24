@@ -98,19 +98,18 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
   };
 
   const refreshAllCache = async () => {
-    // Assuming you want to refresh cache for each workspace
-    const keys = [
-      `gtm:accounts:userId:${userId}`,
-      `gtm:containers:userId:${userId}`,
-      `gtm:workspaces:userId:${userId}`,
-    ];
-    await revalidate(keys, '/dashboard/gtm/accounts', userId);
     toast.info('Updating our systems. This may take a minute or two to update on screen.', {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
       },
     });
+    const keys = [
+      `gtm:accounts:userId:${userId}`,
+      `gtm:containers:userId:${userId}`,
+      `gtm:workspaces:userId:${userId}`,
+    ];
+    await revalidate(keys, '/dashboard/gtm/accounts', userId);
   };
 
   const selectedRowsData = table.getSelectedRowModel().rows.map((row) => row.original);
