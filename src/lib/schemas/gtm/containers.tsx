@@ -6,12 +6,16 @@ const isValidDomainName = (domain: string) => {
   return domainRegex.test(domain);
 };
 
+export const FormCreateAmountSchema = z.object({
+  amount: z.number(),
+});
+
 // Schema for container create form data
 // Define the schema for a single form
 const SingleFormSchema = z.object({
   accountId: z.string().nonempty('Account Id is required'),
-  usageContext: z.string().nonempty('Usage Context is required'),
-  containerName: z.string().nonempty('Container Name is required'),
+  usageContext: z.array(z.string()).nonempty('Usage Context is required'),
+  name: z.string().nonempty('Container Name is required'),
   domainName: z
     .string()
     .optional()

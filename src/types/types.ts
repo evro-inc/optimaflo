@@ -108,7 +108,9 @@ export type ContainerType = {
   name: string;
   publicId: string;
   accountName: string;
-  usageContext: string[];
+  usageContext: any;
+  domainName?: string;
+  notes?: string;
 };
 
 export type UpdateAccountResult = {
