@@ -36,7 +36,6 @@ import { revalidate, tierCreateLimit } from '@/src/utils/server';
 import { ReloadIcon } from '@radix-ui/react-icons';
 
 import { useDispatch } from 'react-redux';
-import AccountForms from '@/src/app/(dashboards)/dashboard/ga/accounts/forms';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
 import { useDeleteHook } from './delete';
 import { notFound } from 'next/navigation';
@@ -153,7 +152,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
             disabled={Object.keys(table.getState().rowSelection).length === 0 || isUpdatePending}
             onClick={onUpdateButtonClick}
           >
-            {isUpdatePending ? 'Updating...' : 'Update'}
+            {isUpdatePending ? 'Loading...' : 'Update'}
           </Button>
 
           <ButtonDelete
@@ -245,7 +244,6 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
           Next
         </Button>
       </div>
-      <AccountForms selectedRows={selectedRowData} accounts={data} table={table} />
     </div>
   );
 }

@@ -33,10 +33,7 @@ import {
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
 import { revalidate } from '@/src/utils/server';
-import { ReloadIcon } from '@radix-ui/react-icons';
-import { toggleUpdate } from '@/src/redux/sharedSlice';
 import { useDispatch } from 'react-redux';
-import AccountForms from '@/src/app/(dashboards)/dashboard/gtm/accounts/forms';
 import { useTransition } from 'react';
 import { useUpdateHookForm } from '@/src/hooks/useCRUD';
 import { setSelectedRows } from '@/src/redux/tableSlice';
@@ -224,7 +221,6 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
           Next
         </Button>
       </div>
-      <AccountForms selectedRows={selectedRowsData} table={table} />
     </div>
   );
 }

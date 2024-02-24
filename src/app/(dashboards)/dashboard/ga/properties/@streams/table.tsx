@@ -146,14 +146,14 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
           <Button onClick={refreshAllCache}>Refresh</Button>
 
           <Button disabled={isCreatePending} onClick={onCreateButtonClick}>
-            {isCreatePending ? 'Creating...' : 'Create'}
+            {isCreatePending ? 'Loading...' : 'Create'}
           </Button>
 
           <Button
             disabled={Object.keys(table.getState().rowSelection).length === 0 || isUpdatePending}
             onClick={onUpdateButtonClick}
           >
-            {isUpdatePending ? 'Updating...' : 'Update'}
+            {isUpdatePending ? 'Loading...' : 'Update'}
           </Button>
 
           <ButtonDelete

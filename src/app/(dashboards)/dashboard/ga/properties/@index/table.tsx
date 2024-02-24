@@ -50,7 +50,6 @@ import {
   DialogTrigger,
 } from '@/src/components/ui/dialog';
 import { acknowledgeUserDataCollection } from '@/src/lib/fetch/dashboard/actions/ga/properties';
-import PropertyForms from './forms';
 import { useCreateHookForm, useUpdateHookForm } from '@/src/hooks/useCRUD';
 import { useTransition } from 'react';
 
@@ -219,14 +218,14 @@ export function DataTable<TData, TValue>({
           <Button onClick={refreshAllCache}>Refresh</Button>
 
           <Button disabled={isCreatePending} onClick={onCreateButtonClick}>
-            {isCreatePending ? 'Creating...' : 'Create'}
+            {isCreatePending ? 'Loading...' : 'Create'}
           </Button>
 
           <Button
             disabled={Object.keys(table.getState().rowSelection).length === 0 || isUpdatePending}
             onClick={onUpdateButtonClick}
           >
-            {isUpdatePending ? 'Updating...' : 'Update'}
+            {isUpdatePending ? 'Loading...' : 'Update'}
           </Button>
 
           <ButtonDelete
@@ -347,7 +346,6 @@ export function DataTable<TData, TValue>({
           Next
         </Button>
       </div>
-      <PropertyForms selectedRows={selectedRowData} table={table} accounts={parentData} />
     </div>
   );
 }
