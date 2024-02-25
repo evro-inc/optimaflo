@@ -5,8 +5,8 @@ import { z } from 'zod';
 const SingleFormSchema = z.object({
   accountId: z.string().min(10, 'Account Id must be at least 10 characters long'),
   containerId: z.string().min(8, 'Container Id is required'),
-  name: z.string().min(1, 'Workspace Name is required'),
-  description: z.string().min(1, 'Workspace Description is required').optional(),
+  name: z.string().min(5),
+  description: z.string().min(5, 'Workspace Description is required').optional(),
   workspaceId: z.string().optional(),
 });
 

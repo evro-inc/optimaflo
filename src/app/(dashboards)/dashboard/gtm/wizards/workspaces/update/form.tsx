@@ -6,7 +6,7 @@ import { setLoading, incrementStep, decrementStep } from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { UpdateContainerSchema } from '@/src/lib/schemas/gtm/containers';
+import { FormSchema } from '@/src/lib/schemas/gtm/workspaces';
 import { Button } from '@/src/components/ui/button';
 import {
   Form,
@@ -19,14 +19,8 @@ import {
 } from '@/src/components/ui/form';
 
 import { Input } from '@/src/components/ui/input';
-import {
-  ContainerType,
-  FeatureResponse,
-  FormWizardUpdateProps,
-  GA4ContainerType,
-} from '@/src/types/types';
+import { FeatureResponse, WorkspaceType } from '@/src/types/types';
 import { toast } from 'sonner';
-import { updateContainers } from '@/src/lib/fetch/dashboard/actions/ga/containers';
 import {
   selectTable,
   setErrorDetails,
@@ -36,24 +30,7 @@ import {
 import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from '@/src/components/ui/select';
-import {
-  CurrencyCodes,
-  IndustryCategories,
-  TimeZones,
-  retentionSettings360,
-  retentionSettingsStandard,
-} from '../../../containers/@index/containerItems';
-import { Switch } from '@/src/components/ui/switch';
-import { UpdateContainers } from '@/src/lib/fetch/dashboard/actions/gtm/containers';
+import { UpdateWorkspaces } from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -69,9 +46,9 @@ const ErrorModal = dynamic(
   { ssr: false }
 );
 
-type Forms = z.infer<typeof UpdateContainerSchema>;
+type Forms = z.infer<typeof FormSchema>;
 
-const FormUpdateContainer = () => {
+const FormUpdateWorkspace = () => {
   const dispatch = useDispatch();
   const loading = useSelector((state: RootState) => state.form.loading);
   const error = useSelector((state: RootState) => state.form.error);
@@ -82,15 +59,13 @@ const FormUpdateContainer = () => {
   const selectedRowData = useSelector((state: RootState) => state.table.selectedRows);
   const currentFormIndex = currentStep - 1; // Adjust for 0-based index
 
-  const formDataDefaults: ContainerType[] = Object.values(selectedRowData).map((rowData) => ({
+  const formDataDefaults: WorkspaceType[] = Object.values(selectedRowData).map((rowData) => ({
     accountId: rowData.accountId,
-    usageContext: rowData.usageContext,
+    workspaceId: rowData.workspaceId,
     name: rowData.name,
-    domainName: rowData.domainName || '',
-    notes: rowData.notes || '',
+    description: rowData.description,
     containerId: rowData.containerId,
-    publicId: rowData.publicId,
-    accountName: rowData.accountName,
+    containerName: rowData.containerName,
   }));
 
   if (notFoundError) {
@@ -103,7 +78,7 @@ const FormUpdateContainer = () => {
     defaultValues: {
       forms: formDataDefaults,
     },
-    resolver: zodResolver(UpdateContainerSchema),
+    resolver: zodResolver(FormSchema),
   });
 
   const { fields } = useFieldArray({
@@ -116,13 +91,7 @@ const FormUpdateContainer = () => {
     const currentFormPath = `forms.${currentFormIndex}`;
 
     // Start with the common fields that are always present
-    const fieldsToValidate = [
-      `${currentFormPath}.name`,
-      `${currentFormPath}.accountId`,
-      `${currentFormPath}.usageContext`,
-      `${currentFormPath}.domainName`,
-      `${currentFormPath}.notes`,
-    ];
+    const fieldsToValidate = [`${currentFormPath}.name`, `${currentFormPath}.description`];
 
     // Now, trigger validation for these fields
     const isFormValid = await form.trigger(fieldsToValidate as any);
@@ -141,19 +110,19 @@ const FormUpdateContainer = () => {
 
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
-    toast('Creating containers...', {
+    toast('Creating workspaces...', {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
       },
     });
 
-    const uniqueContainers = new Set(forms.map((form) => form.containerId));
+    const uniqueWorkspaces = new Set(forms.map((form) => form.workspaceId));
 
     for (const form of forms) {
-      const identifier = `${form.accountId}-${form.containerId}-${form.name}`;
-      if (uniqueContainers.has(identifier)) {
-        toast.error(`Duplicate container found for ${form.accountId} - ${form.name}`, {
+      const identifier = `${form.accountId}-${form.workspaceId}-${form.name}`;
+      if (uniqueWorkspaces.has(identifier)) {
+        toast.error(`Duplicate workspace found for ${form.accountId} - ${form.name}`, {
           action: {
             label: 'Close',
             onClick: () => toast.dismiss(),
@@ -162,17 +131,17 @@ const FormUpdateContainer = () => {
         dispatch(setLoading(false));
         return;
       }
-      uniqueContainers.add(identifier);
+      uniqueWorkspaces.add(identifier);
     }
 
     try {
-      const res = (await UpdateContainers({ forms })) as FeatureResponse;
+      const res = (await UpdateWorkspaces({ forms })) as FeatureResponse;
 
       if (res.success) {
         res.results.forEach((result) => {
           if (result.success) {
             toast.success(
-              `Container ${result.name} created successfully. The table will update shortly.`,
+              `Workspace ${result.name} updated successfully. The table will update shortly.`,
               {
                 action: {
                   label: 'Close',
@@ -183,13 +152,13 @@ const FormUpdateContainer = () => {
           }
         });
 
-        router.push('/dashboard/gtm/containers');
+        router.push('/dashboard/gtm/workspaces');
       } else {
         if (res.notFoundError) {
           res.results.forEach((result) => {
             if (result.notFound) {
               toast.error(
-                `Unable to create container ${result.name}. Please check your access permissions. Any other containers created were successful.`,
+                `Unable to update workspace ${result.name}. Please check your access permissions. Any other workspaces updated were successful.`,
                 {
                   action: {
                     label: 'Close',
@@ -208,7 +177,7 @@ const FormUpdateContainer = () => {
           res.results.forEach((result) => {
             if (result.limitReached) {
               toast.error(
-                `Unable to create container ${result.name}. You have ${result.remaining} more feature(s) you can update.`,
+                `Unable to update workspace ${result.name}. You have ${result.remaining} more feature(s) you can update.`,
                 {
                   action: {
                     label: 'Close',
@@ -223,7 +192,7 @@ const FormUpdateContainer = () => {
 
         if (res.errors) {
           res.errors.forEach((error) => {
-            toast.error(`Unable to create container. ${error}`, {
+            toast.error(`Unable to update workspace. ${error}`, {
               action: {
                 label: 'Close',
                 onClick: () => toast.dismiss(),
@@ -275,7 +244,7 @@ const FormUpdateContainer = () => {
                   <Form {...form}>
                     <form
                       onSubmit={form.handleSubmit(processForm)}
-                      id={`updateContainer-${currentFormIndex}`}
+                      id={`updateWorkspace-${currentFormIndex}`}
                       className="space-y-6"
                     >
                       <FormField
@@ -283,15 +252,18 @@ const FormUpdateContainer = () => {
                         name={`forms.${currentFormIndex}.name`}
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>New Container Name</FormLabel>
-                            <FormDescription>Enter the new name of the container</FormDescription>
+                            <FormLabel>Workspace Name To Update</FormLabel>
+                            <FormDescription>
+                              This is the workspace name you want to update.
+                            </FormDescription>
                             <FormControl>
                               <Input
-                                placeholder="Name of the container"
+                                placeholder="Name of the workspace"
                                 {...form.register(`forms.${currentFormIndex}.name`)}
                                 {...field}
                               />
                             </FormControl>
+
                             <FormMessage />
                           </FormItem>
                         )}
@@ -299,40 +271,25 @@ const FormUpdateContainer = () => {
 
                       <FormField
                         control={form.control}
-                        name={`forms.${currentFormIndex}.domainName`}
+                        name={`forms.${currentFormIndex}.description`}
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Domain Name: Optional (Must be comma separated)</FormLabel>
+                            <FormLabel>Description:</FormLabel>
+                            <FormDescription>
+                              This is a description of the workspace.
+                            </FormDescription>
                             <FormControl>
                               <Input
-                                placeholder="Enter domain names separated by commas"
-                                {...form.register(`forms.${currentFormIndex}.domainName`)}
+                                placeholder="Enter your description"
+                                {...form.register(`forms.${currentFormIndex}.description`)}
                                 {...field}
                               />
                             </FormControl>
+
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-
-                      <FormField
-                        control={form.control}
-                        name={`forms.${currentFormIndex}.notes`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Notes: Optional</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Enter any notes you want"
-                                {...form.register(`forms.${currentFormIndex}.notes`)}
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
                       <div className="flex justify-between">
                         <Button type="button" onClick={handlePrevious} disabled={currentStep === 1}>
                           Previous
@@ -360,4 +317,4 @@ const FormUpdateContainer = () => {
   );
 };
 
-export default FormUpdateContainer;
+export default FormUpdateWorkspace;

@@ -19,14 +19,8 @@ import {
 } from '@/src/components/ui/form';
 
 import { Input } from '@/src/components/ui/input';
-import {
-  ContainerType,
-  FeatureResponse,
-  FormWizardUpdateProps,
-  GA4ContainerType,
-} from '@/src/types/types';
+import { ContainerType, FeatureResponse } from '@/src/types/types';
 import { toast } from 'sonner';
-import { updateContainers } from '@/src/lib/fetch/dashboard/actions/ga/containers';
 import {
   selectTable,
   setErrorDetails,
@@ -36,23 +30,6 @@ import {
 import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from '@/src/components/ui/select';
-import {
-  CurrencyCodes,
-  IndustryCategories,
-  TimeZones,
-  retentionSettings360,
-  retentionSettingsStandard,
-} from '../../../containers/@index/containerItems';
-import { Switch } from '@/src/components/ui/switch';
 import { UpdateContainers } from '@/src/lib/fetch/dashboard/actions/gtm/containers';
 
 const NotFoundErrorModal = dynamic(
