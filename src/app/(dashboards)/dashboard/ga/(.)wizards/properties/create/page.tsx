@@ -2,10 +2,8 @@ import React from 'react';
 import { notFound } from 'next/navigation';
 import { currentUser } from '@clerk/nextjs';
 import { listGAProperties } from '@/src/lib/fetch/dashboard/actions/ga/properties';
-import { listGAPropertyStreams } from '@/src/lib/fetch/dashboard/actions/ga/streams';
 import { listGaAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
-import { dataStreamTypeMapping } from '../../../properties/@streams/streamItems';
-import FormCreateStream from './form';
+import FormCreateProperty from './form';
 import { getTierLimit } from '@/src/lib/fetch/tierLimit';
 import { getSubscription } from '@/src/lib/fetch/subscriptions';
 
@@ -20,7 +18,6 @@ export default async function CreateStreamPage() {
   const tierLimits = await getTierLimit(subscriptionId);
   const accountData = await listGaAccounts();
   const propertyData = await listGAProperties();
-  const streamData = await listGAPropertyStreams();
 
   const [accounts, properties] = await Promise.all([accountData, propertyData]);
 
@@ -60,7 +57,7 @@ export default async function CreateStreamPage() {
   return (
     <>
       <div className="container mx-auto py-10">
-        <FormCreateStream
+        <FormCreateProperty
           tierLimits={tierLimits}
           table={combinedData}
           accounts={accounts}
