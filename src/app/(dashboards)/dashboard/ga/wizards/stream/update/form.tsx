@@ -104,11 +104,11 @@ const FormUpdateStream = () => {
 
     // Add additional fields based on the stream type of the current form
     const currentFormData = selectedRowData[currentFormIndex];
-    if (currentFormData.type === 'WEB_DATA_STREAM') {
+    if (currentFormData?.type === 'WEB_DATA_STREAM') {
       currentFormFields.push(`forms.${currentFormIndex}.webStreamData.defaultUri`);
-    } else if (currentFormData.type === 'ANDROID_APP_DATA_STREAM') {
+    } else if (currentFormData?.type === 'ANDROID_APP_DATA_STREAM') {
       currentFormFields.push(`forms.${currentFormIndex}.androidAppStreamData.packageName`);
-    } else if (currentFormData.type === 'IOS_APP_DATA_STREAM') {
+    } else if (currentFormData?.type === 'IOS_APP_DATA_STREAM') {
       currentFormFields.push(`forms.${currentFormIndex}.iosAppStreamData.bundleId`);
     }
 
@@ -302,7 +302,7 @@ const FormUpdateStream = () => {
                                   )}
                                 />
 
-                                {currentFormData.type === 'WEB_DATA_STREAM' && (
+                                {currentFormData?.type === 'WEB_DATA_STREAM' && (
                                   <FormField
                                     control={form.control}
                                     name={`forms.${currentFormIndex}.webStreamData.defaultUri`}
@@ -326,7 +326,7 @@ const FormUpdateStream = () => {
                                     )}
                                   />
                                 )}
-                                {currentFormData.type === 'ANDROID_APP_DATA_STREAM' && (
+                                {currentFormData?.type === 'ANDROID_APP_DATA_STREAM' && (
                                   <FormField
                                     control={form.control}
                                     name={`forms.${currentFormIndex}.androidAppStreamData.packageName`}
@@ -351,7 +351,7 @@ const FormUpdateStream = () => {
                                   />
                                 )}
 
-                                {currentFormData.type === 'IOS_APP_DATA_STREAM' && (
+                                {currentFormData?.type === 'IOS_APP_DATA_STREAM' && (
                                   <FormField
                                     control={form.control}
                                     name={`forms.${currentFormIndex}.iosAppStreamData.bundleId`}
