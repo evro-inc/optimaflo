@@ -1,6 +1,6 @@
 'use server';
 import { revalidatePath } from 'next/cache';
-import { CreateContainerSchema, UpdateContainerSchema } from '@/src/lib/schemas/gtm/containers';
+import { FormSchema } from '@/src/lib/schemas/gtm/containers';
 import z from 'zod';
 import { auth } from '@clerk/nextjs';
 import { gtmRateLimit } from '../../../../redis/rateLimits';
@@ -19,7 +19,7 @@ import {
 import { fetchGASettings, fetchGtmSettings } from '../..';
 
 // Define the types for the form data
-type FormCreateSchema = z.infer<typeof CreateContainerSchema>;
+type Schema = z.infer<typeof FormSchema>;
 
 /************************************************************************************
   Function to list GTM containers
@@ -362,7 +362,7 @@ export async function DeleteContainers(
 /************************************************************************************
   Create a single container or multiple containers
 ************************************************************************************/
-export async function CreateContainers(formData: FormCreateSchema) {
+export async function CreateContainers(formData: Schema) {
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
@@ -455,7 +455,7 @@ export async function CreateContainers(formData: FormCreateSchema) {
               try {
                 const formDataToValidate = { forms: [containerData] };
 
-                const validationResult = CreateContainerSchema.safeParse(formDataToValidate);
+                const validationResult = FormSchema.safeParse(formDataToValidate);
 
                 if (!validationResult.success) {
                   let errorMessage = validationResult.error.issues
@@ -676,7 +676,7 @@ export async function CreateContainers(formData: FormCreateSchema) {
 /************************************************************************************
   Create a single container or multiple containers
 ************************************************************************************/
-export async function UpdateContainers(formData: FormCreateSchema) {
+export async function UpdateContainers(formData: Schema) {
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
@@ -772,7 +772,7 @@ export async function UpdateContainers(formData: FormCreateSchema) {
               try {
                 const formDataToValidate = { forms: [containerData] };
 
-                const validationResult = UpdateContainerSchema.safeParse(formDataToValidate);
+                const validationResult = FormSchema.safeParse(formDataToValidate);
 
                 if (!validationResult.success) {
                   let errorMessage = validationResult.error.issues
@@ -1013,7 +1013,7 @@ export async function UpdateContainers(formData: FormCreateSchema) {
       return Object.fromEntries(Object.keys(fd).map((key) => [key, fd[key]]));
     });
 
-    const validationResult = UpdateContainerSchema.safeParse({
+    const validationResult = FormSchema.safeParse({
       forms: plainDataArray,
     });
 

@@ -15,5 +15,3 @@ export const FormsSchema = z.object({
 
 // Type for the entire update form data
 export type FormsSchemaType = z.infer<typeof FormsSchema>;
-
-export type CreateContainerSchemaType = z.infer<typeof FormsSchema>;

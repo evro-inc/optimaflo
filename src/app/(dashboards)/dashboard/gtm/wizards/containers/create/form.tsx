@@ -6,7 +6,7 @@ import { setLoading, incrementStep, decrementStep, setCount } from '@/redux/form
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { FormCreateAmountSchema, CreateContainerSchema } from '@/src/lib/schemas/gtm/containers';
+import { FormCreateAmountSchema, FormSchema } from '@/src/lib/schemas/gtm/containers';
 import { Button } from '@/src/components/ui/button';
 import {
   Form,
@@ -55,11 +55,10 @@ const ErrorModal = dynamic(
   { ssr: false }
 );
 
-type Forms = z.infer<typeof CreateContainerSchema>;
+type Forms = z.infer<typeof FormSchema>;
 
 const FormCreateContainer: React.FC<FormCreateProps> = ({
   tierLimits,
-  table = [],
   accounts = [],
 }) => {
   const dispatch = useDispatch();
@@ -81,7 +80,7 @@ const FormCreateContainer: React.FC<FormCreateProps> = ({
 
   const formDataDefaults: ContainerType = {
     accountId: '',
-    usageContext: '',
+    usageContext: [''],
     name: '',
     domainName: '',
     notes: '',
@@ -114,7 +113,7 @@ const FormCreateContainer: React.FC<FormCreateProps> = ({
     defaultValues: {
       forms: [formDataDefaults],
     },
-    resolver: zodResolver(CreateContainerSchema),
+    resolver: zodResolver(FormSchema),
   });
 
   const { fields, append } = useFieldArray({
@@ -434,6 +433,8 @@ const FormCreateContainer: React.FC<FormCreateProps> = ({
                                     <SelectItem value="web">Web</SelectItem>
                                     <SelectItem value="androidSdk5">Android</SelectItem>
                                     <SelectItem value="iosSdk5">IOS</SelectItem>
+                                    <SelectItem value="server">Server</SelectItem>
+                                    <SelectItem value="amp">Amp</SelectItem>                                    
                                   </SelectGroup>
                                 </SelectContent>
                               </Select>

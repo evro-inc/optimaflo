@@ -5,7 +5,7 @@ import { UpdateContainers } from '@/src/lib/fetch/dashboard/actions/gtm/containe
 import { LimitReached } from '../../../../../components/client/modals/limitReached';
 import { ButtonGroup } from '../../../../../components/client/ButtonGroup/ButtonGroup';
 import { z } from 'zod';
-import { UpdateContainerSchema } from '@/src/lib/schemas/gtm/containers';
+import { FormSchema } from '@/src/lib/schemas/gtm/containers';
 import {
   clearSelectedRows,
   selectTable,
@@ -37,7 +37,7 @@ import { Icon } from '@/src/components/client/Button/Button';
 import { toast } from 'sonner';
 
 // Type for the entire form data
-type Forms = z.infer<typeof UpdateContainerSchema>;
+type Forms = z.infer<typeof FormSchema>;
 
 // Component
 const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
@@ -64,7 +64,7 @@ const FormUpdateContainer: React.FC<FormUpdateContainerProps> = ({
         },
       ],
     },
-    resolver: zodResolver(UpdateContainerSchema),
+    resolver: zodResolver(FormSchema),
   });
 
   const { fields } = useFieldArray({

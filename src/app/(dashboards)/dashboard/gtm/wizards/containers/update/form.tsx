@@ -6,7 +6,7 @@ import { setLoading, incrementStep, decrementStep } from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { UpdateContainerSchema } from '@/src/lib/schemas/gtm/containers';
+import { FormSchema } from '@/src/lib/schemas/gtm/containers';
 import { Button } from '@/src/components/ui/button';
 import {
   Form,
@@ -46,7 +46,7 @@ const ErrorModal = dynamic(
   { ssr: false }
 );
 
-type Forms = z.infer<typeof UpdateContainerSchema>;
+type Forms = z.infer<typeof FormSchema>;
 
 const FormUpdateContainer = () => {
   const dispatch = useDispatch();
@@ -80,7 +80,7 @@ const FormUpdateContainer = () => {
     defaultValues: {
       forms: formDataDefaults,
     },
-    resolver: zodResolver(UpdateContainerSchema),
+    resolver: zodResolver(FormSchema),
   });
 
   const { fields } = useFieldArray({

@@ -108,7 +108,7 @@ export type ContainerType = {
   name: string;
   publicId: string;
   accountName: string;
-  usageContext: any;
+  usageContext: [string, ...string[]];
   domainName?: string;
   notes?: string;
 };
