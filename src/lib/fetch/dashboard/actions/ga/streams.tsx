@@ -387,7 +387,7 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
         if (userId) {
           const cacheKey = `ga:streams:userId:${userId}`;
           await redis.del(cacheKey);
-          await revalidatePath(`/dashboard/ga/streams`);
+          await revalidatePath(`/dashboard/ga/properties`);
         }
       }
     }
@@ -419,7 +419,7 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
     const cacheKey = `ga:streams:userId:${userId}`;
 
     await redis.del(cacheKey);
-    revalidatePath(`/dashboard/ga/streams`);
+    revalidatePath(`/dashboard/ga/properties`);
   }
 
   // Map over formData.forms to create the results array
@@ -767,7 +767,7 @@ export async function updateGAPropertyStreams(formData: DataStreamType) {
     const cacheKey = `ga:streams:userId:${userId}`;
 
     await redis.del(cacheKey);
-    revalidatePath(`/dashboard/ga/streams`);
+    revalidatePath(`/dashboard/ga/properties`);
   }
 
   // Map over formData.forms to update the results array
@@ -1004,7 +1004,7 @@ export async function deleteGAPropertyStreams(
         const cacheKey = `ga:streams:userId:${userId}`;
         await redis.del(cacheKey);
 
-        await revalidatePath(`/dashboard/ga/streams`);
+        await revalidatePath(`/dashboard/ga/properties`);
       }
     }
   }
@@ -1036,7 +1036,7 @@ export async function deleteGAPropertyStreams(
     const specificCacheKey = `ga:streams:userId:${userId}`;
     await redis.del(specificCacheKey);
     // Revalidate paths if needed
-    revalidatePath(`/dashboard/ga/streams`);
+    revalidatePath(`/dashboard/ga/properties`);
   }
 
   // Returning the result of the deletion process

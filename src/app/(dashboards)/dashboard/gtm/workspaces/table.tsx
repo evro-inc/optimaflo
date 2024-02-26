@@ -39,6 +39,7 @@ import { ButtonDelete } from '@/src/components/client/Button/Button';
 import { useCreateHookForm, useUpdateHookForm } from '@/src/hooks/useCRUD';
 import { useTransition } from 'react';
 import { setSelectedRows } from '@/src/redux/tableSlice';
+import { LimitReached } from '@/src/components/client/modals/limitReached';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -107,7 +108,7 @@ export function DataTable<TData, TValue>({
 
   const handleCreateClick = useCreateHookForm(
     userId,
-    'GA4Properties',
+    'GTMWorkspaces',
     '/dashboard/gtm/wizards/workspaces/create'
   );
 
@@ -121,7 +122,7 @@ export function DataTable<TData, TValue>({
 
   const handleUpdateClick = useUpdateHookForm(
     userId,
-    'GA4Properties',
+    'GTMWorkspaces',
     '/dashboard/gtm/wizards/workspaces/update',
     rowSelectedCount
   );
@@ -249,6 +250,7 @@ export function DataTable<TData, TValue>({
           Next
         </Button>
       </div>
+      <LimitReached />
     </>
   );
 }

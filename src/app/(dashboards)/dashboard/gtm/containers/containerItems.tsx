@@ -3,5 +3,5 @@ export const usageContext = [
   { label: 'Android', value: 'android' },
   { label: 'iOS', value: 'ios' },
   { label: 'AMP', value: 'amp' },
-  {label: 'Server', value: 'server'},
+  { label: 'Server', value: 'server' },
 ];

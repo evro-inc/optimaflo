@@ -52,6 +52,7 @@ import {
 import { acknowledgeUserDataCollection } from '@/src/lib/fetch/dashboard/actions/ga/properties';
 import { useCreateHookForm, useUpdateHookForm } from '@/src/hooks/useCRUD';
 import { useTransition } from 'react';
+import { LimitReached } from '@/src/components/client/modals/limitReached';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -346,6 +347,7 @@ export function DataTable<TData, TValue>({
           Next
         </Button>
       </div>
+      <LimitReached />
     </div>
   );
 }

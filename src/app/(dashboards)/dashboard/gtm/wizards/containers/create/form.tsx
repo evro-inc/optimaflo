@@ -57,10 +57,7 @@ const ErrorModal = dynamic(
 
 type Forms = z.infer<typeof FormSchema>;
 
-const FormCreateContainer: React.FC<FormCreateProps> = ({
-  tierLimits,
-  accounts = [],
-}) => {
+const FormCreateContainer: React.FC<FormCreateProps> = ({ tierLimits, accounts = [] }) => {
   const dispatch = useDispatch();
   const loading = useSelector((state: RootState) => state.form.loading);
   const error = useSelector((state: RootState) => state.form.error);
@@ -434,7 +431,7 @@ const FormCreateContainer: React.FC<FormCreateProps> = ({
                                     <SelectItem value="androidSdk5">Android</SelectItem>
                                     <SelectItem value="iosSdk5">IOS</SelectItem>
                                     <SelectItem value="server">Server</SelectItem>
-                                    <SelectItem value="amp">Amp</SelectItem>                                    
+                                    <SelectItem value="amp">Amp</SelectItem>
                                   </SelectGroup>
                                 </SelectContent>
                               </Select>

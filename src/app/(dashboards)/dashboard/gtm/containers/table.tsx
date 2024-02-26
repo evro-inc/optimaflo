@@ -33,14 +33,13 @@ import {
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
 import { revalidate } from '@/src/utils/server';
-
-import ContainerForms from '@/src/app/(dashboards)/dashboard/gtm/containers/forms';
 import { useDeleteHook } from './delete';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
 import { useCreateHookForm, useUpdateHookForm } from '@/src/hooks/useCRUD';
 import { useDispatch } from 'react-redux';
 import { useTransition } from 'react';
 import { setSelectedRows } from '@/src/redux/tableSlice';
+import { LimitReached } from '@/src/components/client/modals/limitReached';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -251,7 +250,7 @@ export function DataTable<TData, TValue>({
           Next
         </Button>
       </div>
-      <ContainerForms accounts={accounts} selectedRows={selectedRowData} table={table} />
+      <LimitReached />
     </>
   );
 }

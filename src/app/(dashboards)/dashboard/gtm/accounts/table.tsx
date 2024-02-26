@@ -37,6 +37,7 @@ import { useDispatch } from 'react-redux';
 import { useTransition } from 'react';
 import { useUpdateHookForm } from '@/src/hooks/useCRUD';
 import { setSelectedRows } from '@/src/redux/tableSlice';
+import { LimitReached } from '@/src/components/client/modals/limitReached';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -220,6 +221,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
           Next
         </Button>
       </div>
+      <LimitReached />
     </div>
   );
 }
