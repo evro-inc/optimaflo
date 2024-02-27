@@ -15,7 +15,7 @@ export const useDeleteHook = (selectedRows, table) => {
   const dispatch = useDispatch();
 
   const handleDelete = async () => {
-    toast('Deleting accounts...', {
+    toast('Deleting streams...', {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
@@ -29,13 +29,11 @@ export const useDeleteHook = (selectedRows, table) => {
       }
     );
 
-    const accountNames = ga4StreamToDelete.map((name) => {
-      return `properties/${name}`;
-    });
+    const streamDisplayNames = ga4StreamToDelete.map((stream) => stream.displayName);
 
     const response: FeatureResponse = await deleteGAPropertyStreams(
       new Set(ga4StreamToDelete),
-      accountNames
+      streamDisplayNames
     );
 
     if (!response.success) {

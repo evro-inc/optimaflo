@@ -16,7 +16,7 @@ import {
   tierDeleteLimit,
   tierUpdateLimit,
 } from '@/src/utils/server';
-import { fetchGASettings, fetchGtmSettings } from '../..';
+import { fetchGtmSettings } from '../..';
 
 // Define the types for the form data
 type Schema = z.infer<typeof FormSchema>;
@@ -37,6 +37,14 @@ export async function listGtmContainers() {
   const token = await currentUserOauthAccessToken(userId);
   const accessToken = token[0].token;
 
+  const cacheKey = `gtm:containers:userId:${userId}`;
+  const cachedValue = await redis.get(cacheKey);
+
+  if (cachedValue) {
+    return JSON.parse(cachedValue);
+  }
+
+  await fetchGtmSettings(userId);
   const gtmData = await prisma.user.findFirst({
     where: {
       id: userId,
@@ -45,13 +53,6 @@ export async function listGtmContainers() {
       gtm: true,
     },
   });
-
-  const cacheKey = `gtm:containers:userId:${userId}`;
-  const cachedValue = await redis.get(cacheKey);
-
-  if (cachedValue) {
-    return JSON.parse(cachedValue);
-  }
 
   while (retries < MAX_RETRIES) {
     try {
@@ -491,7 +492,6 @@ export async function CreateContainers(formData: Schema) {
                   successfulCreations.push(containerName);
                   toCreateContainers.delete(identifier);
                   fetchGtmSettings(userId);
-                  fetchGASettings(userId);
 
                   await prisma.tierLimit.update({
                     where: { id: tierLimitResponse.id },

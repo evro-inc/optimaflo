@@ -15,7 +15,7 @@ import {
   tierDeleteLimit,
   tierUpdateLimit,
 } from '@/src/utils/server';
-import { fetchGASettings, fetchGtmSettings } from '../..';
+import { fetchGASettings } from '../..';
 import { FormsSchema } from '@/src/lib/schemas/ga/properties';
 
 // Define the types for the form data
@@ -38,6 +38,14 @@ export async function listGAProperties() {
   const token = await currentUserOauthAccessToken(userId);
   const accessToken = token[0].token;
 
+  const cacheKey = `ga:properties:userId:${userId}`;
+  const cachedValue = await redis.get(cacheKey);
+
+  if (cachedValue) {
+    return JSON.parse(cachedValue);
+  }
+
+  await fetchGASettings(userId);
   const gaData = await prisma.user.findFirst({
     where: {
       id: userId,
@@ -46,13 +54,6 @@ export async function listGAProperties() {
       ga: true,
     },
   });
-
-  const cacheKey = `ga:properties:userId:${userId}`;
-  const cachedValue = await redis.get(cacheKey);
-
-  if (cachedValue) {
-    return JSON.parse(cachedValue);
-  }
 
   while (retries < MAX_RETRIES) {
     try {
@@ -543,7 +544,6 @@ export async function createProperties(formData: FormCreateSchema) {
                 if (response.ok) {
                   successfulCreations.push(validatedContainerData.displayName);
                   toCreateProperties.delete(identifier);
-                  fetchGtmSettings(userId);
                   fetchGASettings(userId);
 
                   await prisma.tierLimit.update({

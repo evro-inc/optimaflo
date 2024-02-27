@@ -16,7 +16,7 @@ import {
   tierDeleteLimit,
   tierUpdateLimit,
 } from '@/src/utils/server';
-import { fetchGASettings, fetchGtmSettings } from '../..';
+import { fetchGtmSettings } from '../..';
 
 // Define the types for the form data
 type FormCreateSchema = z.infer<typeof FormSchema>;
@@ -39,6 +39,14 @@ export async function listGtmWorkspaces() {
   const accessToken = token[0].token;
   let responseBody: any;
 
+  const cacheKey = `gtm:workspaces:userId:${userId}`;
+  const cachedValue = await redis.get(cacheKey);
+  if (cachedValue) {
+    return JSON.parse(cachedValue);
+  }
+
+  await fetchGtmSettings(userId);
+
   const gtmData = await prisma.user.findFirst({
     where: {
       id: userId,
@@ -47,12 +55,6 @@ export async function listGtmWorkspaces() {
       gtm: true,
     },
   });
-
-  const cacheKey = `gtm:workspaces:userId:${userId}`;
-  const cachedValue = await redis.get(cacheKey);
-  if (cachedValue) {
-    return JSON.parse(cachedValue);
-  }
 
   while (retries < MAX_RETRIES) {
     try {
@@ -522,7 +524,6 @@ export async function CreateWorkspaces(formData: FormCreateSchema) {
                   successfulCreations.push(workspaceName);
                   toCreateWorkspaces.delete(identifier);
                   fetchGtmSettings(userId);
-                  fetchGASettings(userId);
                   await prisma.tierLimit.update({
                     where: { id: tierLimitResponse.id },
                     data: { createUsage: { increment: 1 } },

@@ -8,7 +8,7 @@ import { redis } from '@/src/lib/redis/cache';
 import { notFound } from 'next/navigation';
 import { currentUserOauthAccessToken } from '@/src/lib/clerk';
 import prisma from '@/src/lib/prisma';
-import { FeatureResult, FeatureResponse, GA4PropertyType, GA4StreamType } from '@/src/types/types';
+import { FeatureResult, FeatureResponse, GA4StreamType } from '@/src/types/types';
 import {
   handleApiResponseError,
   tierCreateLimit,
@@ -34,6 +34,15 @@ export async function listGAPropertyStreams() {
   const token = await currentUserOauthAccessToken(userId);
   const accessToken = token[0].token;
 
+  const cacheKey = `ga:streams:userId:${userId}`;
+  const cachedValue = await redis.get(cacheKey);
+
+  if (cachedValue) {
+    return JSON.parse(cachedValue);
+  }
+
+  await fetchGASettings(userId);
+
   const gaData = await prisma.user.findFirst({
     where: {
       id: userId,
@@ -42,13 +51,6 @@ export async function listGAPropertyStreams() {
       ga: true,
     },
   });
-
-  const cacheKey = `ga:streams:userId:${userId}`;
-  const cachedValue = await redis.get(cacheKey);
-
-  if (cachedValue) {
-    return JSON.parse(cachedValue);
-  }
 
   while (retries < MAX_RETRIES) {
     try {
@@ -73,13 +75,11 @@ export async function listGAPropertyStreams() {
           for (const url of urls) {
             try {
               const response = await fetch(url, { headers });
-
               if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
               }
 
               const responseBody = await response.json();
-
               allData.push(responseBody);
 
               // Removed the problematic line here
@@ -88,7 +88,6 @@ export async function listGAPropertyStreams() {
             }
           }
         });
-
         redis.set(cacheKey, JSON.stringify(allData), 'EX', 3600);
 
         return allData;
@@ -228,7 +227,7 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
                     requestBody = {
                       ...requestBody,
                       webStreamData: {
-                        defaultUri: validatedContainerData.webStreamData.defaultUri,
+                        defaultUri: validatedContainerData?.webStreamData?.defaultUri,
                       },
                     };
                     break;
@@ -236,7 +235,7 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
                     requestBody = {
                       ...requestBody,
                       androidAppStreamData: {
-                        packageName: validatedContainerData.androidAppStreamData.packageName,
+                        packageName: validatedContainerData?.androidAppStreamData?.packageName,
                       },
                     };
                     break;
@@ -244,7 +243,7 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
                     requestBody = {
                       ...requestBody,
                       iosAppStreamData: {
-                        bundleId: validatedContainerData.iosAppStreamData.bundleId,
+                        bundleId: validatedContainerData?.iosAppStreamData?.bundleId,
                       },
                     };
                     break;
@@ -621,7 +620,6 @@ export async function updateGAPropertyStreams(formData: DataStreamType) {
                 if (response.ok) {
                   successfulCreations.push(validatedContainerData.displayName);
                   toUpdateStreams.delete(identifier);
-                  fetchGASettings(userId);
 
                   await prisma.tierLimit.update({
                     where: { id: tierLimitResponse.id },
@@ -820,6 +818,7 @@ export async function deleteGAPropertyStreams(
   // If user ID is not found, return a 'not found' error
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
+  const cacheKey = `ga:streams:userId:${userId}`;
 
   // Check for feature limit using Prisma ORM
   const tierLimitResponse: any = await tierDeleteLimit(userId, 'GA4Streams');
@@ -909,7 +908,7 @@ export async function deleteGAPropertyStreams(
                   const errorResult = await handleApiResponseError(
                     response,
                     parsedResponse,
-                    'GA4Stream',
+                    'GA4Streams',
                     streamNames
                   );
 
@@ -999,12 +998,9 @@ export async function deleteGAPropertyStreams(
           break;
         }
       } finally {
-        // This block will run regardless of the outcome of the try...catch
-
-        const cacheKey = `ga:streams:userId:${userId}`;
         await redis.del(cacheKey);
 
-        await revalidatePath(`/dashboard/ga/properties`);
+        await revalidatePath('/dashboard/ga/properties');
       }
     }
   }
@@ -1033,10 +1029,9 @@ export async function deleteGAPropertyStreams(
   }
   // If there are successful deletions, update the deleteUsage
   if (successfulDeletions.length > 0) {
-    const specificCacheKey = `ga:streams:userId:${userId}`;
-    await redis.del(specificCacheKey);
+    await redis.del(cacheKey);
     // Revalidate paths if needed
-    revalidatePath(`/dashboard/ga/properties`);
+    revalidatePath('/dashboard/ga/properties');
   }
 
   // Returning the result of the deletion process
