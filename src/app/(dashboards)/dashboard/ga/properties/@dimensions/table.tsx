@@ -32,46 +32,28 @@ import {
 } from '@/src/components/ui/dropdown-menu';
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
-import { revalidate, tierCreateLimit } from '@/src/utils/server';
-import { ReloadIcon } from '@radix-ui/react-icons';
-import { toggleCreate, toggleUpdate } from '@/src/redux/globalSlice';
-import { useDispatch } from 'react-redux';
+import { revalidate } from '@/src/utils/server';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
 import { useDeleteHook } from './delete';
-import { notFound } from 'next/navigation';
-import { setIsLimitReached, setSelectedRows } from '@/src/redux/tableSlice';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/src/components/ui/dialog';
-import { acknowledgeUserDataCollection } from '@/src/lib/fetch/dashboard/actions/ga/properties';
 import { useCreateHookForm, useUpdateHookForm } from '@/src/hooks/useCRUD';
+import { setSelectedRows } from '@/src/redux/tableSlice';
+import { useDispatch } from 'react-redux';
 import { useTransition } from 'react';
 import { LimitReached } from '@/src/components/client/modals/limitReached';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
-  parentData: any;
 }
 
-export function DataTable<TData, TValue>({
-  columns,
-  data,
-  parentData,
-}: DataTableProps<TData, TValue>) {
-  const dispatch = useDispatch();
-  const [isCreatePending, startCreateTransition] = useTransition();
-  const [isUpdatePending, startUpdateTransition] = useTransition();
+export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData, TValue>) {
   const { user } = useUser();
   const userId = user?.id as string;
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+  const dispatch = useDispatch();
+  const [isCreatePending, startCreateTransition] = useTransition();
+  const [isUpdatePending, startUpdateTransition] = useTransition();
 
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
@@ -100,12 +82,13 @@ export function DataTable<TData, TValue>({
     acc[row.id] = row.original;
     return acc;
   }, {});
+
   const rowSelectedCount = Object.keys(selectedRowData).length;
 
   const handleCreateClick = useCreateHookForm(
     userId,
-    'GA4Properties',
-    '/dashboard/ga/wizards/properties/create'
+    'GA4Streams',
+    '/dashboard/ga/wizards/stream/create'
   );
 
   const onCreateButtonClick = () => {
@@ -118,8 +101,8 @@ export function DataTable<TData, TValue>({
 
   const handleUpdateClick = useUpdateHookForm(
     userId,
-    'GA4Properties',
-    '/dashboard/ga/wizards/properties/update',
+    'GA4Streams',
+    '/dashboard/ga/wizards/stream/update',
     rowSelectedCount
   );
 
@@ -130,6 +113,7 @@ export function DataTable<TData, TValue>({
       });
     });
   };
+
   const handleDelete = useDeleteHook(selectedRowData, table);
 
   const refreshAllCache = async () => {
@@ -139,75 +123,19 @@ export function DataTable<TData, TValue>({
         onClick: () => toast.dismiss(),
       },
     });
-    const keys = [`ga:accounts:userId:${userId}`, `ga:properties:userId:${userId}`];
+    const keys = [
+      `ga:accounts:userId:${userId}`,
+      `ga:properties:userId:${userId}`,
+      `ga:streams:userId:${userId}`,
+    ];
     await revalidate(keys, '/dashboard/ga/properties', userId);
-  };
-
-  const handleAcknowledgement = async () => {
-    try {
-      // If you're here, validation succeeded. Proceed with updateContainers.
-      const res = await acknowledgeUserDataCollection(selectedRowData);
-
-      if (res.success) {
-        res.results.forEach((result) => {
-          if (result.success) {
-            toast.success(`Property ${result.name} acknowledged.`, {
-              action: {
-                label: 'Close',
-                onClick: () => toast.dismiss(),
-              },
-            });
-          }
-        });
-      } else {
-        if (res.notFoundError) {
-          res.results.forEach((result) => {
-            if (result.notFound) {
-              toast.error(
-                `Unable to acknowledged property ${result.name}. Please check your access permissions. Any other properties created were successful.`,
-                {
-                  action: {
-                    label: 'Close',
-                    onClick: () => toast.dismiss(),
-                  },
-                }
-              );
-            }
-          });
-
-          /*  dispatch(setErrorDetails(res.results)); // Assuming results contain the error details
-          dispatch(setNotFoundError(true)); // Dispatch the not found error action */
-        }
-
-        if (res.limitReached) {
-          res.results.forEach((result) => {
-            if (result.limitReached) {
-              toast.error(
-                `Unable to create property ${result.name}. You have ${result.remaining} more property(s) you can create.`,
-                {
-                  action: {
-                    label: 'Close',
-                    onClick: () => toast.dismiss(),
-                  },
-                }
-              );
-            }
-          });
-          dispatch(setIsLimitReached(true));
-        }
-      }
-    } catch (error: any) {
-      throw new Error(error);
-    } finally {
-      table.resetRowSelection();
-    }
   };
 
   dispatch(setSelectedRows(selectedRowData)); // Update the selected rows in Redux
 
   return (
     <div>
-      <h1>Properties</h1>
+      <h1>Custom Dimensions</h1>
       <div className="flex items-center py-4">
         <Input
           placeholder="Filter property names..."
@@ -234,35 +162,6 @@ export function DataTable<TData, TValue>({
             disabled={Object.keys(table.getState().rowSelection).length === 0}
             onDelete={handleDelete}
           />
-
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button
-                disabled={Object.keys(table.getState().rowSelection).length === 0}
-                variant="outline"
-              >
-                Data Acknowledgement
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>User Data Collection Acknowledgement</DialogTitle>
-                <DialogDescription>
-                  I acknowledge that I have the necessary privacy disclosures and rights from my end
-                  users for the collection and processing of their data, including the association
-                  of such data with the visitation information Google Analytics collects from my
-                  site and/or app property. This acknowledgement is required and will be applied to
-                  all selected properties.
-                </DialogDescription>
-              </DialogHeader>
-
-              <DialogFooter>
-                <Button type="submit" onClick={handleAcknowledgement}>
-                  Acknowledge
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

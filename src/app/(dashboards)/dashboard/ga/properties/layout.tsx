@@ -12,12 +12,12 @@ export default async function PropertiesLayout({
   children,
   streams,
   index,
-  modal,
+  dimensions,
 }: {
   children: React.ReactNode;
   streams: React.ReactNode;
   index: React.ReactNode;
-  modal: React.ReactNode;
+  dimensions: React.ReactNode;
 }) {
   const user = await currentUser();
   if (!user) return notFound();
@@ -34,7 +34,7 @@ export default async function PropertiesLayout({
         {children}
         {index}
         {streams}
-        {modal}
+        {dimensions}
       </div>
     </>
   );

@@ -9,7 +9,7 @@ export default async function Page() {
 
   return (
     <>
-      <h1>GA4 Properties</h1>
+      <h1>GA4</h1>
     </>
   );
 }

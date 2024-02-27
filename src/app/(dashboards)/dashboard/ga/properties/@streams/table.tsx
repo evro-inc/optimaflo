@@ -135,6 +135,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
 
   return (
     <div>
+      <h1>Data Streams</h1>
       <div className="flex items-center py-4">
         <Input
           placeholder="Filter property names..."

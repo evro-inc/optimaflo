@@ -403,3 +403,21 @@ export type FormWizardUpdateProps = {
   table: Stream[];
   accounts: GA4Account[];
 };
+
+// Custom Dimension Types
+enum DimensionScope {
+  DIMENSION_SCOPE_UNSPECIFIED = 'DIMENSION_SCOPE_UNSPECIFIED',
+  EVENT = 'EVENT',
+  USER = 'USER',
+  ITEM = 'ITEM',
+}
+
+export interface CustomDimensionType {
+  name: string;
+  property: string;
+  parameterName: string;
+  displayName: string;
+  description?: string;
+  scope: DimensionScope;
+  disallowAdsPersonalization?: boolean;
+}
