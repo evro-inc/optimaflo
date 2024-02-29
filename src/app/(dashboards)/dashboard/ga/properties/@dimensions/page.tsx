@@ -47,9 +47,11 @@ export default async function PropertyPage({
       name: cd.name,
       parameterName: cd.parameterName,
       displayName: cd.displayName,
+      scope: cd.scope,
       property: property.displayName,
-      accountId: accounts ? accounts[0].name : 'Unknown Account ID',
+      account: accounts ? accounts[0].name : 'Unknown Account ID',
       accountName: accounts ? accounts[0].displayName : 'Unknown Account Name',
+      disallowAdsPersonalization: cd.scope === 'USER' ? cd.disallowAdsPersonalization : false,
     };
   });
 

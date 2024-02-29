@@ -498,16 +498,10 @@ export async function updateGACustomDimensions(formData: CustomDimensionSchemaTy
                 return;
               }
 
-              let updateFields: string[] = [];
-              updateFields = [
-                'description',
-                'disallowAdsPersonalization',
-                'displayName',
-                'parameterName',
-                'scope',
-              ];
+              const updateFields = ['description', 'displayName'];
+
               const updateMask = updateFields.join(',');
-              const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.property}/customDimensions/${identifier.name}?updateMask=${updateMask}`;
+              const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.name}?updateMask=${updateMask}`;
 
               const headers = {
                 Authorization: `Bearer ${token[0].token}`,
@@ -804,7 +798,8 @@ export async function deleteGACustomDimensions(
           await limiter.schedule(async () => {
             // Creating promises for each property deletion
             const deletePromises = Array.from(toDeleteCustomDimensions).map(async (identifier) => {
-              const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.property}/customDimensions/${identifier.name}:archive`;
+              const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.name}:archive`;
+
               const headers = {
                 Authorization: `Bearer ${token[0].token}`,
                 'Content-Type': 'application/json',
@@ -813,13 +808,13 @@ export async function deleteGACustomDimensions(
 
               try {
                 const response = await fetch(url, {
-                  method: 'DELETE',
+                  method: 'POST',
                   headers: headers,
                 });
 
                 const parsedResponse = await response.json();
 
-                const cleanedParentId = identifier.parent.split('/')[1];
+                const cleanedParentId = identifier.name.split('/')[1];
 
                 if (response.ok) {
                   IdsProcessed.add(identifier.name);
@@ -829,7 +824,7 @@ export async function deleteGACustomDimensions(
                   toDeleteCustomDimensions.delete(identifier);
                   await prisma.ga.deleteMany({
                     where: {
-                      accountId: `${identifier.accountId}`,
+                      accountId: `${identifier.account.split('/')[1]}`,
                       propertyId: cleanedParentId,
                       userId: userId, // Ensure this matches the user ID
                     },
@@ -877,11 +872,11 @@ export async function deleteGACustomDimensions(
                 }
               } catch (error: any) {
                 // Handling exceptions during fetch
-                errors.push(`Error deleting property ${identifier.parent}: ${error.message}`);
+                errors.push(`Error deleting property ${identifier.name}: ${error.message}`);
               }
-              IdsProcessed.add(identifier.parent);
+              IdsProcessed.add(identifier.name);
               toDeleteCustomDimensions.delete(identifier);
-              return { name: identifier.parent, success: false };
+              return { name: identifier.name, success: false };
             });
 
             // Awaiting all deletion promises

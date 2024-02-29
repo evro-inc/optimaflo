@@ -87,8 +87,8 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
 
   const handleCreateClick = useCreateHookForm(
     userId,
-    'GA4Streams',
-    '/dashboard/ga/wizards/stream/create'
+    'GA4CustomDimensions',
+    '/dashboard/ga/wizards/custom-dimensions/create'
   );
 
   const onCreateButtonClick = () => {
@@ -101,8 +101,8 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
 
   const handleUpdateClick = useUpdateHookForm(
     userId,
-    'GA4Streams',
-    '/dashboard/ga/wizards/stream/update',
+    'GA4CustomDimensions',
+    '/dashboard/ga/wizards/custom-dimensions/update',
     rowSelectedCount
   );
 
@@ -126,7 +126,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     const keys = [
       `ga:accounts:userId:${userId}`,
       `ga:properties:userId:${userId}`,
-      `ga:streams:userId:${userId}`,
+      `ga:customDimensions:userId:${userId}`,
     ];
     await revalidate(keys, '/dashboard/ga/properties', userId);
   };

@@ -405,7 +405,7 @@ export type FormWizardUpdateProps = {
 };
 
 // Custom Dimension Types
-enum DimensionScope {
+export enum DimensionScope {
   DIMENSION_SCOPE_UNSPECIFIED = 'DIMENSION_SCOPE_UNSPECIFIED',
   EVENT = 'EVENT',
   USER = 'USER',
@@ -414,6 +414,7 @@ enum DimensionScope {
 
 export interface CustomDimensionType {
   name: string;
+  account: string;
   property: string;
   parameterName: string;
   displayName: string;
