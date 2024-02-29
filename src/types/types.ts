@@ -422,3 +422,40 @@ export interface CustomDimensionType {
   scope: DimensionScope;
   disallowAdsPersonalization?: boolean;
 }
+
+
+// Custom Metric Types
+enum MeasurementUnit {
+  MEASUREMENT_UNIT_UNSPECIFIED = "MEASUREMENT_UNIT_UNSPECIFIED",
+  STANDARD = "STANDARD",
+  CURRENCY = "CURRENCY",
+  FEET = "FEET",
+  METERS = "METERS",
+  KILOMETERS = "KILOMETERS",
+  MILES = "MILES",
+  MILLISECONDS = "MILLISECONDS",
+  SECONDS = "SECONDS",
+  MINUTES = "MINUTES",
+  HOURS = "HOURS"
+}
+
+enum MetricScope {
+  METRIC_SCOPE_UNSPECIFIED = "METRIC_SCOPE_UNSPECIFIED",
+  EVENT = "EVENT"
+}
+
+enum RestrictedMetricType {
+  RESTRICTED_METRIC_TYPE_UNSPECIFIED = "RESTRICTED_METRIC_TYPE_UNSPECIFIED",
+  COST_DATA = "COST_DATA",
+  REVENUE_DATA = "REVENUE_DATA"
+}
+
+interface CustomMetric {
+  name: string;
+  parameterName: string;
+  displayName: string;
+  description?: string;
+  measurementUnit: MeasurementUnit;
+  scope: MetricScope;
+  restrictedMetricType?: RestrictedMetricType[];
+}
