@@ -28,7 +28,6 @@ import {
 } from '@/src/components/ui/select';
 
 import { Input } from '@/src/components/ui/input';
-import { streamType } from '../../../properties/@streams/streamItems';
 import {
   CustomDimensionType,
   DimensionScope,
@@ -36,7 +35,6 @@ import {
   FormCreateProps,
 } from '@/src/types/types';
 import { toast } from 'sonner';
-import { createGAPropertyStreams } from '@/src/lib/fetch/dashboard/actions/ga/streams';
 import {
   selectTable,
   setErrorDetails,
@@ -160,7 +158,7 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
       addForm(); // Use your existing addForm function that calls append
     }
 
-    // Update the stream count in your state management (if necessary)
+    // Update the custom dimension count in your state management (if necessary)
     dispatch(setCount(amount));
   };
 
@@ -175,11 +173,11 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
       },
     });
 
-    const uniqueStreams = new Set(forms.map((form) => form.property));
+    const uniqueCustomDimensions = new Set(forms.map((form) => form.property));
     for (const form of forms) {
       const identifier = `${form.property}-${form.displayName}`;
-      if (uniqueStreams.has(identifier)) {
-        toast.error(`Duplicate stream found for ${form.property} - ${form.displayName}`, {
+      if (uniqueCustomDimensions.has(identifier)) {
+        toast.error(`Duplicate custom dimension found for ${form.property} - ${form.displayName}`, {
           action: {
             label: 'Close',
             onClick: () => toast.dismiss(),
@@ -188,7 +186,7 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
         dispatch(setLoading(false));
         return;
       }
-      uniqueStreams.add(identifier);
+      uniqueCustomDimensions.add(identifier);
     }
 
     try {
@@ -198,7 +196,7 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
         res.results.forEach((result) => {
           if (result.success) {
             toast.success(
-              `Stream ${result.name} created successfully. The table will update shortly.`,
+              `Custom dimension ${result.name} created successfully. The table will update shortly.`,
               {
                 action: {
                   label: 'Close',
@@ -215,7 +213,7 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
           res.results.forEach((result) => {
             if (result.notFound) {
               toast.error(
-                `Unable to create stream ${result.name}. Please check your access permissions. Any other streams created were successful.`,
+                `Unable to create custom dimension ${result.name}. Please check your access permissions. Any other custom dimensions created were successful.`,
                 {
                   action: {
                     label: 'Close',
@@ -234,7 +232,7 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
           res.results.forEach((result) => {
             if (result.limitReached) {
               toast.error(
-                `Unable to create stream ${result.name}. You have ${result.remaining} more stream(s) you can create.`,
+                `Unable to create custom dimension ${result.name}. You have ${result.remaining} more custom dimension(s) you can create.`,
                 {
                   action: {
                     label: 'Close',
@@ -248,7 +246,7 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
         }
         if (res.errors) {
           res.errors.forEach((error) => {
-            toast.error(`Unable to create stream. ${error}`, {
+            toast.error(`Unable to create custom dimension. ${error}`, {
               action: {
                 label: 'Close',
                 onClick: () => toast.dismiss(),
@@ -319,7 +317,7 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
               name="amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>How many streams do you want to create?</FormLabel>
+                  <FormLabel>How many custom dimensions do you want to create?</FormLabel>
                   <Select
                     onValueChange={(value) => {
                       handleAmountChange(value); // Call the modified handler
@@ -328,7 +326,7 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select the amount of streams you want to create." />
+                        <SelectValue placeholder="Select the amount of custom dimensions you want to create." />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -359,7 +357,7 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
               className="max-w-full md:max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-1"
             >
               <div className="max-w-full md:max-w-xl mx-auto">
-                <h1>Stream {currentStep - 1}</h1>
+                <h1>Custom Dimension {currentStep - 1}</h1>
                 <div className="mt-2 md:mt-12">
                   {/* Form */}
 
@@ -424,7 +422,8 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
                                     <FormItem>
                                       <FormLabel>Property</FormLabel>
                                       <FormDescription>
-                                        Which property do you want to create the stream in?
+                                        Which property do you want to create the custom dimension
+                                        in?
                                       </FormDescription>
                                       <FormControl>
                                         <Select
@@ -535,7 +534,7 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
                                           onValueChange={field.onChange}
                                         >
                                           <SelectTrigger>
-                                            <SelectValue placeholder="Select a stream type." />
+                                            <SelectValue placeholder="Select a custom dimension type." />
                                           </SelectTrigger>
                                           <SelectContent>
                                             <SelectGroup>

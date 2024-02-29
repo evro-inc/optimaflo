@@ -15,7 +15,7 @@ export const useDeleteHook = (selectedRows, table) => {
   const dispatch = useDispatch();
 
   const handleDelete = async () => {
-    toast('Deleting streams...', {
+    toast('Deleting custom dimensions...', {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
@@ -23,17 +23,17 @@ export const useDeleteHook = (selectedRows, table) => {
     });
 
     // Use Object.values to get the values from the selectedRows object and cast them to GA4AccountType
-    const ga4StreamToDelete = Object.values(
+    const ga4CustomDimensionToDelete = Object.values(
       selectedRows as Record<string, CustomDimensionType>
     ).map((prop) => {
       return prop;
     });
 
-    const streamDisplayNames = ga4StreamToDelete.map((stream) => stream.displayName);
+    const customDimensionDisplayNames = ga4CustomDimensionToDelete.map((cd) => cd.displayName);
 
     const response: FeatureResponse = await deleteGACustomDimensions(
-      new Set(ga4StreamToDelete),
-      streamDisplayNames
+      new Set(ga4CustomDimensionToDelete),
+      customDimensionDisplayNames
     );
 
     if (!response.success) {

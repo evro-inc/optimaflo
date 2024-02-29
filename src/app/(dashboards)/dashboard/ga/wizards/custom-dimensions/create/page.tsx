@@ -8,7 +8,7 @@ import { getSubscription } from '@/src/lib/fetch/subscriptions';
 import FormCreateCustomDimension from './form';
 import { listGACustomDimensions } from '@/src/lib/fetch/dashboard/actions/ga/dimensions';
 
-export default async function CreateStreamPage() {
+export default async function CreateCustomDimensionPage() {
   const user = await currentUser();
   if (!user) return notFound();
 

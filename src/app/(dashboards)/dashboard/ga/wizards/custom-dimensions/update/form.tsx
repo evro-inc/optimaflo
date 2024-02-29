@@ -59,7 +59,7 @@ const ErrorModal = dynamic(
 
 type Forms = z.infer<typeof FormsSchema>;
 
-const FormUpdateStream = () => {
+const FormUpdateCustomDimension = () => {
   const dispatch = useDispatch();
   const loading = useSelector((state: RootState) => state.form.loading);
   const error = useSelector((state: RootState) => state.form.error);
@@ -143,11 +143,11 @@ const FormUpdateStream = () => {
       },
     });
 
-    const uniqueStreams = new Set(forms.map((form) => form.property));
+    const uniqueCustomDimensions = new Set(forms.map((form) => form.property));
     for (const form of forms) {
       const identifier = `${form.property}-${form.displayName}`;
-      if (uniqueStreams.has(identifier)) {
-        toast.error(`Duplicate stream found for ${form.property} - ${form.displayName}`, {
+      if (uniqueCustomDimensions.has(identifier)) {
+        toast.error(`Duplicate custom dimension found for ${form.property} - ${form.displayName}`, {
           action: {
             label: 'Close',
             onClick: () => toast.dismiss(),
@@ -156,7 +156,7 @@ const FormUpdateStream = () => {
         dispatch(setLoading(false));
         return;
       }
-      uniqueStreams.add(identifier);
+      uniqueCustomDimensions.add(identifier);
     }
 
     try {
@@ -166,7 +166,7 @@ const FormUpdateStream = () => {
         res.results.forEach((result) => {
           if (result.success) {
             toast.success(
-              `Stream ${result.name} created successfully. The table will update shortly.`,
+              `Custom dimension ${result.name} created successfully. The table will update shortly.`,
               {
                 action: {
                   label: 'Close',
@@ -183,7 +183,7 @@ const FormUpdateStream = () => {
           res.results.forEach((result) => {
             if (result.notFound) {
               toast.error(
-                `Unable to create stream ${result.name}. Please check your access permissions. Any other streams created were successful.`,
+                `Unable to create custom dimension ${result.name}. Please check your access permissions. Any other custom dimensions created were successful.`,
                 {
                   action: {
                     label: 'Close',
@@ -202,7 +202,7 @@ const FormUpdateStream = () => {
           res.results.forEach((result) => {
             if (result.limitReached) {
               toast.error(
-                `Unable to create stream ${result.name}. You have ${result.remaining} more stream(s) you can create.`,
+                `Unable to create custom dimension ${result.name}. You have ${result.remaining} more custom dimension(s) you can create.`,
                 {
                   action: {
                     label: 'Close',
@@ -217,7 +217,7 @@ const FormUpdateStream = () => {
 
         if (res.errors) {
           res.errors.forEach((error) => {
-            toast.error(`Unable to create stream. ${error}`, {
+            toast.error(`Unable to create custom dimension. ${error}`, {
               action: {
                 label: 'Close',
                 onClick: () => toast.dismiss(),
@@ -269,7 +269,7 @@ const FormUpdateStream = () => {
                   <Form {...form}>
                     <form
                       onSubmit={form.handleSubmit(processForm)}
-                      id={`updateStream-${currentFormIndex}`}
+                      id={`updateCustomDimension-${currentFormIndex}`}
                       className="space-y-6"
                     >
                       {fields.length > 0 &&
@@ -387,4 +387,4 @@ const FormUpdateStream = () => {
   );
 };
 
-export default FormUpdateStream;
+export default FormUpdateCustomDimension;
