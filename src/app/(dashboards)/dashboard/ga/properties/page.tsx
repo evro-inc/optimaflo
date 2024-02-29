@@ -8,8 +8,8 @@ export default async function Page() {
   if (!userId) return notFound();
 
   return (
-    <>
-      <h1>GA4</h1>
-    </>
+    <div className="container mx-auto py-10">
+      <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">Properties</h1>
+    </div>
   );
 }
