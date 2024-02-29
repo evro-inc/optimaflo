@@ -207,7 +207,7 @@ export function DataTable<TData, TValue>({
 
   return (
     <div>
-      <h1>Properties</h1>
+      <h2 className="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0">Property Details</h2>
       <div className="flex items-center py-4">
         <Input
           placeholder="Filter property names..."

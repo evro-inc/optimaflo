@@ -139,6 +139,9 @@ export function DataTable<TData, TValue>({
 
   return (
     <>
+      <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
+        Containers
+      </h1>
       <div className="flex items-center py-4">
         <Input
           placeholder="Filter container names..."
