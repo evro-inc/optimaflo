@@ -27,19 +27,11 @@ export default async function DashboardLayout({
         <ClerkProvider>
           <body className="flex h-screen border-collapse overflow-hidden">
             {/* ========== HEADER ========== */}
-            <NavApp />
-            {/* ========== END HEADER ========== */}
 
-            {/* ========== MAIN CONTENT ========== */}
-            <SideBar />
+            {children}
+            <Toaster />
+            {/* End Page Heading */}
 
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto overflow-x-hidden pt-16 bg-secondary/10 pb-1">
-              {/* Page Heading */}
-              {children}
-              <Toaster />
-              {/* End Page Heading */}
-            </div>
             {/* End Content */}
             {/* ========== END MAIN CONTENT ========== */}
           </body>

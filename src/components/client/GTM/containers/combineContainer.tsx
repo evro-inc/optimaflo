@@ -6,7 +6,7 @@ import { LimitReached } from '../../modals/limitReached';
 import { ButtonGroup } from '../../ButtonGroup/ButtonGroup';
 import { XMarkIcon } from '@heroicons/react/24/solid';
 import { z } from 'zod';
-import { UpdateContainerSchema } from '@/src/lib/schemas/gtm/containers';
+import { FormSchema } from '@/src/lib/schemas/gtm/containers';
 import { clearSelectedRows, selectTable, setIsLimitReached } from '@/src/redux/tableSlice';
 import { selectIsLoading, setLoading } from '@/src/redux/globalSlice';
 import { useDispatch, useSelector } from 'react-redux';
@@ -15,7 +15,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { FormUpdateContainerProps, UpdateContainersResult } from '@/src/types/types';
 
 // Type for the entire form data
-type Forms = z.infer<typeof UpdateContainerSchema>;
+type Forms = z.infer<typeof FormSchema>;
 
 // Component
 const FormCombineContainer: React.FC<FormUpdateContainerProps> = ({
@@ -48,7 +48,7 @@ const FormCombineContainer: React.FC<FormUpdateContainerProps> = ({
         },
       ],
     },
-    resolver: zodResolver(UpdateContainerSchema),
+    resolver: zodResolver(FormSchema),
   });
 
   const { fields } = useFieldArray({

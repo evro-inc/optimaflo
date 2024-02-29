@@ -4,7 +4,7 @@
 import { auth } from '@clerk/nextjs'; // Importing authentication function from Clerk
 import { limiter } from '../../../../bottleneck'; // Importing rate limiter configuration
 import { gaRateLimit } from '../../../../redis/rateLimits'; // Importing rate limiting utility for Google Tag Manager
-import { UpdateAccountSchema, CreateAccountSchema } from '../../../../schemas/ga/accounts'; // Importing schema for account updates
+import { FormsSchema } from '../../../../schemas/ga/accounts'; // Importing schema for account updates
 import { z } from 'zod'; // Importing Zod for schema validation
 import { revalidatePath } from 'next/cache'; // Importing function to revalidate cached paths in Next.js
 import { currentUserOauthAccessToken } from '@/src/lib/clerk'; // Importing function to get the current user's OAuth access token
@@ -18,11 +18,11 @@ import {
 } from '@/src/utils/server';
 import { FeatureResponse, FeatureResult } from '@/src/types/types';
 import prisma from '@/src/lib/prisma';
-import { fetchGASettings, fetchGtmSettings } from '../..';
+import { fetchGASettings } from '../..';
 
 // Defining a type for form update schema using Zod
-type FormUpdateSchema = z.infer<typeof UpdateAccountSchema>;
-type FormCreateSchema = z.infer<typeof CreateAccountSchema>;
+type FormUpdateSchema = z.infer<typeof FormsSchema>;
+type FormCreateSchema = z.infer<typeof FormsSchema>;
 
 /************************************************************************************
  * List All Google Tag Manager Accounts
@@ -210,7 +210,7 @@ export async function UpdateGaAccounts(formData: FormUpdateSchema) {
               try {
                 const formDataToValidate = { forms: [accountData] };
 
-                const validationResult = UpdateAccountSchema.safeParse(formDataToValidate);
+                const validationResult = FormsSchema.safeParse(formDataToValidate);
 
                 if (!validationResult.success) {
                   let errorMessage = validationResult.error.issues
@@ -795,7 +795,7 @@ export async function createAccounts(formData: FormCreateSchema) {
               try {
                 const formDataToValidate = { forms: [accountData] };
 
-                const validationResult = CreateAccountSchema.safeParse(formDataToValidate);
+                const validationResult = FormsSchema.safeParse(formDataToValidate);
 
                 if (!validationResult.success) {
                   let errorMessage = validationResult.error.issues
@@ -834,7 +834,6 @@ export async function createAccounts(formData: FormCreateSchema) {
 
                   successfulCreations.push(accountData.displayName);
                   toCreateAccounts.delete(identifier);
-                  fetchGtmSettings(userId);
                   fetchGASettings(userId);
 
                   await prisma.tierLimit.update({

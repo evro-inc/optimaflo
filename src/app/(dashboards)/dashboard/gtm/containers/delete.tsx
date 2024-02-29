@@ -14,6 +14,8 @@ import { toast } from 'sonner';
 export const useDeleteHook = (selectedRows, table) => {
   const dispatch = useDispatch();
 
+  const selectedRowsArray = Object.values(selectedRows); // Convert selectedRows to an array
+
   const handleDelete = async () => {
     toast('Deleting containers...', {
       action: {
@@ -22,26 +24,27 @@ export const useDeleteHook = (selectedRows, table) => {
       },
     });
     const uniqueAccountIds = Array.from(
-      new Set(Object.values(selectedRows).map((rowData: any) => rowData.accountId))
+      new Set(selectedRowsArray.map((rowData: any) => rowData.accountId))
     );
 
     const deleteOperations = uniqueAccountIds.map(async (accountId) => {
-      const containersToDelete = selectedRows
-        .filter((rowData) => rowData.accountId === accountId)
-        .map((rowData) => `${rowData.accountId}-${rowData.containerId}`);
+      const containersToDelete = selectedRowsArray
+        .filter((rowData: any) => rowData.accountId === accountId)
+        .map((rowData: any) => `${rowData.accountId}-${rowData.containerId}`);
 
       const containerNames = containersToDelete.map((combinedId) => {
         const [accountId, containerId] = combinedId.split('-');
-        const container = selectedRows.find(
-          (rowData) => rowData.accountId === accountId && rowData.containerId === containerId
-        );
+        const container = selectedRowsArray.find(
+          (rowData: any) => rowData.accountId === accountId && rowData.containerId === containerId
+        ) as { name: string }; // Type assertion to specify the type of 'container'
         if (!container) {
           return undefined; // This will help identify which combinedId is problematic
         }
         return container.name;
       });
+      const validContainerNames = containerNames.filter((name) => name !== undefined) as string[];
 
-      return DeleteContainers(new Set(containersToDelete), containerNames);
+      return DeleteContainers(new Set(containersToDelete), validContainerNames);
     });
 
     // Wait for all delete operations to complete

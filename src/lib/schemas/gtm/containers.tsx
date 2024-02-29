@@ -6,12 +6,16 @@ const isValidDomainName = (domain: string) => {
   return domainRegex.test(domain);
 };
 
+export const FormCreateAmountSchema = z.object({
+  amount: z.number(),
+});
+
 // Schema for container create form data
 // Define the schema for a single form
 const SingleFormSchema = z.object({
   accountId: z.string().nonempty('Account Id is required'),
-  usageContext: z.string().nonempty('Usage Context is required'),
-  containerName: z.string().nonempty('Container Name is required'),
+  usageContext: z.array(z.string()).nonempty('Usage Context is required').or(z.string()),
+  name: z.string().nonempty('Container Name is required'),
   domainName: z
     .string()
     .optional()
@@ -42,23 +46,9 @@ const SingleFormSchema = z.object({
 });
 
 // Define the schema for the entire form with field array
-export const CreateContainerSchema = z.object({
+export const FormSchema = z.object({
   forms: z.array(SingleFormSchema),
 });
 
 // Type for the entire form data
-export type CreateContainerSchemaType = z.infer<typeof CreateContainerSchema>;
-
-// Schema for container update form data
-// Define the schema for a single update form
-const SingleUpdateFormSchema = SingleFormSchema.extend({
-  containerId: z.string().nonempty('ContainerId is required'),
-});
-
-// Define the schema for the entire update form with field array
-export const UpdateContainerSchema = z.object({
-  forms: z.array(SingleUpdateFormSchema),
-});
-
-// Type for the entire update form data
-export type UpdateContainerSchemaType = z.infer<typeof UpdateContainerSchema>;
+export type ContainerSchemaType = z.infer<typeof FormSchema>;

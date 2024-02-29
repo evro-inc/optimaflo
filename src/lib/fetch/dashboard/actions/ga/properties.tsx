@@ -15,12 +15,12 @@ import {
   tierDeleteLimit,
   tierUpdateLimit,
 } from '@/src/utils/server';
-import { fetchGASettings, fetchGtmSettings } from '../..';
-import { CreatePropertySchema, UpdatePropertySchema } from '@/src/lib/schemas/ga/properties';
+import { fetchGASettings } from '../..';
+import { FormsSchema } from '@/src/lib/schemas/ga/properties';
 
 // Define the types for the form data
-type FormCreateSchema = z.infer<typeof CreatePropertySchema>;
-type FormUpdateSchema = z.infer<typeof UpdatePropertySchema>;
+type FormCreateSchema = z.infer<typeof FormsSchema>;
+type FormUpdateSchema = z.infer<typeof FormsSchema>;
 
 /************************************************************************************
   Function to list GA properties
@@ -38,6 +38,14 @@ export async function listGAProperties() {
   const token = await currentUserOauthAccessToken(userId);
   const accessToken = token[0].token;
 
+  const cacheKey = `ga:properties:userId:${userId}`;
+  const cachedValue = await redis.get(cacheKey);
+
+  if (cachedValue) {
+    return JSON.parse(cachedValue);
+  }
+
+  await fetchGASettings(userId);
   const gaData = await prisma.user.findFirst({
     where: {
       id: userId,
@@ -46,13 +54,6 @@ export async function listGAProperties() {
       ga: true,
     },
   });
-
-  const cacheKey = `ga:properties:userId:${userId}`;
-  const cachedValue = await redis.get(cacheKey);
-
-  if (cachedValue) {
-    return JSON.parse(cachedValue);
-  }
 
   while (retries < MAX_RETRIES) {
     try {
@@ -507,7 +508,7 @@ export async function createProperties(formData: FormCreateSchema) {
               try {
                 const formDataToValidate = { forms: [propertyData] };
 
-                const validationResult = CreatePropertySchema.safeParse(formDataToValidate);
+                const validationResult = FormsSchema.safeParse(formDataToValidate);
 
                 if (!validationResult.success) {
                   let errorMessage = validationResult.error.issues
@@ -543,7 +544,6 @@ export async function createProperties(formData: FormCreateSchema) {
                 if (response.ok) {
                   successfulCreations.push(validatedContainerData.displayName);
                   toCreateProperties.delete(identifier);
-                  fetchGtmSettings(userId);
                   fetchGASettings(userId);
 
                   await prisma.tierLimit.update({
@@ -837,7 +837,7 @@ export async function updateProperties(formData: FormUpdateSchema) {
               const updateFields = ['displayName', 'timeZone', 'currencyCode', 'industryCategory'];
               const updateMask = updateFields.join(',');
 
-              const url = `https://analyticsadmin.googleapis.com/v1beta/properties/${identifier.name}?updateMask=${updateMask}`;
+              const url = `https://analyticsadmin.googleapis.com/v1beta/properties/${identifier.parent}?updateMask=${updateMask}`;
               const headers = {
                 Authorization: `Bearer ${token[0].token}`,
                 'Content-Type': 'application/json',
@@ -847,7 +847,7 @@ export async function updateProperties(formData: FormUpdateSchema) {
               try {
                 const formDataToValidate = { forms: [propertyData] };
 
-                const validationResult = UpdatePropertySchema.safeParse(formDataToValidate);
+                const validationResult = FormsSchema.safeParse(formDataToValidate);
 
                 if (!validationResult.success) {
                   let errorMessage = validationResult.error.issues
@@ -878,7 +878,8 @@ export async function updateProperties(formData: FormUpdateSchema) {
                   body: payload,
                 });
 
-                let parsedResponse;
+                const parsedResponse = await response.json();
+
                 const propertyName = propertyData.name;
 
                 if (response.ok) {
@@ -902,8 +903,6 @@ export async function updateProperties(formData: FormUpdateSchema) {
                     message: `Successfully updated property ${propertyName}`,
                   });
                 } else {
-                  parsedResponse = await response.json();
-
                   const errorResult = await handleApiResponseError(
                     response,
                     parsedResponse,
@@ -1177,7 +1176,7 @@ export async function updateDataRetentionSettings(formData: FormUpdateSchema) {
             try {
               const formDataToValidate = { forms: [propertyData] };
 
-              const validationResult = UpdatePropertySchema.safeParse(formDataToValidate);
+              const validationResult = FormsSchema.safeParse(formDataToValidate);
 
               if (!validationResult.success) {
                 let errorMessage = validationResult.error.issues
@@ -1470,7 +1469,7 @@ export async function acknowledgeUserDataCollection(selectedRows) {
               try {
                 const rowDataToValidate = { forms: [propertyData] };
 
-                const validationResult = UpdatePropertySchema.safeParse(rowDataToValidate);
+                const validationResult = FormsSchema.safeParse(rowDataToValidate);
 
                 if (!validationResult.success) {
                   let errorMessage = validationResult.error.issues

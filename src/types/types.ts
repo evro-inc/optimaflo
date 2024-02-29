@@ -1,4 +1,5 @@
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager';
+import { boolean } from 'joi';
 import Stripe from 'stripe';
 
 export interface PageMeta {
@@ -107,7 +108,9 @@ export type ContainerType = {
   name: string;
   publicId: string;
   accountName: string;
-  usageContext: string[];
+  usageContext: [string, ...string[]];
+  domainName?: string;
+  notes?: string;
 };
 
 export type UpdateAccountResult = {
@@ -200,11 +203,12 @@ export type FormCreateWorkspaceProps = {
 };
 
 export type FormCreateProps = {
-  showOptions: boolean;
-  onClose: () => void;
+  showOptions?: boolean;
+  onClose?: () => void;
   table: any;
   accounts?: any;
   properties?: any;
+  tierLimits?: any;
 };
 
 export type WorkspaceType = {
@@ -213,6 +217,7 @@ export type WorkspaceType = {
   workspaceId: string;
   name: string;
   containerName: string;
+  description: string;
 };
 
 export type WorkspaceData = {
@@ -229,6 +234,8 @@ export interface FeatureResult {
   notFound?: boolean;
   limitReached?: boolean;
   remaining?: number;
+  message?: string;
+  errors?: string[];
 }
 
 export interface FeatureResponse {
@@ -242,7 +249,7 @@ export interface FeatureResponse {
   notFoundError?: boolean;
   revalidationSuccess?: boolean;
 }
-export type Account = {
+export type GTMAccountType = {
   accountId: string;
   name: string;
 };
@@ -272,9 +279,13 @@ export type GA4PropertyType = {
   displayName: string;
   timeZone: string;
   currencyCode: string;
-  serviceLevel: string;
-  account: string;
+  serviceLevel?: string;
+  account?: string;
   propertyType: string;
+  industryCategory: string;
+  retention: string;
+  resetOnNewActivity: boolean;
+  acknowledgment: boolean;
 };
 
 export type GA4StreamType = {
@@ -297,3 +308,117 @@ export type GA4StreamType = {
     bundleId: string;
   };
 };
+
+type TierLimit = {
+  id: string;
+  subscriptionId: string;
+  createLimit: number;
+  createUsage: number;
+  updateLimit: number;
+  updateUsage?: number;
+  deleteLimit?: number;
+  deleteUsage?: number;
+  productId: string;
+  featureId: string;
+  Feature: {
+    id: string;
+    name: string;
+    description: string;
+  };
+  Subscription: {
+    id: string;
+    subId: string;
+    userId: string;
+    status: string;
+    metadata: null;
+    priceId: string;
+    productId: string;
+    quantity: number;
+    cancelAtPeriodEnd: boolean;
+    created: Date;
+    currentPeriodStart: Date;
+    currentPeriodEnd: Date;
+    endedAt: null;
+    cancelAt: null;
+    canceledAt: null;
+    trialStart: null;
+    trialEnd: null;
+  };
+};
+
+type GA4Account = {
+  name: string;
+  displayName: string;
+  regionCode: string;
+};
+
+type Property = {
+  name: string;
+  parent: string;
+  createTime: string;
+  updateTime: string;
+  displayName: string;
+  industryCategory: string;
+  timeZone: string;
+  currencyCode: string;
+  serviceLevel: string;
+  account: string;
+  propertyType: string;
+  dataRetentionSettings: {
+    name: string;
+    eventDataRetention: string;
+    resetUserDataOnNewActivity?: boolean;
+  };
+};
+
+type Stream = {
+  name: string;
+  type: string;
+  displayName: string;
+  createTime: string;
+  updateTime: string;
+  webStreamData?: {
+    measurementId: string;
+    defaultUri?: string;
+  };
+  androidAppStreamData?: {
+    firebaseAppId: string;
+    packageName: string;
+  };
+  iosAppStreamData?: {
+    firebaseAppId: string;
+    bundleId: string;
+  };
+  typeDisplayName: string;
+  parent: string;
+  property: string;
+  accountId: string;
+  accountName: string;
+};
+
+// Now, define the FormWizardUpdateProps type using the above types
+export type FormWizardUpdateProps = {
+  tierLimits: TierLimit[];
+  properties: Property[];
+  table: Stream[];
+  accounts: GA4Account[];
+};
+
+// Custom Dimension Types
+export enum DimensionScope {
+  DIMENSION_SCOPE_UNSPECIFIED = 'DIMENSION_SCOPE_UNSPECIFIED',
+  EVENT = 'EVENT',
+  USER = 'USER',
+  ITEM = 'ITEM',
+}
+
+export interface CustomDimensionType {
+  name: string;
+  account: string;
+  property: string;
+  parameterName: string;
+  displayName: string;
+  description?: string;
+  scope: DimensionScope;
+  disallowAdsPersonalization?: boolean;
+}

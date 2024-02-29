@@ -36,13 +36,14 @@ import { revalidate, tierCreateLimit } from '@/src/utils/server';
 import { ReloadIcon } from '@radix-ui/react-icons';
 
 import { useDispatch } from 'react-redux';
-import AccountForms from '@/src/app/(dashboards)/dashboard/ga/accounts/forms';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
 import { useDeleteHook } from './delete';
 import { notFound } from 'next/navigation';
-import { setIsLimitReached } from '@/src/redux/tableSlice';
+import { setIsLimitReached, setSelectedRows } from '@/src/redux/tableSlice';
 import { toggleCreate, toggleUpdate } from '@/src/redux/globalSlice';
 import { useCreateHookForm, useUpdateHookForm } from '@/src/hooks/useCRUD';
+import { useTransition } from 'react';
+import { LimitReached } from '@/src/components/client/modals/limitReached';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -51,9 +52,10 @@ interface DataTableProps<TData, TValue> {
 
 export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData, TValue>) {
   const dispatch = useDispatch();
-
+  const [isCreatePending, startCreateTransition] = useTransition();
+  const [isUpdatePending, startUpdateTransition] = useTransition();
   const { user } = useUser();
-  const userId = user?.id;
+  const userId = user?.id as string;
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
 
@@ -80,23 +82,54 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     },
   });
 
-  const selectedRowsData = table.getSelectedRowModel().rows.map((row) => row.original);
+  const selectedRowData = table.getSelectedRowModel().rows.reduce((acc, row) => {
+    acc[row.id] = row.original;
+    return acc;
+  }, {});
+  const rowSelectedCount = Object.keys(selectedRowData).length;
 
-  const handleCreateClick = useCreateHookForm(userId, 'GA4Accounts');
-  const handleUpdateClick = useUpdateHookForm(userId, 'GA4Accounts');
-  const handleDelete = useDeleteHook(selectedRowsData, table);
+  const handleCreateClick = useCreateHookForm(
+    userId,
+    'GA4Accounts',
+    '/dashboard/ga/wizards/accounts/create'
+  );
+
+  const onCreateButtonClick = () => {
+    startCreateTransition(() => {
+      handleCreateClick().catch((error) => {
+        throw new Error(error);
+      });
+    });
+  };
+
+  const handleUpdateClick = useUpdateHookForm(
+    userId,
+    'GA4Accounts',
+    '/dashboard/ga/wizards/accounts/update',
+    rowSelectedCount
+  );
+
+  const onUpdateButtonClick = () => {
+    startUpdateTransition(() => {
+      handleUpdateClick().catch((error) => {
+        throw new Error(error);
+      });
+    });
+  };
+  const handleDelete = useDeleteHook(selectedRowData, table);
 
   const refreshAllCache = async () => {
-    // Assuming you want to refresh cache for each workspace
-    const keys = [`ga:accounts:userId:${userId}`, `ga:properties:userId:${userId}`];
-    await revalidate(keys, '/dashboard/ga/accounts', userId);
     toast.info('Updating our systems. This may take a minute or two to update on screen.', {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
       },
     });
+    const keys = [`ga:accounts:userId:${userId}`, `ga:properties:userId:${userId}`];
+    await revalidate(keys, '/dashboard/ga/accounts', userId);
   };
+
+  dispatch(setSelectedRows(selectedRowData)); // Update the selected rows in Redux
 
   return (
     <div>
@@ -111,13 +144,15 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
         <div className="ml-auto space-x-4">
           <Button onClick={refreshAllCache}>Refresh</Button>
 
-          {/* <Button onClick={handleCreateClick}>Create</Button> */}
+          {/* <Button disabled={isCreatePending} onClick={onCreateButtonClick}>
+            {isCreatePending ? 'Creating...' : 'Create'}
+          </Button> */}
 
           <Button
-            disabled={Object.keys(table.getState().rowSelection).length === 0}
-            onClick={handleUpdateClick}
+            disabled={Object.keys(table.getState().rowSelection).length === 0 || isUpdatePending}
+            onClick={onUpdateButtonClick}
           >
-            Update
+            {isUpdatePending ? 'Loading...' : 'Update'}
           </Button>
 
           <ButtonDelete
@@ -209,7 +244,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
           Next
         </Button>
       </div>
-      <AccountForms selectedRows={selectedRowsData} accounts={data} table={table} />
+      <LimitReached />
     </div>
   );
 }

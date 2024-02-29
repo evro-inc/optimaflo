@@ -33,11 +33,13 @@ import {
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
 import { revalidate } from '@/src/utils/server';
-
-import ContainerForms from '@/src/app/(dashboards)/dashboard/gtm/containers/forms';
 import { useDeleteHook } from './delete';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
 import { useCreateHookForm, useUpdateHookForm } from '@/src/hooks/useCRUD';
+import { useDispatch } from 'react-redux';
+import { useTransition } from 'react';
+import { setSelectedRows } from '@/src/redux/tableSlice';
+import { LimitReached } from '@/src/components/client/modals/limitReached';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -51,14 +53,17 @@ export function DataTable<TData, TValue>({
   accounts,
 }: DataTableProps<TData, TValue>) {
   const { user } = useUser();
-
-  const userId = user?.id;
+  const userId = user?.id as string;
 
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
 
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
+
+  const dispatch = useDispatch();
+  const [isCreatePending, startCreateTransition] = useTransition();
+  const [isUpdatePending, startUpdateTransition] = useTransition();
 
   const table = useReactTable({
     data,
@@ -81,25 +86,56 @@ export function DataTable<TData, TValue>({
   });
 
   const refreshAllCache = async () => {
-    // Assuming you want to refresh cache for each workspace
-    const keys = [
-      `gtm:accounts:userId:${userId}`,
-      `gtm:containers:userId:${userId}`,
-      `gtm:workspaces:userId:${userId}`,
-    ];
-    await revalidate(keys, '/dashboard/gtm/containers', userId);
     toast.info('Updating our systems. This may take a minute or two to update on screen.', {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
       },
     });
+    const keys = [
+      `gtm:accounts:userId:${userId}`,
+      `gtm:containers:userId:${userId}`,
+      `gtm:workspaces:userId:${userId}`,
+    ];
+    await revalidate(keys, '/dashboard/gtm/containers', userId);
   };
-  const selectedRowsData = table.getSelectedRowModel().rows.map((row) => row.original);
+  const selectedRowData = table.getSelectedRowModel().rows.reduce((acc, row) => {
+    acc[row.id] = row.original;
+    return acc;
+  }, {});
+  const rowSelectedCount = Object.keys(selectedRowData).length;
 
-  const handleDelete = useDeleteHook(selectedRowsData, table);
-  const handleCreateClick = useCreateHookForm(userId, 'GTMContainer');
-  const handleUpdateClick = useUpdateHookForm(userId, 'GTMContainer');
+  const handleDelete = useDeleteHook(selectedRowData, table);
+  const handleCreateClick = useCreateHookForm(
+    userId,
+    'GTMContainer',
+    '/dashboard/gtm/wizards/containers/create'
+  );
+
+  const onCreateButtonClick = () => {
+    startCreateTransition(() => {
+      handleCreateClick().catch((error) => {
+        throw new Error(error);
+      });
+    });
+  };
+
+  const handleUpdateClick = useUpdateHookForm(
+    userId,
+    'GTMContainer',
+    '/dashboard/gtm/wizards/containers/update',
+    rowSelectedCount
+  );
+
+  const onUpdateButtonClick = () => {
+    startUpdateTransition(() => {
+      handleUpdateClick().catch((error) => {
+        throw new Error(error);
+      });
+    });
+  };
+
+  dispatch(setSelectedRows(selectedRowData));
 
   return (
     <>
@@ -114,13 +150,15 @@ export function DataTable<TData, TValue>({
         <div className="ml-auto space-x-4">
           <Button onClick={refreshAllCache}>Refresh</Button>
 
-          <Button onClick={handleCreateClick}>Create</Button>
+          <Button disabled={isCreatePending} onClick={onCreateButtonClick}>
+            {isCreatePending ? 'Loading...' : 'Create'}
+          </Button>
 
           <Button
-            disabled={Object.keys(table.getState().rowSelection).length === 0}
-            onClick={handleUpdateClick}
+            disabled={Object.keys(table.getState().rowSelection).length === 0 || isUpdatePending}
+            onClick={onUpdateButtonClick}
           >
-            Update
+            {isUpdatePending ? 'Loading...' : 'Update'}
           </Button>
 
           <ButtonDelete
@@ -212,7 +250,7 @@ export function DataTable<TData, TValue>({
           Next
         </Button>
       </div>
-      <ContainerForms accounts={accounts} selectedRows={selectedRowsData} table={table} />
+      <LimitReached />
     </>
   );
 }

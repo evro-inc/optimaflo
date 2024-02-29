@@ -1,6 +1,6 @@
 'use server';
 import { revalidatePath } from 'next/cache';
-import { CreateContainerSchema, UpdateContainerSchema } from '@/src/lib/schemas/gtm/containers';
+import { FormSchema } from '@/src/lib/schemas/gtm/containers';
 import z from 'zod';
 import { auth } from '@clerk/nextjs';
 import { gtmRateLimit } from '../../../../redis/rateLimits';
@@ -16,10 +16,10 @@ import {
   tierDeleteLimit,
   tierUpdateLimit,
 } from '@/src/utils/server';
-import { fetchGASettings, fetchGtmSettings } from '../..';
+import { fetchGtmSettings } from '../..';
 
 // Define the types for the form data
-type FormCreateSchema = z.infer<typeof CreateContainerSchema>;
+type Schema = z.infer<typeof FormSchema>;
 
 /************************************************************************************
   Function to list GTM containers
@@ -37,6 +37,14 @@ export async function listGtmContainers() {
   const token = await currentUserOauthAccessToken(userId);
   const accessToken = token[0].token;
 
+  const cacheKey = `gtm:containers:userId:${userId}`;
+  const cachedValue = await redis.get(cacheKey);
+
+  if (cachedValue) {
+    return JSON.parse(cachedValue);
+  }
+
+  await fetchGtmSettings(userId);
   const gtmData = await prisma.user.findFirst({
     where: {
       id: userId,
@@ -45,13 +53,6 @@ export async function listGtmContainers() {
       gtm: true,
     },
   });
-
-  const cacheKey = `gtm:containers:userId:${userId}`;
-  const cachedValue = await redis.get(cacheKey);
-
-  if (cachedValue) {
-    return JSON.parse(cachedValue);
-  }
 
   while (retries < MAX_RETRIES) {
     try {
@@ -362,7 +363,7 @@ export async function DeleteContainers(
 /************************************************************************************
   Create a single container or multiple containers
 ************************************************************************************/
-export async function CreateContainers(formData: FormCreateSchema) {
+export async function CreateContainers(formData: Schema) {
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
@@ -376,9 +377,7 @@ export async function CreateContainers(formData: FormCreateSchema) {
   const notFoundLimit: { id: string; name: string }[] = [];
 
   // Refactor: Use string identifiers in the set
-  const toCreateContainers = new Set(
-    formData.forms.map((cd) => `${cd.accountId}-${cd.containerName}`)
-  );
+  const toCreateContainers = new Set(formData.forms.map((cd) => `${cd.accountId}-${cd.name}`));
 
   const tierLimitResponse: any = await tierCreateLimit(userId, 'GTMContainer');
   const limit = Number(tierLimitResponse.createLimit);
@@ -427,7 +426,7 @@ export async function CreateContainers(formData: FormCreateSchema) {
   }
 
   let permissionDenied = false;
-  const containerNames = formData.forms.map((cd) => cd.containerName);
+  const containerNames = formData.forms.map((cd) => cd.name);
 
   if (toCreateContainers.size <= availableCreateUsage) {
     while (retries < MAX_RETRIES && toCreateContainers.size > 0 && !permissionDenied) {
@@ -438,7 +437,7 @@ export async function CreateContainers(formData: FormCreateSchema) {
             const createPromises = Array.from(toCreateContainers).map(async (identifier) => {
               const [accountId, containerName] = identifier.split('-');
               const containerData = formData.forms.find(
-                (cd) => cd.accountId === accountId && cd.containerName === containerName
+                (cd) => cd.accountId === accountId && cd.name === containerName
               );
 
               if (!containerData) {
@@ -457,7 +456,7 @@ export async function CreateContainers(formData: FormCreateSchema) {
               try {
                 const formDataToValidate = { forms: [containerData] };
 
-                const validationResult = CreateContainerSchema.safeParse(formDataToValidate);
+                const validationResult = FormSchema.safeParse(formDataToValidate);
 
                 if (!validationResult.success) {
                   let errorMessage = validationResult.error.issues
@@ -493,7 +492,6 @@ export async function CreateContainers(formData: FormCreateSchema) {
                   successfulCreations.push(containerName);
                   toCreateContainers.delete(identifier);
                   fetchGtmSettings(userId);
-                  fetchGASettings(userId);
 
                   await prisma.tierLimit.update({
                     where: { id: tierLimitResponse.id },
@@ -656,7 +654,7 @@ export async function CreateContainers(formData: FormCreateSchema) {
     const containerId = form.containerId ? [form.containerId] : []; // Provide an empty array as a fallback
     return {
       id: containerId, // Ensure id is an array of strings
-      name: [form.containerName], // Wrap the string in an array
+      name: [form.name], // Wrap the string in an array
       success: true, // or false, depending on the actual result
       // Include `notFound` if applicable
       notFound: false, // Set this to the appropriate value based on your logic
@@ -678,7 +676,7 @@ export async function CreateContainers(formData: FormCreateSchema) {
 /************************************************************************************
   Create a single container or multiple containers
 ************************************************************************************/
-export async function UpdateContainers(formData: FormCreateSchema) {
+export async function UpdateContainers(formData: Schema) {
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
@@ -694,9 +692,7 @@ export async function UpdateContainers(formData: FormCreateSchema) {
   let accountIdsForCache = new Set<string>();
 
   // Refactor: Use string identifiers in the set
-  const toUpdateContainers = new Set(
-    formData.forms.map((cd) => `${cd.accountId}-${cd.containerName}`)
-  );
+  const toUpdateContainers = new Set(formData.forms.map((cd) => `${cd.accountId}-${cd.name}`));
 
   const tierLimitResponse: any = await tierUpdateLimit(userId, 'GTMContainer');
   const limit = Number(tierLimitResponse.updateLimit);
@@ -745,7 +741,7 @@ export async function UpdateContainers(formData: FormCreateSchema) {
   }
 
   let permissionDenied = false;
-  const containerNames = formData.forms.map((cd) => cd.containerName);
+  const containerNames = formData.forms.map((cd) => cd.name);
 
   if (toUpdateContainers.size <= availableUpdateUsage) {
     while (retries < MAX_RETRIES && toUpdateContainers.size > 0 && !permissionDenied) {
@@ -757,7 +753,7 @@ export async function UpdateContainers(formData: FormCreateSchema) {
               const [accountId, containerName] = identifier.split('-');
               accountIdsForCache.add(accountId);
               const containerData = formData.forms.find(
-                (cd) => cd.accountId === accountId && cd.containerName === containerName
+                (cd) => cd.accountId === accountId && cd.name === containerName
               );
 
               if (!containerData) {
@@ -776,7 +772,7 @@ export async function UpdateContainers(formData: FormCreateSchema) {
               try {
                 const formDataToValidate = { forms: [containerData] };
 
-                const validationResult = UpdateContainerSchema.safeParse(formDataToValidate);
+                const validationResult = FormSchema.safeParse(formDataToValidate);
 
                 if (!validationResult.success) {
                   let errorMessage = validationResult.error.issues
@@ -975,7 +971,7 @@ export async function UpdateContainers(formData: FormCreateSchema) {
     const containerId = form.containerId ? [form.containerId] : []; // Provide an empty array as a fallback
     return {
       id: containerId, // Ensure id is an array of strings
-      name: [form.containerName], // Wrap the string in an array
+      name: [form.name], // Wrap the string in an array
       success: true, // or false, depending on the actual result
       // Include `notFound` if applicable
       notFound: false, // Set this to the appropriate value based on your logic
@@ -1017,7 +1013,7 @@ export async function UpdateContainers(formData: FormCreateSchema) {
       return Object.fromEntries(Object.keys(fd).map((key) => [key, fd[key]]));
     });
 
-    const validationResult = UpdateContainerSchema.safeParse({
+    const validationResult = FormSchema.safeParse({
       forms: plainDataArray,
     });
 

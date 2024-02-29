@@ -8,15 +8,10 @@ const SingleFormSchema = z.object({
 });
 
 // Define the schema for the entire update form with field array
-export const UpdateAccountSchema = z.object({
-  forms: z.array(SingleFormSchema),
-});
 
-export const CreateAccountSchema = z.object({
+export const FormsSchema = z.object({
   forms: z.array(SingleFormSchema),
 });
 
 // Type for the entire update form data
-export type UpdateAccountSchemaType = z.infer<typeof UpdateAccountSchema>;
-
-export type CreateContainerSchemaType = z.infer<typeof CreateAccountSchema>;
+export type FormsSchemaType = z.infer<typeof FormsSchema>;
