@@ -7,7 +7,7 @@ import { redis } from '@/src/lib/redis/cache';
 import { notFound } from 'next/navigation';
 import { currentUserOauthAccessToken } from '@/src/lib/clerk';
 import prisma from '@/src/lib/prisma';
-import { FeatureResult, FeatureResponse, CustomDimensionType } from '@/src/types/types';
+import { FeatureResult, FeatureResponse, CustomMetric } from '@/src/types/types';
 import {
   handleApiResponseError,
   tierCreateLimit,
@@ -15,12 +15,12 @@ import {
   tierUpdateLimit,
 } from '@/src/utils/server';
 import { fetchGASettings } from '../..';
-import { CustomDimensionSchemaType, FormsSchema } from '@/src/lib/schemas/ga/dimensions';
+import { CustomMetricSchemaType, FormsSchema } from '@/src/lib/schemas/ga/metrics';
 
 /************************************************************************************
-  Function to list GA customDimensions
+  Function to list GA customMetrics
 ************************************************************************************/
-export async function listGACustomDimensions() {
+export async function listGACustomMetrics() {
   let retries = 0;
   const MAX_RETRIES = 3;
   let delay = 1000;
@@ -32,7 +32,7 @@ export async function listGACustomDimensions() {
   const token = await currentUserOauthAccessToken(userId);
   const accessToken = token[0].token;
 
-  const cacheKey = `ga:customDimensions:userId:${userId}`;
+  const cacheKey = `ga:customMetrics:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
 
   if (cachedValue) {
@@ -61,7 +61,7 @@ export async function listGACustomDimensions() {
 
           const urls = uniquePropertyIds.map(
             (propertyId) =>
-              `https://analyticsadmin.googleapis.com/v1beta/properties/${propertyId}/customDimensions`
+              `https://analyticsadmin.googleapis.com/v1beta/properties/${propertyId}/customMetrics`
           );
 
           const headers = {
@@ -105,9 +105,9 @@ export async function listGACustomDimensions() {
 }
 
 /************************************************************************************
-  Create a single property or multiple customDimensions
+  Create a single property or multiple customMetrics
 ************************************************************************************/
-export async function createGACustomDimensions(formData: CustomDimensionSchemaType) {
+export async function createGACustomMetrics(formData: CustomMetricSchemaType) {
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
@@ -119,18 +119,18 @@ export async function createGACustomDimensions(formData: CustomDimensionSchemaTy
   const successfulCreations: string[] = [];
   const featureLimitReached: string[] = [];
   const notFoundLimit: { id: string; name: string }[] = [];
-  const cacheKey = `ga:customDimensions:userId:${userId}`;
+  const cacheKey = `ga:customMetrics:userId:${userId}`;
 
   // Refactor: Use string identifiers in the set
-  const toCreateCustomDimensions = new Set(formData.forms.map((cd) => cd));
+  const toCreateCustomMetrics = new Set(formData.forms.map((cm) => cm));
 
-  const tierLimitResponse: any = await tierCreateLimit(userId, 'GA4CustomDimensions');
+  const tierLimitResponse: any = await tierCreateLimit(userId, 'GA4CustomMetrics');
   const limit = Number(tierLimitResponse.createLimit);
   const createUsage = Number(tierLimitResponse.createUsage);
   const availableCreateUsage = limit - createUsage;
 
   const creationResults: {
-    customDimensionName: string;
+    customMetricName: string;
     success: boolean;
     message?: string;
   }[] = [];
@@ -140,19 +140,19 @@ export async function createGACustomDimensions(formData: CustomDimensionSchemaTy
     return {
       success: false,
       limitReached: true,
-      message: 'Feature limit reached for creating custom dimension',
+      message: 'Feature limit reached for creating custom metric',
       results: [],
     };
   }
 
-  if (toCreateCustomDimensions.size > availableCreateUsage) {
-    const attemptedCreations = Array.from(toCreateCustomDimensions).map((identifier) => {
+  if (toCreateCustomMetrics.size > availableCreateUsage) {
+    const attemptedCreations = Array.from(toCreateCustomMetrics).map((identifier) => {
       const displayName = identifier.displayName;
       return {
         id: [], // No property ID since creation did not happen
         name: displayName, // Include the property name from the identifier
         success: false,
-        message: `Creation limit reached. Cannot create custom dimension "${displayName}".`,
+        message: `Creation limit reached. Cannot create custom metric "${displayName}".`,
         // remaining creation limit
         remaining: availableCreateUsage,
         limitReached: true,
@@ -161,9 +161,9 @@ export async function createGACustomDimensions(formData: CustomDimensionSchemaTy
     return {
       success: false,
       features: [],
-      message: `Cannot create ${toCreateCustomDimensions.size} custom dimensions as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
+      message: `Cannot create ${toCreateCustomMetrics.size} custom metrics as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
       errors: [
-        `Cannot create ${toCreateCustomDimensions.size} custom dimensions as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
+        `Cannot create ${toCreateCustomMetrics.size} custom metrics as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
       ],
       results: attemptedCreations,
       limitReached: true,
@@ -171,22 +171,22 @@ export async function createGACustomDimensions(formData: CustomDimensionSchemaTy
   }
 
   let permissionDenied = false;
-  const customDimensionNames = formData.forms.map((cd) => cd.displayName);
+  const customMetricNames = formData.forms.map((cm) => cm.displayName);
 
-  if (toCreateCustomDimensions.size <= availableCreateUsage) {
-    while (retries < MAX_RETRIES && toCreateCustomDimensions.size > 0 && !permissionDenied) {
+  if (toCreateCustomMetrics.size <= availableCreateUsage) {
+    while (retries < MAX_RETRIES && toCreateCustomMetrics.size > 0 && !permissionDenied) {
       try {
         const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
         if (remaining > 0) {
           await limiter.schedule(async () => {
-            const createPromises = Array.from(toCreateCustomDimensions).map(async (identifier) => {
+            const createPromises = Array.from(toCreateCustomMetrics).map(async (identifier) => {
               if (!identifier) {
-                errors.push(`Custom dimension data not found for ${identifier}`);
-                toCreateCustomDimensions.delete(identifier);
+                errors.push(`Custom metric data not found for ${identifier}`);
+                toCreateCustomMetrics.delete(identifier);
                 return;
               }
 
-              const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.property}/customDimensions`;
+              const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.property}/customMetrics`;
 
               const headers = {
                 Authorization: `Bearer ${token[0].token}`,
@@ -204,7 +204,7 @@ export async function createGACustomDimensions(formData: CustomDimensionSchemaTy
                     .map((issue) => `${issue.path[0]}: ${issue.message}`)
                     .join('. ');
                   errors.push(errorMessage);
-                  toCreateCustomDimensions.delete(identifier);
+                  toCreateCustomMetrics.delete(identifier);
                   return {
                     identifier,
                     success: false,
@@ -221,7 +221,8 @@ export async function createGACustomDimensions(formData: CustomDimensionSchemaTy
                   displayName: validatedContainerData.displayName,
                   description: validatedContainerData.description,
                   scope: validatedContainerData.scope,
-                  disallowAdsPersonalization: validatedContainerData.disallowAdsPersonalization,
+                  measurementUnit: validatedContainerData.measurementUnit,
+                  restrictedMetricType: validatedContainerData.restrictedMetricType,
                 };
 
                 // Now, requestBody is prepared with the right structure based on the type
@@ -235,7 +236,7 @@ export async function createGACustomDimensions(formData: CustomDimensionSchemaTy
 
                 if (response.ok) {
                   successfulCreations.push(validatedContainerData.displayName);
-                  toCreateCustomDimensions.delete(identifier);
+                  toCreateCustomMetrics.delete(identifier);
                   fetchGASettings(userId);
 
                   await prisma.tierLimit.update({
@@ -243,7 +244,7 @@ export async function createGACustomDimensions(formData: CustomDimensionSchemaTy
                     data: { createUsage: { increment: 1 } },
                   });
                   creationResults.push({
-                    customDimensionName: validatedContainerData.displayName,
+                    customMetricName: validatedContainerData.displayName,
                     success: true,
                     message: `Successfully created property ${validatedContainerData.displayName}`,
                   });
@@ -251,7 +252,7 @@ export async function createGACustomDimensions(formData: CustomDimensionSchemaTy
                   const errorResult = await handleApiResponseError(
                     response,
                     parsedResponse,
-                    'customDimension',
+                    'customMetric',
                     [validatedContainerData.displayName]
                   );
 
@@ -274,10 +275,10 @@ export async function createGACustomDimensions(formData: CustomDimensionSchemaTy
                     );
                   }
 
-                  toCreateCustomDimensions.delete(identifier);
+                  toCreateCustomMetrics.delete(identifier);
                   permissionDenied = errorResult ? true : permissionDenied;
                   creationResults.push({
-                    customDimensionName: validatedContainerData.displayName,
+                    customMetricName: validatedContainerData.displayName,
                     success: false,
                     message: errorResult?.message,
                   });
@@ -286,9 +287,9 @@ export async function createGACustomDimensions(formData: CustomDimensionSchemaTy
                 errors.push(
                   `Exception creating property ${identifier.displayName}: ${error.message}`
                 );
-                toCreateCustomDimensions.delete(identifier);
+                toCreateCustomMetrics.delete(identifier);
                 creationResults.push({
-                  customDimensionName: identifier.displayName,
+                  customMetricName: identifier.displayName,
                   success: false,
                   message: error.message,
                 });
@@ -319,17 +320,17 @@ export async function createGACustomDimensions(formData: CustomDimensionSchemaTy
               success: false,
               limitReached: true,
               notFoundError: false,
-              message: `Feature limit reached for custom dimensions: ${featureLimitReached.join(
+              message: `Feature limit reached for custom metrics: ${featureLimitReached.join(
                 ', '
               )}`,
               results: featureLimitReached.map((displayName) => {
                 // Find the name associated with the propertyId
-                const customDimensionName =
-                  customDimensionNames.find((displayName) => displayName.includes(displayName)) ||
+                const customMetricName =
+                  customMetricNames.find((displayName) => displayName.includes(displayName)) ||
                   'Unknown';
                 return {
-                  id: [customDimensionName], // Ensure id is an array
-                  name: [customDimensionName], // Ensure name is an array, match by propertyId or default to 'Unknown'
+                  id: [customMetricName], // Ensure id is an array
+                  name: [customMetricName], // Ensure name is an array, match by propertyId or default to 'Unknown'
                   success: false,
                   featureLimitReached: true,
                 };
@@ -341,7 +342,7 @@ export async function createGACustomDimensions(formData: CustomDimensionSchemaTy
             break;
           }
 
-          if (toCreateCustomDimensions.size === 0) {
+          if (toCreateCustomMetrics.size === 0) {
             break;
           }
         } else {
@@ -379,8 +380,8 @@ export async function createGACustomDimensions(formData: CustomDimensionSchemaTy
       success: false,
       features: successfulCreations,
       errors: errors,
-      results: successfulCreations.map((customDimensionName) => ({
-        customDimensionName,
+      results: successfulCreations.map((customMetricName) => ({
+        customMetricName,
         success: true,
       })),
       message: errors.join(', '),
@@ -395,9 +396,9 @@ export async function createGACustomDimensions(formData: CustomDimensionSchemaTy
   // Map over formData.forms to create the results array
   const results: FeatureResult[] = formData.forms.map((form) => {
     // Ensure that form.propertyId is defined before adding it to the array
-    const customDimensionId = form.displayName ? [form.displayName] : []; // Provide an empty array as a fallback
+    const customMetricId = form.displayName ? [form.displayName] : []; // Provide an empty array as a fallback
     return {
-      id: customDimensionId, // Ensure id is an array of strings
+      id: customMetricId, // Ensure id is an array of strings
       name: [form.displayName], // Wrap the string in an array
       success: true, // or false, depending on the actual result
       // Include `notFound` if applicable
@@ -411,16 +412,16 @@ export async function createGACustomDimensions(formData: CustomDimensionSchemaTy
     features: [], // Populate with actual property IDs if applicable
     errors: [], // Populate with actual error messages if applicable
     limitReached: false, // Set based on actual limit status
-    message: 'Custom dimensions created successfully', // Customize the message as needed
+    message: 'Custom metrics created successfully', // Customize the message as needed
     results: results, // Use the correctly typed results
     notFoundError: false, // Set based on actual not found status
   };
 }
 
 /************************************************************************************
-  Update a single property or multiple custom dimensions
+  Update a single property or multiple custom metrics
 ************************************************************************************/
-export async function updateGACustomDimensions(formData: CustomDimensionSchemaType) {
+export async function updateGACustomMetrics(formData: CustomMetricSchemaType) {
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
@@ -434,15 +435,15 @@ export async function updateGACustomDimensions(formData: CustomDimensionSchemaTy
   const notFoundLimit: { id: string; name: string }[] = [];
 
   // Refactor: Use string identifiers in the set
-  const toUpdateCustomDimensions = new Set(formData.forms.map((cd) => cd));
+  const toUpdateCustomMetrics = new Set(formData.forms.map((cm) => cm));
 
-  const tierLimitResponse: any = await tierUpdateLimit(userId, 'GA4CustomDimensions');
+  const tierLimitResponse: any = await tierUpdateLimit(userId, 'GA4CustomMetrics');
   const limit = Number(tierLimitResponse.updateLimit);
   const updateUsage = Number(tierLimitResponse.updateUsage);
   const availableUpdateUsage = limit - updateUsage;
 
   const creationResults: {
-    customDimensionName: string;
+    customMetricName: string;
     success: boolean;
     message?: string;
   }[] = [];
@@ -452,19 +453,19 @@ export async function updateGACustomDimensions(formData: CustomDimensionSchemaTy
     return {
       success: false,
       limitReached: true,
-      message: 'Feature limit reached for creating Custom Dimensions',
+      message: 'Feature limit reached for creating Custom Metrics',
       results: [],
     };
   }
 
-  if (toUpdateCustomDimensions.size > availableUpdateUsage) {
-    const attemptedCreations = Array.from(toUpdateCustomDimensions).map((identifier) => {
+  if (toUpdateCustomMetrics.size > availableUpdateUsage) {
+    const attemptedCreations = Array.from(toUpdateCustomMetrics).map((identifier) => {
       const displayName = identifier.displayName;
       return {
         id: [], // No property ID since creation did not happen
         name: displayName, // Include the property name from the identifier
         success: false,
-        message: `Creation limit reached. Cannot update custom dimension "${displayName}".`,
+        message: `Creation limit reached. Cannot update custom metric "${displayName}".`,
         // remaining creation limit
         remaining: availableUpdateUsage,
         limitReached: true,
@@ -473,9 +474,9 @@ export async function updateGACustomDimensions(formData: CustomDimensionSchemaTy
     return {
       success: false,
       features: [],
-      message: `Cannot update ${toUpdateCustomDimensions.size} custom dimensions as it exceeds the available limit. You have ${availableUpdateUsage} more creation(s) available.`,
+      message: `Cannot update ${toUpdateCustomMetrics.size} custom metrics as it exceeds the available limit. You have ${availableUpdateUsage} more creation(s) available.`,
       errors: [
-        `Cannot update ${toUpdateCustomDimensions.size} custom dimensions as it exceeds the available limit. You have ${availableUpdateUsage} more creation(s) available.`,
+        `Cannot update ${toUpdateCustomMetrics.size} custom metrics as it exceeds the available limit. You have ${availableUpdateUsage} more creation(s) available.`,
       ],
       results: attemptedCreations,
       limitReached: true,
@@ -483,22 +484,27 @@ export async function updateGACustomDimensions(formData: CustomDimensionSchemaTy
   }
 
   let permissionDenied = false;
-  const customDimensionNames = formData.forms.map((cd) => cd.displayName);
+  const customMetricNames = formData.forms.map((cm) => cm.displayName);
 
-  if (toUpdateCustomDimensions.size <= availableUpdateUsage) {
-    while (retries < MAX_RETRIES && toUpdateCustomDimensions.size > 0 && !permissionDenied) {
+  if (toUpdateCustomMetrics.size <= availableUpdateUsage) {
+    while (retries < MAX_RETRIES && toUpdateCustomMetrics.size > 0 && !permissionDenied) {
       try {
         const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
         if (remaining > 0) {
           await limiter.schedule(async () => {
-            const updatePromises = Array.from(toUpdateCustomDimensions).map(async (identifier) => {
+            const updatePromises = Array.from(toUpdateCustomMetrics).map(async (identifier) => {
               if (!identifier) {
-                errors.push(`Custom dimensions data not found for ${identifier}`);
-                toUpdateCustomDimensions.delete(identifier);
+                errors.push(`Custom metrics data not found for ${identifier}`);
+                toUpdateCustomMetrics.delete(identifier);
                 return;
               }
 
-              const updateFields = ['description', 'displayName'];
+              const updateFields = [
+                'description',
+                'displayName',
+                'measurementUnit',
+                'restrictedMetricType',
+              ];
 
               const updateMask = updateFields.join(',');
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.name}?updateMask=${updateMask}`;
@@ -519,7 +525,7 @@ export async function updateGACustomDimensions(formData: CustomDimensionSchemaTy
                     .map((issue) => `${issue.path[0]}: ${issue.message}`)
                     .join('. ');
                   errors.push(errorMessage);
-                  toUpdateCustomDimensions.delete(identifier);
+                  toUpdateCustomMetrics.delete(identifier);
                   return {
                     identifier,
                     success: false,
@@ -536,7 +542,8 @@ export async function updateGACustomDimensions(formData: CustomDimensionSchemaTy
                   displayName: validatedContainerData.displayName,
                   description: validatedContainerData.description,
                   scope: validatedContainerData.scope,
-                  disallowAdsPersonalization: validatedContainerData.disallowAdsPersonalization,
+                  measurementUnit: validatedContainerData.measurementUnit,
+                  restrictedMetricType: validatedContainerData.restrictedMetricType,
                 };
 
                 // Now, requestBody is prepared with the right structure based on the type
@@ -550,14 +557,14 @@ export async function updateGACustomDimensions(formData: CustomDimensionSchemaTy
 
                 if (response.ok) {
                   successfulCreations.push(validatedContainerData.displayName);
-                  toUpdateCustomDimensions.delete(identifier);
+                  toUpdateCustomMetrics.delete(identifier);
 
                   await prisma.tierLimit.update({
                     where: { id: tierLimitResponse.id },
                     data: { updateUsage: { increment: 1 } },
                   });
                   creationResults.push({
-                    customDimensionName: validatedContainerData.displayName,
+                    customMetricName: validatedContainerData.displayName,
                     success: true,
                     message: `Successfully updated property ${validatedContainerData.displayName}`,
                   });
@@ -565,7 +572,7 @@ export async function updateGACustomDimensions(formData: CustomDimensionSchemaTy
                   const errorResult = await handleApiResponseError(
                     response,
                     parsedResponse,
-                    'property',
+                    'customMetrics',
                     [validatedContainerData.displayName]
                   );
 
@@ -588,10 +595,10 @@ export async function updateGACustomDimensions(formData: CustomDimensionSchemaTy
                     );
                   }
 
-                  toUpdateCustomDimensions.delete(identifier);
+                  toUpdateCustomMetrics.delete(identifier);
                   permissionDenied = errorResult ? true : permissionDenied;
                   creationResults.push({
-                    customDimensionName: validatedContainerData.displayName,
+                    customMetricName: validatedContainerData.displayName,
                     success: false,
                     message: errorResult?.message,
                   });
@@ -600,9 +607,9 @@ export async function updateGACustomDimensions(formData: CustomDimensionSchemaTy
                 errors.push(
                   `Exception creating property ${identifier.displayName}: ${error.message}`
                 );
-                toUpdateCustomDimensions.delete(identifier);
+                toUpdateCustomMetrics.delete(identifier);
                 creationResults.push({
-                  customDimensionName: identifier.displayName,
+                  customMetricName: identifier.displayName,
                   success: false,
                   message: error.message,
                 });
@@ -633,17 +640,17 @@ export async function updateGACustomDimensions(formData: CustomDimensionSchemaTy
               success: false,
               limitReached: true,
               notFoundError: false,
-              message: `Feature limit reached for custom dimensions: ${featureLimitReached.join(
+              message: `Feature limit reached for custom metrics: ${featureLimitReached.join(
                 ', '
               )}`,
               results: featureLimitReached.map((displayName) => {
                 // Find the name associated with the propertyId
-                const customDimensionName =
-                  customDimensionNames.find((displayName) => displayName.includes(displayName)) ||
+                const customMetricName =
+                  customMetricNames.find((displayName) => displayName.includes(displayName)) ||
                   'Unknown';
                 return {
-                  id: [customDimensionName], // Ensure id is an array
-                  name: [customDimensionName], // Ensure name is an array, match by propertyId or default to 'Unknown'
+                  id: [customMetricName], // Ensure id is an array
+                  name: [customMetricName], // Ensure name is an array, match by propertyId or default to 'Unknown'
                   success: false,
                   featureLimitReached: true,
                 };
@@ -655,7 +662,7 @@ export async function updateGACustomDimensions(formData: CustomDimensionSchemaTy
             break;
           }
 
-          if (toUpdateCustomDimensions.size === 0) {
+          if (toUpdateCustomMetrics.size === 0) {
             break;
           }
         } else {
@@ -687,8 +694,8 @@ export async function updateGACustomDimensions(formData: CustomDimensionSchemaTy
       success: false,
       features: successfulCreations,
       errors: errors,
-      results: successfulCreations.map((customDimensionName) => ({
-        customDimensionName,
+      results: successfulCreations.map((customMetricName) => ({
+        customMetricName,
         success: true,
       })),
       message: errors.join(', '),
@@ -696,7 +703,7 @@ export async function updateGACustomDimensions(formData: CustomDimensionSchemaTy
   }
 
   if (successfulCreations.length > 0) {
-    const cacheKey = `ga:customDimensions:userId:${userId}`;
+    const cacheKey = `ga:customMetrics:userId:${userId}`;
 
     await redis.del(cacheKey);
     revalidatePath(`/dashboard/ga/properties`);
@@ -705,9 +712,9 @@ export async function updateGACustomDimensions(formData: CustomDimensionSchemaTy
   // Map over formData.forms to update the results array
   const results: FeatureResult[] = formData.forms.map((form) => {
     // Ensure that form.propertyId is defined before adding it to the array
-    const customDimensionId = form.displayName ? [form.displayName] : []; // Provide an empty array as a fallback
+    const customMetricId = form.displayName ? [form.displayName] : []; // Provide an empty array as a fallback
     return {
-      id: customDimensionId, // Ensure id is an array of strings
+      id: customMetricId, // Ensure id is an array of strings
       name: [form.displayName], // Wrap the string in an array
       success: true, // or false, depending on the actual result
       // Include `notFound` if applicable
@@ -721,18 +728,18 @@ export async function updateGACustomDimensions(formData: CustomDimensionSchemaTy
     features: [], // Populate with actual property IDs if applicable
     errors: [], // Populate with actual error messages if applicable
     limitReached: false, // Set based on actual limit status
-    message: 'Custom Dimension updated successfully', // Customize the message as needed
+    message: 'Custom Metric updated successfully', // Customize the message as needed
     results: results, // Use the correctly typed results
     notFoundError: false, // Set based on actual not found status
   };
 }
 
 /************************************************************************************
-  Delete a single property or multiple custom dimensions
+  Delete a single property or multiple custom metrics
 ************************************************************************************/
-export async function deleteGACustomDimensions(
-  selectedCustomDimensions: Set<CustomDimensionType>,
-  customDimensionNames: string[]
+export async function deleteGACustomMetrics(
+  selectedCustomMetrics: Set<CustomMetric>,
+  customMetricNames: string[]
 ): Promise<FeatureResponse> {
   // Initialization of retry mechanism
   let retries = 0;
@@ -746,16 +753,16 @@ export async function deleteGACustomDimensions(
   }> = [];
   const featureLimitReached: { name: string }[] = [];
   const notFoundLimit: { name: string }[] = [];
-  const toDeleteCustomDimensions = new Set<CustomDimensionType>(selectedCustomDimensions);
+  const toDeleteCustomMetrics = new Set<CustomMetric>(selectedCustomMetrics);
   // Authenticating user and getting user ID
   const { userId } = await auth();
   // If user ID is not found, return a 'not found' error
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
-  const cacheKey = `ga:customDimensions:userId:${userId}`;
+  const cacheKey = `ga:customMetrics:userId:${userId}`;
 
   // Check for feature limit using Prisma ORM
-  const tierLimitResponse: any = await tierDeleteLimit(userId, 'GA4CustomDimensions');
+  const tierLimitResponse: any = await tierDeleteLimit(userId, 'GA4CustomMetrics');
   const limit = Number(tierLimitResponse.deleteLimit);
   const deleteUsage = Number(tierLimitResponse.deleteUsage);
   const availableDeleteUsage = limit - deleteUsage;
@@ -767,29 +774,29 @@ export async function deleteGACustomDimensions(
       success: false,
       limitReached: true,
       errors: [],
-      message: 'Feature limit reached for Deleting Custom Dimensions',
+      message: 'Feature limit reached for Deleting Custom Metrics',
       results: [],
     };
   }
 
-  if (toDeleteCustomDimensions.size > availableDeleteUsage) {
+  if (toDeleteCustomMetrics.size > availableDeleteUsage) {
     // If the deletion request exceeds the available limit
     return {
       success: false,
       features: [],
       errors: [
-        `Cannot delete ${toDeleteCustomDimensions.size} custom dimensions as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
+        `Cannot delete ${toDeleteCustomMetrics.size} custom metrics as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
       ],
       results: [],
       limitReached: true,
-      message: `Cannot delete ${toDeleteCustomDimensions.size} custom dimensions as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
+      message: `Cannot delete ${toDeleteCustomMetrics.size} custom metrics as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
     };
   }
   let permissionDenied = false;
 
-  if (toDeleteCustomDimensions.size <= availableDeleteUsage) {
+  if (toDeleteCustomMetrics.size <= availableDeleteUsage) {
     // Retry loop for deletion requests
-    while (retries < MAX_RETRIES && toDeleteCustomDimensions.size > 0 && !permissionDenied) {
+    while (retries < MAX_RETRIES && toDeleteCustomMetrics.size > 0 && !permissionDenied) {
       try {
         // Enforcing rate limit
         const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
@@ -797,7 +804,7 @@ export async function deleteGACustomDimensions(
         if (remaining > 0) {
           await limiter.schedule(async () => {
             // Creating promises for each property deletion
-            const deletePromises = Array.from(toDeleteCustomDimensions).map(async (identifier) => {
+            const deletePromises = Array.from(toDeleteCustomMetrics).map(async (identifier) => {
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.name}:archive`;
 
               const headers = {
@@ -821,7 +828,7 @@ export async function deleteGACustomDimensions(
                   successfulDeletions.push({
                     name: identifier.name,
                   });
-                  toDeleteCustomDimensions.delete(identifier);
+                  toDeleteCustomMetrics.delete(identifier);
                   await prisma.ga.deleteMany({
                     where: {
                       accountId: `${identifier.account.split('/')[1]}`,
@@ -843,8 +850,8 @@ export async function deleteGACustomDimensions(
                   const errorResult = await handleApiResponseError(
                     response,
                     parsedResponse,
-                    'GA4CustomDimensions',
-                    customDimensionNames
+                    'GA4CustomMetrics',
+                    customMetricNames
                   );
 
                   if (errorResult) {
@@ -861,12 +868,10 @@ export async function deleteGACustomDimensions(
                         name: identifier.name,
                       });
                     } else {
-                      errors.push(
-                        `An unknown error occurred for property ${customDimensionNames}.`
-                      );
+                      errors.push(`An unknown error occurred for property ${customMetricNames}.`);
                     }
 
-                    toDeleteCustomDimensions.delete(identifier);
+                    toDeleteCustomMetrics.delete(identifier);
                     permissionDenied = errorResult ? true : permissionDenied;
                   }
                 }
@@ -875,7 +880,7 @@ export async function deleteGACustomDimensions(
                 errors.push(`Error deleting property ${identifier.name}: ${error.message}`);
               }
               IdsProcessed.add(identifier.name);
-              toDeleteCustomDimensions.delete(identifier);
+              toDeleteCustomMetrics.delete(identifier);
               return { name: identifier.name, success: false };
             });
 
@@ -888,13 +893,13 @@ export async function deleteGACustomDimensions(
               success: false,
               limitReached: false,
               notFoundError: true, // Set the notFoundError flag
-              message: `Could not delete custom dimension. Please check your permissions. Property Name: 
-              ${customDimensionNames.find((name) =>
+              message: `Could not delete custom metric. Please check your permissions. Property Name: 
+              ${customMetricNames.find((name) =>
                 name.includes(name)
-              )}. All other custom dimensions were successfully deleted.`,
+              )}. All other custom metrics were successfully deleted.`,
               results: notFoundLimit.map(({ name }) => ({
                 id: [name], // Combine accountId and propertyId into a single array of strings
-                name: [customDimensionNames.find((name) => name.includes(name)) || 'Unknown'], // Ensure name is an array, match by propertyId or default to 'Unknown'
+                name: [customMetricNames.find((name) => name.includes(name)) || 'Unknown'], // Ensure name is an array, match by propertyId or default to 'Unknown'
                 success: false,
                 notFound: true,
               })),
@@ -905,20 +910,20 @@ export async function deleteGACustomDimensions(
               success: false,
               limitReached: true,
               notFoundError: false,
-              message: `Feature limit reached for custom dimensions: ${featureLimitReached.join(
+              message: `Feature limit reached for custom metrics: ${featureLimitReached.join(
                 ', '
               )}`,
               results: featureLimitReached.map(({ name }) => ({
                 id: [name], // Ensure id is an array
-                name: [customDimensionNames.find((name) => name.includes(name)) || 'Unknown'], // Ensure name is an array, match by accountId or default to 'Unknown'
+                name: [customMetricNames.find((name) => name.includes(name)) || 'Unknown'], // Ensure name is an array, match by accountId or default to 'Unknown'
                 success: false,
                 featureLimitReached: true,
               })),
             };
           }
           // Update tier limit usage as before (not shown in code snippet)
-          if (successfulDeletions.length === selectedCustomDimensions.size) {
-            break; // Exit loop if all custom dimensions are processed successfully
+          if (successfulDeletions.length === selectedCustomMetrics.size) {
+            break; // Exit loop if all custom metrics are processed successfully
           }
           if (permissionDenied) {
             break; // Exit the loop if a permission error was encountered
@@ -959,7 +964,7 @@ export async function deleteGACustomDimensions(
       errors: errors,
       results: successfulDeletions.map(({ name }) => ({
         id: [name], // Ensure id is an array
-        name: [customDimensionNames.find((name) => name.includes(name)) || 'Unknown'], // Ensure name is an array and provide a default value
+        name: [customMetricNames.find((name) => name.includes(name)) || 'Unknown'], // Ensure name is an array and provide a default value
         success: true,
       })),
       // Add a general message if needed
@@ -976,13 +981,13 @@ export async function deleteGACustomDimensions(
   // Returning the result of the deletion process
   return {
     success: errors.length === 0,
-    message: `Successfully deleted ${successfulDeletions.length} custom dimension(s)`,
+    message: `Successfully deleted ${successfulDeletions.length} custom metric(s)`,
     features: successfulDeletions.map(({ name }) => `${name}`),
     errors: errors,
     notFoundError: notFoundLimit.length > 0,
     results: successfulDeletions.map(({ name }) => ({
       id: [name], // Ensure id is an array
-      name: [customDimensionNames.find((name) => name.includes(name)) || 'Unknown'], // Ensure name is an array
+      name: [customMetricNames.find((name) => name.includes(name)) || 'Unknown'], // Ensure name is an array
       success: true,
     })),
   };

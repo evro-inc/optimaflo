@@ -87,8 +87,8 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
 
   const handleCreateClick = useCreateHookForm(
     userId,
-    'GA4CustomDimensions',
-    '/dashboard/ga/wizards/custom-dimensions/create'
+    'GA4CustomMetrics',
+    '/dashboard/ga/wizards/custom-metrics/create'
   );
 
   const onCreateButtonClick = () => {
@@ -101,8 +101,8 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
 
   const handleUpdateClick = useUpdateHookForm(
     userId,
-    'GA4CustomDimensions',
-    '/dashboard/ga/wizards/custom-dimensions/update',
+    'GA4CustomMetrics',
+    '/dashboard/ga/wizards/custom-metrics/update',
     rowSelectedCount
   );
 
@@ -126,7 +126,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     const keys = [
       `ga:accounts:userId:${userId}`,
       `ga:properties:userId:${userId}`,
-      `ga:customDimensions:userId:${userId}`,
+      `ga:customMetrics:userId:${userId}`,
     ];
     await revalidate(keys, '/dashboard/ga/properties', userId);
   };
@@ -135,7 +135,9 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
 
   return (
     <div>
-      <h2 className="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0">Custom Dimensions</h2>
+      <h2 className="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0">
+        Custom Metrics
+      </h2>
       <div className="flex items-center py-4">
         <Input
           placeholder="Filter property names..."

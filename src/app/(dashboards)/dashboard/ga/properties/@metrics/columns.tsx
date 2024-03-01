@@ -7,15 +7,17 @@ import { ArrowUpDown } from 'lucide-react';
 
 // This type is used to define the shape of our data.
 // You can use a Zod schema here if you want.
-export type CustomDimension = {
+export type CustomMetric = {
   id: string;
   select: boolean;
   displayName: string;
-  customDimensionType: string;
-  customDimensionId: string;
+  parameterName: string;
+  scope: string;
+  property: string;
+  accountName: string;
 };
 
-export const columns: ColumnDef<CustomDimension>[] = [
+export const columns: ColumnDef<CustomMetric>[] = [
   {
     id: 'select',
     header: ({ table }) => (

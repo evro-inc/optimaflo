@@ -1,13 +1,13 @@
 'use client';
 
-import { deleteGACustomDimensions } from '@/src/lib/fetch/dashboard/actions/ga/dimensions';
+import { deleteGACustomMetrics } from '@/src/lib/fetch/dashboard/actions/ga/metrics';
 import {
   clearSelectedRows,
   setErrorDetails,
   setIsLimitReached,
   setNotFoundError,
 } from '@/src/redux/tableSlice';
-import { FeatureResponse, CustomDimensionType } from '@/src/types/types';
+import { FeatureResponse, CustomMetric } from '@/src/types/types';
 import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
 
@@ -24,14 +24,14 @@ export const useDeleteHook = (selectedRows, table) => {
 
     // Use Object.values to get the values from the selectedRows object and cast them to GA4AccountType
     const ga4CustomDimensionToDelete = Object.values(
-      selectedRows as Record<string, CustomDimensionType>
+      selectedRows as Record<string, CustomMetric>
     ).map((prop) => {
       return prop;
     });
 
     const customDimensionDisplayNames = ga4CustomDimensionToDelete.map((cd) => cd.displayName);
 
-    const response: FeatureResponse = await deleteGACustomDimensions(
+    const response: FeatureResponse = await deleteGACustomMetrics(
       new Set(ga4CustomDimensionToDelete),
       customDimensionDisplayNames
     );

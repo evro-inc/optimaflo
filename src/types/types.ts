@@ -423,35 +423,36 @@ export interface CustomDimensionType {
   disallowAdsPersonalization?: boolean;
 }
 
-
 // Custom Metric Types
-enum MeasurementUnit {
-  MEASUREMENT_UNIT_UNSPECIFIED = "MEASUREMENT_UNIT_UNSPECIFIED",
-  STANDARD = "STANDARD",
-  CURRENCY = "CURRENCY",
-  FEET = "FEET",
-  METERS = "METERS",
-  KILOMETERS = "KILOMETERS",
-  MILES = "MILES",
-  MILLISECONDS = "MILLISECONDS",
-  SECONDS = "SECONDS",
-  MINUTES = "MINUTES",
-  HOURS = "HOURS"
+export enum MeasurementUnit {
+  MEASUREMENT_UNIT_UNSPECIFIED = 'MEASUREMENT_UNIT_UNSPECIFIED',
+  STANDARD = 'STANDARD',
+  CURRENCY = 'CURRENCY',
+  FEET = 'FEET',
+  METERS = 'METERS',
+  KILOMETERS = 'KILOMETERS',
+  MILES = 'MILES',
+  MILLISECONDS = 'MILLISECONDS',
+  SECONDS = 'SECONDS',
+  MINUTES = 'MINUTES',
+  HOURS = 'HOURS',
 }
 
-enum MetricScope {
-  METRIC_SCOPE_UNSPECIFIED = "METRIC_SCOPE_UNSPECIFIED",
-  EVENT = "EVENT"
+export enum MetricScope {
+  METRIC_SCOPE_UNSPECIFIED = 'METRIC_SCOPE_UNSPECIFIED',
+  EVENT = 'EVENT',
 }
 
-enum RestrictedMetricType {
-  RESTRICTED_METRIC_TYPE_UNSPECIFIED = "RESTRICTED_METRIC_TYPE_UNSPECIFIED",
-  COST_DATA = "COST_DATA",
-  REVENUE_DATA = "REVENUE_DATA"
+export enum RestrictedMetricType {
+  RESTRICTED_METRIC_TYPE_UNSPECIFIED = 'RESTRICTED_METRIC_TYPE_UNSPECIFIED',
+  COST_DATA = 'COST_DATA',
+  REVENUE_DATA = 'REVENUE_DATA',
 }
 
-interface CustomMetric {
+export interface CustomMetric {
   name: string;
+  account: string;
+  property: string;
   parameterName: string;
   displayName: string;
   description?: string;

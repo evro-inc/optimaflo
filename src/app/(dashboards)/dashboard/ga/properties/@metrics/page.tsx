@@ -4,11 +4,11 @@ import { auth } from '@clerk/nextjs';
 import { Skeleton } from '@/src/components/ui/skeleton';
 import { columns } from './columns';
 import { listGAProperties } from '@/src/lib/fetch/dashboard/actions/ga/properties';
-import { listGACustomDimensions } from '@/src/lib/fetch/dashboard/actions/ga/dimensions';
+import { listGACustomMetrics } from '@/src/lib/fetch/dashboard/actions/ga/metrics';
 import { DataTable } from './table';
 import { listGaAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
 
-export default async function PropertyPage({
+export default async function CustomMetricPage({
   searchParams,
 }: {
   searchParams?: {
@@ -23,35 +23,33 @@ export default async function PropertyPage({
 
   const accountData = await listGaAccounts();
   const propertyData = await listGAProperties();
-  const customDimensions = await listGACustomDimensions();
+  const customMetrics = await listGACustomMetrics();
 
-  const [accounts, properties, cd] = await Promise.all([
-    accountData,
-    propertyData,
-    customDimensions,
-  ]);
+  const [accounts, properties, cm] = await Promise.all([accountData, propertyData, customMetrics]);
 
   const flatAccounts = accounts.flat();
   const flatProperties = properties.flat();
-  const flattenedCustomDimensions = cd
-    .filter((item) => item.customDimensions) // Filter out objects without customDimensions
-    .flatMap((item) => item.customDimensions);
+  const flattenedCustomMetrics = cm
+    .filter((item) => item.customMetrics) // Filter out objects without customMetrics
+    .flatMap((item) => item.customMetrics);
 
-  const combinedData = flattenedCustomDimensions.map((cd) => {
-    const propertyId = cd.name.split('/')[1];
+  const combinedData = flattenedCustomMetrics.map((cm) => {
+    const propertyId = cm.name.split('/')[1];
     const property = flatProperties.find((p) => p.name.includes(propertyId));
     const accounts = flatAccounts.filter((a) => a.name === property?.parent);
 
     return {
-      ...cd,
-      name: cd.name,
-      parameterName: cd.parameterName,
-      displayName: cd.displayName,
-      scope: cd.scope,
+      ...cm,
+      name: cm.name,
+      parameterName: cm.parameterName,
+      displayName: cm.displayName,
+      scope: cm.scope,
+      measurementUnit: cm.measurementUnit,
       property: property.displayName,
+      restrictedMetricType: cm.restrictedMetricType,
       account: accounts ? accounts[0].name : 'Unknown Account ID',
       accountName: accounts ? accounts[0].displayName : 'Unknown Account Name',
-      disallowAdsPersonalization: cd.scope === 'USER' ? cd.disallowAdsPersonalization : false,
+      disallowAdsPersonalization: cm.scope === 'USER' ? cm.disallowAdsPersonalization : false,
     };
   });
 
