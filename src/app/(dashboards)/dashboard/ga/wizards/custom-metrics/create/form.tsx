@@ -6,7 +6,7 @@ import { setLoading, incrementStep, decrementStep, setCount } from '@/redux/form
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { FormCreateAmountSchema, FormsSchema } from '@/src/lib/schemas/ga/dimensions';
+import { FormCreateAmountSchema, FormsSchema } from '@/src/lib/schemas/ga/metrics';
 import { Button } from '@/src/components/ui/button';
 import {
   Form,
@@ -29,10 +29,12 @@ import {
 
 import { Input } from '@/src/components/ui/input';
 import {
-  CustomDimensionType,
-  DimensionScope,
+  CustomMetric,
   FeatureResponse,
   FormCreateProps,
+  MeasurementUnit,
+  MetricScope,
+  RestrictedMetricType,
 } from '@/src/types/types';
 import { toast } from 'sonner';
 import {
@@ -44,9 +46,9 @@ import {
 import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { createGACustomDimensions } from '@/src/lib/fetch/dashboard/actions/ga/dimensions';
-import { DimensionScopeType } from '../../../properties/@dimensions/dimensionItems';
-import { Switch } from '@/src/components/ui/switch';
+import { createGACustomMetrics } from '@/src/lib/fetch/dashboard/actions/ga/metrics';
+import { MeasurementUnitType, RestrictedMetric } from '../../../properties/@metrics/items';
+import { Checkbox } from '@/src/components/ui/checkbox';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -64,7 +66,7 @@ const ErrorModal = dynamic(
 
 type Forms = z.infer<typeof FormsSchema>;
 
-const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
+const FormCreateCustomMetric: React.FC<FormCreateProps> = ({
   tierLimits,
   properties = [],
   table = [],
@@ -79,9 +81,8 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
   const router = useRouter();
 
   const foundTierLimit = tierLimits.find(
-    (subscription) => subscription.Feature?.name === 'GA4CustomDimensions'
+    (subscription) => subscription.Feature?.name === 'GA4CustomMetrics'
   );
-  const currentFormIndex = currentStep - 2;
 
   const createLimit = foundTierLimit?.createLimit;
   const createUsage = foundTierLimit?.createUsage;
@@ -98,13 +99,13 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
     })
     .filter((account) => account.properties.length > 0);
 
-  const formDataDefaults: CustomDimensionType = {
+  const formDataDefaults: CustomMetric = {
     name: '',
     parameterName: '',
     displayName: '',
     description: '',
-    scope: DimensionScope.EVENT,
-    disallowAdsPersonalization: true,
+    measurementUnit: MeasurementUnit.MEASUREMENT_UNIT_UNSPECIFIED,
+    scope: MetricScope.EVENT,
     account: accountsWithProperties[0].name,
     property: table[0].parent,
   };
@@ -143,8 +144,8 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
   const addForm = () => {
     append(formDataDefaults);
   };
-
-  const scopeSelection = form.watch(`forms.${currentFormIndex}.scope`);
+  const currentFormIndex = currentStep - 2;
+  const measurementUnit = form.watch(`forms.${currentFormIndex}.measurementUnit`);
 
   // Adjust handleAmountSubmit or create a new function to handle selection change
   const handleAmountChange = (selectedAmount) => {
@@ -161,7 +162,7 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
       addForm(); // Use your existing addForm function that calls append
     }
 
-    // Update the custom dimension count in your state management (if necessary)
+    // Update the custom metric count in your state management (if necessary)
     dispatch(setCount(amount));
   };
 
@@ -169,18 +170,18 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
     const { forms } = data;
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
-    toast('Creating custom dimensions...', {
+    toast('Creating custom metrics...', {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
       },
     });
 
-    const uniqueCustomDimensions = new Set(forms.map((form) => form.property));
+    const uniqueCustomMetrics = new Set(forms.map((form) => form.property));
     for (const form of forms) {
       const identifier = `${form.property}-${form.displayName}`;
-      if (uniqueCustomDimensions.has(identifier)) {
-        toast.error(`Duplicate custom dimension found for ${form.property} - ${form.displayName}`, {
+      if (uniqueCustomMetrics.has(identifier)) {
+        toast.error(`Duplicate custom metric found for ${form.property} - ${form.displayName}`, {
           action: {
             label: 'Close',
             onClick: () => toast.dismiss(),
@@ -189,17 +190,17 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
         dispatch(setLoading(false));
         return;
       }
-      uniqueCustomDimensions.add(identifier);
+      uniqueCustomMetrics.add(identifier);
     }
 
     try {
-      const res = (await createGACustomDimensions({ forms })) as FeatureResponse;
+      const res = (await createGACustomMetrics({ forms })) as FeatureResponse;
 
       if (res.success) {
         res.results.forEach((result) => {
           if (result.success) {
             toast.success(
-              `Custom dimension ${result.name} created successfully. The table will update shortly.`,
+              `Custom metric ${result.name} created successfully. The table will update shortly.`,
               {
                 action: {
                   label: 'Close',
@@ -216,7 +217,7 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
           res.results.forEach((result) => {
             if (result.notFound) {
               toast.error(
-                `Unable to create custom dimension ${result.name}. Please check your access permissions. Any other custom dimensions created were successful.`,
+                `Unable to create custom metric ${result.name}. Please check your access permissions. Any other custom metrics created were successful.`,
                 {
                   action: {
                     label: 'Close',
@@ -235,7 +236,7 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
           res.results.forEach((result) => {
             if (result.limitReached) {
               toast.error(
-                `Unable to create custom dimension ${result.name}. You have ${result.remaining} more custom dimension(s) you can create.`,
+                `Unable to create custom metric ${result.name}. You have ${result.remaining} more custom metric(s) you can create.`,
                 {
                   action: {
                     label: 'Close',
@@ -249,7 +250,7 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
         }
         if (res.errors) {
           res.errors.forEach((error) => {
-            toast.error(`Unable to create custom dimension. ${error}`, {
+            toast.error(`Unable to create custom metric. ${error}`, {
               action: {
                 label: 'Close',
                 onClick: () => toast.dismiss(),
@@ -290,9 +291,10 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
       `${currentFormPath}.parameterName`,
       `${currentFormPath}.description`,
       `${currentFormPath}.scope`,
-      `${currentFormPath}.disallowAdsPersonalization`,
       `${currentFormPath}.account`,
       `${currentFormPath}.property`,
+      `${currentFormPath}.restrictedMetricType`,
+      `${currentFormPath}.measurementUnit`,
     ];
 
     // Now, trigger validation for these fields
@@ -319,7 +321,7 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
               name="amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>How many custom dimensions do you want to create?</FormLabel>
+                  <FormLabel>How many custom metrics do you want to create?</FormLabel>
                   <Select
                     onValueChange={(value) => {
                       handleAmountChange(value); // Call the modified handler
@@ -328,7 +330,7 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select the amount of custom dimensions you want to create." />
+                        <SelectValue placeholder="Select the amount of custom metrics you want to create." />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -359,14 +361,14 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
               className="max-w-full md:max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-1"
             >
               <div className="max-w-full md:max-w-xl mx-auto">
-                <h1>Custom Dimension {currentStep - 1}</h1>
+                <h1>Custom Metric {currentStep - 1}</h1>
                 <div className="mt-2 md:mt-12">
                   {/* Form */}
 
                   <Form {...form}>
                     <form
                       onSubmit={form.handleSubmit(processForm)}
-                      id={`createStream-${currentStep - 1}`}
+                      id={`createMetric-${currentStep - 1}`}
                       className="space-y-6"
                     >
                       {(() => {
@@ -424,8 +426,7 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
                                     <FormItem>
                                       <FormLabel>Property</FormLabel>
                                       <FormDescription>
-                                        Which property do you want to create the custom dimension
-                                        in?
+                                        Which property do you want to create the custom metric in?
                                       </FormDescription>
                                       <FormControl>
                                         <Select
@@ -473,9 +474,9 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
                                   name={`forms.${currentStep - 2}.displayName`}
                                   render={({ field }) => (
                                     <FormItem>
-                                      <FormLabel>New Custom Dimension Name</FormLabel>
+                                      <FormLabel>New Custom Metric Name</FormLabel>
                                       <FormDescription>
-                                        This is the custom dimension name you want to create.
+                                        This is the custom metric name you want to create.
                                       </FormDescription>
                                       <FormControl>
                                         <Input
@@ -499,7 +500,7 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
                                     <FormItem>
                                       <FormLabel>Parameter Name</FormLabel>
                                       <FormDescription>
-                                        Tagging parameter name for this custom dimension.
+                                        Tagging parameter name for this custom metric.
                                       </FormDescription>
                                       <FormControl>
                                         <Input
@@ -522,16 +523,18 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
                               <div className="w-full md:basis-1/2">
                                 <FormField
                                   control={form.control}
-                                  name={`forms.${currentStep - 2}.scope`}
+                                  name={`forms.${currentStep - 2}.measurementUnit`}
                                   render={({ field }) => (
                                     <FormItem>
-                                      <FormLabel>Scope</FormLabel>
+                                      <FormLabel>Measurement</FormLabel>
                                       <FormDescription>
-                                        The scope of this dimension.
+                                        The measurement of this metric.
                                       </FormDescription>
                                       <FormControl>
                                         <Select
-                                          {...form.register(`forms.${currentStep - 2}.scope`)}
+                                          {...form.register(
+                                            `forms.${currentStep - 2}.measurementUnit`
+                                          )}
                                           {...field}
                                           onValueChange={field.onChange}
                                         >
@@ -540,8 +543,8 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
                                           </SelectTrigger>
                                           <SelectContent>
                                             <SelectGroup>
-                                              <SelectLabel>Scope of dimension</SelectLabel>
-                                              {Object.entries(DimensionScopeType).map(
+                                              <SelectLabel>Measurement Unit Type</SelectLabel>
+                                              {Object.entries(MeasurementUnitType).map(
                                                 ([label, value]) => (
                                                   <SelectItem key={value} value={value}>
                                                     {label}
@@ -557,6 +560,7 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
                                   )}
                                 />
                               </div>
+
                               <div className="w-full md:basis-1/2">
                                 <FormField
                                   control={form.control}
@@ -582,34 +586,68 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
                               </div>
                             </div>
 
-                            {scopeSelection === DimensionScope.USER ? (
-                              <div className="flex flex-row">
-                                <div className="basis-auto">
+                            <div className="flex flex-col md:flex-row md:space-x-4">
+                              <div className="w-full md:basis-1/2">
+                                {measurementUnit === MeasurementUnit.CURRENCY && (
                                   <FormField
                                     control={form.control}
-                                    name={`forms.${currentStep - 2}.disallowAdsPersonalization`}
+                                    name={`forms.${currentStep - 2}.restrictedMetricType`}
                                     render={({ field }) => (
                                       <FormItem>
-                                        <div className="space-y-0.5">
-                                          <FormLabel>Disallow Ads Personalization</FormLabel>
-                                          <FormDescription>
-                                            If set to true, sets this dimension as NPA and excludes
-                                            it from ads personalization. This is currently only
-                                            supported by user-scoped custom dimensions.
-                                          </FormDescription>
-                                        </div>
-                                        <FormControl>
-                                          <Switch
-                                            checked={field.value}
-                                            onCheckedChange={field.onChange}
+                                        <FormLabel>Restricted Metric Type</FormLabel>
+                                        <FormDescription>
+                                          Optional. Types of restricted data that this metric may
+                                          contain. Required for metrics with CURRENCY measurement
+                                          unit. Must be empty for metrics with a non-CURRENCY
+                                          measurement unit.
+                                        </FormDescription>
+
+                                        {RestrictedMetric.map((item) => (
+                                          <FormField
+                                            key={item.id}
+                                            control={form.control}
+                                            name={`forms.${currentStep - 2}.restrictedMetricType`}
+                                            render={({ field }) => {
+                                              return (
+                                                <FormItem
+                                                  key={item.id}
+                                                  className="flex flex-row items-start space-x-3 space-y-0"
+                                                >
+                                                  <FormControl>
+                                                    <Checkbox
+                                                      checked={
+                                                        Array.isArray(field.value) &&
+                                                        field.value.includes(item.id)
+                                                      }
+                                                      onCheckedChange={(checked) => {
+                                                        if (Array.isArray(field.value)) {
+                                                          const updatedValue = checked
+                                                            ? [...field.value, item.id]
+                                                            : field.value.filter(
+                                                                (value) => value !== item.id
+                                                              );
+                                                          field.onChange(updatedValue);
+                                                        } else {
+                                                          field.onChange([item.id]);
+                                                        }
+                                                      }}
+                                                    />
+                                                  </FormControl>
+                                                  <FormLabel className="text-sm font-normal">
+                                                    {item.label}
+                                                  </FormLabel>
+                                                </FormItem>
+                                              );
+                                            }}
                                           />
-                                        </FormControl>
+                                        ))}
+                                        <FormMessage />
                                       </FormItem>
                                     )}
                                   />
-                                </div>
+                                )}
                               </div>
-                            ) : null}
+                            </div>
                           </>
                         );
                       })()}
@@ -640,4 +678,4 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
   );
 };
 
-export default FormCreateCustomDimension;
+export default FormCreateCustomMetric;
