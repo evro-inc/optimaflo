@@ -460,3 +460,28 @@ export interface CustomMetric {
   scope: MetricScope;
   restrictedMetricType?: RestrictedMetricType[];
 }
+
+
+enum ConversionCountingMethod {
+  CONVERSION_COUNTING_METHOD_UNSPECIFIED = "CONVERSION_COUNTING_METHOD_UNSPECIFIED",
+  ONCE_PER_EVENT = "ONCE_PER_EVENT",
+  ONCE_PER_SESSION = "ONCE_PER_SESSION",
+}
+
+
+
+interface DefaultConversionValue {
+  value: number;
+  currencyCode: string;
+}
+
+
+export interface ConversionEvent {
+  name: string;
+  eventName: string;
+  createTime: string; // Assuming RFC3339 UTC "Zulu" format
+  deletable: boolean;
+  custom: boolean;
+  countingMethod?: ConversionCountingMethod;
+  defaultConversionValue?: DefaultConversionValue;
+}
