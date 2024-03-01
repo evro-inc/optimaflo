@@ -41,7 +41,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/src/components/ui/select';
-import { MeasurementUnitUpdateType, RestrictedMetric } from '../../../properties/@metrics/items';
+import {
+  MeasurementUnitType,
+  MeasurementUnitUpdateType,
+  RestrictedMetric,
+} from '../../../properties/@metrics/items';
+import { Checkbox } from '@/src/components/ui/checkbox';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -325,62 +330,21 @@ const FormUpdateCustomMetric = () => {
                                     </FormItem>
                                   )}
                                 />
-                                <FormField
-                                  control={form.control}
-                                  name={`forms.${currentFormIndex}.measurementUnit`}
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Measurement</FormLabel>
-                                      <FormDescription>
-                                        The measurement of this metric.
-                                      </FormDescription>
-                                      <FormControl>
-                                        <Select
-                                          {...form.register(
-                                            `forms.${currentFormIndex}.measurementUnit`
-                                          )}
-                                          {...field}
-                                          onValueChange={field.onChange}
-                                        >
-                                          <SelectTrigger>
-                                            <SelectValue placeholder="Select a custom dimension type." />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            <SelectGroup>
-                                              <SelectLabel>Measurement Unit Type</SelectLabel>
-                                              {Object.entries(MeasurementUnitUpdateType).map(
-                                                ([label, value]) => (
-                                                  <SelectItem key={value} value={value}>
-                                                    {label}
-                                                  </SelectItem>
-                                                )
-                                              )}
-                                            </SelectGroup>
-                                          </SelectContent>
-                                        </Select>
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
 
-                                {measurementUnit === MeasurementUnit.CURRENCY && (
+                                {measurementUnit === MeasurementUnit.CURRENCY ? null : (
                                   <FormField
                                     control={form.control}
-                                    name={`forms.${currentFormIndex}.scope`}
+                                    name={`forms.${currentFormIndex}.measurementUnit`}
                                     render={({ field }) => (
                                       <FormItem>
-                                        <FormLabel>Restricted Metric Type</FormLabel>
+                                        <FormLabel>Measurement</FormLabel>
                                         <FormDescription>
-                                          Optional. Types of restricted data that this metric may
-                                          contain. Required for metrics with CURRENCY measurement
-                                          unit. Must be empty for metrics with a non-CURRENCY
-                                          measurement unit.
+                                          The measurement of this metric.
                                         </FormDescription>
                                         <FormControl>
                                           <Select
                                             {...form.register(
-                                              `forms.${currentFormIndex}.restrictedMetricType`
+                                              `forms.${currentFormIndex}.measurementUnit`
                                             )}
                                             {...field}
                                             onValueChange={field.onChange}
@@ -388,10 +352,11 @@ const FormUpdateCustomMetric = () => {
                                             <SelectTrigger>
                                               <SelectValue placeholder="Select a custom dimension type." />
                                             </SelectTrigger>
+
                                             <SelectContent>
                                               <SelectGroup>
-                                                <SelectLabel>Restricted Metric Type</SelectLabel>
-                                                {Object.entries(RestrictedMetric).map(
+                                                <SelectLabel>Measurement Unit Type</SelectLabel>
+                                                {Object.entries(MeasurementUnitUpdateType).map(
                                                   ([label, value]) => (
                                                     <SelectItem key={value} value={value}>
                                                       {label}
@@ -402,6 +367,64 @@ const FormUpdateCustomMetric = () => {
                                             </SelectContent>
                                           </Select>
                                         </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                )}
+
+                                {measurementUnit === MeasurementUnit.CURRENCY && (
+                                  <FormField
+                                    control={form.control}
+                                    name={`forms.${currentFormIndex}.restrictedMetricType`}
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Restricted Metric Type</FormLabel>
+                                        <FormDescription>
+                                          Optional. Types of restricted data that this metric may
+                                          contain. Required for metrics with CURRENCY measurement
+                                          unit. Must be empty for metrics with a non-CURRENCY
+                                          measurement unit.
+                                        </FormDescription>
+                                        {RestrictedMetric.map((item) => (
+                                          <FormField
+                                            key={item.id}
+                                            control={form.control}
+                                            name={`forms.${currentStep - 2}.restrictedMetricType`}
+                                            render={({ field }) => {
+                                              return (
+                                                <FormItem
+                                                  key={item.id}
+                                                  className="flex flex-row items-start space-x-3 space-y-0"
+                                                >
+                                                  <FormControl>
+                                                    <Checkbox
+                                                      checked={
+                                                        Array.isArray(field.value) &&
+                                                        field.value.includes(item.id)
+                                                      }
+                                                      onCheckedChange={(checked) => {
+                                                        if (Array.isArray(field.value)) {
+                                                          const updatedValue = checked
+                                                            ? [...field.value, item.id]
+                                                            : field.value.filter(
+                                                                (value) => value !== item.id
+                                                              );
+                                                          field.onChange(updatedValue);
+                                                        } else {
+                                                          field.onChange([item.id]);
+                                                        }
+                                                      }}
+                                                    />
+                                                  </FormControl>
+                                                  <FormLabel className="text-sm font-normal">
+                                                    {item.label}
+                                                  </FormLabel>
+                                                </FormItem>
+                                              );
+                                            }}
+                                          />
+                                        ))}
                                         <FormMessage />
                                       </FormItem>
                                     )}

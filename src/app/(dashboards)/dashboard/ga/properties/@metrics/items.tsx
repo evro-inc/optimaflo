@@ -23,7 +23,13 @@ export const MeasurementUnitUpdateType = {
   Hours: 'HOURS',
 };
 
-export const RestrictedMetric = {
-  CostData: 'COST_DATA',
-  RevenueData: 'REVENUE_DATA',
-};
+export const RestrictedMetric = [
+  {
+    id: 'COST_DATA',
+    label: 'Cost Data',
+  },
+  {
+    id: 'REVENUE_DATA',
+    label: 'Revenue Data',
+  },
+];

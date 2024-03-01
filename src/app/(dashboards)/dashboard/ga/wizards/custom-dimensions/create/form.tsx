@@ -81,6 +81,7 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
   const foundTierLimit = tierLimits.find(
     (subscription) => subscription.Feature?.name === 'GA4CustomDimensions'
   );
+  const currentFormIndex = currentStep - 2;
 
   const createLimit = foundTierLimit?.createLimit;
   const createUsage = foundTierLimit?.createUsage;
@@ -142,6 +143,8 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
   const addForm = () => {
     append(formDataDefaults);
   };
+
+  const scopeSelection = form.watch(`forms.${currentFormIndex}.scope`);
 
   // Adjust handleAmountSubmit or create a new function to handle selection change
   const handleAmountChange = (selectedAmount) => {
@@ -278,7 +281,6 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
   };
 
   const handleNext = async () => {
-    const currentFormIndex = currentStep - 2; // Adjusting for the array index and step count
     const currentFormPath = `forms.${currentFormIndex}`;
 
     // Start with the common fields that are always present
@@ -580,32 +582,34 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
                               </div>
                             </div>
 
-                            <div className="flex flex-row">
-                              <div className="basis-auto">
-                                <FormField
-                                  control={form.control}
-                                  name={`forms.${currentStep - 2}.disallowAdsPersonalization`}
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <div className="space-y-0.5">
-                                        <FormLabel>Disallow Ads Personalization</FormLabel>
-                                        <FormDescription>
-                                          If set to true, sets this dimension as NPA and excludes it
-                                          from ads personalization. This is currently only supported
-                                          by user-scoped custom dimensions.
-                                        </FormDescription>
-                                      </div>
-                                      <FormControl>
-                                        <Switch
-                                          checked={field.value}
-                                          onCheckedChange={field.onChange}
-                                        />
-                                      </FormControl>
-                                    </FormItem>
-                                  )}
-                                />
+                            {scopeSelection === DimensionScope.USER ? (
+                              <div className="flex flex-row">
+                                <div className="basis-auto">
+                                  <FormField
+                                    control={form.control}
+                                    name={`forms.${currentStep - 2}.disallowAdsPersonalization`}
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <div className="space-y-0.5">
+                                          <FormLabel>Disallow Ads Personalization</FormLabel>
+                                          <FormDescription>
+                                            If set to true, sets this dimension as NPA and excludes
+                                            it from ads personalization. This is currently only
+                                            supported by user-scoped custom dimensions.
+                                          </FormDescription>
+                                        </div>
+                                        <FormControl>
+                                          <Switch
+                                            checked={field.value}
+                                            onCheckedChange={field.onChange}
+                                          />
+                                        </FormControl>
+                                      </FormItem>
+                                    )}
+                                  />
+                                </div>
                               </div>
-                            </div>
+                            ) : null}
                           </>
                         );
                       })()}

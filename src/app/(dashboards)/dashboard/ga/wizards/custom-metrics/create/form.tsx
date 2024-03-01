@@ -48,6 +48,7 @@ import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { createGACustomMetrics } from '@/src/lib/fetch/dashboard/actions/ga/metrics';
 import { MeasurementUnitType, RestrictedMetric } from '../../../properties/@metrics/items';
+import { Checkbox } from '@/src/components/ui/checkbox';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -590,7 +591,7 @@ const FormCreateCustomMetric: React.FC<FormCreateProps> = ({
                                 {measurementUnit === MeasurementUnit.CURRENCY && (
                                   <FormField
                                     control={form.control}
-                                    name={`forms.${currentStep - 2}.scope`}
+                                    name={`forms.${currentStep - 2}.restrictedMetricType`}
                                     render={({ field }) => (
                                       <FormItem>
                                         <FormLabel>Restricted Metric Type</FormLabel>
@@ -600,31 +601,46 @@ const FormCreateCustomMetric: React.FC<FormCreateProps> = ({
                                           unit. Must be empty for metrics with a non-CURRENCY
                                           measurement unit.
                                         </FormDescription>
-                                        <FormControl>
-                                          <Select
-                                            {...form.register(
-                                              `forms.${currentStep - 2}.restrictedMetricType`
-                                            )}
-                                            {...field}
-                                            onValueChange={field.onChange}
-                                          >
-                                            <SelectTrigger>
-                                              <SelectValue placeholder="Select a custom dimension type." />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                              <SelectGroup>
-                                                <SelectLabel>Restricted Metric Type</SelectLabel>
-                                                {Object.entries(RestrictedMetric).map(
-                                                  ([label, value]) => (
-                                                    <SelectItem key={value} value={value}>
-                                                      {label}
-                                                    </SelectItem>
-                                                  )
-                                                )}
-                                              </SelectGroup>
-                                            </SelectContent>
-                                          </Select>
-                                        </FormControl>
+
+                                        {RestrictedMetric.map((item) => (
+                                          <FormField
+                                            key={item.id}
+                                            control={form.control}
+                                            name={`forms.${currentStep - 2}.restrictedMetricType`}
+                                            render={({ field }) => {
+                                              return (
+                                                <FormItem
+                                                  key={item.id}
+                                                  className="flex flex-row items-start space-x-3 space-y-0"
+                                                >
+                                                  <FormControl>
+                                                    <Checkbox
+                                                      checked={
+                                                        Array.isArray(field.value) &&
+                                                        field.value.includes(item.id)
+                                                      }
+                                                      onCheckedChange={(checked) => {
+                                                        if (Array.isArray(field.value)) {
+                                                          const updatedValue = checked
+                                                            ? [...field.value, item.id]
+                                                            : field.value.filter(
+                                                                (value) => value !== item.id
+                                                              );
+                                                          field.onChange(updatedValue);
+                                                        } else {
+                                                          field.onChange([item.id]);
+                                                        }
+                                                      }}
+                                                    />
+                                                  </FormControl>
+                                                  <FormLabel className="text-sm font-normal">
+                                                    {item.label}
+                                                  </FormLabel>
+                                                </FormItem>
+                                              );
+                                            }}
+                                          />
+                                        ))}
                                         <FormMessage />
                                       </FormItem>
                                     )}
