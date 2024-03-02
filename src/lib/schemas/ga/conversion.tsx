@@ -7,16 +7,15 @@ const ConversionCountingMethodSchema = z.enum([
 ]);
 
 const DefaultConversionValueSchema = z.object({
-  value: z.number(),
+  value: z.string(),
   currencyCode: z.string(),
+  type: z.string(),
 });
 
 const SingleFormSchema = z.object({
-  name: z.string(),
-  eventName: z.string(),
-  createTime: z.string(), // Assuming RFC3339 UTC "Zulu" format as a simple string for schema validation
-  deletable: z.boolean(),
-  custom: z.boolean(),
+  account: z.string(),
+  property: z.string(),
+  eventName: z.string().min(1),
   countingMethod: ConversionCountingMethodSchema.optional(),
   defaultConversionValue: DefaultConversionValueSchema.optional(),
 });
