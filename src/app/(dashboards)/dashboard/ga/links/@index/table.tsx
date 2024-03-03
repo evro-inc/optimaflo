@@ -104,8 +104,8 @@ export function DataTable<TData, TValue>({
 
   const handleCreateClick = useCreateHookForm(
     userId,
-    'GA4Properties',
-    '/dashboard/ga/wizards/properties/create'
+    'GA4FBLinks',
+    '/dashboard/ga/wizards/firebase-links/create'
   );
 
   const onCreateButtonClick = () => {
@@ -116,20 +116,6 @@ export function DataTable<TData, TValue>({
     });
   };
 
-  const handleUpdateClick = useUpdateHookForm(
-    userId,
-    'GA4Properties',
-    '/dashboard/ga/wizards/properties/update',
-    rowSelectedCount
-  );
-
-  const onUpdateButtonClick = () => {
-    startUpdateTransition(() => {
-      handleUpdateClick().catch((error) => {
-        throw new Error(error);
-      });
-    });
-  };
   const handleDelete = useDeleteHook(selectedRowData, table);
 
   const refreshAllCache = async () => {
@@ -213,8 +199,8 @@ export function DataTable<TData, TValue>({
       <div className="flex items-center py-4">
         <Input
           placeholder="Filter property names..."
-          value={(table.getColumn('displayName')?.getFilterValue() as string) ?? ''}
-          onChange={(event) => table.getColumn('displayName')?.setFilterValue(event.target.value)}
+          value={(table.getColumn('project')?.getFilterValue() as string) ?? ''}
+          onChange={(event) => table.getColumn('project')?.setFilterValue(event.target.value)}
           className="max-w-sm"
         />
 
@@ -223,13 +209,6 @@ export function DataTable<TData, TValue>({
 
           <Button disabled={isCreatePending} onClick={onCreateButtonClick}>
             {isCreatePending ? 'Loading...' : 'Create'}
-          </Button>
-
-          <Button
-            disabled={Object.keys(table.getState().rowSelection).length === 0 || isUpdatePending}
-            onClick={onUpdateButtonClick}
-          >
-            {isUpdatePending ? 'Loading...' : 'Update'}
           </Button>
 
           <ButtonDelete

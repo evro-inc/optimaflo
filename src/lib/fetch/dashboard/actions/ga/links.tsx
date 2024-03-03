@@ -124,7 +124,7 @@ export async function createGAFirebaseLinks(formData: FirebaseLinkSchemaType) {
   // Refactor: Use string identifiers in the set
   const toCreateFirebaseLinks = new Set(formData.forms.map((cm) => cm));
 
-  const tierLimitResponse: any = await tierCreateLimit(userId, 'GA4FirebaseLinks');
+  const tierLimitResponse: any = await tierCreateLimit(userId, 'GA4FBLinks');
   const limit = Number(tierLimitResponse.createLimit);
   const createUsage = Number(tierLimitResponse.createUsage);
   const availableCreateUsage = limit - createUsage;
@@ -140,19 +140,19 @@ export async function createGAFirebaseLinks(formData: FirebaseLinkSchemaType) {
     return {
       success: false,
       limitReached: true,
-      message: 'Feature limit reached for creating custom metric',
+      message: 'Feature limit reached for creating firebase link',
       results: [],
     };
   }
 
   if (toCreateFirebaseLinks.size > availableCreateUsage) {
     const attemptedCreations = Array.from(toCreateFirebaseLinks).map((identifier) => {
-      const eventName = identifier.eventName;
+      const project = identifier.project;
       return {
         id: [], // No property ID since creation did not happen
-        name: eventName, // Include the property name from the identifier
+        name: project, // Include the property name from the identifier
         success: false,
-        message: `Creation limit reached. Cannot create custom metric "${eventName}".`,
+        message: `Creation limit reached. Cannot create firebase link "${project}".`,
         // remaining creation limit
         remaining: availableCreateUsage,
         limitReached: true,
@@ -161,9 +161,9 @@ export async function createGAFirebaseLinks(formData: FirebaseLinkSchemaType) {
     return {
       success: false,
       features: [],
-      message: `Cannot create ${toCreateFirebaseLinks.size} custom metrics as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
+      message: `Cannot create ${toCreateFirebaseLinks.size} firebase links as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
       errors: [
-        `Cannot create ${toCreateFirebaseLinks.size} custom metrics as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
+        `Cannot create ${toCreateFirebaseLinks.size} firebase links as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
       ],
       results: attemptedCreations,
       limitReached: true,
@@ -171,7 +171,7 @@ export async function createGAFirebaseLinks(formData: FirebaseLinkSchemaType) {
   }
 
   let permissionDenied = false;
-  const firebaseLinkNames = formData.forms.map((cm) => cm.eventName);
+  const firebaseLinkNames = formData.forms.map((cm) => cm.project);
 
   if (toCreateFirebaseLinks.size <= availableCreateUsage) {
     while (retries < MAX_RETRIES && toCreateFirebaseLinks.size > 0 && !permissionDenied) {
@@ -216,12 +216,7 @@ export async function createGAFirebaseLinks(formData: FirebaseLinkSchemaType) {
                 const validatedContainerData = validationResult.data.forms[0];
 
                 let requestBody: any = {
-                  eventName: validatedContainerData.eventName,
-                  countingMethod: validatedContainerData.countingMethod,
-                  defaultConversionValue: {
-                    value: validatedContainerData.defaultConversionValue?.value,
-                    currencyCode: validatedContainerData.defaultConversionValue?.currencyCode,
-                  },
+                  project: validatedContainerData.project,
                 };
 
                 // Now, requestBody is prepared with the right structure based on the type
@@ -234,7 +229,7 @@ export async function createGAFirebaseLinks(formData: FirebaseLinkSchemaType) {
                 const parsedResponse = await response.json();
 
                 if (response.ok) {
-                  successfulCreations.push(validatedContainerData.eventName);
+                  successfulCreations.push(validatedContainerData.project);
                   toCreateFirebaseLinks.delete(identifier);
                   fetchGASettings(userId);
 
@@ -243,16 +238,16 @@ export async function createGAFirebaseLinks(formData: FirebaseLinkSchemaType) {
                     data: { createUsage: { increment: 1 } },
                   });
                   creationResults.push({
-                    firebaseLinkName: validatedContainerData.eventName,
+                    firebaseLinkName: validatedContainerData.project,
                     success: true,
-                    message: `Successfully created property ${validatedContainerData.eventName}`,
+                    message: `Successfully created property ${validatedContainerData.project}`,
                   });
                 } else {
                   const errorResult = await handleApiResponseError(
                     response,
                     parsedResponse,
                     'firebaseLink',
-                    [validatedContainerData.eventName]
+                    [validatedContainerData.project]
                   );
 
                   if (errorResult) {
@@ -261,34 +256,32 @@ export async function createGAFirebaseLinks(formData: FirebaseLinkSchemaType) {
                       errorResult.errorCode === 403 &&
                       parsedResponse.message === 'Feature limit reached'
                     ) {
-                      featureLimitReached.push(validatedContainerData.eventName);
+                      featureLimitReached.push(validatedContainerData.project);
                     } else if (errorResult.errorCode === 404) {
                       notFoundLimit.push({
                         id: identifier.property,
-                        name: validatedContainerData.eventName,
+                        name: validatedContainerData.project,
                       });
                     }
                   } else {
                     errors.push(
-                      `An unknown error occurred for property ${validatedContainerData.eventName}.`
+                      `An unknown error occurred for property ${validatedContainerData.project}.`
                     );
                   }
 
                   toCreateFirebaseLinks.delete(identifier);
                   permissionDenied = errorResult ? true : permissionDenied;
                   creationResults.push({
-                    firebaseLinkName: validatedContainerData.eventName,
+                    firebaseLinkName: validatedContainerData.project,
                     success: false,
                     message: errorResult?.message,
                   });
                 }
               } catch (error: any) {
-                errors.push(
-                  `Exception creating property ${identifier.eventName}: ${error.message}`
-                );
+                errors.push(`Exception creating property ${identifier.project}: ${error.message}`);
                 toCreateFirebaseLinks.delete(identifier);
                 creationResults.push({
-                  firebaseLinkName: identifier.eventName,
+                  firebaseLinkName: identifier.project,
                   success: false,
                   message: error.message,
                 });
@@ -319,14 +312,13 @@ export async function createGAFirebaseLinks(formData: FirebaseLinkSchemaType) {
               success: false,
               limitReached: true,
               notFoundError: false,
-              message: `Feature limit reached for custom metrics: ${featureLimitReached.join(
+              message: `Feature limit reached for firebase links: ${featureLimitReached.join(
                 ', '
               )}`,
-              results: featureLimitReached.map((eventName) => {
+              results: featureLimitReached.map(() => {
                 // Find the name associated with the propertyId
                 const firebaseLinkName =
-                  firebaseLinkNames.find((eventName) => eventName.includes(eventName)) ||
-                  'Unknown';
+                  firebaseLinkNames.find((project) => project.includes(project)) || 'Unknown';
                 return {
                   id: [firebaseLinkName], // Ensure id is an array
                   name: [firebaseLinkName], // Ensure name is an array, match by propertyId or default to 'Unknown'
@@ -359,7 +351,7 @@ export async function createGAFirebaseLinks(formData: FirebaseLinkSchemaType) {
         // This block will run regardless of the outcome of the try...catch
         if (userId) {
           await redis.del(cacheKey);
-          await revalidatePath(`/dashboard/ga/properties`);
+          await revalidatePath(`/dashboard/ga/links`);
         }
       }
     }
@@ -389,16 +381,16 @@ export async function createGAFirebaseLinks(formData: FirebaseLinkSchemaType) {
 
   if (successfulCreations.length > 0) {
     await redis.del(cacheKey);
-    revalidatePath(`/dashboard/ga/properties`);
+    revalidatePath(`/dashboard/ga/links`);
   }
 
   // Map over formData.forms to create the results array
   const results: FeatureResult[] = formData.forms.map((form) => {
     // Ensure that form.propertyId is defined before adding it to the array
-    const firebaseLinkId = form.eventName ? [form.eventName] : []; // Provide an empty array as a fallback
+    const firebaseLinkId = form.project ? [form.project] : []; // Provide an empty array as a fallback
     return {
       id: firebaseLinkId, // Ensure id is an array of strings
-      name: [form.eventName], // Wrap the string in an array
+      name: [form.project], // Wrap the string in an array
       success: true, // or false, depending on the actual result
       // Include `notFound` if applicable
       notFound: false, // Set this to the appropriate value based on your logic
@@ -418,7 +410,7 @@ export async function createGAFirebaseLinks(formData: FirebaseLinkSchemaType) {
 }
 
 /************************************************************************************
-  Delete a single property or multiple custom metrics
+  Delete a single property or multiple firebase links
 ************************************************************************************/
 export async function deleteGAFirebaseLinks(
   selectedFirebaseLinks: Set<FirebaseLink>,
@@ -445,7 +437,7 @@ export async function deleteGAFirebaseLinks(
   const cacheKey = `ga:firebaseLinks:userId:${userId}`;
 
   // Check for feature limit using Prisma ORM
-  const tierLimitResponse: any = await tierDeleteLimit(userId, 'GA4FirebaseLinks');
+  const tierLimitResponse: any = await tierDeleteLimit(userId, 'GA4FBLinks');
   const limit = Number(tierLimitResponse.deleteLimit);
   const deleteUsage = Number(tierLimitResponse.deleteUsage);
   const availableDeleteUsage = limit - deleteUsage;
@@ -457,7 +449,7 @@ export async function deleteGAFirebaseLinks(
       success: false,
       limitReached: true,
       errors: [],
-      message: 'Feature limit reached for Deleting Custom Metrics',
+      message: 'Feature limit reached for deleting firebase links.',
       results: [],
     };
   }
@@ -468,11 +460,11 @@ export async function deleteGAFirebaseLinks(
       success: false,
       features: [],
       errors: [
-        `Cannot delete ${toDeleteFirebaseLinks.size} custom metrics as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
+        `Cannot delete ${toDeleteFirebaseLinks.size} firebase links as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
       ],
       results: [],
       limitReached: true,
-      message: `Cannot delete ${toDeleteFirebaseLinks.size} custom metrics as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
+      message: `Cannot delete ${toDeleteFirebaseLinks.size} firebase links as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
     };
   }
   let permissionDenied = false;
@@ -526,14 +518,14 @@ export async function deleteGAFirebaseLinks(
 
                   return {
                     name: identifier.name,
-                    eventName: identifier.eventName,
+                    project: identifier.project,
                     success: true,
                   };
                 } else {
                   const errorResult = await handleApiResponseError(
                     response,
                     parsedResponse,
-                    'GA4FirebaseLinks',
+                    'GA4FBLinks',
                     firebaseLinkNames
                   );
 
@@ -551,9 +543,7 @@ export async function deleteGAFirebaseLinks(
                         name: identifier.name,
                       });
                     } else {
-                      errors.push(
-                        `An unknown error occurred for property ${firebaseLinkNames}.`
-                      );
+                      errors.push(`An unknown error occurred for property ${firebaseLinkNames}.`);
                     }
 
                     toDeleteFirebaseLinks.delete(identifier);
@@ -578,10 +568,10 @@ export async function deleteGAFirebaseLinks(
               success: false,
               limitReached: false,
               notFoundError: true, // Set the notFoundError flag
-              message: `Could not delete custom metric. Please check your permissions. Property Name: 
+              message: `Could not delete firebase link. Please check your permissions. Property Name: 
               ${firebaseLinkNames.find((name) =>
                 name.includes(name)
-              )}. All other custom metrics were successfully deleted.`,
+              )}. All other firebase links were successfully deleted.`,
               results: notFoundLimit.map(({ name }) => ({
                 id: [name], // Combine accountId and propertyId into a single array of strings
                 name: [firebaseLinkNames.find((name) => name.includes(name)) || 'Unknown'], // Ensure name is an array, match by propertyId or default to 'Unknown'
@@ -595,7 +585,7 @@ export async function deleteGAFirebaseLinks(
               success: false,
               limitReached: true,
               notFoundError: false,
-              message: `Feature limit reached for custom metrics: ${featureLimitReached.join(
+              message: `Feature limit reached for firebase links: ${featureLimitReached.join(
                 ', '
               )}`,
               results: featureLimitReached.map(({ name }) => ({
@@ -608,7 +598,7 @@ export async function deleteGAFirebaseLinks(
           }
           // Update tier limit usage as before (not shown in code snippet)
           if (successfulDeletions.length === selectedFirebaseLinks.size) {
-            break; // Exit loop if all custom metrics are processed successfully
+            break; // Exit loop if all firebase links are processed successfully
           }
           if (permissionDenied) {
             break; // Exit the loop if a permission error was encountered
@@ -629,7 +619,7 @@ export async function deleteGAFirebaseLinks(
       } finally {
         await redis.del(cacheKey);
 
-        await revalidatePath('/dashboard/ga/properties');
+        await revalidatePath('/dashboard/ga/links');
       }
     }
   }
@@ -660,13 +650,13 @@ export async function deleteGAFirebaseLinks(
   if (successfulDeletions.length > 0) {
     await redis.del(cacheKey);
     // Revalidate paths if needed
-    revalidatePath('/dashboard/ga/properties');
+    revalidatePath('/dashboard/ga/links');
   }
 
   // Returning the result of the deletion process
   return {
     success: errors.length === 0,
-    message: `Successfully deleted ${successfulDeletions.length} custom metric(s)`,
+    message: `Successfully deleted ${successfulDeletions.length} firebase link(s)`,
     features: successfulDeletions.map(({ name }) => `${name}`),
     errors: errors,
     notFoundError: notFoundLimit.length > 0,

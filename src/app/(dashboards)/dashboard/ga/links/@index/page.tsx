@@ -24,26 +24,19 @@ export default async function FirebaseLinkPage({
   const accountData = await listGaAccounts();
   const propertyData = await listGAProperties();
   const firebaseLinkData = await listGAFirebaseLinks();
-  console.log('firebaseLinkData', firebaseLinkData);
-  
-  
 
-  const [accounts, properties, fb] = await Promise.all([accountData, propertyData, firebaseLinkData]);
+  const [accounts, properties, fb] = await Promise.all([
+    accountData,
+    propertyData,
+    firebaseLinkData,
+  ]);
 
   const flatAccounts = accounts.flat();
   const flatProperties = properties.flat();
-  const flatFirebaseLinks = firebaseLinkData.flatMap(item => item.firebaseLinks || []);
-
-
-  console.log('flatFirebaseLinks', flatFirebaseLinks);
-  console.log('flatProperties', flatProperties);
-  console.log('flatAccounts', flatAccounts);
-  
+  const flatFirebaseLinks = firebaseLinkData.flatMap((item) => item.firebaseLinks || []);
 
   const combinedData = flatFirebaseLinks.map((fb) => {
     const propertyId = fb.name.split('/')[1];
-    console.log('propertyId', propertyId);
-    
     const property = flatProperties.find((p) => p.name.includes(propertyId));
     const accounts = flatAccounts.filter((a) => a.name === property?.parent);
 
@@ -56,8 +49,6 @@ export default async function FirebaseLinkPage({
       project: fb.project,
     };
   });
-  console.log('combinedData', combinedData);
-  
 
   return (
     <>

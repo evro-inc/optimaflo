@@ -3,8 +3,12 @@ import { z } from 'zod';
 const SingleFormSchema = z.object({
   account: z.string(),
   property: z.string(),
-  name: z.string().regex(/^properties\/\d+\/firebaseLinks\/\d+$/, "Invalid format for 'name'. Expected format: properties/{propertyId}/firebaseLinks/{firebaseLinkId}"),
-  project: z.string().regex(/^projects\/\d+$/, "Invalid format for 'project'. Expected format: projects/{projectNumber}"),
+  project: z
+    .string()
+    .regex(
+      /^projects\/\d+$/,
+      "Invalid format for 'project'. Expected format: projects/{projectNumber}"
+    ),
 });
 
 export const FormCreateAmountSchema = z.object({
