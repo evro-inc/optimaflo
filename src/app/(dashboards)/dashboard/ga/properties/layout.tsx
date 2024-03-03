@@ -14,12 +14,14 @@ export default async function PropertiesLayout({
   index,
   dimensions,
   metrics,
+  conversions,
 }: {
   children: React.ReactNode;
   streams: React.ReactNode;
   index: React.ReactNode;
   dimensions: React.ReactNode;
   metrics: React.ReactNode;
+  conversions: React.ReactNode;
 }) {
   const user = await currentUser();
   if (!user) return notFound();
@@ -38,6 +40,7 @@ export default async function PropertiesLayout({
         {streams}
         {dimensions}
         {metrics}
+        {conversions}
       </div>
     </>
   );
