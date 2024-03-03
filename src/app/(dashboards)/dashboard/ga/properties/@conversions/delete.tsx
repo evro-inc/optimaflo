@@ -1,13 +1,13 @@
 'use client';
 
-import { deleteGACustomMetrics } from '@/src/lib/fetch/dashboard/actions/ga/metrics';
+import { deleteGAConversionEvents } from '@/src/lib/fetch/dashboard/actions/ga/conversions';
 import {
   clearSelectedRows,
   setErrorDetails,
   setIsLimitReached,
   setNotFoundError,
 } from '@/src/redux/tableSlice';
-import { FeatureResponse, CustomMetric } from '@/src/types/types';
+import { FeatureResponse, ConversionEvent } from '@/src/types/types';
 import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
 
@@ -15,7 +15,7 @@ export const useDeleteHook = (selectedRows, table) => {
   const dispatch = useDispatch();
 
   const handleDelete = async () => {
-    toast('Deleting custom dimensions...', {
+    toast('Deleting conversion events...', {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
@@ -24,14 +24,14 @@ export const useDeleteHook = (selectedRows, table) => {
 
     // Use Object.values to get the values from the selectedRows object and cast them to GA4AccountType
     const ga4CustomDimensionToDelete = Object.values(
-      selectedRows as Record<string, CustomMetric>
+      selectedRows as Record<string, ConversionEvent>
     ).map((prop) => {
       return prop;
     });
 
-    const customDimensionDisplayNames = ga4CustomDimensionToDelete.map((cd) => cd.displayName);
+    const customDimensionDisplayNames = ga4CustomDimensionToDelete.map((cd) => cd.eventName);
 
-    const response: FeatureResponse = await deleteGACustomMetrics(
+    const response: FeatureResponse = await deleteGAConversionEvents(
       new Set(ga4CustomDimensionToDelete),
       customDimensionDisplayNames
     );

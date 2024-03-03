@@ -74,7 +74,6 @@ const FormUpdateCustomMetric = () => {
 
   const selectedRowData = useSelector((state: RootState) => state.table.selectedRows);
   const currentFormIndex = currentStep - 1;
-  const currentFormData = selectedRowData[currentFormIndex]; // Get data for the current step
 
   const formDataDefaults: CustomMetric[] = Object.values(selectedRowData).map((rowData) => ({
     name: rowData.name,

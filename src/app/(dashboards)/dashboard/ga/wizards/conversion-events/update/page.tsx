@@ -1,7 +1,7 @@
 import React from 'react';
 import { notFound } from 'next/navigation';
 import { currentUser } from '@clerk/nextjs';
-import FormUpdateCustomMetric from './form';
+import FormUpdateConversionEvent from './form';
 
 export default async function UpdateCustomDimensionPage() {
   const user = await currentUser();
@@ -10,7 +10,7 @@ export default async function UpdateCustomDimensionPage() {
   return (
     <>
       <div className="container mx-auto py-10">
-        <FormUpdateCustomMetric />
+        <FormUpdateConversionEvent />
       </div>
     </>
   );

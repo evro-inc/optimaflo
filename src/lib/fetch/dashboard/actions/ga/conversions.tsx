@@ -498,12 +498,7 @@ export async function updateGAConversionEvents(formData: CustomConversionSchemaT
                 return;
               }
 
-              const updateFields = [
-                'description',
-                'eventName',
-                'measurementUnit',
-                'restrictedMetricType',
-              ];
+              const updateFields = ['countingMethod', 'defaultConversionValue'];
 
               const updateMask = updateFields.join(',');
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.name}?updateMask=${updateMask}`;
@@ -536,13 +531,11 @@ export async function updateGAConversionEvents(formData: CustomConversionSchemaT
                 const validatedContainerData = validationResult.data.forms[0];
 
                 let requestBody: any = {
-                  name: validatedContainerData.name,
-                  parameterName: validatedContainerData.parameterName,
-                  eventName: validatedContainerData.eventName,
-                  description: validatedContainerData.description,
-                  scope: validatedContainerData.scope,
-                  measurementUnit: validatedContainerData.measurementUnit,
-                  restrictedMetricType: validatedContainerData.restrictedMetricType,
+                  countingMethod: validatedContainerData.countingMethod,
+                  defaultConversionValue: {
+                    value: validatedContainerData.defaultConversionValue?.value,
+                    currencyCode: validatedContainerData.defaultConversionValue?.currencyCode,
+                  },
                 };
 
                 // Now, requestBody is prepared with the right structure based on the type
@@ -804,7 +797,7 @@ export async function deleteGAConversionEvents(
           await limiter.schedule(async () => {
             // Creating promises for each property deletion
             const deletePromises = Array.from(toDeleteConversionEvents).map(async (identifier) => {
-              const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.name}:archive`;
+              const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.name}`;
 
               const headers = {
                 Authorization: `Bearer ${token[0].token}`,
@@ -814,7 +807,7 @@ export async function deleteGAConversionEvents(
 
               try {
                 const response = await fetch(url, {
-                  method: 'POST',
+                  method: 'DELETE',
                   headers: headers,
                 });
 

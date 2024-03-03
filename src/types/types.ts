@@ -474,6 +474,7 @@ interface DefaultConversionValue {
 }
 
 export interface ConversionEvent {
+  name: string;
   account: string;
   property: string;
   eventName: string;

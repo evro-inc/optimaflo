@@ -7,12 +7,13 @@ const ConversionCountingMethodSchema = z.enum([
 ]);
 
 const DefaultConversionValueSchema = z.object({
-  value: z.string(),
+  value: z.union([z.string(), z.number()]),
   currencyCode: z.string(),
   type: z.string(),
 });
 
 const SingleFormSchema = z.object({
+  name: z.string().optional(),
   account: z.string(),
   property: z.string(),
   eventName: z.string().min(1),

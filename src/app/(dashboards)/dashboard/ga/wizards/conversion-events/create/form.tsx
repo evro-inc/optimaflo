@@ -33,8 +33,6 @@ import {
   ConversionEvent,
   FeatureResponse,
   FormCreateProps,
-  MeasurementUnit,
-  MetricScope,
 } from '@/src/types/types';
 import { toast } from 'sonner';
 import {
@@ -47,8 +45,6 @@ import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { createGAConversionEvents } from '@/src/lib/fetch/dashboard/actions/ga/conversions';
-import { MeasurementUnitType, RestrictedMetric } from '../../../properties/@metrics/items';
-import { Checkbox } from '@/src/components/ui/checkbox';
 import { ConversionCountingItems, Currencies } from '../../../properties/@conversions/items';
 import { RadioGroup, RadioGroupItem } from '@/src/components/ui/radio-group';
 
@@ -106,7 +102,8 @@ const FormCreateConversionEvent: React.FC<FormCreateProps> = ({
     property: table[0].parent,
     eventName: '',
     countingMethod: ConversionCountingMethod.ONCE_PER_EVENT,
-    defaultConversionValue: { type: 'none', value: 0, currencyCode: 'USD' },
+    defaultConversionValue: { type: 'none', value: '0', currencyCode: 'USD' },
+    name: '',
   };
 
   const formCreateAmount = useForm({
@@ -476,7 +473,7 @@ const FormCreateConversionEvent: React.FC<FormCreateProps> = ({
                                       </FormDescription>
                                       <FormControl>
                                         <Input
-                                          placeholder="Name of the custom dismenion"
+                                          placeholder="Name of the conversion event"
                                           {...form.register(`forms.${currentStep - 2}.eventName`)}
                                           {...field}
                                         />
@@ -545,7 +542,7 @@ const FormCreateConversionEvent: React.FC<FormCreateProps> = ({
                                           if (newValue === 'none') {
                                             form.setValue(
                                               `forms.${currentStep - 2}.defaultConversionValue`,
-                                              { type: 'none', value: 0, currencyCode: 'USD' }
+                                              { type: 'none', value: '0', currencyCode: 'USD' }
                                             );
                                           } else {
                                             // Maintain the existing values but indicate that a value should be set
@@ -553,7 +550,7 @@ const FormCreateConversionEvent: React.FC<FormCreateProps> = ({
                                               `forms.${currentStep - 2}.defaultConversionValue`,
                                               {
                                                 type: 'conversionValue',
-                                                value: 0,
+                                                value: '0',
                                                 currencyCode: 'USD',
                                               }
                                             ); // Set a default structure for 'conversionValue'

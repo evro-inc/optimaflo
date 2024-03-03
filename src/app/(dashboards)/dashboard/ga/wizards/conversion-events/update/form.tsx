@@ -6,7 +6,7 @@ import { setLoading, incrementStep, decrementStep } from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { FormsSchema } from '@/src/lib/schemas/ga/metrics';
+import { FormsSchema } from '@/src/lib/schemas/ga/conversion';
 import { Button } from '@/src/components/ui/button';
 import {
   Form,
@@ -19,9 +19,9 @@ import {
 } from '@/src/components/ui/form';
 
 import { Input } from '@/src/components/ui/input';
-import { FeatureResponse, CustomMetric, MeasurementUnit } from '@/src/types/types';
+import { FeatureResponse, ConversionEvent, MeasurementUnit } from '@/src/types/types';
 import { toast } from 'sonner';
-import { updateGACustomMetrics } from '@/src/lib/fetch/dashboard/actions/ga/metrics';
+import { updateGAConversionEvents } from '@/src/lib/fetch/dashboard/actions/ga/conversions';
 import {
   selectTable,
   setErrorDetails,
@@ -31,7 +31,6 @@ import {
 import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { Switch } from '@/src/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -41,12 +40,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/src/components/ui/select';
-import {
-  MeasurementUnitType,
-  MeasurementUnitUpdateType,
-  RestrictedMetric,
-} from '../../../properties/@metrics/items';
+import { ConversionCountingItems, Currencies } from '../../../properties/@conversions/items';
 import { Checkbox } from '@/src/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/src/components/ui/radio-group';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -64,7 +60,7 @@ const ErrorModal = dynamic(
 
 type Forms = z.infer<typeof FormsSchema>;
 
-const FormUpdateCustomMetric = () => {
+const FormUpdateConversionEvent = () => {
   const dispatch = useDispatch();
   const loading = useSelector((state: RootState) => state.form.loading);
   const error = useSelector((state: RootState) => state.form.error);
@@ -74,17 +70,14 @@ const FormUpdateCustomMetric = () => {
 
   const selectedRowData = useSelector((state: RootState) => state.table.selectedRows);
   const currentFormIndex = currentStep - 1;
-  const currentFormData = selectedRowData[currentFormIndex]; // Get data for the current step
 
-  const formDataDefaults: CustomMetric[] = Object.values(selectedRowData).map((rowData) => ({
-    name: rowData.name,
-    parameterName: rowData.parameterName,
-    displayName: rowData.displayName,
-    description: rowData.description,
+  const formDataDefaults: ConversionEvent[] = Object.values(selectedRowData).map((rowData) => ({
     account: rowData.account,
     property: rowData.property,
-    scope: rowData.scope,
-    measurementUnit: rowData.measurementUnit,
+    eventName: rowData.eventName,
+    countingMethod: rowData.countingMethod,
+    defaultConversionValue: { type: 'none', value: '0', currencyCode: 'USD' },
+    name: rowData.name,
   }));
 
   if (notFoundError) {
@@ -104,17 +97,16 @@ const FormUpdateCustomMetric = () => {
     control: form.control,
     name: 'forms',
   });
-  const measurementUnit = form.watch(`forms.${currentFormIndex}.measurementUnit`);
 
   const handleNext = async () => {
     // Determine the names of the fields in the current form to validate
     const currentFormFields = [
-      `forms.${currentFormIndex}.displayName`,
-      `forms.${currentFormIndex}.parameterName`,
-      `forms.${currentFormIndex}.description`,
+      `forms.${currentFormIndex}.name`,
       `forms.${currentFormIndex}.account`,
       `forms.${currentFormIndex}.property`,
-      `forms.${currentFormIndex}.measurementUnit`,
+      `forms.${currentFormIndex}.eventName`,
+      `forms.${currentFormIndex}.countingMethod`,
+      `forms.${currentFormIndex}.defaultConversionValue`,
     ];
 
     // Trigger validation for only the current form's fields
@@ -141,18 +133,18 @@ const FormUpdateCustomMetric = () => {
 
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
-    toast('Updating custom metric...', {
+    toast('Updating conversion event...', {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
       },
     });
 
-    const uniqueCustomMetrics = new Set(forms.map((form) => form.property));
+    const uniqueConversionEvents = new Set(forms.map((form) => form.property));
     for (const form of forms) {
-      const identifier = `${form.property}-${form.displayName}`;
-      if (uniqueCustomMetrics.has(identifier)) {
-        toast.error(`Duplicate custom metric found for ${form.property} - ${form.displayName}`, {
+      const identifier = `${form.property}-${form.eventName}`;
+      if (uniqueConversionEvents.has(identifier)) {
+        toast.error(`Duplicate conversion event found for ${form.property} - ${form.eventName}`, {
           action: {
             label: 'Close',
             onClick: () => toast.dismiss(),
@@ -161,17 +153,17 @@ const FormUpdateCustomMetric = () => {
         dispatch(setLoading(false));
         return;
       }
-      uniqueCustomMetrics.add(identifier);
+      uniqueConversionEvents.add(identifier);
     }
 
     try {
-      const res = (await updateGACustomMetrics({ forms })) as FeatureResponse;
+      const res = (await updateGAConversionEvents({ forms })) as FeatureResponse;
 
       if (res.success) {
         res.results.forEach((result) => {
           if (result.success) {
             toast.success(
-              `Custom metric ${result.name} created successfully. The table will update shortly.`,
+              `Convention event ${result.name} created successfully. The table will update shortly.`,
               {
                 action: {
                   label: 'Close',
@@ -188,7 +180,7 @@ const FormUpdateCustomMetric = () => {
           res.results.forEach((result) => {
             if (result.notFound) {
               toast.error(
-                `Unable to create custom metric ${result.name}. Please check your access permissions. Any other custom metrics created were successful.`,
+                `Unable to create conversion event ${result.name}. Please check your access permissions. Any other conversion events created were successful.`,
                 {
                   action: {
                     label: 'Close',
@@ -207,7 +199,7 @@ const FormUpdateCustomMetric = () => {
           res.results.forEach((result) => {
             if (result.limitReached) {
               toast.error(
-                `Unable to create custom metric ${result.name}. You have ${result.remaining} more custom metric(s) you can create.`,
+                `Unable to create conversion event ${result.name}. You have ${result.remaining} more conversion event(s) you can create.`,
                 {
                   action: {
                     label: 'Close',
@@ -222,7 +214,7 @@ const FormUpdateCustomMetric = () => {
 
         if (res.errors) {
           res.errors.forEach((error) => {
-            toast.error(`Unable to create custom metric. ${error}`, {
+            toast.error(`Unable to create conversion event. ${error}`, {
               action: {
                 label: 'Close',
                 onClick: () => toast.dismiss(),
@@ -268,14 +260,14 @@ const FormUpdateCustomMetric = () => {
               className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
             >
               <div className="max-w-xl mx-auto">
-                <h1>{fields[currentFormIndex]?.displayName}</h1>
+                <h1>{fields[currentFormIndex]?.eventName}</h1>
                 <div className="mt-12">
                   {/* Form */}
 
                   <Form {...form}>
                     <form
                       onSubmit={form.handleSubmit(processForm)}
-                      id={`updateCustomMetric-${currentFormIndex}`}
+                      id={`updateConversionEvent-${currentFormIndex}`}
                       className="space-y-6"
                     >
                       {fields.length > 0 &&
@@ -285,21 +277,38 @@ const FormUpdateCustomMetric = () => {
                               <>
                                 <FormField
                                   control={form.control}
-                                  name={`forms.${currentFormIndex}.displayName`}
+                                  name={`forms.${currentFormIndex}.countingMethod`}
                                   render={({ field }) => (
                                     <FormItem>
-                                      <FormLabel>New Custom Metric Name</FormLabel>
+                                      <FormLabel>Counting method (conversion)</FormLabel>
                                       <FormDescription>
-                                        This is the custom metric name you want to create.
+                                        Choose how to count this conversion. The counting method you
+                                        choose will be used to count future conversion actions; it
+                                        won't be used to count past data.
                                       </FormDescription>
                                       <FormControl>
-                                        <Input
-                                          placeholder="Name of the custom dismenion"
+                                        <Select
                                           {...form.register(
-                                            `forms.${currentFormIndex}.displayName`
+                                            `forms.${currentFormIndex}.countingMethod`
                                           )}
                                           {...field}
-                                        />
+                                          onValueChange={field.onChange}
+                                        >
+                                          <SelectTrigger className="w-[180px]">
+                                            <SelectValue placeholder="Select counting method." />
+                                          </SelectTrigger>
+
+                                          <SelectContent>
+                                            <SelectGroup>
+                                              <SelectLabel>Counting Method</SelectLabel>
+                                              {ConversionCountingItems.map((item) => (
+                                                <SelectItem key={item.label} value={item.id}>
+                                                  {item.label}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectGroup>
+                                          </SelectContent>
+                                        </Select>
                                       </FormControl>
 
                                       <FormMessage />
@@ -309,127 +318,93 @@ const FormUpdateCustomMetric = () => {
 
                                 <FormField
                                   control={form.control}
-                                  name={`forms.${currentFormIndex}.parameterName`}
+                                  name={`forms.${currentFormIndex}.defaultConversionValue`}
                                   render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Parameter Name</FormLabel>
-                                      <FormDescription>
-                                        Tagging parameter name for this custom metric.
-                                      </FormDescription>
+                                    <FormItem className="space-y-3">
+                                      <FormLabel>Default Conversion Value</FormLabel>
                                       <FormControl>
-                                        <Input
-                                          placeholder="Name of the parameter name"
-                                          {...form.register(
-                                            `forms.${currentFormIndex}.parameterName`
-                                          )}
-                                          {...field}
-                                        />
-                                      </FormControl>
+                                        <RadioGroup
+                                          onValueChange={(newValue) => {
+                                            if (newValue === 'none') {
+                                              form.setValue(
+                                                `forms.${currentFormIndex}.defaultConversionValue`,
+                                                { type: 'none', value: '0', currencyCode: 'USD' }
+                                              );
+                                            } else {
+                                              // Maintain the existing values but indicate that a value should be set
+                                              form.setValue(
+                                                `forms.${currentFormIndex}.defaultConversionValue`,
+                                                {
+                                                  type: 'conversionValue',
+                                                  value: '0',
+                                                  currencyCode: 'USD',
+                                                }
+                                              ); // Set a default structure for 'conversionValue'
+                                            }
+                                          }}
+                                          defaultValue={field.value?.type}
+                                          className="flex flex-col space-y-1"
+                                        >
+                                          <FormItem className="flex items-center space-x-3 space-y-0">
+                                            <FormControl>
+                                              <RadioGroupItem value="none" />
+                                            </FormControl>
+                                            <FormLabel className="font-normal">
+                                              Don't set a default conversion value
+                                            </FormLabel>
+                                          </FormItem>
+                                          <FormItem className="flex items-center space-x-3 space-y-0">
+                                            <FormControl>
+                                              <RadioGroupItem value="conversionValue" />
+                                            </FormControl>
+                                            <FormLabel className="font-normal">
+                                              Set a default conversion value
+                                            </FormLabel>
+                                            {field.value?.type === 'conversionValue' && (
+                                              <div className="flex items-center space-x-3">
+                                                <Input
+                                                  placeholder="Enter default conversion value"
+                                                  {...form.register(
+                                                    `forms.${currentFormIndex}.defaultConversionValue.value`
+                                                  )}
+                                                />
 
+                                                <Select
+                                                  value={form.watch(
+                                                    `forms.${currentFormIndex}.defaultConversionValue.currencyCode`
+                                                  )}
+                                                  onValueChange={(selectedCurrency) => {
+                                                    form.setValue(
+                                                      `forms.${currentFormIndex}.defaultConversionValue.currencyCode`,
+                                                      selectedCurrency,
+                                                      { shouldValidate: true }
+                                                    );
+                                                  }}
+                                                >
+                                                  <SelectTrigger>
+                                                    <SelectValue placeholder="Select currency" />
+                                                  </SelectTrigger>
+                                                  <SelectContent>
+                                                    <SelectGroup>
+                                                      {Object.entries(Currencies).map(
+                                                        ([code, name]) => (
+                                                          <SelectItem key={code} value={code}>
+                                                            {code} - {name}
+                                                          </SelectItem>
+                                                        )
+                                                      )}
+                                                    </SelectGroup>
+                                                  </SelectContent>
+                                                </Select>
+                                              </div>
+                                            )}
+                                          </FormItem>
+                                        </RadioGroup>
+                                      </FormControl>
                                       <FormMessage />
                                     </FormItem>
                                   )}
                                 />
-
-                                {measurementUnit === MeasurementUnit.CURRENCY ? null : (
-                                  <FormField
-                                    control={form.control}
-                                    name={`forms.${currentFormIndex}.measurementUnit`}
-                                    render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel>Measurement</FormLabel>
-                                        <FormDescription>
-                                          The measurement of this metric.
-                                        </FormDescription>
-                                        <FormControl>
-                                          <Select
-                                            {...form.register(
-                                              `forms.${currentFormIndex}.measurementUnit`
-                                            )}
-                                            {...field}
-                                            onValueChange={field.onChange}
-                                          >
-                                            <SelectTrigger>
-                                              <SelectValue placeholder="Select a custom dimension type." />
-                                            </SelectTrigger>
-
-                                            <SelectContent>
-                                              <SelectGroup>
-                                                <SelectLabel>Measurement Unit Type</SelectLabel>
-                                                {Object.entries(MeasurementUnitUpdateType).map(
-                                                  ([label, value]) => (
-                                                    <SelectItem key={value} value={value}>
-                                                      {label}
-                                                    </SelectItem>
-                                                  )
-                                                )}
-                                              </SelectGroup>
-                                            </SelectContent>
-                                          </Select>
-                                        </FormControl>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
-                                )}
-
-                                {measurementUnit === MeasurementUnit.CURRENCY && (
-                                  <FormField
-                                    control={form.control}
-                                    name={`forms.${currentFormIndex}.restrictedMetricType`}
-                                    render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel>Restricted Metric Type</FormLabel>
-                                        <FormDescription>
-                                          Optional. Types of restricted data that this metric may
-                                          contain. Required for metrics with CURRENCY measurement
-                                          unit. Must be empty for metrics with a non-CURRENCY
-                                          measurement unit.
-                                        </FormDescription>
-                                        {RestrictedMetric.map((item) => (
-                                          <FormField
-                                            key={item.id}
-                                            control={form.control}
-                                            name={`forms.${currentStep - 2}.restrictedMetricType`}
-                                            render={({ field }) => {
-                                              return (
-                                                <FormItem
-                                                  key={item.id}
-                                                  className="flex flex-row items-start space-x-3 space-y-0"
-                                                >
-                                                  <FormControl>
-                                                    <Checkbox
-                                                      checked={
-                                                        Array.isArray(field.value) &&
-                                                        field.value.includes(item.id)
-                                                      }
-                                                      onCheckedChange={(checked) => {
-                                                        if (Array.isArray(field.value)) {
-                                                          const updatedValue = checked
-                                                            ? [...field.value, item.id]
-                                                            : field.value.filter(
-                                                                (value) => value !== item.id
-                                                              );
-                                                          field.onChange(updatedValue);
-                                                        } else {
-                                                          field.onChange([item.id]);
-                                                        }
-                                                      }}
-                                                    />
-                                                  </FormControl>
-                                                  <FormLabel className="text-sm font-normal">
-                                                    {item.label}
-                                                  </FormLabel>
-                                                </FormItem>
-                                              );
-                                            }}
-                                          />
-                                        ))}
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
-                                )}
                               </>
                             );
                           }
@@ -463,4 +438,4 @@ const FormUpdateCustomMetric = () => {
   );
 };
 
-export default FormUpdateCustomMetric;
+export default FormUpdateConversionEvent;
