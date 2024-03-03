@@ -6,8 +6,9 @@ import { DataTable } from './table';
 import { columns } from './columns';
 import { listGAProperties } from '@/src/lib/fetch/dashboard/actions/ga/properties';
 import { listGaAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
+import { listGAFirebaseLinks } from '@/src/lib/fetch/dashboard/actions/ga/links';
 
-export default async function StreamPage({
+export default async function FirebaseLinkPage({
   searchParams,
 }: {
   searchParams?: {
@@ -22,41 +23,41 @@ export default async function StreamPage({
 
   const accountData = await listGaAccounts();
   const propertyData = await listGAProperties();
+  const firebaseLinkData = await listGAFirebaseLinks();
+  console.log('firebaseLinkData', firebaseLinkData);
+  
+  
 
-  const [accounts, properties] = await Promise.all([accountData, propertyData]);
+  const [accounts, properties, fb] = await Promise.all([accountData, propertyData, firebaseLinkData]);
 
   const flatAccounts = accounts.flat();
   const flatProperties = properties.flat();
+  const flatFirebaseLinks = firebaseLinkData.flatMap(item => item.firebaseLinks || []);
 
-  const combinedData = flatProperties.map((property) => {
-    // Find the matching account
-    const account = flatAccounts.find((a) => a.name === property.parent);
 
-    // Transformation functions
-    const extractId = (path) => path.split('/')[1];
-    const formatType = (propertyType) => {
-      // Split the string into parts based on underscores
-      const parts = propertyType.split('_');
+  console.log('flatFirebaseLinks', flatFirebaseLinks);
+  console.log('flatProperties', flatProperties);
+  console.log('flatAccounts', flatAccounts);
+  
 
-      // Take the last part of the split string, which should be "ORDINARY" in your example
-      const lastPart = parts[parts.length - 1];
+  const combinedData = flatFirebaseLinks.map((fb) => {
+    const propertyId = fb.name.split('/')[1];
+    console.log('propertyId', propertyId);
+    
+    const property = flatProperties.find((p) => p.name.includes(propertyId));
+    const accounts = flatAccounts.filter((a) => a.name === property?.parent);
 
-      // Convert that part to lowercase, then capitalize the first letter
-      return lastPart[0] + lastPart.slice(1).toLowerCase();
-    };
-
-    // Apply transformations
     return {
-      ...property,
-      name: extractId(property.name), // Transforming the 'name' property
-      parent: property.parent ? extractId(property.parent) : 'Unknown', // Conditional transformation if 'parent' exists
-      serviceLevel: formatType(property.serviceLevel), // Transforming the 'serviceLevel'
-      propertyType: formatType(property.propertyType), // Transforming the 'propertyType'
-      accountName: account ? account.displayName : 'Unknown Account', // Setting 'accountName' from 'flatAccounts' or default
-      retention: property.dataRetentionSettings.eventDataRetention,
-      resetOnNewActivity: property.dataRetentionSettings.resetUserDataOnNewActivity || false,
+      ...fb,
+      account: accounts ? accounts[0].name : 'Unknown Account ID',
+      accountName: accounts ? accounts[0].displayName : 'Unknown Account Name',
+      property: property.displayName,
+      name: fb.name,
+      project: fb.project,
     };
   });
+  console.log('combinedData', combinedData);
+  
 
   return (
     <>

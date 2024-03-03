@@ -8,7 +8,7 @@ import { listGAConversionEvents } from '@/src/lib/fetch/dashboard/actions/ga/con
 import { DataTable } from './table';
 import { listGaAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
 
-export default async function CustomMetricPage({
+export default async function ConversionEventPage({
   searchParams,
 }: {
   searchParams?: {

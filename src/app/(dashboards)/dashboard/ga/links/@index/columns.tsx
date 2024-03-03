@@ -10,12 +10,7 @@ import { ArrowUpDown } from 'lucide-react';
 export type Property = {
   id: string;
   select: boolean;
-  displayName: string;
   name: string;
-  timeZone: string;
-  retenionSetting: string;
-  propertyType: string;
-  serviceLevel: string;
   accountName: string;
 };
 
@@ -43,14 +38,14 @@ export const columns: ColumnDef<Property>[] = [
   },
 
   {
-    accessorKey: 'displayName',
+    accessorKey: 'project',
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Name
+          Project
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
@@ -65,77 +60,6 @@ export const columns: ColumnDef<Property>[] = [
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
           Property ID
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-  },
-  {
-    accessorKey: 'timeZone',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Time Zone
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-  },
-  {
-    accessorKey: 'retention',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Retention Setting
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-  },
-  {
-    accessorKey: 'resetOnNewActivity',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Reset User Data <br />
-          On New Activity
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-  },
-  {
-    accessorKey: 'propertyType',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Property Type
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-  },
-  {
-    accessorKey: 'serviceLevel',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Service Level
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
