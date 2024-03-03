@@ -263,7 +263,7 @@ const FormUpdateProperty = () => {
               key={fields[currentStep - 1].id}
               className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
             >
-              <div className="max-w-xl mx-auto">
+              <div className="max-w-full mx-auto">
                 <h1>{fields[currentFormIndex]?.displayName}</h1>
                 <div className="mt-12">
                   {/* Form */}
