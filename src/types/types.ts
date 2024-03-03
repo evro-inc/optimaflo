@@ -481,3 +481,11 @@ export interface ConversionEvent {
   countingMethod?: ConversionCountingMethod;
   defaultConversionValue?: DefaultConversionValue;
 }
+
+// Link Types
+export interface FirebaseLink {
+  account: string;
+  property: string;
+  name: string;
+  project: string;
+}
