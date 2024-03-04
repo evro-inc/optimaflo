@@ -497,3 +497,21 @@ export interface GoogleAdsLink {
   customerId: string; // Google Ads customer ID
   adsPersonalizationEnabled: boolean; // Enables personalized advertising features
 }
+
+
+// Account Access Permissions
+type Role =
+  | 'predefinedRoles/viewer'
+  | 'predefinedRoles/analyst'
+  | 'predefinedRoles/editor'
+  | 'predefinedRoles/admin'
+  | 'predefinedRoles/no-cost-data'
+  | 'predefinedRoles/no-revenue-data';
+
+interface AccessBinding {
+  name?: string; // Output only. Format: accounts/{account}/accessBindings/{accessBinding} or properties/{property}/accessBindings/{accessBinding}
+  roles: Role[]; // A list of roles to grant to the parent resource.
+  
+  // Union field access_target
+  user?: string; // Optional. If set, the email address of the user to set roles for.
+}

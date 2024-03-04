@@ -10,11 +10,9 @@ import { currentUser } from '@clerk/nextjs';
 
 export default async function PropertiesLayout({
   children,
-  ads,
   index,
 }: {
   children: React.ReactNode;
-  ads: React.ReactNode;
   index: React.ReactNode;
 }) {
   const user = await currentUser();
@@ -31,7 +29,6 @@ export default async function PropertiesLayout({
         {/* Page Heading */}
         {children}
         {index}
-        {ads}
       </div>
     </>
   );
