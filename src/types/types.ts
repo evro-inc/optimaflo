@@ -489,3 +489,11 @@ export interface FirebaseLink {
   name: string;
   project: string;
 }
+
+export interface GoogleAdsLink {
+  account: string;
+  property: string;
+  name?: string; // Format: properties/{propertyId}/googleAdsLinks/{googleAdsLinkId}
+  customerId: string; // Google Ads customer ID
+  adsPersonalizationEnabled: boolean; // Enables personalized advertising features
+}

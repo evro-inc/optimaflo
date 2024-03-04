@@ -4,7 +4,7 @@ import { auth } from '@clerk/nextjs';
 import { Skeleton } from '@/src/components/ui/skeleton';
 import { columns } from './columns';
 import { listGAProperties } from '@/src/lib/fetch/dashboard/actions/ga/properties';
-import { listGAConversionEvents } from '@/src/lib/fetch/dashboard/actions/ga/conversions';
+import { listGAGoogleAdsLinks } from '@/src/lib/fetch/dashboard/actions/ga/ads';
 import { DataTable } from './table';
 import { listGaAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
 
@@ -23,37 +23,29 @@ export default async function ConversionEventPage({
 
   const accountData = await listGaAccounts();
   const propertyData = await listGAProperties();
-  const conversionEvent = await listGAConversionEvents();
+  const adLink = await listGAGoogleAdsLinks();
 
-  const [accounts, properties, ce] = await Promise.all([
-    accountData,
-    propertyData,
-    conversionEvent,
-  ]);
+  const [accounts, properties, ad] = await Promise.all([accountData, propertyData, adLink]);
 
   const flatAccounts = accounts.flat();
   const flatProperties = properties.flat();
-  const flattenedConversionEvent = ce.flatMap((item) => item.conversionEvents || []);
+  const flattenedAds = adLink.flatMap((item) => item.googleAdsLinks || []);
 
-  const combinedData = flattenedConversionEvent.map((ce) => {
-    const propertyId = ce.name.split('/')[1];
+  const combinedData = flattenedAds.map((ad) => {
+    const propertyId = ad.name.split('/')[1];
     const property = flatProperties.find((p) => p.name.includes(propertyId));
     const accounts = flatAccounts.filter((a) => a.name === property?.parent);
 
-    const deletable = ce.deletable === true ? true : false;
-    const custom = ce.custom === true ? true : false;
-
     return {
-      ...ce,
+      ...ad,
       account: accounts ? accounts[0].name : 'Unknown Account ID',
       accountName: accounts ? accounts[0].displayName : 'Unknown Account Name',
       property: property.displayName,
-      name: ce.name,
-      eventName: ce.eventName,
-      countingMethod: ce.countingMethod,
-      defaultConversionValue: ce.defaultConversionValue,
-      deletable: deletable,
-      custom: custom,
+      name: ad.name,
+      customerId: ad.customerId,
+      canManageClients: ad.canManageClients,
+      adsPersonalizationEnabled: ad.adsPersonalizationEnabled,
+      creatorEmailAddress: ad.creatorEmailAddress,
     };
   });
 
