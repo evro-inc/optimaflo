@@ -7,15 +7,14 @@ import { ArrowUpDown } from 'lucide-react';
 
 // This type is used to define the shape of our data.
 // You can use a Zod schema here if you want.
-export type Stream = {
+export type Property = {
   id: string;
   select: boolean;
-  displayName: string;
-  streamType: string;
-  streamId: string;
+  name: string;
+  accountName: string;
 };
 
-export const columns: ColumnDef<Stream>[] = [
+export const columns: ColumnDef<Property>[] = [
   {
     id: 'select',
     header: ({ table }) => (
@@ -39,42 +38,28 @@ export const columns: ColumnDef<Stream>[] = [
   },
 
   {
-    accessorKey: 'displayName',
+    accessorKey: 'project',
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Name
+          Project
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
     },
   },
   {
-    accessorKey: 'typeDisplayName',
+    accessorKey: 'name',
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Stream Type
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-  },
-  {
-    accessorKey: 'property',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Property
+          Property ID
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
@@ -88,7 +73,21 @@ export const columns: ColumnDef<Stream>[] = [
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Account
+          Account Name
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+  },
+  {
+    accessorKey: 'property',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Propoerty Name
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );

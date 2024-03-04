@@ -2,13 +2,13 @@ import React, { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import { auth } from '@clerk/nextjs';
 import { Skeleton } from '@/src/components/ui/skeleton';
+import { DataTable } from './table';
 import { columns } from './columns';
 import { listGAProperties } from '@/src/lib/fetch/dashboard/actions/ga/properties';
-import { listGACustomMetrics } from '@/src/lib/fetch/dashboard/actions/ga/metrics';
-import { DataTable } from './table';
 import { listGaAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
+import { listGAFirebaseLinks } from '@/src/lib/fetch/dashboard/actions/ga/links';
 
-export default async function CustomMetricPage({
+export default async function FirebaseLinkPage({
   searchParams,
 }: {
   searchParams?: {
@@ -23,33 +23,30 @@ export default async function CustomMetricPage({
 
   const accountData = await listGaAccounts();
   const propertyData = await listGAProperties();
-  const customMetrics = await listGACustomMetrics();
+  const firebaseLinkData = await listGAFirebaseLinks();
 
-  const [accounts, properties, cm] = await Promise.all([accountData, propertyData, customMetrics]);
+  const [accounts, properties, fb] = await Promise.all([
+    accountData,
+    propertyData,
+    firebaseLinkData,
+  ]);
 
   const flatAccounts = accounts.flat();
   const flatProperties = properties.flat();
-  const flattenedCustomMetrics = cm
-    .filter((item) => item.customMetrics) // Filter out objects without customMetrics
-    .flatMap((item) => item.customMetrics);
+  const flatFirebaseLinks = firebaseLinkData.flatMap((item) => item.firebaseLinks || []);
 
-  const combinedData = flattenedCustomMetrics.map((cm) => {
-    const propertyId = cm.name.split('/')[1];
+  const combinedData = flatFirebaseLinks.map((fb) => {
+    const propertyId = fb.name.split('/')[1];
     const property = flatProperties.find((p) => p.name.includes(propertyId));
     const accounts = flatAccounts.filter((a) => a.name === property?.parent);
 
     return {
-      ...cm,
-      name: cm.name,
-      parameterName: cm.parameterName,
-      displayName: cm.displayName,
-      scope: cm.scope,
-      measurementUnit: cm.measurementUnit,
-      property: property.displayName,
-      restrictedMetricType: cm.restrictedMetricType,
+      ...fb,
       account: accounts ? accounts[0].name : 'Unknown Account ID',
       accountName: accounts ? accounts[0].displayName : 'Unknown Account Name',
-      disallowAdsPersonalization: cm.scope === 'USER' ? cm.disallowAdsPersonalization : false,
+      property: property.displayName,
+      name: fb.name,
+      project: fb.project,
     };
   });
 
@@ -79,7 +76,7 @@ export default async function CustomMetricPage({
         }
       >
         <div className="container mx-auto py-10">
-          <DataTable columns={columns} data={combinedData} />
+          <DataTable columns={columns} data={combinedData} parentData={accounts} />
         </div>
       </Suspense>
     </>

@@ -1,21 +1,21 @@
 'use client';
 
-import { deleteGAPropertyStreams } from '@/src/lib/fetch/dashboard/actions/ga/streams';
 import {
   clearSelectedRows,
   setErrorDetails,
   setIsLimitReached,
   setNotFoundError,
 } from '@/src/redux/tableSlice';
-import { FeatureResponse, GA4StreamType } from '@/src/types/types';
+import { FeatureResponse, FirebaseLink } from '@/src/types/types';
 import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
+import { deleteGAFirebaseLinks } from '@/src/lib/fetch/dashboard/actions/ga/links';
 
 export const useDeleteHook = (selectedRows, table) => {
   const dispatch = useDispatch();
 
   const handleDelete = async () => {
-    toast('Deleting streams...', {
+    toast('Deleting firebase link...', {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
@@ -23,17 +23,19 @@ export const useDeleteHook = (selectedRows, table) => {
     });
 
     // Use Object.values to get the values from the selectedRows object and cast them to GA4AccountType
-    const ga4StreamToDelete = Object.values(selectedRows as Record<string, GA4StreamType>).map(
+    const ga4AccountsToDelete = Object.values(selectedRows as Record<string, FirebaseLink>).map(
       (prop) => {
         return prop;
       }
     );
 
-    const streamDisplayNames = ga4StreamToDelete.map((stream) => stream.displayName);
+    const accountNames = ga4AccountsToDelete.map((name) => {
+      return `properties/${name}`;
+    });
 
-    const response: FeatureResponse = await deleteGAPropertyStreams(
-      new Set(ga4StreamToDelete),
-      streamDisplayNames
+    const response: FeatureResponse = await deleteGAFirebaseLinks(
+      new Set(ga4AccountsToDelete),
+      accountNames
     );
 
     if (!response.success) {

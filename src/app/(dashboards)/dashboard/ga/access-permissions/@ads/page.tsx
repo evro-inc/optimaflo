@@ -4,12 +4,11 @@ import { auth } from '@clerk/nextjs';
 import { Skeleton } from '@/src/components/ui/skeleton';
 import { columns } from './columns';
 import { listGAProperties } from '@/src/lib/fetch/dashboard/actions/ga/properties';
-import { listGAPropertyStreams } from '@/src/lib/fetch/dashboard/actions/ga/streams';
+import { listGAGoogleAdsLinks } from '@/src/lib/fetch/dashboard/actions/ga/ads';
 import { DataTable } from './table';
 import { listGaAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
-import { dataStreamTypeMapping } from './streamItems';
 
-export default async function PropertyPage({
+export default async function ConversionEventPage({
   searchParams,
 }: {
   searchParams?: {
@@ -24,38 +23,29 @@ export default async function PropertyPage({
 
   const accountData = await listGaAccounts();
   const propertyData = await listGAProperties();
-  const streamData = await listGAPropertyStreams();
+  const adLink = await listGAGoogleAdsLinks();
 
-  const [accounts, properties, streams] = await Promise.all([
-    accountData,
-    propertyData,
-    streamData,
-  ]);
+  const [accounts, properties, ad] = await Promise.all([accountData, propertyData, adLink]);
 
   const flatAccounts = accounts.flat();
   const flatProperties = properties.flat();
-  const dataStreamsArray = streams
-    .filter((stream) => stream.dataStreams)
-    .flatMap((stream) => stream.dataStreams)
-    .flat();
+  const flattenedAds = adLink.flatMap((item) => item.googleAdsLinks || []);
 
-  const combinedData = dataStreamsArray.map((stream) => {
-    const propertyId = stream.name.split('/')[1];
+  const combinedData = flattenedAds.map((ad) => {
+    const propertyId = ad.name.split('/')[1];
     const property = flatProperties.find((p) => p.name.includes(propertyId));
     const accounts = flatAccounts.filter((a) => a.name === property?.parent);
 
     return {
-      ...stream,
-      name: stream.name,
-      type: stream.type,
-      typeDisplayName: dataStreamTypeMapping[stream.type],
-      parent: property.name,
-      createTime: stream.createTime,
-      updateTime: stream.updateTime,
-      displayName: stream.displayName,
-      property: property.displayName,
-      accountId: accounts ? accounts[0].name : 'Unknown Account ID',
+      ...ad,
+      account: accounts ? accounts[0].name : 'Unknown Account ID',
       accountName: accounts ? accounts[0].displayName : 'Unknown Account Name',
+      property: property.displayName,
+      name: ad.name,
+      customerId: ad.customerId,
+      canManageClients: ad.canManageClients,
+      adsPersonalizationEnabled: ad.adsPersonalizationEnabled,
+      creatorEmailAddress: ad.creatorEmailAddress,
     };
   });
 

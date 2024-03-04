@@ -59,6 +59,12 @@ export const NavItems = [
         color: 'text-pink-500',
         href: '/dashboard/ga/links',
       },
+      {
+        title: 'Access Permissions',
+        icon: BarChartIcon,
+        color: 'text-pink-500',
+        href: '/dashboard/ga/access-permissions',
+      },
     ],
   },
 ];

@@ -7,15 +7,14 @@ import { ArrowUpDown } from 'lucide-react';
 
 // This type is used to define the shape of our data.
 // You can use a Zod schema here if you want.
-export type CustomDimension = {
+export type CustomMetric = {
   id: string;
   select: boolean;
-  displayName: string;
-  customDimensionType: string;
-  customDimensionId: string;
+  property: string;
+  accountName: string;
 };
 
-export const columns: ColumnDef<CustomDimension>[] = [
+export const columns: ColumnDef<CustomMetric>[] = [
   {
     id: 'select',
     header: ({ table }) => (
@@ -37,44 +36,29 @@ export const columns: ColumnDef<CustomDimension>[] = [
     enableSorting: false,
     enableHiding: false,
   },
-
   {
-    accessorKey: 'displayName',
+    accessorKey: 'customerId',
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Name
+          Ads Customer ID
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
     },
   },
   {
-    accessorKey: 'parameterName',
+    accessorKey: 'adsPersonalizationEnabled',
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Parameter Name
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-  },
-  {
-    accessorKey: 'scope',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Scope
+          Ads Personalization Enabled
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
