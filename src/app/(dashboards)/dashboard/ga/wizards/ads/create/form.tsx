@@ -6,7 +6,7 @@ import { setLoading, incrementStep, decrementStep, setCount } from '@/redux/form
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { FormCreateAmountSchema, FormsSchema } from '@/src/lib/schemas/ga/firebaseLinks';
+import { FormCreateAmountSchema, FormsSchema } from '@/src/lib/schemas/ga/adsLinks';
 import { Button } from '@/src/components/ui/button';
 import {
   Form,
@@ -30,7 +30,7 @@ import {
 import { Input } from '@/src/components/ui/input';
 import {
   ConversionCountingMethod,
-  FirebaseLink,
+  GoogleAdsLink,
   FeatureResponse,
   FormCreateProps,
 } from '@/src/types/types';
@@ -44,9 +44,10 @@ import {
 import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { createGAFirebaseLinks } from '@/src/lib/fetch/dashboard/actions/ga/links';
+import { createGAGoogleAdsLinks } from '@/src/lib/fetch/dashboard/actions/ga/ads';
 import { ConversionCountingItems, Currencies } from '../../../properties/@conversions/items';
 import { RadioGroup, RadioGroupItem } from '@/src/components/ui/radio-group';
+import { Switch } from '@/src/components/ui/switch';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -64,7 +65,7 @@ const ErrorModal = dynamic(
 
 type Forms = z.infer<typeof FormsSchema>;
 
-const FormCreateFBLink: React.FC<FormCreateProps> = ({
+const FormCreateAds: React.FC<FormCreateProps> = ({
   tierLimits,
   properties = [],
   table = [],
@@ -79,7 +80,7 @@ const FormCreateFBLink: React.FC<FormCreateProps> = ({
   const router = useRouter();
 
   const foundTierLimit = tierLimits.find(
-    (subscription) => subscription.Feature?.name === 'GA4FBLinks'
+    (subscription) => subscription.Feature?.name === 'GA4AdLinks'
   );
 
   const createLimit = foundTierLimit?.createLimit;
@@ -97,11 +98,14 @@ const FormCreateFBLink: React.FC<FormCreateProps> = ({
     })
     .filter((account) => account.properties.length > 0);
 
-  const formDataDefaults: FirebaseLink = {
+  const formDataDefaults: GoogleAdsLink = {
     account: accountsWithProperties[0].name,
-    property: table[0].parent,
-    project: '',
+    property: table.length > 0 ? table[0].parent : '',
+    customerId: '',
+    adsPersonalizationEnabled: true,
     name: '',
+    creatorEmailAddress: '',
+    canManageClients: false,
   };
 
   const formCreateAmount = useForm({
@@ -163,18 +167,18 @@ const FormCreateFBLink: React.FC<FormCreateProps> = ({
     const { forms } = data;
     dispatch(setLoading(true));
 
-    toast('Creating FireBase links...', {
+    toast('Creating conversion events...', {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
       },
     });
 
-    const uniqueFirebaseLinks = new Set(forms.map((form) => form.property));
+    const uniqueGoogleAdsLinks = new Set(forms.map((form) => form.property));
     for (const form of forms) {
-      const identifier = `${form.property}-${form.project}`;
-      if (uniqueFirebaseLinks.has(identifier)) {
-        toast.error(`Duplicate conversion event found for ${form.property} - ${form.project}`, {
+      const identifier = `${form.property}-${form.customerId}`;
+      if (uniqueGoogleAdsLinks.has(identifier)) {
+        toast.error(`Duplicate conversion event found for ${form.property} - ${form.customerId}`, {
           action: {
             label: 'Close',
             onClick: () => toast.dismiss(),
@@ -183,17 +187,17 @@ const FormCreateFBLink: React.FC<FormCreateProps> = ({
         dispatch(setLoading(false));
         return;
       }
-      uniqueFirebaseLinks.add(identifier);
+      uniqueGoogleAdsLinks.add(identifier);
     }
 
     try {
-      const res = (await createGAFirebaseLinks({ forms })) as FeatureResponse;
+      const res = (await createGAGoogleAdsLinks({ forms })) as FeatureResponse;
 
       if (res.success) {
         res.results.forEach((result) => {
           if (result.success) {
             toast.success(
-              `Firebase link ${result.name} created successfully. The table will update shortly.`,
+              `Custom metric ${result.name} created successfully. The table will update shortly.`,
               {
                 action: {
                   label: 'Close',
@@ -210,7 +214,7 @@ const FormCreateFBLink: React.FC<FormCreateProps> = ({
           res.results.forEach((result) => {
             if (result.notFound) {
               toast.error(
-                `Unable to create firebase link ${result.name}. Please check your access permissions. Any other conversion events created were successful.`,
+                `Unable to create ad link ${result.name}. Please check your access permissions. Any other conversion events created were successful.`,
                 {
                   action: {
                     label: 'Close',
@@ -229,7 +233,7 @@ const FormCreateFBLink: React.FC<FormCreateProps> = ({
           res.results.forEach((result) => {
             if (result.limitReached) {
               toast.error(
-                `Unable to create firebase link ${result.name}. You have ${result.remaining} more conversion event(s) you can create.`,
+                `Unable to create ad link ${result.name}. You have ${result.remaining} more conversion event(s) you can create.`,
                 {
                   action: {
                     label: 'Close',
@@ -243,7 +247,7 @@ const FormCreateFBLink: React.FC<FormCreateProps> = ({
         }
         if (res.errors) {
           res.errors.forEach((error) => {
-            toast.error(`Unable to create firebase link. ${error}`, {
+            toast.error(`Unable to create ad link. ${error}`, {
               action: {
                 label: 'Close',
                 onClick: () => toast.dismiss(),
@@ -279,9 +283,10 @@ const FormCreateFBLink: React.FC<FormCreateProps> = ({
 
     // Start with the common fields that are always present
     const fieldsToValidate = [
-      `${currentFormPath}.project`,
       `${currentFormPath}.account`,
       `${currentFormPath}.property`,
+      `${currentFormPath}.customerId`,
+      `${currentFormPath}.adsPersonalizationEnabled`,
     ];
 
     // Now, trigger validation for these fields
@@ -348,14 +353,14 @@ const FormCreateFBLink: React.FC<FormCreateProps> = ({
               className="max-w-full md:max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-1"
             >
               <div className="max-w-full md:max-w-xl mx-auto">
-                <h1>FireBase Links {currentStep - 1}</h1>
+                <h1>Google Ad Link {currentStep - 1}</h1>
                 <div className="mt-2 md:mt-12">
                   {/* Form */}
 
                   <Form {...form}>
                     <form
                       onSubmit={form.handleSubmit(processForm)}
-                      id={`createFBLink-${currentStep - 1}`}
+                      id={`createAdLink-${currentStep - 1}`}
                       className="space-y-6"
                     >
                       {(() => {
@@ -456,23 +461,53 @@ const FormCreateFBLink: React.FC<FormCreateProps> = ({
                             </div>
 
                             <div className="flex flex-col md:flex-row md:space-x-4">
-                              <div className="w-full md:basis-auto">
+                              <div className="w-full md:basis-1/2">
                                 <FormField
                                   control={form.control}
-                                  name={`forms.${currentStep - 2}.project`}
+                                  name={`forms.${currentStep - 2}.customerId`}
                                   render={({ field }) => (
                                     <FormItem>
-                                      <FormLabel>FireBase Project Link to Create</FormLabel>
-                                      <FormDescription>Create a FireBase link.</FormDescription>
+                                      <FormLabel>Google Ads Customer ID</FormLabel>
+                                      <FormDescription>
+                                        This is the Google Ads customer ID from your account.
+                                      </FormDescription>
                                       <FormControl>
                                         <Input
-                                          placeholder="Enter the FireBase project link to create"
-                                          {...form.register(`forms.${currentStep - 2}.project`)}
+                                          placeholder="Google Ads customer ID"
+                                          {...form.register(`forms.${currentStep - 2}.customerId`)}
                                           {...field}
                                         />
                                       </FormControl>
 
                                       <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+
+                              <div className="w-full md:basis-1/2">
+                                <FormField
+                                  control={form.control}
+                                  name={`forms.${currentStep - 2}.adsPersonalizationEnabled`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <div className="space-y-0.5">
+                                        <FormLabel>Ads Personalization Enabled</FormLabel>
+                                        <FormDescription>
+                                          Enable personalized advertising features with this
+                                          integration. Automatically publish my Google Analytics
+                                          audience lists and Google Analytics remarketing
+                                          events/parameters to the linked Google Ads account. If
+                                          this field is not set on create/update, it will be
+                                          defaulted to true.
+                                        </FormDescription>
+                                      </div>
+                                      <FormControl>
+                                        <Switch
+                                          checked={field.value}
+                                          onCheckedChange={field.onChange}
+                                        />
+                                      </FormControl>
                                     </FormItem>
                                   )}
                                 />
@@ -508,4 +543,4 @@ const FormCreateFBLink: React.FC<FormCreateProps> = ({
   );
 };
 
-export default FormCreateFBLink;
+export default FormCreateAds;

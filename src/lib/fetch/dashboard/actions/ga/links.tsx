@@ -15,7 +15,7 @@ import {
   tierUpdateLimit,
 } from '@/src/utils/server';
 import { fetchGASettings } from '../..';
-import { FirebaseLinkSchemaType, FormsSchema } from '@/src/lib/schemas/ga/links';
+import { FirebaseLinkSchemaType, FormsSchema } from '@/src/lib/schemas/ga/firebaseLinks';
 
 /************************************************************************************
   Function to list GA firebase links

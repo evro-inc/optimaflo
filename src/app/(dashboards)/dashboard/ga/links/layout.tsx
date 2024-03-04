@@ -10,18 +10,12 @@ import { currentUser } from '@clerk/nextjs';
 
 export default async function PropertiesLayout({
   children,
-  streams,
+  ads,
   index,
-  dimensions,
-  metrics,
-  conversions,
 }: {
   children: React.ReactNode;
-  streams: React.ReactNode;
+  ads: React.ReactNode;
   index: React.ReactNode;
-  dimensions: React.ReactNode;
-  metrics: React.ReactNode;
-  conversions: React.ReactNode;
 }) {
   const user = await currentUser();
   if (!user) return notFound();
@@ -37,10 +31,7 @@ export default async function PropertiesLayout({
         {/* Page Heading */}
         {children}
         {index}
-        {streams}
-        {dimensions}
-        {metrics}
-        {conversions}
+        {ads}
       </div>
     </>
   );

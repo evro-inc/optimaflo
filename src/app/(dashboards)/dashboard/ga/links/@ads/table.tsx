@@ -87,8 +87,8 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
 
   const handleCreateClick = useCreateHookForm(
     userId,
-    'GA4CustomMetrics',
-    '/dashboard/ga/wizards/conversion-events/create'
+    'GA4AdLinks',
+    '/dashboard/ga/wizards/ads/create'
   );
 
   const onCreateButtonClick = () => {
@@ -101,8 +101,8 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
 
   const handleUpdateClick = useUpdateHookForm(
     userId,
-    'GA4CustomMetrics',
-    '/dashboard/ga/wizards/conversion-events/update',
+    'GA4AdLinks',
+    '/dashboard/ga/wizards/ads/update',
     rowSelectedCount
   );
 
@@ -126,7 +126,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     const keys = [
       `ga:accounts:userId:${userId}`,
       `ga:properties:userId:${userId}`,
-      `ga:customMetrics:userId:${userId}`,
+      `ga:ads:userId:${userId}`,
     ];
     await revalidate(keys, '/dashboard/ga/properties', userId);
   };
@@ -136,13 +136,13 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
   return (
     <div>
       <h2 className="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0">
-        Conversion Events
+        Google Ad Links
       </h2>
       <div className="flex items-center py-4">
         <Input
           placeholder="Filter conversion event names..."
-          value={(table.getColumn('eventName')?.getFilterValue() as string) ?? ''}
-          onChange={(event) => table.getColumn('eventName')?.setFilterValue(event.target.value)}
+          value={(table.getColumn('customerId')?.getFilterValue() as string) ?? ''}
+          onChange={(event) => table.getColumn('customerId')?.setFilterValue(event.target.value)}
           className="max-w-sm"
         />
 

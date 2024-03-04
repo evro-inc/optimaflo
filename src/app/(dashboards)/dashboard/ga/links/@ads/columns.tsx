@@ -12,11 +12,6 @@ export type CustomMetric = {
   select: boolean;
   property: string;
   accountName: string;
-  eventName: string;
-  deleteable: boolean;
-  custom: boolean;
-  countingMethod: string;
-  defaultConversionValue: string;
 };
 
 export const columns: ColumnDef<CustomMetric>[] = [
@@ -41,58 +36,29 @@ export const columns: ColumnDef<CustomMetric>[] = [
     enableSorting: false,
     enableHiding: false,
   },
-
   {
-    accessorKey: 'eventName',
+    accessorKey: 'customerId',
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Event Name
+          Ads Customer ID
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
     },
   },
   {
-    accessorKey: 'deletable',
+    accessorKey: 'adsPersonalizationEnabled',
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Deletable
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-  },
-  {
-    accessorKey: 'custom',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Custom
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-  },
-  {
-    accessorKey: 'countingMethod',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Counting Method
+          Ads Personalization Enabled
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
