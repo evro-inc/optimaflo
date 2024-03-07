@@ -498,20 +498,19 @@ export interface GoogleAdsLink {
   adsPersonalizationEnabled: boolean; // Enables personalized advertising features
 }
 
-
 // Account Access Permissions
-type Role =
-  | 'predefinedRoles/viewer'
-  | 'predefinedRoles/analyst'
-  | 'predefinedRoles/editor'
-  | 'predefinedRoles/admin'
-  | 'predefinedRoles/no-cost-data'
-  | 'predefinedRoles/no-revenue-data';
+export enum Role {
+  VIEWER = 'predefinedRoles/viewer',
+  ANALYST = 'predefinedRoles/analyst',
+  EDITOR = 'predefinedRoles/editor',
+  ADMIN = 'predefinedRoles/admin',
+  NO_COST_DATA = 'predefinedRoles/no-cost-data',
+  NO_REVENUE_DATA = 'predefinedRoles/no-revenue-data',
+}
 
-interface AccessBinding {
+export interface AccountAccessBinding {
+  account: string;
   name?: string; // Output only. Format: accounts/{account}/accessBindings/{accessBinding} or properties/{property}/accessBindings/{accessBinding}
   roles: Role[]; // A list of roles to grant to the parent resource.
-  
-  // Union field access_target
-  user?: string; // Optional. If set, the email address of the user to set roles for.
+  user: string; // Optional. If set, the email address of the user to set roles for.
 }

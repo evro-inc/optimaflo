@@ -10,12 +10,10 @@ const RoleSchema = z.enum([
 ]);
 
 const SingleFormSchema = z.object({
-  name: z.string().regex(
-    /^(accounts\/\d+\/accessBindings\/\d+|properties\/\d+\/accessBindings\/\d+)$/,
-    "Invalid format for 'name'. Expected format: accounts/{account}/accessBindings/{accessBinding} or properties/{property}/accessBindings/{accessBinding}"
-  ).optional(),
-  roles: z.array(RoleSchema), // Validate roles against the predefined roles
-  user: z.string().email().optional(), // Validate the user email, optional
+  account: z.string(),
+  roles: z.array(RoleSchema),
+  user: z.string().email(),
+  name: z.string().optional(),
 });
 
 export const FormCreateAmountSchema = z.object({
@@ -27,4 +25,4 @@ export const FormsSchema = z.object({
 });
 
 // Export the type inferred from CustomConversionsSchema for type safety
-export type AccountPermissionsSchemaType = z.infer<typeof FormsSchema>;
+export type AccountPermissionsSchema = z.infer<typeof FormsSchema>;

@@ -33,23 +33,11 @@ import {
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
 import { revalidate, tierCreateLimit } from '@/src/utils/server';
-import { ReloadIcon } from '@radix-ui/react-icons';
-import { toggleCreate, toggleUpdate } from '@/src/redux/globalSlice';
 import { useDispatch } from 'react-redux';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
 import { useDeleteHook } from './delete';
 import { notFound } from 'next/navigation';
 import { setIsLimitReached, setSelectedRows } from '@/src/redux/tableSlice';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/src/components/ui/dialog';
-import { acknowledgeUserDataCollection } from '@/src/lib/fetch/dashboard/actions/ga/properties';
 import { useCreateHookForm, useUpdateHookForm } from '@/src/hooks/useCRUD';
 import { useTransition } from 'react';
 import { LimitReached } from '@/src/components/client/modals/limitReached';
@@ -104,8 +92,8 @@ export function DataTable<TData, TValue>({
 
   const handleCreateClick = useCreateHookForm(
     userId,
-    'GA4FBLinks',
-    '/dashboard/ga/wizards/firebase-links/create'
+    'GA4AccountAccess',
+    '/dashboard/ga/wizards/account-access/create'
   );
 
   const onCreateButtonClick = () => {
@@ -116,6 +104,20 @@ export function DataTable<TData, TValue>({
     });
   };
 
+  const handleUpdateClick = useUpdateHookForm(
+    userId,
+    'GA4AccountAccess',
+    '/dashboard/ga/wizards/account-access/update',
+    rowSelectedCount
+  );
+
+  const onUpdateButtonClick = () => {
+    startUpdateTransition(() => {
+      handleUpdateClick().catch((error) => {
+        throw new Error(error);
+      });
+    });
+  };
   const handleDelete = useDeleteHook(selectedRowData, table);
 
   const refreshAllCache = async () => {
@@ -125,68 +127,8 @@ export function DataTable<TData, TValue>({
         onClick: () => toast.dismiss(),
       },
     });
-    const keys = [`ga:accounts:userId:${userId}`, `ga:properties:userId:${userId}`];
-    await revalidate(keys, '/dashboard/ga/properties', userId);
-  };
-
-  const handleAcknowledgement = async () => {
-    try {
-      // If you're here, validation succeeded. Proceed with updateContainers.
-      const res = await acknowledgeUserDataCollection(selectedRowData);
-
-      if (res.success) {
-        res.results.forEach((result) => {
-          if (result.success) {
-            toast.success(`Property ${result.name} acknowledged.`, {
-              action: {
-                label: 'Close',
-                onClick: () => toast.dismiss(),
-              },
-            });
-          }
-        });
-      } else {
-        if (res.notFoundError) {
-          res.results.forEach((result) => {
-            if (result.notFound) {
-              toast.error(
-                `Unable to acknowledged property ${result.name}. Please check your access permissions. Any other properties created were successful.`,
-                {
-                  action: {
-                    label: 'Close',
-                    onClick: () => toast.dismiss(),
-                  },
-                }
-              );
-            }
-          });
-
-          /*  dispatch(setErrorDetails(res.results)); // Assuming results contain the error details
-          dispatch(setNotFoundError(true)); // Dispatch the not found error action */
-        }
-
-        if (res.limitReached) {
-          res.results.forEach((result) => {
-            if (result.limitReached) {
-              toast.error(
-                `Unable to create property ${result.name}. You have ${result.remaining} more property(s) you can create.`,
-                {
-                  action: {
-                    label: 'Close',
-                    onClick: () => toast.dismiss(),
-                  },
-                }
-              );
-            }
-          });
-          dispatch(setIsLimitReached(true));
-        }
-      }
-    } catch (error: any) {
-      throw new Error(error);
-    } finally {
-      table.resetRowSelection();
-    }
+    const keys = [`ga:accounts:userId:${userId}`, `ga:accountAccess:userId:${userId}`];
+    await revalidate(keys, '/dashboard/ga/access-permissions', userId);
   };
 
   dispatch(setSelectedRows(selectedRowData)); // Update the selected rows in Redux
@@ -194,13 +136,13 @@ export function DataTable<TData, TValue>({
   return (
     <div>
       <h2 className="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0">
-        Firebase Links
+        Account
       </h2>
       <div className="flex items-center py-4">
         <Input
           placeholder="Filter property names..."
-          value={(table.getColumn('project')?.getFilterValue() as string) ?? ''}
-          onChange={(event) => table.getColumn('project')?.setFilterValue(event.target.value)}
+          value={(table.getColumn('user')?.getFilterValue() as string) ?? ''}
+          onChange={(event) => table.getColumn('user')?.setFilterValue(event.target.value)}
           className="max-w-sm"
         />
 
@@ -211,39 +153,17 @@ export function DataTable<TData, TValue>({
             {isCreatePending ? 'Loading...' : 'Create'}
           </Button>
 
+          <Button
+            disabled={Object.keys(table.getState().rowSelection).length === 0 || isUpdatePending}
+            onClick={onUpdateButtonClick}
+          >
+            {isUpdatePending ? 'Loading...' : 'Update'}
+          </Button>
+
           <ButtonDelete
             disabled={Object.keys(table.getState().rowSelection).length === 0}
             onDelete={handleDelete}
           />
-
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button
-                disabled={Object.keys(table.getState().rowSelection).length === 0}
-                variant="outline"
-              >
-                Data Acknowledgement
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>User Data Collection Acknowledgement</DialogTitle>
-                <DialogDescription>
-                  I acknowledge that I have the necessary privacy disclosures and rights from my end
-                  users for the collection and processing of their data, including the association
-                  of such data with the visitation information Google Analytics collects from my
-                  site and/or app property. This acknowledgement is required and will be applied to
-                  all selected properties.
-                </DialogDescription>
-              </DialogHeader>
-
-              <DialogFooter>
-                <Button type="submit" onClick={handleAcknowledgement}>
-                  Acknowledge
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

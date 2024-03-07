@@ -4,11 +4,10 @@ import { auth } from '@clerk/nextjs';
 import { Skeleton } from '@/src/components/ui/skeleton';
 import { DataTable } from './table';
 import { columns } from './columns';
-import { listGAProperties } from '@/src/lib/fetch/dashboard/actions/ga/properties';
 import { listGaAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
-import { listGAFirebaseLinks } from '@/src/lib/fetch/dashboard/actions/ga/links';
+import { listGAAccessBindings } from '@/src/lib/fetch/dashboard/actions/ga/accountPermissions';
 
-export default async function FirebaseLinkPage({
+export default async function StreamPage({
   searchParams,
 }: {
   searchParams?: {
@@ -22,33 +21,34 @@ export default async function FirebaseLinkPage({
   if (!userId) return notFound();
 
   const accountData = await listGaAccounts();
-  const propertyData = await listGAProperties();
-  const firebaseLinkData = await listGAFirebaseLinks();
+  const accountAccess = await listGAAccessBindings();
 
-  const [accounts, properties, fb] = await Promise.all([
-    accountData,
-    propertyData,
-    firebaseLinkData,
-  ]);
+  const [accounts] = await Promise.all([accountData]);
 
   const flatAccounts = accounts.flat();
-  const flatProperties = properties.flat();
-  const flatFirebaseLinks = firebaseLinkData.flatMap((item) => item.firebaseLinks || []);
+  const flatAccess = accountAccess.map((item) => item.accessBindings);
 
-  const combinedData = flatFirebaseLinks.map((fb) => {
-    const propertyId = fb.name.split('/')[1];
-    const property = flatProperties.find((p) => p.name.includes(propertyId));
-    const accounts = flatAccounts.filter((a) => a.name === property?.parent);
+  const combinedData = flatAccess.flatMap((group) =>
+    group.map((access) => {
+      // Split the 'name' to extract specific parts, if needed
+      const parts = access.name.split('/');
+      const accountId = parts[1];
+      const accessBindingId = parts[3];
+      const accountName =
+        flatAccounts.find((account) => account.name.split('/')[1] === accountId)?.displayName ||
+        'Account Name Unknown';
 
-    return {
-      ...fb,
-      account: accounts ? accounts[0].name : 'Unknown Account ID',
-      accountName: accounts ? accounts[0].displayName : 'Unknown Account Name',
-      property: property.displayName,
-      name: fb.name,
-      project: fb.project,
-    };
-  });
+      // Return a new object with desired structure or processed data
+      return {
+        name: access.name,
+        accountName,
+        accountId,
+        accessBindingId,
+        user: access.user,
+        roles: access.roles, // Assuming you want to directly use the roles array
+      };
+    })
+  );
 
   return (
     <>

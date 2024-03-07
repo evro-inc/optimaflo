@@ -10,7 +10,12 @@ import { ArrowUpDown } from 'lucide-react';
 export type Property = {
   id: string;
   select: boolean;
+  displayName: string;
   name: string;
+  timeZone: string;
+  retenionSetting: string;
+  propertyType: string;
+  serviceLevel: string;
   accountName: string;
 };
 
@@ -38,28 +43,28 @@ export const columns: ColumnDef<Property>[] = [
   },
 
   {
-    accessorKey: 'project',
+    accessorKey: 'user',
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Project
+          User
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
     },
   },
   {
-    accessorKey: 'name',
+    accessorKey: 'roles',
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Property ID
+          Roles
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
@@ -80,14 +85,14 @@ export const columns: ColumnDef<Property>[] = [
     },
   },
   {
-    accessorKey: 'property',
+    accessorKey: 'accountId',
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Propoerty Name
+          Account Id
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
