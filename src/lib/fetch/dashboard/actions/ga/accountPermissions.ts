@@ -524,7 +524,7 @@ export async function updateGAAccessBindings(formData: AccountPermissionsSchema)
                   user: validatedContainerData.user,
                   roles: validatedContainerData.roles,
                 };
-
+                
                 // Now, requestBody is prepared with the right structure based on the type
                 const response = await fetch(url, {
                   method: 'PATCH',
