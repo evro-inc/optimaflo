@@ -6,7 +6,7 @@ import { setLoading, incrementStep, decrementStep, setCount } from '@/redux/form
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { FormCreateAmountSchema, FormsSchema } from '@/src/lib/schemas/ga/accountAccess';
+import { FormCreateAmountSchema, FormsSchema } from '@/src/lib/schemas/ga/propertyAccess';
 import { Button } from '@/src/components/ui/button';
 import {
   Form,
@@ -39,7 +39,7 @@ import {
 import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { createGAAccessBindings } from '@/src/lib/fetch/dashboard/actions/ga/accountPermissions';
+import { createGAAccessBindings } from '@/src/lib/fetch/dashboard/actions/ga/propertyPermissions';
 import { RadioGroup, RadioGroupItem } from '@/src/components/ui/radio-group';
 import { DataRestrictions, Roles } from '../../../access-permissions/@accounts/items';
 import { Separator } from '@/src/components/ui/separator';
@@ -61,9 +61,10 @@ const ErrorModal = dynamic(
 
 type Forms = z.infer<typeof FormsSchema>;
 
-const FormCreateAccountAccess: React.FC<FormCreateProps> = ({
+const FormCreatePropertyAccess: React.FC<FormCreateProps> = ({
   tierLimits,
   table = [],
+  properties = [],
   accounts = [],
 }) => {
   const dispatch = useDispatch();
@@ -75,18 +76,30 @@ const FormCreateAccountAccess: React.FC<FormCreateProps> = ({
   const router = useRouter();
 
   const foundTierLimit = tierLimits.find(
-    (subscription) => subscription.Feature?.name === 'GA4AccountAccess'
+    (subscription) => subscription.Feature?.name === 'GA4PropertyAccess'
   );
 
   const createLimit = foundTierLimit?.createLimit;
   const createUsage = foundTierLimit?.createUsage;
   const remainingCreate = createLimit - createUsage;
 
+  const accountsWithProperties = accounts
+    .map((account) => {
+      const accountProperties = properties.filter((property) => property.parent === account.name);
+
+      return {
+        ...account,
+        properties: accountProperties,
+      };
+    })
+    .filter((account) => account.properties.length > 0);
+
   const formDataDefaults: AccessBinding = {
     name: '',
     roles: [Role.VIEWER],
-    account: '',
+    account: accountsWithProperties[0].name,
     user: '',
+    property: table[0].parent,
   };
 
   const formCreateAmount = useForm({
@@ -148,7 +161,7 @@ const FormCreateAccountAccess: React.FC<FormCreateProps> = ({
     const { forms } = data;
     dispatch(setLoading(true));
 
-    toast('Creating user access for account...', {
+    toast('Creating user access for property...', {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
@@ -159,7 +172,7 @@ const FormCreateAccountAccess: React.FC<FormCreateProps> = ({
     for (const form of forms) {
       const identifier = `${form.user}-${form.roles}`;
       if (uniqueAccountAccessBindings.has(identifier)) {
-        toast.error(`Duplicate account access found for ${form.user} - ${form.roles}`, {
+        toast.error(`Duplicate property access found for ${form.user} - ${form.roles}`, {
           action: {
             label: 'Close',
             onClick: () => toast.dismiss(),
@@ -178,7 +191,7 @@ const FormCreateAccountAccess: React.FC<FormCreateProps> = ({
         res.results.forEach((result) => {
           if (result.success) {
             toast.success(
-              `Account access for user ${result.name} created successfully. The table will update shortly.`,
+              `Property access for user ${result.name} created successfully. The table will update shortly.`,
               {
                 action: {
                   label: 'Close',
@@ -228,7 +241,7 @@ const FormCreateAccountAccess: React.FC<FormCreateProps> = ({
         }
         if (res.errors) {
           res.errors.forEach((error) => {
-            toast.error(`Unable to create account access for user. ${error}`, {
+            toast.error(`Unable to create property access for user. ${error}`, {
               action: {
                 label: 'Close',
                 onClick: () => toast.dismiss(),
@@ -263,7 +276,12 @@ const FormCreateAccountAccess: React.FC<FormCreateProps> = ({
     const currentFormPath = `forms.${currentFormIndex}`;
 
     // Start with the common fields that are always present
-    const fieldsToValidate = [`${currentFormPath}.roles`, `${currentFormPath}.user`];
+    const fieldsToValidate = [
+      `${currentFormPath}.roles`,
+      `${currentFormPath}.user`,
+      `${currentFormPath}.account`,
+      `${currentFormPath}.property`,
+    ];
 
     // Now, trigger validation for these fields
     const isFormValid = await form.trigger(fieldsToValidate as any);
@@ -336,12 +354,15 @@ const FormCreateAccountAccess: React.FC<FormCreateProps> = ({
                   <Form {...form}>
                     <form
                       onSubmit={form.handleSubmit(processForm)}
-                      id={`createConversion-${currentStep - 1}`}
+                      id={`createPropertyAccess-${currentStep - 1}`}
                       className="space-y-6"
                     >
                       {(() => {
                         const currentIndex = currentStep - 2; // Adjust for zero-based index
-
+                        const selectedAccountId = form.watch(`forms.${currentIndex}.account`);
+                        const filteredProperties = properties.filter(
+                          (property) => property.parent === selectedAccountId
+                        );
                         return (
                           <>
                             <div className="flex flex-col md:flex-row md:space-x-4">
@@ -367,11 +388,62 @@ const FormCreateAccountAccess: React.FC<FormCreateProps> = ({
                                           <SelectContent>
                                             <SelectGroup>
                                               <SelectLabel>Account</SelectLabel>
-                                              {accounts.map((account) => (
+                                              {accountsWithProperties.map((account) => (
                                                 <SelectItem key={account.name} value={account.name}>
                                                   {account.displayName}
                                                 </SelectItem>
                                               ))}
+                                            </SelectGroup>
+                                          </SelectContent>
+                                        </Select>
+                                      </FormControl>
+
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+                            </div>
+
+                            <div className="flex flex-col md:flex-row md:space-x-4">
+                              <div className="w-full md:basis-auto">
+                                <FormField
+                                  control={form.control}
+                                  name={`forms.${currentStep - 2}.property`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Property</FormLabel>
+                                      <FormDescription>
+                                        Which property do you want to create the custom dimension
+                                        in?
+                                      </FormDescription>
+                                      <FormControl>
+                                        <Select
+                                          {...form.register(`forms.${currentStep - 2}.property`)}
+                                          {...field}
+                                          onValueChange={field.onChange}
+                                        >
+                                          <SelectTrigger>
+                                            <SelectValue placeholder="Select a property." />
+                                          </SelectTrigger>
+
+                                          <SelectContent>
+                                            <SelectGroup>
+                                              <SelectLabel>Property</SelectLabel>
+                                              {filteredProperties.length > 0 ? (
+                                                filteredProperties.map((property) => (
+                                                  <SelectItem
+                                                    key={property.name}
+                                                    value={property.name}
+                                                  >
+                                                    {property.displayName}
+                                                  </SelectItem>
+                                                ))
+                                              ) : (
+                                                <SelectItem value="" disabled>
+                                                  No properties available
+                                                </SelectItem>
+                                              )}
                                             </SelectGroup>
                                           </SelectContent>
                                         </Select>
@@ -532,4 +604,4 @@ const FormCreateAccountAccess: React.FC<FormCreateProps> = ({
   );
 };
 
-export default FormCreateAccountAccess;
+export default FormCreatePropertyAccess;

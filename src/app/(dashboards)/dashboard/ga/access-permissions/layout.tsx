@@ -10,10 +10,12 @@ import { currentUser } from '@clerk/nextjs';
 
 export default async function PropertiesLayout({
   children,
-  index,
+  accounts,
+  properties,
 }: {
   children: React.ReactNode;
-  index: React.ReactNode;
+  accounts: React.ReactNode;
+  properties: React.ReactNode;
 }) {
   const user = await currentUser();
   if (!user) return notFound();
@@ -28,7 +30,8 @@ export default async function PropertiesLayout({
       <div className="flex-1 overflow-y-auto overflow-x-hidden pt-16 bg-secondary/10 pb-1">
         {/* Page Heading */}
         {children}
-        {index}
+        {accounts}
+        {properties}
       </div>
     </>
   );

@@ -508,9 +508,10 @@ export enum Role {
   NO_REVENUE_DATA = 'predefinedRoles/no-revenue-data',
 }
 
-export interface AccountAccessBinding {
+export interface AccessBinding {
   account: string;
   name?: string; // Output only. Format: accounts/{account}/accessBindings/{accessBinding} or properties/{property}/accessBindings/{accessBinding}
   roles: Role[]; // A list of roles to grant to the parent resource.
-  user: string; // Optional. If set, the email address of the user to set roles for.
+  user: string;
+  property: string;
 }

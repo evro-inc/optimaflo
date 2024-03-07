@@ -15,7 +15,7 @@ import {
   tierUpdateLimit,
 } from '@/src/utils/server';
 import { fetchGASettings } from '../..';
-import { AccountPermissionsSchema, FormsSchema } from '@/src/lib/schemas/ga/accountAccess';
+import { PropertyPermissionsSchema, FormsSchema } from '@/src/lib/schemas/ga/propertyAccess';
 
 /************************************************************************************
   Function to list GA accountAccess
@@ -32,7 +32,7 @@ export async function listGAAccessBindings() {
   const token = await currentUserOauthAccessToken(userId);
   const accessToken = token[0].token;
 
-  const cacheKey = `ga:accountAccess:userId:${userId}`;
+  const cacheKey = `ga:propertyAccess:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
 
   if (cachedValue) {
@@ -57,11 +57,11 @@ export async function listGAAccessBindings() {
         let allData: any[] = [];
 
         await limiter.schedule(async () => {
-          const uniqueAccountIds = Array.from(new Set(gaData.ga.map((item) => item.accountId)));
+          const uniquePropertyIds = Array.from(new Set(gaData.ga.map((item) => item.propertyId)));
 
-          const urls = uniqueAccountIds.map(
-            (accountId) =>
-              `https://analyticsadmin.googleapis.com/v1alpha/${accountId}/accessBindings`
+          const urls = uniquePropertyIds.map(
+            (propertyId) =>
+              `https://analyticsadmin.googleapis.com/v1alpha/properties/${propertyId}/accessBindings`
           );
 
           const headers = {
@@ -73,6 +73,7 @@ export async function listGAAccessBindings() {
           for (const url of urls) {
             try {
               const response = await fetch(url, { headers });
+
               if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
               }
@@ -107,7 +108,7 @@ export async function listGAAccessBindings() {
 /************************************************************************************
   Create a single property or multiple accountAccess
 ************************************************************************************/
-export async function createGAAccessBindings(formData: AccountPermissionsSchema) {
+export async function createGAAccessBindings(formData: PropertyPermissionsSchema) {
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
@@ -119,12 +120,12 @@ export async function createGAAccessBindings(formData: AccountPermissionsSchema)
   const successfulCreations: string[] = [];
   const featureLimitReached: string[] = [];
   const notFoundLimit: { id: string; name: string }[] = [];
-  const cacheKey = `ga:accountAccess:userId:${userId}`;
+  const cacheKey = `ga:propertyAccess:userId:${userId}`;
 
   // Refactor: Use string identifiers in the set
   const toCreateAccessBindings = new Set(formData.forms.map((access) => access));
 
-  const tierLimitResponse: any = await tierCreateLimit(userId, 'GA4AccountAccess');
+  const tierLimitResponse: any = await tierCreateLimit(userId, 'GA4PropertyAccess');
   const limit = Number(tierLimitResponse.createLimit);
   const createUsage = Number(tierLimitResponse.createUsage);
   const availableCreateUsage = limit - createUsage;
@@ -185,7 +186,7 @@ export async function createGAAccessBindings(formData: AccountPermissionsSchema)
                 toCreateAccessBindings.delete(identifier);
                 return;
               }
-              const url = `https://analyticsadmin.googleapis.com/v1alpha/${identifier.account}/accessBindings`;
+              const url = `https://analyticsadmin.googleapis.com/v1alpha/${identifier.property}/accessBindings`;
 
               const headers = {
                 Authorization: `Bearer ${token[0].token}`,
@@ -413,7 +414,7 @@ export async function createGAAccessBindings(formData: AccountPermissionsSchema)
 /************************************************************************************
   Update a single property or multiple custom metrics
 ************************************************************************************/
-export async function updateGAAccessBindings(formData: AccountPermissionsSchema) {
+export async function updateGAAccessBindings(formData: PropertyPermissionsSchema) {
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
@@ -429,7 +430,7 @@ export async function updateGAAccessBindings(formData: AccountPermissionsSchema)
   // Refactor: Use string identifiers in the set
   const toUpdateAccessBindings = new Set(formData.forms.map((access) => access));
 
-  const tierLimitResponse: any = await tierUpdateLimit(userId, 'GA4AccountAccess');
+  const tierLimitResponse: any = await tierUpdateLimit(userId, 'GA4PropertyAccess');
   const limit = Number(tierLimitResponse.updateLimit);
   const updateUsage = Number(tierLimitResponse.updateUsage);
   const availableUpdateUsage = limit - updateUsage;
@@ -445,7 +446,7 @@ export async function updateGAAccessBindings(formData: AccountPermissionsSchema)
     return {
       success: false,
       limitReached: true,
-      message: 'Feature limit reached for creating Custom Metrics',
+      message: 'Feature limit reached for udpating user access at the property level.',
       results: [],
     };
   }
@@ -457,7 +458,7 @@ export async function updateGAAccessBindings(formData: AccountPermissionsSchema)
         id: [], // No property ID since creation did not happen
         name: user, // Include the property name from the identifier
         success: false,
-        message: `Creation limit reached. Cannot update custom metric "${user}".`,
+        message: `Creation limit reached. Cannot update property access "${user}".`,
         // remaining creation limit
         remaining: availableUpdateUsage,
         limitReached: true,
@@ -466,9 +467,9 @@ export async function updateGAAccessBindings(formData: AccountPermissionsSchema)
     return {
       success: false,
       features: [],
-      message: `Cannot update ${toUpdateAccessBindings.size} custom metrics as it exceeds the available limit. You have ${availableUpdateUsage} more creation(s) available.`,
+      message: `Cannot update ${toUpdateAccessBindings.size} property access as it exceeds the available limit. You have ${availableUpdateUsage} more creation(s) available.`,
       errors: [
-        `Cannot update ${toUpdateAccessBindings.size} custom metrics as it exceeds the available limit. You have ${availableUpdateUsage} more creation(s) available.`,
+        `Cannot update ${toUpdateAccessBindings.size} property access as it exceeds the available limit. You have ${availableUpdateUsage} more creation(s) available.`,
       ],
       results: attemptedCreations,
       limitReached: true,
@@ -680,7 +681,7 @@ export async function updateGAAccessBindings(formData: AccountPermissionsSchema)
   }
 
   if (successfulCreations.length > 0) {
-    const cacheKey = `ga:accountAccess:userId:${userId}`;
+    const cacheKey = `ga:propertyAccess:userId:${userId}`;
 
     await redis.del(cacheKey);
     revalidatePath(`dashboard/ga/access-permissions`);
@@ -736,10 +737,10 @@ export async function deleteGAAccessBindings(
   // If user ID is not found, return a 'not found' error
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
-  const cacheKey = `ga:accountAccess:userId:${userId}`;
+  const cacheKey = `ga:propertyAccess:userId:${userId}`;
 
   // Check for feature limit using Prisma ORM
-  const tierLimitResponse: any = await tierDeleteLimit(userId, 'GA4AccountAccess');
+  const tierLimitResponse: any = await tierDeleteLimit(userId, 'GA4PropertyAccess');
   const limit = Number(tierLimitResponse.deleteLimit);
   const deleteUsage = Number(tierLimitResponse.deleteUsage);
   const availableDeleteUsage = limit - deleteUsage;
@@ -799,9 +800,9 @@ export async function deleteGAAccessBindings(
                 const parsedResponse = await response.json();
 
                 if (response.ok) {
-                  IdsProcessed.add(identifier?.name);
+                  IdsProcessed.add(identifier?.user);
                   successfulDeletions.push({
-                    name: identifier.name,
+                    name: identifier.user,
                   });
                   toDeleteAccessBindings.delete(identifier);
 
@@ -812,14 +813,14 @@ export async function deleteGAAccessBindings(
 
                   return {
                     name: identifier.name,
-                    eventName: identifier.eventName,
+                    eventName: identifier.user,
                     success: true,
                   };
                 } else {
                   const errorResult = await handleApiResponseError(
                     response,
                     parsedResponse,
-                    'GA4AccountAccess',
+                    'GA4PropertyAccess',
                     conversionEventNames
                   );
 
@@ -830,11 +831,11 @@ export async function deleteGAAccessBindings(
                       parsedResponse.message === 'Feature limit reached'
                     ) {
                       featureLimitReached.push({
-                        name: identifier.name,
+                        name: identifier.user,
                       });
                     } else if (errorResult.errorCode === 404) {
                       notFoundLimit.push({
-                        name: identifier.name,
+                        name: identifier.user,
                       });
                     } else {
                       errors.push(
@@ -850,7 +851,7 @@ export async function deleteGAAccessBindings(
                 // Handling exceptions during fetch
                 errors.push(`Error deleting property ${identifier.name}: ${error.message}`);
               }
-              IdsProcessed.add(identifier.name);
+              IdsProcessed.add(identifier.user);
               toDeleteAccessBindings.delete(identifier);
               return { name: identifier.name, success: false };
             });

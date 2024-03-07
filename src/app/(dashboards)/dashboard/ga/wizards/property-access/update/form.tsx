@@ -6,7 +6,7 @@ import { setLoading, incrementStep, decrementStep } from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { FormsSchema } from '@/src/lib/schemas/ga/accountAccess';
+import { FormsSchema } from '@/src/lib/schemas/ga/propertyAccess';
 import { Button } from '@/src/components/ui/button';
 import {
   Form,
@@ -19,7 +19,7 @@ import {
 } from '@/src/components/ui/form';
 import { FeatureResponse, AccessBinding, Role } from '@/src/types/types';
 import { toast } from 'sonner';
-import { updateGAAccessBindings } from '@/src/lib/fetch/dashboard/actions/ga/accountPermissions';
+import { updateGAAccessBindings } from '@/src/lib/fetch/dashboard/actions/ga/propertyPermissions';
 import {
   selectTable,
   setErrorDetails,
@@ -50,7 +50,7 @@ const ErrorModal = dynamic(
 
 type Forms = z.infer<typeof FormsSchema>;
 
-const FormUpdateAccountAccess = () => {
+const FormUpdatePropertyAccess = () => {
   const dispatch = useDispatch();
   const loading = useSelector((state: RootState) => state.form.loading);
   const error = useSelector((state: RootState) => state.form.error);
@@ -64,6 +64,7 @@ const FormUpdateAccountAccess = () => {
   const formDataDefaults: AccessBinding[] = Object.values(selectedRowData).map((rowData) => ({
     user: rowData.user,
     account: rowData.name.split('/')[1],
+    property: rowData.name,
     roles: rowData.roles,
     name: rowData.name,
   }));
@@ -92,6 +93,7 @@ const FormUpdateAccountAccess = () => {
       `forms.${currentFormIndex}.user`,
       `forms.${currentFormIndex}.account`,
       `forms.${currentFormIndex}.roles`,
+      `forms.${currentFormIndex}.property`,
     ];
 
     // Trigger validation for only the current form's fields
@@ -118,7 +120,7 @@ const FormUpdateAccountAccess = () => {
 
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
-    toast('Updating account access...', {
+    toast('Updating property access...', {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
@@ -129,7 +131,7 @@ const FormUpdateAccountAccess = () => {
     for (const form of forms) {
       const identifier = `${form.user}-${form.account}`;
       if (uniqueAccountAccessBindings.has(identifier)) {
-        toast.error(`Duplicate conversion event found for ${form.roles} - ${form.user}`, {
+        toast.error(`Duplicate property found for ${form.roles} - ${form.user}`, {
           action: {
             label: 'Close',
             onClick: () => toast.dismiss(),
@@ -148,7 +150,7 @@ const FormUpdateAccountAccess = () => {
         res.results.forEach((result) => {
           if (result.success) {
             toast.success(
-              `Account access ${result.name} created successfully. The table will update shortly.`,
+              `Property access ${result.name} updated successfully. The table will update shortly.`,
               {
                 action: {
                   label: 'Close',
@@ -165,7 +167,7 @@ const FormUpdateAccountAccess = () => {
           res.results.forEach((result) => {
             if (result.notFound) {
               toast.error(
-                `Unable to udpate account access ${result.name}. Please check your access permissions. Any other conversion events created were successful.`,
+                `Unable to update property access ${result.name}. Please check your access permissions. Any other conversion events created were successful.`,
                 {
                   action: {
                     label: 'Close',
@@ -184,7 +186,7 @@ const FormUpdateAccountAccess = () => {
           res.results.forEach((result) => {
             if (result.limitReached) {
               toast.error(
-                `Unable to update account access ${result.name}. You have ${result.remaining} more you can update.`,
+                `Unable to update property access ${result.name}. You have ${result.remaining} more you can update.`,
                 {
                   action: {
                     label: 'Close',
@@ -199,7 +201,7 @@ const FormUpdateAccountAccess = () => {
 
         if (res.errors) {
           res.errors.forEach((error) => {
-            toast.error(`Unable to udpate account access. ${error}`, {
+            toast.error(`Unable to update prpoerty access. ${error}`, {
               action: {
                 label: 'Close',
                 onClick: () => toast.dismiss(),
@@ -233,8 +235,6 @@ const FormUpdateAccountAccess = () => {
 
   return (
     <div className="flex items-center justify-center h-screen">
-      {/* Conditional rendering based on the currentStep */}
-
       {currentStep && (
         <div className="w-full">
           {/* Render only the form corresponding to the current step - 1 
@@ -252,7 +252,7 @@ const FormUpdateAccountAccess = () => {
                   <Form {...form}>
                     <form
                       onSubmit={form.handleSubmit(processForm)}
-                      id={`updateAccountAccessBinding-${currentFormIndex}`}
+                      id={`updatePropertyAccessBinding-${currentFormIndex}`}
                       className="space-y-6"
                     >
                       {fields.length > 0 &&
@@ -380,4 +380,4 @@ const FormUpdateAccountAccess = () => {
   );
 };
 
-export default FormUpdateAccountAccess;
+export default FormUpdatePropertyAccess;
