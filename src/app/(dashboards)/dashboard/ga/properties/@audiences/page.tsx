@@ -4,11 +4,11 @@ import { auth } from '@clerk/nextjs';
 import { Skeleton } from '@/src/components/ui/skeleton';
 import { columns } from './columns';
 import { listGAProperties } from '@/src/lib/fetch/dashboard/actions/ga/properties';
-import { listGAConversionEvents } from '@/src/lib/fetch/dashboard/actions/ga/conversions';
+import { listGAAudiences } from '@/src/lib/fetch/dashboard/actions/ga/audiences';
 import { DataTable } from './table';
 import { listGaAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
 
-export default async function CustomMetricPage({
+export default async function AudiencePage({
   searchParams,
 }: {
   searchParams?: {
@@ -23,39 +23,41 @@ export default async function CustomMetricPage({
 
   const accountData = await listGaAccounts();
   const propertyData = await listGAProperties();
-  const conversionEvent = await listGAConversionEvents();
+  const audienceData = await listGAAudiences();  
 
-  const [accounts, properties, ce] = await Promise.all([
+  const [accounts, properties, audience] = await Promise.all([
     accountData,
     propertyData,
-    conversionEvent,
+    audienceData,
   ]);
 
   const flatAccounts = accounts.flat();
   const flatProperties = properties.flat();
-  const flattenedConversionEvent = ce.flatMap((item) => item.conversionEvents || []);
+  const flattenedaudience = audienceData.flatMap(item => item.audiences);  
 
-  const combinedData = flattenedConversionEvent.map((ce) => {
-    const propertyId = ce.name.split('/')[1];
+  const combinedData = flattenedaudience.map((audience) => {
+    const propertyId = audience.name.split('/')[1];
     const property = flatProperties.find((p) => p.name.includes(propertyId));
-    const accounts = flatAccounts.filter((a) => a.name === property?.parent);
-
-    const deletable = ce.deletable === true ? true : false;
-    const custom = ce.custom === true ? true : false;
+    
+    const accounts = flatAccounts.find(
+        (acc) =>
+          acc.name ===
+          flatProperties.find((property) => property.name.split('/')[1] === propertyId)?.parent
+      );
+    
+    const accountName = accounts ? accounts.displayName : 'Account Name Unknown';
 
     return {
-      ...ce,
-      account: accounts ? accounts[0].name : 'Unknown Account ID',
-      accountName: accounts ? accounts[0].displayName : 'Unknown Account Name',
-      property: property.displayName,
-      name: ce.name,
-      eventName: ce.eventName,
-      countingMethod: ce.countingMethod,
-      defaultConversionValue: ce.defaultConversionValue,
-      deletable: deletable,
-      custom: custom,
+      ...audience,
+      account: accounts ? accounts.name : 'Unknown Account ID',
+      accountName,
+      property: property ? property?.displayName: 'Unknown Property Name',
+      displayName: audience.displayName,
+      name: audience.name,
+      membershipDurationDays: audience.membershipDurationDays,
+      adsPersonalizationEnabled: audience.adsPersonalizationEnabled,
     };
-  });
+  });  
 
   return (
     <>

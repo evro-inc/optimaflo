@@ -521,7 +521,9 @@ export interface AccessBinding {
  *********************************************************/
 
 // Main Audience Resource
-interface Audience {
+export interface AudienceType {
+  account: string;
+  property: string;
   name: string;
   displayName: string;
   description: string;

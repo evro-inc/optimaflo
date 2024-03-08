@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 // Enums as Zod enums
-const AudienceExclusionDurationMode = z.enum([
+export const AudienceExclusionDurationMode = z.enum([
   'AUDIENCE_EXCLUSION_DURATION_MODE_UNSPECIFIED',
   'EXCLUDE_TEMPORARILY',
   'EXCLUDE_PERMANENTLY',

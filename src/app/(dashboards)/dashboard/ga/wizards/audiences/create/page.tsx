@@ -1,0 +1,71 @@
+import React from 'react';
+import { notFound } from 'next/navigation';
+import { currentUser } from '@clerk/nextjs';
+import { listGAProperties } from '@/src/lib/fetch/dashboard/actions/ga/properties';
+import { listGaAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
+import { getTierLimit } from '@/src/lib/fetch/tierLimit';
+import { getSubscription } from '@/src/lib/fetch/subscriptions';
+import FormCreateConversionEvent from './form';
+import { listGAAudiences } from '@/src/lib/fetch/dashboard/actions/ga/audiences';
+
+export default async function CreateCustomDimensionPage() {
+  const user = await currentUser();
+  if (!user) return notFound();
+
+  const subscription = await getSubscription(user.id);
+
+  const subscriptionId = subscription.id;
+
+  const tierLimits = await getTierLimit(subscriptionId);
+
+  const accountData = await listGaAccounts();
+  const propertyData = await listGAProperties();
+  const audienceData = await listGAAudiences();  
+
+  const [accounts, properties, audience] = await Promise.all([
+    accountData,
+    propertyData,
+    audienceData,
+  ]);
+
+  const flatAccounts = accounts.flat();
+  const flatProperties = properties.flat();
+  const flattenedaudience = audienceData.flatMap(item => item.audiences);  
+
+  const combinedData = flattenedaudience.map((audience) => {
+    const propertyId = audience.name.split('/')[1];
+    const property = flatProperties.find((p) => p.name.includes(propertyId));
+    
+    const accounts = flatAccounts.find(
+        (acc) =>
+          acc.name ===
+          flatProperties.find((property) => property.name.split('/')[1] === propertyId)?.parent
+      );
+    
+    const accountName = accounts ? accounts.displayName : 'Account Name Unknown';
+
+    return {
+      ...audience,
+      account: accounts ? accounts.name : 'Unknown Account ID',
+      accountName,
+      property: property ? property?.displayName: 'Unknown Property Name',
+      displayName: audience.displayName,
+      name: audience.name,
+      membershipDurationDays: audience.membershipDurationDays,
+      adsPersonalizationEnabled: audience.adsPersonalizationEnabled,
+    };
+  }); 
+
+  return (
+    <>
+      <div className="container">
+        <FormCreateConversionEvent
+          tierLimits={tierLimits}
+          table={combinedData}
+          accounts={accounts}
+          properties={properties}
+        />
+      </div>
+    </>
+  );
+}

@@ -7,7 +7,7 @@ import { redis } from '@/src/lib/redis/cache';
 import { notFound } from 'next/navigation';
 import { currentUserOauthAccessToken } from '@/src/lib/clerk';
 import prisma from '@/src/lib/prisma';
-import { FeatureResult, FeatureResponse, ConversionEvent } from '@/src/types/types';
+import { FeatureResult, FeatureResponse, AudienceType } from '@/src/types/types';
 import {
   handleApiResponseError,
   tierCreateLimit,
@@ -15,12 +15,12 @@ import {
   tierUpdateLimit,
 } from '@/src/utils/server';
 import { fetchGASettings } from '../..';
-import { CustomConversionSchemaType, FormsSchema } from '@/src/lib/schemas/ga/conversion';
+import { Audience, FormsSchema } from '@/src/lib/schemas/ga/audiences';
 
 /************************************************************************************
   Function to list GA conversionEvents
 ************************************************************************************/
-export async function listGAConversionEvents() {
+export async function listGAAudiences() {
   let retries = 0;
   const MAX_RETRIES = 3;
   let delay = 1000;
@@ -32,7 +32,7 @@ export async function listGAConversionEvents() {
   const token = await currentUserOauthAccessToken(userId);
   const accessToken = token[0].token;
 
-  const cacheKey = `ga:conversionEvents:userId:${userId}`;
+  const cacheKey = `ga:audiences:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
 
   if (cachedValue) {
@@ -61,8 +61,11 @@ export async function listGAConversionEvents() {
 
           const urls = uniquePropertyIds.map(
             (propertyId) =>
-              `https://analyticsadmin.googleapis.com/v1beta/properties/${propertyId}/conversionEvents`
+              `https://analyticsadmin.googleapis.com/v1alpha/properties/${propertyId}/audiences`
           );
+          
+          console.log('urls', urls);
+          
 
           const headers = {
             Authorization: `Bearer ${accessToken}`,
@@ -107,7 +110,7 @@ export async function listGAConversionEvents() {
 /************************************************************************************
   Create a single property or multiple conversionEvents
 ************************************************************************************/
-export async function createGAConversionEvents(formData: CustomConversionSchemaType) {
+export async function createGAAudiences(formData: Audience) {
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
@@ -119,12 +122,12 @@ export async function createGAConversionEvents(formData: CustomConversionSchemaT
   const successfulCreations: string[] = [];
   const featureLimitReached: string[] = [];
   const notFoundLimit: { id: string; name: string }[] = [];
-  const cacheKey = `ga:conversionEvents:userId:${userId}`;
+  const cacheKey = `ga:audiences:userId:${userId}`;
 
   // Refactor: Use string identifiers in the set
-  const toCreateConversionEvents = new Set(formData.forms.map((cm) => cm));
+  const toCreateAudiences = new Set(formData.forms.map((cm) => cm));
 
-  const tierLimitResponse: any = await tierCreateLimit(userId, 'GA4ConversionEvents');
+  const tierLimitResponse: any = await tierCreateLimit(userId, 'GA4Audiences');
   const limit = Number(tierLimitResponse.createLimit);
   const createUsage = Number(tierLimitResponse.createUsage);
   const availableCreateUsage = limit - createUsage;
@@ -145,14 +148,14 @@ export async function createGAConversionEvents(formData: CustomConversionSchemaT
     };
   }
 
-  if (toCreateConversionEvents.size > availableCreateUsage) {
-    const attemptedCreations = Array.from(toCreateConversionEvents).map((identifier) => {
-      const eventName = identifier.eventName;
+  if (toCreateAudiences.size > availableCreateUsage) {
+    const attemptedCreations = Array.from(toCreateAudiences).map((identifier) => {
+      const displayName = identifier.displayName;
       return {
         id: [], // No property ID since creation did not happen
-        name: eventName, // Include the property name from the identifier
+        name: displayName, // Include the property name from the identifier
         success: false,
-        message: `Creation limit reached. Cannot create custom metric "${eventName}".`,
+        message: `Creation limit reached. Cannot create custom metric "${displayName}".`,
         // remaining creation limit
         remaining: availableCreateUsage,
         limitReached: true,
@@ -161,9 +164,9 @@ export async function createGAConversionEvents(formData: CustomConversionSchemaT
     return {
       success: false,
       features: [],
-      message: `Cannot create ${toCreateConversionEvents.size} custom metrics as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
+      message: `Cannot create ${toCreateAudiences.size} audience as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
       errors: [
-        `Cannot create ${toCreateConversionEvents.size} custom metrics as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
+        `Cannot create ${toCreateAudiences.size} audiences as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
       ],
       results: attemptedCreations,
       limitReached: true,
@@ -171,22 +174,22 @@ export async function createGAConversionEvents(formData: CustomConversionSchemaT
   }
 
   let permissionDenied = false;
-  const conversionEventNames = formData.forms.map((cm) => cm.eventName);
+  const conversionEventNames = formData.forms.map((cm) => cm.displayName);
 
-  if (toCreateConversionEvents.size <= availableCreateUsage) {
-    while (retries < MAX_RETRIES && toCreateConversionEvents.size > 0 && !permissionDenied) {
+  if (toCreateAudiences.size <= availableCreateUsage) {
+    while (retries < MAX_RETRIES && toCreateAudiences.size > 0 && !permissionDenied) {
       try {
         const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
         if (remaining > 0) {
           await limiter.schedule(async () => {
-            const createPromises = Array.from(toCreateConversionEvents).map(async (identifier) => {
+            const createPromises = Array.from(toCreateAudiences).map(async (identifier) => {
               if (!identifier) {
                 errors.push(`Custom metric data not found for ${identifier}`);
-                toCreateConversionEvents.delete(identifier);
+                toCreateAudiences.delete(identifier);
                 return;
               }
 
-              const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.property}/conversionEvents`;
+              const url = `https://analyticsadmin.googleapis.com/v1alpha/${identifier.property}/audiences`;
 
               const headers = {
                 Authorization: `Bearer ${token[0].token}`,
@@ -204,7 +207,7 @@ export async function createGAConversionEvents(formData: CustomConversionSchemaT
                     .map((issue) => `${issue.path[0]}: ${issue.message}`)
                     .join('. ');
                   errors.push(errorMessage);
-                  toCreateConversionEvents.delete(identifier);
+                  toCreateAudiences.delete(identifier);
                   return {
                     identifier,
                     success: false,
@@ -213,16 +216,78 @@ export async function createGAConversionEvents(formData: CustomConversionSchemaT
                 }
 
                 // Accessing the validated property data
-                const validatedContainerData = validationResult.data.forms[0];
+                const validatedData = validationResult.data.forms[0];
 
-                let requestBody: any = {
-                  eventName: validatedContainerData.eventName,
-                  countingMethod: validatedContainerData.countingMethod,
-                  defaultConversionValue: {
-                    value: validatedContainerData.defaultConversionValue?.value,
-                    currencyCode: validatedContainerData.defaultConversionValue?.currencyCode,
-                  },
-                };
+
+  // Function to dynamically build filter expressions
+  const buildFilterExpression = (filterExpression: any): any => {
+    let result: any = {};
+
+    // Handle different types of filter expressions
+    if (filterExpression.andGroup) {
+      result.andGroup = {
+        filterExpressions: filterExpression.andGroup.filterExpressions.map(buildFilterExpression),
+      };
+    } else if (filterExpression.orGroup) {
+      result.orGroup = {
+        filterExpressions: filterExpression.orGroup.filterExpressions.map(buildFilterExpression),
+      };
+    } else if (filterExpression.notExpression) {
+      result.notExpression = buildFilterExpression(filterExpression.notExpression);
+    } else if (filterExpression.dimensionOrMetricFilter) {
+      result.dimensionOrMetricFilter = { ...filterExpression.dimensionOrMetricFilter };
+    } else if (filterExpression.eventFilter) {
+      result.eventFilter = { ...filterExpression.eventFilter };
+    }
+
+    return result;
+  }
+  
+  
+
+  // Function to dynamically construct filter clauses from formData
+  const buildFilterClauses = (filterClauses: any[]): any[] => {
+    return filterClauses.map((clause) => {
+      let result: any = { clauseType: clause.clauseType };
+
+      if (clause.simpleFilter) {
+        result.simpleFilter = {
+          scope: clause.simpleFilter.scope,
+          filterExpression: buildFilterExpression(clause.simpleFilter.filterExpression),
+        };
+      }
+
+      if (clause.sequenceFilter) {
+        result.sequenceFilter = {
+          scope: clause.sequenceFilter.scope,
+          sequenceSteps: clause.sequenceFilter.sequenceSteps.map((step) => ({
+            scope: step.scope,
+            immediatelyFollows: step.immediatelyFollows,
+            filterExpression: buildFilterExpression(step.filterExpression),
+          })),
+        };
+      }
+
+      return result;
+    });
+  }
+
+  let requestBody = {
+    displayName: validatedData.displayName,
+    description: validatedData.description,
+    membershipDurationDays: validatedData.membershipDurationDays,
+    adsPersonalizationEnabled: validatedData.adsPersonalizationEnabled,
+    eventTrigger: validatedData.eventTrigger ? {
+      eventName: validatedData.eventTrigger.eventName,
+      logCondition: validatedData.eventTrigger.logCondition,
+    } : undefined, // Include eventTrigger only if present
+    exclusionDurationMode: validatedData.exclusionDurationMode,
+    filterClauses: buildFilterClauses(validatedData.filterClauses),
+  };
+
+
+
+
 
                 // Now, requestBody is prepared with the right structure based on the type
                 const response = await fetch(url, {
@@ -235,7 +300,7 @@ export async function createGAConversionEvents(formData: CustomConversionSchemaT
 
                 if (response.ok) {
                   successfulCreations.push(validatedContainerData.eventName);
-                  toCreateConversionEvents.delete(identifier);
+                  toCreateAudiences.delete(identifier);
                   fetchGASettings(userId);
 
                   await prisma.tierLimit.update({
@@ -274,7 +339,7 @@ export async function createGAConversionEvents(formData: CustomConversionSchemaT
                     );
                   }
 
-                  toCreateConversionEvents.delete(identifier);
+                  toCreateAudiences.delete(identifier);
                   permissionDenied = errorResult ? true : permissionDenied;
                   creationResults.push({
                     conversionEventName: validatedContainerData.eventName,
@@ -286,7 +351,7 @@ export async function createGAConversionEvents(formData: CustomConversionSchemaT
                 errors.push(
                   `Exception creating property ${identifier.eventName}: ${error.message}`
                 );
-                toCreateConversionEvents.delete(identifier);
+                toCreateAudiences.delete(identifier);
                 creationResults.push({
                   conversionEventName: identifier.eventName,
                   success: false,
@@ -341,7 +406,7 @@ export async function createGAConversionEvents(formData: CustomConversionSchemaT
             break;
           }
 
-          if (toCreateConversionEvents.size === 0) {
+          if (toCreateAudiences.size === 0) {
             break;
           }
         } else {
@@ -420,7 +485,7 @@ export async function createGAConversionEvents(formData: CustomConversionSchemaT
 /************************************************************************************
   Update a single property or multiple custom metrics
 ************************************************************************************/
-export async function updateGAConversionEvents(formData: CustomConversionSchemaType) {
+export async function updateGAAudiences(formData: Audience) {
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
@@ -434,9 +499,9 @@ export async function updateGAConversionEvents(formData: CustomConversionSchemaT
   const notFoundLimit: { id: string; name: string }[] = [];
 
   // Refactor: Use string identifiers in the set
-  const toUpdateConversionEvents = new Set(formData.forms.map((cm) => cm));
+  const toUpdateAudiences = new Set(formData.forms.map((cm) => cm));
 
-  const tierLimitResponse: any = await tierUpdateLimit(userId, 'GA4ConversionEvents');
+  const tierLimitResponse: any = await tierUpdateLimit(userId, 'GA4Audiences');
   const limit = Number(tierLimitResponse.updateLimit);
   const updateUsage = Number(tierLimitResponse.updateUsage);
   const availableUpdateUsage = limit - updateUsage;
@@ -457,8 +522,8 @@ export async function updateGAConversionEvents(formData: CustomConversionSchemaT
     };
   }
 
-  if (toUpdateConversionEvents.size > availableUpdateUsage) {
-    const attemptedCreations = Array.from(toUpdateConversionEvents).map((identifier) => {
+  if (toUpdateAudiences.size > availableUpdateUsage) {
+    const attemptedCreations = Array.from(toUpdateAudiences).map((identifier) => {
       const eventName = identifier.eventName;
       return {
         id: [], // No property ID since creation did not happen
@@ -473,9 +538,9 @@ export async function updateGAConversionEvents(formData: CustomConversionSchemaT
     return {
       success: false,
       features: [],
-      message: `Cannot update ${toUpdateConversionEvents.size} custom metrics as it exceeds the available limit. You have ${availableUpdateUsage} more creation(s) available.`,
+      message: `Cannot update ${toUpdateAudiences.size} custom metrics as it exceeds the available limit. You have ${availableUpdateUsage} more creation(s) available.`,
       errors: [
-        `Cannot update ${toUpdateConversionEvents.size} custom metrics as it exceeds the available limit. You have ${availableUpdateUsage} more creation(s) available.`,
+        `Cannot update ${toUpdateAudiences.size} custom metrics as it exceeds the available limit. You have ${availableUpdateUsage} more creation(s) available.`,
       ],
       results: attemptedCreations,
       limitReached: true,
@@ -485,16 +550,16 @@ export async function updateGAConversionEvents(formData: CustomConversionSchemaT
   let permissionDenied = false;
   const conversionEventNames = formData.forms.map((cm) => cm.eventName);
 
-  if (toUpdateConversionEvents.size <= availableUpdateUsage) {
-    while (retries < MAX_RETRIES && toUpdateConversionEvents.size > 0 && !permissionDenied) {
+  if (toUpdateAudiences.size <= availableUpdateUsage) {
+    while (retries < MAX_RETRIES && toUpdateAudiences.size > 0 && !permissionDenied) {
       try {
         const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
         if (remaining > 0) {
           await limiter.schedule(async () => {
-            const updatePromises = Array.from(toUpdateConversionEvents).map(async (identifier) => {
+            const updatePromises = Array.from(toUpdateAudiences).map(async (identifier) => {
               if (!identifier) {
                 errors.push(`Custom metrics data not found for ${identifier}`);
-                toUpdateConversionEvents.delete(identifier);
+                toUpdateAudiences.delete(identifier);
                 return;
               }
 
@@ -519,7 +584,7 @@ export async function updateGAConversionEvents(formData: CustomConversionSchemaT
                     .map((issue) => `${issue.path[0]}: ${issue.message}`)
                     .join('. ');
                   errors.push(errorMessage);
-                  toUpdateConversionEvents.delete(identifier);
+                  toUpdateAudiences.delete(identifier);
                   return {
                     identifier,
                     success: false,
@@ -549,7 +614,7 @@ export async function updateGAConversionEvents(formData: CustomConversionSchemaT
 
                 if (response.ok) {
                   successfulCreations.push(validatedContainerData.eventName);
-                  toUpdateConversionEvents.delete(identifier);
+                  toUpdateAudiences.delete(identifier);
 
                   await prisma.tierLimit.update({
                     where: { id: tierLimitResponse.id },
@@ -587,7 +652,7 @@ export async function updateGAConversionEvents(formData: CustomConversionSchemaT
                     );
                   }
 
-                  toUpdateConversionEvents.delete(identifier);
+                  toUpdateAudiences.delete(identifier);
                   permissionDenied = errorResult ? true : permissionDenied;
                   creationResults.push({
                     conversionEventName: validatedContainerData.eventName,
@@ -599,7 +664,7 @@ export async function updateGAConversionEvents(formData: CustomConversionSchemaT
                 errors.push(
                   `Exception creating property ${identifier.eventName}: ${error.message}`
                 );
-                toUpdateConversionEvents.delete(identifier);
+                toUpdateAudiences.delete(identifier);
                 creationResults.push({
                   conversionEventName: identifier.eventName,
                   success: false,
@@ -654,7 +719,7 @@ export async function updateGAConversionEvents(formData: CustomConversionSchemaT
             break;
           }
 
-          if (toUpdateConversionEvents.size === 0) {
+          if (toUpdateAudiences.size === 0) {
             break;
           }
         } else {
@@ -695,7 +760,7 @@ export async function updateGAConversionEvents(formData: CustomConversionSchemaT
   }
 
   if (successfulCreations.length > 0) {
-    const cacheKey = `ga:conversionEvents:userId:${userId}`;
+    const cacheKey = `ga:audiences:userId:${userId}`;
 
     await redis.del(cacheKey);
     revalidatePath(`/dashboard/ga/properties`);
@@ -729,8 +794,8 @@ export async function updateGAConversionEvents(formData: CustomConversionSchemaT
 /************************************************************************************
   Delete a single property or multiple custom metrics
 ************************************************************************************/
-export async function deleteGAConversionEvents(
-  selectedConversionEvents: Set<ConversionEvent>,
+export async function deleteGAAudiences(
+  selectedAudiences: Set<AudienceType>,
   conversionEventNames: string[]
 ): Promise<FeatureResponse> {
   // Initialization of retry mechanism
@@ -745,16 +810,16 @@ export async function deleteGAConversionEvents(
   }> = [];
   const featureLimitReached: { name: string }[] = [];
   const notFoundLimit: { name: string }[] = [];
-  const toDeleteConversionEvents = new Set<ConversionEvent>(selectedConversionEvents);
+  const toDeleteAudiences = new Set<AudienceType>(selectedAudiences);
   // Authenticating user and getting user ID
   const { userId } = await auth();
   // If user ID is not found, return a 'not found' error
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
-  const cacheKey = `ga:conversionEvents:userId:${userId}`;
+  const cacheKey = `ga:audiences:userId:${userId}`;
 
   // Check for feature limit using Prisma ORM
-  const tierLimitResponse: any = await tierDeleteLimit(userId, 'GA4ConversionEvents');
+  const tierLimitResponse: any = await tierDeleteLimit(userId, 'GA4Audiences');
   const limit = Number(tierLimitResponse.deleteLimit);
   const deleteUsage = Number(tierLimitResponse.deleteUsage);
   const availableDeleteUsage = limit - deleteUsage;
@@ -771,24 +836,24 @@ export async function deleteGAConversionEvents(
     };
   }
 
-  if (toDeleteConversionEvents.size > availableDeleteUsage) {
+  if (toDeleteAudiences.size > availableDeleteUsage) {
     // If the deletion request exceeds the available limit
     return {
       success: false,
       features: [],
       errors: [
-        `Cannot delete ${toDeleteConversionEvents.size} custom metrics as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
+        `Cannot delete ${toDeleteAudiences.size} custom metrics as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
       ],
       results: [],
       limitReached: true,
-      message: `Cannot delete ${toDeleteConversionEvents.size} custom metrics as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
+      message: `Cannot delete ${toDeleteAudiences.size} custom metrics as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
     };
   }
   let permissionDenied = false;
 
-  if (toDeleteConversionEvents.size <= availableDeleteUsage) {
+  if (toDeleteAudiences.size <= availableDeleteUsage) {
     // Retry loop for deletion requests
-    while (retries < MAX_RETRIES && toDeleteConversionEvents.size > 0 && !permissionDenied) {
+    while (retries < MAX_RETRIES && toDeleteAudiences.size > 0 && !permissionDenied) {
       try {
         // Enforcing rate limit
         const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
@@ -796,7 +861,7 @@ export async function deleteGAConversionEvents(
         if (remaining > 0) {
           await limiter.schedule(async () => {
             // Creating promises for each property deletion
-            const deletePromises = Array.from(toDeleteConversionEvents).map(async (identifier) => {
+            const deletePromises = Array.from(toDeleteAudiences).map(async (identifier) => {
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.name}`;
 
               const headers = {
@@ -820,7 +885,7 @@ export async function deleteGAConversionEvents(
                   successfulDeletions.push({
                     name: identifier.name,
                   });
-                  toDeleteConversionEvents.delete(identifier);
+                  toDeleteAudiences.delete(identifier);
                   await prisma.ga.deleteMany({
                     where: {
                       accountId: `${identifier.account.split('/')[1]}`,
@@ -842,7 +907,7 @@ export async function deleteGAConversionEvents(
                   const errorResult = await handleApiResponseError(
                     response,
                     parsedResponse,
-                    'GA4ConversionEvents',
+                    'GA4Audiences',
                     conversionEventNames
                   );
 
@@ -865,7 +930,7 @@ export async function deleteGAConversionEvents(
                       );
                     }
 
-                    toDeleteConversionEvents.delete(identifier);
+                    toDeleteAudiences.delete(identifier);
                     permissionDenied = errorResult ? true : permissionDenied;
                   }
                 }
@@ -874,7 +939,7 @@ export async function deleteGAConversionEvents(
                 errors.push(`Error deleting property ${identifier.name}: ${error.message}`);
               }
               IdsProcessed.add(identifier.name);
-              toDeleteConversionEvents.delete(identifier);
+              toDeleteAudiences.delete(identifier);
               return { name: identifier.name, success: false };
             });
 
@@ -916,7 +981,7 @@ export async function deleteGAConversionEvents(
             };
           }
           // Update tier limit usage as before (not shown in code snippet)
-          if (successfulDeletions.length === selectedConversionEvents.size) {
+          if (successfulDeletions.length === selectedAudiences.size) {
             break; // Exit loop if all custom metrics are processed successfully
           }
           if (permissionDenied) {

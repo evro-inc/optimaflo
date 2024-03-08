@@ -87,7 +87,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
 
   const handleCreateClick = useCreateHookForm(
     userId,
-    'GA4CustomMetrics',
+    'GA4ConversionEvents',
     '/dashboard/ga/wizards/conversion-events/create'
   );
 
@@ -101,7 +101,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
 
   const handleUpdateClick = useUpdateHookForm(
     userId,
-    'GA4CustomMetrics',
+    'GA4ConversionEvents',
     '/dashboard/ga/wizards/conversion-events/update',
     rowSelectedCount
   );

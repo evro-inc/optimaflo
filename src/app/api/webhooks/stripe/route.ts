@@ -179,6 +179,7 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
           GA4AdLinks: 2,
           GA4AccountAccess: 10,
           GA4PropertyAccess: 10,
+          GA4Audiences: 10,
         },
         update: {
           GTMContainer: 3,
@@ -203,6 +204,7 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
           GA4AdLinks: 2,
           GA4AccountAccess: 10,
           GA4PropertyAccess: 10,
+          GA4Audiences: 10,
         },
         delete: {
           GTMContainer: 3,
@@ -227,6 +229,7 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
           GA4AdLinks: 2,
           GA4AccountAccess: 5,
           GA4PropertyAccess: 5,
+          GA4Audiences: 10,
         },
       },
       /* Pro Tier */
@@ -254,6 +257,7 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
           GA4AdLinks: 6,
           GA4AccountAccess: 10,
           GA4PropertyAccess: 10,
+          GA4Audiences: 20,
         },
         update: {
           GTMContainer: 10,
@@ -278,6 +282,7 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
           GA4AdLinks: 6,
           GA4AccountAccess: 10,
           GA4PropertyAccess: 10,
+          GA4Audiences: 20,
         },
         delete: {
           GTMContainer: 10,
@@ -302,6 +307,7 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
           GA4AdLinks: 6,
           GA4AccountAccess: 10,
           GA4PropertyAccess: 10,
+          GA4Audiences: 20,
         },
       },
       /* Enterprise Tier */
@@ -329,6 +335,7 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
           GA4AdLinks: 10000,
           GA4AccountAccess: 10000,
           GA4PropertyAccess: 10000,
+          GA4Audiences: 10000,
         },
         update: {
           GTMContainer: 10000,
@@ -353,6 +360,7 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
           GA4AdLinks: 10000,
           GA4AccountAccess: 10000,
           GA4PropertyAccess: 10000,
+          GA4Audiences: 10000,
         },
         delete: {
           GTMContainer: 10000,
@@ -377,6 +385,7 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
           GA4AdLinks: 10000,
           GA4AccountAccess: 10000,
           GA4PropertyAccess: 10000,
+          GA4Audiences: 10000,
         },
       },
     };

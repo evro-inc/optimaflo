@@ -7,19 +7,17 @@ import { ArrowUpDown } from 'lucide-react';
 
 // This type is used to define the shape of our data.
 // You can use a Zod schema here if you want.
-export type CustomMetric = {
+export type Audience = {
   id: string;
   select: boolean;
   property: string;
   accountName: string;
-  eventName: string;
-  deleteable: boolean;
-  custom: boolean;
-  countingMethod: string;
-  defaultConversionValue: string;
+  displayName: string;
+  membershipDurationDays: number;
+  adsPersonalizationEnabled: boolean;
 };
 
-export const columns: ColumnDef<CustomMetric>[] = [
+export const columns: ColumnDef<Audience>[] = [
   {
     id: 'select',
     header: ({ table }) => (
@@ -43,56 +41,14 @@ export const columns: ColumnDef<CustomMetric>[] = [
   },
 
   {
-    accessorKey: 'eventName',
+    accessorKey: 'displayName',
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Event Name
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-  },
-  {
-    accessorKey: 'deletable',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Deletable
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-  },
-  {
-    accessorKey: 'custom',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Custom
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-  },
-  {
-    accessorKey: 'countingMethod',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Counting Method
+          Audience Name
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
@@ -121,6 +77,34 @@ export const columns: ColumnDef<CustomMetric>[] = [
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
           Account
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+  },
+  {
+    accessorKey: 'membershipDurationDays',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Membership Duration (in days)
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+  },
+  {
+    accessorKey: 'adsPersonalizationEnabled',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Ads Personalization Enabled
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
