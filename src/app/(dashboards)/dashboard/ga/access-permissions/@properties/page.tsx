@@ -2,14 +2,13 @@ import React, { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import { auth } from '@clerk/nextjs';
 import { Skeleton } from '@/src/components/ui/skeleton';
-import { columns } from './columns';
-import { listGAProperties } from '@/src/lib/fetch/dashboard/actions/ga/properties';
-import { listGAPropertyStreams } from '@/src/lib/fetch/dashboard/actions/ga/streams';
 import { DataTable } from './table';
+import { columns } from './columns';
 import { listGaAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
-import { dataStreamTypeMapping } from './streamItems';
+import { listGAAccessBindings } from '@/src/lib/fetch/dashboard/actions/ga/propertyPermissions';
+import { listGAProperties } from '@/src/lib/fetch/dashboard/actions/ga/properties';
 
-export default async function PropertyPage({
+export default async function PropertyAccessPage({
   searchParams,
 }: {
   searchParams?: {
@@ -24,40 +23,41 @@ export default async function PropertyPage({
 
   const accountData = await listGaAccounts();
   const propertyData = await listGAProperties();
-  const streamData = await listGAPropertyStreams();
+  const access = await listGAAccessBindings();
 
-  const [accounts, properties, streams] = await Promise.all([
-    accountData,
-    propertyData,
-    streamData,
-  ]);
+  const [accounts, properties] = await Promise.all([accountData, propertyData]);
 
   const flatAccounts = accounts.flat();
   const flatProperties = properties.flat();
-  const dataStreamsArray = streams
-    .filter((stream) => stream.dataStreams)
-    .flatMap((stream) => stream.dataStreams)
-    .flat();
+  const flatAccess = access.map((item) => item.accessBindings);
 
-  const combinedData = dataStreamsArray.map((stream) => {
-    const propertyId = stream.name.split('/')[1];
-    const property = flatProperties.find((p) => p.name.includes(propertyId));
-    const accounts = flatAccounts.filter((a) => a.name === property?.parent);
+  const combinedData = flatAccess.flatMap((group) =>
+    group.map((access) => {
+      const propertyId = access.name.split('/')[1];
+      const parts = access.name.split('/');
+      const accessBindingId = parts[3];
 
-    return {
-      ...stream,
-      name: stream.name,
-      type: stream.type,
-      typeDisplayName: dataStreamTypeMapping[stream.type],
-      parent: property.name,
-      createTime: stream.createTime,
-      updateTime: stream.updateTime,
-      displayName: stream.displayName,
-      property: property.displayName,
-      accountId: accounts ? accounts[0].name : 'Unknown Account ID',
-      accountName: accounts ? accounts[0].displayName : 'Unknown Account Name',
-    };
-  });
+      const account = flatAccounts.find(
+        (acc) =>
+          acc.name ===
+          flatProperties.find((property) => property.name.split('/')[1] === propertyId)?.parent
+      );
+
+      const accountName = account ? account.displayName : 'Account Name Unknown';
+      const propertyName = flatProperties.find(
+        (property) => property.name.split('/')[1] === propertyId
+      );
+
+      return {
+        name: access.name,
+        accountName,
+        accessBindingId,
+        user: access.user,
+        roles: access.roles,
+        property: propertyName?.displayName || 'Property Name Unknown',
+      };
+    })
+  );
 
   return (
     <>
@@ -85,7 +85,7 @@ export default async function PropertyPage({
         }
       >
         <div className="container mx-auto py-10">
-          <DataTable columns={columns} data={combinedData} />
+          <DataTable columns={columns} data={combinedData} parentData={accounts} />
         </div>
       </Suspense>
     </>

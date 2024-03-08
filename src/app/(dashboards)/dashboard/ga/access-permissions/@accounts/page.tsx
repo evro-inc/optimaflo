@@ -2,13 +2,12 @@ import React, { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import { auth } from '@clerk/nextjs';
 import { Skeleton } from '@/src/components/ui/skeleton';
-import { columns } from './columns';
-import { listGAProperties } from '@/src/lib/fetch/dashboard/actions/ga/properties';
-import { listGACustomMetrics } from '@/src/lib/fetch/dashboard/actions/ga/metrics';
 import { DataTable } from './table';
+import { columns } from './columns';
 import { listGaAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
+import { listGAAccessBindings } from '@/src/lib/fetch/dashboard/actions/ga/accountPermissions';
 
-export default async function CustomMetricPage({
+export default async function StreamPage({
   searchParams,
 }: {
   searchParams?: {
@@ -22,36 +21,34 @@ export default async function CustomMetricPage({
   if (!userId) return notFound();
 
   const accountData = await listGaAccounts();
-  const propertyData = await listGAProperties();
-  const customMetrics = await listGACustomMetrics();
+  const accountAccess = await listGAAccessBindings();
 
-  const [accounts, properties, cm] = await Promise.all([accountData, propertyData, customMetrics]);
+  const [accounts] = await Promise.all([accountData]);
 
   const flatAccounts = accounts.flat();
-  const flatProperties = properties.flat();
-  const flattenedCustomMetrics = cm
-    .filter((item) => item.customMetrics) // Filter out objects without customMetrics
-    .flatMap((item) => item.customMetrics);
+  const flatAccess = accountAccess.map((item) => item.accessBindings);
 
-  const combinedData = flattenedCustomMetrics.map((cm) => {
-    const propertyId = cm.name.split('/')[1];
-    const property = flatProperties.find((p) => p.name.includes(propertyId));
-    const accounts = flatAccounts.filter((a) => a.name === property?.parent);
+  const combinedData = flatAccess.flatMap((group) =>
+    group.map((access) => {
+      // Split the 'name' to extract specific parts, if needed
+      const parts = access.name.split('/');
+      const accountId = parts[1];
+      const accessBindingId = parts[3];
+      const accountName =
+        flatAccounts.find((account) => account.name.split('/')[1] === accountId)?.displayName ||
+        'Account Name Unknown';
 
-    return {
-      ...cm,
-      name: cm.name,
-      parameterName: cm.parameterName,
-      displayName: cm.displayName,
-      scope: cm.scope,
-      measurementUnit: cm.measurementUnit,
-      property: property.displayName,
-      restrictedMetricType: cm.restrictedMetricType,
-      account: accounts ? accounts[0].name : 'Unknown Account ID',
-      accountName: accounts ? accounts[0].displayName : 'Unknown Account Name',
-      disallowAdsPersonalization: cm.scope === 'USER' ? cm.disallowAdsPersonalization : false,
-    };
-  });
+      // Return a new object with desired structure or processed data
+      return {
+        name: access.name,
+        accountName,
+        accountId,
+        accessBindingId,
+        user: access.user,
+        roles: access.roles, // Assuming you want to directly use the roles array
+      };
+    })
+  );
 
   return (
     <>
@@ -79,7 +76,7 @@ export default async function CustomMetricPage({
         }
       >
         <div className="container mx-auto py-10">
-          <DataTable columns={columns} data={combinedData} />
+          <DataTable columns={columns} data={combinedData} parentData={accounts} />
         </div>
       </Suspense>
     </>

@@ -177,6 +177,8 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
           GA4Streams: 3,
           GA4FBLinks: 2,
           GA4AdLinks: 2,
+          GA4AccountAccess: 10,
+          GA4PropertyAccess: 10,
         },
         update: {
           GTMContainer: 3,
@@ -199,6 +201,8 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
           GA4Streams: 3,
           GA4FBLinks: 2,
           GA4AdLinks: 2,
+          GA4AccountAccess: 10,
+          GA4PropertyAccess: 10,
         },
         delete: {
           GTMContainer: 3,
@@ -221,6 +225,8 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
           GA4Streams: 3,
           GA4FBLinks: 2,
           GA4AdLinks: 2,
+          GA4AccountAccess: 5,
+          GA4PropertyAccess: 5,
         },
       },
       /* Pro Tier */
@@ -246,6 +252,8 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
           GA4Streams: 12,
           GA4FBLinks: 6,
           GA4AdLinks: 6,
+          GA4AccountAccess: 10,
+          GA4PropertyAccess: 10,
         },
         update: {
           GTMContainer: 10,
@@ -268,6 +276,8 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
           GA4Streams: 12,
           GA4FBLinks: 6,
           GA4AdLinks: 6,
+          GA4AccountAccess: 10,
+          GA4PropertyAccess: 10,
         },
         delete: {
           GTMContainer: 10,
@@ -290,6 +300,8 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
           GA4Streams: 12,
           GA4FBLinks: 6,
           GA4AdLinks: 6,
+          GA4AccountAccess: 10,
+          GA4PropertyAccess: 10,
         },
       },
       /* Enterprise Tier */
@@ -315,6 +327,8 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
           GA4Streams: 10000,
           GA4FBLinks: 10000,
           GA4AdLinks: 10000,
+          GA4AccountAccess: 10000,
+          GA4PropertyAccess: 10000,
         },
         update: {
           GTMContainer: 10000,
@@ -337,6 +351,8 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
           GA4Streams: 10000,
           GA4FBLinks: 10000,
           GA4AdLinks: 10000,
+          GA4AccountAccess: 10000,
+          GA4PropertyAccess: 10000,
         },
         delete: {
           GTMContainer: 10000,
@@ -359,6 +375,8 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
           GA4Streams: 10000,
           GA4FBLinks: 10000,
           GA4AdLinks: 10000,
+          GA4AccountAccess: 10000,
+          GA4PropertyAccess: 10000,
         },
       },
     };

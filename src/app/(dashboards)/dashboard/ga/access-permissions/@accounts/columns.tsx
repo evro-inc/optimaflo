@@ -7,15 +7,19 @@ import { ArrowUpDown } from 'lucide-react';
 
 // This type is used to define the shape of our data.
 // You can use a Zod schema here if you want.
-export type CustomDimension = {
+export type Property = {
   id: string;
   select: boolean;
   displayName: string;
-  customDimensionType: string;
-  customDimensionId: string;
+  name: string;
+  timeZone: string;
+  retenionSetting: string;
+  propertyType: string;
+  serviceLevel: string;
+  accountName: string;
 };
 
-export const columns: ColumnDef<CustomDimension>[] = [
+export const columns: ColumnDef<Property>[] = [
   {
     id: 'select',
     header: ({ table }) => (
@@ -39,56 +43,28 @@ export const columns: ColumnDef<CustomDimension>[] = [
   },
 
   {
-    accessorKey: 'displayName',
+    accessorKey: 'user',
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Name
+          User
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
     },
   },
   {
-    accessorKey: 'parameterName',
+    accessorKey: 'roles',
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Parameter Name
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-  },
-  {
-    accessorKey: 'scope',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Scope
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-  },
-  {
-    accessorKey: 'property',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Property
+          Roles
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
@@ -102,7 +78,21 @@ export const columns: ColumnDef<CustomDimension>[] = [
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Account
+          Account Name
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+  },
+  {
+    accessorKey: 'accountId',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Account Id
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );

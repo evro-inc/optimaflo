@@ -497,3 +497,21 @@ export interface GoogleAdsLink {
   customerId: string; // Google Ads customer ID
   adsPersonalizationEnabled: boolean; // Enables personalized advertising features
 }
+
+// Account Access Permissions
+export enum Role {
+  VIEWER = 'predefinedRoles/viewer',
+  ANALYST = 'predefinedRoles/analyst',
+  EDITOR = 'predefinedRoles/editor',
+  ADMIN = 'predefinedRoles/admin',
+  NO_COST_DATA = 'predefinedRoles/no-cost-data',
+  NO_REVENUE_DATA = 'predefinedRoles/no-revenue-data',
+}
+
+export interface AccessBinding {
+  account: string;
+  name?: string; // Output only. Format: accounts/{account}/accessBindings/{accessBinding} or properties/{property}/accessBindings/{accessBinding}
+  roles: Role[]; // A list of roles to grant to the parent resource.
+  user: string;
+  property: string;
+}

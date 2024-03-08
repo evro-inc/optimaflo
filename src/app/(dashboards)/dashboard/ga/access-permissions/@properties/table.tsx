@@ -32,28 +32,34 @@ import {
 } from '@/src/components/ui/dropdown-menu';
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
-import { revalidate } from '@/src/utils/server';
+import { revalidate, tierCreateLimit } from '@/src/utils/server';
+import { useDispatch } from 'react-redux';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
 import { useDeleteHook } from './delete';
+import { notFound } from 'next/navigation';
+import { setIsLimitReached, setSelectedRows } from '@/src/redux/tableSlice';
 import { useCreateHookForm, useUpdateHookForm } from '@/src/hooks/useCRUD';
-import { setSelectedRows } from '@/src/redux/tableSlice';
-import { useDispatch } from 'react-redux';
 import { useTransition } from 'react';
 import { LimitReached } from '@/src/components/client/modals/limitReached';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  parentData: any;
 }
 
-export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData, TValue>) {
+export function DataTable<TData, TValue>({
+  columns,
+  data,
+  parentData,
+}: DataTableProps<TData, TValue>) {
+  const dispatch = useDispatch();
+  const [isCreatePending, startCreateTransition] = useTransition();
+  const [isUpdatePending, startUpdateTransition] = useTransition();
   const { user } = useUser();
   const userId = user?.id as string;
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-  const dispatch = useDispatch();
-  const [isCreatePending, startCreateTransition] = useTransition();
-  const [isUpdatePending, startUpdateTransition] = useTransition();
 
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
@@ -82,13 +88,12 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     acc[row.id] = row.original;
     return acc;
   }, {});
-
   const rowSelectedCount = Object.keys(selectedRowData).length;
 
   const handleCreateClick = useCreateHookForm(
     userId,
-    'GA4Streams',
-    '/dashboard/ga/wizards/stream/create'
+    'GA4PropertyAccess',
+    '/dashboard/ga/wizards/property-access/create'
   );
 
   const onCreateButtonClick = () => {
@@ -101,8 +106,8 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
 
   const handleUpdateClick = useUpdateHookForm(
     userId,
-    'GA4Streams',
-    '/dashboard/ga/wizards/stream/update',
+    'GA4PropertyAccess',
+    '/dashboard/ga/wizards/property-access/update',
     rowSelectedCount
   );
 
@@ -113,7 +118,6 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
       });
     });
   };
-
   const handleDelete = useDeleteHook(selectedRowData, table);
 
   const refreshAllCache = async () => {
@@ -123,12 +127,8 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
         onClick: () => toast.dismiss(),
       },
     });
-    const keys = [
-      `ga:accounts:userId:${userId}`,
-      `ga:properties:userId:${userId}`,
-      `ga:streams:userId:${userId}`,
-    ];
-    await revalidate(keys, '/dashboard/ga/properties', userId);
+    const keys = [`ga:accounts:userId:${userId}`, `ga:propertyAccess:userId:${userId}`];
+    await revalidate(keys, '/dashboard/ga/access-permissions', userId);
   };
 
   dispatch(setSelectedRows(selectedRowData)); // Update the selected rows in Redux
@@ -136,13 +136,13 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
   return (
     <div>
       <h2 className="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0">
-        Data Streams
+        Property
       </h2>
       <div className="flex items-center py-4">
         <Input
           placeholder="Filter property names..."
-          value={(table.getColumn('displayName')?.getFilterValue() as string) ?? ''}
-          onChange={(event) => table.getColumn('displayName')?.setFilterValue(event.target.value)}
+          value={(table.getColumn('user')?.getFilterValue() as string) ?? ''}
+          onChange={(event) => table.getColumn('user')?.setFilterValue(event.target.value)}
           className="max-w-sm"
         />
 

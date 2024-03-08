@@ -1,5 +1,5 @@
 'use client';
 
 export default function ErrorStreams() {
-  return <h2>Error CDs...</h2>;
+  return <h2>Error Properties...</h2>;
 }
