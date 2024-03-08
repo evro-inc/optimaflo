@@ -23,7 +23,7 @@ export default async function AudiencePage({
 
   const accountData = await listGaAccounts();
   const propertyData = await listGAProperties();
-  const audienceData = await listGAAudiences();  
+  const audienceData = await listGAAudiences();
 
   const [accounts, properties, audience] = await Promise.all([
     accountData,
@@ -33,31 +33,33 @@ export default async function AudiencePage({
 
   const flatAccounts = accounts.flat();
   const flatProperties = properties.flat();
-  const flattenedaudience = audienceData.flatMap(item => item.audiences);  
+  const flattenedaudience = audienceData.flatMap((item) => item.audiences);
 
   const combinedData = flattenedaudience.map((audience) => {
     const propertyId = audience.name.split('/')[1];
     const property = flatProperties.find((p) => p.name.includes(propertyId));
-    
+
     const accounts = flatAccounts.find(
-        (acc) =>
-          acc.name ===
-          flatProperties.find((property) => property.name.split('/')[1] === propertyId)?.parent
-      );
-    
+      (acc) =>
+        acc.name ===
+        flatProperties.find((property) => property.name.split('/')[1] === propertyId)?.parent
+    );
+
     const accountName = accounts ? accounts.displayName : 'Account Name Unknown';
+    const accountId = accounts ? accounts.name : 'Account Id Unknown';
 
     return {
       ...audience,
-      account: accounts ? accounts.name : 'Unknown Account ID',
+      accountId,
       accountName,
-      property: property ? property?.displayName: 'Unknown Property Name',
+      property: property ? property?.displayName : 'Unknown Property Name',
+      propertyId: property ? property?.name : 'Unknown Property Id',
       displayName: audience.displayName,
       name: audience.name,
       membershipDurationDays: audience.membershipDurationDays,
       adsPersonalizationEnabled: audience.adsPersonalizationEnabled,
     };
-  });  
+  });
 
   return (
     <>

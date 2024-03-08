@@ -7,11 +7,7 @@ export const AudienceExclusionDurationMode = z.enum([
   'EXCLUDE_PERMANENTLY',
 ]);
 
-const AudienceClauseType = z.enum([
-  'AUDIENCE_CLAUSE_TYPE_UNSPECIFIED',
-  'INCLUDE',
-  'EXCLUDE',
-]);
+const AudienceClauseType = z.enum(['AUDIENCE_CLAUSE_TYPE_UNSPECIFIED', 'INCLUDE', 'EXCLUDE']);
 
 const LogCondition = z.enum([
   'LOG_CONDITION_UNSPECIFIED',
@@ -35,12 +31,7 @@ const MatchType = z.enum([
   'FULL_REGEXP',
 ]);
 
-const Operation = z.enum([
-  'OPERATION_UNSPECIFIED',
-  'EQUAL',
-  'LESS_THAN',
-  'GREATER_THAN',
-]);
+const Operation = z.enum(['OPERATION_UNSPECIFIED', 'EQUAL', 'LESS_THAN', 'GREATER_THAN']);
 
 // Nested object schemas
 const AudienceEventTriggerSchema = z.object({
@@ -75,13 +66,15 @@ const BetweenFilterSchema = z.object({
 });
 
 // Recursive definitions
-const AudienceFilterExpressionSchema: z.ZodSchema<AudienceFilterExpression> = z.lazy(() => z.object({
-  andGroup: AudienceFilterExpressionListSchema.optional(),
-  orGroup: AudienceFilterExpressionListSchema.optional(),
-  notExpression: AudienceFilterExpressionSchema.optional(),
-  dimensionOrMetricFilter: AudienceDimensionOrMetricFilterSchema.optional(),
-  eventFilter: AudienceEventFilterSchema.optional(),
-}));
+const AudienceFilterExpressionSchema: z.ZodSchema<AudienceFilterExpression> = z.lazy(() =>
+  z.object({
+    andGroup: AudienceFilterExpressionListSchema.optional(),
+    orGroup: AudienceFilterExpressionListSchema.optional(),
+    notExpression: AudienceFilterExpressionSchema.optional(),
+    dimensionOrMetricFilter: AudienceDimensionOrMetricFilterSchema.optional(),
+    eventFilter: AudienceEventFilterSchema.optional(),
+  })
+);
 
 const AudienceFilterExpressionListSchema = z.object({
   filterExpressions: z.array(AudienceFilterExpressionSchema),
@@ -125,7 +118,6 @@ const AudienceFilterClauseSchema = z.object({
   simpleFilter: AudienceSimpleFilterSchema.optional(),
   sequenceFilter: AudienceSequenceFilterSchema.optional(),
 });
-
 
 const SingleFormSchema = z.object({
   account: z.string(),

@@ -126,7 +126,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     const keys = [
       `ga:accounts:userId:${userId}`,
       `ga:properties:userId:${userId}`,
-      `ga:customMetrics:userId:${userId}`,
+      `ga:audiences:userId:${userId}`,
     ];
     await revalidate(keys, '/dashboard/ga/properties', userId);
   };

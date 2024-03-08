@@ -6,7 +6,11 @@ import { setLoading, incrementStep, decrementStep, setCount } from '@/redux/form
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { AudienceExclusionDurationMode, FormCreateAmountSchema, FormsSchema } from '@/src/lib/schemas/ga/audiences';
+import {
+  AudienceExclusionDurationMode,
+  FormCreateAmountSchema,
+  FormsSchema,
+} from '@/src/lib/schemas/ga/audiences';
 import { Button } from '@/src/components/ui/button';
 import {
   Form,
@@ -28,11 +32,7 @@ import {
 } from '@/src/components/ui/select';
 
 import { Input } from '@/src/components/ui/input';
-import {
-  AudienceType,
-  FeatureResponse,
-  FormCreateProps,
-} from '@/src/types/types';
+import { AudienceType, FeatureResponse, FormCreateProps } from '@/src/types/types';
 import { toast } from 'sonner';
 import {
   selectTable,
@@ -46,6 +46,7 @@ import dynamic from 'next/dynamic';
 import { createGAAudiences } from '@/src/lib/fetch/dashboard/actions/ga/audiences';
 import { ConversionCountingItems, Currencies } from '../../../properties/@conversions/items';
 import { RadioGroup, RadioGroupItem } from '@/src/components/ui/radio-group';
+import { Checkbox } from '@/src/components/ui/checkbox';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -77,6 +78,40 @@ const FormCreateConversionEvent: React.FC<FormCreateProps> = ({
   const notFoundError = useSelector(selectTable).notFoundError;
   const router = useRouter();
 
+  const extractedData = table.map((item) => {
+    const propertyId = item.name.split('/')[1];
+    const property = item.property;
+    const accountId = item.accountId.split('/')[1];
+    const accountName = item.accountName;
+    const ids = 'accountId/' + accountId + '/' + 'propertyId/' + propertyId;
+    const names = 'account/' + accountName + '/' + 'property/' + property;
+
+    return {
+      ids,
+      names,
+    };
+  });
+
+  const cleanedData = extractedData.map((item) => ({
+    id: item.ids,
+    label: item.names
+      .replace(/\/property\//g, ' - Property: ')
+      .replace(/account\//g, '')
+      .replace(/\/propertyId\//g, ' - Property ID: ')
+      .replace(/accountId\//g, 'Account ID: '),
+  }));
+
+  const uniqueData = cleanedData.reduce((acc, current) => {
+    const x = acc.find((item) => item.id === current.id && item.label === current.label);
+    if (!x) {
+      return acc.concat([current]);
+    } else {
+      return acc;
+    }
+  }, []);
+
+  console.log(uniqueData);
+
   const foundTierLimit = tierLimits.find(
     (subscription) => subscription.Feature?.name === 'GA4Audiences'
   );
@@ -105,7 +140,7 @@ const FormCreateConversionEvent: React.FC<FormCreateProps> = ({
     adsPersonalizationEnabled: false,
     description: '',
     exclusionDurationMode: AudienceExclusionDurationMode.EXCLUDE_PERMANENTLY,
-    filterClauses: []
+    filterClauses: [],
   };
 
   const formCreateAmount = useForm({
@@ -307,58 +342,18 @@ const FormCreateConversionEvent: React.FC<FormCreateProps> = ({
 
   return (
     <div className="flex items-center justify-center h-screen overflow-auto">
-      {/* Conditional rendering based on the currentStep */}
-      {currentStep === 1 && (
-        <Form {...formCreateAmount}>
-          <form className="w-full md:w-2/3 space-y-6">
-            {/* Amount selection logic */}
-            <FormField
-              control={formCreateAmount.control}
-              name="amount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>How many conversion events do you want to create?</FormLabel>
-                  <Select
-                    onValueChange={(value) => {
-                      handleAmountChange(value); // Call the modified handler
-                    }}
-                    defaultValue={count.toString()}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select the amount of conversion events you want to create." />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {Array.from({ length: remainingCreate }, (_, i) => (
-                        <SelectItem key={i} value={`${i + 1}`}>
-                          {i + 1}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormItem>
-              )}
-            />
-            <Button type="button" onClick={handleNext}>
-              Next
-            </Button>
-          </form>
-        </Form>
-      )}
-
-      {currentStep > 1 && (
+      {currentStep && (
         <div className="w-full">
           {/* Render only the form corresponding to the current step - 1 
               (since step 1 is for selecting the number of forms) */}
-          {fields.length >= currentStep - 1 && (
+          {fields.length > 0 && fields.length >= currentStep && (
             <div
-              key={fields[currentStep - 2].id}
-              className="max-w-full md:max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-1"
+              key={fields[currentStep - 1].id}
+              className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
             >
-              <div className="max-w-full md:max-w-xl mx-auto">
-                <h1>Audience {currentStep - 1}</h1>
-                <div className="mt-2 md:mt-12">
+              <div className="max-w-xl mx-auto">
+                <h1>Audience {currentStep}</h1>
+                <div className="mt-12">
                   {/* Form */}
 
                   <Form {...form}>
@@ -367,259 +362,134 @@ const FormCreateConversionEvent: React.FC<FormCreateProps> = ({
                       id={`createAudience-${currentStep - 1}`}
                       className="space-y-6"
                     >
-                      {(() => {
-                        const currentIndex = currentStep - 2; // Adjust for zero-based index
-                        const selectedAccountId = form.watch(`forms.${currentIndex}.account`);
-                        const filteredProperties = properties.filter(
-                          (property) => property.parent === selectedAccountId
-                        );
-
-                        return (
-                          <>
-                            <div className="flex flex-col md:flex-row md:space-x-4">
-                              <div className="w-full md:basis-1/2">
-                                <FormField
-                                  control={form.control}
-                                  name={`forms.${currentStep - 2}.account`}
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Account</FormLabel>
-                                      <FormDescription>
-                                        This is the account you want to create the property in.
-                                      </FormDescription>
-                                      <FormControl>
-                                        <Select
-                                          {...form.register(`forms.${currentStep - 2}.account`)}
-                                          {...field}
-                                          onValueChange={field.onChange}
-                                        >
-                                          <SelectTrigger>
-                                            <SelectValue placeholder="Select an account." />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            <SelectGroup>
-                                              <SelectLabel>Account</SelectLabel>
-                                              {accountsWithProperties.map((account) => (
-                                                <SelectItem key={account.name} value={account.name}>
-                                                  {account.displayName}
-                                                </SelectItem>
-                                              ))}
-                                            </SelectGroup>
-                                          </SelectContent>
-                                        </Select>
-                                      </FormControl>
-
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                              </div>
-                              <div className="w-full md:basis-1/2">
-                                <FormField
-                                  control={form.control}
-                                  name={`forms.${currentStep - 2}.property`}
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Property</FormLabel>
-                                      <FormDescription>
-                                        Which property do you want to create the conversion event
-                                        in?
-                                      </FormDescription>
-                                      <FormControl>
-                                        <Select
-                                          {...form.register(`forms.${currentStep - 2}.property`)}
-                                          {...field}
-                                          onValueChange={field.onChange}
-                                        >
-                                          <SelectTrigger>
-                                            <SelectValue placeholder="Select a property." />
-                                          </SelectTrigger>
-
-                                          <SelectContent>
-                                            <SelectGroup>
-                                              <SelectLabel>Property</SelectLabel>
-                                              {filteredProperties.length > 0 ? (
-                                                filteredProperties.map((property) => (
-                                                  <SelectItem
-                                                    key={property.name}
-                                                    value={property.name}
-                                                  >
-                                                    {property.displayName}
-                                                  </SelectItem>
-                                                ))
-                                              ) : (
-                                                <SelectItem value="" disabled>
-                                                  No properties available
-                                                </SelectItem>
+                      {fields.length > 0 &&
+                        fields.map((field, index) => {
+                          if (index === currentStep - 1) {
+                            return (
+                              <>
+                                <div className="flex flex-col md:flex-row md:space-x-4">
+                                  <div className="w-full md:basis-1/2">
+                                    <FormField
+                                      control={form.control}
+                                      name={`forms.${currentStep - 2}.displayName`}
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>New Conversion Event Name</FormLabel>
+                                          <FormDescription>
+                                            This is the conversion event name you want to create.
+                                          </FormDescription>
+                                          <FormControl>
+                                            <Input
+                                              placeholder="Name of the conversion event"
+                                              {...form.register(
+                                                `forms.${currentStep - 2}.displayName`
                                               )}
-                                            </SelectGroup>
-                                          </SelectContent>
-                                        </Select>
-                                      </FormControl>
-
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                              </div>
-                            </div>
-
-                             <div className="flex flex-col md:flex-row md:space-x-4">
-                              <div className="w-full md:basis-1/2">
-                                <FormField
-                                  control={form.control}
-                                  name={`forms.${currentStep - 2}.displayName`}
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>New Conversion Event Name</FormLabel>
-                                      <FormDescription>
-                                        This is the conversion event name you want to create.
-                                      </FormDescription>
-                                      <FormControl>
-                                        <Input
-                                          placeholder="Name of the conversion event"
-                                          {...form.register(`forms.${currentStep - 2}.displayName`)}
-                                          {...field}
-                                        />
-                                      </FormControl>
-
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                              </div>
-
-                              <div className="w-full md:basis-1/2">
-                                <FormField
-                                  control={form.control}
-                                  name={`forms.${currentStep - 2}.description`}
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>New Conversion Event Name</FormLabel>
-                                      <FormDescription>
-                                        This is the conversion event name you want to create.
-                                      </FormDescription>
-                                      <FormControl>
-                                        <Input
-                                          placeholder="Name of the conversion event"
-                                          {...form.register(`forms.${currentStep - 2}.description`)}
-                                          {...field}
-                                        />
-                                      </FormControl>
-
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                              </div>
-                            </div>
-
-                           {/* <div className="flex flex-col md:flex-row md:space-x-4">
-                              <FormField
-                                control={form.control}
-                                name={`forms.${currentStep - 2}.defaultConversionValue`}
-                                render={({ field }) => (
-                                  <FormItem className="space-y-3">
-                                    <FormLabel>Default Conversion Value</FormLabel>
-                                    <FormControl>
-                                      <RadioGroup
-                                        onValueChange={(newValue) => {
-                                          if (newValue === 'none') {
-                                            form.setValue(
-                                              `forms.${currentStep - 2}.defaultConversionValue`,
-                                              { type: 'none', value: '0', currencyCode: 'USD' }
-                                            );
-                                          } else {
-                                            // Maintain the existing values but indicate that a value should be set
-                                            form.setValue(
-                                              `forms.${currentStep - 2}.defaultConversionValue`,
-                                              {
-                                                type: 'conversionValue',
-                                                value: '0',
-                                                currencyCode: 'USD',
-                                              }
-                                            ); // Set a default structure for 'conversionValue'
-                                          }
-                                        }}
-                                        defaultValue={field.value?.type}
-                                        className="flex flex-col space-y-1"
-                                      >
-                                        <FormItem className="flex items-center space-x-3 space-y-0">
-                                          <FormControl>
-                                            <RadioGroupItem value="none" />
+                                              {...field}
+                                            />
                                           </FormControl>
-                                          <FormLabel className="font-normal">
-                                            Don't set a default conversion value
-                                          </FormLabel>
-                                        </FormItem>
-                                        <FormItem className="flex items-center space-x-3 space-y-0">
-                                          <FormControl>
-                                            <RadioGroupItem value="conversionValue" />
-                                          </FormControl>
-                                          <FormLabel className="font-normal">
-                                            Set a default conversion value
-                                          </FormLabel>
-                                          {field.value?.type === 'conversionValue' && (
-                                            <div className="flex items-center space-x-3">
-                                              <Input
-                                                placeholder="Enter default conversion value"
-                                                {...form.register(
-                                                  `forms.${
-                                                    currentStep - 2
-                                                  }.defaultConversionValue.value`
-                                                )}
-                                              />
 
-                                              <Select
-                                                value={form.watch(
-                                                  `forms.${
-                                                    currentStep - 2
-                                                  }.defaultConversionValue.currencyCode`
-                                                )}
-                                                onValueChange={(selectedCurrency) => {
-                                                  form.setValue(
-                                                    `forms.${
-                                                      currentStep - 2
-                                                    }.defaultConversionValue.currencyCode`,
-                                                    selectedCurrency,
-                                                    { shouldValidate: true }
-                                                  );
-                                                }}
-                                              >
-                                                <SelectTrigger>
-                                                  <SelectValue placeholder="Select currency" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                  <SelectGroup>
-                                                    {Object.entries(Currencies).map(
-                                                      ([code, name]) => (
-                                                        <SelectItem key={code} value={code}>
-                                                          {code} - {name}
-                                                        </SelectItem>
-                                                      )
-                                                    )}
-                                                  </SelectGroup>
-                                                </SelectContent>
-                                              </Select>
-                                            </div>
-                                          )}
+                                          <FormMessage />
                                         </FormItem>
-                                      </RadioGroup>
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                            </div> */}
-                          </>
-                        );
-                      })()}
+                                      )}
+                                    />
+                                  </div>
+
+                                  <div className="w-full md:basis-1/2">
+                                    <FormField
+                                      control={form.control}
+                                      name={`forms.${currentStep - 2}.description`}
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>New Conversion Event Name</FormLabel>
+                                          <FormDescription>
+                                            This is the conversion event name you want to create.
+                                          </FormDescription>
+                                          <FormControl>
+                                            <Input
+                                              placeholder="Name of the conversion event"
+                                              {...form.register(
+                                                `forms.${currentStep - 2}.description`
+                                              )}
+                                              {...field}
+                                            />
+                                          </FormControl>
+
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                  </div>
+                                </div>
+                                <div className="flex flex-col md:flex-row md:space-x-4">
+                                  <div className="w-full md:basis-auto">
+                                    <FormField
+                                      control={form.control}
+                                      name={`forms.${currentStep - 2}.account`}
+                                      render={() => (
+                                        <FormItem>
+                                          <div className="mb-4">
+                                            <FormLabel className="text-base">
+                                              Account and Property Selection
+                                            </FormLabel>
+                                            <FormDescription>
+                                              Which account and property do you want to create the
+                                              audience for?
+                                            </FormDescription>
+                                          </div>
+                                          {uniqueData.map((item) => (
+                                            <FormField
+                                              key={item.id}
+                                              control={form.control}
+                                              name={`forms.${currentStep - 2}.account`}
+                                              render={({ field }) => {
+                                                return (
+                                                  <FormItem
+                                                    key={item.id}
+                                                    className="flex flex-row items-start space-x-3 space-y-0"
+                                                  >
+                                                    <FormControl>
+                                                      <Checkbox
+                                                        checked={field.value?.includes(item.id)}
+                                                        onCheckedChange={(checked) => {
+                                                          return checked
+                                                            ? field.onChange([
+                                                                ...(field.value ?? []),
+                                                                item.id,
+                                                              ])
+                                                            : field.onChange(
+                                                                (field.value ?? []).filter(
+                                                                  (value) => value !== item.id
+                                                                )
+                                                              );
+                                                        }}
+                                                      />
+                                                    </FormControl>
+                                                    <FormLabel className="text-sm font-normal">
+                                                      {item.label}
+                                                    </FormLabel>
+                                                  </FormItem>
+                                                );
+                                              }}
+                                            />
+                                          ))}
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                  </div>
+                                </div>
+                              </>
+                            );
+                          }
+                          return null;
+                        })}
+
                       <div className="flex justify-between">
-                        <Button type="button" onClick={handlePrevious}>
+                        <Button type="button" onClick={handlePrevious} disabled={currentStep === 1}>
                           Previous
                         </Button>
 
-                        {currentStep - 1 < count ? (
+                        {currentStep < fields.length ? (
                           <Button type="button" onClick={handleNext}>
                             Next
                           </Button>

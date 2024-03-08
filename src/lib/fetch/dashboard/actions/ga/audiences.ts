@@ -63,9 +63,8 @@ export async function listGAAudiences() {
             (propertyId) =>
               `https://analyticsadmin.googleapis.com/v1alpha/properties/${propertyId}/audiences`
           );
-          
+
           console.log('urls', urls);
-          
 
           const headers = {
             Authorization: `Bearer ${accessToken}`,
@@ -218,76 +217,77 @@ export async function createGAAudiences(formData: Audience) {
                 // Accessing the validated property data
                 const validatedData = validationResult.data.forms[0];
 
+                // Function to dynamically build filter expressions
+                const buildFilterExpression = (filterExpression: any): any => {
+                  let result: any = {};
 
-  // Function to dynamically build filter expressions
-  const buildFilterExpression = (filterExpression: any): any => {
-    let result: any = {};
+                  // Handle different types of filter expressions
+                  if (filterExpression.andGroup) {
+                    result.andGroup = {
+                      filterExpressions:
+                        filterExpression.andGroup.filterExpressions.map(buildFilterExpression),
+                    };
+                  } else if (filterExpression.orGroup) {
+                    result.orGroup = {
+                      filterExpressions:
+                        filterExpression.orGroup.filterExpressions.map(buildFilterExpression),
+                    };
+                  } else if (filterExpression.notExpression) {
+                    result.notExpression = buildFilterExpression(filterExpression.notExpression);
+                  } else if (filterExpression.dimensionOrMetricFilter) {
+                    result.dimensionOrMetricFilter = {
+                      ...filterExpression.dimensionOrMetricFilter,
+                    };
+                  } else if (filterExpression.eventFilter) {
+                    result.eventFilter = { ...filterExpression.eventFilter };
+                  }
 
-    // Handle different types of filter expressions
-    if (filterExpression.andGroup) {
-      result.andGroup = {
-        filterExpressions: filterExpression.andGroup.filterExpressions.map(buildFilterExpression),
-      };
-    } else if (filterExpression.orGroup) {
-      result.orGroup = {
-        filterExpressions: filterExpression.orGroup.filterExpressions.map(buildFilterExpression),
-      };
-    } else if (filterExpression.notExpression) {
-      result.notExpression = buildFilterExpression(filterExpression.notExpression);
-    } else if (filterExpression.dimensionOrMetricFilter) {
-      result.dimensionOrMetricFilter = { ...filterExpression.dimensionOrMetricFilter };
-    } else if (filterExpression.eventFilter) {
-      result.eventFilter = { ...filterExpression.eventFilter };
-    }
+                  return result;
+                };
 
-    return result;
-  }
-  
-  
+                // Function to dynamically construct filter clauses from formData
+                const buildFilterClauses = (filterClauses: any[]): any[] => {
+                  return filterClauses.map((clause) => {
+                    let result: any = { clauseType: clause.clauseType };
 
-  // Function to dynamically construct filter clauses from formData
-  const buildFilterClauses = (filterClauses: any[]): any[] => {
-    return filterClauses.map((clause) => {
-      let result: any = { clauseType: clause.clauseType };
+                    if (clause.simpleFilter) {
+                      result.simpleFilter = {
+                        scope: clause.simpleFilter.scope,
+                        filterExpression: buildFilterExpression(
+                          clause.simpleFilter.filterExpression
+                        ),
+                      };
+                    }
 
-      if (clause.simpleFilter) {
-        result.simpleFilter = {
-          scope: clause.simpleFilter.scope,
-          filterExpression: buildFilterExpression(clause.simpleFilter.filterExpression),
-        };
-      }
+                    if (clause.sequenceFilter) {
+                      result.sequenceFilter = {
+                        scope: clause.sequenceFilter.scope,
+                        sequenceSteps: clause.sequenceFilter.sequenceSteps.map((step) => ({
+                          scope: step.scope,
+                          immediatelyFollows: step.immediatelyFollows,
+                          filterExpression: buildFilterExpression(step.filterExpression),
+                        })),
+                      };
+                    }
 
-      if (clause.sequenceFilter) {
-        result.sequenceFilter = {
-          scope: clause.sequenceFilter.scope,
-          sequenceSteps: clause.sequenceFilter.sequenceSteps.map((step) => ({
-            scope: step.scope,
-            immediatelyFollows: step.immediatelyFollows,
-            filterExpression: buildFilterExpression(step.filterExpression),
-          })),
-        };
-      }
+                    return result;
+                  });
+                };
 
-      return result;
-    });
-  }
-
-  let requestBody = {
-    displayName: validatedData.displayName,
-    description: validatedData.description,
-    membershipDurationDays: validatedData.membershipDurationDays,
-    adsPersonalizationEnabled: validatedData.adsPersonalizationEnabled,
-    eventTrigger: validatedData.eventTrigger ? {
-      eventName: validatedData.eventTrigger.eventName,
-      logCondition: validatedData.eventTrigger.logCondition,
-    } : undefined, // Include eventTrigger only if present
-    exclusionDurationMode: validatedData.exclusionDurationMode,
-    filterClauses: buildFilterClauses(validatedData.filterClauses),
-  };
-
-
-
-
+                let requestBody = {
+                  displayName: validatedData.displayName,
+                  description: validatedData.description,
+                  membershipDurationDays: validatedData.membershipDurationDays,
+                  adsPersonalizationEnabled: validatedData.adsPersonalizationEnabled,
+                  eventTrigger: validatedData.eventTrigger
+                    ? {
+                        eventName: validatedData.eventTrigger.eventName,
+                        logCondition: validatedData.eventTrigger.logCondition,
+                      }
+                    : undefined, // Include eventTrigger only if present
+                  exclusionDurationMode: validatedData.exclusionDurationMode,
+                  filterClauses: buildFilterClauses(validatedData.filterClauses),
+                };
 
                 // Now, requestBody is prepared with the right structure based on the type
                 const response = await fetch(url, {
