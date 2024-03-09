@@ -1,11 +1,17 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
+interface FormIdentifier {
+  id: string;
+  type: string; // e.g., "simple", "sequence"
+}
+
 interface FormState {
   formData: FormData | null;
   loading: boolean;
   error: string | null;
   currentStep: number;
   count: number;
+  showForm: FormIdentifier[];
 }
 
 const initialState: FormState = {
@@ -14,6 +20,7 @@ const initialState: FormState = {
   error: null,
   currentStep: 1,
   count: 1,
+  showForm: [],
 };
 const formSlice = createSlice({
   name: 'form',
@@ -40,6 +47,12 @@ const formSlice = createSlice({
     setCount: (state, action: PayloadAction<number>) => {
       state.count = action.payload;
     },
+    setShowForm: (state, action: PayloadAction<string[]>) => {
+      state.showForm = action.payload;
+    },
+    removeForm: (state, action: PayloadAction<string>) => {
+      state.showForm = state.showForm.filter((form) => form.id !== action.payload);
+    },
   },
 });
 
@@ -51,6 +64,8 @@ export const {
   incrementStep,
   decrementStep,
   setCount,
+  setShowForm,
+  removeForm,
 } = formSlice.actions;
 
 export default formSlice.reducer;

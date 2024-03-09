@@ -1,7 +1,10 @@
 import React from 'react';
 import { notFound } from 'next/navigation';
 import { currentUser } from '@clerk/nextjs';
-import { listGAProperties } from '@/src/lib/fetch/dashboard/actions/ga/properties';
+import {
+  getMetadataProperties,
+  listGAProperties
+} from '@/src/lib/fetch/dashboard/actions/ga/properties';
 import { listGaAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
 import { getTierLimit } from '@/src/lib/fetch/tierLimit';
 import { getSubscription } from '@/src/lib/fetch/subscriptions';
@@ -21,11 +24,21 @@ export default async function CreateCustomDimensionPage() {
   const accountData = await listGaAccounts();
   const propertyData = await listGAProperties();
   const audienceData = await listGAAudiences();
+  const propertyMetaData = await getMetadataProperties();
+
+  const allDimensions = propertyMetaData.flatMap(
+    (property) => property.dataRetentionSettings.dimensions
+  );
+
+  // Get unique dimensions
+  const uniqueDimensions = Array.from(new Set(allDimensions));
+
+  console.log('uniqueDimensions', uniqueDimensions);
 
   const [accounts, properties, audience] = await Promise.all([
     accountData,
     propertyData,
-    audienceData,
+    audienceData
   ]);
 
   const flatAccounts = accounts.flat();
@@ -39,10 +52,14 @@ export default async function CreateCustomDimensionPage() {
     const accounts = flatAccounts.find(
       (acc) =>
         acc.name ===
-        flatProperties.find((property) => property.name.split('/')[1] === propertyId)?.parent
+        flatProperties.find(
+          (property) => property.name.split('/')[1] === propertyId
+        )?.parent
     );
 
-    const accountName = accounts ? accounts.displayName : 'Account Name Unknown';
+    const accountName = accounts
+      ? accounts.displayName
+      : 'Account Name Unknown';
     const accountId = accounts ? accounts.name : 'Account Id Unknown';
 
     return {
@@ -54,13 +71,13 @@ export default async function CreateCustomDimensionPage() {
       displayName: audience.displayName,
       name: audience.name,
       membershipDurationDays: audience.membershipDurationDays,
-      adsPersonalizationEnabled: audience.adsPersonalizationEnabled,
+      adsPersonalizationEnabled: audience.adsPersonalizationEnabled
     };
   });
 
   return (
     <>
-      <div className="container">
+      <div className="container overflow-auto">
         <FormCreateConversionEvent
           tierLimits={tierLimits}
           table={combinedData}
