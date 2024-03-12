@@ -49,6 +49,7 @@ export async function listGAAudiences() {
       ga: true,
     },
   });
+  console.log('gaData', gaData);
 
   while (retries < MAX_RETRIES) {
     try {
@@ -75,6 +76,8 @@ export async function listGAAudiences() {
           for (const url of urls) {
             try {
               const response = await fetch(url, { headers });
+              console.log('response', response);
+
               if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
               }

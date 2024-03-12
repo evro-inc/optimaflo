@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { currentUser } from '@clerk/nextjs';
 import {
   getMetadataProperties,
-  listGAProperties
+  listGAProperties,
 } from '@/src/lib/fetch/dashboard/actions/ga/properties';
 import { listGaAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
 import { getTierLimit } from '@/src/lib/fetch/tierLimit';
@@ -38,7 +38,7 @@ export default async function CreateCustomDimensionPage() {
   const [accounts, properties, audience] = await Promise.all([
     accountData,
     propertyData,
-    audienceData
+    audienceData,
   ]);
 
   const flatAccounts = accounts.flat();
@@ -52,14 +52,10 @@ export default async function CreateCustomDimensionPage() {
     const accounts = flatAccounts.find(
       (acc) =>
         acc.name ===
-        flatProperties.find(
-          (property) => property.name.split('/')[1] === propertyId
-        )?.parent
+        flatProperties.find((property) => property.name.split('/')[1] === propertyId)?.parent
     );
 
-    const accountName = accounts
-      ? accounts.displayName
-      : 'Account Name Unknown';
+    const accountName = accounts ? accounts.displayName : 'Account Name Unknown';
     const accountId = accounts ? accounts.name : 'Account Id Unknown';
 
     return {
@@ -71,7 +67,7 @@ export default async function CreateCustomDimensionPage() {
       displayName: audience.displayName,
       name: audience.name,
       membershipDurationDays: audience.membershipDurationDays,
-      adsPersonalizationEnabled: audience.adsPersonalizationEnabled
+      adsPersonalizationEnabled: audience.adsPersonalizationEnabled,
     };
   });
 

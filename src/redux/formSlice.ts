@@ -1,8 +1,9 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-interface FormIdentifier {
+export interface FormIdentifier {
   id: string;
   type: string; // e.g., "simple", "sequence"
+  parentId?: string;
 }
 
 interface FormState {
