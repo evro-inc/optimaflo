@@ -48,7 +48,7 @@ const formSlice = createSlice({
     setCount: (state, action: PayloadAction<number>) => {
       state.count = action.payload;
     },
-    setShowForm: (state, action: PayloadAction<string[]>) => {
+    setShowForm: (state, action: PayloadAction<FormIdentifier[]>) => {
       state.showForm = action.payload;
     },
     removeForm: (state, action: PayloadAction<string>) => {
