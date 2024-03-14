@@ -488,7 +488,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
               <Button
                 className="flex items-center space-x-2 text-blue-500"
                 variant="ghost"
-                onClick={() => handleShowForm('Or', formId)}
+                onClick={() => handleShowForm('simple', formId)}
               >
                 Or
               </Button>
@@ -543,10 +543,24 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                 </div>
               </div>
             )}
-            <div key={formId}>
-              {/* Your simple form rendering logic here */}
-              <div className="w-full md:basis-auto">
-                <ConditionalForm formId={formId} parentType="Or" />
+            <div key={formId} className='bg-gray-100 rounded'>
+              <div className="flex md:space-x-4 items-center justify-between  p-4">
+                <div className="flex flex-col w-full">
+                  <div className="w-full md:basis-auto">
+                    <ConditionalForm formId={formId} parentType="Or" />
+                  </div>
+                  <div className="justify-start mt-4">
+                    {isAddButtonClicked && (
+                      <Button
+                        className="flex items-center space-x-2"
+                        onClick={() => handleShowForm('And')}
+                      >
+                        <PlusIcon className="text-white" />
+                        <span>Add</span>
+                      </Button>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* Iteratively render child forms if any */}
@@ -557,36 +571,11 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                     {renderFormBasedOnType(childForm.id, childForm.type, formId)}
                   </div>
                 ))}
+
             </div>
           </>
         );
-      case 'Or':
-        return (
-          <>
-            <div className="border-t border-dashed m-4" />
 
-            <div className="flex flex-col md:flex-row md:space-x-4 items-center justify-between bg-gray-100 rounded">
-              <div className="w-full md:basis-auto">
-                <div key={formId}>
-                  {/* Your simple form rendering logic here */}
-                  <div className="w-full md:basis-auto">
-                    <ConditionalForm formId={formId} parentType="Or" />
-                  </div>
-
-                  {/* Iteratively render child forms if any */}
-                  {childForms.length > 0 &&
-                    childForms.map((childForm) => (
-                      // Recursive call for child forms with a check to ensure it's not causing infinite recursion
-                      <div key={childForm.id}>
-                        {renderFormBasedOnType(childForm.id, childForm.type, formId)}
-                        <p>tests</p>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            </div>
-          </>
-        );
       case 'And':
         return (
           <>
@@ -799,7 +788,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                             </div>
 
                             <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow">
-                              <div className="flex md:space-x-4 items-center justify-between bg-gray-100 rounded p-4">
+                              {/*           <div className="flex md:space-x-4 items-center justify-between bg-gray-100 rounded p-4">
                                 <div className="flex flex-col w-full">
                                   {renderTopLevelForms()}
                                   <div className="justify-start mt-4">
@@ -814,7 +803,10 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                     )}
                                   </div>
                                 </div>
-                              </div>
+                              </div> */}
+
+                              {renderTopLevelForms()}
+
 
                               <div className="flex items-center justify-between mt-6">
                                 <Button
@@ -872,17 +864,17 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                                     onCheckedChange={(checked) => {
                                                       return checked
                                                         ? field.onChange([
-                                                            ...(Array.isArray(field.value)
-                                                              ? field.value
-                                                              : []),
-                                                            item.id,
-                                                          ])
+                                                          ...(Array.isArray(field.value)
+                                                            ? field.value
+                                                            : []),
+                                                          item.id,
+                                                        ])
                                                         : field.onChange(
-                                                            (Array.isArray(field.value)
-                                                              ? field.value
-                                                              : []
-                                                            ).filter((value) => value !== item.id)
-                                                          );
+                                                          (Array.isArray(field.value)
+                                                            ? field.value
+                                                            : []
+                                                          ).filter((value) => value !== item.id)
+                                                        );
                                                     }}
                                                   />
                                                 </FormControl>
