@@ -10,6 +10,7 @@ import {
   setShowForm,
   removeForm,
   FormIdentifier,
+  setShowCard
 } from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
@@ -119,9 +120,8 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   const count = useSelector((state: RootState) => state.form.count);
   const notFoundError = useSelector(selectTable).notFoundError;
   const router = useRouter();
-  const formsToShow = useSelector((state: any) => state.form.showForm); // Define formsToShow using useSelector
-
-  const [isAddButtonClicked, setIsAddButtonClicked] = useState(false);
+  const formsToShow = useSelector((state: any) => state.form.showForm);
+  const cardsToShow = useSelector((state: any) => state.form.showCard);
 
   const extractedData = table.map((item) => {
     const propertyId = item.name.split('/')[1];
@@ -217,9 +217,11 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     control: form.control,
     name: 'forms',
   });
+
   const addForm = () => {
     append(formDataDefaults);
   };
+
   const currentFormIndex = currentStep - 2;
 
   // Adjust handleAmountSubmit or create a new function to handle selection change
@@ -384,9 +386,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   };
 
   const handleShowForm = (formType: string, parentId?: string) => {
-    if (formType === 'simple') {
-      setIsAddButtonClicked(true);
-    }
     const uniqueId = `${formType}-${crypto.randomUUID()}`;
     const newForm: FormIdentifier = {
       id: uniqueId,
@@ -395,12 +394,24 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     };
 
     if (parentId) {
-      newForm.parentId = parentId; // Set parentId for Or forms
+      newForm.parentId = parentId;
     }
 
     const updatedForms = [...formsToShow, newForm];
     dispatch(setShowForm(updatedForms));
   };
+
+  const handleShowCard = () => {
+    const uniqueId = `card-${crypto.randomUUID()}`;
+    const newForm: FormIdentifier = {
+      id: uniqueId,
+      type: 'card',
+    };
+
+    dispatch(setShowCard([...cardsToShow, newForm]));
+  };
+
+
 
   const handleRemoveForm = (formId) => {
     dispatch(removeForm(formId)); // Dispatch action to remove the form
@@ -409,65 +420,28 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   const ConditionalForm = ({ formId, parentType }: { formId: string; parentType?: string }) => {
     return (
       <>
-        <div className="flex flex-col md:flex-row md:space-x-4">
-          <div className="w-full basis-9/12">
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button className="flex justify-between items-center w-full" variant="outline">
-                  Select an Event
-                  <ChevronDownIcon className="text-gray-400" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-5xl mx-auto p-6 bg-white shadow rounded-lg">
-                <div className="flex">
-                  <div className="flex flex-col w-64 mr-4">
-                    <div className="flex items-center px-3 py-2 space-x-2 border-b">
-                      <MagnifyingGlassIcon className="text-gray-400" />
-                      <Input placeholder="Search items" />
-                    </div>
-                    <Accordion className="mt-2">
-                      <AccordionItem value="events">
-                        <AccordionTrigger>Events</AccordionTrigger>
-                        <AccordionContent>
-                          <ul className="divide-y cursor-pointer">
-                            <li className="px-3 py-2">app_clear_data</li>
-                            <li className="px-3 py-2">app_exception</li>
-                            <li className="px-3 py-2">app_store_refund</li>
-                            <li className="px-3 py-2">app_store_subscription_cancel</li>
-                            <li className="px-3 py-2">app_store_subscription_convert</li>
-                            <li className="px-3 py-2">app_store_subscription_renew</li>
-                            <li className="px-3 py-2">app_update</li>
-                            <li className="px-3 py-2">first_open</li>
-                            <li className="px-3 py-2">in_app_purchase</li>
-                            <li className="px-3 py-2">notification_dismiss</li>
-                          </ul>
-                        </AccordionContent>
-                      </AccordionItem>
-                      <AccordionItem value="dimensions">
-                        <AccordionTrigger>Dimensions</AccordionTrigger>
-                        <AccordionContent>
-                          <ul className="divide-y cursor-pointer">
-                            <li className="px-3 py-2">User</li>
-                            <li className="px-3 py-2">Session</li>
-                          </ul>
-                        </AccordionContent>
-                      </AccordionItem>
-                      <AccordionItem value="metrics">
-                        <AccordionTrigger>Metrics</AccordionTrigger>
-                        <AccordionContent>
-                          <ul className="divide-y cursor-pointer">
-                            <li className="px-3 py-2">Revenue</li>
-                            <li className="px-3 py-2">Engagement</li>
-                          </ul>
-                        </AccordionContent>
-                      </AccordionItem>
-                    </Accordion>
-                  </div>
-                  <div className="flex-1">
-                    <ScrollArea className="h-72">
-                      <ul className="divide-y">
+
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button className="flex justify-between items-center w-full" variant="ghost">
+              Select an Event
+              <ChevronDownIcon className="text-gray-400" />
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-5xl mx-auto bg-white shadow rounded-lg">
+            <div className="flex">
+              <div className="flex flex-col w-64 mr-4">
+                <div className="flex items-center px-3 py-2 space-x-2 border-b">
+                  <MagnifyingGlassIcon className="text-gray-400" />
+                  <Input placeholder="Search items" />
+                </div>
+                <Accordion className="mt-2">
+                  <AccordionItem value="events">
+                    <AccordionTrigger>Events</AccordionTrigger>
+                    <AccordionContent>
+                      <ul className="divide-y cursor-pointer">
                         <li className="px-3 py-2">app_clear_data</li>
-                        <li className="px-3 py-2 bg-blue-100">app_exception</li>
+                        <li className="px-3 py-2">app_exception</li>
                         <li className="px-3 py-2">app_store_refund</li>
                         <li className="px-3 py-2">app_store_subscription_cancel</li>
                         <li className="px-3 py-2">app_store_subscription_convert</li>
@@ -477,165 +451,307 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                         <li className="px-3 py-2">in_app_purchase</li>
                         <li className="px-3 py-2">notification_dismiss</li>
                       </ul>
-                    </ScrollArea>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-          <div className="w-full basis-1/12">
-            {parentType === 'Or' && (
-              <Button
-                className="flex items-center space-x-2 text-blue-500"
-                variant="ghost"
-                onClick={() => handleShowForm('simple', formId)}
-              >
-                Or
-              </Button>
-            )}
-            {parentType === 'And' && (
-              <Button
-                className="flex items-center space-x-2 text-blue-500"
-                variant="ghost"
-                onClick={() => handleShowForm('AndOr', formId)}
-              >
-                Or
-              </Button>
-            )}
+                    </AccordionContent>
+                  </AccordionItem>
+                  <AccordionItem value="dimensions">
+                    <AccordionTrigger>Dimensions</AccordionTrigger>
+                    <AccordionContent>
+                      <ul className="divide-y cursor-pointer">
+                        <li className="px-3 py-2">User</li>
+                        <li className="px-3 py-2">Session</li>
+                      </ul>
+                    </AccordionContent>
+                  </AccordionItem>
+                  <AccordionItem value="metrics">
+                    <AccordionTrigger>Metrics</AccordionTrigger>
+                    <AccordionContent>
+                      <ul className="divide-y cursor-pointer">
+                        <li className="px-3 py-2">Revenue</li>
+                        <li className="px-3 py-2">Engagement</li>
+                      </ul>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </div>
+              <div className="flex-1">
+                <ScrollArea className="h-72">
+                  <ul className="divide-y">
+                    <li className="px-3 py-2">app_clear_data</li>
+                    <li className="px-3 py-2 bg-blue-100">app_exception</li>
+                    <li className="px-3 py-2">app_store_refund</li>
+                    <li className="px-3 py-2">app_store_subscription_cancel</li>
+                    <li className="px-3 py-2">app_store_subscription_convert</li>
+                    <li className="px-3 py-2">app_store_subscription_renew</li>
+                    <li className="px-3 py-2">app_update</li>
+                    <li className="px-3 py-2">first_open</li>
+                    <li className="px-3 py-2">in_app_purchase</li>
+                    <li className="px-3 py-2">notification_dismiss</li>
+                  </ul>
+                </ScrollArea>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
-            {parentType === 'AndOr' && (
-              <Button
-                className="flex items-center space-x-2 text-blue-500"
-                variant="ghost"
-                onClick={() => handleShowForm('AndOr', formId)}
-              >
-                Or
-              </Button>
-            )}
-          </div>
-          <div className="w-full basis-1/12">
-            <Button variant="outline" size="icon" onClick={() => handleRemoveForm(formId)}>
-              <Cross2Icon className="text-gray-400" />
-            </Button>
-          </div>
-        </div>
+
       </>
     );
   };
 
-  const renderFormBasedOnType = (formId, formType, parentId = null, hasInputBefore = false) => {
-    const childForms = formsToShow.filter((form) => form.parentId === formId);
+  console.log('formsToShow', formsToShow);
 
-    // The switch statement is encapsulated in its own function now
-    switch (formType) {
-      case 'simple':
-        return (
-          <>
-            {' '}
-            {hasInputBefore && (
-              <div className="w-10 flex flex-col items-center justify-center space-y-2">
-                <div className="h-5">
-                  <Separator orientation="vertical" />
-                </div>
-                <Badge variant="outline">And</Badge>
-                <div className="h-5">
-                  <Separator orientation="vertical" />
-                </div>
+  const CardForm = (form) => {
+    console.log('form', form);
+
+    const hasChildForms = formsToShow.some((childForm) => childForm.parentId === form.id);
+
+    return (
+      <Card>
+        <CardContent>
+          <div className="flex items-center justify-between mt-5">
+            <div className="flex flex-row md:space-x-4 w-full">
+              <div className="w-full basis-3/12">
+                <ConditionalForm formId={form.id} parentType={form.type} />
               </div>
-            )}
-            <div key={formId} className='bg-gray-100 rounded'>
-              <div className="flex md:space-x-4 items-center justify-between  p-4">
-                <div className="flex flex-col w-full">
-                  <div className="w-full md:basis-auto">
-                    <ConditionalForm formId={formId} parentType="Or" />
-                  </div>
-                  <div className="justify-start mt-4">
-                    {isAddButtonClicked && (
-                      <Button
-                        className="flex items-center space-x-2"
-                        onClick={() => handleShowForm('And')}
-                      >
-                        <PlusIcon className="text-white" />
-                        <span>Add</span>
-                      </Button>
-                    )}
-                  </div>
+              <div className="w-full basis-7/12">
+                <ConditionalForm formId={form.id} parentType={form.type} />
+              </div>
+              {!hasChildForms && form.type !== 'sequence' && (
+                <div className="w-full basis-1/12">
+                  <Button
+                    className="flex items-center space-x-2 text-blue-500"
+                    variant="ghost"
+                    onClick={() => handleShowForm('Or', form.id)}
+                  >
+                    Or
+                  </Button>
                 </div>
-              </div>
-
-              {/* Iteratively render child forms if any */}
-              {childForms.length > 0 &&
-                childForms.map((childForm) => (
-                  // Recursive call for child forms with a check to ensure it's not causing infinite recursion
-                  <div key={childForm.id}>
-                    {renderFormBasedOnType(childForm.id, childForm.type, formId)}
-                  </div>
-                ))}
-
-            </div>
-          </>
-        );
-
-      case 'And':
-        return (
-          <>
-            <div className="w-10 flex flex-col items-center justify-center space-y-2">
-              <div className="h-5">
-                <Separator orientation="vertical" />
-              </div>
-              <Badge variant="outline">Add</Badge>
-              <div className="h-5">
-                <Separator orientation="vertical" />
+              )}
+              <div className="w-full basis-1/12">
+                <Button variant="outline" size="icon" onClick={() => handleRemoveForm(form.id)}>
+                  <Cross2Icon className="text-gray-400" />
+                </Button>
               </div>
             </div>
-
-            <ConditionalForm key={formId} formId={formId} parentType="And" />
-
-            {formsToShow.map((formIdentifier) => {
-              if (formIdentifier.type === 'AndOr' && formIdentifier.parentId === formId) {
-                // Render only if parentId matches And's id
-                return (
-                  <>
-                    {formsToShow.some((formIdentifier) => formIdentifier.type === 'AndOr') && (
-                      <div className="border-t border-dashed m-4" />
-                    )}
-                    <div className="flex flex-col items-center justify-between rounded">
-                      <div className="w-full md:basis-auto">
-                        <ConditionalForm key={formId} formId={formId} parentType="AndOr" />
+          </div>
+        </CardContent>
+        {formsToShow
+          .filter((childForm) => childForm.parentId === form.id)
+          .map((childForm, childIndex) => (
+            <div key={childForm.id}>
+              {childForm.type === 'Or' && (
+                <CardContent>
+                  <div className="flex items-center justify-between mt-5">
+                    <div className="flex flex-row md:space-x-4 w-full">
+                      <div className="w-full basis-3/12">
+                        <ConditionalForm formId={form.id} parentType={form.type} />
+                      </div>
+                      <div className="w-full basis-7/12">
+                        <ConditionalForm formId={form.id} parentType={form.type} />
+                      </div>
+                      {childIndex === formsToShow.filter((f) => f.parentId === form.id).length - 1 && (
+                        <div className="w-full basis-1/12">
+                          <Button
+                            className="flex items-center space-x-2 text-blue-500"
+                            variant="ghost"
+                            onClick={() => handleShowForm('Or', form.id)}
+                          >
+                            Or
+                          </Button>
+                        </div>
+                      )}
+                      <div className="w-full basis-1/12">
+                        <Button variant="outline" size="icon" onClick={() => handleRemoveForm(form.id)}>
+                          <Cross2Icon className="text-gray-400" />
+                        </Button>
                       </div>
                     </div>
-                  </>
-                );
-              }
-            })}
-          </>
-        );
-      case 'sequence':
-        // Assuming renderSequenceForm returns the JSX for rendering a sequence form
-        return renderSequenceForm(formId);
-      default:
-        return null; // For unrecognized form types, render nothing or a fallback component
-    }
-  };
-
-  const renderSimpleForm = (formId, formType, parentId = null, hasInputBefore = false) => {
-    return <>{renderFormBasedOnType(formId, formType, parentId, hasInputBefore)}</>;
-  };
-
-  const renderTopLevelForms = () => {
-    return formsToShow
-      .filter((form) => !form.parentId)
-      .map((form, index) => renderSimpleForm(form.id, form.type, null, index > 0));
-  };
-
-  const renderSequenceForm = () => {
-    return (
-      <div>
-        {/* Define the structure and fields for the "sequence" form */}
-        {/* ... */}
-      </div>
+                  </div>
+                </CardContent>
+              )}
+            </div>
+          ))}
+      </Card>
     );
   };
+
+  const simpleForm = () => {
+    return (
+      <>
+        {formsToShow.filter((form) => !form.parentId) // Assuming top-level forms/cards
+          .map((form) => (
+            <Card key={form.id} className='pt-10'>
+              <CardContent>
+
+                {cardsToShow.map((card) => {
+                  return (
+                    <div key={card.id}>
+                      {CardForm(card)}
+                    </div>
+                  );
+                })}
+
+
+                <div className="mt-5">
+                  {/* This button is now outside the map(), ensuring only one is rendered */}
+                  <Button
+                    className="flex items-center space-x-2"
+                    onClick={handleShowCard}
+                  >
+                    <PlusIcon className="text-white" />
+                    <span>Add</span>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        }
+      </>
+    );
+  };
+
+
+
+  /*  const renderTopLevelForms = () => {
+     return formsToShow
+       .filter((form) => !form.parentId)
+       .map((form, index) => (
+         <div key={form.id}>
+           {index > 0 && (
+             <div className="w-10 flex flex-col items-center justify-center space-y-2">
+               <div className="h-5">
+                 <Separator orientation="vertical" />
+               </div>
+               <Badge variant="outline">And</Badge>
+               <div className="h-5">
+                 <Separator orientation="vertical" />
+               </div>
+             </div>
+           )}
+           <div className="bg-gray-100 rounded">
+             <div className="flex md:space-x-4 items-center justify-between p-4">
+               <div className="flex flex-col md:flex-row md:space-x-4 w-full">
+                 <div className="w-full basis-9/12">
+                   <ConditionalForm formId={form.id} parentType={form.type} />
+                 </div>
+                 {form.type !== 'sequence' && (
+                   <div className="mt-2 w-full basis-1/12">
+                     <Button
+                       className="flex items-center space-x-2 text-blue-500"
+                       variant="ghost"
+                       onClick={() => handleShowForm('Or', form.id)}
+                     >
+                       Or
+                     </Button>
+                   </div>
+                 )}
+                 <div className="w-full basis-1/12">
+                   <Button variant="outline" size="icon" onClick={() => handleRemoveForm(form.id)}>
+                     <Cross2Icon className="text-gray-400" />
+                   </Button>
+                 </div>
+               </div>
+             </div>
+             <div className="flex flex-col space-y-4 p-4">
+               {formsToShow
+                 .filter((childForm) => childForm.parentId === form.id)
+                 .map((childForm, childIndex) => (
+                   <div key={childForm.id}>
+                     {childForm.type === 'Or' && (
+                       <>
+                         <div className="bg-gray-100 rounded">
+                           <div className="flex md:space-x-4 items-center justify-between">
+                             <div className="flex flex-col md:flex-row md:space-x-4 w-full">
+                               <div className="w-full basis-9/12">
+                                 <ConditionalForm formId={childForm.id} parentType="Or" />
+                               </div>
+                               {childIndex === formsToShow.filter((f) => f.parentId === form.id).length - 1 && (
+                                 <div className="mt-2 w-full basis-1/12">
+                                   <Button
+                                     className="flex items-center space-x-2 text-blue-500"
+                                     variant="ghost"
+                                     onClick={() => handleShowForm('Or', childForm.id)}
+                                   >
+                                     Or
+                                   </Button>
+                                 </div>
+                               )}
+                               <div className="w-full basis-1/12">
+                                 <Button
+                                   variant="outline"
+                                   size="icon"
+                                   onClick={() => handleRemoveForm(childForm.id)}
+                                 >
+                                   <Cross2Icon className="text-gray-400" />
+                                 </Button>
+                               </div>
+                             </div>
+                           </div>
+                         </div>
+                       </>
+                     )}
+                     {childForm.type === 'And' && (
+                       <>
+                         <div className="w-10 flex flex-col items-center justify-center space-y-2">
+                           <div className="h-5">
+                             <Separator orientation="vertical" />
+                           </div>
+                           <Badge variant="outline">And</Badge>
+                           <div className="h-5">
+                             <Separator orientation="vertical" />
+                           </div>
+                         </div>
+                         <div className="bg-gray-100 rounded">
+                           <div className="flex md:space-x-4 items-center justify-between">
+                             <div className="flex flex-col md:flex-row md:space-x-4 w-full">
+                               <div className="w-full basis-9/12">
+                                 <ConditionalForm formId={childForm.id} parentType="Or" />
+                               </div>
+                               {childIndex === formsToShow.filter((f) => f.parentId === form.id).length - 1 && (
+                                 <div className="mt-2 w-full basis-1/12">
+                                   <Button
+                                     className="flex items-center space-x-2 text-blue-500"
+                                     variant="ghost"
+                                     onClick={() => handleShowForm('Or', childForm.id)}
+                                   >
+                                     Or
+                                   </Button>
+                                 </div>
+                               )}
+                               <div className="w-full basis-1/12">
+                                 <Button
+                                   variant="outline"
+                                   size="icon"
+                                   onClick={() => handleRemoveForm(childForm.id)}
+                                 >
+                                   <Cross2Icon className="text-gray-400" />
+                                 </Button>
+                               </div>
+                             </div>
+                           </div>
+                         </div>
+                       </>
+                     )}
+                   </div>
+                 ))}
+             </div>
+             {form.type !== 'sequence' && (
+               <div className="mt-auto">
+                 <Button
+                   className="flex items-center space-x-2"
+                   onClick={() => handleShowForm('And', form.id)}
+                 >
+                   <PlusIcon className="text-white" />
+                   <span>Add</span>
+                 </Button>
+               </div>
+             )}
+           </div>
+         </div>
+       ));
+   }; */
+
+
 
   return (
     <div className="flex h-full">
@@ -787,7 +903,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                               </div>
                             </div>
 
-                            <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow">
+                            <div className="max-w-4xl mx-auto bg-white rounded-lg shadow p-5">
                               {/*           <div className="flex md:space-x-4 items-center justify-between bg-gray-100 rounded p-4">
                                 <div className="flex flex-col w-full">
                                   {renderTopLevelForms()}
@@ -805,7 +921,9 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                 </div>
                               </div> */}
 
-                              {renderTopLevelForms()}
+                              {simpleForm()}
+
+
 
 
                               <div className="flex items-center justify-between mt-6">

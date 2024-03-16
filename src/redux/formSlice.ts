@@ -6,6 +6,11 @@ export interface FormIdentifier {
   parentId?: string;
 }
 
+export interface CardIdentifier {
+  id: string;
+  type: string;
+}
+
 interface FormState {
   formData: FormData | null;
   loading: boolean;
@@ -13,6 +18,7 @@ interface FormState {
   currentStep: number;
   count: number;
   showForm: FormIdentifier[];
+  showCard: CardIdentifier[];
 }
 
 const initialState: FormState = {
@@ -22,6 +28,7 @@ const initialState: FormState = {
   currentStep: 1,
   count: 1,
   showForm: [],
+  showCard: [],
 };
 const formSlice = createSlice({
   name: 'form',
@@ -54,6 +61,12 @@ const formSlice = createSlice({
     removeForm: (state, action: PayloadAction<string>) => {
       state.showForm = state.showForm.filter((form) => form.id !== action.payload);
     },
+    setShowCard: (state, action: PayloadAction<CardIdentifier[]>) => {
+      state.showCard = action.payload;
+    },
+    removeCard: (state, action: PayloadAction<string>) => {
+      state.showCard = state.showCard.filter((card) => card.id !== action.payload);
+    }
   },
 });
 
@@ -67,6 +80,8 @@ export const {
   setCount,
   setShowForm,
   removeForm,
+  setShowCard,
+  removeCard,
 } = formSlice.actions;
 
 export default formSlice.reducer;
