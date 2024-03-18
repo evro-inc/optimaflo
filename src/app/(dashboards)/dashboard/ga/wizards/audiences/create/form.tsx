@@ -13,7 +13,7 @@ import {
   setShowCard,
   removeCard,
   setOrForm,
-  removeOrForm
+  removeOrForm,
 } from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
@@ -74,6 +74,8 @@ import {
   Cross2Icon,
   ChevronDownIcon,
   MagnifyingGlassIcon,
+  TrashIcon,
+  CircleIcon,
 } from '@radix-ui/react-icons';
 import {
   Dialog,
@@ -93,6 +95,7 @@ import {
 import { ScrollArea } from '@/src/components/ui/scroll-area';
 import { Badge } from '@/src/components/ui/badge';
 import { Separator } from '@/src/components/ui/separator';
+import { UserPlusIcon } from '@heroicons/react/24/solid';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -126,10 +129,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   const formsToShow = useSelector((state: any) => state.form.showForm);
   const cardsToShow = useSelector((state: any) => state.form.showCard);
   const orForms = useSelector((state: RootState) => state.form.Or);
-
-
-
-
 
   const extractedData = table.map((item) => {
     const propertyId = item.name.split('/')[1];
@@ -400,12 +399,14 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     const newForm: FormIdentifier = {
       id: newFormGroupId,
       type: formType,
-      cards: [{
-        id: newCardFormId,
-        type: 'card',
-        parentId: newFormGroupId // Here, cards are always associated with their form group
-      }],
-      parentId // This is now optional and defaults to 'top-level'
+      cards: [
+        {
+          id: newCardFormId,
+          type: 'card',
+          parentId: newFormGroupId, // Here, cards are always associated with their form group
+        },
+      ],
+      parentId, // This is now optional and defaults to 'top-level'
     };
 
     // If there's no parent, this is a top-level form group
@@ -413,13 +414,12 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     handleShowCard(newFormGroupId);
   };
 
-
   const handleShowCard = (parentId: string) => {
     const uniqueId = `card-${crypto.randomUUID()}`;
     const newForm: FormIdentifier = {
       id: uniqueId,
       type: 'card',
-      parentId
+      parentId,
     };
 
     dispatch(setShowCard([...cardsToShow, newForm]));
@@ -442,17 +442,19 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   const handleRemoveOrForm = (formId) => {
     console.log(`Removing form with ID: ${formId}`);
     dispatch(removeOrForm(formId));
-  }
+  };
 
   const handleRemoveCard = (cardId) => {
     // Dispatch the action to remove the card by its ID
     dispatch(removeCard(cardId));
 
     // Find the parent form of the card being removed
-    const parentFormId = cardsToShow.find(card => card.id === cardId)?.parentId;
+    const parentFormId = cardsToShow.find((card) => card.id === cardId)?.parentId;
 
     // Check if the parent form has any other cards after removing the current one
-    const remainingCards = cardsToShow.filter(card => card.parentId === parentFormId && card.id !== cardId);
+    const remainingCards = cardsToShow.filter(
+      (card) => card.parentId === parentFormId && card.id !== cardId
+    );
 
     // If no other cards are associated with this form, remove the form as well
     if (remainingCards.length === 0 && parentFormId) {
@@ -467,7 +469,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   const ConditionalForm = ({ formId, parentType }: { formId: string; parentType?: string }) => {
     return (
       <>
-
         <Dialog>
           <DialogTrigger asChild>
             <Button className="flex justify-between items-center w-full" variant="ghost">
@@ -539,13 +540,28 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
             </div>
           </DialogContent>
         </Dialog>
-
-
       </>
     );
   };
 
-
+  /* 
+  
+       return formsToShow
+       .filter((form) => !form.parentId)
+       .map((form, index) => (
+         <div key={form.id}>
+           {index > 0 && (
+             <div className="w-10 flex flex-col items-center justify-center space-y-2">
+               <div className="h-5">
+                 <Separator orientation="vertical" />
+               </div>
+               <Badge variant="outline">And</Badge>
+               <div className="h-5">
+                 <Separator orientation="vertical" />
+               </div>
+             </div>
+           )}
+  */
   const CardForm = (form) => {
     return (
       <Card>
@@ -577,74 +593,48 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
           </div>
         </CardContent>
 
-        {orForms.filter(or => or.parentId === form.id).map((orForm) => (
-          <CardContent key={orForm.id}>
-            <div className="flex items-center justify-between mt-5">
-              <div className="flex flex-row md:space-x-4 w-full">
-                <div className="w-full basis-3/12">
-                  <ConditionalForm formId={form.id} parentType={form.type} />
-                </div>
-                <div className="w-full basis-7/12">
-                  <ConditionalForm formId={form.id} parentType={form.type} />
-                </div>
-                <div className="w-full basis-1/12">
-                  <Button
-                    className="flex items-center space-x-2 text-blue-500"
-                    variant="ghost"
-                    onClick={() => handleShowOrForm(form.id)}
-                  >
-                    Or
-                  </Button>
-                </div>
-
-                <div className="w-full basis-1/12">
-                  <Button variant="outline" size="icon" onClick={() => handleRemoveOrForm(orForm.id)}>
-                    <Cross2Icon className="text-gray-400" />
-                  </Button>
+        {orForms
+          .filter((or) => or.parentId === form.id)
+          .map((orForm) => (
+            <>
+              <div className="relative border-t border-dashed my-4 flex justify-center">
+                <div className="absolute -bottom-3 left-5">
+                  <Badge variant="secondary">OR</Badge>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        ))}
+              <CardContent key={orForm.id}>
+                <div className="flex items-center justify-between mt-5">
+                  <div className="flex flex-row md:space-x-4 w-full">
+                    <div className="w-full basis-3/12">
+                      <ConditionalForm formId={form.id} parentType={form.type} />
+                    </div>
+                    <div className="w-full basis-7/12">
+                      <ConditionalForm formId={form.id} parentType={form.type} />
+                    </div>
+                    <div className="w-full basis-1/12">
+                      <Button
+                        className="flex items-center space-x-2 text-blue-500"
+                        variant="ghost"
+                        onClick={() => handleShowOrForm(form.id)}
+                      >
+                        Or
+                      </Button>
+                    </div>
 
-
-
-        {/*  {orForms
-          .filter((childForm) => childForm.parentId === form.id)
-          .map((childForm, childIndex) => (
-            <div key={childForm.id}>
-              {childForm.type === 'Or' && (
-                <CardContent>
-                  <div className="flex items-center justify-between mt-5">
-                    <div className="flex flex-row md:space-x-4 w-full">
-                      <div className="w-full basis-3/12">
-                        <ConditionalForm formId={form.id} parentType={form.type} />
-                      </div>
-                      <div className="w-full basis-7/12">
-                        <ConditionalForm formId={form.id} parentType={form.type} />
-                      </div>
-                      {childIndex === formsToShow.filter((f) => f.parentId === form.id).length - 1 && (
-                        <div className="w-full basis-1/12">
-                          <Button
-                            className="flex items-center space-x-2 text-blue-500"
-                            variant="ghost"
-                            onClick={() => handleShowOrForm()}
-                          >
-                            Or
-                          </Button>
-                        </div>
-                      )}
-                      <div className="w-full basis-1/12">
-                        <Button variant="outline" size="icon" onClick={() => handleRemoveCard(form.id)}>
-                          <Cross2Icon className="text-gray-400" />
-                        </Button>
-                      </div>
+                    <div className="w-full basis-1/12">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleRemoveOrForm(orForm.id)}
+                      >
+                        <Cross2Icon className="text-gray-400" />
+                      </Button>
                     </div>
                   </div>
-                </CardContent>
-              )}
-            </div>
-          ))} */}
+                </div>
+              </CardContent>
+            </>
+          ))}
       </Card>
     );
   };
@@ -652,41 +642,81 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   const simpleForm = () => {
     return (
       <>
-        {formsToShow.map((form) => (
-          <Card key={form.id} className='pt-10'>
-            <div>
-              <Button variant="outline" size="icon" onClick={() => handleRemoveForm(form.id)}>
-                <Cross2Icon className="text-gray-400" />
-              </Button>
-            </div>
-            <CardContent>
-
-
-              {cardsToShow.filter(card => card.parentId === form.id).map((card) => (
-                <div key={card.id}>
-                  {CardForm(card)}
+        {formsToShow.map((form, index) => (
+          <div key={form.id}>
+            {index > 0 && (
+              <div className="w-10 flex flex-col items-center justify-center space-y-2">
+                <div className="h-5">
+                  <Separator orientation="vertical" />
                 </div>
-              ))}
-
-              <div className="mt-5">
-                {/* This button is now outside the map(), ensuring only one is rendered */}
-                <Button
-                  className="flex items-center space-x-2"
-                  onClick={() => handleShowCard(form.id)}
-                >
-                  <PlusIcon className="text-white" />
-                  <span>Add</span>
-                </Button>
+                <Badge variant="secondary">AND</Badge>
+                <div className="h-5">
+                  <Separator orientation="vertical" />
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        ))
-        }
+            )}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center">
+                  <CircleIcon className="text-blue-500 mr-2" />
+                  <span className="flex-grow text-sm font-medium">Include users when:</span>
+                  <div className="flex items-center space-x-2">
+                    <UserPlusIcon className="text-gray-600" />
+                    <Select>
+                      <SelectTrigger id="user-action">
+                        <SelectValue placeholder="Select action" />
+                      </SelectTrigger>
+                      <SelectContent position="popper">
+                        <SelectItem value="created">Created</SelectItem>
+                        <SelectItem value="updated">Updated</SelectItem>
+                        <SelectItem value="deleted">Deleted</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Separator orientation="vertical" />
+                    <Button variant="ghost" size="icon" onClick={() => handleRemoveForm(form.id)}>
+                      <TrashIcon className="text-gray-400" />
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+
+              <CardContent>
+                {cardsToShow
+                  .filter((card) => card.parentId === form.id)
+                  .map((card, index) => (
+                    <div key={card.id}>
+                      {index > 0 && (
+                        <div className="w-10 flex flex-col items-center justify-center space-y-2">
+                          <div className="h-5">
+                            <Separator orientation="vertical" />
+                          </div>
+                          <Badge variant="secondary">AND</Badge>
+                          <div className="h-5">
+                            <Separator orientation="vertical" />
+                          </div>
+                        </div>
+                      )}
+                      {CardForm(card)}
+                    </div>
+                  ))}
+
+                <div className="mt-5">
+                  {/* This button is now outside the map(), ensuring only one is rendered */}
+                  <Button
+                    className="flex items-center space-x-2"
+                    onClick={() => handleShowCard(form.id)}
+                  >
+                    <PlusIcon className="text-white" />
+                    <span>And</span>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        ))}
       </>
     );
   };
-
-
 
   /*  const renderTopLevelForms = () => {
      return formsToShow
@@ -827,8 +857,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
        ));
    }; */
 
-
-
   return (
     <div className="flex h-full">
       <div className="flex items-center justify-center h-screen mx-auto">
@@ -874,8 +902,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
 
       {currentStep > 1 && (
         <div className="w-full flex justify-center mx-auto">
-          {/* Render only the form corresponding to the current step - 1 
-              (since step 1 is for selecting the number of forms) */}
           {fields.length >= currentStep - 1 && (
             <div
               key={fields[currentFormIndex].id}
@@ -980,7 +1006,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                             </div>
 
                             <div className="max-w-4xl mx-auto bg-white rounded-lg shadow p-5">
-
                               {simpleForm()}
 
                               <div className="flex items-center justify-between mt-6">
@@ -1039,17 +1064,17 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                                     onCheckedChange={(checked) => {
                                                       return checked
                                                         ? field.onChange([
-                                                          ...(Array.isArray(field.value)
-                                                            ? field.value
-                                                            : []),
-                                                          item.id,
-                                                        ])
+                                                            ...(Array.isArray(field.value)
+                                                              ? field.value
+                                                              : []),
+                                                            item.id,
+                                                          ])
                                                         : field.onChange(
-                                                          (Array.isArray(field.value)
-                                                            ? field.value
-                                                            : []
-                                                          ).filter((value) => value !== item.id)
-                                                        );
+                                                            (Array.isArray(field.value)
+                                                              ? field.value
+                                                              : []
+                                                            ).filter((value) => value !== item.id)
+                                                          );
                                                     }}
                                                   />
                                                 </FormControl>
