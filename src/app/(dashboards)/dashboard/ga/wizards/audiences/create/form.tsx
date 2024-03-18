@@ -7,13 +7,15 @@ import {
   incrementStep,
   decrementStep,
   setCount,
-  setShowForm,
-  removeForm,
+  setShowSimpleForm,
+  removeSimpleForm,
   FormIdentifier,
   setShowCard,
   removeCard,
   setOrForm,
   removeOrForm,
+  setShowSequenceForm,
+  removeSequenceForm,
 } from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
@@ -126,7 +128,8 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   const count = useSelector((state: RootState) => state.form.count);
   const notFoundError = useSelector(selectTable).notFoundError;
   const router = useRouter();
-  const formsToShow = useSelector((state: any) => state.form.showForm);
+  const simpleFormsToShow = useSelector((state: any) => state.form.showSimpleForm);
+  const sequenceFormsToShow = useSelector((state: any) => state.form.showSequenceForm);
   const cardsToShow = useSelector((state: any) => state.form.showCard);
   const orForms = useSelector((state: RootState) => state.form.Or);
 
@@ -231,28 +234,21 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
 
   const currentFormIndex = currentStep - 2;
 
-  // Adjust handleAmountSubmit or create a new function to handle selection change
   const handleAmountChange = (selectedAmount) => {
-    // Convert the selected amount to a number
     const amount = parseInt(selectedAmount);
 
-    // First, reset the current forms to start fresh
-    // Note: This step might need adjustment based on your exact requirements
-    // and the behavior you observe with your form state management
     form.reset({ forms: [] }); // Clear existing forms
 
-    // Then, append new forms based on the selected amount
     for (let i = 0; i < amount; i++) {
       addForm(); // Use your existing addForm function that calls append
     }
 
-    // Update the conversion event count in your state management (if necessary)
     dispatch(setCount(amount));
   };
 
   const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
-    dispatch(setLoading(true)); // Set loading to true using Redux action
+    dispatch(setLoading(true));
 
     toast('Creating conversion events...', {
       action: {
@@ -403,15 +399,21 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
         {
           id: newCardFormId,
           type: 'card',
-          parentId: newFormGroupId, // Here, cards are always associated with their form group
+          parentId: newFormGroupId,
         },
       ],
-      parentId, // This is now optional and defaults to 'top-level'
+      parentId,
     };
 
-    // If there's no parent, this is a top-level form group
-    dispatch(setShowForm([...formsToShow, newForm]));
-    handleShowCard(newFormGroupId);
+    if (formType == 'simple') {
+      // If there's no parent, this is a top-level form group
+      dispatch(setShowSimpleForm([...simpleFormsToShow, newForm]));
+      handleShowCard(newFormGroupId);
+    }
+    if (formType == 'sequence') {
+      dispatch(setShowSequenceForm([...sequenceFormsToShow, newForm]));
+      handleShowCard(newFormGroupId);
+    }
   };
 
   const handleShowCard = (parentId: string) => {
@@ -445,25 +447,27 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   };
 
   const handleRemoveCard = (cardId) => {
-    // Dispatch the action to remove the card by its ID
     dispatch(removeCard(cardId));
-
-    // Find the parent form of the card being removed
     const parentFormId = cardsToShow.find((card) => card.id === cardId)?.parentId;
 
-    // Check if the parent form has any other cards after removing the current one
     const remainingCards = cardsToShow.filter(
       (card) => card.parentId === parentFormId && card.id !== cardId
     );
 
-    // If no other cards are associated with this form, remove the form as well
     if (remainingCards.length === 0 && parentFormId) {
-      dispatch(removeForm(parentFormId));
+      dispatch(removeSimpleForm(parentFormId));
+    }
+    if (remainingCards.length === 0 && parentFormId) {
+      dispatch(removeSequenceForm(parentFormId));
     }
   };
 
-  const handleRemoveForm = (formId) => {
-    dispatch(removeForm(formId));
+  const handleRemoveSimpleForm = (formId) => {
+    dispatch(removeSimpleForm(formId));
+  };
+
+  const handleRemoveSequenceForm = (formId) => {
+    dispatch(removeSequenceForm(formId));
   };
 
   const ConditionalForm = ({ formId, parentType }: { formId: string; parentType?: string }) => {
@@ -544,24 +548,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     );
   };
 
-  /* 
-  
-       return formsToShow
-       .filter((form) => !form.parentId)
-       .map((form, index) => (
-         <div key={form.id}>
-           {index > 0 && (
-             <div className="w-10 flex flex-col items-center justify-center space-y-2">
-               <div className="h-5">
-                 <Separator orientation="vertical" />
-               </div>
-               <Badge variant="outline">And</Badge>
-               <div className="h-5">
-                 <Separator orientation="vertical" />
-               </div>
-             </div>
-           )}
-  */
   const CardForm = (form) => {
     return (
       <Card>
@@ -642,7 +628,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   const simpleForm = () => {
     return (
       <>
-        {formsToShow.map((form, index) => (
+        {simpleFormsToShow.map((form, index) => (
           <div key={form.id}>
             {index > 0 && (
               <div className="w-10 flex flex-col items-center justify-center space-y-2">
@@ -673,7 +659,11 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                       </SelectContent>
                     </Select>
                     <Separator orientation="vertical" />
-                    <Button variant="ghost" size="icon" onClick={() => handleRemoveForm(form.id)}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleRemoveSimpleForm(form.id)}
+                    >
                       <TrashIcon className="text-gray-400" />
                     </Button>
                   </div>
@@ -701,7 +691,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                   ))}
 
                 <div className="mt-5">
-                  {/* This button is now outside the map(), ensuring only one is rendered */}
                   <Button
                     className="flex items-center space-x-2"
                     onClick={() => handleShowCard(form.id)}
@@ -718,144 +707,87 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     );
   };
 
-  /*  const renderTopLevelForms = () => {
-     return formsToShow
-       .filter((form) => !form.parentId)
-       .map((form, index) => (
-         <div key={form.id}>
-           {index > 0 && (
-             <div className="w-10 flex flex-col items-center justify-center space-y-2">
-               <div className="h-5">
-                 <Separator orientation="vertical" />
-               </div>
-               <Badge variant="outline">And</Badge>
-               <div className="h-5">
-                 <Separator orientation="vertical" />
-               </div>
-             </div>
-           )}
-           <div className="bg-gray-100 rounded">
-             <div className="flex md:space-x-4 items-center justify-between p-4">
-               <div className="flex flex-col md:flex-row md:space-x-4 w-full">
-                 <div className="w-full basis-9/12">
-                   <ConditionalForm formId={form.id} parentType={form.type} />
-                 </div>
-                 {form.type !== 'sequence' && (
-                   <div className="mt-2 w-full basis-1/12">
-                     <Button
-                       className="flex items-center space-x-2 text-blue-500"
-                       variant="ghost"
-                       onClick={() => handleShowForm('Or', form.id)}
-                     >
-                       Or
-                     </Button>
-                   </div>
-                 )}
-                 <div className="w-full basis-1/12">
-                   <Button variant="outline" size="icon" onClick={() => handleRemoveForm(form.id)}>
-                     <Cross2Icon className="text-gray-400" />
-                   </Button>
-                 </div>
-               </div>
-             </div>
-             <div className="flex flex-col space-y-4 p-4">
-               {formsToShow
-                 .filter((childForm) => childForm.parentId === form.id)
-                 .map((childForm, childIndex) => (
-                   <div key={childForm.id}>
-                     {childForm.type === 'Or' && (
-                       <>
-                         <div className="bg-gray-100 rounded">
-                           <div className="flex md:space-x-4 items-center justify-between">
-                             <div className="flex flex-col md:flex-row md:space-x-4 w-full">
-                               <div className="w-full basis-9/12">
-                                 <ConditionalForm formId={childForm.id} parentType="Or" />
-                               </div>
-                               {childIndex === formsToShow.filter((f) => f.parentId === form.id).length - 1 && (
-                                 <div className="mt-2 w-full basis-1/12">
-                                   <Button
-                                     className="flex items-center space-x-2 text-blue-500"
-                                     variant="ghost"
-                                     onClick={() => handleShowForm('Or', childForm.id)}
-                                   >
-                                     Or
-                                   </Button>
-                                 </div>
-                               )}
-                               <div className="w-full basis-1/12">
-                                 <Button
-                                   variant="outline"
-                                   size="icon"
-                                   onClick={() => handleRemoveForm(childForm.id)}
-                                 >
-                                   <Cross2Icon className="text-gray-400" />
-                                 </Button>
-                               </div>
-                             </div>
-                           </div>
-                         </div>
-                       </>
-                     )}
-                     {childForm.type === 'And' && (
-                       <>
-                         <div className="w-10 flex flex-col items-center justify-center space-y-2">
-                           <div className="h-5">
-                             <Separator orientation="vertical" />
-                           </div>
-                           <Badge variant="outline">And</Badge>
-                           <div className="h-5">
-                             <Separator orientation="vertical" />
-                           </div>
-                         </div>
-                         <div className="bg-gray-100 rounded">
-                           <div className="flex md:space-x-4 items-center justify-between">
-                             <div className="flex flex-col md:flex-row md:space-x-4 w-full">
-                               <div className="w-full basis-9/12">
-                                 <ConditionalForm formId={childForm.id} parentType="Or" />
-                               </div>
-                               {childIndex === formsToShow.filter((f) => f.parentId === form.id).length - 1 && (
-                                 <div className="mt-2 w-full basis-1/12">
-                                   <Button
-                                     className="flex items-center space-x-2 text-blue-500"
-                                     variant="ghost"
-                                     onClick={() => handleShowForm('Or', childForm.id)}
-                                   >
-                                     Or
-                                   </Button>
-                                 </div>
-                               )}
-                               <div className="w-full basis-1/12">
-                                 <Button
-                                   variant="outline"
-                                   size="icon"
-                                   onClick={() => handleRemoveForm(childForm.id)}
-                                 >
-                                   <Cross2Icon className="text-gray-400" />
-                                 </Button>
-                               </div>
-                             </div>
-                           </div>
-                         </div>
-                       </>
-                     )}
-                   </div>
-                 ))}
-             </div>
-             {form.type !== 'sequence' && (
-               <div className="mt-auto">
-                 <Button
-                   className="flex items-center space-x-2"
-                   onClick={() => handleShowForm('And', form.id)}
-                 >
-                   <PlusIcon className="text-white" />
-                   <span>Add</span>
-                 </Button>
-               </div>
-             )}
-           </div>
-         </div>
-       ));
-   }; */
+  const sequenceForm = () => {
+    return (
+      <>
+        {sequenceFormsToShow.map((form, index) => (
+          <div key={form.id}>
+            {index > 0 && (
+              <div className="w-10 flex flex-col items-center justify-center space-y-2">
+                <div className="h-5">
+                  <Separator orientation="vertical" />
+                </div>
+                <Badge variant="secondary">AND</Badge>
+                <div className="h-5">
+                  <Separator orientation="vertical" />
+                </div>
+              </div>
+            )}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center">
+                  <CircleIcon className="text-blue-500 mr-2" />
+                  <span className="flex-grow text-sm font-medium">Include sequence:</span>
+                  <div className="flex items-center space-x-2">
+                    <UserPlusIcon className="text-gray-600" />
+                    <Select>
+                      <SelectTrigger id="user-action">
+                        <SelectValue placeholder="Select action" />
+                      </SelectTrigger>
+                      <SelectContent position="popper">
+                        <SelectItem value="created">Created</SelectItem>
+                        <SelectItem value="updated">Updated</SelectItem>
+                        <SelectItem value="deleted">Deleted</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Separator orientation="vertical" />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleRemoveSequenceForm(form.id)}
+                    >
+                      <TrashIcon className="text-gray-400" />
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+
+              <CardContent>
+                {cardsToShow
+                  .filter((card) => card.parentId === form.id)
+                  .map((card, index) => (
+                    <div key={card.id}>
+                      {index > 0 && (
+                        <div className="w-10 flex flex-col items-center justify-center space-y-2">
+                          <div className="h-5">
+                            <Separator orientation="vertical" />
+                          </div>
+                          <Badge variant="secondary">AND</Badge>
+                          <div className="h-5">
+                            <Separator orientation="vertical" />
+                          </div>
+                        </div>
+                      )}
+                      {CardForm(card)}
+                    </div>
+                  ))}
+
+                <div className="mt-5">
+                  <Button
+                    className="flex items-center space-x-2"
+                    onClick={() => handleShowCard(form.id)}
+                  >
+                    <PlusIcon className="text-white" />
+                    <span>And</span>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        ))}
+      </>
+    );
+  };
 
   return (
     <div className="flex h-full">
@@ -1007,6 +939,20 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
 
                             <div className="max-w-4xl mx-auto bg-white rounded-lg shadow p-5">
                               {simpleForm()}
+
+                              {simpleFormsToShow.length > 0 && sequenceFormsToShow.length > 0 && (
+                                <div className="w-10 flex flex-col items-center justify-center space-y-2">
+                                  <div className="h-5">
+                                    <Separator orientation="vertical" />
+                                  </div>
+                                  <Badge variant="secondary">AND</Badge>
+                                  <div className="h-5">
+                                    <Separator orientation="vertical" />
+                                  </div>
+                                </div>
+                              )}
+
+                              {sequenceForm()}
 
                               <div className="flex items-center justify-between mt-6">
                                 <Button

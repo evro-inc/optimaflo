@@ -19,7 +19,8 @@ interface FormState {
   error: string | null;
   currentStep: number;
   count: number;
-  showForm: FormIdentifier[];
+  showSimpleForm: FormIdentifier[];
+  showSequenceForm: FormIdentifier[];
   showCard: CardIdentifier[];
   Or: FormIdentifier[];
 }
@@ -30,7 +31,8 @@ const initialState: FormState = {
   error: null,
   currentStep: 1,
   count: 1,
-  showForm: [],
+  showSimpleForm: [],
+  showSequenceForm: [],
   showCard: [],
   Or: [],
 };
@@ -60,11 +62,17 @@ const formSlice = createSlice({
     setCount: (state, action: PayloadAction<number>) => {
       state.count = action.payload;
     },
-    setShowForm: (state, action: PayloadAction<FormIdentifier[]>) => {
-      state.showForm = action.payload;
+    setShowSimpleForm: (state, action: PayloadAction<FormIdentifier[]>) => {
+      state.showSimpleForm = action.payload;
     },
-    removeForm: (state, action: PayloadAction<string>) => {
-      state.showForm = state.showForm.filter((form) => form.id !== action.payload);
+    removeSimpleForm: (state, action: PayloadAction<string>) => {
+      state.showSimpleForm = state.showSimpleForm.filter((form) => form.id !== action.payload);
+    },
+    setShowSequenceForm: (state, action: PayloadAction<FormIdentifier[]>) => {
+      state.showSequenceForm = action.payload;
+    },
+    removeSequenceForm: (state, action: PayloadAction<string>) => {
+      state.showSequenceForm = state.showSequenceForm.filter((form) => form.id !== action.payload);
     },
     setShowCard: (state, action: PayloadAction<CardIdentifier[]>) => {
       state.showCard = action.payload;
@@ -91,8 +99,10 @@ export const {
   incrementStep,
   decrementStep,
   setCount,
-  setShowForm,
-  removeForm,
+  setShowSimpleForm,
+  setShowSequenceForm,
+  removeSimpleForm,
+  removeSequenceForm,
   setShowCard,
   removeCard,
   setOrForm,
