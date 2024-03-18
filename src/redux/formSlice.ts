@@ -1,14 +1,16 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-export interface FormIdentifier {
-  id: string;
-  type: string; // e.g., "simple", "sequence"
-  parentId?: string;
-}
-
 export interface CardIdentifier {
   id: string;
   type: string;
+  parentId: string;
+}
+
+export interface FormIdentifier {
+  id: string;
+  type: string; // e.g., "simple", "sequence"
+  parentId: string;
+  cards?: CardIdentifier[];
 }
 
 interface FormState {
@@ -19,6 +21,7 @@ interface FormState {
   count: number;
   showForm: FormIdentifier[];
   showCard: CardIdentifier[];
+  Or: FormIdentifier[];
 }
 
 const initialState: FormState = {
@@ -29,7 +32,9 @@ const initialState: FormState = {
   count: 1,
   showForm: [],
   showCard: [],
+  Or: [],
 };
+
 const formSlice = createSlice({
   name: 'form',
   initialState,
@@ -66,7 +71,15 @@ const formSlice = createSlice({
     },
     removeCard: (state, action: PayloadAction<string>) => {
       state.showCard = state.showCard.filter((card) => card.id !== action.payload);
-    }
+    },
+    setOrForm: (state, action: PayloadAction<FormIdentifier[]>) => {
+      state.Or = action.payload;
+    },
+    removeOrForm: (state, action: PayloadAction<string>) => {
+      console.log('Current state:', state.Or); // Debug log
+      console.log('Removing ID:', action.payload); // Debug log
+      state.Or = state.Or.filter((orForm) => orForm.id !== action.payload);
+    },
   },
 });
 
@@ -82,6 +95,8 @@ export const {
   removeForm,
   setShowCard,
   removeCard,
+  setOrForm,
+  removeOrForm,
 } = formSlice.actions;
 
 export default formSlice.reducer;

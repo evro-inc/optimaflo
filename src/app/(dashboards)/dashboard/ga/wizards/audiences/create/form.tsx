@@ -10,7 +10,10 @@ import {
   setShowForm,
   removeForm,
   FormIdentifier,
-  setShowCard
+  setShowCard,
+  removeCard,
+  setOrForm,
+  removeOrForm
 } from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
@@ -122,6 +125,11 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   const router = useRouter();
   const formsToShow = useSelector((state: any) => state.form.showForm);
   const cardsToShow = useSelector((state: any) => state.form.showCard);
+  const orForms = useSelector((state: RootState) => state.form.Or);
+
+
+
+
 
   const extractedData = table.map((item) => {
     const propertyId = item.name.split('/')[1];
@@ -385,36 +393,75 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     dispatch(decrementStep());
   };
 
-  const handleShowForm = (formType: string, parentId?: string) => {
-    const uniqueId = `${formType}-${crypto.randomUUID()}`;
+  const handleShowForm = (formType: string, parentId: string = 'top-level') => {
+    const newFormGroupId = crypto.randomUUID();
+    const newCardFormId = crypto.randomUUID();
+
     const newForm: FormIdentifier = {
-      id: uniqueId,
+      id: newFormGroupId,
       type: formType,
-      parentId,
+      cards: [{
+        id: newCardFormId,
+        type: 'card',
+        parentId: newFormGroupId // Here, cards are always associated with their form group
+      }],
+      parentId // This is now optional and defaults to 'top-level'
     };
 
-    if (parentId) {
-      newForm.parentId = parentId;
-    }
-
-    const updatedForms = [...formsToShow, newForm];
-    dispatch(setShowForm(updatedForms));
+    // If there's no parent, this is a top-level form group
+    dispatch(setShowForm([...formsToShow, newForm]));
+    handleShowCard(newFormGroupId);
   };
 
-  const handleShowCard = () => {
+
+  const handleShowCard = (parentId: string) => {
     const uniqueId = `card-${crypto.randomUUID()}`;
     const newForm: FormIdentifier = {
       id: uniqueId,
       type: 'card',
+      parentId
     };
 
     dispatch(setShowCard([...cardsToShow, newForm]));
   };
 
+  const handleShowOrForm = (parentId: string) => {
+    const newOrFormId = crypto.randomUUID();
 
+    const newOrForm: FormIdentifier = {
+      id: newOrFormId,
+      type: 'or',
+      parentId, // This assumes "Or" forms can be nested or associated with a parent form
+      cards: [], // Assuming an "Or" form can have cards, start with an empty array
+    };
+
+    // Assuming "Or" forms are a top-level concept, similar to cards or other forms
+    dispatch(setOrForm([...orForms, newOrForm]));
+  };
+
+  const handleRemoveOrForm = (formId) => {
+    console.log(`Removing form with ID: ${formId}`);
+    dispatch(removeOrForm(formId));
+  }
+
+  const handleRemoveCard = (cardId) => {
+    // Dispatch the action to remove the card by its ID
+    dispatch(removeCard(cardId));
+
+    // Find the parent form of the card being removed
+    const parentFormId = cardsToShow.find(card => card.id === cardId)?.parentId;
+
+    // Check if the parent form has any other cards after removing the current one
+    const remainingCards = cardsToShow.filter(card => card.parentId === parentFormId && card.id !== cardId);
+
+    // If no other cards are associated with this form, remove the form as well
+    if (remainingCards.length === 0 && parentFormId) {
+      dispatch(removeForm(parentFormId));
+    }
+  };
 
   const handleRemoveForm = (formId) => {
-    dispatch(removeForm(formId)); // Dispatch action to remove the form
+    dispatch(removeForm(formId));
   };
 
   const ConditionalForm = ({ formId, parentType }: { formId: string; parentType?: string }) => {
@@ -498,13 +545,8 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     );
   };
 
-  console.log('formsToShow', formsToShow);
 
   const CardForm = (form) => {
-    console.log('form', form);
-
-    const hasChildForms = formsToShow.some((childForm) => childForm.parentId === form.id);
-
     return (
       <Card>
         <CardContent>
@@ -516,26 +558,58 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
               <div className="w-full basis-7/12">
                 <ConditionalForm formId={form.id} parentType={form.type} />
               </div>
-              {!hasChildForms && form.type !== 'sequence' && (
-                <div className="w-full basis-1/12">
-                  <Button
-                    className="flex items-center space-x-2 text-blue-500"
-                    variant="ghost"
-                    onClick={() => handleShowForm('Or', form.id)}
-                  >
-                    Or
-                  </Button>
-                </div>
-              )}
               <div className="w-full basis-1/12">
-                <Button variant="outline" size="icon" onClick={() => handleRemoveForm(form.id)}>
+                <Button
+                  className="flex items-center space-x-2 text-blue-500"
+                  variant="ghost"
+                  onClick={() => handleShowOrForm(form.id)}
+                >
+                  Or
+                </Button>
+              </div>
+
+              <div className="w-full basis-1/12">
+                <Button variant="outline" size="icon" onClick={() => handleRemoveCard(form.id)}>
                   <Cross2Icon className="text-gray-400" />
                 </Button>
               </div>
             </div>
           </div>
         </CardContent>
-        {formsToShow
+
+        {orForms.filter(or => or.parentId === form.id).map((orForm) => (
+          <CardContent key={orForm.id}>
+            <div className="flex items-center justify-between mt-5">
+              <div className="flex flex-row md:space-x-4 w-full">
+                <div className="w-full basis-3/12">
+                  <ConditionalForm formId={form.id} parentType={form.type} />
+                </div>
+                <div className="w-full basis-7/12">
+                  <ConditionalForm formId={form.id} parentType={form.type} />
+                </div>
+                <div className="w-full basis-1/12">
+                  <Button
+                    className="flex items-center space-x-2 text-blue-500"
+                    variant="ghost"
+                    onClick={() => handleShowOrForm(form.id)}
+                  >
+                    Or
+                  </Button>
+                </div>
+
+                <div className="w-full basis-1/12">
+                  <Button variant="outline" size="icon" onClick={() => handleRemoveOrForm(orForm.id)}>
+                    <Cross2Icon className="text-gray-400" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        ))}
+
+
+
+        {/*  {orForms
           .filter((childForm) => childForm.parentId === form.id)
           .map((childForm, childIndex) => (
             <div key={childForm.id}>
@@ -554,14 +628,14 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                           <Button
                             className="flex items-center space-x-2 text-blue-500"
                             variant="ghost"
-                            onClick={() => handleShowForm('Or', form.id)}
+                            onClick={() => handleShowOrForm()}
                           >
                             Or
                           </Button>
                         </div>
                       )}
                       <div className="w-full basis-1/12">
-                        <Button variant="outline" size="icon" onClick={() => handleRemoveForm(form.id)}>
+                        <Button variant="outline" size="icon" onClick={() => handleRemoveCard(form.id)}>
                           <Cross2Icon className="text-gray-400" />
                         </Button>
                       </div>
@@ -570,7 +644,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                 </CardContent>
               )}
             </div>
-          ))}
+          ))} */}
       </Card>
     );
   };
@@ -578,33 +652,35 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   const simpleForm = () => {
     return (
       <>
-        {formsToShow.filter((form) => !form.parentId) // Assuming top-level forms/cards
-          .map((form) => (
-            <Card key={form.id} className='pt-10'>
-              <CardContent>
-
-                {cardsToShow.map((card) => {
-                  return (
-                    <div key={card.id}>
-                      {CardForm(card)}
-                    </div>
-                  );
-                })}
+        {formsToShow.map((form) => (
+          <Card key={form.id} className='pt-10'>
+            <div>
+              <Button variant="outline" size="icon" onClick={() => handleRemoveForm(form.id)}>
+                <Cross2Icon className="text-gray-400" />
+              </Button>
+            </div>
+            <CardContent>
 
 
-                <div className="mt-5">
-                  {/* This button is now outside the map(), ensuring only one is rendered */}
-                  <Button
-                    className="flex items-center space-x-2"
-                    onClick={handleShowCard}
-                  >
-                    <PlusIcon className="text-white" />
-                    <span>Add</span>
-                  </Button>
+              {cardsToShow.filter(card => card.parentId === form.id).map((card) => (
+                <div key={card.id}>
+                  {CardForm(card)}
                 </div>
-              </CardContent>
-            </Card>
-          ))
+              ))}
+
+              <div className="mt-5">
+                {/* This button is now outside the map(), ensuring only one is rendered */}
+                <Button
+                  className="flex items-center space-x-2"
+                  onClick={() => handleShowCard(form.id)}
+                >
+                  <PlusIcon className="text-white" />
+                  <span>Add</span>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))
         }
       </>
     );
@@ -904,27 +980,8 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                             </div>
 
                             <div className="max-w-4xl mx-auto bg-white rounded-lg shadow p-5">
-                              {/*           <div className="flex md:space-x-4 items-center justify-between bg-gray-100 rounded p-4">
-                                <div className="flex flex-col w-full">
-                                  {renderTopLevelForms()}
-                                  <div className="justify-start mt-4">
-                                    {isAddButtonClicked && (
-                                      <Button
-                                        className="flex items-center space-x-2"
-                                        onClick={() => handleShowForm('And')}
-                                      >
-                                        <PlusIcon className="text-white" />
-                                        <span>Add</span>
-                                      </Button>
-                                    )}
-                                  </div>
-                                </div>
-                              </div> */}
 
                               {simpleForm()}
-
-
-
 
                               <div className="flex items-center justify-between mt-6">
                                 <Button
