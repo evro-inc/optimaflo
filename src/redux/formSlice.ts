@@ -6,6 +6,12 @@ export interface CardIdentifier {
   parentId: string;
 }
 
+export interface StepIdentifier {
+  id: string;
+  type: string; // "step"
+  parentId: string;
+}
+
 export interface FormIdentifier {
   id: string;
   type: string; // e.g., "simple", "sequence"
@@ -23,6 +29,7 @@ interface FormState {
   showSequenceForm: FormIdentifier[];
   showCard: CardIdentifier[];
   Or: FormIdentifier[];
+  showStep: StepIdentifier[];
 }
 
 const initialState: FormState = {
@@ -35,6 +42,7 @@ const initialState: FormState = {
   showSequenceForm: [],
   showCard: [],
   Or: [],
+  showStep: [],
 };
 
 const formSlice = createSlice({
@@ -84,9 +92,21 @@ const formSlice = createSlice({
       state.Or = action.payload;
     },
     removeOrForm: (state, action: PayloadAction<string>) => {
-      console.log('Current state:', state.Or); // Debug log
-      console.log('Removing ID:', action.payload); // Debug log
       state.Or = state.Or.filter((orForm) => orForm.id !== action.payload);
+    },
+    setShowStep: (state, action: PayloadAction<StepIdentifier[]>) => {
+      state.showStep = action.payload;
+    },
+    addStep: (state, action: PayloadAction<{ parentId: string }>) => {
+      const newStep: StepIdentifier = {
+        id: crypto.randomUUID(), // Ensure you have a polyfill or alternative for environments without crypto
+        type: 'step',
+        parentId: action.payload.parentId,
+      };
+      state.showStep = [...state.showStep, newStep];
+    },
+    removeStep: (state, action: PayloadAction<string>) => {
+      state.showStep = state.showStep.filter((step) => step.id !== action.payload);
     },
   },
 });
@@ -107,6 +127,9 @@ export const {
   removeCard,
   setOrForm,
   removeOrForm,
+  setShowStep,
+  addStep,
+  removeStep,
 } = formSlice.actions;
 
 export default formSlice.reducer;

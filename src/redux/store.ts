@@ -8,6 +8,7 @@ import workspaceReducer from './sharedSlice';
 import sidebarReducer from './sidebarSlice';
 import profileReducer from './profileSlice';
 import formReducer from './formSlice';
+import excludeFormReducer from './excludeFormSlice';
 
 const rootReducer = combineReducers({
   user: userReducer,
@@ -18,6 +19,7 @@ const rootReducer = combineReducers({
   sidebar: sidebarReducer,
   profile: profileReducer,
   form: formReducer,
+  excludeForm: excludeFormReducer,
 });
 
 export const store = configureStore({

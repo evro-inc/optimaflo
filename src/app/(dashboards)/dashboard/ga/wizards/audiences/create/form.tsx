@@ -16,6 +16,8 @@ import {
   removeOrForm,
   setShowSequenceForm,
   removeSequenceForm,
+  addStep,
+  removeStep,
 } from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
@@ -78,6 +80,8 @@ import {
   MagnifyingGlassIcon,
   TrashIcon,
   CircleIcon,
+  ClockIcon,
+  ValueNoneIcon,
 } from '@radix-ui/react-icons';
 import {
   Dialog,
@@ -98,6 +102,16 @@ import { ScrollArea } from '@/src/components/ui/scroll-area';
 import { Badge } from '@/src/components/ui/badge';
 import { Separator } from '@/src/components/ui/separator';
 import { UserPlusIcon } from '@heroicons/react/24/solid';
+import {
+  setExcludeSequenceForm,
+  setExcludeSimpleForm,
+  setShowExcludeCard,
+  setExcludeParentForm,
+  removeExcludeSequenceForm,
+  removeExcludeSimpleForm,
+  removeExcludeParentForm,
+  removeExcludeCard,
+} from '@/src/redux/excludeFormSlice';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -128,10 +142,23 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   const count = useSelector((state: RootState) => state.form.count);
   const notFoundError = useSelector(selectTable).notFoundError;
   const router = useRouter();
+
+  // Form state
   const simpleFormsToShow = useSelector((state: any) => state.form.showSimpleForm);
   const sequenceFormsToShow = useSelector((state: any) => state.form.showSequenceForm);
   const cardsToShow = useSelector((state: any) => state.form.showCard);
   const orForms = useSelector((state: RootState) => state.form.Or);
+  const showStep = useSelector((state: RootState) => state.form.showStep);
+
+  // Exclude Form state
+  const showExcludeParent = useSelector((state: RootState) => state.excludeForm.showParentForm);
+  const excludeSimpleFormsToShow = useSelector((state: any) => state.excludeForm.showSimpleForm);
+  const excludeSequenceFormsToShow = useSelector(
+    (state: any) => state.excludeForm.showSequenceForm
+  );
+  const excludeCardsToShow = useSelector((state: any) => state.excludeForm.showCard);
+  const excludeOrForms = useSelector((state: RootState) => state.excludeForm.Or);
+  const excludeShowStep = useSelector((state: RootState) => state.excludeForm.showStep);
 
   const extractedData = table.map((item) => {
     const propertyId = item.name.split('/')[1];
@@ -408,23 +435,94 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     if (formType == 'simple') {
       // If there's no parent, this is a top-level form group
       dispatch(setShowSimpleForm([...simpleFormsToShow, newForm]));
-      handleShowCard(newFormGroupId);
+      handleCard(newFormGroupId, 'card');
     }
     if (formType == 'sequence') {
       dispatch(setShowSequenceForm([...sequenceFormsToShow, newForm]));
-      handleShowCard(newFormGroupId);
+      handleCard(newFormGroupId, 'card');
+    }
+    if (formType == 'excludeSimple') {
+      // If there's no parent, this is a top-level form group
+      dispatch(setExcludeSimpleForm([...excludeSimpleFormsToShow, newForm]));
+      handleCard(newFormGroupId, 'excludeCard');
+    }
+    if (formType == 'excludeSequence') {
+      dispatch(setExcludeSequenceForm([...excludeSequenceFormsToShow, newForm]));
+      handleCard(newFormGroupId, 'excludeCard');
+    }
+    if (formType == 'excludeShowParent') {
+      dispatch(setExcludeParentForm([...showExcludeParent, newForm]));
+      dispatch(setExcludeSimpleForm([...excludeSimpleFormsToShow, newForm]));
+      handleCard(newFormGroupId, 'excludeCard');
     }
   };
 
-  const handleShowCard = (parentId: string) => {
+  const handleRemoveSimpleForm = (formId, type: 'include' | 'exclude') => {
+    if (type === 'include') {
+      dispatch(removeSimpleForm(formId));
+    } else if (type === 'exclude') {
+      dispatch(removeExcludeParentForm(formId));
+      dispatch(removeExcludeSimpleForm(formId));
+    }
+  };
+
+  const handleRemoveSequenceForm = (formId: string, type: 'include' | 'exclude') => {
+    if (type === 'include') {
+      // Handle include form removal
+      dispatch(removeSequenceForm(formId));
+    } else if (type === 'exclude') {
+      // Handle exclude form removal
+      dispatch(removeExcludeSequenceForm(formId)); // Assuming you have a similar action for exclude forms
+    }
+  };
+
+  const handleCard = (parentId: string, cardType: string) => {
     const uniqueId = `card-${crypto.randomUUID()}`;
     const newForm: FormIdentifier = {
       id: uniqueId,
-      type: 'card',
+      type: cardType,
       parentId,
     };
 
-    dispatch(setShowCard([...cardsToShow, newForm]));
+    if (cardType == 'card') {
+      dispatch(setShowCard([...cardsToShow, newForm]));
+    }
+    if (cardType == 'excludeCard') {
+      dispatch(setShowExcludeCard([...excludeCardsToShow, newForm]));
+    }
+  };
+
+  // A helper function to remove a card and update its parent form if necessary.
+  const removeCardAndUpdateParent = (cards, cardId, removeCardAction, removeParentFormActions) => {
+    dispatch(removeCardAction(cardId)); // Dispatch the action to remove the card.
+
+    const parentFormId = cards.find((card) => card.id === cardId)?.parentId;
+    if (!parentFormId) return; // Early exit if no parent ID is found.
+
+    // Check if there are any remaining cards in this parent form.
+    const remainingCards = cards.filter((card) => card.parentId === parentFormId && card.id !== cardId);
+    if (remainingCards.length === 0) {
+      // If no remaining cards, remove the parent form.
+      removeParentFormActions.forEach(action => dispatch(action(parentFormId)));
+    }
+  };
+
+  // Refactored handleRemoveCard using the helper function.
+  const handleRemoveCard = (cardId) => {
+    // Handling for include cards and parent forms.
+    removeCardAndUpdateParent(cardsToShow, cardId, removeCard, [removeSimpleForm, removeSequenceForm]);
+
+    // Handling for exclude cards and parent forms.
+    removeCardAndUpdateParent(excludeCardsToShow, cardId, removeExcludeCard, [removeExcludeSimpleForm, removeExcludeSequenceForm]);
+  };
+
+
+  const handleShowStep = (parentId: string) => {
+    dispatch(addStep({ parentId }));
+  };
+
+  const handleRemoveStep = (stepId: string) => {
+    dispatch(removeStep(stepId));
   };
 
   const handleShowOrForm = (parentId: string) => {
@@ -446,30 +544,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     dispatch(removeOrForm(formId));
   };
 
-  const handleRemoveCard = (cardId) => {
-    dispatch(removeCard(cardId));
-    const parentFormId = cardsToShow.find((card) => card.id === cardId)?.parentId;
-
-    const remainingCards = cardsToShow.filter(
-      (card) => card.parentId === parentFormId && card.id !== cardId
-    );
-
-    if (remainingCards.length === 0 && parentFormId) {
-      dispatch(removeSimpleForm(parentFormId));
-    }
-    if (remainingCards.length === 0 && parentFormId) {
-      dispatch(removeSequenceForm(parentFormId));
-    }
-  };
-
-  const handleRemoveSimpleForm = (formId) => {
-    dispatch(removeSimpleForm(formId));
-  };
-
-  const handleRemoveSequenceForm = (formId) => {
-    dispatch(removeSequenceForm(formId));
-  };
-
   const ConditionalForm = ({ formId, parentType }: { formId: string; parentType?: string }) => {
     return (
       <>
@@ -478,6 +552,87 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
             <Button className="flex justify-between items-center w-full" variant="ghost">
               Select an Event
               <ChevronDownIcon className="text-gray-400" />
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-5xl mx-auto bg-white shadow rounded-lg">
+            <div className="flex">
+              <div className="flex flex-col w-64 mr-4">
+                <div className="flex items-center px-3 py-2 space-x-2 border-b">
+                  <MagnifyingGlassIcon className="text-gray-400" />
+                  <Input placeholder="Search items" />
+                </div>
+                <Accordion className="mt-2">
+                  <AccordionItem value="events">
+                    <AccordionTrigger>Events</AccordionTrigger>
+                    <AccordionContent>
+                      <ul className="divide-y cursor-pointer">
+                        <li className="px-3 py-2">app_clear_data</li>
+                        <li className="px-3 py-2">app_exception</li>
+                        <li className="px-3 py-2">app_store_refund</li>
+                        <li className="px-3 py-2">app_store_subscription_cancel</li>
+                        <li className="px-3 py-2">app_store_subscription_convert</li>
+                        <li className="px-3 py-2">app_store_subscription_renew</li>
+                        <li className="px-3 py-2">app_update</li>
+                        <li className="px-3 py-2">first_open</li>
+                        <li className="px-3 py-2">in_app_purchase</li>
+                        <li className="px-3 py-2">notification_dismiss</li>
+                      </ul>
+                    </AccordionContent>
+                  </AccordionItem>
+                  <AccordionItem value="dimensions">
+                    <AccordionTrigger>Dimensions</AccordionTrigger>
+                    <AccordionContent>
+                      <ul className="divide-y cursor-pointer">
+                        <li className="px-3 py-2">User</li>
+                        <li className="px-3 py-2">Session</li>
+                      </ul>
+                    </AccordionContent>
+                  </AccordionItem>
+                  <AccordionItem value="metrics">
+                    <AccordionTrigger>Metrics</AccordionTrigger>
+                    <AccordionContent>
+                      <ul className="divide-y cursor-pointer">
+                        <li className="px-3 py-2">Revenue</li>
+                        <li className="px-3 py-2">Engagement</li>
+                      </ul>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </div>
+              <div className="flex-1">
+                <ScrollArea className="h-72">
+                  <ul className="divide-y">
+                    <li className="px-3 py-2">app_clear_data</li>
+                    <li className="px-3 py-2 bg-blue-100">app_exception</li>
+                    <li className="px-3 py-2">app_store_refund</li>
+                    <li className="px-3 py-2">app_store_subscription_cancel</li>
+                    <li className="px-3 py-2">app_store_subscription_convert</li>
+                    <li className="px-3 py-2">app_store_subscription_renew</li>
+                    <li className="px-3 py-2">app_update</li>
+                    <li className="px-3 py-2">first_open</li>
+                    <li className="px-3 py-2">in_app_purchase</li>
+                    <li className="px-3 py-2">notification_dismiss</li>
+                  </ul>
+                </ScrollArea>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </>
+    );
+  };
+
+  const TimeConstraint = () => {
+    return (
+      <>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button
+              className="flex justify-between items-center w-full"
+              size="icon"
+              variant="ghost"
+            >
+              <ClockIcon className="text-gray-400" />
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-5xl mx-auto bg-white shadow rounded-lg">
@@ -662,7 +817,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleRemoveSimpleForm(form.id)}
+                      onClick={() => handleRemoveSimpleForm(form.id, 'include')}
                     >
                       <TrashIcon className="text-gray-400" />
                     </Button>
@@ -693,7 +848,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                 <div className="mt-5">
                   <Button
                     className="flex items-center space-x-2"
-                    onClick={() => handleShowCard(form.id)}
+                    onClick={() => handleCard(form.id, 'card')}
                   >
                     <PlusIcon className="text-white" />
                     <span>And</span>
@@ -723,34 +878,77 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                 </div>
               </div>
             )}
+
             <Card>
               <CardHeader>
-                <div className="flex items-center">
-                  <CircleIcon className="text-blue-500 mr-2" />
-                  <span className="flex-grow text-sm font-medium">Include sequence:</span>
-                  <div className="flex items-center space-x-2">
-                    <UserPlusIcon className="text-gray-600" />
-                    <Select>
-                      <SelectTrigger id="user-action">
-                        <SelectValue placeholder="Select action" />
-                      </SelectTrigger>
-                      <SelectContent position="popper">
-                        <SelectItem value="created">Created</SelectItem>
-                        <SelectItem value="updated">Updated</SelectItem>
-                        <SelectItem value="deleted">Deleted</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Separator orientation="vertical" />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleRemoveSequenceForm(form.id)}
-                    >
-                      <TrashIcon className="text-gray-400" />
-                    </Button>
+                <div className="flex items-center w-full">
+                  <div className="flex basis-5/12">
+                    <CircleIcon className="text-blue-500 mr-2" />
+                    <span className="flex text-sm font-medium">Include sequence:</span>
+                  </div>
+
+                  <div className="flex flex-grow basis-7/12 justify-end">
+                    <div className="flex items-center space-x-2">
+                      <UserPlusIcon className="text-gray-600" />
+                      <Select>
+                        <SelectTrigger id="user-action">
+                          <SelectValue placeholder="Select action" />
+                        </SelectTrigger>
+                        <SelectContent position="popper">
+                          <SelectItem value="created">Created</SelectItem>
+                          <SelectItem value="updated">Updated</SelectItem>
+                          <SelectItem value="deleted">Deleted</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Separator orientation="vertical" />
+                      {TimeConstraint()}
+                      <Separator orientation="vertical" />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemoveSequenceForm(form.id, 'include')}
+                      >
+                        <TrashIcon className="text-gray-400" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
+                <div className="flex flex-col items-center space-y-2 w-full pt-2">
+                  <Separator />
+                </div>
               </CardHeader>
+
+              <CardContent>
+                <div className="flex items-center w-full">
+                  <div className="basis-5/12">
+                    <p>Step 1</p>
+                  </div>
+                  <div className="flex flex-grow basis-7/12 justify-end">
+                    <div className="flex items-center space-x-2">
+                      <UserPlusIcon className="text-gray-600" />
+                      <Select>
+                        <SelectTrigger id="user-action">
+                          <SelectValue placeholder="Select action" />
+                        </SelectTrigger>
+                        <SelectContent position="popper">
+                          <SelectItem value="created">Created</SelectItem>
+                          <SelectItem value="updated">Updated</SelectItem>
+                          <SelectItem value="deleted">Deleted</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Separator orientation="vertical" />
+
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemoveStep(form.id)}
+                      >
+                        <TrashIcon className="text-gray-400" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
 
               <CardContent>
                 {cardsToShow
@@ -775,13 +973,448 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                 <div className="mt-5">
                   <Button
                     className="flex items-center space-x-2"
-                    onClick={() => handleShowCard(form.id)}
+                    onClick={() => handleCard(form.id, 'card')}
                   >
                     <PlusIcon className="text-white" />
                     <span>And</span>
                   </Button>
                 </div>
               </CardContent>
+
+              {showStep
+                .filter((step) => step.parentId === form.id)
+                .map((step, stepIndex) => (
+                  <>
+                    <CardContent>
+                      <div className="flex items-center w-full">
+                        <div className="flex flex-grow basis-full justify-start bg-gray-300 rounded p-2">
+                          <div className="flex items-center space-x-2">
+                            <Select>
+                              <SelectTrigger
+                                id="user-action"
+                                className="border-none outline-none focus:outline-none focus:ring-0 shadow-none"
+                              >
+                                <SelectValue
+                                  placeholder="followed by"
+                                  className="border-none outline-none focus:outline-none focus:ring-0"
+                                />
+                              </SelectTrigger>
+                              <SelectContent
+                                position="popper"
+                                className="border-none outline-none focus:outline-none focus:ring-0"
+                              >
+                                <SelectItem value="created">Created</SelectItem>
+                                <SelectItem value="updated">Updated</SelectItem>
+                                <SelectItem value="deleted">Deleted</SelectItem>
+                              </SelectContent>
+                            </Select>
+
+                            <Separator orientation="vertical" className="bg-gray-400" />
+                            {TimeConstraint()}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center w-full mt-5">
+                        <div className="basis-3/12">
+                          <p>step {stepIndex + 2}</p>
+                        </div>
+                        <div className="flex flex-grow basis-9/12 justify-end">
+                          <div className="flex items-center space-x-2">
+                            <UserPlusIcon className="text-gray-600" />
+                            <Select>
+                              <SelectTrigger id="user-action">
+                                <SelectValue placeholder="Select action" />
+                              </SelectTrigger>
+                              <SelectContent position="popper">
+                                <SelectItem value="created">Created</SelectItem>
+                                <SelectItem value="updated">Updated</SelectItem>
+                                <SelectItem value="deleted">Deleted</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Separator orientation="vertical" />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleRemoveStep(form.id)}
+                            >
+                              <TrashIcon className="text-gray-400" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+
+                    <CardContent>
+                      {cardsToShow
+                        .filter((card) => card.parentId === form.id)
+                        .map((card, index) => (
+                          <div key={card.id}>
+                            {index > 0 && (
+                              <div className="w-10 flex flex-col items-center justify-center space-y-2">
+                                <div className="h-5">
+                                  <Separator orientation="vertical" />
+                                </div>
+                                <Badge variant="secondary">AND</Badge>
+                                <div className="h-5">
+                                  <Separator orientation="vertical" />
+                                </div>
+                              </div>
+                            )}
+                            {CardForm(card)}
+                          </div>
+                        ))}
+
+                      <div className="mt-5">
+                        <Button
+                          className="flex items-center space-x-2"
+                          onClick={() => handleCard(form.id, 'card')}
+                        >
+                          <PlusIcon className="text-white" />
+                          <span>And</span>
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </>
+                ))}
+
+              <CardFooter>
+                <div className="flex flex-col items-center space-y-2 w-full">
+                  <Separator />
+                  <div className="w-full flex justify-start">
+                    {' '}
+                    {/* Adjusted line */}
+                    <Button
+                      className="flex items-center space-x-2"
+                      onClick={() => handleShowStep(form.id)}
+                      variant="ghost"
+                    >
+                      <span>Add Step</span>
+                    </Button>
+                  </div>
+                </div>
+              </CardFooter>
+            </Card>
+          </div>
+        ))}
+      </>
+    );
+  };
+
+  const excludeSimpleForm = () => {
+    return (
+      <>
+        {excludeSimpleFormsToShow.map((form, index) => (
+          <div key={form.id}>
+            {index > 0 && (
+              <div className="w-10 flex flex-col items-center justify-center space-y-2">
+                <div className="h-5">
+                  <Separator orientation="vertical" />
+                </div>
+                <Badge variant="secondary">AND</Badge>
+                <div className="h-5">
+                  <Separator orientation="vertical" />
+                </div>
+              </div>
+            )}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center">
+                  <CircleIcon className="text-blue-500 mr-2" />
+                  <span className="flex-grow text-sm font-medium">Exclude users when:</span>
+                  <div className="flex items-center space-x-2">
+                    <UserPlusIcon className="text-gray-600" />
+                    <Select>
+                      <SelectTrigger id="user-action">
+                        <SelectValue placeholder="Select action" />
+                      </SelectTrigger>
+                      <SelectContent position="popper">
+                        <SelectItem value="created">Created</SelectItem>
+                        <SelectItem value="updated">Updated</SelectItem>
+                        <SelectItem value="deleted">Deleted</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Separator orientation="vertical" />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleRemoveSimpleForm(form.id, 'exclude')}
+                    >
+                      <TrashIcon className="text-gray-400" />
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+
+              <CardContent>
+                {excludeCardsToShow
+                  .filter((card) => card.parentId === form.id)
+                  .map((card, index) => (
+                    <div key={card.id}>
+                      {index > 0 && (
+                        <div className="w-10 flex flex-col items-center justify-center space-y-2">
+                          <div className="h-5">
+                            <Separator orientation="vertical" />
+                          </div>
+                          <Badge variant="secondary">AND</Badge>
+                          <div className="h-5">
+                            <Separator orientation="vertical" />
+                          </div>
+                        </div>
+                      )}
+                      {CardForm(card)}
+                    </div>
+                  ))}
+
+                <div className="mt-5">
+                  <Button
+                    className="flex items-center space-x-2"
+                    onClick={() => handleCard(form.id, 'excludeCard')}
+                  >
+                    <PlusIcon className="text-white" />
+                    <span>And</span>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        ))}
+      </>
+    );
+  };
+
+  const excludeSequenceForm = () => {
+    return (
+      <>
+        {excludeSequenceFormsToShow.map((form, index) => (
+          <div key={form.id}>
+            {index > 0 && (
+              <div className="w-10 flex flex-col items-center justify-center space-y-2">
+                <div className="h-5">
+                  <Separator orientation="vertical" />
+                </div>
+                <Badge variant="secondary">AND</Badge>
+                <div className="h-5">
+                  <Separator orientation="vertical" />
+                </div>
+              </div>
+            )}
+
+            <Card>
+              <CardHeader>
+                <div className="flex items-center w-full">
+                  <div className="flex basis-5/12">
+                    <CircleIcon className="text-blue-500 mr-2" />
+                    <span className="flex text-sm font-medium">Include sequence:</span>
+                  </div>
+
+                  <div className="flex flex-grow basis-7/12 justify-end">
+                    <div className="flex items-center space-x-2">
+                      <UserPlusIcon className="text-gray-600" />
+                      <Select>
+                        <SelectTrigger id="user-action">
+                          <SelectValue placeholder="Select action" />
+                        </SelectTrigger>
+                        <SelectContent position="popper">
+                          <SelectItem value="created">Created</SelectItem>
+                          <SelectItem value="updated">Updated</SelectItem>
+                          <SelectItem value="deleted">Deleted</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Separator orientation="vertical" />
+                      {TimeConstraint()}
+                      <Separator orientation="vertical" />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemoveSequenceForm(form.id, 'exclude')}
+                      >
+                        <TrashIcon className="text-gray-400" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-col items-center space-y-2 w-full pt-2">
+                  <Separator />
+                </div>
+              </CardHeader>
+
+              <CardContent>
+                <div className="flex items-center w-full">
+                  <div className="basis-5/12">
+                    <p>Step 1</p>
+                  </div>
+                  <div className="flex flex-grow basis-7/12 justify-end">
+                    <div className="flex items-center space-x-2">
+                      <UserPlusIcon className="text-gray-600" />
+                      <Select>
+                        <SelectTrigger id="user-action">
+                          <SelectValue placeholder="Select action" />
+                        </SelectTrigger>
+                        <SelectContent position="popper">
+                          <SelectItem value="created">Created</SelectItem>
+                          <SelectItem value="updated">Updated</SelectItem>
+                          <SelectItem value="deleted">Deleted</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Separator orientation="vertical" />
+
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemoveSequenceForm(form.id, 'exclude')}
+                      >
+                        <TrashIcon className="text-gray-400" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+
+              <CardContent>
+                {excludeCardsToShow
+                  .filter((card) => card.parentId === form.id)
+                  .map((card, index) => (
+                    <div key={card.id}>
+                      {index > 0 && (
+                        <div className="w-10 flex flex-col items-center justify-center space-y-2">
+                          <div className="h-5">
+                            <Separator orientation="vertical" />
+                          </div>
+                          <Badge variant="secondary">AND</Badge>
+                          <div className="h-5">
+                            <Separator orientation="vertical" />
+                          </div>
+                        </div>
+                      )}
+                      {CardForm(card)}
+                    </div>
+                  ))}
+
+                <div className="mt-5">
+                  <Button
+                    className="flex items-center space-x-2"
+                    onClick={() => handleCard(form.id, 'excludeCard')}
+                  >
+                    <PlusIcon className="text-white" />
+                    <span>And</span>
+                  </Button>
+                </div>
+              </CardContent>
+
+              {showStep
+                .filter((step) => step.parentId === form.id)
+                .map((step, stepIndex) => (
+                  <>
+                    <CardContent>
+                      <div className="flex items-center w-full">
+                        <div className="flex flex-grow basis-full justify-start bg-gray-300 rounded p-2">
+                          <div className="flex items-center space-x-2">
+                            <Select>
+                              <SelectTrigger
+                                id="user-action"
+                                className="border-none outline-none focus:outline-none focus:ring-0 shadow-none"
+                              >
+                                <SelectValue
+                                  placeholder="followed by"
+                                  className="border-none outline-none focus:outline-none focus:ring-0"
+                                />
+                              </SelectTrigger>
+                              <SelectContent
+                                position="popper"
+                                className="border-none outline-none focus:outline-none focus:ring-0"
+                              >
+                                <SelectItem value="created">Created</SelectItem>
+                                <SelectItem value="updated">Updated</SelectItem>
+                                <SelectItem value="deleted">Deleted</SelectItem>
+                              </SelectContent>
+                            </Select>
+
+                            <Separator orientation="vertical" className="bg-gray-400" />
+                            {TimeConstraint()}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center w-full mt-5">
+                        <div className="basis-3/12">
+                          <p>step {stepIndex + 2}</p>
+                        </div>
+                        <div className="flex flex-grow basis-9/12 justify-end">
+                          <div className="flex items-center space-x-2">
+                            <UserPlusIcon className="text-gray-600" />
+                            <Select>
+                              <SelectTrigger id="user-action">
+                                <SelectValue placeholder="Select action" />
+                              </SelectTrigger>
+                              <SelectContent position="popper">
+                                <SelectItem value="created">Created</SelectItem>
+                                <SelectItem value="updated">Updated</SelectItem>
+                                <SelectItem value="deleted">Deleted</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Separator orientation="vertical" />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleRemoveSequenceForm(form.id, 'exclude')}
+                            >
+                              <TrashIcon className="text-gray-400" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+
+                    <CardContent>
+                      {excludeCardsToShow
+                        .filter((card) => card.parentId === form.id)
+                        .map((card, index) => (
+                          <div key={card.id}>
+                            {index > 0 && (
+                              <div className="w-10 flex flex-col items-center justify-center space-y-2">
+                                <div className="h-5">
+                                  <Separator orientation="vertical" />
+                                </div>
+                                <Badge variant="secondary">AND</Badge>
+                                <div className="h-5">
+                                  <Separator orientation="vertical" />
+                                </div>
+                              </div>
+                            )}
+                            {CardForm(card)}
+                          </div>
+                        ))}
+
+                      <div className="mt-5">
+                        <Button
+                          className="flex items-center space-x-2"
+                          onClick={() => handleCard(form.id, 'excludeCard')}
+                        >
+                          <PlusIcon className="text-white" />
+                          <span>And</span>
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </>
+                ))}
+
+              <CardFooter>
+                <div className="flex flex-col items-center space-y-2 w-full">
+                  <Separator />
+                  <div className="w-full flex justify-start">
+                    {' '}
+                    {/* Adjusted line */}
+                    <Button
+                      className="flex items-center space-x-2"
+                      onClick={() => handleShowStep(form.id)}
+                      variant="ghost"
+                    >
+                      <span>Add Step</span>
+                    </Button>
+                  </div>
+                </div>
+              </CardFooter>
             </Card>
           </div>
         ))}
@@ -937,7 +1570,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                               </div>
                             </div>
 
-                            <div className="max-w-4xl mx-auto bg-white rounded-lg shadow p-5">
+                            <div className="max-w-4xl mx-auto p-5">
                               {simpleForm()}
 
                               {simpleFormsToShow.length > 0 && sequenceFormsToShow.length > 0 && (
@@ -973,6 +1606,87 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                 </Button>
                               </div>
                             </div>
+
+                            <div className="max-w-4xl mx-auto pl-5">
+                              <div className="flex items-center justify-between">
+
+                                {showExcludeParent.length === 0 && (
+                                  <div className="flex items-center justify-between">
+                                    <Button
+                                      className="flex items-center space-x-2"
+                                      variant="secondary"
+                                      onClick={() => handleShowForm('excludeShowParent')}
+                                    >
+                                      <ValueNoneIcon className="text-red" />
+                                      <span>Add group to exclude</span>
+                                    </Button>
+                                  </div>
+                                )}
+
+
+                              </div>
+                            </div>
+
+                            {showExcludeParent.map((form, index) => (
+                              <div className="max-w-4xl mx-auto p-5">
+
+
+
+                                <div className="flex items-center">
+                                  <div className='flex basis-9 mb-5'>
+                                    <Select>
+                                      <SelectTrigger id="user-action">
+                                        <SelectValue placeholder="Select action" />
+                                      </SelectTrigger>
+                                      <SelectContent position="popper">
+                                        <SelectItem value="created">Created</SelectItem>
+                                        <SelectItem value="updated">Updated</SelectItem>
+                                        <SelectItem value="deleted">Deleted</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                </div>
+
+
+
+
+
+                                {excludeSimpleForm()}
+
+                                {excludeSimpleFormsToShow.length > 0 && excludeSequenceFormsToShow.length > 0 && (
+                                  <div className="w-10 flex flex-col items-center justify-center space-y-2">
+                                    <div className="h-5">
+                                      <Separator orientation="vertical" />
+                                    </div>
+                                    <Badge variant="secondary">AND</Badge>
+                                    <div className="h-5">
+                                      <Separator orientation="vertical" />
+                                    </div>
+                                  </div>
+                                )}
+
+                                {excludeSequenceForm()}
+
+                                <div className="flex items-center justify-between mt-6">
+                                  <Button
+                                    className="flex items-center space-x-2"
+                                    variant="secondary"
+                                    onClick={() => handleShowForm('excludeSimple')}
+                                  >
+                                    <PlusIcon className="text-white" />
+                                    <span>Add condition group to exclude</span>
+                                  </Button>
+                                  <Button
+                                    className="flex items-center space-x-2"
+                                    variant="secondary"
+                                    onClick={() => handleShowForm('excludeSequence')}
+                                  >
+                                    <BarChartIcon className="text-white" />
+                                    <span>Add sequence to exclude</span>
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
 
                             <div className="flex flex-col md:flex-row md:space-x-4">
                               <div className="w-full md:basis-auto">
@@ -1010,17 +1724,17 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                                     onCheckedChange={(checked) => {
                                                       return checked
                                                         ? field.onChange([
-                                                            ...(Array.isArray(field.value)
-                                                              ? field.value
-                                                              : []),
-                                                            item.id,
-                                                          ])
+                                                          ...(Array.isArray(field.value)
+                                                            ? field.value
+                                                            : []),
+                                                          item.id,
+                                                        ])
                                                         : field.onChange(
-                                                            (Array.isArray(field.value)
-                                                              ? field.value
-                                                              : []
-                                                            ).filter((value) => value !== item.id)
-                                                          );
+                                                          (Array.isArray(field.value)
+                                                            ? field.value
+                                                            : []
+                                                          ).filter((value) => value !== item.id)
+                                                        );
                                                     }}
                                                   />
                                                 </FormControl>
