@@ -570,17 +570,20 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
 
   const handleRemoveStep = (stepId: string, type: string) => {
     if (type === 'include') {
-      const updatedShowStep = showStep.filter((step) => step.id !== stepId);
 
       if (showStep.length > 1) {
         // Only attempt to access the last step if it exists
         const lastStepId = showStep[showStep.length - 1].id;
+        console.log('Last step ID:', lastStepId); // Debug log
+
         if (stepId !== lastStepId) {
           dispatch(removeStep(lastStepId));
         } else {
           dispatch(removeStep(stepId));
         }
-      } else {
+      }
+
+      else {
         // Fallback action if there are no steps. Adjust according to your logic.
         // For example, removing the last sequence form if no steps are present.
         const lastSequenceFormId =
@@ -588,10 +591,16 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
             ? sequenceFormsToShow[sequenceFormsToShow.length - 1].id
             : null;
 
+        console.log('Last sequence form ID:', lastSequenceFormId); // Debug log
+
+
         if (lastSequenceFormId) {
           dispatch(removeSequenceForm(lastSequenceFormId));
         }
       }
+
+
+
     } else if (type === 'exclude') {
       // Check if there are any steps to remove
       if (excludeShowStep.length > 0) {
@@ -1789,17 +1798,17 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                                     onCheckedChange={(checked) => {
                                                       return checked
                                                         ? field.onChange([
-                                                            ...(Array.isArray(field.value)
-                                                              ? field.value
-                                                              : []),
-                                                            item.id,
-                                                          ])
+                                                          ...(Array.isArray(field.value)
+                                                            ? field.value
+                                                            : []),
+                                                          item.id,
+                                                        ])
                                                         : field.onChange(
-                                                            (Array.isArray(field.value)
-                                                              ? field.value
-                                                              : []
-                                                            ).filter((value) => value !== item.id)
-                                                          );
+                                                          (Array.isArray(field.value)
+                                                            ? field.value
+                                                            : []
+                                                          ).filter((value) => value !== item.id)
+                                                        );
                                                     }}
                                                   />
                                                 </FormControl>
