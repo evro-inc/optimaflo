@@ -12,12 +12,13 @@ import {
   FormIdentifier,
   setShowCard,
   removeCard,
-  setOrForm,
   removeOrForm,
   setShowSequenceForm,
   removeSequenceForm,
-  addStep,
   removeStep,
+  CardIdentifier,
+  setShowStep,
+  StepIdentifier,
 } from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
@@ -111,6 +112,8 @@ import {
   removeExcludeSimpleForm,
   removeExcludeParentForm,
   removeExcludeCard,
+  removeExcludeStep,
+  addExcludeStep,
 } from '@/src/redux/excludeFormSlice';
 
 const NotFoundErrorModal = dynamic(
@@ -146,8 +149,8 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   // Form state
   const simpleFormsToShow = useSelector((state: any) => state.form.showSimpleForm);
   const sequenceFormsToShow = useSelector((state: any) => state.form.showSequenceForm);
-  const cardsToShow = useSelector((state: any) => state.form.showCard);
-  const orForms = useSelector((state: RootState) => state.form.Or);
+  const cardsToShow = useSelector((state: RootState) => state.form.showCard);
+  const orForms = useSelector((state: RootState) => state.form.showCard);
   const showStep = useSelector((state: RootState) => state.form.showStep);
 
   // Exclude Form state
@@ -415,9 +418,10 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     dispatch(decrementStep());
   };
 
-  const handleShowForm = (formType: string, parentId: string = 'top-level') => {
+  const handleShowForm = (formType: string) => {
     const newFormGroupId = crypto.randomUUID();
     const newCardFormId = crypto.randomUUID();
+    const parentId = crypto.randomUUID();
 
     const newForm: FormIdentifier = {
       id: newFormGroupId,
@@ -430,6 +434,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
         },
       ],
       parentId,
+      steps: [],
     };
 
     if (formType == 'simple') {
@@ -439,6 +444,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     }
     if (formType == 'sequence') {
       dispatch(setShowSequenceForm([...sequenceFormsToShow, newForm]));
+      //dispatch(setShowStep([...showStep, newForm]));
       handleCard(newFormGroupId, 'card');
     }
     if (formType == 'excludeSimple') {
@@ -457,38 +463,48 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     }
   };
 
-  const handleRemoveSimpleForm = (formId, type: 'include' | 'exclude') => {
-    if (type === 'include') {
-      dispatch(removeSimpleForm(formId));
-    } else if (type === 'exclude') {
-      dispatch(removeExcludeParentForm(formId));
+  const handleRemoveSimpleForm = (formId: string, type: 'include' | 'exclude') => {
+    if (type === 'exclude') {
       dispatch(removeExcludeSimpleForm(formId));
+      // Check if this was the last excludeSimpleForm and there are no excludeSequenceForms
+      if (excludeSimpleFormsToShow.length === 1 && excludeSequenceFormsToShow.length === 0) {
+        // Dispatch removal of the parent form
+        dispatch(removeExcludeParentForm(showExcludeParent[showExcludeParent.length - 1].id)); // Use actual parentId
+      }
+    } else if (type === 'include') {
+      // Handle include case
+      dispatch(removeSimpleForm(formId));
     }
   };
 
   const handleRemoveSequenceForm = (formId: string, type: 'include' | 'exclude') => {
-    if (type === 'include') {
-      // Handle include form removal
+    if (type === 'exclude') {
+      // Check if this was the last excludeSequenceForm and there are no excludeSimpleForms
+      if (excludeSequenceFormsToShow.length === 1 && excludeSimpleFormsToShow.length === 0) {
+        // Dispatch removal of the parent form
+        dispatch(removeExcludeParentForm(showExcludeParent[showExcludeParent.length - 1].id)); // Use actual parentId
+      }
+      dispatch(removeExcludeSequenceForm(formId));
+    } else if (type === 'include') {
+      // Handle include case
       dispatch(removeSequenceForm(formId));
-    } else if (type === 'exclude') {
-      // Handle exclude form removal
-      dispatch(removeExcludeSequenceForm(formId)); // Assuming you have a similar action for exclude forms
+      dispatch(removeStep(formId));
+      dispatch(removeCard(formId));
     }
   };
 
   const handleCard = (parentId: string, cardType: string) => {
     const uniqueId = `card-${crypto.randomUUID()}`;
-    const newForm: FormIdentifier = {
+    const newCard: CardIdentifier = {
       id: uniqueId,
-      type: cardType,
+      type: cardType, // Make sure this is adjusted based on the context (e.g., 'card', 'excludeCard')
       parentId,
     };
 
-    if (cardType == 'card') {
-      dispatch(setShowCard([...cardsToShow, newForm]));
-    }
-    if (cardType == 'excludeCard') {
-      dispatch(setShowExcludeCard([...excludeCardsToShow, newForm]));
+    if (cardType === 'card' || cardType === 'or') {
+      dispatch(setShowCard([...cardsToShow, newCard]));
+    } else if (cardType === 'excludeCard') {
+      dispatch(setShowExcludeCard([...excludeCardsToShow, newCard]));
     }
   };
 
@@ -500,47 +516,107 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     if (!parentFormId) return; // Early exit if no parent ID is found.
 
     // Check if there are any remaining cards in this parent form.
-    const remainingCards = cards.filter((card) => card.parentId === parentFormId && card.id !== cardId);
+    const remainingCards = cards.filter(
+      (card) => card.parentId === parentFormId && card.id !== cardId
+    );
     if (remainingCards.length === 0) {
       // If no remaining cards, remove the parent form.
-      removeParentFormActions.forEach(action => dispatch(action(parentFormId)));
+      removeParentFormActions.forEach((action) => dispatch(action(parentFormId)));
     }
   };
 
   // Refactored handleRemoveCard using the helper function.
   const handleRemoveCard = (cardId) => {
     // Handling for include cards and parent forms.
-    removeCardAndUpdateParent(cardsToShow, cardId, removeCard, [removeSimpleForm, removeSequenceForm]);
+    removeCardAndUpdateParent(cardsToShow, cardId, removeCard, [
+      removeSimpleForm,
+      removeSequenceForm,
+    ]);
 
     // Handling for exclude cards and parent forms.
-    removeCardAndUpdateParent(excludeCardsToShow, cardId, removeExcludeCard, [removeExcludeSimpleForm, removeExcludeSequenceForm]);
+    removeCardAndUpdateParent(excludeCardsToShow, cardId, removeExcludeCard, [
+      removeExcludeSimpleForm,
+      removeExcludeSequenceForm,
+    ]);
   };
 
+  const handleShowStep = (parentId: string, stepType: string) => {
+    const stepId = `step-${crypto.randomUUID()}`;
+    const cardId = `card-${crypto.randomUUID()}`;
+    console.log('Parent ID:', parentId); // Debug log
 
-  const handleShowStep = (parentId: string) => {
-    dispatch(addStep({ parentId }));
-  };
-
-  const handleRemoveStep = (stepId: string) => {
-    dispatch(removeStep(stepId));
-  };
-
-  const handleShowOrForm = (parentId: string) => {
-    const newOrFormId = crypto.randomUUID();
-
-    const newOrForm: FormIdentifier = {
-      id: newOrFormId,
-      type: 'or',
-      parentId, // This assumes "Or" forms can be nested or associated with a parent form
-      cards: [], // Assuming an "Or" form can have cards, start with an empty array
+    const newForm: StepIdentifier = {
+      id: stepId,
+      type: stepType,
+      parentId,
+      cards: [
+        {
+          id: cardId,
+          type: 'card',
+          parentId: stepId,
+        },
+      ],
     };
 
-    // Assuming "Or" forms are a top-level concept, similar to cards or other forms
-    dispatch(setOrForm([...orForms, newOrForm]));
+    console.log('New form:', newForm); // Debug log
+
+    if (stepType == 'step') {
+      dispatch(setShowStep([...showStep, newForm]));
+    }
+    if (stepType == 'excludeStep') {
+      dispatch(setShowExcludeCard([...excludeCardsToShow, newForm]));
+    }
+  };
+
+  const handleRemoveStep = (stepId: string, type: string) => {
+    if (type === 'include') {
+      const updatedShowStep = showStep.filter((step) => step.id !== stepId);
+
+      if (showStep.length > 1) {
+        // Only attempt to access the last step if it exists
+        const lastStepId = showStep[showStep.length - 1].id;
+        if (stepId !== lastStepId) {
+          dispatch(removeStep(lastStepId));
+        } else {
+          dispatch(removeStep(stepId));
+        }
+      } else {
+        // Fallback action if there are no steps. Adjust according to your logic.
+        // For example, removing the last sequence form if no steps are present.
+        const lastSequenceFormId =
+          sequenceFormsToShow.length > 0
+            ? sequenceFormsToShow[sequenceFormsToShow.length - 1].id
+            : null;
+
+        if (lastSequenceFormId) {
+          dispatch(removeSequenceForm(lastSequenceFormId));
+        }
+      }
+    } else if (type === 'exclude') {
+      // Check if there are any steps to remove
+      if (excludeShowStep.length > 0) {
+        // Only attempt to access the last step if it exists
+        const lastStepId = excludeShowStep[excludeShowStep.length - 1].id;
+        if (stepId !== lastStepId) {
+          dispatch(removeExcludeStep(lastStepId));
+        } else {
+          dispatch(removeExcludeStep(stepId));
+        }
+      } else {
+        // Fallback action if there are no steps. Adjust according to your logic.
+        // For example, removing the last sequence form if no steps are present.
+        const lastSequenceFormId =
+          excludeSequenceFormsToShow.length > 0
+            ? excludeSequenceFormsToShow[excludeSequenceFormsToShow.length - 1].id
+            : null;
+        if (lastSequenceFormId) {
+          dispatch(removeExcludeSequenceForm(lastSequenceFormId));
+        }
+      }
+    }
   };
 
   const handleRemoveOrForm = (formId) => {
-    console.log(`Removing form with ID: ${formId}`);
     dispatch(removeOrForm(formId));
   };
 
@@ -719,7 +795,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                 <Button
                   className="flex items-center space-x-2 text-blue-500"
                   variant="ghost"
-                  onClick={() => handleShowOrForm(form.id)}
+                  onClick={() => handleCard(form.id, 'or')}
                 >
                   Or
                 </Button>
@@ -756,7 +832,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                       <Button
                         className="flex items-center space-x-2 text-blue-500"
                         variant="ghost"
-                        onClick={() => handleShowOrForm(form.id)}
+                        onClick={() => handleCard(form.id, 'or')}
                       >
                         Or
                       </Button>
@@ -863,6 +939,9 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   };
 
   const sequenceForm = () => {
+    console.log('Sequence Forms:', sequenceFormsToShow);
+    const stepId = showStep[showStep.length - 1]?.id;
+
     return (
       <>
         {sequenceFormsToShow.map((form, index) => (
@@ -918,8 +997,8 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                 </div>
               </CardHeader>
 
-              <CardContent>
-                <div className="flex items-center w-full">
+              {/*   <CardContent>
+                <div className="flex items-center w-full mb-6">
                   <div className="basis-5/12">
                     <p>Step 1</p>
                   </div>
@@ -941,16 +1020,13 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleRemoveStep(form.id)}
+                        onClick={() => handleRemoveStep(form.id, 'include')}
                       >
                         <TrashIcon className="text-gray-400" />
                       </Button>
                     </div>
                   </div>
                 </div>
-              </CardContent>
-
-              <CardContent>
                 {cardsToShow
                   .filter((card) => card.parentId === form.id)
                   .map((card, index) => (
@@ -979,13 +1055,13 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                     <span>And</span>
                   </Button>
                 </div>
-              </CardContent>
+              </CardContent> */}
 
               {showStep
                 .filter((step) => step.parentId === form.id)
                 .map((step, stepIndex) => (
                   <>
-                    <CardContent>
+                    <CardContent key={step.id}>
                       <div className="flex items-center w-full">
                         <div className="flex flex-grow basis-full justify-start bg-gray-300 rounded p-2">
                           <div className="flex items-center space-x-2">
@@ -1017,7 +1093,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
 
                       <div className="flex items-center w-full mt-5">
                         <div className="basis-3/12">
-                          <p>step {stepIndex + 2}</p>
+                          <p>Step {stepIndex + 1}</p>
                         </div>
                         <div className="flex flex-grow basis-9/12 justify-end">
                           <div className="flex items-center space-x-2">
@@ -1036,18 +1112,16 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleRemoveStep(form.id)}
+                              onClick={() => handleRemoveStep(step.id, 'include')}
                             >
                               <TrashIcon className="text-gray-400" />
                             </Button>
                           </div>
                         </div>
                       </div>
-                    </CardContent>
 
-                    <CardContent>
                       {cardsToShow
-                        .filter((card) => card.parentId === form.id)
+                        .filter((card) => card.parentId === step.id)
                         .map((card, index) => (
                           <div key={card.id}>
                             {index > 0 && (
@@ -1068,7 +1142,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                       <div className="mt-5">
                         <Button
                           className="flex items-center space-x-2"
-                          onClick={() => handleCard(form.id, 'card')}
+                          onClick={() => handleCard(step.id, 'card')}
                         >
                           <PlusIcon className="text-white" />
                           <span>And</span>
@@ -1086,7 +1160,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                     {/* Adjusted line */}
                     <Button
                       className="flex items-center space-x-2"
-                      onClick={() => handleShowStep(form.id)}
+                      onClick={() => handleShowStep(form.id, 'step')}
                       variant="ghost"
                     >
                       <span>Add Step</span>
@@ -1205,7 +1279,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                 <div className="flex items-center w-full">
                   <div className="flex basis-5/12">
                     <CircleIcon className="text-blue-500 mr-2" />
-                    <span className="flex text-sm font-medium">Include sequence:</span>
+                    <span className="flex text-sm font-medium">Exclude sequence:</span>
                   </div>
 
                   <div className="flex flex-grow basis-7/12 justify-end">
@@ -1262,7 +1336,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleRemoveSequenceForm(form.id, 'exclude')}
+                        onClick={() => handleRemoveStep(form.id, 'exclude')}
                       >
                         <TrashIcon className="text-gray-400" />
                       </Button>
@@ -1302,7 +1376,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                 </div>
               </CardContent>
 
-              {showStep
+              {excludeShowStep
                 .filter((step) => step.parentId === form.id)
                 .map((step, stepIndex) => (
                   <>
@@ -1338,7 +1412,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
 
                       <div className="flex items-center w-full mt-5">
                         <div className="basis-3/12">
-                          <p>step {stepIndex + 2}</p>
+                          <p>Step {stepIndex + 1}</p>
                         </div>
                         <div className="flex flex-grow basis-9/12 justify-end">
                           <div className="flex items-center space-x-2">
@@ -1357,7 +1431,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleRemoveSequenceForm(form.id, 'exclude')}
+                              onClick={() => handleRemoveStep(step.id, 'exclude')}
                             >
                               <TrashIcon className="text-gray-400" />
                             </Button>
@@ -1407,7 +1481,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                     {/* Adjusted line */}
                     <Button
                       className="flex items-center space-x-2"
-                      onClick={() => handleShowStep(form.id)}
+                      onClick={() => handleShowStep(form.id, 'excludeStep')}
                       variant="ghost"
                     >
                       <span>Add Step</span>
@@ -1609,7 +1683,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
 
                             <div className="max-w-4xl mx-auto pl-5">
                               <div className="flex items-center justify-between">
-
                                 {showExcludeParent.length === 0 && (
                                   <div className="flex items-center justify-between">
                                     <Button
@@ -1622,18 +1695,13 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                     </Button>
                                   </div>
                                 )}
-
-
                               </div>
                             </div>
 
                             {showExcludeParent.map((form, index) => (
                               <div className="max-w-4xl mx-auto p-5">
-
-
-
                                 <div className="flex items-center">
-                                  <div className='flex basis-9 mb-5'>
+                                  <div className="flex basis-9 mb-5">
                                     <Select>
                                       <SelectTrigger id="user-action">
                                         <SelectValue placeholder="Select action" />
@@ -1647,23 +1715,20 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                   </div>
                                 </div>
 
-
-
-
-
                                 {excludeSimpleForm()}
 
-                                {excludeSimpleFormsToShow.length > 0 && excludeSequenceFormsToShow.length > 0 && (
-                                  <div className="w-10 flex flex-col items-center justify-center space-y-2">
-                                    <div className="h-5">
-                                      <Separator orientation="vertical" />
+                                {excludeSimpleFormsToShow.length > 0 &&
+                                  excludeSequenceFormsToShow.length > 0 && (
+                                    <div className="w-10 flex flex-col items-center justify-center space-y-2">
+                                      <div className="h-5">
+                                        <Separator orientation="vertical" />
+                                      </div>
+                                      <Badge variant="secondary">AND</Badge>
+                                      <div className="h-5">
+                                        <Separator orientation="vertical" />
+                                      </div>
                                     </div>
-                                    <Badge variant="secondary">AND</Badge>
-                                    <div className="h-5">
-                                      <Separator orientation="vertical" />
-                                    </div>
-                                  </div>
-                                )}
+                                  )}
 
                                 {excludeSequenceForm()}
 
@@ -1724,17 +1789,17 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                                     onCheckedChange={(checked) => {
                                                       return checked
                                                         ? field.onChange([
-                                                          ...(Array.isArray(field.value)
-                                                            ? field.value
-                                                            : []),
-                                                          item.id,
-                                                        ])
+                                                            ...(Array.isArray(field.value)
+                                                              ? field.value
+                                                              : []),
+                                                            item.id,
+                                                          ])
                                                         : field.onChange(
-                                                          (Array.isArray(field.value)
-                                                            ? field.value
-                                                            : []
-                                                          ).filter((value) => value !== item.id)
-                                                        );
+                                                            (Array.isArray(field.value)
+                                                              ? field.value
+                                                              : []
+                                                            ).filter((value) => value !== item.id)
+                                                          );
                                                     }}
                                                   />
                                                 </FormControl>
