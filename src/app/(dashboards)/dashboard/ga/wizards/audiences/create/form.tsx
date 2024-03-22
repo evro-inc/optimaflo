@@ -434,7 +434,20 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
         },
       ],
       parentId,
-      steps: [],
+      steps: [
+        {
+          id: crypto.randomUUID(),
+          type: 'step',
+          parentId: newFormGroupId,
+          cards: [
+            {
+              id: crypto.randomUUID(),
+              type: 'card',
+              parentId: newFormGroupId,
+            },
+          ],
+        },
+      ],
     };
 
     if (formType == 'simple') {
@@ -444,8 +457,9 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     }
     if (formType == 'sequence') {
       dispatch(setShowSequenceForm([...sequenceFormsToShow, newForm]));
-      //dispatch(setShowStep([...showStep, newForm]));
+
       handleCard(newFormGroupId, 'card');
+      handleShowStep(newFormGroupId, 'step');
     }
     if (formType == 'excludeSimple') {
       // If there's no parent, this is a top-level form group
@@ -558,10 +572,9 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
       ],
     };
 
-    console.log('New form:', newForm); // Debug log
-
     if (stepType == 'step') {
       dispatch(setShowStep([...showStep, newForm]));
+      handleCard(stepId, 'card');
     }
     if (stepType == 'excludeStep') {
       dispatch(setShowExcludeCard([...excludeCardsToShow, newForm]));
@@ -1006,99 +1019,53 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                 </div>
               </CardHeader>
 
-              {/*   <CardContent>
-                <div className="flex items-center w-full mb-6">
-                  <div className="basis-5/12">
-                    <p>Step 1</p>
-                  </div>
-                  <div className="flex flex-grow basis-7/12 justify-end">
-                    <div className="flex items-center space-x-2">
-                      <UserPlusIcon className="text-gray-600" />
-                      <Select>
-                        <SelectTrigger id="user-action">
-                          <SelectValue placeholder="Select action" />
-                        </SelectTrigger>
-                        <SelectContent position="popper">
-                          <SelectItem value="created">Created</SelectItem>
-                          <SelectItem value="updated">Updated</SelectItem>
-                          <SelectItem value="deleted">Deleted</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Separator orientation="vertical" />
-
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleRemoveStep(form.id, 'include')}
-                      >
-                        <TrashIcon className="text-gray-400" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-                {cardsToShow
-                  .filter((card) => card.parentId === form.id)
-                  .map((card, index) => (
-                    <div key={card.id}>
-                      {index > 0 && (
-                        <div className="w-10 flex flex-col items-center justify-center space-y-2">
-                          <div className="h-5">
-                            <Separator orientation="vertical" />
-                          </div>
-                          <Badge variant="secondary">AND</Badge>
-                          <div className="h-5">
-                            <Separator orientation="vertical" />
-                          </div>
-                        </div>
-                      )}
-                      {CardForm(card)}
-                    </div>
-                  ))}
-
-                <div className="mt-5">
-                  <Button
-                    className="flex items-center space-x-2"
-                    onClick={() => handleCard(form.id, 'card')}
-                  >
-                    <PlusIcon className="text-white" />
-                    <span>And</span>
-                  </Button>
-                </div>
-              </CardContent> */}
 
               {showStep
                 .filter((step) => step.parentId === form.id)
                 .map((step, stepIndex) => (
+
+
+
                   <>
                     <CardContent key={step.id}>
-                      <div className="flex items-center w-full">
-                        <div className="flex flex-grow basis-full justify-start bg-gray-300 rounded p-2">
-                          <div className="flex items-center space-x-2">
-                            <Select>
-                              <SelectTrigger
-                                id="user-action"
-                                className="border-none outline-none focus:outline-none focus:ring-0 shadow-none"
-                              >
-                                <SelectValue
-                                  placeholder="followed by"
-                                  className="border-none outline-none focus:outline-none focus:ring-0"
-                                />
-                              </SelectTrigger>
-                              <SelectContent
-                                position="popper"
-                                className="border-none outline-none focus:outline-none focus:ring-0"
-                              >
-                                <SelectItem value="created">Created</SelectItem>
-                                <SelectItem value="updated">Updated</SelectItem>
-                                <SelectItem value="deleted">Deleted</SelectItem>
-                              </SelectContent>
-                            </Select>
 
-                            <Separator orientation="vertical" className="bg-gray-400" />
-                            {TimeConstraint()}
+
+                      {stepIndex >= 1 ? (
+                        // Custom rendering for the first step
+                        <div className="flex items-center w-full">
+                          <div className="flex flex-grow basis-full justify-start bg-gray-300 rounded p-2">
+                            <div className="flex items-center space-x-2">
+                              <Select>
+                                <SelectTrigger
+                                  id="user-action"
+                                  className="border-none outline-none focus:outline-none focus:ring-0 shadow-none"
+                                >
+                                  <SelectValue
+                                    placeholder="followed by"
+                                    className="border-none outline-none focus:outline-none focus:ring-0"
+                                  />
+                                </SelectTrigger>
+                                <SelectContent
+                                  position="popper"
+                                  className="border-none outline-none focus:outline-none focus:ring-0"
+                                >
+                                  <SelectItem value="created">Created</SelectItem>
+                                  <SelectItem value="updated">Updated</SelectItem>
+                                  <SelectItem value="deleted">Deleted</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <Separator orientation="vertical" className="bg-gray-400" />
+                              {TimeConstraint()}
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      ) : (
+                        // This part of the ternary operator needs to render something or nothing for subsequent steps.
+                        // If there's no specific content needed for subsequent steps, you can return null or omit this part.
+                        null
+                      )}
+
+
 
                       <div className="flex items-center w-full mt-5">
                         <div className="basis-3/12">
