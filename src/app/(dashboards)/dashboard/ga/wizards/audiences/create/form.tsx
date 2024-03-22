@@ -155,7 +155,9 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
 
   // Exclude Form state
   const showExcludeParent = useSelector((state: RootState) => state.excludeForm.showParentForm);
-  const excludeSimpleFormsToShow = useSelector((state: RootState) => state.excludeForm.showSimpleForm);
+  const excludeSimpleFormsToShow = useSelector(
+    (state: RootState) => state.excludeForm.showSimpleForm
+  );
   const excludeSequenceFormsToShow = useSelector(
     (state: any) => state.excludeForm.showSequenceForm
   );
@@ -515,7 +517,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     };
     console.log(`Adding new card of type ${cardType}:`, newCard);
 
-
     if (cardType === 'card' || cardType === 'or') {
       console.log('Card type:', [...cardsToShow, newCard]); // Debug log
 
@@ -592,7 +593,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
 
   const handleRemoveStep = (stepId: string, type: string) => {
     if (type === 'include') {
-
       if (showStep.length > 1) {
         // Only attempt to access the last step if it exists
         const lastStepId = showStep[showStep.length - 1].id;
@@ -603,9 +603,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
         } else {
           dispatch(removeStep(stepId));
         }
-      }
-
-      else {
+      } else {
         // Fallback action if there are no steps. Adjust according to your logic.
         // For example, removing the last sequence form if no steps are present.
         const lastSequenceFormId =
@@ -615,14 +613,10 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
 
         console.log('Last sequence form ID:', lastSequenceFormId); // Debug log
 
-
         if (lastSequenceFormId) {
           dispatch(removeSequenceForm(lastSequenceFormId));
         }
       }
-
-
-
     } else if (type === 'exclude') {
       // Check if there are any steps to remove
       if (excludeShowStep.length > 0) {
@@ -1028,17 +1022,11 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                 </div>
               </CardHeader>
 
-
               {showStep
                 .filter((step) => step.parentId === form.id)
                 .map((step, stepIndex) => (
-
-
-
                   <>
                     <CardContent key={step.id}>
-
-
                       {stepIndex >= 1 ? (
                         // Custom rendering for the first step
                         <div className="flex items-center w-full">
@@ -1068,13 +1056,9 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                             </div>
                           </div>
                         </div>
-                      ) : (
-                        // This part of the ternary operator needs to render something or nothing for subsequent steps.
-                        // If there's no specific content needed for subsequent steps, you can return null or omit this part.
-                        null
-                      )}
-
-
+                      ) : // This part of the ternary operator needs to render something or nothing for subsequent steps.
+                      // If there's no specific content needed for subsequent steps, you can return null or omit this part.
+                      null}
 
                       <div className="flex items-center w-full mt-5">
                         <div className="basis-3/12">
@@ -1298,8 +1282,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                 </div>
               </CardHeader>
 
-
-
               {excludeShowStep
                 .filter((step) => step.parentId === form.id)
                 .map((step, stepIndex) => (
@@ -1334,9 +1316,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                             </div>
                           </div>
                         </div>
-                      ) : (
-                        null
-                      )}
+                      ) : null}
 
                       <div className="flex items-center w-full mt-5">
                         <div className="basis-3/12">
@@ -1715,17 +1695,17 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                                     onCheckedChange={(checked) => {
                                                       return checked
                                                         ? field.onChange([
-                                                          ...(Array.isArray(field.value)
-                                                            ? field.value
-                                                            : []),
-                                                          item.id,
-                                                        ])
+                                                            ...(Array.isArray(field.value)
+                                                              ? field.value
+                                                              : []),
+                                                            item.id,
+                                                          ])
                                                         : field.onChange(
-                                                          (Array.isArray(field.value)
-                                                            ? field.value
-                                                            : []
-                                                          ).filter((value) => value !== item.id)
-                                                        );
+                                                            (Array.isArray(field.value)
+                                                              ? field.value
+                                                              : []
+                                                            ).filter((value) => value !== item.id)
+                                                          );
                                                     }}
                                                   />
                                                 </FormControl>

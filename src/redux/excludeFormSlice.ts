@@ -106,7 +106,6 @@ const formSlice = createSlice({
       state.showCard = state.showCard.filter((card) => card.id !== action.payload);
     },
 
-
     setShowExcludeStep: (state, action: PayloadAction<ExcludeStepIdentifier[]>) => {
       state.showStep = action.payload;
     },
