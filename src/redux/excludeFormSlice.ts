@@ -8,15 +8,17 @@ export interface ExcludeCardIdentifier {
 
 export interface ExcludeStepIdentifier {
   id: string;
-  type: string;
+  type: string; // "step"
   parentId: string;
+  cards: ExcludeCardIdentifier[];
 }
 
 export interface ExcludeFormIdentifier {
   id: string;
-  type: string;
+  type: string; // e.g., "simple", "sequence"
   parentId: string;
-  cards?: ExcludeCardIdentifier[];
+  cards: ExcludeCardIdentifier[];
+  steps: ExcludeStepIdentifier[];
 }
 
 export interface ExcludeParentIdentifier {
@@ -36,7 +38,6 @@ interface Exclude {
   showSimpleForm: ExcludeFormIdentifier[];
   showSequenceForm: ExcludeFormIdentifier[];
   showCard: ExcludeCardIdentifier[];
-  Or: ExcludeFormIdentifier[];
   showStep: ExcludeStepIdentifier[];
 }
 
@@ -50,7 +51,6 @@ const initialState: Exclude = {
   showSimpleForm: [],
   showSequenceForm: [],
   showCard: [],
-  Or: [],
   showStep: [],
 };
 
@@ -105,25 +105,12 @@ const formSlice = createSlice({
     removeExcludeCard: (state, action: PayloadAction<string>) => {
       state.showCard = state.showCard.filter((card) => card.id !== action.payload);
     },
-    setExcludeOrForm: (state, action: PayloadAction<ExcludeFormIdentifier[]>) => {
-      state.Or = action.payload;
-    },
-    removeExcludeOrForm: (state, action: PayloadAction<string>) => {
-      console.log('Current state:', state.Or); // Debug log
-      console.log('Removing ID:', action.payload); // Debug log
-      state.Or = state.Or.filter((orForm) => orForm.id !== action.payload);
-    },
+
+
     setShowExcludeStep: (state, action: PayloadAction<ExcludeStepIdentifier[]>) => {
       state.showStep = action.payload;
     },
-    addExcludeStep: (state, action: PayloadAction<{ parentId: string }>) => {
-      const newStep: ExcludeStepIdentifier = {
-        id: crypto.randomUUID(), // Ensure you have a polyfill or alternative for environments without crypto
-        type: 'step',
-        parentId: action.payload.parentId,
-      };
-      state.showStep = [...state.showStep, newStep];
-    },
+
     removeExcludeStep: (state, action: PayloadAction<string>) => {
       state.showStep = state.showStep.filter((step) => step.id !== action.payload);
     },
@@ -144,10 +131,7 @@ export const {
   removeExcludeSequenceForm,
   setShowExcludeCard,
   removeExcludeCard,
-  setExcludeOrForm,
-  removeExcludeOrForm,
   setShowExcludeStep,
-  addExcludeStep,
   removeExcludeStep,
   setExcludeParentForm,
   removeExcludeParentForm,

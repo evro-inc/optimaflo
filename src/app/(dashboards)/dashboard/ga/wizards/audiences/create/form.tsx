@@ -113,7 +113,7 @@ import {
   removeExcludeParentForm,
   removeExcludeCard,
   removeExcludeStep,
-  addExcludeStep,
+  setShowExcludeStep,
 } from '@/src/redux/excludeFormSlice';
 
 const NotFoundErrorModal = dynamic(
@@ -147,20 +147,19 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   const router = useRouter();
 
   // Form state
-  const simpleFormsToShow = useSelector((state: any) => state.form.showSimpleForm);
-  const sequenceFormsToShow = useSelector((state: any) => state.form.showSequenceForm);
+  const simpleFormsToShow = useSelector((state: RootState) => state.form.showSimpleForm);
+  const sequenceFormsToShow = useSelector((state: RootState) => state.form.showSequenceForm);
   const cardsToShow = useSelector((state: RootState) => state.form.showCard);
   const orForms = useSelector((state: RootState) => state.form.showCard);
   const showStep = useSelector((state: RootState) => state.form.showStep);
 
   // Exclude Form state
   const showExcludeParent = useSelector((state: RootState) => state.excludeForm.showParentForm);
-  const excludeSimpleFormsToShow = useSelector((state: any) => state.excludeForm.showSimpleForm);
+  const excludeSimpleFormsToShow = useSelector((state: RootState) => state.excludeForm.showSimpleForm);
   const excludeSequenceFormsToShow = useSelector(
     (state: any) => state.excludeForm.showSequenceForm
   );
-  const excludeCardsToShow = useSelector((state: any) => state.excludeForm.showCard);
-  const excludeOrForms = useSelector((state: RootState) => state.excludeForm.Or);
+  const excludeCardsToShow = useSelector((state: RootState) => state.excludeForm.showCard);
   const excludeShowStep = useSelector((state: RootState) => state.excludeForm.showStep);
 
   const extractedData = table.map((item) => {
@@ -457,8 +456,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     }
     if (formType == 'sequence') {
       dispatch(setShowSequenceForm([...sequenceFormsToShow, newForm]));
-
-      handleCard(newFormGroupId, 'card');
+      //handleCard(newFormGroupId, 'card');
       handleShowStep(newFormGroupId, 'step');
     }
     if (formType == 'excludeSimple') {
@@ -469,6 +467,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     if (formType == 'excludeSequence') {
       dispatch(setExcludeSequenceForm([...excludeSequenceFormsToShow, newForm]));
       handleCard(newFormGroupId, 'excludeCard');
+      handleShowStep(newFormGroupId, 'excludeStep');
     }
     if (formType == 'excludeShowParent') {
       dispatch(setExcludeParentForm([...showExcludeParent, newForm]));
@@ -514,11 +513,20 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
       type: cardType, // Make sure this is adjusted based on the context (e.g., 'card', 'excludeCard')
       parentId,
     };
+    console.log(`Adding new card of type ${cardType}:`, newCard);
+
 
     if (cardType === 'card' || cardType === 'or') {
+      console.log('Card type:', [...cardsToShow, newCard]); // Debug log
+
       dispatch(setShowCard([...cardsToShow, newCard]));
-    } else if (cardType === 'excludeCard') {
+    }
+    if (cardType === 'excludeCard') {
+      console.log('Exclude card type:', [...excludeCardsToShow, newCard]); // Debug log
+      console.log('Attempting to add an excludeCard to the state', newCard);
+
       dispatch(setShowExcludeCard([...excludeCardsToShow, newCard]));
+      console.log('Dispatch called for setShowExcludeCard');
     }
   };
 
@@ -577,7 +585,8 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
       handleCard(stepId, 'card');
     }
     if (stepType == 'excludeStep') {
-      dispatch(setShowExcludeCard([...excludeCardsToShow, newForm]));
+      dispatch(setShowExcludeStep([...excludeShowStep, newForm]));
+      handleCard(stepId, 'excludeCard');
     }
   };
 
@@ -1289,102 +1298,45 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                 </div>
               </CardHeader>
 
-              <CardContent>
-                <div className="flex items-center w-full">
-                  <div className="basis-5/12">
-                    <p>Step 1</p>
-                  </div>
-                  <div className="flex flex-grow basis-7/12 justify-end">
-                    <div className="flex items-center space-x-2">
-                      <UserPlusIcon className="text-gray-600" />
-                      <Select>
-                        <SelectTrigger id="user-action">
-                          <SelectValue placeholder="Select action" />
-                        </SelectTrigger>
-                        <SelectContent position="popper">
-                          <SelectItem value="created">Created</SelectItem>
-                          <SelectItem value="updated">Updated</SelectItem>
-                          <SelectItem value="deleted">Deleted</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Separator orientation="vertical" />
 
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleRemoveStep(form.id, 'exclude')}
-                      >
-                        <TrashIcon className="text-gray-400" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-
-              <CardContent>
-                {excludeCardsToShow
-                  .filter((card) => card.parentId === form.id)
-                  .map((card, index) => (
-                    <div key={card.id}>
-                      {index > 0 && (
-                        <div className="w-10 flex flex-col items-center justify-center space-y-2">
-                          <div className="h-5">
-                            <Separator orientation="vertical" />
-                          </div>
-                          <Badge variant="secondary">AND</Badge>
-                          <div className="h-5">
-                            <Separator orientation="vertical" />
-                          </div>
-                        </div>
-                      )}
-                      {CardForm(card)}
-                    </div>
-                  ))}
-
-                <div className="mt-5">
-                  <Button
-                    className="flex items-center space-x-2"
-                    onClick={() => handleCard(form.id, 'excludeCard')}
-                  >
-                    <PlusIcon className="text-white" />
-                    <span>And</span>
-                  </Button>
-                </div>
-              </CardContent>
 
               {excludeShowStep
                 .filter((step) => step.parentId === form.id)
                 .map((step, stepIndex) => (
                   <>
-                    <CardContent>
-                      <div className="flex items-center w-full">
-                        <div className="flex flex-grow basis-full justify-start bg-gray-300 rounded p-2">
-                          <div className="flex items-center space-x-2">
-                            <Select>
-                              <SelectTrigger
-                                id="user-action"
-                                className="border-none outline-none focus:outline-none focus:ring-0 shadow-none"
-                              >
-                                <SelectValue
-                                  placeholder="followed by"
+                    <CardContent key={step.id}>
+                      {stepIndex >= 1 ? (
+                        <div className="flex items-center w-full">
+                          <div className="flex flex-grow basis-full justify-start bg-gray-300 rounded p-2">
+                            <div className="flex items-center space-x-2">
+                              <Select>
+                                <SelectTrigger
+                                  id="user-action"
+                                  className="border-none outline-none focus:outline-none focus:ring-0 shadow-none"
+                                >
+                                  <SelectValue
+                                    placeholder="followed by"
+                                    className="border-none outline-none focus:outline-none focus:ring-0"
+                                  />
+                                </SelectTrigger>
+                                <SelectContent
+                                  position="popper"
                                   className="border-none outline-none focus:outline-none focus:ring-0"
-                                />
-                              </SelectTrigger>
-                              <SelectContent
-                                position="popper"
-                                className="border-none outline-none focus:outline-none focus:ring-0"
-                              >
-                                <SelectItem value="created">Created</SelectItem>
-                                <SelectItem value="updated">Updated</SelectItem>
-                                <SelectItem value="deleted">Deleted</SelectItem>
-                              </SelectContent>
-                            </Select>
+                                >
+                                  <SelectItem value="created">Created</SelectItem>
+                                  <SelectItem value="updated">Updated</SelectItem>
+                                  <SelectItem value="deleted">Deleted</SelectItem>
+                                </SelectContent>
+                              </Select>
 
-                            <Separator orientation="vertical" className="bg-gray-400" />
-                            {TimeConstraint()}
+                              <Separator orientation="vertical" className="bg-gray-400" />
+                              {TimeConstraint()}
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      ) : (
+                        null
+                      )}
 
                       <div className="flex items-center w-full mt-5">
                         <div className="basis-3/12">
@@ -1414,11 +1366,9 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                           </div>
                         </div>
                       </div>
-                    </CardContent>
 
-                    <CardContent>
                       {excludeCardsToShow
-                        .filter((card) => card.parentId === form.id)
+                        .filter((card) => card.parentId === step.id)
                         .map((card, index) => (
                           <div key={card.id}>
                             {index > 0 && (
@@ -1439,7 +1389,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                       <div className="mt-5">
                         <Button
                           className="flex items-center space-x-2"
-                          onClick={() => handleCard(form.id, 'excludeCard')}
+                          onClick={() => handleCard(step.id, 'excludeCard')}
                         >
                           <PlusIcon className="text-white" />
                           <span>And</span>
