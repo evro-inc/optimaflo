@@ -591,53 +591,32 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     }
   };
 
-  const handleRemoveStep = (stepId: string, type: string) => {
+  const handleRemoveStep = (stepId: string, type: 'include' | 'exclude') => {
+    // Determine the parent ID of the step being removed
+    const stepToRemove = (type === 'include' ? showStep : excludeShowStep).find(
+      (step) => step.id === stepId
+    );
+    const parentId = stepToRemove?.parentId;
+
+    // Filter to get the steps that belong to the same parent
+    const stepsOfSameParent = (type === 'include' ? showStep : excludeShowStep).filter(
+      (step) => step.parentId === parentId
+    );
+
+    // If it's the last step in the sequence, remove the sequence form as well
+    if (stepsOfSameParent.length <= 1) {
+      if (type === 'include') {
+        dispatch(removeSequenceForm(parentId));
+      } else if (type === 'exclude') {
+        dispatch(removeExcludeSequenceForm(parentId));
+      }
+    }
+
+    // Proceed to remove the step
     if (type === 'include') {
-      if (showStep.length > 1) {
-        // Only attempt to access the last step if it exists
-        const lastStepId = showStep[showStep.length - 1].id;
-        console.log('Last step ID:', lastStepId); // Debug log
-
-        if (stepId !== lastStepId) {
-          dispatch(removeStep(lastStepId));
-        } else {
-          dispatch(removeStep(stepId));
-        }
-      } else {
-        // Fallback action if there are no steps. Adjust according to your logic.
-        // For example, removing the last sequence form if no steps are present.
-        const lastSequenceFormId =
-          sequenceFormsToShow.length > 0
-            ? sequenceFormsToShow[sequenceFormsToShow.length - 1].id
-            : null;
-
-        console.log('Last sequence form ID:', lastSequenceFormId); // Debug log
-
-        if (lastSequenceFormId) {
-          dispatch(removeSequenceForm(lastSequenceFormId));
-        }
-      }
+      dispatch(removeStep(stepId));
     } else if (type === 'exclude') {
-      // Check if there are any steps to remove
-      if (excludeShowStep.length > 0) {
-        // Only attempt to access the last step if it exists
-        const lastStepId = excludeShowStep[excludeShowStep.length - 1].id;
-        if (stepId !== lastStepId) {
-          dispatch(removeExcludeStep(lastStepId));
-        } else {
-          dispatch(removeExcludeStep(stepId));
-        }
-      } else {
-        // Fallback action if there are no steps. Adjust according to your logic.
-        // For example, removing the last sequence form if no steps are present.
-        const lastSequenceFormId =
-          excludeSequenceFormsToShow.length > 0
-            ? excludeSequenceFormsToShow[excludeSequenceFormsToShow.length - 1].id
-            : null;
-        if (lastSequenceFormId) {
-          dispatch(removeExcludeSequenceForm(lastSequenceFormId));
-        }
-      }
+      dispatch(removeExcludeStep(stepId));
     }
   };
 
