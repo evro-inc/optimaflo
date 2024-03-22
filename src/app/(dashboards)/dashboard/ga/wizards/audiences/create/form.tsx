@@ -598,6 +598,10 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     );
     const parentId = stepToRemove?.parentId;
 
+    if (!parentId) {
+      throw new Error('Parent ID not found for step');
+    }
+
     // Filter to get the steps that belong to the same parent
     const stepsOfSameParent = (type === 'include' ? showStep : excludeShowStep).filter(
       (step) => step.parentId === parentId
