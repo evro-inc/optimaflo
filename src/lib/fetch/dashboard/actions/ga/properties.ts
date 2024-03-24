@@ -1754,6 +1754,9 @@ export async function getMetadataProperties() {
               for (const property of properties) {
                 const resUrl = `https://analyticsdata.googleapis.com/v1beta/${property.name}/metadata`;
 
+                console.log('property', property.name);
+
+
                 try {
                   const res = await fetch(resUrl, {
                     headers,

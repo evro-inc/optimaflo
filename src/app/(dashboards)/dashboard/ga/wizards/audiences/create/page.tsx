@@ -30,10 +30,16 @@ export default async function CreateCustomDimensionPage() {
     (property) => property.dataRetentionSettings.dimensions
   );
 
+  const allMetrics = propertyMetaData.flatMap((property) => property.dataRetentionSettings.metrics);
+
   // Get unique dimensions
   const uniqueDimensions = Array.from(new Set(allDimensions));
-
-  console.log('uniqueDimensions', uniqueDimensions);
+  const uniqueMetrics = Array.from(new Set(allMetrics));
+  /*   const eventDimensions = propertyMetaData.flatMap(
+      (property) => property.dataRetentionSettings.dimensions.filter((dimension) => dimension.apiName.startsWith('event'))
+    );
+    const uniqueEventNames = new Set(eventDimensions.map((dimension) => dimension.apiName));
+    const uniqueEventNamesArray = Array.from(uniqueEventNames); */
 
   const [accounts, properties, audience] = await Promise.all([
     accountData,
@@ -79,6 +85,8 @@ export default async function CreateCustomDimensionPage() {
           table={combinedData}
           accounts={accounts}
           properties={properties}
+          dimensions={uniqueDimensions}
+          metrics={uniqueMetrics}
         />
       </div>
     </>

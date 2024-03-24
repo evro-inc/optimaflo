@@ -53,7 +53,7 @@ export interface Price {
   products?: Product;
 }
 
-export interface PriceWithProduct extends Price {}
+export interface PriceWithProduct extends Price { }
 
 export interface Subscription {
   id: string /* primary key */;
@@ -209,6 +209,8 @@ export type FormCreateProps = {
   accounts?: any;
   properties?: any;
   tierLimits?: any;
+  dimensions?: any;
+  metrics?: any;
 };
 
 export type WorkspaceType = {

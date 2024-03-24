@@ -72,7 +72,7 @@ import {
 import { ConversionCountingItems, Currencies } from '../../../properties/@conversions/items';
 import { RadioGroup, RadioGroupItem } from '@/src/components/ui/radio-group';
 import { Checkbox } from '@/src/components/ui/checkbox';
-import { Scope } from '../../../properties/@audiences/items';
+import { ImmediatelyFollows, SequenceScope, SimpleScope } from '../../../properties/@audiences/items';
 import {
   PlusIcon,
   BarChartIcon,
@@ -137,6 +137,8 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   properties = [],
   table = [],
   accounts = [],
+  dimensions = [],
+  metrics = [],
 }) => {
   const dispatch = useDispatch();
   const loading = useSelector((state: RootState) => state.form.loading);
@@ -145,6 +147,10 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   const count = useSelector((state: RootState) => state.form.count);
   const notFoundError = useSelector(selectTable).notFoundError;
   const router = useRouter();
+
+  console.log('dimensions', dimensions);
+  //console.log('metrics', metrics);
+
 
   // Form state
   const simpleFormsToShow = useSelector((state: RootState) => state.form.showSimpleForm);
@@ -515,19 +521,15 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
       type: cardType, // Make sure this is adjusted based on the context (e.g., 'card', 'excludeCard')
       parentId,
     };
-    console.log(`Adding new card of type ${cardType}:`, newCard);
 
     if (cardType === 'card' || cardType === 'or') {
-      console.log('Card type:', [...cardsToShow, newCard]); // Debug log
 
       dispatch(setShowCard([...cardsToShow, newCard]));
     }
     if (cardType === 'excludeCard') {
-      console.log('Exclude card type:', [...excludeCardsToShow, newCard]); // Debug log
-      console.log('Attempting to add an excludeCard to the state', newCard);
 
       dispatch(setShowExcludeCard([...excludeCardsToShow, newCard]));
-      console.log('Dispatch called for setShowExcludeCard');
+
     }
   };
 
@@ -566,7 +568,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   const handleShowStep = (parentId: string, stepType: string) => {
     const stepId = `step-${crypto.randomUUID()}`;
     const cardId = `card-${crypto.randomUUID()}`;
-    console.log('Parent ID:', parentId); // Debug log
 
     const newForm: StepIdentifier = {
       id: stepId,
@@ -645,7 +646,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                   <MagnifyingGlassIcon className="text-gray-400" />
                   <Input placeholder="Search items" />
                 </div>
-                <Accordion className="mt-2">
+                <Accordion type='single' className="mt-2">
                   <AccordionItem value="events">
                     <AccordionTrigger>Events</AccordionTrigger>
                     <AccordionContent>
@@ -889,12 +890,14 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                     <UserPlusIcon className="text-gray-600" />
                     <Select>
                       <SelectTrigger id="user-action">
-                        <SelectValue placeholder="Select action" />
+                        <SelectValue placeholder="Condition scoping" />
                       </SelectTrigger>
                       <SelectContent position="popper">
-                        <SelectItem value="created">Created</SelectItem>
-                        <SelectItem value="updated">Updated</SelectItem>
-                        <SelectItem value="deleted">Deleted</SelectItem>
+                        {SimpleScope.map((item) => (
+                          <SelectItem key={item.label} value={item.id}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <Separator orientation="vertical" />
@@ -947,7 +950,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   };
 
   const sequenceForm = () => {
-    console.log('Sequence Forms:', sequenceFormsToShow);
     const stepId = showStep[showStep.length - 1]?.id;
 
     return (
@@ -979,12 +981,14 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                       <UserPlusIcon className="text-gray-600" />
                       <Select>
                         <SelectTrigger id="user-action">
-                          <SelectValue placeholder="Select action" />
+                          <SelectValue placeholder="Sequence scoping" />
                         </SelectTrigger>
                         <SelectContent position="popper">
-                          <SelectItem value="created">Created</SelectItem>
-                          <SelectItem value="updated">Updated</SelectItem>
-                          <SelectItem value="deleted">Deleted</SelectItem>
+                          {SequenceScope.map((item) => (
+                            <SelectItem key={item.label} value={item.id}>
+                              {item.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <Separator orientation="vertical" />
@@ -1029,9 +1033,11 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                   position="popper"
                                   className="border-none outline-none focus:outline-none focus:ring-0"
                                 >
-                                  <SelectItem value="created">Created</SelectItem>
-                                  <SelectItem value="updated">Updated</SelectItem>
-                                  <SelectItem value="deleted">Deleted</SelectItem>
+                                  {ImmediatelyFollows.map((item) => (
+                                    <SelectItem key={item.label} value={item.id}>
+                                      {item.label}
+                                    </SelectItem>
+                                  ))}
                                 </SelectContent>
                               </Select>
                               <Separator orientation="vertical" className="bg-gray-400" />
@@ -1040,8 +1046,8 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                           </div>
                         </div>
                       ) : // This part of the ternary operator needs to render something or nothing for subsequent steps.
-                      // If there's no specific content needed for subsequent steps, you can return null or omit this part.
-                      null}
+                        // If there's no specific content needed for subsequent steps, you can return null or omit this part.
+                        null}
 
                       <div className="flex items-center w-full mt-5">
                         <div className="basis-3/12">
@@ -1052,12 +1058,14 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                             <UserPlusIcon className="text-gray-600" />
                             <Select>
                               <SelectTrigger id="user-action">
-                                <SelectValue placeholder="Select action" />
+                                <SelectValue placeholder="Step scoping" />
                               </SelectTrigger>
                               <SelectContent position="popper">
-                                <SelectItem value="created">Created</SelectItem>
-                                <SelectItem value="updated">Updated</SelectItem>
-                                <SelectItem value="deleted">Deleted</SelectItem>
+                                {SimpleScope.map((item) => (
+                                  <SelectItem key={item.label} value={item.id}>
+                                    {item.label}
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                             <Separator orientation="vertical" />
@@ -1152,12 +1160,14 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                     <UserPlusIcon className="text-gray-600" />
                     <Select>
                       <SelectTrigger id="user-action">
-                        <SelectValue placeholder="Select action" />
+                        <SelectValue placeholder="Condition scoping" />
                       </SelectTrigger>
                       <SelectContent position="popper">
-                        <SelectItem value="created">Created</SelectItem>
-                        <SelectItem value="updated">Updated</SelectItem>
-                        <SelectItem value="deleted">Deleted</SelectItem>
+                        {SimpleScope.map((item) => (
+                          <SelectItem key={item.label} value={item.id}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <Separator orientation="vertical" />
@@ -1239,12 +1249,14 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                       <UserPlusIcon className="text-gray-600" />
                       <Select>
                         <SelectTrigger id="user-action">
-                          <SelectValue placeholder="Select action" />
+                          <SelectValue placeholder="Sequence scoping" />
                         </SelectTrigger>
                         <SelectContent position="popper">
-                          <SelectItem value="created">Created</SelectItem>
-                          <SelectItem value="updated">Updated</SelectItem>
-                          <SelectItem value="deleted">Deleted</SelectItem>
+                          {SequenceScope.map((item) => (
+                            <SelectItem key={item.label} value={item.id}>
+                              {item.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <Separator orientation="vertical" />
@@ -1288,9 +1300,11 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                   position="popper"
                                   className="border-none outline-none focus:outline-none focus:ring-0"
                                 >
-                                  <SelectItem value="created">Created</SelectItem>
-                                  <SelectItem value="updated">Updated</SelectItem>
-                                  <SelectItem value="deleted">Deleted</SelectItem>
+                                  {ImmediatelyFollows.map((item) => (
+                                    <SelectItem key={item.label} value={item.id}>
+                                      {item.label}
+                                    </SelectItem>
+                                  ))}
                                 </SelectContent>
                               </Select>
 
@@ -1310,12 +1324,14 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                             <UserPlusIcon className="text-gray-600" />
                             <Select>
                               <SelectTrigger id="user-action">
-                                <SelectValue placeholder="Select action" />
+                                <SelectValue placeholder="Step scoping" />
                               </SelectTrigger>
                               <SelectContent position="popper">
-                                <SelectItem value="created">Created</SelectItem>
-                                <SelectItem value="updated">Updated</SelectItem>
-                                <SelectItem value="deleted">Deleted</SelectItem>
+                                {SimpleScope.map((item) => (
+                                  <SelectItem key={item.label} value={item.id}>
+                                    {item.label}
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                             <Separator orientation="vertical" />
@@ -1678,17 +1694,17 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                                     onCheckedChange={(checked) => {
                                                       return checked
                                                         ? field.onChange([
-                                                            ...(Array.isArray(field.value)
-                                                              ? field.value
-                                                              : []),
-                                                            item.id,
-                                                          ])
+                                                          ...(Array.isArray(field.value)
+                                                            ? field.value
+                                                            : []),
+                                                          item.id,
+                                                        ])
                                                         : field.onChange(
-                                                            (Array.isArray(field.value)
-                                                              ? field.value
-                                                              : []
-                                                            ).filter((value) => value !== item.id)
-                                                          );
+                                                          (Array.isArray(field.value)
+                                                            ? field.value
+                                                            : []
+                                                          ).filter((value) => value !== item.id)
+                                                        );
                                                     }}
                                                   />
                                                 </FormControl>

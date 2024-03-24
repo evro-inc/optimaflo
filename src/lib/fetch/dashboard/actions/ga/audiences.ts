@@ -76,7 +76,7 @@ export async function listGAAudiences() {
           for (const url of urls) {
             try {
               const response = await fetch(url, { headers });
-              console.log('response', response);
+              //console.log('response', response);
 
               if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
@@ -284,9 +284,9 @@ export async function createGAAudiences(formData: Audience) {
                   adsPersonalizationEnabled: validatedData.adsPersonalizationEnabled,
                   eventTrigger: validatedData.eventTrigger
                     ? {
-                        eventName: validatedData.eventTrigger.eventName,
-                        logCondition: validatedData.eventTrigger.logCondition,
-                      }
+                      eventName: validatedData.eventTrigger.eventName,
+                      logCondition: validatedData.eventTrigger.logCondition,
+                    }
                     : undefined, // Include eventTrigger only if present
                   exclusionDurationMode: validatedData.exclusionDurationMode,
                   filterClauses: buildFilterClauses(validatedData.filterClauses),
