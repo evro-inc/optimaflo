@@ -152,19 +152,25 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   const notFoundError = useSelector(selectTable).notFoundError;
   const router = useRouter();
 
-  console.log('dimensions', dimensions);
-  //console.log('metrics', metrics);
-
-
   // Form state
   const simpleFormsToShow = useSelector((state: RootState) => state.form.showSimpleForm);
   const sequenceFormsToShow = useSelector((state: RootState) => state.form.showSequenceForm);
   const cardsToShow = useSelector((state: RootState) => state.form.showCard);
   const orForms = useSelector((state: RootState) => state.form.showCard);
   const showStep = useSelector((state: RootState) => state.form.showStep);
-  const categories = useSelector((state: RootState) => state.form.categories);
-  const selectedItems = useSelector((state: RootState) => state.form.selectedItems);
-  const selectedCategoryItems = useSelector((state: RootState) => state.form.selectedCategoryItems);
+
+
+  // Exclude Form state
+  const showExcludeParent = useSelector((state: RootState) => state.excludeForm.showParentForm);
+  const excludeSimpleFormsToShow = useSelector(
+    (state: RootState) => state.excludeForm.showSimpleForm
+  );
+  const excludeSequenceFormsToShow = useSelector(
+    (state: any) => state.excludeForm.showSequenceForm
+  );
+  const excludeCardsToShow = useSelector((state: RootState) => state.excludeForm.showCard);
+  const excludeShowStep = useSelector((state: RootState) => state.excludeForm.showStep);
+
 
   const categorizedDimensions = dimensions.reduce((acc, item) => {
     const categoryIndex = acc.findIndex((cat) => cat.name === item.category);
@@ -203,22 +209,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
       categories: categorizedMetrics
     }
   ];
-
-  console.log('combinedCategories', combinedCategories);
-
-
-
-
-  // Exclude Form state
-  const showExcludeParent = useSelector((state: RootState) => state.excludeForm.showParentForm);
-  const excludeSimpleFormsToShow = useSelector(
-    (state: RootState) => state.excludeForm.showSimpleForm
-  );
-  const excludeSequenceFormsToShow = useSelector(
-    (state: any) => state.excludeForm.showSequenceForm
-  );
-  const excludeCardsToShow = useSelector((state: RootState) => state.excludeForm.showCard);
-  const excludeShowStep = useSelector((state: RootState) => state.excludeForm.showStep);
 
   const extractedData = table.map((item) => {
     const propertyId = item.name.split('/')[1];
@@ -679,18 +669,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     dispatch(removeOrForm(formId));
   };
 
-
-
-  const handleSelectItem = (item: CategoryItem) => {
-    dispatch(addSelectedItem(item));
-  };
-
-  const handleDeselectItem = (itemId: string) => {
-    dispatch(removeSelectedItem(itemId));
-  };
-
-
-
   const ConditionalForm = ({ formId, parentType }: { formId: string; parentType?: string }) => {
 
     //Using local useState instead of redux because of re-rendering issues
@@ -700,6 +678,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
       event.stopPropagation(); // Prevent the dialog from closing
       setLocalSelectedItems(categoryItems); // Update local state to reflect new items
     };
+
     return (
       <>
         <Dialog>
@@ -779,7 +758,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                   <MagnifyingGlassIcon className="text-gray-400" />
                   <Input placeholder="Search items" />
                 </div>
-                <Accordion className="mt-2">
+                <Accordion type='single' className="mt-2">
                   <AccordionItem value="events">
                     <AccordionTrigger>Events</AccordionTrigger>
                     <AccordionContent>
