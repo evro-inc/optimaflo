@@ -19,6 +19,10 @@ import {
   CardIdentifier,
   setShowStep,
   StepIdentifier,
+  CategoryItem,
+  addSelectedItem,
+  removeSelectedItem,
+  setSelectedCategoryItems,
 } from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
@@ -158,6 +162,52 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   const cardsToShow = useSelector((state: RootState) => state.form.showCard);
   const orForms = useSelector((state: RootState) => state.form.showCard);
   const showStep = useSelector((state: RootState) => state.form.showStep);
+  const categories = useSelector((state: RootState) => state.form.categories);
+  const selectedItems = useSelector((state: RootState) => state.form.selectedItems);
+  const selectedCategoryItems = useSelector((state: RootState) => state.form.selectedCategoryItems);
+
+  const categorizedDimensions = dimensions.reduce((acc, item) => {
+    const categoryIndex = acc.findIndex((cat) => cat.name === item.category);
+    if (categoryIndex > -1) {
+      const isUnique = !acc[categoryIndex].items.some(existingItem => existingItem.apiName === item.apiName);
+      if (isUnique) {
+        acc[categoryIndex].items.push(item);
+      }
+    } else {
+      acc.push({ name: item.category, items: [item] });
+    }
+    return acc;
+  }, []);
+
+  const categorizedMetrics = metrics.reduce((acc, item) => {
+    const categoryIndex = acc.findIndex((cat) => cat.name === item.category);
+    if (categoryIndex > -1) {
+      const isUnique = !acc[categoryIndex].items.some(existingItem => existingItem.apiName === item.apiName);
+      if (isUnique) {
+        acc[categoryIndex].items.push(item);
+      }
+    } else {
+      acc.push({ name: item.category, items: [item] });
+    }
+    return acc;
+  }, []);
+
+
+  const combinedCategories = [
+    {
+      name: "Dimensions",
+      categories: categorizedDimensions
+    },
+    {
+      name: "Metrics",
+      categories: categorizedMetrics
+    }
+  ];
+
+  console.log('combinedCategories', combinedCategories);
+
+
+
 
   // Exclude Form state
   const showExcludeParent = useSelector((state: RootState) => state.excludeForm.showParentForm);
@@ -629,76 +679,78 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     dispatch(removeOrForm(formId));
   };
 
+
+
+  const handleSelectItem = (item: CategoryItem) => {
+    dispatch(addSelectedItem(item));
+  };
+
+  const handleDeselectItem = (itemId: string) => {
+    dispatch(removeSelectedItem(itemId));
+  };
+
+
+
   const ConditionalForm = ({ formId, parentType }: { formId: string; parentType?: string }) => {
+
+    //Using local useState instead of redux because of re-rendering issues
+    const [localSelectedItems, setLocalSelectedItems] = useState([]);
+
+    const handleCategoryClick = (categoryItems, event) => {
+      event.stopPropagation(); // Prevent the dialog from closing
+      setLocalSelectedItems(categoryItems); // Update local state to reflect new items
+    };
     return (
       <>
         <Dialog>
           <DialogTrigger asChild>
             <Button className="flex justify-between items-center w-full" variant="ghost">
-              Select an Event
+              Add new condition
               <ChevronDownIcon className="text-gray-400" />
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-5xl mx-auto bg-white shadow rounded-lg">
+          <DialogContent className="max-w-5xl mx-auto bg-white shadow rounded-lg h-96">
             <div className="flex">
               <div className="flex flex-col w-64 mr-4">
                 <div className="flex items-center px-3 py-2 space-x-2 border-b">
                   <MagnifyingGlassIcon className="text-gray-400" />
                   <Input placeholder="Search items" />
                 </div>
-                <Accordion type='single' className="mt-2">
-                  <AccordionItem value="events">
-                    <AccordionTrigger>Events</AccordionTrigger>
-                    <AccordionContent>
-                      <ul className="divide-y cursor-pointer">
-                        <li className="px-3 py-2">app_clear_data</li>
-                        <li className="px-3 py-2">app_exception</li>
-                        <li className="px-3 py-2">app_store_refund</li>
-                        <li className="px-3 py-2">app_store_subscription_cancel</li>
-                        <li className="px-3 py-2">app_store_subscription_convert</li>
-                        <li className="px-3 py-2">app_store_subscription_renew</li>
-                        <li className="px-3 py-2">app_update</li>
-                        <li className="px-3 py-2">first_open</li>
-                        <li className="px-3 py-2">in_app_purchase</li>
-                        <li className="px-3 py-2">notification_dismiss</li>
-                      </ul>
-                    </AccordionContent>
-                  </AccordionItem>
-                  <AccordionItem value="dimensions">
-                    <AccordionTrigger>Dimensions</AccordionTrigger>
-                    <AccordionContent>
-                      <ul className="divide-y cursor-pointer">
-                        <li className="px-3 py-2">User</li>
-                        <li className="px-3 py-2">Session</li>
-                      </ul>
-                    </AccordionContent>
-                  </AccordionItem>
-                  <AccordionItem value="metrics">
-                    <AccordionTrigger>Metrics</AccordionTrigger>
-                    <AccordionContent>
-                      <ul className="divide-y cursor-pointer">
-                        <li className="px-3 py-2">Revenue</li>
-                        <li className="px-3 py-2">Engagement</li>
-                      </ul>
-                    </AccordionContent>
-                  </AccordionItem>
+                <Accordion type='single' collapsible className="mt-2">
+                  {combinedCategories.map((parentCategory) => (
+                    <AccordionItem key={parentCategory.name} value={parentCategory.name}>
+                      <AccordionTrigger>{parentCategory.name}</AccordionTrigger>
+                      <AccordionContent>
+                        <div className="flex flex-col overflow-auto max-h-32">
+                          {parentCategory.categories.map((category) => (
+                            <Button
+                              variant="ghost"
+                              key={category.name}
+                              onClick={(event) => handleCategoryClick(category.items, event)}
+                              className="mb-2 justify-start w-full text-left"
+                            >
+                              <h3>{category.name}</h3>
+                            </Button>
+                          ))}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
                 </Accordion>
               </div>
-              <div className="flex-1">
-                <ScrollArea className="h-72">
-                  <ul className="divide-y">
-                    <li className="px-3 py-2">app_clear_data</li>
-                    <li className="px-3 py-2 bg-blue-100">app_exception</li>
-                    <li className="px-3 py-2">app_store_refund</li>
-                    <li className="px-3 py-2">app_store_subscription_cancel</li>
-                    <li className="px-3 py-2">app_store_subscription_convert</li>
-                    <li className="px-3 py-2">app_store_subscription_renew</li>
-                    <li className="px-3 py-2">app_update</li>
-                    <li className="px-3 py-2">first_open</li>
-                    <li className="px-3 py-2">in_app_purchase</li>
-                    <li className="px-3 py-2">notification_dismiss</li>
+              <div className="flex-1 overflow-auto max-h-80">
+                <ScrollArea className="">
+                  <ul>
+                    {localSelectedItems.map((item: any) => (
+                      <li key={item.id} className="px-3 py-2">
+                        <Button variant="ghost">
+                          {item.uiName}
+                        </Button>
+                      </li>
+                    ))}
                   </ul>
                 </ScrollArea>
+
               </div>
             </div>
           </DialogContent>
@@ -864,6 +916,12 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
       </Card>
     );
   };
+
+
+
+
+
+
 
   const simpleForm = () => {
     return (

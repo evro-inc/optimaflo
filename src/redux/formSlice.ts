@@ -1,5 +1,18 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
+
+export interface CategoryItem {
+  id: string;
+  uiName: string;
+  apiName: string;
+  category: string;
+}
+
+interface Category {
+  name: string;
+  items: CategoryItem[];
+}
+
 // Add/Or Form Cards
 export interface CardIdentifier {
   id: string;
@@ -32,6 +45,10 @@ interface FormState {
   showSequenceForm: FormIdentifier[];
   showCard: CardIdentifier[];
   showStep: StepIdentifier[];
+  categories: Category[];
+  selectedItems: CategoryItem[];
+  selectedCategoryItems: CategoryItem[];
+  localSelectedItems: CategoryItem[];
 }
 
 const initialState: FormState = {
@@ -44,6 +61,10 @@ const initialState: FormState = {
   showSequenceForm: [],
   showCard: [],
   showStep: [],
+  categories: [],
+  selectedItems: [],
+  selectedCategoryItems: [],
+  localSelectedItems: [],
 };
 
 const formSlice = createSlice({
@@ -99,6 +120,33 @@ const formSlice = createSlice({
     removeStep: (state, action: PayloadAction<string>) => {
       state.showStep = state.showStep.filter((step) => step.id !== action.payload);
     },
+
+
+    setCategories: (state, action: PayloadAction<Category[]>) => {
+      state.categories = action.payload;
+    },
+    addSelectedItem: (state, action: PayloadAction<CategoryItem>) => {
+      state.selectedItems.push(action.payload);
+    },
+    removeSelectedItem: (state, action: PayloadAction<string>) => {
+      state.selectedItems = state.selectedItems.filter(item => item.id !== action.payload);
+    },
+
+    setSelectedCategoryItems: (state, action: PayloadAction<CategoryItem[]>) => {
+      state.selectedCategoryItems = action.payload;
+    },
+
+
+    setLocalSelectedItems: (state, action: PayloadAction<CategoryItem[]>) => {
+      state.localSelectedItems = action.payload;
+    },
+    addLocalSelectedItem: (state, action: PayloadAction<CategoryItem>) => {
+      state.localSelectedItems.push(action.payload);
+    },
+    removeLocalSelectedItem: (state, action: PayloadAction<string>) => {
+      state.localSelectedItems = state.localSelectedItems.filter(item => item.id !== action.payload);
+    },
+
   },
 });
 
@@ -119,6 +167,11 @@ export const {
   removeOrForm,
   setShowStep,
   removeStep,
+  setCategories,
+  addSelectedItem,
+  removeSelectedItem,
+  setSelectedCategoryItems,
+  setLocalSelectedItems,
 } = formSlice.actions;
 
 export default formSlice.reducer;
