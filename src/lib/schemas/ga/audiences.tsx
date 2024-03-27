@@ -66,13 +66,15 @@ const BetweenFilterSchema = z.object({
 });
 
 // Recursive definitions
-const AudienceFilterExpressionSchema: z.ZodSchema<any> = z.lazy(() => z.object({
-  andGroup: AudienceFilterExpressionListSchema.optional(),
-  orGroup: AudienceFilterExpressionListSchema.optional(),
-  notExpression: z.lazy(() => AudienceFilterExpressionSchema).optional(),
-  dimensionOrMetricFilter: AudienceDimensionOrMetricFilterSchema.optional(),
-  eventFilter: AudienceEventFilterSchema.optional(),
-}));
+const AudienceFilterExpressionSchema: z.ZodSchema<any> = z.lazy(() =>
+  z.object({
+    andGroup: AudienceFilterExpressionListSchema.optional(),
+    orGroup: AudienceFilterExpressionListSchema.optional(),
+    notExpression: z.lazy(() => AudienceFilterExpressionSchema).optional(),
+    dimensionOrMetricFilter: AudienceDimensionOrMetricFilterSchema.optional(),
+    eventFilter: AudienceEventFilterSchema.optional(),
+  })
+);
 
 const AudienceFilterExpressionListSchema = z.object({
   filterExpressions: z.array(AudienceFilterExpressionSchema),

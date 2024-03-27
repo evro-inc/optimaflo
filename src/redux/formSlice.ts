@@ -1,6 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-
 export interface CategoryItem {
   id: string;
   uiName: string;
@@ -121,32 +120,9 @@ const formSlice = createSlice({
       state.showStep = state.showStep.filter((step) => step.id !== action.payload);
     },
 
-
-    setCategories: (state, action: PayloadAction<Category[]>) => {
-      state.categories = action.payload;
-    },
-    addSelectedItem: (state, action: PayloadAction<CategoryItem>) => {
-      state.selectedItems.push(action.payload);
-    },
-    removeSelectedItem: (state, action: PayloadAction<string>) => {
-      state.selectedItems = state.selectedItems.filter(item => item.id !== action.payload);
-    },
-
-    setSelectedCategoryItems: (state, action: PayloadAction<CategoryItem[]>) => {
-      state.selectedCategoryItems = action.payload;
-    },
-
-
     setLocalSelectedItems: (state, action: PayloadAction<CategoryItem[]>) => {
       state.localSelectedItems = action.payload;
     },
-    addLocalSelectedItem: (state, action: PayloadAction<CategoryItem>) => {
-      state.localSelectedItems.push(action.payload);
-    },
-    removeLocalSelectedItem: (state, action: PayloadAction<string>) => {
-      state.localSelectedItems = state.localSelectedItems.filter(item => item.id !== action.payload);
-    },
-
   },
 });
 
@@ -167,10 +143,7 @@ export const {
   removeOrForm,
   setShowStep,
   removeStep,
-  setCategories,
-  addSelectedItem,
-  removeSelectedItem,
-  setSelectedCategoryItems,
+
   setLocalSelectedItems,
 } = formSlice.actions;
 

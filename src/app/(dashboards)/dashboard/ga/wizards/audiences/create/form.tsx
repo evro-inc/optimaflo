@@ -19,10 +19,6 @@ import {
   CardIdentifier,
   setShowStep,
   StepIdentifier,
-  CategoryItem,
-  addSelectedItem,
-  removeSelectedItem,
-  setSelectedCategoryItems,
 } from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
@@ -76,7 +72,11 @@ import {
 import { ConversionCountingItems, Currencies } from '../../../properties/@conversions/items';
 import { RadioGroup, RadioGroupItem } from '@/src/components/ui/radio-group';
 import { Checkbox } from '@/src/components/ui/checkbox';
-import { ImmediatelyFollows, SequenceScope, SimpleScope } from '../../../properties/@audiences/items';
+import {
+  ImmediatelyFollows,
+  SequenceScope,
+  SimpleScope,
+} from '../../../properties/@audiences/items';
 import {
   PlusIcon,
   BarChartIcon,
@@ -159,7 +159,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   const orForms = useSelector((state: RootState) => state.form.showCard);
   const showStep = useSelector((state: RootState) => state.form.showStep);
 
-
   // Exclude Form state
   const showExcludeParent = useSelector((state: RootState) => state.excludeForm.showParentForm);
   const excludeSimpleFormsToShow = useSelector(
@@ -171,11 +170,12 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   const excludeCardsToShow = useSelector((state: RootState) => state.excludeForm.showCard);
   const excludeShowStep = useSelector((state: RootState) => state.excludeForm.showStep);
 
-
   const categorizedDimensions = dimensions.reduce((acc, item) => {
     const categoryIndex = acc.findIndex((cat) => cat.name === item.category);
     if (categoryIndex > -1) {
-      const isUnique = !acc[categoryIndex].items.some(existingItem => existingItem.apiName === item.apiName);
+      const isUnique = !acc[categoryIndex].items.some(
+        (existingItem) => existingItem.apiName === item.apiName
+      );
       if (isUnique) {
         acc[categoryIndex].items.push(item);
       }
@@ -188,7 +188,9 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   const categorizedMetrics = metrics.reduce((acc, item) => {
     const categoryIndex = acc.findIndex((cat) => cat.name === item.category);
     if (categoryIndex > -1) {
-      const isUnique = !acc[categoryIndex].items.some(existingItem => existingItem.apiName === item.apiName);
+      const isUnique = !acc[categoryIndex].items.some(
+        (existingItem) => existingItem.apiName === item.apiName
+      );
       if (isUnique) {
         acc[categoryIndex].items.push(item);
       }
@@ -198,16 +200,15 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     return acc;
   }, []);
 
-
   const combinedCategories = [
     {
-      name: "Dimensions",
-      categories: categorizedDimensions
+      name: 'Dimensions',
+      categories: categorizedDimensions,
     },
     {
-      name: "Metrics",
-      categories: categorizedMetrics
-    }
+      name: 'Metrics',
+      categories: categorizedMetrics,
+    },
   ];
 
   const extractedData = table.map((item) => {
@@ -563,13 +564,10 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     };
 
     if (cardType === 'card' || cardType === 'or') {
-
       dispatch(setShowCard([...cardsToShow, newCard]));
     }
     if (cardType === 'excludeCard') {
-
       dispatch(setShowExcludeCard([...excludeCardsToShow, newCard]));
-
     }
   };
 
@@ -670,18 +668,53 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   };
 
   const ConditionalForm = ({ formId, parentType }: { formId: string; parentType?: string }) => {
-
     //Using local useState instead of redux because of re-rendering issues
-    const [localSelectedItems, setLocalSelectedItems] = useState([]);
+    const [selectedCategoryItems, setSelectedCategoryItems] = useState([]);
 
-    const handleCategoryClick = (categoryItems, event) => {
-      event.stopPropagation(); // Prevent the dialog from closing
-      setLocalSelectedItems(categoryItems); // Update local state to reflect new items
+    // This function is called when an item in the first Select is selected
+    const handleCategorySelection = (selectedCategoryName) => {
+      // Find the category and its items based on the selected name
+      const selectedCategory = combinedCategories
+        .flatMap((category) => category.categories)
+        .find((category) => category.name === selectedCategoryName);
+
+      // Update the state to reflect the items of the selected category
+      setSelectedCategoryItems(selectedCategory ? selectedCategory.items : []);
     };
 
     return (
-      <>
-        <Dialog>
+      <div className="flex space-x-4">
+        <Select onValueChange={handleCategorySelection}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select Category" />
+          </SelectTrigger>
+          <SelectContent>
+            {/* {combinedCategories.flatMap(parentCategory => parentCategory.categories).map((category) => (
+              <SelectItem value={category.name}>{category.name}</SelectItem>
+            ))} */}
+            {combinedCategories.map((parentCategory) => (
+              <SelectGroup>
+                <SelectLabel>{parentCategory.name}</SelectLabel>
+                {parentCategory.categories.map((category) => (
+                  <SelectItem value={category.name}>{category.name}</SelectItem>
+                ))}
+              </SelectGroup>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Second Select that displays items based on the selected category */}
+        <Select disabled={selectedCategoryItems.length === 0}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select Item" />
+          </SelectTrigger>
+          <SelectContent>
+            {selectedCategoryItems.map((item: any) => (
+              <SelectItem value={item.apiName}>{item.uiName}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {/*   <Dialog>
           <DialogTrigger asChild>
             <Button className="flex justify-between items-center w-full" variant="ghost">
               Add new condition
@@ -733,8 +766,8 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
               </div>
             </div>
           </DialogContent>
-        </Dialog>
-      </>
+        </Dialog> */}
+      </div>
     );
   };
 
@@ -758,7 +791,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                   <MagnifyingGlassIcon className="text-gray-400" />
                   <Input placeholder="Search items" />
                 </div>
-                <Accordion type='single' className="mt-2">
+                <Accordion type="single" className="mt-2">
                   <AccordionItem value="events">
                     <AccordionTrigger>Events</AccordionTrigger>
                     <AccordionContent>
@@ -825,12 +858,10 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
         <CardContent>
           <div className="flex items-center justify-between mt-5">
             <div className="flex flex-row md:space-x-4 w-full">
-              <div className="w-full basis-3/12">
+              <div className="w-full basis-11/12">
                 <ConditionalForm formId={form.id} parentType={form.type} />
               </div>
-              <div className="w-full basis-7/12">
-                <ConditionalForm formId={form.id} parentType={form.type} />
-              </div>
+
               <div className="w-full basis-1/12">
                 <Button
                   className="flex items-center space-x-2 text-blue-500"
@@ -895,12 +926,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
       </Card>
     );
   };
-
-
-
-
-
-
 
   const simpleForm = () => {
     return (
@@ -1083,8 +1108,8 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                           </div>
                         </div>
                       ) : // This part of the ternary operator needs to render something or nothing for subsequent steps.
-                        // If there's no specific content needed for subsequent steps, you can return null or omit this part.
-                        null}
+                      // If there's no specific content needed for subsequent steps, you can return null or omit this part.
+                      null}
 
                       <div className="flex items-center w-full mt-5">
                         <div className="basis-3/12">
@@ -1731,17 +1756,17 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                                     onCheckedChange={(checked) => {
                                                       return checked
                                                         ? field.onChange([
-                                                          ...(Array.isArray(field.value)
-                                                            ? field.value
-                                                            : []),
-                                                          item.id,
-                                                        ])
+                                                            ...(Array.isArray(field.value)
+                                                              ? field.value
+                                                              : []),
+                                                            item.id,
+                                                          ])
                                                         : field.onChange(
-                                                          (Array.isArray(field.value)
-                                                            ? field.value
-                                                            : []
-                                                          ).filter((value) => value !== item.id)
-                                                        );
+                                                            (Array.isArray(field.value)
+                                                              ? field.value
+                                                              : []
+                                                            ).filter((value) => value !== item.id)
+                                                          );
                                                     }}
                                                   />
                                                 </FormControl>
