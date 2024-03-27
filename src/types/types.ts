@@ -209,6 +209,8 @@ export type FormCreateProps = {
   accounts?: any;
   properties?: any;
   tierLimits?: any;
+  dimensions?: any;
+  metrics?: any;
 };
 
 export type WorkspaceType = {
@@ -514,4 +516,152 @@ export interface AccessBinding {
   roles: Role[]; // A list of roles to grant to the parent resource.
   user: string;
   property: string;
+}
+
+/*********************************************************
+ Audience Types 
+ *********************************************************/
+
+// Main Audience Resource
+export interface AudienceType {
+  account: string;
+  property: string;
+  name: string;
+  displayName: string;
+  description: string;
+  membershipDurationDays: number;
+  adsPersonalizationEnabled: boolean;
+  eventTrigger?: AudienceEventTrigger;
+  exclusionDurationMode: AudienceExclusionDurationMode;
+  filterClauses: AudienceFilterClause[];
+}
+
+// Enums for various Audience fields
+enum AudienceExclusionDurationMode {
+  UNSPECIFIED = 'AUDIENCE_EXCLUSION_DURATION_MODE_UNSPECIFIED',
+  TEMPORARILY = 'EXCLUDE_TEMPORARILY',
+  PERMANENTLY = 'EXCLUDE_PERMANENTLY',
+}
+
+enum AudienceClauseType {
+  UNSPECIFIED = 'AUDIENCE_CLAUSE_TYPE_UNSPECIFIED',
+  INCLUDE = 'INCLUDE',
+  EXCLUDE = 'EXCLUDE',
+}
+
+enum LogCondition {
+  UNSPECIFIED = 'LOG_CONDITION_UNSPECIFIED',
+  JOINED = 'AUDIENCE_JOINED',
+  MEMBERSHIP_RENEWED = 'AUDIENCE_MEMBERSHIP_RENEWED',
+}
+
+// Audience Event Trigger
+interface AudienceEventTrigger {
+  eventName: string;
+  logCondition: LogCondition;
+}
+
+// Audience Filter Clause
+interface AudienceFilterClause {
+  clauseType: AudienceClauseType;
+  simpleFilter?: AudienceSimpleFilter;
+  sequenceFilter?: AudienceSequenceFilter;
+}
+
+// Filters
+interface AudienceSimpleFilter {
+  scope: AudienceFilterScope;
+  filterExpression: AudienceFilterExpression;
+}
+
+enum AudienceFilterScope {
+  UNSPECIFIED = 'AUDIENCE_FILTER_SCOPE_UNSPECIFIED',
+  WITHIN_SAME_EVENT = 'AUDIENCE_FILTER_SCOPE_WITHIN_SAME_EVENT',
+  WITHIN_SAME_SESSION = 'AUDIENCE_FILTER_SCOPE_WITHIN_SAME_SESSION',
+  ACROSS_ALL_SESSIONS = 'AUDIENCE_FILTER_SCOPE_ACROSS_ALL_SESSIONS',
+}
+
+interface AudienceSequenceFilter {
+  scope: AudienceFilterScope;
+  sequenceMaximumDuration: string; // Duration format, e.g., "3.5s"
+  sequenceSteps: AudienceSequenceStep[];
+}
+
+interface AudienceSequenceStep {
+  scope: AudienceFilterScope;
+  immediatelyFollows?: boolean;
+  constraintDuration?: string; // Duration format, e.g., "3.5s"
+  filterExpression: AudienceFilterExpression;
+}
+
+// Audience Filter Expression and supporting types
+type AudienceFilterExpression = {
+  andGroup?: AudienceFilterExpressionList;
+  orGroup?: AudienceFilterExpressionList;
+  notExpression?: AudienceFilterExpression;
+  dimensionOrMetricFilter?: AudienceDimensionOrMetricFilter;
+  eventFilter?: AudienceEventFilter;
+};
+
+interface AudienceFilterExpressionList {
+  filterExpressions: AudienceFilterExpression[];
+}
+
+interface AudienceDimensionOrMetricFilter {
+  fieldName: string;
+  atAnyPointInTime?: boolean;
+  inAnyNDayPeriod?: number;
+  // Union of filters, only one of these should be set at a time
+  stringFilter?: StringFilter;
+  inListFilter?: InListFilter;
+  numericFilter?: NumericFilter;
+  betweenFilter?: BetweenFilter;
+}
+
+// Detailed filter types
+interface StringFilter {
+  matchType: MatchType;
+  value: string;
+  caseSensitive?: boolean;
+}
+
+enum MatchType {
+  UNSPECIFIED = 'MATCH_TYPE_UNSPECIFIED',
+  EXACT = 'EXACT',
+  BEGINS_WITH = 'BEGINS_WITH',
+  ENDS_WITH = 'ENDS_WITH',
+  CONTAINS = 'CONTAINS',
+  FULL_REGEXP = 'FULL_REGEXP',
+}
+
+interface InListFilter {
+  values: string[];
+  caseSensitive?: boolean;
+}
+
+interface NumericFilter {
+  operation: Operation;
+  value: NumericValue;
+}
+
+enum Operation {
+  UNSPECIFIED = 'OPERATION_UNSPECIFIED',
+  EQUAL = 'EQUAL',
+  LESS_THAN = 'LESS_THAN',
+  GREATER_THAN = 'GREATER_THAN',
+}
+
+type NumericValue = {
+  int64Value?: string;
+  doubleValue?: number;
+};
+
+interface BetweenFilter {
+  fromValue: NumericValue;
+  toValue: NumericValue;
+}
+
+interface AudienceEventFilter {
+  eventName: string;
+  eventParameterFilterExpression?: AudienceFilterExpression;
 }

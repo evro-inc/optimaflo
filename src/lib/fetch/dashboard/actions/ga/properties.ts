@@ -1695,3 +1695,104 @@ export async function acknowledgeUserDataCollection(selectedRows) {
     notFoundError: false, // Set based on actual not found status
   };
 }
+
+/************************************************************************************
+Returns metadata for dimensions and metrics available in reporting methods. Used to explore the dimensions and metrics. In this method, a Google Analytics GA4 Property Identifier is specified in the request, and the metadata response includes Custom dimensions and metrics as well as Universal metadata.
+************************************************************************************/
+export async function getMetadataProperties() {
+  let retries = 0;
+  const MAX_RETRIES = 3;
+  let delay = 1000;
+
+  // Authenticating the user and getting the user ID
+  const { userId } = await auth();
+  // If user ID is not found, return a 'not found' error
+  if (!userId) return notFound();
+
+  const token = await currentUserOauthAccessToken(userId);
+  const accessToken = token[0].token;
+
+  await fetchGASettings(userId);
+  const gaData = await prisma.user.findFirst({
+    where: {
+      id: userId,
+    },
+    include: {
+      ga: true,
+    },
+  });
+
+  while (retries < MAX_RETRIES) {
+    try {
+      const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
+      if (remaining > 0) {
+        let allData: any[] = [];
+
+        await limiter.schedule(async () => {
+          const uniqueAccountIds = Array.from(new Set(gaData.ga.map((item) => item.accountId)));
+
+          const urls = uniqueAccountIds.map(
+            (accountId) =>
+              `https://analyticsadmin.googleapis.com/v1beta/properties?filter=parent:${accountId}`
+          );
+
+          const headers = {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+            'Accept-Encoding': 'gzip',
+          };
+
+          for (const url of urls) {
+            try {
+              const response = await fetch(url, { headers });
+              if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
+              }
+
+              const responseBody = await response.json();
+              const properties = responseBody.properties || [];
+              for (const property of properties) {
+                const resUrl = `https://analyticsdata.googleapis.com/v1beta/${property.name}/metadata`;
+
+                try {
+                  const res = await fetch(resUrl, {
+                    headers,
+                  });
+
+                  if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}. ${res.statusText}`);
+                  }
+                  const jsonRes = await res.json();
+
+                  allData.push({
+                    ...property,
+                    dataRetentionSettings: jsonRes,
+                  });
+                } catch (error: any) {
+                  // In case of an error, push the property without data retention settings
+                  allData.push(property);
+                  throw new Error(`Error fetching data retention settings: ${error.message}`);
+                }
+              }
+              // Removed the problematic line here
+            } catch (error: any) {
+              throw new Error(`Error fetching data: ${error.message}`);
+            }
+          }
+        });
+
+        return allData;
+      }
+    } catch (error: any) {
+      if (error.code === 429 || error.status === 429) {
+        const jitter = Math.random() * 200;
+        await new Promise((resolve) => setTimeout(resolve, delay + jitter));
+        delay *= 2;
+        retries++;
+      } else {
+        throw error;
+      }
+    }
+  }
+  throw new Error('Maximum retries reached without a successful response.');
+}

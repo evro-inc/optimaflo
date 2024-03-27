@@ -87,8 +87,8 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
 
   const handleCreateClick = useCreateHookForm(
     userId,
-    'GA4ConversionEvents',
-    '/dashboard/ga/wizards/conversion-events/create'
+    'GA4Audiences',
+    '/dashboard/ga/wizards/audiences/create'
   );
 
   const onCreateButtonClick = () => {
@@ -101,8 +101,8 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
 
   const handleUpdateClick = useUpdateHookForm(
     userId,
-    'GA4ConversionEvents',
-    '/dashboard/ga/wizards/conversion-events/update',
+    'GA4Audiences',
+    '/dashboard/ga/wizards/audiences/update',
     rowSelectedCount
   );
 
@@ -126,7 +126,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     const keys = [
       `ga:accounts:userId:${userId}`,
       `ga:properties:userId:${userId}`,
-      `ga:customMetrics:userId:${userId}`,
+      `ga:audiences:userId:${userId}`,
     ];
     await revalidate(keys, '/dashboard/ga/properties', userId);
   };
@@ -136,7 +136,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
   return (
     <div>
       <h2 className="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0">
-        Conversion Events
+        Audiences
       </h2>
       <div className="flex items-center py-4">
         <Input

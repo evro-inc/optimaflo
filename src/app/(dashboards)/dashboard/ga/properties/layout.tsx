@@ -41,6 +41,7 @@ export default async function PropertiesLayout({
         {dimensions}
         {metrics}
         {conversions}
+
       </div>
     </>
   );
