@@ -75,17 +75,20 @@ export async function listGAAccessBindings() {
               const response = await fetch(url, { headers });
 
               if (!response.ok) {
+                if (response.status === 403) {
+                  continue; // Skip the current iteration and proceed with the next property
+                }
                 throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
               }
 
               const responseBody = await response.json();
               allData.push(responseBody);
-
-              // Removed the problematic line here
             } catch (error: any) {
+              // For errors other than 403, you might still want to throw or handle them differently
               throw new Error(`Error fetching data: ${error.message}`);
             }
           }
+
         });
         redis.set(cacheKey, JSON.stringify(allData), 'EX', 3600);
 
