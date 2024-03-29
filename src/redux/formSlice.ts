@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
+
 export interface CategoryItem {
   id: string;
   uiName: string;
@@ -119,10 +120,6 @@ const formSlice = createSlice({
     removeStep: (state, action: PayloadAction<string>) => {
       state.showStep = state.showStep.filter((step) => step.id !== action.payload);
     },
-
-    setLocalSelectedItems: (state, action: PayloadAction<CategoryItem[]>) => {
-      state.localSelectedItems = action.payload;
-    },
   },
 });
 
@@ -142,9 +139,7 @@ export const {
   removeCard,
   removeOrForm,
   setShowStep,
-  removeStep,
-
-  setLocalSelectedItems,
+  removeStep
 } = formSlice.actions;
 
 export default formSlice.reducer;
