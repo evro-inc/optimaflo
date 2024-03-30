@@ -99,8 +99,14 @@ const formSlice = createSlice({
     removeExcludeSequenceForm: (state, action: PayloadAction<string>) => {
       state.showSequenceForm = state.showSequenceForm.filter((form) => form.id !== action.payload);
     },
-    setShowExcludeCard: (state, action: PayloadAction<ExcludeCardIdentifier[]>) => {
-      state.showCard = action.payload;
+    setShowExcludeCard: (state, action: PayloadAction<{ parentId: string; cardType: string }>) => {
+      const uniqueId = `card-${crypto.randomUUID()}`;
+      const newCard: ExcludeCardIdentifier = {
+        id: uniqueId,
+        type: action.payload.cardType,
+        parentId: action.payload.parentId,
+      };
+      state.showCard = [...state.showCard, newCard];
     },
     removeExcludeCard: (state, action: PayloadAction<string>) => {
       state.showCard = state.showCard.filter((card) => card.id !== action.payload);

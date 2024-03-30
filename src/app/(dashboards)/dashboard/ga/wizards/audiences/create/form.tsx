@@ -19,9 +19,11 @@ import {
   CardIdentifier,
   setShowStep,
   StepIdentifier,
+  setSelectedCategory,
+  setSelectedItem,
 } from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
+import { SubmitHandler, useFieldArray, useForm, useFormContext } from 'react-hook-form';
 import { z } from 'zod';
 import {
   AudienceExclusionDurationMode,
@@ -69,8 +71,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/src/components/ui/card';
-import { ConversionCountingItems, Currencies } from '../../../properties/@conversions/items';
-import { RadioGroup, RadioGroupItem } from '@/src/components/ui/radio-group';
 import { Checkbox } from '@/src/components/ui/checkbox';
 import {
   ImmediatelyFollows,
@@ -170,6 +170,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   const excludeCardsToShow = useSelector((state: RootState) => state.excludeForm.showCard);
   const excludeShowStep = useSelector((state: RootState) => state.excludeForm.showStep);
 
+  // Dimensions
   const categorizedDimensions = dimensions.reduce((acc, item) => {
     const categoryIndex = acc.findIndex((cat) => cat.name === item.category);
     if (categoryIndex > -1) {
@@ -185,6 +186,8 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     return acc;
   }, []);
 
+
+  // Metrics
   const categorizedMetrics = metrics.reduce((acc, item) => {
     const categoryIndex = acc.findIndex((cat) => cat.name === item.category);
     if (categoryIndex > -1) {
@@ -200,6 +203,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     return acc;
   }, []);
 
+  // Combined Categories including dimensions and metrics
   const combinedCategories = [
     {
       name: 'Dimensions',
@@ -210,9 +214,8 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
       categories: categorizedMetrics,
     },
   ];
-  console.log('combinedCategories', combinedCategories);
 
-
+  // Extract data from table
   const extractedData = table.map((item) => {
     const propertyId = item.name.split('/')[1];
     const property = item.property;
@@ -227,6 +230,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     };
   });
 
+  // Clean
   const cleanedData = extractedData.map((item) => ({
     id: item.ids,
     label: item.names
@@ -236,6 +240,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
       .replace(/accountId\//g, 'Account ID: '),
   }));
 
+  // Remove duplicates
   const uniqueData = cleanedData.reduce((acc, current) => {
     const x = acc.find((item) => item.id === current.id && item.label === current.label);
     if (!x) {
@@ -253,6 +258,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   const createUsage = foundTierLimit?.createUsage;
   const remainingCreate = createLimit - createUsage;
 
+  // Filter out accounts with no properties
   const accountsWithProperties = accounts
     .map((account) => {
       const accountProperties = properties.filter((property) => property.parent === account.name);
@@ -264,6 +270,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     })
     .filter((account) => account.properties.length > 0);
 
+  // Default form data
   const formDataDefaults: AudienceType = {
     account: accountsWithProperties[0].name,
     property: accountsWithProperties[0].properties[0].name,
@@ -276,6 +283,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     filterClauses: [],
   };
 
+  // Form state for amount
   const formCreateAmount = useForm({
     resolver: zodResolver(FormCreateAmountSchema),
     defaultValues: {
@@ -296,6 +304,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     return <ErrorModal />;
   }
 
+  // Form state for form data
   const form = useForm<Forms>({
     defaultValues: {
       forms: [formDataDefaults],
@@ -303,6 +312,8 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     resolver: zodResolver(FormsSchema),
   });
 
+
+  // Form state for form data with array
   const { fields, append } = useFieldArray({
     control: form.control,
     name: 'forms',
@@ -314,6 +325,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
 
   const currentFormIndex = currentStep - 2;
 
+  // Handle amount change
   const handleAmountChange = (selectedAmount) => {
     const amount = parseInt(selectedAmount);
 
@@ -326,6 +338,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     dispatch(setCount(amount));
   };
 
+  // Handle form submission
   const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
     dispatch(setLoading(true));
@@ -468,6 +481,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     dispatch(decrementStep());
   };
 
+  // Handle form 
   const handleShowForm = (formType: string) => {
     const newFormGroupId = crypto.randomUUID();
     const newCardFormId = crypto.randomUUID();
@@ -558,20 +572,11 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   };
 
   const handleCard = (parentId: string, cardType: string) => {
-    const uniqueId = `card-${crypto.randomUUID()}`;
-    const newCard: CardIdentifier = {
-      id: uniqueId,
-      type: cardType, // Make sure this is adjusted based on the context (e.g., 'card', 'excludeCard')
-      parentId,
-    };
-    console.log('newCard', newCard);
-
-
     if (cardType === 'card' || cardType === 'or') {
-      dispatch(setShowCard([...cardsToShow, newCard]));
+      dispatch(setShowCard({ parentId, cardType }));
     }
     if (cardType === 'excludeCard') {
-      dispatch(setShowExcludeCard([...excludeCardsToShow, newCard]));
+      dispatch(setShowExcludeCard({ parentId, cardType }));
     }
   };
 
@@ -671,9 +676,12 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     dispatch(removeOrForm(formId));
   };
 
-  const ConditionalForm = ({ formId, parentType }: { formId: string; parentType?: string }) => {
-    const [selectedCategoryId, setSelectedCategoryId] = useState('');
-    const [selectedItem, setSelectedItem] = useState('');
+  const ConditionalForm = ({ form, parentType, cardId }: { form: any; parentType?: string; cardId: any }) => {
+    const { register, control, watch } = useFormContext();
+
+    const selectedCategoryId = useSelector((state: RootState) => state.form.selectedCategory[cardId]);
+    const selectedItemId = useSelector((state: RootState) => state.form.selectedItem[cardId]);
+
 
     const flattenedCategories = combinedCategories.flatMap((parentCategory) =>
       parentCategory.categories.map((category) => ({
@@ -688,12 +696,16 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     );
 
     const handleCategorySelection = (selectedCategoryId: string) => {
-      setSelectedCategoryId(selectedCategoryId);
-      setSelectedItem('');
+      dispatch(setSelectedCategory({ formId: cardId, categoryId: selectedCategoryId }));
+    };
+
+    const handleItemSelection = (selectedItemId: string) => {
+      dispatch(setSelectedItem({ formId: cardId, itemId: selectedItemId }));
     };
 
     return (
-      <div className="flex space-x-4">
+      <div key={`${parentType}-${form.id}`} className="flex space-x-4">
+
         <Select value={selectedCategoryId} onValueChange={handleCategorySelection}>
           <SelectTrigger>
             <SelectValue placeholder="Select Category" />
@@ -704,6 +716,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                 <SelectLabel>{parentCategory.name}</SelectLabel>
                 {parentCategory.categories.map((category) => (
                   <SelectItem
+                    {...register(`forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression`)}
                     key={`${parentCategory.name}-${category.name}`}
                     value={`${parentCategory.name}-${category.name}`}
                   >
@@ -715,18 +728,38 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
           </SelectContent>
         </Select>
 
-        <Select value={selectedItem} onValueChange={setSelectedItem}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select Item" />
-          </SelectTrigger>
-          <SelectContent>
-            {selectedCategory?.items.map((item: any) => (
-              <SelectItem key={item.apiName} value={item.apiName}>
-                {item.uiName}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <FormField
+          control={control}
+          name={`forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression.dimensionOrMetricFilter.fieldName`}
+          render={({ field }) => (
+            <FormItem>
+              <FormControl>
+                <Select
+                  /*   {...register(
+                      `forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression.dimensionOrMetricFilter.fieldName`
+                    )}
+                    {...field} */
+                  value={selectedItemId}
+                  onValueChange={handleItemSelection}
+                  disabled={!selectedCategory}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Item" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {selectedCategory?.items.map((item: any) => (
+                      <SelectItem key={item.apiName} value={item.apiName}>
+                        {item.uiName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
       </div>
     );
   };
@@ -812,28 +845,28 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     );
   };
 
-  const CardForm = (form) => {
+  const CardForm = (card) => {
     return (
       <Card>
         <CardContent>
           <div className="flex items-center justify-between mt-5">
             <div className="flex flex-row md:space-x-4 w-full">
               <div className="w-full basis-11/12">
-                <ConditionalForm formId={form.id} parentType={form.type} />
+                <ConditionalForm form={card} parentType={card.type} cardId={card.id} />
               </div>
 
               <div className="w-full basis-1/12">
                 <Button
                   className="flex items-center space-x-2 text-blue-500"
                   variant="ghost"
-                  onClick={() => handleCard(form.id, 'or')}
+                  onClick={() => handleCard(card.id, 'or')}
                 >
                   Or
                 </Button>
               </div>
 
               <div className="w-full basis-1/12">
-                <Button variant="outline" size="icon" onClick={() => handleRemoveCard(form.id)}>
+                <Button variant="outline" size="icon" onClick={() => handleRemoveCard(card.id)}>
                   <Cross2Icon className="text-gray-400" />
                 </Button>
               </div>
@@ -842,7 +875,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
         </CardContent>
 
         {orForms
-          .filter((or) => or.parentId === form.id)
+          .filter((or) => or.parentId === card.id)
           .map((orForm) => (
             <>
               <div className="relative border-t border-dashed my-4 flex justify-center">
@@ -854,14 +887,14 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                 <div className="flex items-center justify-between mt-5">
                   <div className="flex flex-row md:space-x-4 w-full">
                     <div className="w-full basis-11/12">
-                      <ConditionalForm formId={form.id} parentType={form.type} />
+                      <ConditionalForm form={orForm} parentType={orForm.type} cardId={orForm.id} />
                     </div>
 
                     <div className="w-full basis-1/12">
                       <Button
                         className="flex items-center space-x-2 text-blue-500"
                         variant="ghost"
-                        onClick={() => handleCard(form.id, 'or')}
+                        onClick={() => handleCard(card.id, 'or')}
                       >
                         Or
                       </Button>
@@ -885,7 +918,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     );
   };
 
-  const simpleForm = () => {
+  const simpleForm = (formState) => {
     return (
       <>
         {simpleFormsToShow.map((form, index) => (
@@ -908,18 +941,39 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                   <span className="flex-grow text-sm font-medium">Include users when:</span>
                   <div className="flex items-center space-x-2">
                     <UserPlusIcon className="text-gray-600" />
-                    <Select>
-                      <SelectTrigger id="user-action">
-                        <SelectValue placeholder="Condition scoping" />
-                      </SelectTrigger>
-                      <SelectContent position="popper">
-                        {SimpleScope.map((item) => (
-                          <SelectItem key={item.label} value={item.id}>
-                            {item.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormField
+                      control={formState.control}
+                      name={`forms.${currentFormIndex}.filterClauses.simpleFilter.scope`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Select
+                              {...formState.register(
+                                `forms.${currentFormIndex}.filterClauses.simpleFilter.scope`
+                              )}
+                              {...field}
+                              onValueChange={field.onChange}
+                            >
+                              <SelectTrigger id="user-action">
+                                <SelectValue placeholder="Condition scoping" />
+                              </SelectTrigger>
+                              <SelectContent position="popper">
+                                {SimpleScope.map((item) =>
+                                (
+                                  <SelectItem key={item.label} value={item.id}>
+                                    {item.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+
+
                     <Separator orientation="vertical" />
                     <Button
                       variant="ghost"
@@ -999,6 +1053,8 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                   <div className="flex flex-grow basis-7/12 justify-end">
                     <div className="flex items-center space-x-2">
                       <UserPlusIcon className="text-gray-600" />
+
+
                       <Select>
                         <SelectTrigger id="user-action">
                           <SelectValue placeholder="Sequence scoping" />
@@ -1011,6 +1067,8 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                           ))}
                         </SelectContent>
                       </Select>
+
+
                       <Separator orientation="vertical" />
                       {TimeConstraint()}
                       <Separator orientation="vertical" />
@@ -1570,7 +1628,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                             </div>
 
                             <div className="max-w-4xl mx-auto p-5">
-                              {simpleForm()}
+                              {simpleForm(form)}
 
                               {simpleFormsToShow.length > 0 && sequenceFormsToShow.length > 0 && (
                                 <div className="w-10 flex flex-col items-center justify-center space-y-2">

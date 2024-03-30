@@ -47,7 +47,8 @@ interface FormState {
   showStep: StepIdentifier[];
   categories: Category[];
   selectedItems: CategoryItem[];
-  selectedCategoryItems: CategoryItem[];
+  selectedCategory: { [formId: string]: string };
+  selectedItem: { [formId: string]: string };
   localSelectedItems: CategoryItem[];
 }
 
@@ -63,7 +64,8 @@ const initialState: FormState = {
   showStep: [],
   categories: [],
   selectedItems: [],
-  selectedCategoryItems: [],
+  selectedCategory: {},
+  selectedItem: {},
   localSelectedItems: [],
 };
 
@@ -104,8 +106,14 @@ const formSlice = createSlice({
     removeSequenceForm: (state, action: PayloadAction<string>) => {
       state.showSequenceForm = state.showSequenceForm.filter((form) => form.id !== action.payload);
     },
-    setShowCard: (state, action: PayloadAction<CardIdentifier[]>) => {
-      state.showCard = action.payload;
+    setShowCard: (state, action: PayloadAction<{ parentId: string; cardType: string }>) => {
+      const uniqueId = `card-${crypto.randomUUID()}`;
+      const newCard: CardIdentifier = {
+        id: uniqueId,
+        type: action.payload.cardType,
+        parentId: action.payload.parentId,
+      };
+      state.showCard = [...state.showCard, newCard];
     },
     removeCard: (state, action: PayloadAction<string>) => {
       state.showCard = state.showCard.filter((card) => card.id !== action.payload);
@@ -119,6 +127,13 @@ const formSlice = createSlice({
     },
     removeStep: (state, action: PayloadAction<string>) => {
       state.showStep = state.showStep.filter((step) => step.id !== action.payload);
+    },
+
+    setSelectedCategory: (state, action: PayloadAction<{ formId: string; categoryId: string }>) => {
+      state.selectedCategory[action.payload.formId] = action.payload.categoryId;
+    },
+    setSelectedItem: (state, action: PayloadAction<{ formId: string; itemId: string }>) => {
+      state.selectedItem[action.payload.formId] = action.payload.itemId;
     },
   },
 });
@@ -139,7 +154,9 @@ export const {
   removeCard,
   removeOrForm,
   setShowStep,
-  removeStep
+  removeStep,
+  setSelectedCategory,
+  setSelectedItem,
 } = formSlice.actions;
 
 export default formSlice.reducer;
