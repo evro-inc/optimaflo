@@ -917,7 +917,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                     onValueChange={handleItemSelection}
                     disabled={!selectedCategory}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className='truncate w-[200px]'>
                       <SelectValue placeholder="Select Item" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1043,11 +1043,11 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
         <CardContent>
           <div className="flex items-center justify-between mt-5">
             <div className="flex flex-row md:space-x-4 w-full">
-              <div className="w-full basis-11/12">
+              <div className="basis-11/12">
                 <ConditionalForm form={card} parentType={card.type} cardId={card.id} />
               </div>
 
-              <div className="w-full basis-1/12">
+              <div className="basis-1/12">
                 <Button
                   className="flex items-center space-x-2 text-blue-500"
                   variant="ghost"
@@ -1057,7 +1057,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                 </Button>
               </div>
 
-              <div className="w-full basis-1/12">
+              <div className="basis-1/12">
                 <Button variant="outline" size="icon" onClick={() => handleRemoveCard(card.id)}>
                   <Cross2Icon className="text-gray-400" />
                 </Button>
@@ -1078,11 +1078,11 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
               <CardContent key={orForm.id}>
                 <div className="flex items-center justify-between mt-5">
                   <div className="flex flex-row md:space-x-4 w-full">
-                    <div className="w-full basis-11/12">
+                    <div className="basis-11/12">
                       <ConditionalForm form={orForm} parentType={orForm.type} cardId={orForm.id} />
                     </div>
 
-                    <div className="w-full basis-1/12">
+                    <div className="basis-1/12">
                       <Button
                         className="flex items-center space-x-2 text-blue-500"
                         variant="ghost"
@@ -1092,7 +1092,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                       </Button>
                     </div>
 
-                    <div className="w-full basis-1/12">
+                    <div className="basis-1/12">
                       <Button
                         variant="outline"
                         size="icon"
