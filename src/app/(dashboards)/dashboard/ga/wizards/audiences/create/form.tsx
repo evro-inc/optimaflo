@@ -73,6 +73,7 @@ import {
 } from '@/src/components/ui/card';
 import { Checkbox } from '@/src/components/ui/checkbox';
 import {
+  filterTypeMapping,
   ImmediatelyFollows,
   SequenceScope,
   SimpleScope,
@@ -185,7 +186,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     }
     return acc;
   }, []);
-
 
   // Metrics
   const categorizedMetrics = metrics.reduce((acc, item) => {
@@ -311,7 +311,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     },
     resolver: zodResolver(FormsSchema),
   });
-
 
   // Form state for form data with array
   const { fields, append } = useFieldArray({
@@ -481,7 +480,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     dispatch(decrementStep());
   };
 
-  // Handle form 
+  // Handle form
   const handleShowForm = (formType: string) => {
     const newFormGroupId = crypto.randomUUID();
     const newCardFormId = crypto.randomUUID();
@@ -676,12 +675,175 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     dispatch(removeOrForm(formId));
   };
 
-  const ConditionalForm = ({ form, parentType, cardId }: { form: any; parentType?: string; cardId: any }) => {
-    const { register, control, watch } = useFormContext();
 
-    const selectedCategoryId = useSelector((state: RootState) => state.form.selectedCategory[cardId]);
+  const renderFilterInput = (filterType, field) => {
+    const { register } = useFormContext();
+
+    switch (filterType) {
+      case 'stringFilter':
+        console.log('stringFilter');
+
+        console.log('field', field);
+
+        return (
+          <>
+            <Select
+              {...register(
+                `forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression.dimensionOrMetricFilter.one_filter.stringFilter.matchType`
+              )}
+              {...field}
+              onValueChange={field.onChange}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Condition" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="EXACT">Exact</SelectItem>
+                <SelectItem value="BEGINS_WITH">Begins With</SelectItem>
+                <SelectItem value="ENDS_WITH">Ends With</SelectItem>
+                <SelectItem value="CONTAINS">Contains</SelectItem>
+                <SelectItem value="FULL_REGEXP">Full Regexp</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input
+              {...register(
+                `forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression.dimensionOrMetricFilter.one_filter.stringFilter.value`
+              )}
+              {...field}
+              onValueChange={field.onChange}
+            />
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                {...register(
+                  `forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression.dimensionOrMetricFilter.one_filter.stringFilter.caseSensitive`
+                )}
+                {...field}
+                onValueChange={field.onChange}
+              />
+              <label
+                htmlFor="caseSensitive"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Case Sensitive
+              </label>
+            </div>
+          </>
+        );
+      case 'inListFilter':
+        console.log('inListFilter');
+        console.log('field', field);
+
+
+        return (
+          <>
+            <Input
+              {...register(
+                `forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression.dimensionOrMetricFilter.one_filter.inListFilter.values`
+              )}
+              onValueChange={field.onChange}
+              {...field}
+            />
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                {...register(
+                  `forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression.dimensionOrMetricFilter.one_filter.inListFilter.caseSensitive`
+                )}
+                {...field}
+                onValueChange={field.onChange}
+              />
+              <label
+                htmlFor="caseSensitive"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Case Sensitive
+              </label>
+            </div>
+          </>
+        );
+      case 'numericFilter':
+        console.log('numericFilter');
+        console.log('field', field);
+
+        return (
+          <>
+
+            <Select
+              {...register(
+                `forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression.dimensionOrMetricFilter.one_filter.numericFilter.operation`
+              )}
+              onValueChange={field.onChange}
+              {...field}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Condition" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="EQUAL">Equal</SelectItem>
+                <SelectItem value="LESS_THAN">Less Than</SelectItem>
+                <SelectItem value="LESS_THAN_OR_EQUAL">Less Than or Equal</SelectItem>
+                <SelectItem value="GREATER_THAN">Greater Than</SelectItem>
+                <SelectItem value="GREATER_THAN_OR_EQUAL">Greater Than or Equal</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input
+              type="number"
+              min={0}
+              {...register(
+                `forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression.dimensionOrMetricFilter.one_filter.numericFilter.value`
+              )}
+              {...field}
+              onValueChange={field.onChange}
+            />
+          </>
+        );
+      case 'betweenFilter':
+        console.log('betweenFilter');
+        console.log('field', field);
+        return (
+          <>
+            <Input
+              type="number"
+              min={0}
+              {...register(
+                `forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression.dimensionOrMetricFilter.one_filter.betweenFilter.fromValue`
+              )}
+              {...field}
+              placeholder="From Value"
+              onValueChange={field.onChange}
+            />
+            <Input
+              type="number"
+              min={0}
+              {...register(
+                `forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression.dimensionOrMetricFilter.one_filter.betweenFilter.toValue`
+              )}
+              {...field}
+              placeholder="To Value"
+              onValueChange={field.onChange}
+            />
+          </>
+        );
+      default:
+        return null;
+    }
+  };
+
+
+  const ConditionalForm = ({
+    form,
+    parentType,
+    cardId,
+  }: {
+    form: any;
+    parentType?: string;
+    cardId: any;
+  }) => {
+    const { register, control, watch, setValue } = useFormContext();
+
+    const selectedCategoryId = useSelector(
+      (state: RootState) => state.form.selectedCategory[cardId]
+    );
     const selectedItemId = useSelector((state: RootState) => state.form.selectedItem[cardId]);
-
 
     const flattenedCategories = combinedCategories.flatMap((parentCategory) =>
       parentCategory.categories.map((category) => ({
@@ -690,6 +852,9 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
         id: `${parentCategory.name}-${category.name}`,
       }))
     );
+    const selectedItem = flattenedCategories
+      .find((category) => category.id === selectedCategoryId)
+      ?.items.find((item: any) => item.apiName === selectedItemId);
 
     const selectedCategory = flattenedCategories.find(
       (category) => category.id === selectedCategoryId
@@ -697,70 +862,97 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
 
     const handleCategorySelection = (selectedCategoryId: string) => {
       dispatch(setSelectedCategory({ formId: cardId, categoryId: selectedCategoryId }));
+      // Reset filter values when category changes
+      setValue(`forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression.dimensionOrMetricFilter.one_filter`, {});
     };
 
     const handleItemSelection = (selectedItemId: string) => {
       dispatch(setSelectedItem({ formId: cardId, itemId: selectedItemId }));
+      // Reset filter values when item changes
+      setValue(`forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression.dimensionOrMetricFilter.one_filter`, {});
     };
 
+    console.log('combinedCategories:', combinedCategories);
+
+
     return (
-      <div key={`${parentType}-${form.id}`} className="flex space-x-4">
+      <>
+        <div key={`${parentType}-${form.id}`} className="flex space-x-4">
+          <Select value={selectedCategoryId} onValueChange={handleCategorySelection}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select Category" />
+            </SelectTrigger>
+            <SelectContent>
+              {combinedCategories.map((parentCategory) => (
+                <SelectGroup key={parentCategory.name}>
+                  <SelectLabel>{parentCategory.name}</SelectLabel>
+                  {parentCategory.categories.map((category) => (
+                    <SelectItem
+                      {...register(
+                        `forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression`
+                      )}
+                      key={`${parentCategory.name}-${category.name}`}
+                      value={`${parentCategory.name}-${category.name}`}
+                    >
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              ))}
+            </SelectContent>
+          </Select>
 
-        <Select value={selectedCategoryId} onValueChange={handleCategorySelection}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select Category" />
-          </SelectTrigger>
-          <SelectContent>
-            {combinedCategories.map((parentCategory) => (
-              <SelectGroup key={parentCategory.name}>
-                <SelectLabel>{parentCategory.name}</SelectLabel>
-                {parentCategory.categories.map((category) => (
-                  <SelectItem
-                    {...register(`forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression`)}
-                    key={`${parentCategory.name}-${category.name}`}
-                    value={`${parentCategory.name}-${category.name}`}
-                  >
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <FormField
-          control={control}
-          name={`forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression.dimensionOrMetricFilter.fieldName`}
-          render={({ field }) => (
-            <FormItem>
-              <FormControl>
-                <Select
-                  /*   {...register(
+          <FormField
+            control={control}
+            name={`forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression.dimensionOrMetricFilter.fieldName`}
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <Select
+                    {...register(
                       `forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression.dimensionOrMetricFilter.fieldName`
                     )}
-                    {...field} */
-                  value={selectedItemId}
-                  onValueChange={handleItemSelection}
-                  disabled={!selectedCategory}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Item" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {selectedCategory?.items.map((item: any) => (
-                      <SelectItem key={item.apiName} value={item.apiName}>
-                        {item.uiName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+                    {...field}
+                    value={selectedItemId}
+                    onValueChange={handleItemSelection}
+                    disabled={!selectedCategory}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Item" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {selectedCategory?.items.map((item: any) => (
+                        <SelectItem key={item.apiName} value={item.apiName}>
+                          {item.uiName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <div>
+          {selectedItem && (
+            <FormField
+              control={control}
+              name={`forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression.dimensionOrMetricFilter.one_filter.${filterTypeMapping[selectedItem.apiName] || filterTypeMapping[selectedItem.category] || 'stringFilter'}`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Filter</FormLabel>
+                  <FormControl>
+                    {/* Render the appropriate filter input based on the filterType */}
+                    {renderFilterInput(filterTypeMapping[selectedItem.apiName] || filterTypeMapping[selectedItem.category] || 'stringFilter', field)}
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           )}
-        />
-
-      </div>
+        </div>
+      </>
     );
   };
 
@@ -958,8 +1150,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                 <SelectValue placeholder="Condition scoping" />
                               </SelectTrigger>
                               <SelectContent position="popper">
-                                {SimpleScope.map((item) =>
-                                (
+                                {SimpleScope.map((item) => (
                                   <SelectItem key={item.label} value={item.id}>
                                     {item.label}
                                   </SelectItem>
@@ -971,8 +1162,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                         </FormItem>
                       )}
                     />
-
-
 
                     <Separator orientation="vertical" />
                     <Button
@@ -1054,7 +1243,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                     <div className="flex items-center space-x-2">
                       <UserPlusIcon className="text-gray-600" />
 
-
                       <Select>
                         <SelectTrigger id="user-action">
                           <SelectValue placeholder="Sequence scoping" />
@@ -1067,7 +1255,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                           ))}
                         </SelectContent>
                       </Select>
-
 
                       <Separator orientation="vertical" />
                       {TimeConstraint()}
