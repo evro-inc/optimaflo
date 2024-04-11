@@ -162,6 +162,23 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   const notFoundError = useSelector(selectTable).notFoundError;
   const router = useRouter();
 
+  // Form state
+  const simpleFormsToShow = useSelector((state: RootState) => state.form.showSimpleForm);
+  const sequenceFormsToShow = useSelector((state: RootState) => state.form.showSequenceForm);
+  const cardsToShow = useSelector((state: RootState) => state.form.showCard);
+  const orForms = useSelector((state: RootState) => state.form.showCard);
+  const showStep = useSelector((state: RootState) => state.form.showStep);
+
+  // Exclude Form state
+  const showExcludeParent = useSelector((state: RootState) => state.excludeForm.showParentForm);
+  const excludeSimpleFormsToShow = useSelector(
+    (state: RootState) => state.excludeForm.showSimpleForm
+  );
+  const excludeSequenceFormsToShow = useSelector(
+    (state: any) => state.excludeForm.showSequenceForm
+  );
+  const excludeCardsToShow = useSelector((state: RootState) => state.excludeForm.showCard);
+  const excludeShowStep = useSelector((state: RootState) => state.excludeForm.showStep);
 
   // Dimensions
   const categorizedDimensions = dimensions.reduce((acc, item) => {
@@ -581,32 +598,27 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     filterClauses: [
       {
         name: "",
-        parentCardArray: [
+        nestedArray: [
           {
             clauseType: AudienceClauseType.UNSPECIFIED,
             simpleFilter: {
-              name: "",
-              simpleCardArray: [
-                {
-                  scope: AudienceFilterScope.UNSPECIFIED,
-                  filterExpression: simpleFilterExpression,
-                }
-              ]
-            },
-            sequenceFilter: {
-              scope: AudienceFilterScope.WITHIN_SAME_EVENT,
-              sequenceMaximumDuration: '',
-              sequenceSteps: [
-                {
-                  scope: AudienceFilterScope.WITHIN_SAME_EVENT,
-                  immediatelyFollows: false,
-                  constraintDuration: '',
-                  filterExpression: sequenceStepFilterExpression,
-                },
-              ],
+              scope: AudienceFilterScope.UNSPECIFIED,
+              filterExpression: simpleFilterExpression,
             },
           },
         ],
+        /* sequenceFilter: {
+          scope: AudienceFilterScope.WITHIN_SAME_EVENT,
+          sequenceMaximumDuration: '',
+          sequenceSteps: [
+            {
+              scope: AudienceFilterScope.WITHIN_SAME_EVENT,
+              immediatelyFollows: false,
+              constraintDuration: '',
+              filterExpression: sequenceStepFilterExpression,
+            },
+          ],
+        }, */
       },
     ],
   };
@@ -626,7 +638,57 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   /////////////////////////////////////////////////////////////////////
   const form = useForm<Forms>({
     defaultValues: {
-      forms: [formDataDefaults]
+      forms: [formDataDefaults],
+      simpleCards: [
+        {
+          name: "OrCard",
+          nestedArray: [
+            {
+              clauseType: AudienceClauseType.UNSPECIFIED,
+              simpleFilter: {
+                scope: AudienceFilterScope.UNSPECIFIED,
+                filterExpression: simpleFilterExpression,
+              },
+            },
+          ],
+          /* sequenceFilter: {
+            scope: AudienceFilterScope.WITHIN_SAME_EVENT,
+            sequenceMaximumDuration: '',
+            sequenceSteps: [
+              {
+                scope: AudienceFilterScope.WITHIN_SAME_EVENT,
+                immediatelyFollows: false,
+                constraintDuration: '',
+                filterExpression: sequenceStepFilterExpression,
+              },
+            ],
+          }, */
+        },
+        {
+          name: "AndCard",
+          nestedArray: [
+            {
+              clauseType: AudienceClauseType.UNSPECIFIED,
+              simpleFilter: {
+                scope: AudienceFilterScope.UNSPECIFIED,
+                filterExpression: simpleFilterExpression,
+              },
+            },
+          ],
+          /* sequenceFilter: {
+            scope: AudienceFilterScope.WITHIN_SAME_EVENT,
+            sequenceMaximumDuration: '',
+            sequenceSteps: [
+              {
+                scope: AudienceFilterScope.WITHIN_SAME_EVENT,
+                immediatelyFollows: false,
+                constraintDuration: '',
+                filterExpression: sequenceStepFilterExpression,
+              },
+            ],
+          }, */
+        },
+      ],
     },
     resolver: zodResolver(FormsSchema),
   });
@@ -639,30 +701,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     name: 'forms',
   });
 
-  const { fields: simpleFormFields, append: simpleFormAppend, remove: simpleFormRemove } = useFieldArray({
-    control: form.control,
-    name: `forms.${fields.length}.filterClauses`,
-  });
 
-
-
-  /*   
-  
-    const { fields: cardFields, append: cardAppend, remove: cardRemove } = useFieldArray({
-      control: form.control,
-      name: `forms.${fields.length}.filterClauses.${simpleFormFields.length}.parentCardArray.${simpleFormFields.length}.simpleFilter.simpleCardArray.${simpleFormFields.length}.filterExpression.andGroup.filterExpressions`,
-    });
-  
-    const { fields: cardOrFields, append: cardOrAppend, remove: cardOrRemove } = useFieldArray({
-      control: form.control,
-      name: `forms.${fields.length}.filterClauses.${simpleFormFields.length}.parentCardArray.${simpleFormFields.length}.simpleFilter.simpleCardArray.${simpleFormFields.length}.filterExpression.orGroup.filterExpressions`,
-    });
-   */
-
-  /*    const { fields, remove, append } = useFieldArray({
-      control,
-      name: `forms[${nestIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions`,
-    }); */
   //////////////////////////////////////////////////////////////////////
   // Form state for step field array
   /////////////////////////////////////////////////////////////////////  
@@ -847,8 +886,200 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     dispatch(decrementStep());
   };
 
+  // Handle form
+  const handleShowForm = (formType: string) => {
+    const newFormGroupId = crypto.randomUUID();
+    const newCardFormId = crypto.randomUUID();
+    const parentId = crypto.randomUUID();
 
+    const newForm: FormIdentifier = {
+      id: newFormGroupId,
+      type: formType,
+      cards: [
+        {
+          id: newCardFormId,
+          type: 'card',
+          parentId: newFormGroupId,
+        },
+      ],
+      parentId,
+      steps: [
+        {
+          id: crypto.randomUUID(),
+          type: 'step',
+          parentId: newFormGroupId,
+          cards: [
+            {
+              id: crypto.randomUUID(),
+              type: 'card',
+              parentId: newFormGroupId,
+            },
+          ],
+        },
+      ],
+    };
 
+    if (formType == 'simple') {
+      // If there's no parent, this is a top-level form group
+      dispatch(setShowSimpleForm([...simpleFormsToShow, newForm]));
+      handleCard(newFormGroupId, 'card');
+    }
+    if (formType == 'sequence') {
+      dispatch(setShowSequenceForm([...sequenceFormsToShow, newForm]));
+      //handleCard(newFormGroupId, 'card');
+      handleShowStep(newFormGroupId, 'step');
+    }
+    if (formType == 'excludeSimple') {
+      // If there's no parent, this is a top-level form group
+      dispatch(setExcludeSimpleForm([...excludeSimpleFormsToShow, newForm]));
+      handleCard(newFormGroupId, 'excludeCard');
+    }
+    if (formType == 'excludeSequence') {
+      dispatch(setExcludeSequenceForm([...excludeSequenceFormsToShow, newForm]));
+      handleCard(newFormGroupId, 'excludeCard');
+      handleShowStep(newFormGroupId, 'excludeStep');
+    }
+    if (formType == 'excludeShowParent') {
+      dispatch(setExcludeParentForm([...showExcludeParent, newForm]));
+      dispatch(setExcludeSimpleForm([...excludeSimpleFormsToShow, newForm]));
+      handleCard(newFormGroupId, 'excludeCard');
+    }
+  };
+
+  const handleRemoveSimpleForm = (formId: string, type: 'include' | 'exclude') => {
+    if (type === 'exclude') {
+      dispatch(removeExcludeSimpleForm(formId));
+      // Check if this was the last excludeSimpleForm and there are no excludeSequenceForms
+      if (excludeSimpleFormsToShow.length === 1 && excludeSequenceFormsToShow.length === 0) {
+        // Dispatch removal of the parent form
+        dispatch(removeExcludeParentForm(showExcludeParent[showExcludeParent.length - 1].id)); // Use actual parentId
+      }
+    } else if (type === 'include') {
+      // Handle include case
+      dispatch(removeSimpleForm(formId));
+    }
+  };
+
+  const handleRemoveSequenceForm = (formId: string, type: 'include' | 'exclude') => {
+    if (type === 'exclude') {
+      // Check if this was the last excludeSequenceForm and there are no excludeSimpleForms
+      if (excludeSequenceFormsToShow.length === 1 && excludeSimpleFormsToShow.length === 0) {
+        // Dispatch removal of the parent form
+        dispatch(removeExcludeParentForm(showExcludeParent[showExcludeParent.length - 1].id)); // Use actual parentId
+      }
+      dispatch(removeExcludeSequenceForm(formId));
+    } else if (type === 'include') {
+      // Handle include case
+      dispatch(removeSequenceForm(formId));
+      dispatch(removeStep(formId));
+      dispatch(removeCard(formId));
+    }
+  };
+
+  const handleCard = (parentId: string, cardType: string) => {
+    if (cardType === 'card' || cardType === 'or') {
+      dispatch(setShowCard({ parentId, cardType }));
+    }
+    if (cardType === 'excludeCard') {
+      dispatch(setShowExcludeCard({ parentId, cardType }));
+    }
+  };
+
+  // A helper function to remove a card and update its parent form if necessary.
+  const removeCardAndUpdateParent = (cards, cardId, removeCardAction, removeParentFormActions) => {
+    dispatch(removeCardAction(cardId)); // Dispatch the action to remove the card.
+
+    const parentFormId = cards.find((card) => card.id === cardId)?.parentId;
+    if (!parentFormId) return; // Early exit if no parent ID is found.
+
+    // Check if there are any remaining cards in this parent form.
+    const remainingCards = cards.filter(
+      (card) => card.parentId === parentFormId && card.id !== cardId
+    );
+    if (remainingCards.length === 0) {
+      // If no remaining cards, remove the parent form.
+      removeParentFormActions.forEach((action) => dispatch(action(parentFormId)));
+    }
+  };
+
+  // Refactored handleRemoveCard using the helper function.
+  const handleRemoveCard = (cardId) => {
+    // Handling for include cards and parent forms.
+    removeCardAndUpdateParent(cardsToShow, cardId, removeCard, [
+      removeSimpleForm,
+      removeSequenceForm,
+    ]);
+
+    // Handling for exclude cards and parent forms.
+    removeCardAndUpdateParent(excludeCardsToShow, cardId, removeExcludeCard, [
+      removeExcludeSimpleForm,
+      removeExcludeSequenceForm,
+    ]);
+  };
+
+  const handleShowStep = (parentId: string, stepType: string) => {
+    const stepId = `step-${crypto.randomUUID()}`;
+    const cardId = `card-${crypto.randomUUID()}`;
+
+    const newForm: StepIdentifier = {
+      id: stepId,
+      type: stepType,
+      parentId,
+      cards: [
+        {
+          id: cardId,
+          type: 'card',
+          parentId: stepId,
+        },
+      ],
+    };
+
+    if (stepType == 'step') {
+      dispatch(setShowStep([...showStep, newForm]));
+      handleCard(stepId, 'card');
+    }
+    if (stepType == 'excludeStep') {
+      dispatch(setShowExcludeStep([...excludeShowStep, newForm]));
+      handleCard(stepId, 'excludeCard');
+    }
+  };
+
+  const handleRemoveStep = (stepId: string, type: 'include' | 'exclude') => {
+    // Determine the parent ID of the step being removed
+    const stepToRemove = (type === 'include' ? showStep : excludeShowStep).find(
+      (step) => step.id === stepId
+    );
+    const parentId = stepToRemove?.parentId;
+
+    if (!parentId) {
+      throw new Error('Parent ID not found for step');
+    }
+
+    // Filter to get the steps that belong to the same parent
+    const stepsOfSameParent = (type === 'include' ? showStep : excludeShowStep).filter(
+      (step) => step.parentId === parentId
+    );
+
+    // If it's the last step in the sequence, remove the sequence form as well
+    if (stepsOfSameParent.length <= 1) {
+      if (type === 'include') {
+        dispatch(removeSequenceForm(parentId));
+      } else if (type === 'exclude') {
+        dispatch(removeExcludeSequenceForm(parentId));
+      }
+    }
+
+    // Proceed to remove the step
+    if (type === 'include') {
+      dispatch(removeStep(stepId));
+    } else if (type === 'exclude') {
+      dispatch(removeExcludeStep(stepId));
+    }
+  };
+
+  const handleRemoveOrForm = (formId) => {
+    dispatch(removeOrForm(formId));
+  };
 
   const renderFilterInput = (filterType, field) => {
     const { register } = useFormContext();
@@ -1081,50 +1312,24 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     );
   };
 
-  const CardForm = ({ parentIndex, nestIndex, control, register, watch }) => {
-    /*     const { fields: cardFields, append: cardAppend, remove: cardRemove } = useFieldArray({
-          control: form.control,
-          name: `forms.${nestIndex}.filterClauses.${nestIndex}.parentCardArray.${nestIndex}.simpleFilter.simpleCardArray.${nestIndex}.filterExpression.andGroup.filterExpressions`,
-        }); */
-
-
-    const { fields: cardFields, append: cardAppend, remove: cardRemove } = useFieldArray({
-      control: form.control,
-      name: `forms.${parentIndex}.filterClauses.${nestIndex}.parentCardArray.${nestIndex}.simpleFilter.simpleCardArray.${nestIndex}.filterExpression.andGroup.filterExpressions`,
+  const CardForm = ({ nestIndex, control, register, watch }) => {
+    const { fields, remove, append } = useFieldArray({
+      control,
+      name: `simpleCards[${nestIndex}].nestedArray`
     });
-
-    const { fields: cardOrFields, append: cardOrAppend, remove: cardOrRemove } = useFieldArray({
-      control: form.control,
-      name: `forms.${parentIndex}.filterClauses.${nestIndex}.parentCardArray.${nestIndex}.simpleFilter.simpleCardArray.${nestIndex}.filterExpression.orGroup.filterExpressions`,
-    });
-
-
-    const handleAddCardForm = () => {
-      cardAppend({
-        clauseType: AudienceClauseType.UNSPECIFIED,
-        simpleFilter: {
-          name: "",
-          simpleCardArray: [
-            {
-              scope: AudienceFilterScope.UNSPECIFIED,
-              filterExpression: simpleFilterExpression,
-            }
-          ]
-        },
-      });
-    };
 
     return (
-      <>
+      <Card>
 
         {
-          cardFields.map((field, index) => {
+          fields.map((field, index) => {
+
             const selectedCategory = watch(
-              `forms[${parentIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.category`
+              `simpleCards[${nestIndex}].nestedArray[${index}].simpleFilter.filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.category`
             );
 
             const selectedItem = watch(
-              `forms[${parentIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.fieldName`
+              `simpleCards[${nestIndex}].nestedArray[${index}].simpleFilter.filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.fieldName`
             );
 
 
@@ -1132,7 +1337,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
               parentCategory.categories.map((category) => ({
                 ...category,
                 parentName: parentCategory.name,
-                id: `${parentCategory.name} - ${category.name}`,
+                id: `${parentCategory.name}-${category.name}`,
               }))
             );
 
@@ -1140,172 +1345,150 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
             const inputItem = inputCategory?.items.find((item) => item.apiName === selectedItem);
 
             return (
-
-              <Card>
-                <CardContent key={field.id}>
-                  {/*  {index > 0 && (
-                    <div className="relative border-t border-dashed my-8 flex justify-center">
-                      <div className="absolute -bottom-3 left-5">
-                        <Badge variant="secondary">OR</Badge>
-                      </div>
-                    </div>
-                  )} */}
-                  <div className="flex items-center justify-between mt-5">
-                    <div className="flex flex-row md:space-x-4 w-full">
-                      <div className="basis-11/12">
-                        <div>
-                          <div className="flex space-x-4">
-                            <FormField
-                              control={control}
-                              name={`forms[${nestIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.category`}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormControl>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Select Category" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {combinedCategories.map((parentCategory) => (
-                                          <SelectGroup key={parentCategory.name}>
-                                            <SelectLabel>{parentCategory.name}</SelectLabel>
-                                            {parentCategory.categories.map((category) => (
-                                              <SelectItem
-                                                {...register(`forms[${nestIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.category`)}
-                                                key={`${parentCategory.name} - ${category.name}`}
-                                                value={`${parentCategory.name} - ${category.name}`}
-                                              >
-                                                {category.name}
-                                              </SelectItem>
-                                            ))}
-                                          </SelectGroup>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-
-                            <FormField
-                              control={control}
-                              name={`forms[${nestIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.fieldName`}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormControl>
-                                    <Select
-                                      {...register(`forms[${nestIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.fieldName`)}
-                                      {...field}
-                                      disabled={!selectedCategory}
-                                      onValueChange={field.onChange}
-                                      defaultValue={field.value}
-                                    >
-                                      <SelectTrigger className="truncate w-[200px]">
-                                        <SelectValue placeholder="Select Item" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {inputCategory?.items.map((item: any) => (
-                                          <SelectItem key={item.apiName} value={item.apiName}>
-                                            {item.uiName}
-                                          </SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
-                          <div>
-                            {inputItem && (
-                              <FormField
-                                control={control}
-                                name={`simpleCards[${nestIndex}].nestedArray[${index}].simpleFilter.filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.${filterTypeMapping[inputItem.apiName] ||
-                                  filterTypeMapping[inputItem.category] ||
-                                  'stringFilter'
-                                  }`}
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>Filter</FormLabel>
-                                    <FormControl>
-                                      {/* Render the appropriate filter input based on the filterType */}
-                                      {renderFilterInput(
-                                        filterTypeMapping[inputItem.apiName] ||
-                                        filterTypeMapping[inputItem.category] ||
-                                        'stringFilter',
-                                        field
-                                      )}
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="basis-1/12">
-                        <Button
-                          className="flex items-center space-x-2 text-blue-500"
-                          variant="ghost"
-                          onClick={() =>
-                            cardAppend({
-                              clauseType: AudienceClauseType.UNSPECIFIED,
-                              simpleFilter: {
-                                name: "",
-                                simpleCardArray: [
-                                  {
-                                    scope: AudienceFilterScope.UNSPECIFIED,
-                                    filterExpression: simpleFilterExpression,
-                                  }
-                                ]
-                              }
-                            })
-                          }
-
-                        >
-                          Or
-                        </Button>
-                      </div>
-
-                      <div className="basis-1/12">
-                        <Button variant="outline" size="icon" onClick={() => cardRemove(index)}>
-                          <Cross2Icon className="text-gray-400" />
-                        </Button>
-                      </div>
+              <CardContent key={field.id}>
+                {index > 0 && (
+                  <div className="relative border-t border-dashed my-8 flex justify-center">
+                    <div className="absolute -bottom-3 left-5">
+                      <Badge variant="secondary">OR</Badge>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                )}
+                <div className="flex items-center justify-between mt-5">
+                  <div className="flex flex-row md:space-x-4 w-full">
+                    <div className="basis-11/12">
+                      <div>
+                        <div className="flex space-x-4">
+                          <FormField
+                            control={control}
+                            name={selectedCategory}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select Category" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {combinedCategories.map((parentCategory) => (
+                                        <SelectGroup key={parentCategory.name}>
+                                          <SelectLabel>{parentCategory.name}</SelectLabel>
+                                          {parentCategory.categories.map((category) => (
+                                            <SelectItem
+                                              {...register(selectedCategory)}
+                                              key={`${parentCategory.name}-${category.name}`}
+                                              value={`${parentCategory.name}-${category.name}`}
+                                            >
+                                              {category.name}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectGroup>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={control}
+                            name={selectedItem}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <Select
+                                    {...register(selectedItem)}
+                                    {...field}
+                                    disabled={!selectedCategory}
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                  >
+                                    <SelectTrigger className="truncate w-[200px]">
+                                      <SelectValue placeholder="Select Item" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {inputCategory?.items.map((item: any) => (
+                                        <SelectItem key={item.apiName} value={item.apiName}>
+                                          {item.uiName}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        <div>
+                          {inputItem && (
+                            <FormField
+                              control={control}
+                              name={`simpleCards[${nestIndex}].nestedArray[${index}].simpleFilter.filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.${filterTypeMapping[inputItem.apiName] ||
+                                filterTypeMapping[inputItem.category] ||
+                                'stringFilter'
+                                }`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Filter</FormLabel>
+                                  <FormControl>
+                                    {/* Render the appropriate filter input based on the filterType */}
+                                    {renderFilterInput(
+                                      filterTypeMapping[inputItem.apiName] ||
+                                      filterTypeMapping[inputItem.category] ||
+                                      'stringFilter',
+                                      field
+                                    )}
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="basis-1/12">
+                      <Button
+                        className="flex items-center space-x-2 text-blue-500"
+                        variant="ghost"
+                        onClick={() =>
+                          append({
+                            clauseType: AudienceClauseType.UNSPECIFIED,
+                            simpleFilter: {
+                              scope: AudienceFilterScope.UNSPECIFIED,
+                              filterExpression: simpleFilterExpression,
+                            },
+                          })}
+                      >
+                        Or
+                      </Button>
+                    </div>
+
+                    <div className="basis-1/12">
+                      <Button variant="outline" size="icon" onClick={() => remove(index)}>
+                        <Cross2Icon className="text-gray-400" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
             )
           })
         }
-
-
-
-        <div className="mt-5">
-          <Button
-            className="flex items-center space-x-2"
-            onClick={handleAddCardForm}
-          >
-            <PlusIcon className="text-white" />
-            <span>And</span>
-          </Button>
-        </div>
-      </>
+      </Card>
     );
   };
 
-  const simpleForm = ({ control, register, defaultValues, watch, setValue, getValues, formIndex }) => {
-
+  const simpleForm = ({ control, register, watch, setValue, getValues }) => {
+    console.log("control", control);
 
     return (
       <>
-        {simpleFormFields.map((field, index) => (
-          <div key={field.id}>
+        {simpleFormsToShow.map((formInfo, index) => (
+          <div key={formInfo.id}>
             {index > 0 && (
               <div className="w-10 flex flex-col items-center justify-center space-y-2">
                 <div className="h-5">
@@ -1326,13 +1509,13 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                     <UserPlusIcon className="text-gray-600" />
                     <FormField
                       control={control}
-                      name={`forms.[${formIndex}].filterClauses.parentCardArray[${index}].simpleFilter.simpleCardArray[${index}].scope`}
+                      name={`forms.${currentFormIndex}.filterClauses.simpleFilter.scope`}
                       render={({ field }) => (
                         <FormItem>
                           <FormControl>
                             <Select
                               {...register(
-                                `forms.[${formIndex}].filterClauses.parentCardArray[${index}].simpleFilter.simpleCardArray[${index}].scope`
+                                `forms.${currentFormIndex}.filterClauses.simpleFilter.scope`
                               )}
                               {...field}
                               onValueChange={field.onChange}
@@ -1358,7 +1541,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => simpleFormRemove(index)}
+                      onClick={() => handleRemoveSimpleForm(formInfo.id, 'include')}
                     >
                       <TrashIcon className="text-gray-400" />
                     </Button>
@@ -1367,41 +1550,34 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
               </CardHeader>
 
               <CardContent>
-
-
-                {/*                 {index > 0 && (
-                  <div className="w-10 flex flex-col items-center justify-center space-y-2">
-                    <div className="h-5">
-                      <Separator orientation="vertical" />
+                {fields
+                  .map((card, index) => (
+                    <div key={card.id}>
+                      {index > 0 && (
+                        <div className="w-10 flex flex-col items-center justify-center space-y-2">
+                          <div className="h-5">
+                            <Separator orientation="vertical" />
+                          </div>
+                          <Badge variant="secondary">AND</Badge>
+                          <div className="h-5">
+                            <Separator orientation="vertical" />
+                          </div>
+                        </div>
+                      )}
+                      {/*  {CardForm()} */}
+                      <CardForm nestIndex={index} {...{ control, register, watch }} />
                     </div>
-                    <Badge variant="secondary">AND</Badge>
-                    <div className="h-5">
-                      <Separator orientation="vertical" />
-                    </div>
-                  </div>
-                )}
- */}
+                  ))}
 
-                {/*         <div key={field.id}>
-                  <CardForm nestIndex={index} {...{ control, register, watch }} />
+                <div className="mt-5">
+                  <Button
+                    className="flex items-center space-x-2"
+                    onClick={() => addOrCard()}
+                  >
+                    <PlusIcon className="text-white" />
+                    <span>And</span>
+                  </Button>
                 </div>
- */}
-                {/*        {
-                  cardFields.map((card, index) => {
-                    return (
-                      <div key={card.id}>
-                        <CardForm nestIndex={index} {...{ control, register, watch }} />
-                      </div>
-                    )
-                  })} */}
-
-
-                <CardForm parentIndex={formIndex} nestIndex={index} {...{ control, register, watch }} />
-
-
-
-
-
               </CardContent>
             </Card>
           </div>
@@ -1864,338 +2040,368 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     );
   };
 
-
-  const addConditionGroup = () => {
-    simpleFormAppend({
-      name: '',
-      parentCardArray: [
-        {
-          clauseType: AudienceClauseType.UNSPECIFIED,
-          simpleFilter: {
-            name: '',
-            simpleCardArray: [
-              {
-                scope: AudienceFilterScope.UNSPECIFIED,
-                filterExpression: simpleFilterExpression,
-              }
-            ]
-          }
-        }
-      ]
-    });
-  };
-
-
-
   return (
     <div className="flex h-full">
-
       <div className="flex items-center justify-center h-screen mx-auto">
         {currentStep === 1 && (
-          <div className="flex items-center justify-center h-screen mx-auto">
-            <Form {...formCreateAmount}>
-              <form className="w-full space-y-6">
-                {/* Amount selection logic */}
-                <FormField
-                  control={formCreateAmount.control}
-                  name="amount"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>How many users do you want to add?</FormLabel>
-                      <Select
-                        onValueChange={(value) => {
-                          handleAmountChange(value);
-                        }}
-                        defaultValue={count.toString()}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select the amount of conversion events you want to create." />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {Array.from({ length: remainingCreate }, (_, i) => (
-                            <SelectItem key={i} value={`${i + 1}`}>
-                              {i + 1}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormItem>
-                  )}
-                />
-                <Button type="button" onClick={handleNext}>
-                  Next
-                </Button>
-
-              </form>
-            </Form>
-          </div>
+          <Form {...formCreateAmount}>
+            <form className="w-full space-y-6">
+              {/* Amount selection logic */}
+              <FormField
+                control={formCreateAmount.control}
+                name="amount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>How many users do you want to add?</FormLabel>
+                    <Select
+                      onValueChange={(value) => {
+                        handleAmountChange(value); // Call the modified handler
+                      }}
+                      defaultValue={count.toString()}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select the amount of conversion events you want to create." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {Array.from({ length: remainingCreate }, (_, i) => (
+                          <SelectItem key={i} value={`${i + 1}`}>
+                            {i + 1}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )}
+              />
+              <Button type="button" onClick={handleNext}>
+                Next
+              </Button>
+            </form>
+          </Form>
         )}
       </div>
 
+      {currentStep > 1 && (
+        <div className="w-full flex justify-center mx-auto">
+          {fields.length >= currentStep - 1 && (
+            <div
+              key={fields[currentFormIndex].id}
+              className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
+            >
+              <div className="max-w-xl mx-auto">
+                <h1>Audience {currentStep - 1}</h1>
+                <div className="mt-12">
+                  {/* Form */}
 
-      {fields.map((item, index) => {
+                  <Form {...form}>
+                    <form
+                      onSubmit={form.handleSubmit(processForm)}
+                      id={`createAudience-${currentStep - 1}`}
+                      className="space-y-6"
+                    >
+                      {(() => {
+                        return (
+                          <>
+                            <div className="flex flex-col md:flex-row md:space-x-4">
+                              <div className="w-full md:basis-1/3">
+                                <FormField
+                                  control={form.control}
+                                  name={`forms.${currentFormIndex}.displayName`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Audience Name</FormLabel>
+                                      <FormDescription>
+                                        This is the audience event name you want to create.
+                                      </FormDescription>
+                                      <FormControl>
+                                        <Input
+                                          placeholder="Audience name"
+                                          {...form.register(
+                                            `forms.${currentFormIndex}.displayName`
+                                          )}
+                                          {...field}
+                                        />
+                                      </FormControl>
 
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
 
-        return (
+                              <div className="w-full md:basis-1/3">
+                                <FormField
+                                  control={form.control}
+                                  name={`forms.${currentFormIndex}.description`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Description</FormLabel>
+                                      <FormDescription>
+                                        This is the description of the audience event you want to
+                                        add.
+                                      </FormDescription>
+                                      <FormControl>
+                                        <Input
+                                          placeholder="Audience description"
+                                          {...form.register(
+                                            `forms.${currentFormIndex}.description`
+                                          )}
+                                          {...field}
+                                        />
+                                      </FormControl>
 
-          <React.Fragment key={item.id}>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+                              <div className="w-full md:basis-1/3">
+                                <FormField
+                                  control={form.control}
+                                  name={`forms.${currentFormIndex}.membershipDurationDays`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Membership Duration Days</FormLabel>
+                                      <FormDescription>
+                                        Required. Immutable. The duration a user should stay in an
+                                        Audience. It cannot be set to more than 540 days.
+                                      </FormDescription>
+                                      <FormControl>
+                                        <Input
+                                          type="number"
+                                          placeholder="Membership Duration Days"
+                                          {...form.register(
+                                            `forms.${currentFormIndex}.membershipDurationDays`
+                                          )}
+                                          {...field}
+                                          max={540}
+                                          min={1}
+                                        />
+                                      </FormControl>
 
-
-
-
-            {currentStep > 1 && index === currentStep - 2 && (
-
-
-
-              <div className="w-full flex justify-center mx-auto">
-                {fields.length >= currentStep - 1 && (
-                  <div
-                    key={item.id}
-                    className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-                  >
-                    <div className="max-w-xl mx-auto">
-                      <h1>Audience {index}</h1>
-                      <div className="mt-12">
-                        {/* Form */}
-
-                        <Form {...form}>
-                          <form
-                            onSubmit={form.handleSubmit(processForm)}
-                            id={`createAudience - ${index - 1} `}
-                            className="space-y-6"
-                          >
-                            {(() => {
-                              return (
-                                <>
-                                  <div className="flex flex-col md:flex-row md:space-x-4">
-                                    <div className="w-full md:basis-1/3">
-                                      <FormField
-                                        control={form.control}
-                                        name={`forms.${index}.displayName`}
-                                        render={({ field }) => (
-                                          <FormItem>
-                                            <FormLabel>Audience Name</FormLabel>
-                                            <FormDescription>
-                                              This is the audience event name you want to create.
-                                            </FormDescription>
-                                            <FormControl>
-                                              <Input
-                                                placeholder="Audience name"
-                                                {...form.register(
-                                                  `forms.${index}.displayName`
-                                                )}
-                                                {...field}
-                                              />
-                                            </FormControl>
-
-                                            <FormMessage />
-                                          </FormItem>
-                                        )}
-                                      />
-                                    </div>
-
-                                    <div className="w-full md:basis-1/3">
-                                      <FormField
-                                        control={form.control}
-                                        name={`forms.${index}.description`}
-                                        render={({ field }) => (
-                                          <FormItem>
-                                            <FormLabel>Description</FormLabel>
-                                            <FormDescription>
-                                              This is the description of the audience event you want to
-                                              add.
-                                            </FormDescription>
-                                            <FormControl>
-                                              <Input
-                                                placeholder="Audience description"
-                                                {...form.register(
-                                                  `forms.${index}.description`
-                                                )}
-                                                {...field}
-                                              />
-                                            </FormControl>
-
-                                            <FormMessage />
-                                          </FormItem>
-                                        )}
-                                      />
-                                    </div>
-                                    <div className="w-full md:basis-1/3">
-                                      <FormField
-                                        control={form.control}
-                                        name={`forms.${index}.membershipDurationDays`}
-                                        render={({ field }) => (
-                                          <FormItem>
-                                            <FormLabel>Membership Duration Days</FormLabel>
-                                            <FormDescription>
-                                              Required. Immutable. The duration a user should stay in an
-                                              Audience. It cannot be set to more than 540 days.
-                                            </FormDescription>
-                                            <FormControl>
-                                              <Input
-                                                type="number"
-                                                placeholder="Membership Duration Days"
-                                                {...form.register(
-                                                  `forms.${index}.membershipDurationDays`
-                                                )}
-                                                {...field}
-                                                max={540}
-                                                min={1}
-                                              />
-                                            </FormControl>
-
-                                            <FormMessage />
-                                          </FormItem>
-                                        )}
-                                      />
-                                    </div>
-                                  </div>
-
-
-
-                                  {
-                                    simpleForm({
-                                      control: form.control,
-                                      register: form.register,
-                                      defaultValues: formDataDefaults,
-                                      watch: form.watch,
-                                      setValue: form.setValue,
-                                      getValues: form.getValues,
-                                      formIndex: index,
-                                      /* errors: form.errors, */
-                                      /*  fields: form,
-                                       append: (value) => simpleFormAppend({ name: '', parentCardArray: [value] }, index),
-                                       remove: (index) => simpleFormRemove(index), */
-                                    })
-                                  }
-
-
-
-
-                                  <div className="flex items-center justify-between mt-6">
-                                    <Button
-                                      className="flex items-center space-x-2"
-                                      variant="secondary"
-                                      onClick={addConditionGroup}
-                                    >
-                                      <PlusIcon className="text-white" />
-                                      <span>Add condition group to include</span>
-                                    </Button>
-                                    <Button
-                                      className="flex items-center space-x-2"
-                                      variant="secondary"
-                                      onClick={() => handleShowForm('sequence')}
-                                    >
-                                      <BarChartIcon className="text-white" />
-                                      <span>Add sequence to include</span>
-                                    </Button>
-                                  </div>
-
-
-
-                                  <div className="flex flex-col md:flex-row md:space-x-4">
-                                    <div className="w-full md:basis-auto">
-                                      <FormField
-                                        control={form.control}
-                                        name={`forms.${index}.account`}
-                                        render={() => (
-                                          <FormItem>
-                                            <div className="mb-4">
-                                              <FormLabel className="text-base">
-                                                Account and Property Selection
-                                              </FormLabel>
-                                              <FormDescription>
-                                                Which account and property do you want to create the
-                                                audience for?
-                                              </FormDescription>
-                                            </div>
-                                            {uniqueData.map((item) => (
-                                              <FormField
-                                                key={item.id}
-                                                control={form.control}
-                                                name={`forms.${index}.account`}
-                                                render={({ field }) => {
-                                                  return (
-                                                    <FormItem
-                                                      key={item.id}
-                                                      className="flex flex-row items-start space-x-3 space-y-0"
-                                                    >
-                                                      <FormControl>
-                                                        <Checkbox
-                                                          checked={
-                                                            Array.isArray(field.value) &&
-                                                            field.value.includes(item.id)
-                                                          }
-                                                          onCheckedChange={(checked) => {
-                                                            return checked
-                                                              ? field.onChange([
-                                                                ...(Array.isArray(field.value)
-                                                                  ? field.value
-                                                                  : []),
-                                                                item.id,
-                                                              ])
-                                                              : field.onChange(
-                                                                (Array.isArray(field.value)
-                                                                  ? field.value
-                                                                  : []
-                                                                ).filter((value) => value !== item.id)
-                                                              );
-                                                          }}
-                                                        />
-                                                      </FormControl>
-                                                      <FormLabel className="text-sm font-normal">
-                                                        {item.label}
-                                                      </FormLabel>
-                                                    </FormItem>
-                                                  );
-                                                }}
-                                              />
-                                            ))}
-                                            <FormMessage />
-                                          </FormItem>
-                                        )}
-                                      />
-                                    </div>
-                                  </div>
-                                </>
-                              );
-                            })()}
-
-                            <div className="flex justify-between">
-                              {index > 1 && (
-                                <Button type="button" onClick={handlePrevious}>
-                                  Previous
-                                </Button>
-                              )}
-
-                              {index < count ? (
-                                <Button type="button" onClick={handleNext}>
-                                  Next
-                                </Button>
-                              ) : (
-                                <Button type="submit">{loading ? 'Submitting...' : 'Submit'}</Button>
-                              )}
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
                             </div>
-                          </form>
-                        </Form>
 
-                        {/* End Form */}
+                            <div className="max-w-4xl mx-auto p-5">
+                              {/* {simpleForm(form)} */}
+
+                              {/* <simpleForm
+                                {...{ form.control, form.register, form.defaultValues, form.watch, form.getValues, form.setValue, form.errors }}
+                              /> */}
+
+                              {simpleForm({
+                                control: form.control,
+                                register: form.register,
+                                watch: form.watch,
+                                setValue: form.setValue,
+                                getValues: form.getValues,
+                              })
+                              }
+
+
+                              {simpleFormsToShow.length > 0 && sequenceFormsToShow.length > 0 && (
+                                <div className="w-10 flex flex-col items-center justify-center space-y-2">
+                                  <div className="h-5">
+                                    <Separator orientation="vertical" />
+                                  </div>
+                                  <Badge variant="secondary">AND</Badge>
+                                  <div className="h-5">
+                                    <Separator orientation="vertical" />
+                                  </div>
+                                </div>
+                              )}
+
+                              {sequenceForm()}
+
+                              <div className="flex items-center justify-between mt-6">
+                                <Button
+                                  className="flex items-center space-x-2"
+                                  variant="secondary"
+                                  onClick={() => append(formDataDefaults)}
+                                >
+                                  <PlusIcon className="text-white" />
+                                  <span>Add condition group to include</span>
+                                </Button>
+                                <Button
+                                  className="flex items-center space-x-2"
+                                  variant="secondary"
+                                  onClick={() => handleShowForm('sequence')}
+                                >
+                                  <BarChartIcon className="text-white" />
+                                  <span>Add sequence to include</span>
+                                </Button>
+                              </div>
+                            </div>
+
+                            <div className="max-w-4xl mx-auto pl-5">
+                              <div className="flex items-center justify-between">
+                                {showExcludeParent.length === 0 && (
+                                  <div className="flex items-center justify-between">
+                                    <Button
+                                      className="flex items-center space-x-2"
+                                      variant="secondary"
+                                      onClick={() => handleShowForm('excludeShowParent')}
+                                    >
+                                      <ValueNoneIcon className="text-red" />
+                                      <span>Add group to exclude</span>
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {showExcludeParent.map((form, index) => (
+                              <div className="max-w-4xl mx-auto p-5">
+                                <div className="flex items-center">
+                                  <div className="flex basis-9 mb-5">
+                                    <Select>
+                                      <SelectTrigger id="user-action">
+                                        <SelectValue placeholder="Select action" />
+                                      </SelectTrigger>
+                                      <SelectContent position="popper">
+                                        <SelectItem value="created">Created</SelectItem>
+                                        <SelectItem value="updated">Updated</SelectItem>
+                                        <SelectItem value="deleted">Deleted</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                </div>
+
+                                {excludeSimpleForm()}
+
+                                {excludeSimpleFormsToShow.length > 0 &&
+                                  excludeSequenceFormsToShow.length > 0 && (
+                                    <div className="w-10 flex flex-col items-center justify-center space-y-2">
+                                      <div className="h-5">
+                                        <Separator orientation="vertical" />
+                                      </div>
+                                      <Badge variant="secondary">AND</Badge>
+                                      <div className="h-5">
+                                        <Separator orientation="vertical" />
+                                      </div>
+                                    </div>
+                                  )}
+
+                                {excludeSequenceForm()}
+
+                                <div className="flex items-center justify-between mt-6">
+                                  <Button
+                                    className="flex items-center space-x-2"
+                                    variant="secondary"
+                                    onClick={() => handleShowForm('excludeSimple')}
+                                  >
+                                    <PlusIcon className="text-white" />
+                                    <span>Add condition group to exclude</span>
+                                  </Button>
+                                  <Button
+                                    className="flex items-center space-x-2"
+                                    variant="secondary"
+                                    onClick={() => handleShowForm('excludeSequence')}
+                                  >
+                                    <BarChartIcon className="text-white" />
+                                    <span>Add sequence to exclude</span>
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+
+                            <div className="flex flex-col md:flex-row md:space-x-4">
+                              <div className="w-full md:basis-auto">
+                                <FormField
+                                  control={form.control}
+                                  name={`forms.${currentFormIndex}.account`}
+                                  render={() => (
+                                    <FormItem>
+                                      <div className="mb-4">
+                                        <FormLabel className="text-base">
+                                          Account and Property Selection
+                                        </FormLabel>
+                                        <FormDescription>
+                                          Which account and property do you want to create the
+                                          audience for?
+                                        </FormDescription>
+                                      </div>
+                                      {uniqueData.map((item) => (
+                                        <FormField
+                                          key={item.id}
+                                          control={form.control}
+                                          name={`forms.${currentFormIndex}.account`}
+                                          render={({ field }) => {
+                                            return (
+                                              <FormItem
+                                                key={item.id}
+                                                className="flex flex-row items-start space-x-3 space-y-0"
+                                              >
+                                                <FormControl>
+                                                  <Checkbox
+                                                    checked={
+                                                      Array.isArray(field.value) &&
+                                                      field.value.includes(item.id)
+                                                    }
+                                                    onCheckedChange={(checked) => {
+                                                      return checked
+                                                        ? field.onChange([
+                                                          ...(Array.isArray(field.value)
+                                                            ? field.value
+                                                            : []),
+                                                          item.id,
+                                                        ])
+                                                        : field.onChange(
+                                                          (Array.isArray(field.value)
+                                                            ? field.value
+                                                            : []
+                                                          ).filter((value) => value !== item.id)
+                                                        );
+                                                    }}
+                                                  />
+                                                </FormControl>
+                                                <FormLabel className="text-sm font-normal">
+                                                  {item.label}
+                                                </FormLabel>
+                                              </FormItem>
+                                            );
+                                          }}
+                                        />
+                                      ))}
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+                            </div>
+                          </>
+                        );
+                      })()}
+
+                      <div className="flex justify-between">
+                        <Button type="button" onClick={handlePrevious}>
+                          Previous
+                        </Button>
+
+                        {currentStep - 1 < count ? (
+                          <Button type="button" onClick={handleNext}>
+                            Next
+                          </Button>
+                        ) : (
+                          <Button type="submit">{loading ? 'Submitting...' : 'Submit'}</Button>
+                        )}
                       </div>
-                    </div>
-                  </div>
-                )}
+                    </form>
+                  </Form>
+
+                  {/* End Form */}
+                </div>
               </div>
-
-
-
-            )}
-          </React.Fragment>
-        );
-      })}
-
-
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

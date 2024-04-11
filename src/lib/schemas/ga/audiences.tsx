@@ -81,6 +81,7 @@ const AudienceFilterExpressionListSchema = z.object({
 });
 
 const AudienceDimensionOrMetricFilterSchema = z.object({
+  category: z.string(),
   fieldName: z.string(),
   atAnyPointInTime: z.boolean().optional(),
   inAnyNDayPeriod: z.number().optional(),
@@ -95,12 +96,15 @@ const AudienceEventFilterSchema = z.object({
   eventParameterFilterExpression: AudienceFilterExpressionSchema.optional(),
 });
 
-const AudienceSimpleFilterSchema = z.object({
-  scope: AudienceFilterScope,
-  filterExpression: AudienceFilterExpressionSchema,
+export const AudienceSimpleFilterSchema = z.object({
+  name: z.string(),
+  simpleCardArray: z.array(z.object({
+    scope: AudienceFilterScope,
+    filterExpression: AudienceFilterExpressionSchema,
+  })),
 });
 
-const AudienceSequenceStepSchema = z.object({
+export const AudienceSequenceStepSchema = z.object({
   scope: AudienceFilterScope,
   immediatelyFollows: z.boolean().optional(),
   constraintDuration: z.string().optional(), // This should ideally be validated as a duration
@@ -114,9 +118,12 @@ const AudienceSequenceFilterSchema = z.object({
 });
 
 const AudienceFilterClauseSchema = z.object({
-  clauseType: AudienceClauseType,
-  simpleFilter: AudienceSimpleFilterSchema.optional(),
-  sequenceFilter: AudienceSequenceFilterSchema.optional(),
+  name: z.string(),
+  parentCardArray: z.array(z.object({
+    clauseType: AudienceClauseType,
+    simpleFilter: AudienceSimpleFilterSchema.optional(),
+    sequenceFilter: AudienceSequenceFilterSchema.optional(),
+  })),
 });
 
 const SingleFormSchema = z.object({
@@ -135,7 +142,8 @@ const SingleFormSchema = z.object({
 export const FormCreateAmountSchema = z.object({
   amount: z.number(),
 });
-// If you need to validate an array of CustomConversion objects like in your original FormsSchema
+
+
 export const FormsSchema = z.object({
   forms: z.array(SingleFormSchema),
 });

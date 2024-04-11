@@ -35,8 +35,6 @@ export const ImmediatelyFollows = [
   },
 ];
 
-
-
 export const filterTypeMapping = {
   // Dimensions
   adSourceName: 'stringFilter',

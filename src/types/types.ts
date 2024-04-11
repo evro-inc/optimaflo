@@ -53,7 +53,7 @@ export interface Price {
   products?: Product;
 }
 
-export interface PriceWithProduct extends Price {}
+export interface PriceWithProduct extends Price { }
 
 export interface Subscription {
   id: string /* primary key */;
@@ -537,19 +537,19 @@ export interface AudienceType {
 }
 
 // Enums for various Audience fields
-enum AudienceExclusionDurationMode {
+export enum AudienceExclusionDurationMode {
   UNSPECIFIED = 'AUDIENCE_EXCLUSION_DURATION_MODE_UNSPECIFIED',
   TEMPORARILY = 'EXCLUDE_TEMPORARILY',
   PERMANENTLY = 'EXCLUDE_PERMANENTLY',
 }
 
-enum AudienceClauseType {
+export enum AudienceClauseType {
   UNSPECIFIED = 'AUDIENCE_CLAUSE_TYPE_UNSPECIFIED',
   INCLUDE = 'INCLUDE',
   EXCLUDE = 'EXCLUDE',
 }
 
-enum LogCondition {
+export enum LogCondition {
   UNSPECIFIED = 'LOG_CONDITION_UNSPECIFIED',
   JOINED = 'AUDIENCE_JOINED',
   MEMBERSHIP_RENEWED = 'AUDIENCE_MEMBERSHIP_RENEWED',
@@ -562,19 +562,25 @@ interface AudienceEventTrigger {
 }
 
 // Audience Filter Clause
-interface AudienceFilterClause {
-  clauseType: AudienceClauseType;
-  simpleFilter?: AudienceSimpleFilter;
-  sequenceFilter?: AudienceSequenceFilter;
+export interface AudienceFilterClause {
+  name: string;
+  parentCardArray: [{
+    clauseType: AudienceClauseType;
+    simpleFilter?: AudienceSimpleFilter;
+    sequenceFilter?: AudienceSequenceFilter;
+  }]
 }
 
 // Filters
-interface AudienceSimpleFilter {
-  scope: AudienceFilterScope;
-  filterExpression: AudienceFilterExpression;
+export interface AudienceSimpleFilter {
+  name: string;
+  simpleCardArray: [{
+    scope: AudienceFilterScope;
+    filterExpression: AudienceFilterExpression;
+  }];
 }
 
-enum AudienceFilterScope {
+export enum AudienceFilterScope {
   UNSPECIFIED = 'AUDIENCE_FILTER_SCOPE_UNSPECIFIED',
   WITHIN_SAME_EVENT = 'AUDIENCE_FILTER_SCOPE_WITHIN_SAME_EVENT',
   WITHIN_SAME_SESSION = 'AUDIENCE_FILTER_SCOPE_WITHIN_SAME_SESSION',
@@ -595,7 +601,7 @@ interface AudienceSequenceStep {
 }
 
 // Audience Filter Expression and supporting types
-type AudienceFilterExpression = {
+export type AudienceFilterExpression = {
   andGroup?: AudienceFilterExpressionList;
   orGroup?: AudienceFilterExpressionList;
   notExpression?: AudienceFilterExpression;
@@ -625,7 +631,7 @@ interface StringFilter {
   caseSensitive?: boolean;
 }
 
-enum MatchType {
+export enum MatchType {
   UNSPECIFIED = 'MATCH_TYPE_UNSPECIFIED',
   EXACT = 'EXACT',
   BEGINS_WITH = 'BEGINS_WITH',
@@ -644,7 +650,7 @@ interface NumericFilter {
   value: NumericValue;
 }
 
-enum Operation {
+export enum Operation {
   UNSPECIFIED = 'OPERATION_UNSPECIFIED',
   EQUAL = 'EQUAL',
   LESS_THAN = 'LESS_THAN',
