@@ -1153,13 +1153,23 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
 
         {
           cardFields.map((field, index) => {
-            const selectedCategory = watch(
-              `forms[${parentIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.category`
-            );
+            /*             const selectedCategory = watch(
+                          `forms[${parentIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.category`
+                        );
+            
+                        const selectedItem = watch(
+                          `forms[${parentIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.fieldName`
+                        );
+             */
 
-            const selectedItem = watch(
-              `forms[${parentIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.fieldName`
-            );
+
+            const categoryFieldName = `forms[${parentIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${index}].dimensionOrMetricFilter.category`;
+
+            const fieldName = `forms[${parentIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${index}].dimensionOrMetricFilter.fieldName`;
+
+            // Watch the specific category and item for this field
+            const selectedCategory = watch(categoryFieldName);
+            const selectedItem = watch(fieldName);
 
 
             const flattenedCategories = combinedCategories.flatMap((parentCategory) =>
@@ -1191,7 +1201,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                           <div className="flex space-x-4">
                             <FormField
                               control={control}
-                              name={`forms[${nestIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.category`}
+                              name={categoryFieldName}
                               render={({ field }) => (
                                 <FormItem>
                                   <FormControl>
@@ -1205,7 +1215,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                             <SelectLabel>{parentCategory.name}</SelectLabel>
                                             {parentCategory.categories.map((category) => (
                                               <SelectItem
-                                                {...register(`forms[${nestIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.category`)}
+                                                {...register(categoryFieldName)}
                                                 key={`${parentCategory.name} - ${category.name}`}
                                                 value={`${parentCategory.name} - ${category.name}`}
                                               >
@@ -1224,12 +1234,12 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
 
                             <FormField
                               control={control}
-                              name={`forms[${nestIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.fieldName`}
+                              name={fieldName}
                               render={({ field }) => (
                                 <FormItem>
                                   <FormControl>
                                     <Select
-                                      {...register(`forms[${nestIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.fieldName`)}
+                                      {...register(fieldName)}
                                       {...field}
                                       disabled={!selectedCategory}
                                       onValueChange={field.onChange}
@@ -1280,117 +1290,130 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                           </div>
                         </div>
 
-                        {cardOrFields.map((orField, orIndex) => (
-                          <div key={orField.id} className="flex items-center space-x-4">
+                        {cardOrFields.map((orField, orIndex) => {
+
+                          // Generate unique names for each select based on the field's index and orIndex
+                          const orCategoryFieldName = `forms[${parentIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.orGroup.filterExpressions[${orIndex}].dimensionOrMetricFilter.category`;
+                          const orFieldName = `forms[${parentIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.orGroup.filterExpressions[${orIndex}].dimensionOrMetricFilter.fieldName`;
+
+                          // Watch the specific category and item for this OrField
+                          const selectedOrCategory = watch(orCategoryFieldName);
+                          const selectedOrItem = watch(orFieldName);
+
+                          const inputOrCategory = flattenedCategories.find((category) => category.id === selectedOrCategory);
+                          const inputOrItem = inputOrCategory?.items.find((item) => item.apiName === selectedOrItem);
+
+                          return (
+                            <div key={orField.id} className="flex items-center space-x-4">
 
 
-                            <div>
-                              <div className="flex space-x-4">
-                                <FormField
-                                  control={control}
-                                  name={`forms[${nestIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.category`}
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormControl>
-                                        <Select onValueChange={orField.onChange} defaultValue={orField.value}>
-                                          <SelectTrigger>
-                                            <SelectValue placeholder="Select Category" />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            {combinedCategories.map((parentCategory) => (
-                                              <SelectGroup key={parentCategory.name}>
-                                                <SelectLabel>{parentCategory.name}</SelectLabel>
-                                                {parentCategory.categories.map((category) => (
-                                                  <SelectItem
-                                                    {...register(`forms[${nestIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.category`)}
-                                                    key={`${parentCategory.name} - ${category.name}`}
-                                                    value={`${parentCategory.name} - ${category.name}`}
-                                                  >
-                                                    {category.name}
-                                                  </SelectItem>
-                                                ))}
-                                              </SelectGroup>
-                                            ))}
-                                          </SelectContent>
-                                        </Select>
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-
-                                <FormField
-                                  control={control}
-                                  name={`forms[${nestIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.fieldName`}
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormControl>
-                                        <Select
-                                          {...register(`forms[${nestIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.fieldName`)}
-                                          {...orField}
-                                          disabled={!selectedCategory}
-                                          onValueChange={orField.onChange}
-                                          defaultValue={orField.value}
-                                        >
-                                          <SelectTrigger className="truncate w-[200px]">
-                                            <SelectValue placeholder="Select Item" />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            {inputCategory?.items.map((item: any) => (
-                                              <SelectItem key={item.apiName} value={item.apiName}>
-                                                {item.uiName}
-                                              </SelectItem>
-                                            ))}
-                                          </SelectContent>
-                                        </Select>
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                              </div>
                               <div>
-                                {inputItem && (
+                                <div className="flex space-x-4">
                                   <FormField
                                     control={control}
-                                    name={`simpleCards[${nestIndex}].nestedArray[${index}].simpleFilter.filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.${filterTypeMapping[inputItem.apiName] ||
-                                      filterTypeMapping[inputItem.category] ||
-                                      'stringFilter'
-                                      }`}
+                                    name={orCategoryFieldName}
                                     render={({ field }) => (
                                       <FormItem>
-                                        <FormLabel>Filter</FormLabel>
                                         <FormControl>
-                                          {/* Render the appropriate filter input based on the filterType */}
-                                          {renderFilterInput(
-                                            filterTypeMapping[inputItem.apiName] ||
-                                            filterTypeMapping[inputItem.category] ||
-                                            'stringFilter',
-                                            orField
-                                          )}
+                                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <SelectTrigger>
+                                              <SelectValue placeholder="Select Category" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              {combinedCategories.map((parentCategory) => (
+                                                <SelectGroup key={parentCategory.name}>
+                                                  <SelectLabel>{parentCategory.name}</SelectLabel>
+                                                  {parentCategory.categories.map((category) => (
+                                                    <SelectItem
+                                                      {...register(orCategoryFieldName)}
+                                                      key={`${parentCategory.name} - ${category.name}`}
+                                                      value={`${parentCategory.name} - ${category.name}`}
+                                                    >
+                                                      {category.name}
+                                                    </SelectItem>
+                                                  ))}
+                                                </SelectGroup>
+                                              ))}
+                                            </SelectContent>
+                                          </Select>
                                         </FormControl>
                                         <FormMessage />
                                       </FormItem>
                                     )}
                                   />
-                                )}
+
+                                  <FormField
+                                    control={control}
+                                    name={orFieldName}
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormControl>
+                                          <Select
+                                            {...register(orFieldName)}
+                                            {...field}
+                                            disabled={!selectedOrCategory}
+                                            onValueChange={field.onChange}
+                                            defaultValue={field.value}
+                                          >
+                                            <SelectTrigger className="truncate w-[200px]">
+                                              <SelectValue placeholder="Select Item" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              {inputOrCategory?.items.map((item: any) => (
+                                                <SelectItem key={item.apiName} value={item.apiName}>
+                                                  {item.uiName}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectContent>
+                                          </Select>
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                </div>
+                                <div>
+                                  {inputOrItem && (
+                                    <FormField
+                                      control={control}
+                                      name={`simpleCards[${nestIndex}].nestedArray[${index}].simpleFilter.filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.${filterTypeMapping[inputOrItem.apiName] ||
+                                        filterTypeMapping[inputOrItem.category] ||
+                                        'stringFilter'
+                                        }`}
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>Filter</FormLabel>
+                                          <FormControl>
+                                            {/* Render the appropriate filter input based on the filterType */}
+                                            {renderFilterInput(
+                                              filterTypeMapping[inputOrItem.apiName] ||
+                                              filterTypeMapping[inputOrItem.category] ||
+                                              'stringFilter',
+                                              orField
+                                            )}
+                                          </FormControl>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                  )}
+                                </div>
                               </div>
+                              <div className="flex-shrink-0">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => cardOrRemove(orIndex)}
+                                >
+                                  <Cross2Icon className="text-gray-400" />
+                                </Button>
+                              </div>
+
+
+
                             </div>
-                            <div className="flex-shrink-0">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => cardOrRemove(orIndex)}
-                              >
-                                <Cross2Icon className="text-gray-400" />
-                              </Button>
-                            </div>
-
-
-
-                          </div>
-
-                        ))}
+                          )
+                        })}
                       </div>
 
 
