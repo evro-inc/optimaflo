@@ -162,7 +162,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   const notFoundError = useSelector(selectTable).notFoundError;
   const router = useRouter();
 
-
   // Dimensions
   const categorizedDimensions = dimensions.reduce((acc, item) => {
     const categoryIndex = acc.findIndex((cat) => cat.name === item.category);
@@ -580,18 +579,18 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     exclusionDurationMode: AudienceExclusionDurationMode.UNSPECIFIED,
     filterClauses: [
       {
-        name: "",
+        name: '',
         parentCardArray: [
           {
             clauseType: AudienceClauseType.UNSPECIFIED,
             simpleFilter: {
-              name: "",
+              name: '',
               simpleCardArray: [
                 {
                   scope: AudienceFilterScope.UNSPECIFIED,
                   filterExpression: simpleFilterExpression,
-                }
-              ]
+                },
+              ],
             },
             sequenceFilter: {
               scope: AudienceFilterScope.WITHIN_SAME_EVENT,
@@ -626,7 +625,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   /////////////////////////////////////////////////////////////////////
   const form = useForm<Forms>({
     defaultValues: {
-      forms: [formDataDefaults]
+      forms: [formDataDefaults],
     },
     resolver: zodResolver(FormsSchema),
   });
@@ -639,12 +638,14 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     name: 'forms',
   });
 
-  const { fields: simpleFormFields, append: simpleFormAppend, remove: simpleFormRemove } = useFieldArray({
+  const {
+    fields: simpleFormFields,
+    append: simpleFormAppend,
+    remove: simpleFormRemove,
+  } = useFieldArray({
     control: form.control,
     name: `forms.${fields.length}.filterClauses`,
   });
-
-
 
   /*   
   
@@ -665,7 +666,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     }); */
   //////////////////////////////////////////////////////////////////////
   // Form state for step field array
-  /////////////////////////////////////////////////////////////////////  
+  /////////////////////////////////////////////////////////////////////
   useEffect(() => {
     const amount = parseInt(formCreateAmount.getValues('amount').toString());
     dispatch(setCount(amount));
@@ -684,10 +685,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
 
   const removeForm = (index) => {
     remove(index);
-  }
-
-
-
+  };
 
   const currentFormIndex = currentStep - 2;
 
@@ -846,9 +844,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   const handlePrevious = () => {
     dispatch(decrementStep());
   };
-
-
-
 
   const renderFilterInput = (filterType, field) => {
     const { register } = useFormContext();
@@ -1087,210 +1082,358 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
           name: `forms.${nestIndex}.filterClauses.${nestIndex}.parentCardArray.${nestIndex}.simpleFilter.simpleCardArray.${nestIndex}.filterExpression.andGroup.filterExpressions`,
         }); */
 
-
-    const { fields: cardFields, append: cardAppend, remove: cardRemove } = useFieldArray({
+    const {
+      fields: cardFields,
+      append: cardAppend,
+      remove: cardRemove,
+    } = useFieldArray({
       control: form.control,
       name: `forms.${parentIndex}.filterClauses.${nestIndex}.parentCardArray.${nestIndex}.simpleFilter.simpleCardArray.${nestIndex}.filterExpression.andGroup.filterExpressions`,
     });
 
-    const { fields: cardOrFields, append: cardOrAppend, remove: cardOrRemove } = useFieldArray({
+    const {
+      fields: cardOrFields,
+      append: cardOrAppend,
+      remove: cardOrRemove,
+    } = useFieldArray({
       control: form.control,
       name: `forms.${parentIndex}.filterClauses.${nestIndex}.parentCardArray.${nestIndex}.simpleFilter.simpleCardArray.${nestIndex}.filterExpression.orGroup.filterExpressions`,
     });
-
 
     const handleAddCardForm = () => {
       cardAppend({
         clauseType: AudienceClauseType.UNSPECIFIED,
         simpleFilter: {
-          name: "",
+          name: '',
           simpleCardArray: [
             {
               scope: AudienceFilterScope.UNSPECIFIED,
               filterExpression: simpleFilterExpression,
-            }
-          ]
+            },
+          ],
         },
       });
     };
 
+    const handleAddOrField = () => {
+      cardOrAppend({
+        // Define the structure of the new "Or" field here
+        // Example structure, adjust according to your needs
+        clauseType: AudienceClauseType.UNSPECIFIED,
+        simpleFilter: {
+          name: '',
+          simpleCardArray: [
+            {
+              scope: AudienceFilterScope.UNSPECIFIED,
+              filterExpression: simpleFilterExpression,
+            },
+          ],
+        },
+      });
+    };
+
+    const handleRemoveCardForm = (index) => {
+      console.log('index', index);
+      console.log('cardFields', cardFields);
+      console.log('cardOrFields', cardOrFields);
+
+      // if cardFields and cardOrFields are empty, remove the parent card
+      if (cardFields.length === 1 && cardOrFields.length === 0) {
+        simpleFormRemove(index);
+      } else {
+        cardOrRemove(index);
+      }
+    };
+
     return (
       <>
+        {cardFields.map((field, index) => {
+          const selectedCategory = watch(
+            `forms[${parentIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.category`
+          );
 
-        {
-          cardFields.map((field, index) => {
-            const selectedCategory = watch(
-              `forms[${parentIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.category`
-            );
+          const selectedItem = watch(
+            `forms[${parentIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.fieldName`
+          );
 
-            const selectedItem = watch(
-              `forms[${parentIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.fieldName`
-            );
+          const flattenedCategories = combinedCategories.flatMap((parentCategory) =>
+            parentCategory.categories.map((category) => ({
+              ...category,
+              parentName: parentCategory.name,
+              id: `${parentCategory.name} - ${category.name}`,
+            }))
+          );
 
+          const inputCategory = flattenedCategories.find(
+            (category) => category.id === selectedCategory
+          );
+          const inputItem = inputCategory?.items.find((item) => item.apiName === selectedItem);
 
-            const flattenedCategories = combinedCategories.flatMap((parentCategory) =>
-              parentCategory.categories.map((category) => ({
-                ...category,
-                parentName: parentCategory.name,
-                id: `${parentCategory.name} - ${category.name}`,
-              }))
-            );
-
-            const inputCategory = flattenedCategories.find((category) => category.id === selectedCategory);
-            const inputItem = inputCategory?.items.find((item) => item.apiName === selectedItem);
-
-            return (
-
-              <Card>
-                <CardContent key={field.id}>
-                  {/*  {index > 0 && (
+          return (
+            <Card key={field.id}>
+              <CardContent>
+                {/*  {index > 0 && (
                     <div className="relative border-t border-dashed my-8 flex justify-center">
                       <div className="absolute -bottom-3 left-5">
                         <Badge variant="secondary">OR</Badge>
                       </div>
                     </div>
                   )} */}
-                  <div className="flex items-center justify-between mt-5">
-                    <div className="flex flex-row md:space-x-4 w-full">
-                      <div className="basis-11/12">
-                        <div>
-                          <div className="flex space-x-4">
-                            <FormField
-                              control={control}
-                              name={`forms[${nestIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.category`}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormControl>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Select Category" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {combinedCategories.map((parentCategory) => (
-                                          <SelectGroup key={parentCategory.name}>
-                                            <SelectLabel>{parentCategory.name}</SelectLabel>
-                                            {parentCategory.categories.map((category) => (
-                                              <SelectItem
-                                                {...register(`forms[${nestIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.category`)}
-                                                key={`${parentCategory.name} - ${category.name}`}
-                                                value={`${parentCategory.name} - ${category.name}`}
-                                              >
-                                                {category.name}
-                                              </SelectItem>
-                                            ))}
-                                          </SelectGroup>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
+                <div className="flex items-center justify-between mt-5">
+                  <div className="flex flex-row md:space-x-4 w-full">
+                    <div>
+                      <div>
+                        <div className="flex space-x-4">
+                          <FormField
+                            control={control}
+                            name={`forms[${nestIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.category`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select Category" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {combinedCategories.map((parentCategory) => (
+                                        <SelectGroup key={parentCategory.name}>
+                                          <SelectLabel>{parentCategory.name}</SelectLabel>
+                                          {parentCategory.categories.map((category) => (
+                                            <SelectItem
+                                              {...register(
+                                                `forms[${nestIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.category`
+                                              )}
+                                              key={`${parentCategory.name} - ${category.name}`}
+                                              value={`${parentCategory.name} - ${category.name}`}
+                                            >
+                                              {category.name}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectGroup>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
 
+                          <FormField
+                            control={control}
+                            name={`forms[${nestIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.fieldName`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <Select
+                                    {...register(
+                                      `forms[${nestIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.fieldName`
+                                    )}
+                                    {...field}
+                                    disabled={!selectedCategory}
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                  >
+                                    <SelectTrigger className="truncate w-[200px]">
+                                      <SelectValue placeholder="Select Item" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {inputCategory?.items.map((item: any) => (
+                                        <SelectItem key={item.apiName} value={item.apiName}>
+                                          {item.uiName}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        <div>
+                          {inputItem && (
                             <FormField
                               control={control}
-                              name={`forms[${nestIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.fieldName`}
+                              name={`simpleCards[${nestIndex}].nestedArray[${index}].simpleFilter.filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.${
+                                filterTypeMapping[inputItem.apiName] ||
+                                filterTypeMapping[inputItem.category] ||
+                                'stringFilter'
+                              }`}
                               render={({ field }) => (
                                 <FormItem>
+                                  <FormLabel>Filter</FormLabel>
                                   <FormControl>
-                                    <Select
-                                      {...register(`forms[${nestIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.fieldName`)}
-                                      {...field}
-                                      disabled={!selectedCategory}
-                                      onValueChange={field.onChange}
-                                      defaultValue={field.value}
-                                    >
-                                      <SelectTrigger className="truncate w-[200px]">
-                                        <SelectValue placeholder="Select Item" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {inputCategory?.items.map((item: any) => (
-                                          <SelectItem key={item.apiName} value={item.apiName}>
-                                            {item.uiName}
-                                          </SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
-                          <div>
-                            {inputItem && (
-                              <FormField
-                                control={control}
-                                name={`simpleCards[${nestIndex}].nestedArray[${index}].simpleFilter.filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.${filterTypeMapping[inputItem.apiName] ||
-                                  filterTypeMapping[inputItem.category] ||
-                                  'stringFilter'
-                                  }`}
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>Filter</FormLabel>
-                                    <FormControl>
-                                      {/* Render the appropriate filter input based on the filterType */}
-                                      {renderFilterInput(
-                                        filterTypeMapping[inputItem.apiName] ||
+                                    {/* Render the appropriate filter input based on the filterType */}
+                                    {renderFilterInput(
+                                      filterTypeMapping[inputItem.apiName] ||
                                         filterTypeMapping[inputItem.category] ||
                                         'stringFilter',
-                                        field
-                                      )}
+                                      field
+                                    )}
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          )}
+                        </div>
+                      </div>
+
+                      {cardOrFields.map((orField, orIndex) => (
+                        <div key={orField.id} className="flex items-center space-x-4">
+                          <div>
+                            <div className="flex space-x-4">
+                              <FormField
+                                control={control}
+                                name={`forms[${nestIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${orIndex}].orGroup.filterExpressions[${orIndex}].dimensionOrMetricFilter.category`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormControl>
+                                      <Select
+                                        onValueChange={field.onChange}
+                                        defaultValue={field.value}
+                                      >
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Select Category" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {combinedCategories.map((parentCategory) => (
+                                            <SelectGroup key={parentCategory.name}>
+                                              <SelectLabel>{parentCategory.name}</SelectLabel>
+                                              {parentCategory.categories.map((category) => (
+                                                <SelectItem
+                                                  {...register(
+                                                    `forms[${nestIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${orIndex}].orGroup.filterExpressions[${orIndex}].dimensionOrMetricFilter.category`
+                                                  )}
+                                                  key={`${parentCategory.name} - ${category.name}`}
+                                                  value={`${parentCategory.name} - ${category.name}`}
+                                                >
+                                                  {category.name}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectGroup>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
                                     </FormControl>
                                     <FormMessage />
                                   </FormItem>
                                 )}
                               />
-                            )}
+
+                              <FormField
+                                control={control}
+                                name={`forms[${nestIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${orIndex}].orGroup.filterExpressions[${orIndex}].dimensionOrMetricFilter.fieldName`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormControl>
+                                      <Select
+                                        {...register(
+                                          `forms[${nestIndex}].filterClauses[${nestIndex}].parentCardArray[${nestIndex}].simpleFilter.simpleCardArray[${nestIndex}].filterExpression.andGroup.filterExpressions[${orIndex}].orGroup.filterExpressions[${orIndex}].dimensionOrMetricFilter.fieldName`
+                                        )}
+                                        {...field}
+                                        disabled={!selectedCategory}
+                                        onValueChange={field.onChange}
+                                        defaultValue={field.value}
+                                      >
+                                        <SelectTrigger className="truncate w-[200px]">
+                                          <SelectValue placeholder="Select Item" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {inputCategory?.items.map((item: any) => (
+                                            <SelectItem key={item.apiName} value={item.apiName}>
+                                              {item.uiName}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                            <div>
+                              {inputItem && (
+                                <FormField
+                                  control={control}
+                                  name={`simpleCards[${nestIndex}].nestedArray[${orIndex}].simpleFilter.filterExpression.andGroup.filterExpressions[${orIndex}].orGroup.filterExpressions[${orIndex}].dimensionOrMetricFilter.${
+                                    filterTypeMapping[inputItem.apiName] ||
+                                    filterTypeMapping[inputItem.category] ||
+                                    'stringFilter'
+                                  }`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Filter</FormLabel>
+                                      <FormControl>
+                                        {/* Render the appropriate filter input based on the filterType */}
+                                        {renderFilterInput(
+                                          filterTypeMapping[inputItem.apiName] ||
+                                            filterTypeMapping[inputItem.category] ||
+                                            'stringFilter',
+                                          orField
+                                        )}
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex-shrink-0">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => cardOrRemove(orIndex)}
+                            >
+                              <Cross2Icon className="text-gray-400" />
+                            </Button>
                           </div>
                         </div>
-                      </div>
+                      ))}
+                    </div>
 
-                      <div className="basis-1/12">
-                        <Button
-                          className="flex items-center space-x-2 text-blue-500"
-                          variant="ghost"
-                          onClick={() =>
-                            cardAppend({
-                              clauseType: AudienceClauseType.UNSPECIFIED,
-                              simpleFilter: {
-                                name: "",
-                                simpleCardArray: [
-                                  {
-                                    scope: AudienceFilterScope.UNSPECIFIED,
-                                    filterExpression: simpleFilterExpression,
-                                  }
-                                ]
-                              }
-                            })
-                          }
+                    <div className=" flex justify-end">
+                      <Button
+                        className="flex items-center space-x-2 text-blue-500"
+                        variant="ghost"
+                        onClick={() =>
+                          cardOrAppend({
+                            clauseType: AudienceClauseType.UNSPECIFIED,
+                            simpleFilter: {
+                              name: '',
+                              simpleCardArray: [
+                                {
+                                  scope: AudienceFilterScope.UNSPECIFIED,
+                                  filterExpression: simpleFilterExpression,
+                                },
+                              ],
+                            },
+                          })
+                        }
+                      >
+                        Or
+                      </Button>
 
-                        >
-                          Or
-                        </Button>
-                      </div>
-
-                      <div className="basis-1/12">
-                        <Button variant="outline" size="icon" onClick={() => cardRemove(index)}>
-                          <Cross2Icon className="text-gray-400" />
-                        </Button>
-                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemoveCardForm(index)}
+                      >
+                        <Cross2Icon className="text-gray-400" />
+                      </Button>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            )
-          })
-        }
-
-
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
 
         <div className="mt-5">
-          <Button
-            className="flex items-center space-x-2"
-            onClick={handleAddCardForm}
-          >
+          <Button className="flex items-center space-x-2" onClick={handleAddCardForm}>
             <PlusIcon className="text-white" />
             <span>And</span>
           </Button>
@@ -1299,9 +1442,15 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     );
   };
 
-  const simpleForm = ({ control, register, defaultValues, watch, setValue, getValues, formIndex }) => {
-
-
+  const simpleForm = ({
+    control,
+    register,
+    defaultValues,
+    watch,
+    setValue,
+    getValues,
+    formIndex,
+  }) => {
     return (
       <>
         {simpleFormFields.map((field, index) => (
@@ -1355,11 +1504,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                     />
 
                     <Separator orientation="vertical" />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => simpleFormRemove(index)}
-                    >
+                    <Button variant="ghost" size="icon" onClick={() => simpleFormRemove(index)}>
                       <TrashIcon className="text-gray-400" />
                     </Button>
                   </div>
@@ -1367,8 +1512,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
               </CardHeader>
 
               <CardContent>
-
-
                 {/*                 {index > 0 && (
                   <div className="w-10 flex flex-col items-center justify-center space-y-2">
                     <div className="h-5">
@@ -1395,13 +1538,11 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                     )
                   })} */}
 
-
-                <CardForm parentIndex={formIndex} nestIndex={index} {...{ control, register, watch }} />
-
-
-
-
-
+                <CardForm
+                  parentIndex={formIndex}
+                  nestIndex={index}
+                  {...{ control, register, watch }}
+                />
               </CardContent>
             </Card>
           </div>
@@ -1509,8 +1650,8 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                           </div>
                         </div>
                       ) : // This part of the ternary operator needs to render something or nothing for subsequent steps.
-                        // If there's no specific content needed for subsequent steps, you can return null or omit this part.
-                        null}
+                      // If there's no specific content needed for subsequent steps, you can return null or omit this part.
+                      null}
 
                       <div className="flex items-center w-full mt-5">
                         <div className="basis-3/12">
@@ -1864,7 +2005,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     );
   };
 
-
   const addConditionGroup = () => {
     simpleFormAppend({
       name: '',
@@ -1877,19 +2017,16 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
               {
                 scope: AudienceFilterScope.UNSPECIFIED,
                 filterExpression: simpleFilterExpression,
-              }
-            ]
-          }
-        }
-      ]
+              },
+            ],
+          },
+        },
+      ],
     });
   };
 
-
-
   return (
     <div className="flex h-full">
-
       <div className="flex items-center justify-center h-screen mx-auto">
         {currentStep === 1 && (
           <div className="flex items-center justify-center h-screen mx-auto">
@@ -1927,34 +2064,19 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                 <Button type="button" onClick={handleNext}>
                   Next
                 </Button>
-
               </form>
             </Form>
           </div>
         )}
       </div>
 
-
       {fields.map((item, index) => {
-
-
         return (
-
           <React.Fragment key={item.id}>
-
-
-
-
             {currentStep > 1 && index === currentStep - 2 && (
-
-
-
               <div className="w-full flex justify-center mx-auto">
                 {fields.length >= currentStep - 1 && (
-                  <div
-                    key={item.id}
-                    className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-                  >
+                  <div key={item.id} className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
                     <div className="max-w-xl mx-auto">
                       <h1>Audience {index}</h1>
                       <div className="mt-12">
@@ -1983,9 +2105,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                             <FormControl>
                                               <Input
                                                 placeholder="Audience name"
-                                                {...form.register(
-                                                  `forms.${index}.displayName`
-                                                )}
+                                                {...form.register(`forms.${index}.displayName`)}
                                                 {...field}
                                               />
                                             </FormControl>
@@ -2004,15 +2124,13 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                           <FormItem>
                                             <FormLabel>Description</FormLabel>
                                             <FormDescription>
-                                              This is the description of the audience event you want to
-                                              add.
+                                              This is the description of the audience event you want
+                                              to add.
                                             </FormDescription>
                                             <FormControl>
                                               <Input
                                                 placeholder="Audience description"
-                                                {...form.register(
-                                                  `forms.${index}.description`
-                                                )}
+                                                {...form.register(`forms.${index}.description`)}
                                                 {...field}
                                               />
                                             </FormControl>
@@ -2030,8 +2148,9 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                           <FormItem>
                                             <FormLabel>Membership Duration Days</FormLabel>
                                             <FormDescription>
-                                              Required. Immutable. The duration a user should stay in an
-                                              Audience. It cannot be set to more than 540 days.
+                                              Required. Immutable. The duration a user should stay
+                                              in an Audience. It cannot be set to more than 540
+                                              days.
                                             </FormDescription>
                                             <FormControl>
                                               <Input
@@ -2053,26 +2172,19 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                     </div>
                                   </div>
 
-
-
-                                  {
-                                    simpleForm({
-                                      control: form.control,
-                                      register: form.register,
-                                      defaultValues: formDataDefaults,
-                                      watch: form.watch,
-                                      setValue: form.setValue,
-                                      getValues: form.getValues,
-                                      formIndex: index,
-                                      /* errors: form.errors, */
-                                      /*  fields: form,
+                                  {simpleForm({
+                                    control: form.control,
+                                    register: form.register,
+                                    defaultValues: formDataDefaults,
+                                    watch: form.watch,
+                                    setValue: form.setValue,
+                                    getValues: form.getValues,
+                                    formIndex: index,
+                                    /* errors: form.errors, */
+                                    /*  fields: form,
                                        append: (value) => simpleFormAppend({ name: '', parentCardArray: [value] }, index),
                                        remove: (index) => simpleFormRemove(index), */
-                                    })
-                                  }
-
-
-
+                                  })}
 
                                   <div className="flex items-center justify-between mt-6">
                                     <Button
@@ -2092,8 +2204,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                       <span>Add sequence to include</span>
                                     </Button>
                                   </div>
-
-
 
                                   <div className="flex flex-col md:flex-row md:space-x-4">
                                     <div className="w-full md:basis-auto">
@@ -2131,17 +2241,19 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                                           onCheckedChange={(checked) => {
                                                             return checked
                                                               ? field.onChange([
-                                                                ...(Array.isArray(field.value)
-                                                                  ? field.value
-                                                                  : []),
-                                                                item.id,
-                                                              ])
+                                                                  ...(Array.isArray(field.value)
+                                                                    ? field.value
+                                                                    : []),
+                                                                  item.id,
+                                                                ])
                                                               : field.onChange(
-                                                                (Array.isArray(field.value)
-                                                                  ? field.value
-                                                                  : []
-                                                                ).filter((value) => value !== item.id)
-                                                              );
+                                                                  (Array.isArray(field.value)
+                                                                    ? field.value
+                                                                    : []
+                                                                  ).filter(
+                                                                    (value) => value !== item.id
+                                                                  )
+                                                                );
                                                           }}
                                                         />
                                                       </FormControl>
@@ -2175,7 +2287,9 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                   Next
                                 </Button>
                               ) : (
-                                <Button type="submit">{loading ? 'Submitting...' : 'Submit'}</Button>
+                                <Button type="submit">
+                                  {loading ? 'Submitting...' : 'Submit'}
+                                </Button>
                               )}
                             </div>
                           </form>
@@ -2187,15 +2301,10 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                   </div>
                 )}
               </div>
-
-
-
             )}
           </React.Fragment>
         );
       })}
-
-
     </div>
   );
 };

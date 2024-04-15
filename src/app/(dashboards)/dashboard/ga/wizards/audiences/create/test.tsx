@@ -597,7 +597,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     exclusionDurationMode: AudienceExclusionDurationMode.UNSPECIFIED,
     filterClauses: [
       {
-        name: "",
+        name: '',
         nestedArray: [
           {
             clauseType: AudienceClauseType.UNSPECIFIED,
@@ -641,7 +641,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
       forms: [formDataDefaults],
       simpleCards: [
         {
-          name: "OrCard",
+          name: 'OrCard',
           nestedArray: [
             {
               clauseType: AudienceClauseType.UNSPECIFIED,
@@ -665,7 +665,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
           }, */
         },
         {
-          name: "AndCard",
+          name: 'AndCard',
           nestedArray: [
             {
               clauseType: AudienceClauseType.UNSPECIFIED,
@@ -701,10 +701,9 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     name: 'forms',
   });
 
-
   //////////////////////////////////////////////////////////////////////
   // Form state for step field array
-  /////////////////////////////////////////////////////////////////////  
+  /////////////////////////////////////////////////////////////////////
   useEffect(() => {
     const amount = parseInt(formCreateAmount.getValues('amount').toString());
     dispatch(setCount(amount));
@@ -723,10 +722,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
 
   const removeForm = (index) => {
     remove(index);
-  }
-
-
-
+  };
 
   const currentFormIndex = currentStep - 2;
 
@@ -1315,175 +1311,174 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   const CardForm = ({ nestIndex, control, register, watch }) => {
     const { fields, remove, append } = useFieldArray({
       control,
-      name: `simpleCards[${nestIndex}].nestedArray`
+      name: `simpleCards[${nestIndex}].nestedArray`,
     });
 
     return (
       <Card>
+        {fields.map((field, index) => {
+          const selectedCategory = watch(
+            `simpleCards[${nestIndex}].nestedArray[${index}].simpleFilter.filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.category`
+          );
 
-        {
-          fields.map((field, index) => {
+          const selectedItem = watch(
+            `simpleCards[${nestIndex}].nestedArray[${index}].simpleFilter.filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.fieldName`
+          );
 
-            const selectedCategory = watch(
-              `simpleCards[${nestIndex}].nestedArray[${index}].simpleFilter.filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.category`
-            );
+          const flattenedCategories = combinedCategories.flatMap((parentCategory) =>
+            parentCategory.categories.map((category) => ({
+              ...category,
+              parentName: parentCategory.name,
+              id: `${parentCategory.name}-${category.name}`,
+            }))
+          );
 
-            const selectedItem = watch(
-              `simpleCards[${nestIndex}].nestedArray[${index}].simpleFilter.filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.fieldName`
-            );
+          const inputCategory = flattenedCategories.find(
+            (category) => category.id === selectedCategory
+          );
+          const inputItem = inputCategory?.items.find((item) => item.apiName === selectedItem);
 
-
-            const flattenedCategories = combinedCategories.flatMap((parentCategory) =>
-              parentCategory.categories.map((category) => ({
-                ...category,
-                parentName: parentCategory.name,
-                id: `${parentCategory.name}-${category.name}`,
-              }))
-            );
-
-            const inputCategory = flattenedCategories.find((category) => category.id === selectedCategory);
-            const inputItem = inputCategory?.items.find((item) => item.apiName === selectedItem);
-
-            return (
-              <CardContent key={field.id}>
-                {index > 0 && (
-                  <div className="relative border-t border-dashed my-8 flex justify-center">
-                    <div className="absolute -bottom-3 left-5">
-                      <Badge variant="secondary">OR</Badge>
-                    </div>
-                  </div>
-                )}
-                <div className="flex items-center justify-between mt-5">
-                  <div className="flex flex-row md:space-x-4 w-full">
-                    <div className="basis-11/12">
-                      <div>
-                        <div className="flex space-x-4">
-                          <FormField
-                            control={control}
-                            name={selectedCategory}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormControl>
-                                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select Category" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {combinedCategories.map((parentCategory) => (
-                                        <SelectGroup key={parentCategory.name}>
-                                          <SelectLabel>{parentCategory.name}</SelectLabel>
-                                          {parentCategory.categories.map((category) => (
-                                            <SelectItem
-                                              {...register(selectedCategory)}
-                                              key={`${parentCategory.name}-${category.name}`}
-                                              value={`${parentCategory.name}-${category.name}`}
-                                            >
-                                              {category.name}
-                                            </SelectItem>
-                                          ))}
-                                        </SelectGroup>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={control}
-                            name={selectedItem}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormControl>
-                                  <Select
-                                    {...register(selectedItem)}
-                                    {...field}
-                                    disabled={!selectedCategory}
-                                    onValueChange={field.onChange}
-                                    defaultValue={field.value}
-                                  >
-                                    <SelectTrigger className="truncate w-[200px]">
-                                      <SelectValue placeholder="Select Item" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {inputCategory?.items.map((item: any) => (
-                                        <SelectItem key={item.apiName} value={item.apiName}>
-                                          {item.uiName}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                        <div>
-                          {inputItem && (
-                            <FormField
-                              control={control}
-                              name={`simpleCards[${nestIndex}].nestedArray[${index}].simpleFilter.filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.${filterTypeMapping[inputItem.apiName] ||
-                                filterTypeMapping[inputItem.category] ||
-                                'stringFilter'
-                                }`}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Filter</FormLabel>
-                                  <FormControl>
-                                    {/* Render the appropriate filter input based on the filterType */}
-                                    {renderFilterInput(
-                                      filterTypeMapping[inputItem.apiName] ||
-                                      filterTypeMapping[inputItem.category] ||
-                                      'stringFilter',
-                                      field
-                                    )}
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="basis-1/12">
-                      <Button
-                        className="flex items-center space-x-2 text-blue-500"
-                        variant="ghost"
-                        onClick={() =>
-                          append({
-                            clauseType: AudienceClauseType.UNSPECIFIED,
-                            simpleFilter: {
-                              scope: AudienceFilterScope.UNSPECIFIED,
-                              filterExpression: simpleFilterExpression,
-                            },
-                          })}
-                      >
-                        Or
-                      </Button>
-                    </div>
-
-                    <div className="basis-1/12">
-                      <Button variant="outline" size="icon" onClick={() => remove(index)}>
-                        <Cross2Icon className="text-gray-400" />
-                      </Button>
-                    </div>
+          return (
+            <CardContent key={field.id}>
+              {index > 0 && (
+                <div className="relative border-t border-dashed my-8 flex justify-center">
+                  <div className="absolute -bottom-3 left-5">
+                    <Badge variant="secondary">OR</Badge>
                   </div>
                 </div>
-              </CardContent>
-            )
-          })
-        }
+              )}
+              <div className="flex items-center justify-between mt-5">
+                <div className="flex flex-row md:space-x-4 w-full">
+                  <div className="basis-11/12">
+                    <div>
+                      <div className="flex space-x-4">
+                        <FormField
+                          control={control}
+                          name={selectedCategory}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select Category" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {combinedCategories.map((parentCategory) => (
+                                      <SelectGroup key={parentCategory.name}>
+                                        <SelectLabel>{parentCategory.name}</SelectLabel>
+                                        {parentCategory.categories.map((category) => (
+                                          <SelectItem
+                                            {...register(selectedCategory)}
+                                            key={`${parentCategory.name}-${category.name}`}
+                                            value={`${parentCategory.name}-${category.name}`}
+                                          >
+                                            {category.name}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectGroup>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={control}
+                          name={selectedItem}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <Select
+                                  {...register(selectedItem)}
+                                  {...field}
+                                  disabled={!selectedCategory}
+                                  onValueChange={field.onChange}
+                                  defaultValue={field.value}
+                                >
+                                  <SelectTrigger className="truncate w-[200px]">
+                                    <SelectValue placeholder="Select Item" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {inputCategory?.items.map((item: any) => (
+                                      <SelectItem key={item.apiName} value={item.apiName}>
+                                        {item.uiName}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <div>
+                        {inputItem && (
+                          <FormField
+                            control={control}
+                            name={`simpleCards[${nestIndex}].nestedArray[${index}].simpleFilter.filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.${
+                              filterTypeMapping[inputItem.apiName] ||
+                              filterTypeMapping[inputItem.category] ||
+                              'stringFilter'
+                            }`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Filter</FormLabel>
+                                <FormControl>
+                                  {/* Render the appropriate filter input based on the filterType */}
+                                  {renderFilterInput(
+                                    filterTypeMapping[inputItem.apiName] ||
+                                      filterTypeMapping[inputItem.category] ||
+                                      'stringFilter',
+                                    field
+                                  )}
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="basis-1/12">
+                    <Button
+                      className="flex items-center space-x-2 text-blue-500"
+                      variant="ghost"
+                      onClick={() =>
+                        append({
+                          clauseType: AudienceClauseType.UNSPECIFIED,
+                          simpleFilter: {
+                            scope: AudienceFilterScope.UNSPECIFIED,
+                            filterExpression: simpleFilterExpression,
+                          },
+                        })
+                      }
+                    >
+                      Or
+                    </Button>
+                  </div>
+
+                  <div className="basis-1/12">
+                    <Button variant="outline" size="icon" onClick={() => remove(index)}>
+                      <Cross2Icon className="text-gray-400" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          );
+        })}
       </Card>
     );
   };
 
   const simpleForm = ({ control, register, watch, setValue, getValues }) => {
-    console.log("control", control);
+    console.log('control', control);
 
     return (
       <>
@@ -1550,30 +1545,26 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
               </CardHeader>
 
               <CardContent>
-                {fields
-                  .map((card, index) => (
-                    <div key={card.id}>
-                      {index > 0 && (
-                        <div className="w-10 flex flex-col items-center justify-center space-y-2">
-                          <div className="h-5">
-                            <Separator orientation="vertical" />
-                          </div>
-                          <Badge variant="secondary">AND</Badge>
-                          <div className="h-5">
-                            <Separator orientation="vertical" />
-                          </div>
+                {fields.map((card, index) => (
+                  <div key={card.id}>
+                    {index > 0 && (
+                      <div className="w-10 flex flex-col items-center justify-center space-y-2">
+                        <div className="h-5">
+                          <Separator orientation="vertical" />
                         </div>
-                      )}
-                      {/*  {CardForm()} */}
-                      <CardForm nestIndex={index} {...{ control, register, watch }} />
-                    </div>
-                  ))}
+                        <Badge variant="secondary">AND</Badge>
+                        <div className="h-5">
+                          <Separator orientation="vertical" />
+                        </div>
+                      </div>
+                    )}
+                    {/*  {CardForm()} */}
+                    <CardForm nestIndex={index} {...{ control, register, watch }} />
+                  </div>
+                ))}
 
                 <div className="mt-5">
-                  <Button
-                    className="flex items-center space-x-2"
-                    onClick={() => addOrCard()}
-                  >
+                  <Button className="flex items-center space-x-2" onClick={() => addOrCard()}>
                     <PlusIcon className="text-white" />
                     <span>And</span>
                   </Button>
@@ -1685,8 +1676,8 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                           </div>
                         </div>
                       ) : // This part of the ternary operator needs to render something or nothing for subsequent steps.
-                        // If there's no specific content needed for subsequent steps, you can return null or omit this part.
-                        null}
+                      // If there's no specific content needed for subsequent steps, you can return null or omit this part.
+                      null}
 
                       <div className="flex items-center w-full mt-5">
                         <div className="basis-3/12">
@@ -2201,9 +2192,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                 watch: form.watch,
                                 setValue: form.setValue,
                                 getValues: form.getValues,
-                              })
-                              }
-
+                              })}
 
                               {simpleFormsToShow.length > 0 && sequenceFormsToShow.length > 0 && (
                                 <div className="w-10 flex flex-col items-center justify-center space-y-2">
@@ -2347,17 +2336,17 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                                     onCheckedChange={(checked) => {
                                                       return checked
                                                         ? field.onChange([
-                                                          ...(Array.isArray(field.value)
-                                                            ? field.value
-                                                            : []),
-                                                          item.id,
-                                                        ])
+                                                            ...(Array.isArray(field.value)
+                                                              ? field.value
+                                                              : []),
+                                                            item.id,
+                                                          ])
                                                         : field.onChange(
-                                                          (Array.isArray(field.value)
-                                                            ? field.value
-                                                            : []
-                                                          ).filter((value) => value !== item.id)
-                                                        );
+                                                            (Array.isArray(field.value)
+                                                              ? field.value
+                                                              : []
+                                                            ).filter((value) => value !== item.id)
+                                                          );
                                                     }}
                                                   />
                                                 </FormControl>

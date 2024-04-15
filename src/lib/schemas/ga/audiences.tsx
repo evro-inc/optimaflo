@@ -98,10 +98,12 @@ const AudienceEventFilterSchema = z.object({
 
 export const AudienceSimpleFilterSchema = z.object({
   name: z.string(),
-  simpleCardArray: z.array(z.object({
-    scope: AudienceFilterScope,
-    filterExpression: AudienceFilterExpressionSchema,
-  })),
+  simpleCardArray: z.array(
+    z.object({
+      scope: AudienceFilterScope,
+      filterExpression: AudienceFilterExpressionSchema,
+    })
+  ),
 });
 
 export const AudienceSequenceStepSchema = z.object({
@@ -119,11 +121,13 @@ const AudienceSequenceFilterSchema = z.object({
 
 const AudienceFilterClauseSchema = z.object({
   name: z.string(),
-  parentCardArray: z.array(z.object({
-    clauseType: AudienceClauseType,
-    simpleFilter: AudienceSimpleFilterSchema.optional(),
-    sequenceFilter: AudienceSequenceFilterSchema.optional(),
-  })),
+  parentCardArray: z.array(
+    z.object({
+      clauseType: AudienceClauseType,
+      simpleFilter: AudienceSimpleFilterSchema.optional(),
+      sequenceFilter: AudienceSequenceFilterSchema.optional(),
+    })
+  ),
 });
 
 const SingleFormSchema = z.object({
@@ -142,7 +146,6 @@ const SingleFormSchema = z.object({
 export const FormCreateAmountSchema = z.object({
   amount: z.number(),
 });
-
 
 export const FormsSchema = z.object({
   forms: z.array(SingleFormSchema),

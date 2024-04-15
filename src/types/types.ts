@@ -53,7 +53,7 @@ export interface Price {
   products?: Product;
 }
 
-export interface PriceWithProduct extends Price { }
+export interface PriceWithProduct extends Price {}
 
 export interface Subscription {
   id: string /* primary key */;
@@ -564,20 +564,24 @@ interface AudienceEventTrigger {
 // Audience Filter Clause
 export interface AudienceFilterClause {
   name: string;
-  parentCardArray: [{
-    clauseType: AudienceClauseType;
-    simpleFilter?: AudienceSimpleFilter;
-    sequenceFilter?: AudienceSequenceFilter;
-  }]
+  parentCardArray: [
+    {
+      clauseType: AudienceClauseType;
+      simpleFilter?: AudienceSimpleFilter;
+      sequenceFilter?: AudienceSequenceFilter;
+    }
+  ];
 }
 
 // Filters
 export interface AudienceSimpleFilter {
   name: string;
-  simpleCardArray: [{
-    scope: AudienceFilterScope;
-    filterExpression: AudienceFilterExpression;
-  }];
+  simpleCardArray: [
+    {
+      scope: AudienceFilterScope;
+      filterExpression: AudienceFilterExpression;
+    }
+  ];
 }
 
 export enum AudienceFilterScope {
