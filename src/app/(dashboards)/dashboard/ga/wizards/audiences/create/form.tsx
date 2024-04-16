@@ -644,7 +644,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     remove: simpleFormRemove,
   } = useFieldArray({
     control: form.control,
-    name: `forms.${fields.length}.filterClauses`,
+    name: `forms.${fields.length}.filterClauses.${fields.length}.parentCardArray.${fields.length}.simpleFilter.simpleCardArray`,
   });
 
   /*   
@@ -1088,70 +1088,71 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
       remove: cardRemove,
     } = useFieldArray({
       control: form.control,
-      name: `forms.${formIndex}.filterClauses.${simpleFormIndex}.parentCardArray.${simpleFormIndex}.simpleFilter.simpleCardArray.${simpleFormIndex}.filterExpression.andGroup.filterExpressions`,
+      name: `forms.${formIndex}.filterClauses.${formIndex}.parentCardArray.${formIndex}.simpleFilter.simpleCardArray`,
     });
 
-    const {
-      fields: cardOrFields,
-      append: cardOrAppend,
-      remove: cardOrRemove,
-    } = useFieldArray({
-      control: form.control,
-      name: `forms.${formIndex}.filterClauses.${simpleFormIndex}.parentCardArray.${simpleFormIndex}.simpleFilter.simpleCardArray.${simpleFormIndex}.filterExpression.orGroup.filterExpressions`,
-    });
+    console.log('cardFields', cardFields);
 
     const handleAddCardForm = () => {
       cardAppend({
-        clauseType: AudienceClauseType.UNSPECIFIED,
-        simpleFilter: {
-          name: '',
-          simpleCardArray: [
-            {
-              scope: AudienceFilterScope.UNSPECIFIED,
-              filterExpression: simpleFilterExpression,
-            },
-          ],
+        scope: AudienceFilterScope.UNSPECIFIED,
+        filterExpression: {
+          clauseType: AudienceClauseType.UNSPECIFIED,
+          simpleFilter: {
+            name: '',
+            simpleCardArray: [
+              {
+                scope: AudienceFilterScope.UNSPECIFIED,
+                filterExpression: simpleFilterExpression,
+              },
+            ],
+          },
         },
       });
-    };
-
-    const handleAddOrField = () => {
-      cardOrAppend({
-        // Define the structure of the new "Or" field here
-        // Example structure, adjust according to your needs
-        clauseType: AudienceClauseType.UNSPECIFIED,
-        simpleFilter: {
-          name: '',
-          simpleCardArray: [
-            {
-              scope: AudienceFilterScope.UNSPECIFIED,
-              filterExpression: simpleFilterExpression,
-            },
-          ],
-        },
-      });
-    };
-
-    const handleRemoveCardForm = (index) => {
-      console.log('index', index);
-      console.log('cardFields', cardFields);
-      console.log('cardOrFields', cardOrFields);
-
-      // if cardFields and cardOrFields are empty, remove the parent card
-      if (cardFields.length === 1 && cardOrFields.length === 0) {
-        simpleFormRemove(index);
-      } else {
-        cardOrRemove(index);
-      }
     };
 
     return (
       <>
-        {cardFields.map((field, index) => {
+        {cardFields.map((field, cardFieldIndex) => {
+          let OrIndex: number;
 
-          const categoryFieldName = `forms[${formIndex}].filterClauses[${simpleFormIndex}].parentCardArray[${simpleFormIndex}].simpleFilter.simpleCardArray[${simpleFormIndex}].filterExpression.andGroup.filterExpressions[${index}].dimensionOrMetricFilter.category`;
+          const {
+            fields: cardOrFields,
+            append: cardOrAppend,
+            remove: cardOrRemove,
+          } = useFieldArray({
+            control,
+            name: `forms[${formIndex}].filterClauses[${formIndex}].parentCardArray[${formIndex}].simpleFilter.simpleCardArray[${cardFieldIndex}].filterExpression.orGroup.filterExpressions`,
+          });
 
-          const fieldName = `forms[${formIndex}].filterClauses[${simpleFormIndex}].parentCardArray[${simpleFormIndex}].simpleFilter.simpleCardArray[${simpleFormIndex}].filterExpression.andGroup.filterExpressions[${index}].dimensionOrMetricFilter.fieldName`;
+          const handleAddOrField = () => {
+            cardOrAppend({
+              // Define the structure of the new "Or" field here
+              // Example structure, adjust according to your needs
+              clauseType: AudienceClauseType.UNSPECIFIED,
+              simpleFilter: {
+                name: '',
+                simpleCardArray: [
+                  {
+                    scope: AudienceFilterScope.UNSPECIFIED,
+                    filterExpression: simpleFilterExpression,
+                  },
+                ],
+              },
+            });
+          };
+
+          const handleRemoveCardForm = (index, OrIndex) => {
+            if (cardOrFields.length > 0) {
+              cardOrRemove(OrIndex);
+            } else {
+              cardRemove(index);
+            }
+          };
+
+          const categoryFieldName = `forms[${formIndex}].filterClauses[${formIndex}].parentCardArray[${formIndex}].simpleFilter.simpleCardArray[${cardFieldIndex}].filterExpression.andGroup.filterExpressions[${cardFieldIndex}].dimensionOrMetricFilter.category`;
+
+          const fieldName = `forms[${formIndex}].filterClauses[${formIndex}].parentCardArray[${formIndex}].simpleFilter.simpleCardArray[${cardFieldIndex}].filterExpression.andGroup.filterExpressions[${cardFieldIndex}].dimensionOrMetricFilter.fieldName`;
 
           // Watch the specific category and item for this field
           const selectedCategory = watch(categoryFieldName);
@@ -1252,10 +1253,15 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                           {inputItem && (
                             <FormField
                               control={control}
-                              name={`simpleCards[${simpleFormIndex}].nestedArray[${index}].simpleFilter.filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.${filterTypeMapping[inputItem.apiName] ||
+                              /* name={`simpleCards[${simpleFormIndex}].nestedArray[${cardFieldIndex}].simpleFilter.filterExpression.andGroup.filterExpressions[${cardFieldIndex}].orGroup.filterExpressions[${cardFieldIndex}].dimensionOrMetricFilter.${filterTypeMapping[inputItem.apiName] ||
                                 filterTypeMapping[inputItem.category] ||
                                 'stringFilter'
-                                }`}
+                                }`} */
+                              name={`forms[${formIndex}].filterClauses[${formIndex}].parentCardArray[${formIndex}].simpleFilter.simpleCardArray[${cardFieldIndex}].filterExpression.andGroup.filterExpressions[${cardFieldIndex}].dimensionOrMetricFilter.${
+                                filterTypeMapping[inputItem.apiName] ||
+                                filterTypeMapping[inputItem.category] ||
+                                'stringFilter'
+                              }`}
                               render={({ field }) => (
                                 <FormItem>
                                   <FormLabel>Filter</FormLabel>
@@ -1263,8 +1269,8 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                     {/* Render the appropriate filter input based on the filterType */}
                                     {renderFilterInput(
                                       filterTypeMapping[inputItem.apiName] ||
-                                      filterTypeMapping[inputItem.category] ||
-                                      'stringFilter',
+                                        filterTypeMapping[inputItem.category] ||
+                                        'stringFilter',
                                       field
                                     )}
                                   </FormControl>
@@ -1276,10 +1282,15 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                         </div>
                       </div>
 
-                      {cardOrFields.map((orField, orIndex) => {
+                      {/* ///////////////////////////////////////////////
+                      // OR FIELDS                     
+                      ///////////////////////////////////////////////*/}
+                      {cardOrFields.map((orField, orFieldIndex) => {
+                        OrIndex = orFieldIndex;
+
                         // Generate unique names for each select based on the field's index and orIndex
-                        const orCategoryFieldName = `forms[${formIndex}].filterClauses[${simpleFormIndex}].parentCardArray[${simpleFormIndex}].simpleFilter.simpleCardArray[${simpleFormIndex}].filterExpression.orGroup.filterExpressions[${orIndex}].dimensionOrMetricFilter.category`;
-                        const orFieldName = `forms[${formIndex}].filterClauses[${simpleFormIndex}].parentCardArray[${simpleFormIndex}].simpleFilter.simpleCardArray[${simpleFormIndex}].filterExpression.orGroup.filterExpressions[${orIndex}].dimensionOrMetricFilter.fieldName`;
+                        const orCategoryFieldName = `forms[${formIndex}].filterClauses[${formIndex}].parentCardArray[${formIndex}].simpleFilter.simpleCardArray[${cardFieldIndex}].filterExpression.orGroup.filterExpressions[${orFieldIndex}].dimensionOrMetricFilter.category`;
+                        const orFieldName = `forms[${formIndex}].filterClauses[${simpleFormIndex}].parentCardArray[${cardFieldIndex}].simpleFilter.simpleCardArray[${cardFieldIndex}].filterExpression.orGroup.filterExpressions[${orFieldIndex}].dimensionOrMetricFilter.fieldName`;
 
                         // Watch the specific category and item for this OrField
                         const selectedOrCategory = watch(orCategoryFieldName);
@@ -1293,7 +1304,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                         );
 
                         return (
-                          <div key={orField.id} className="flex items-center space-x-4">
+                          <CardContent key={orField.id} className="flex items-center space-x-4">
                             <div>
                               <div className="flex space-x-4">
                                 <FormField
@@ -1366,10 +1377,11 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                 {inputOrItem && (
                                   <FormField
                                     control={control}
-                                    name={`simpleCards[${simpleFormIndex}].nestedArray[${index}].simpleFilter.filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.${filterTypeMapping[inputOrItem.apiName] ||
+                                    name={`simpleCards[${simpleFormIndex}].nestedArray[${index}].simpleFilter.filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.${
+                                      filterTypeMapping[inputOrItem.apiName] ||
                                       filterTypeMapping[inputOrItem.category] ||
                                       'stringFilter'
-                                      }`}
+                                    }`}
                                     render={({ field }) => (
                                       <FormItem>
                                         <FormLabel>Filter</FormLabel>
@@ -1377,8 +1389,8 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                           {/* Render the appropriate filter input based on the filterType */}
                                           {renderFilterInput(
                                             filterTypeMapping[inputOrItem.apiName] ||
-                                            filterTypeMapping[inputOrItem.category] ||
-                                            'stringFilter',
+                                              filterTypeMapping[inputOrItem.category] ||
+                                              'stringFilter',
                                             orField
                                           )}
                                         </FormControl>
@@ -1393,12 +1405,12 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => cardOrRemove(orIndex)}
+                                onClick={() => cardOrRemove(orFieldIndex)}
                               >
                                 <Cross2Icon className="text-gray-400" />
                               </Button>
                             </div>
-                          </div>
+                          </CardContent>
                         );
                       })}
                     </div>
@@ -1407,20 +1419,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                       <Button
                         className="flex items-center space-x-2 text-blue-500"
                         variant="ghost"
-                        onClick={() =>
-                          cardOrAppend({
-                            clauseType: AudienceClauseType.UNSPECIFIED,
-                            simpleFilter: {
-                              name: '',
-                              simpleCardArray: [
-                                {
-                                  scope: AudienceFilterScope.UNSPECIFIED,
-                                  filterExpression: simpleFilterExpression,
-                                },
-                              ],
-                            },
-                          })
-                        }
+                        onClick={handleAddOrField}
                       >
                         Or
                       </Button>
@@ -1428,7 +1427,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleRemoveCardForm(index)}
+                        onClick={() => handleRemoveCardForm(cardFieldIndex, OrIndex)}
                       >
                         <Cross2Icon className="text-gray-400" />
                       </Button>
@@ -1658,8 +1657,8 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                           </div>
                         </div>
                       ) : // This part of the ternary operator needs to render something or nothing for subsequent steps.
-                        // If there's no specific content needed for subsequent steps, you can return null or omit this part.
-                        null}
+                      // If there's no specific content needed for subsequent steps, you can return null or omit this part.
+                      null}
 
                       <div className="flex items-center w-full mt-5">
                         <div className="basis-3/12">
@@ -2249,19 +2248,19 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                                           onCheckedChange={(checked) => {
                                                             return checked
                                                               ? field.onChange([
-                                                                ...(Array.isArray(field.value)
-                                                                  ? field.value
-                                                                  : []),
-                                                                item.id,
-                                                              ])
+                                                                  ...(Array.isArray(field.value)
+                                                                    ? field.value
+                                                                    : []),
+                                                                  item.id,
+                                                                ])
                                                               : field.onChange(
-                                                                (Array.isArray(field.value)
-                                                                  ? field.value
-                                                                  : []
-                                                                ).filter(
-                                                                  (value) => value !== item.id
-                                                                )
-                                                              );
+                                                                  (Array.isArray(field.value)
+                                                                    ? field.value
+                                                                    : []
+                                                                  ).filter(
+                                                                    (value) => value !== item.id
+                                                                  )
+                                                                );
                                                           }}
                                                         />
                                                       </FormControl>
