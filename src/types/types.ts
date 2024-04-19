@@ -563,14 +563,9 @@ interface AudienceEventTrigger {
 
 // Audience Filter Clause
 export interface AudienceFilterClause {
-  name: string;
-  parentCardArray: [
-    {
-      clauseType: AudienceClauseType;
-      simpleFilter?: AudienceSimpleFilter;
-      sequenceFilter?: AudienceSequenceFilter;
-    }
-  ];
+  clauseType: AudienceClauseType;
+  simpleFilter?: AudienceSimpleFilter;
+  sequenceFilter?: AudienceSequenceFilter;
 }
 
 // Filters

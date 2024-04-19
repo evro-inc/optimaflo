@@ -129,7 +129,6 @@ import {
   removeExcludeStep,
   setShowExcludeStep,
 } from '@/src/redux/excludeFormSlice';
-import SimpleForm from './simpleForm';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -648,6 +647,23 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     name: `forms.${fields.length}.filterClauses.${fields.length}.parentCardArray.${fields.length}.simpleFilter.simpleCardArray`,
   });
 
+  /*   
+  
+    const { fields: cardFields, append: cardAppend, remove: cardRemove } = useFieldArray({
+      control: form.control,
+      name: `forms.${fields.length}.filterClauses.${simpleFormFields.length}.parentCardArray.${simpleFormFields.length}.simpleFilter.simpleCardArray.${simpleFormFields.length}.filterExpression.andGroup.filterExpressions`,
+    });
+  
+    const { fields: cardOrFields, append: cardOrAppend, remove: cardOrRemove } = useFieldArray({
+      control: form.control,
+      name: `forms.${fields.length}.filterClauses.${simpleFormFields.length}.parentCardArray.${simpleFormFields.length}.simpleFilter.simpleCardArray.${simpleFormFields.length}.filterExpression.orGroup.filterExpressions`,
+    });
+   */
+
+  /*    const { fields, remove, append } = useFieldArray({
+      control,
+      name: `forms[${simpleFormIndex}].filterClauses[${simpleFormIndex}].parentCardArray[${simpleFormIndex}].simpleFilter.simpleCardArray[${simpleFormIndex}].filterExpression.andGroup.filterExpressions`,
+    }); */
   //////////////////////////////////////////////////////////////////////
   // Form state for step field array
   /////////////////////////////////////////////////////////////////////
@@ -1460,6 +1476,90 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     );
   };
 
+  const simpleForm = ({
+    control,
+    register,
+    defaultValues,
+    watch,
+    setValue,
+    getValues,
+    formIndex,
+    errors,
+  }) => {
+    return (
+      <>
+        {simpleFormFields.map((field, index) => (
+          <div key={field.id}>
+            {index > 0 && (
+              <div className="w-10 flex flex-col items-center justify-center space-y-2">
+                <div className="h-5">
+                  <Separator orientation="vertical" />
+                </div>
+                <Badge variant="secondary">AND</Badge>
+                <div className="h-5">
+                  <Separator orientation="vertical" />
+                </div>
+              </div>
+            )}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center">
+                  <CircleIcon className="text-blue-500 mr-2" />
+                  <span className="flex-grow text-sm font-medium">Include users when:</span>
+                  <div className="flex items-center space-x-2">
+                    <UserPlusIcon className="text-gray-600" />
+                    <FormField
+                      control={control}
+                      name={`forms.[${formIndex}].filterClauses.parentCardArray[${index}].simpleFilter.simpleCardArray[${index}].scope`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Select
+                              {...register(
+                                `forms.[${formIndex}].filterClauses.parentCardArray[${index}].simpleFilter.simpleCardArray[${index}].scope`
+                              )}
+                              {...field}
+                              onValueChange={field.onChange}
+                            >
+                              <SelectTrigger id="user-action">
+                                <SelectValue placeholder="Condition scoping" />
+                              </SelectTrigger>
+                              <SelectContent position="popper">
+                                {SimpleScope.map((item) => (
+                                  <SelectItem key={item.label} value={item.id}>
+                                    {item.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <Separator orientation="vertical" />
+                    <Button variant="ghost" size="icon" onClick={() => simpleFormRemove(index)}>
+                      <TrashIcon className="text-gray-400" />
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+
+              <CardContent>
+                <CardForm
+                  formIndex={formIndex}
+                  simpleFormIndex={index}
+                  {...{ control, register, watch }}
+                />
+              </CardContent>
+            </Card>
+          </div>
+        ))}
+      </>
+    );
+  };
+
   const sequenceForm = () => {
     const stepId = showStep[showStep.length - 1]?.id;
 
@@ -2079,17 +2179,18 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                     </div>
                                   </div>
 
-                                  <SimpleForm
-                                    combinedCategories={combinedCategories}
-                                    audienceFormIndex={index}
-                                    {...{
-                                      control: form.control,
-                                      register: form.register,
-                                      watch: form.watch,
-                                    }}
-                                  />
+                                  {simpleForm({
+                                    control: form.control,
+                                    register: form.register,
+                                    defaultValues: formDataDefaults,
+                                    watch: form.watch,
+                                    setValue: form.setValue,
+                                    getValues: form.getValues,
+                                    formIndex: index,
+                                    errors: form.errors,
+                                  })}
 
-                                  {/*   <div className="flex items-center justify-between mt-6">
+                                  <div className="flex items-center justify-between mt-6">
                                     <Button
                                       className="flex items-center space-x-2"
                                       variant="secondary"
@@ -2106,7 +2207,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                       <BarChartIcon className="text-white" />
                                       <span>Add sequence to include</span>
                                     </Button>
-                                  </div> */}
+                                  </div>
 
                                   <div className="flex flex-col md:flex-row md:space-x-4">
                                     <div className="w-full md:basis-auto">

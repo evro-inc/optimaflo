@@ -120,14 +120,9 @@ const AudienceSequenceFilterSchema = z.object({
 });
 
 const AudienceFilterClauseSchema = z.object({
-  name: z.string(),
-  parentCardArray: z.array(
-    z.object({
-      clauseType: AudienceClauseType,
-      simpleFilter: AudienceSimpleFilterSchema.optional(),
-      sequenceFilter: AudienceSequenceFilterSchema.optional(),
-    })
-  ),
+  clauseType: AudienceClauseType,
+  simpleFilter: AudienceSimpleFilterSchema.optional(),
+  sequenceFilter: AudienceSequenceFilterSchema.optional(),
 });
 
 const SingleFormSchema = z.object({
