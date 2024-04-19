@@ -35,7 +35,7 @@ export default ({
 }) => {
   const { fields, remove, append } = useFieldArray({
     control,
-    name: `forms.${audienceFormIndex}.filterClauses.${simpleFormIndex}.parentCardArray.${simpleFormIndex}.simpleFilter.simpleCardArray.${cardAndIndex}.filterExpression.andGroup.filterExpressions.orGroup.filterExpressions`,
+    name: `forms.${audienceFormIndex}.filterClauses.${audienceFormIndex}.parentCardArray.${simpleFormIndex}.simpleFilter.simpleCardArray.${cardAndIndex}.filterExpression.andGroup.filterExpressions.orGroup.filterExpressions`,
   });
 
   return (

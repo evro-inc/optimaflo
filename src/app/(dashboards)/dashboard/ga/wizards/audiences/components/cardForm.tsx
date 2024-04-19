@@ -23,6 +23,8 @@ import { Button } from '@/src/components/ui/button';
 import { Cross2Icon, PlusIcon } from '@radix-ui/react-icons';
 import { renderFilterInput } from '../../../properties/@audiences/items';
 import OrForm from './cardOrForm';
+import { Separator } from '@/src/components/ui/separator';
+import { Badge } from '@/src/components/ui/badge';
 
 export default ({
   combinedCategories,
@@ -34,7 +36,7 @@ export default ({
 }) => {
   const { fields, remove, append } = useFieldArray({
     control,
-    name: `forms.${audienceFormIndex}.filterClauses.${audienceFormIndex}.parentCardArray.${audienceFormIndex}.simpleFilter.simpleCardArray.${simpleFormIndex}.filterExpression.andGroup.filterExpressions`,
+    name: `forms.${audienceFormIndex}.filterClauses.${audienceFormIndex}.parentCardArray.${simpleFormIndex}.simpleFilter.simpleCardArray.${simpleFormIndex}.filterExpression.andGroup.filterExpressions`,
   });
 
   return (
@@ -63,6 +65,17 @@ export default ({
 
         return (
           <div key={item.id}>
+            {cardAndIndex > 0 && (
+              <div className="w-10 flex flex-col items-center justify-center space-y-2">
+                <div className="h-2">
+                  <Separator orientation="vertical" />
+                </div>
+                <Badge variant="secondary">AND</Badge>
+                <div className="h-2">
+                  <Separator orientation="vertical" />
+                </div>
+              </div>
+            )}
             <Card>
               <CardContent>
                 <div className="flex items-center justify-between mt-5">

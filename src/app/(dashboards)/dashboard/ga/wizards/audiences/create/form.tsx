@@ -85,6 +85,8 @@ import {
   filterTypeMapping,
   ImmediatelyFollows,
   SequenceScope,
+  sequenceStepFilterExpression,
+  simpleFilterExpression,
   SimpleScope,
 } from '../../../properties/@audiences/items';
 import {
@@ -129,7 +131,8 @@ import {
   removeExcludeStep,
   setShowExcludeStep,
 } from '@/src/redux/excludeFormSlice';
-import SimpleForm from './simpleForm';
+import SimpleForm from '../components/simpleForm';
+import SequenceForm from '../components/sequenceForm';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -265,306 +268,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   //////////////////////////////////////////////////////////////////////
   // Form data defaults
   /////////////////////////////////////////////////////////////////////
-  const simpleFilterExpression: AudienceFilterExpression = {
-    andGroup: {
-      filterExpressions: [
-        {
-          orGroup: {
-            filterExpressions: [],
-          },
-          notExpression: {
-            dimensionOrMetricFilter: {
-              fieldName: '',
-              atAnyPointInTime: false,
-              inAnyNDayPeriod: 0,
-              stringFilter: {
-                matchType: MatchType.EXACT,
-                value: '',
-                caseSensitive: false,
-              },
-              inListFilter: {
-                values: [],
-                caseSensitive: false,
-              },
-              numericFilter: {
-                operation: Operation.EQUAL,
-                value: {
-                  int64Value: '0',
-                  doubleValue: 0,
-                },
-              },
-              betweenFilter: {
-                fromValue: {
-                  int64Value: '0',
-                  doubleValue: 0,
-                },
-                toValue: {
-                  int64Value: '0',
-                  doubleValue: 0,
-                },
-              },
-            },
-          },
-          dimensionOrMetricFilter: {
-            fieldName: '',
-            atAnyPointInTime: false,
-            inAnyNDayPeriod: 0,
-            stringFilter: {
-              matchType: MatchType.EXACT,
-              value: '',
-              caseSensitive: false,
-            },
-            inListFilter: {
-              values: [],
-              caseSensitive: false,
-            },
-            numericFilter: {
-              operation: Operation.EQUAL,
-              value: {
-                int64Value: '0',
-                doubleValue: 0,
-              },
-            },
-            betweenFilter: {
-              fromValue: {
-                int64Value: '0',
-                doubleValue: 0,
-              },
-              toValue: {
-                int64Value: '0',
-                doubleValue: 0,
-              },
-            },
-          },
-          eventFilter: {
-            eventName: '',
-            eventParameterFilterExpression: {
-              andGroup: {
-                filterExpressions: [],
-              },
-              orGroup: {
-                filterExpressions: [],
-              },
-              notExpression: {
-                dimensionOrMetricFilter: {
-                  fieldName: '',
-                  atAnyPointInTime: false,
-                  inAnyNDayPeriod: 0,
-                  stringFilter: {
-                    matchType: MatchType.EXACT,
-                    value: '',
-                    caseSensitive: false,
-                  },
-                  inListFilter: {
-                    values: [],
-                    caseSensitive: false,
-                  },
-                  numericFilter: {
-                    operation: Operation.EQUAL,
-                    value: {
-                      int64Value: '0',
-                      doubleValue: 0,
-                    },
-                  },
-                  betweenFilter: {
-                    fromValue: {
-                      int64Value: '0',
-                      doubleValue: 0,
-                    },
-                    toValue: {
-                      int64Value: '0',
-                      doubleValue: 0,
-                    },
-                  },
-                },
-              },
-              dimensionOrMetricFilter: {
-                fieldName: '',
-                atAnyPointInTime: false,
-                inAnyNDayPeriod: 0,
-                stringFilter: {
-                  matchType: MatchType.EXACT,
-                  value: '',
-                  caseSensitive: false,
-                },
-                inListFilter: {
-                  values: [],
-                  caseSensitive: false,
-                },
-                numericFilter: {
-                  operation: Operation.EQUAL,
-                  value: {
-                    int64Value: '0',
-                    doubleValue: 0,
-                  },
-                },
-                betweenFilter: {
-                  fromValue: {
-                    int64Value: '0',
-                    doubleValue: 0,
-                  },
-                  toValue: {
-                    int64Value: '0',
-                    doubleValue: 0,
-                  },
-                },
-              },
-            },
-          },
-        },
-      ],
-    },
-  };
-
-  const sequenceStepFilterExpression = {
-    andGroup: {
-      filterExpressions: [],
-    },
-    orGroup: {
-      filterExpressions: [],
-    },
-    notExpression: {
-      dimensionOrMetricFilter: {
-        category: '',
-        fieldName: '',
-        atAnyPointInTime: false,
-        inAnyNDayPeriod: 0,
-        stringFilter: {
-          matchType: MatchType.EXACT,
-          value: '',
-          caseSensitive: false,
-        },
-        inListFilter: {
-          values: [],
-          caseSensitive: false,
-        },
-        numericFilter: {
-          operation: Operation.EQUAL,
-          value: {
-            int64Value: '0',
-            doubleValue: 0,
-          },
-        },
-        betweenFilter: {
-          fromValue: {
-            int64Value: '0',
-            doubleValue: 0,
-          },
-          toValue: {
-            int64Value: '0',
-            doubleValue: 0,
-          },
-        },
-      },
-    },
-    dimensionOrMetricFilter: {
-      fieldName: '',
-      atAnyPointInTime: false,
-      inAnyNDayPeriod: 0,
-      stringFilter: {
-        matchType: MatchType.EXACT,
-        value: '',
-        caseSensitive: false,
-      },
-      inListFilter: {
-        values: [],
-        caseSensitive: false,
-      },
-      numericFilter: {
-        operation: Operation.EQUAL,
-        value: {
-          int64Value: '0',
-          doubleValue: 0,
-        },
-      },
-      betweenFilter: {
-        fromValue: {
-          int64Value: '0',
-          doubleValue: 0,
-        },
-        toValue: {
-          int64Value: '0',
-          doubleValue: 0,
-        },
-      },
-    },
-    eventFilter: {
-      eventName: '',
-      eventParameterFilterExpression: {
-        andGroup: {
-          filterExpressions: [],
-        },
-        orGroup: {
-          filterExpressions: [],
-        },
-        notExpression: {
-          dimensionOrMetricFilter: {
-            fieldName: '',
-            atAnyPointInTime: false,
-            inAnyNDayPeriod: 0,
-            stringFilter: {
-              matchType: MatchType.EXACT,
-              value: '',
-              caseSensitive: false,
-            },
-            inListFilter: {
-              values: [],
-              caseSensitive: false,
-            },
-            numericFilter: {
-              operation: Operation.EQUAL,
-              value: {
-                int64Value: '0',
-                doubleValue: 0,
-              },
-            },
-            betweenFilter: {
-              fromValue: {
-                int64Value: '0',
-                doubleValue: 0,
-              },
-              toValue: {
-                int64Value: '0',
-                doubleValue: 0,
-              },
-            },
-          },
-        },
-        dimensionOrMetricFilter: {
-          fieldName: '',
-          atAnyPointInTime: false,
-          inAnyNDayPeriod: 0,
-          stringFilter: {
-            matchType: MatchType.EXACT,
-            value: '',
-            caseSensitive: false,
-          },
-          inListFilter: {
-            values: [],
-            caseSensitive: false,
-          },
-          numericFilter: {
-            operation: Operation.EQUAL,
-            value: {
-              int64Value: '0',
-              doubleValue: 0,
-            },
-          },
-          betweenFilter: {
-            fromValue: {
-              int64Value: '0',
-              doubleValue: 0,
-            },
-            toValue: {
-              int64Value: '0',
-              doubleValue: 0,
-            },
-          },
-        },
-      },
-    },
-  };
-
   const formDataDefaults: AudienceType = {
     account: accountsWithProperties[0].name,
     property: accountsWithProperties[0].properties[0].name,
@@ -1266,11 +969,10 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                   filterTypeMapping[inputItem.category] ||
                                   'stringFilter'
                                   }`} */
-                                name={`forms[${formIndex}].filterClauses[${formIndex}].parentCardArray[${formIndex}].simpleFilter.simpleCardArray[${cardFieldIndex}].filterExpression.andGroup.filterExpressions[${cardFieldIndex}].dimensionOrMetricFilter.${
-                                  filterTypeMapping[inputItem.apiName] ||
+                                name={`forms[${formIndex}].filterClauses[${formIndex}].parentCardArray[${formIndex}].simpleFilter.simpleCardArray[${cardFieldIndex}].filterExpression.andGroup.filterExpressions[${cardFieldIndex}].dimensionOrMetricFilter.${filterTypeMapping[inputItem.apiName] ||
                                   filterTypeMapping[inputItem.category] ||
                                   'stringFilter'
-                                }`}
+                                  }`}
                                 render={({ field }) => (
                                   <FormItem>
                                     <FormLabel>Filter</FormLabel>
@@ -1278,8 +980,8 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                       {/* Render the appropriate filter input based on the filterType */}
                                       {renderFilterInput(
                                         filterTypeMapping[inputItem.apiName] ||
-                                          filterTypeMapping[inputItem.category] ||
-                                          'stringFilter',
+                                        filterTypeMapping[inputItem.category] ||
+                                        'stringFilter',
                                         field
                                       )}
                                     </FormControl>
@@ -1396,11 +1098,10 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                     {inputOrItem && (
                                       <FormField
                                         control={control}
-                                        name={`simpleCards[${simpleFormIndex}].nestedArray[${index}].simpleFilter.filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.${
-                                          filterTypeMapping[inputOrItem.apiName] ||
+                                        name={`simpleCards[${simpleFormIndex}].nestedArray[${index}].simpleFilter.filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.${filterTypeMapping[inputOrItem.apiName] ||
                                           filterTypeMapping[inputOrItem.category] ||
                                           'stringFilter'
-                                        }`}
+                                          }`}
                                         render={({ field }) => (
                                           <FormItem>
                                             <FormLabel>Filter</FormLabel>
@@ -1408,8 +1109,8 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                               {/* Render the appropriate filter input based on the filterType */}
                                               {renderFilterInput(
                                                 filterTypeMapping[inputOrItem.apiName] ||
-                                                  filterTypeMapping[inputOrItem.category] ||
-                                                  'stringFilter',
+                                                filterTypeMapping[inputOrItem.category] ||
+                                                'stringFilter',
                                                 orField
                                               )}
                                             </FormControl>
@@ -1559,8 +1260,8 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                           </div>
                         </div>
                       ) : // This part of the ternary operator needs to render something or nothing for subsequent steps.
-                      // If there's no specific content needed for subsequent steps, you can return null or omit this part.
-                      null}
+                        // If there's no specific content needed for subsequent steps, you can return null or omit this part.
+                        null}
 
                       <div className="flex items-center w-full mt-5">
                         <div className="basis-3/12">
@@ -2089,6 +1790,16 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                     }}
                                   />
 
+                                  {/* <SequenceForm
+                                    combinedCategories={combinedCategories}
+                                    audienceFormIndex={index}
+                                    {...{
+                                      control: form.control,
+                                      register: form.register,
+                                      watch: form.watch,
+                                    }}
+                                  />
+ */}
                                   {/*   <div className="flex items-center justify-between mt-6">
                                     <Button
                                       className="flex items-center space-x-2"
@@ -2144,19 +1855,19 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                                           onCheckedChange={(checked) => {
                                                             return checked
                                                               ? field.onChange([
-                                                                  ...(Array.isArray(field.value)
-                                                                    ? field.value
-                                                                    : []),
-                                                                  item.id,
-                                                                ])
+                                                                ...(Array.isArray(field.value)
+                                                                  ? field.value
+                                                                  : []),
+                                                                item.id,
+                                                              ])
                                                               : field.onChange(
-                                                                  (Array.isArray(field.value)
-                                                                    ? field.value
-                                                                    : []
-                                                                  ).filter(
-                                                                    (value) => value !== item.id
-                                                                  )
-                                                                );
+                                                                (Array.isArray(field.value)
+                                                                  ? field.value
+                                                                  : []
+                                                                ).filter(
+                                                                  (value) => value !== item.id
+                                                                )
+                                                              );
                                                           }}
                                                         />
                                                       </FormControl>

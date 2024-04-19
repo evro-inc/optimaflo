@@ -34,10 +34,11 @@ import {
   SelectValue,
 } from '@/src/components/ui/select';
 import { Button } from '@/src/components/ui/button';
-import { SimpleScope } from '../../../properties/@audiences/items';
+import { simpleFilterExpression, SimpleScope } from '../../../properties/@audiences/items';
 import CardForm from './cardForm';
+import { AudienceClauseType, AudienceFilterScope } from '@/src/types/types';
 
-export default function SimpleForm({
+export default function SequenceForm({
   combinedCategories,
   audienceFormIndex,
   control,
@@ -46,7 +47,7 @@ export default function SimpleForm({
 }) {
   const { fields, append, remove } = useFieldArray({
     control,
-    name: `forms.${audienceFormIndex}.filterClauses.${audienceFormIndex}.parentCardArray.${audienceFormIndex}.simpleFilter.simpleCardArray`,
+    name: `forms.${audienceFormIndex}.filterClauses`,
   });
 
   return (
@@ -130,7 +131,23 @@ export default function SimpleForm({
           className="flex items-center space-x-2"
           variant="secondary"
           onClick={() => {
-            append({ name: 'append' });
+            append({
+              name: 'new condition group',
+              parentCardArray: [
+                {
+                  clauseType: AudienceClauseType.UNSPECIFIED,
+                  simpleFilter: {
+                    name: 'new simple filter',
+                    simpleCardArray: [
+                      {
+                        scope: AudienceFilterScope.UNSPECIFIED,
+                        filterExpression: simpleFilterExpression,
+                      },
+                    ],
+                  },
+                },
+              ],
+            });
           }}
         >
           <PlusIcon className="text-white" />

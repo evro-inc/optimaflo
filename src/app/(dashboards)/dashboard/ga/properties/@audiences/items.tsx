@@ -24,6 +24,7 @@ import { Cross2Icon } from '@radix-ui/react-icons';
 import { useFormContext } from 'react-hook-form';
 import { Input } from '@/src/components/ui/input';
 import { Checkbox } from '@/src/components/ui/checkbox';
+import { AudienceFilterExpression, AudienceType, MatchType, Operation } from '@/src/types/types';
 
 export const SimpleScope = [
   {
@@ -244,6 +245,306 @@ export const filterTypeMapping = {
   // Custom Metrics
   averageCustomEvent: 'numericFilter',
   countCustomEvent: 'numericFilter',
+};
+
+export const simpleFilterExpression: AudienceFilterExpression = {
+  andGroup: {
+    filterExpressions: [
+      {
+        orGroup: {
+          filterExpressions: [],
+        },
+        notExpression: {
+          dimensionOrMetricFilter: {
+            fieldName: '',
+            atAnyPointInTime: false,
+            inAnyNDayPeriod: 0,
+            stringFilter: {
+              matchType: MatchType.EXACT,
+              value: '',
+              caseSensitive: false,
+            },
+            inListFilter: {
+              values: [],
+              caseSensitive: false,
+            },
+            numericFilter: {
+              operation: Operation.EQUAL,
+              value: {
+                int64Value: '0',
+                doubleValue: 0,
+              },
+            },
+            betweenFilter: {
+              fromValue: {
+                int64Value: '0',
+                doubleValue: 0,
+              },
+              toValue: {
+                int64Value: '0',
+                doubleValue: 0,
+              },
+            },
+          },
+        },
+        dimensionOrMetricFilter: {
+          fieldName: '',
+          atAnyPointInTime: false,
+          inAnyNDayPeriod: 0,
+          stringFilter: {
+            matchType: MatchType.EXACT,
+            value: '',
+            caseSensitive: false,
+          },
+          inListFilter: {
+            values: [],
+            caseSensitive: false,
+          },
+          numericFilter: {
+            operation: Operation.EQUAL,
+            value: {
+              int64Value: '0',
+              doubleValue: 0,
+            },
+          },
+          betweenFilter: {
+            fromValue: {
+              int64Value: '0',
+              doubleValue: 0,
+            },
+            toValue: {
+              int64Value: '0',
+              doubleValue: 0,
+            },
+          },
+        },
+        eventFilter: {
+          eventName: '',
+          eventParameterFilterExpression: {
+            andGroup: {
+              filterExpressions: [],
+            },
+            orGroup: {
+              filterExpressions: [],
+            },
+            notExpression: {
+              dimensionOrMetricFilter: {
+                fieldName: '',
+                atAnyPointInTime: false,
+                inAnyNDayPeriod: 0,
+                stringFilter: {
+                  matchType: MatchType.EXACT,
+                  value: '',
+                  caseSensitive: false,
+                },
+                inListFilter: {
+                  values: [],
+                  caseSensitive: false,
+                },
+                numericFilter: {
+                  operation: Operation.EQUAL,
+                  value: {
+                    int64Value: '0',
+                    doubleValue: 0,
+                  },
+                },
+                betweenFilter: {
+                  fromValue: {
+                    int64Value: '0',
+                    doubleValue: 0,
+                  },
+                  toValue: {
+                    int64Value: '0',
+                    doubleValue: 0,
+                  },
+                },
+              },
+            },
+            dimensionOrMetricFilter: {
+              fieldName: '',
+              atAnyPointInTime: false,
+              inAnyNDayPeriod: 0,
+              stringFilter: {
+                matchType: MatchType.EXACT,
+                value: '',
+                caseSensitive: false,
+              },
+              inListFilter: {
+                values: [],
+                caseSensitive: false,
+              },
+              numericFilter: {
+                operation: Operation.EQUAL,
+                value: {
+                  int64Value: '0',
+                  doubleValue: 0,
+                },
+              },
+              betweenFilter: {
+                fromValue: {
+                  int64Value: '0',
+                  doubleValue: 0,
+                },
+                toValue: {
+                  int64Value: '0',
+                  doubleValue: 0,
+                },
+              },
+            },
+          },
+        },
+      },
+    ],
+  },
+};
+
+export const sequenceStepFilterExpression = {
+  andGroup: {
+    filterExpressions: [],
+  },
+  orGroup: {
+    filterExpressions: [],
+  },
+  notExpression: {
+    dimensionOrMetricFilter: {
+      category: '',
+      fieldName: '',
+      atAnyPointInTime: false,
+      inAnyNDayPeriod: 0,
+      stringFilter: {
+        matchType: MatchType.EXACT,
+        value: '',
+        caseSensitive: false,
+      },
+      inListFilter: {
+        values: [],
+        caseSensitive: false,
+      },
+      numericFilter: {
+        operation: Operation.EQUAL,
+        value: {
+          int64Value: '0',
+          doubleValue: 0,
+        },
+      },
+      betweenFilter: {
+        fromValue: {
+          int64Value: '0',
+          doubleValue: 0,
+        },
+        toValue: {
+          int64Value: '0',
+          doubleValue: 0,
+        },
+      },
+    },
+  },
+  dimensionOrMetricFilter: {
+    fieldName: '',
+    atAnyPointInTime: false,
+    inAnyNDayPeriod: 0,
+    stringFilter: {
+      matchType: MatchType.EXACT,
+      value: '',
+      caseSensitive: false,
+    },
+    inListFilter: {
+      values: [],
+      caseSensitive: false,
+    },
+    numericFilter: {
+      operation: Operation.EQUAL,
+      value: {
+        int64Value: '0',
+        doubleValue: 0,
+      },
+    },
+    betweenFilter: {
+      fromValue: {
+        int64Value: '0',
+        doubleValue: 0,
+      },
+      toValue: {
+        int64Value: '0',
+        doubleValue: 0,
+      },
+    },
+  },
+  eventFilter: {
+    eventName: '',
+    eventParameterFilterExpression: {
+      andGroup: {
+        filterExpressions: [],
+      },
+      orGroup: {
+        filterExpressions: [],
+      },
+      notExpression: {
+        dimensionOrMetricFilter: {
+          fieldName: '',
+          atAnyPointInTime: false,
+          inAnyNDayPeriod: 0,
+          stringFilter: {
+            matchType: MatchType.EXACT,
+            value: '',
+            caseSensitive: false,
+          },
+          inListFilter: {
+            values: [],
+            caseSensitive: false,
+          },
+          numericFilter: {
+            operation: Operation.EQUAL,
+            value: {
+              int64Value: '0',
+              doubleValue: 0,
+            },
+          },
+          betweenFilter: {
+            fromValue: {
+              int64Value: '0',
+              doubleValue: 0,
+            },
+            toValue: {
+              int64Value: '0',
+              doubleValue: 0,
+            },
+          },
+        },
+      },
+      dimensionOrMetricFilter: {
+        fieldName: '',
+        atAnyPointInTime: false,
+        inAnyNDayPeriod: 0,
+        stringFilter: {
+          matchType: MatchType.EXACT,
+          value: '',
+          caseSensitive: false,
+        },
+        inListFilter: {
+          values: [],
+          caseSensitive: false,
+        },
+        numericFilter: {
+          operation: Operation.EQUAL,
+          value: {
+            int64Value: '0',
+            doubleValue: 0,
+          },
+        },
+        betweenFilter: {
+          fromValue: {
+            int64Value: '0',
+            doubleValue: 0,
+          },
+          toValue: {
+            int64Value: '0',
+            doubleValue: 0,
+          },
+        },
+      },
+    },
+  },
 };
 
 export const renderFilterInput = (filterType, field, currentFormIndex) => {
