@@ -131,7 +131,7 @@ import {
   removeExcludeStep,
   setShowExcludeStep,
 } from '@/src/redux/excludeFormSlice';
-import SimpleForm from '../components/simpleForm';
+import SimpleForm from '../components/conditionalForm';
 import SequenceForm from '../components/sequenceForm';
 
 const NotFoundErrorModal = dynamic(
@@ -340,15 +340,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: 'forms',
-  });
-
-  const {
-    fields: simpleFormFields,
-    append: simpleFormAppend,
-    remove: simpleFormRemove,
-  } = useFieldArray({
-    control: form.control,
-    name: `forms.${fields.length}.filterClauses.${fields.length}.parentCardArray.${fields.length}.simpleFilter.simpleCardArray`,
   });
 
   //////////////////////////////////////////////////////////////////////
@@ -969,10 +960,11 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                   filterTypeMapping[inputItem.category] ||
                                   'stringFilter'
                                   }`} */
-                                name={`forms[${formIndex}].filterClauses[${formIndex}].parentCardArray[${formIndex}].simpleFilter.simpleCardArray[${cardFieldIndex}].filterExpression.andGroup.filterExpressions[${cardFieldIndex}].dimensionOrMetricFilter.${filterTypeMapping[inputItem.apiName] ||
+                                name={`forms[${formIndex}].filterClauses[${formIndex}].parentCardArray[${formIndex}].simpleFilter.simpleCardArray[${cardFieldIndex}].filterExpression.andGroup.filterExpressions[${cardFieldIndex}].dimensionOrMetricFilter.${
+                                  filterTypeMapping[inputItem.apiName] ||
                                   filterTypeMapping[inputItem.category] ||
                                   'stringFilter'
-                                  }`}
+                                }`}
                                 render={({ field }) => (
                                   <FormItem>
                                     <FormLabel>Filter</FormLabel>
@@ -980,8 +972,8 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                       {/* Render the appropriate filter input based on the filterType */}
                                       {renderFilterInput(
                                         filterTypeMapping[inputItem.apiName] ||
-                                        filterTypeMapping[inputItem.category] ||
-                                        'stringFilter',
+                                          filterTypeMapping[inputItem.category] ||
+                                          'stringFilter',
                                         field
                                       )}
                                     </FormControl>
@@ -1098,10 +1090,11 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                     {inputOrItem && (
                                       <FormField
                                         control={control}
-                                        name={`simpleCards[${simpleFormIndex}].nestedArray[${index}].simpleFilter.filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.${filterTypeMapping[inputOrItem.apiName] ||
+                                        name={`simpleCards[${simpleFormIndex}].nestedArray[${index}].simpleFilter.filterExpression.andGroup.filterExpressions[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter.${
+                                          filterTypeMapping[inputOrItem.apiName] ||
                                           filterTypeMapping[inputOrItem.category] ||
                                           'stringFilter'
-                                          }`}
+                                        }`}
                                         render={({ field }) => (
                                           <FormItem>
                                             <FormLabel>Filter</FormLabel>
@@ -1109,8 +1102,8 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                               {/* Render the appropriate filter input based on the filterType */}
                                               {renderFilterInput(
                                                 filterTypeMapping[inputOrItem.apiName] ||
-                                                filterTypeMapping[inputOrItem.category] ||
-                                                'stringFilter',
+                                                  filterTypeMapping[inputOrItem.category] ||
+                                                  'stringFilter',
                                                 orField
                                               )}
                                             </FormControl>
@@ -1260,8 +1253,8 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                           </div>
                         </div>
                       ) : // This part of the ternary operator needs to render something or nothing for subsequent steps.
-                        // If there's no specific content needed for subsequent steps, you can return null or omit this part.
-                        null}
+                      // If there's no specific content needed for subsequent steps, you can return null or omit this part.
+                      null}
 
                       <div className="flex items-center w-full mt-5">
                         <div className="basis-3/12">
@@ -1615,24 +1608,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     );
   };
 
-  const addConditionGroup = () => {
-    simpleFormAppend({
-      scope: AudienceFilterScope.UNSPECIFIED,
-      filterExpression: {
-        clauseType: AudienceClauseType.UNSPECIFIED,
-        simpleFilter: {
-          name: '',
-          simpleCardArray: [
-            {
-              scope: AudienceFilterScope.UNSPECIFIED,
-              filterExpression: simpleFilterExpression,
-            },
-          ],
-        },
-      },
-    });
-  };
-
   return (
     <div className="flex h-full">
       <div className="flex items-center justify-center h-screen mx-auto">
@@ -1686,7 +1661,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                 {fields.length >= currentStep - 1 && (
                   <div key={item.id} className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
                     <div className="max-w-xl mx-auto">
-                      <h1>Audience {index}</h1>
+                      <h1>Audience {index + 1}</h1>
                       <div className="mt-12">
                         {/* Form */}
 
@@ -1790,7 +1765,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                     }}
                                   />
 
-                                  {/* <SequenceForm
+                                  {/*  <SequenceForm
                                     combinedCategories={combinedCategories}
                                     audienceFormIndex={index}
                                     {...{
@@ -1798,8 +1773,8 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                       register: form.register,
                                       watch: form.watch,
                                     }}
-                                  />
- */}
+                                  /> */}
+
                                   {/*   <div className="flex items-center justify-between mt-6">
                                     <Button
                                       className="flex items-center space-x-2"
@@ -1855,19 +1830,19 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                                           onCheckedChange={(checked) => {
                                                             return checked
                                                               ? field.onChange([
-                                                                ...(Array.isArray(field.value)
-                                                                  ? field.value
-                                                                  : []),
-                                                                item.id,
-                                                              ])
+                                                                  ...(Array.isArray(field.value)
+                                                                    ? field.value
+                                                                    : []),
+                                                                  item.id,
+                                                                ])
                                                               : field.onChange(
-                                                                (Array.isArray(field.value)
-                                                                  ? field.value
-                                                                  : []
-                                                                ).filter(
-                                                                  (value) => value !== item.id
-                                                                )
-                                                              );
+                                                                  (Array.isArray(field.value)
+                                                                    ? field.value
+                                                                    : []
+                                                                  ).filter(
+                                                                    (value) => value !== item.id
+                                                                  )
+                                                                );
                                                           }}
                                                         />
                                                       </FormControl>

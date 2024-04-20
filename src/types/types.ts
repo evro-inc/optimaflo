@@ -588,7 +588,7 @@ export enum AudienceFilterScope {
 
 interface AudienceSequenceFilter {
   scope: AudienceFilterScope;
-  sequenceMaximumDuration: string; // Duration format, e.g., "3.5s"
+  sequenceMaximumDuration: string;
   sequenceSteps: AudienceSequenceStep[];
 }
 

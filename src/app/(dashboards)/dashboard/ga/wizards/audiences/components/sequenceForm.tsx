@@ -1,20 +1,6 @@
 import React from 'react';
 import { useFieldArray } from 'react-hook-form';
-import { Separator } from '@/src/components/ui/separator';
-import { Badge } from '@/src/components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/src/components/ui/card';
-import {
-  PlusIcon,
-  BarChartIcon,
-  Cross2Icon,
-  ChevronDownIcon,
-  MagnifyingGlassIcon,
-  TrashIcon,
-  CircleIcon,
-  ClockIcon,
-  ValueNoneIcon,
-  PersonIcon,
-} from '@radix-ui/react-icons';
 import {
   Form,
   FormControl,
@@ -34,126 +20,192 @@ import {
   SelectValue,
 } from '@/src/components/ui/select';
 import { Button } from '@/src/components/ui/button';
-import { simpleFilterExpression, SimpleScope } from '../../../properties/@audiences/items';
-import CardForm from './cardForm';
-import { AudienceClauseType, AudienceFilterScope } from '@/src/types/types';
+import { Cross2Icon, PlusIcon } from '@radix-ui/react-icons';
+import { renderFilterInput } from '../../../properties/@audiences/items';
+import OrForm from './cardOrForm';
+import { Separator } from '@/src/components/ui/separator';
+import { Badge } from '@/src/components/ui/badge';
 
-export default function SequenceForm({
+export default ({
   combinedCategories,
   audienceFormIndex,
+  sequenceFormIndex,
   control,
   register,
   watch,
-}) {
-  const { fields, append, remove } = useFieldArray({
+}) => {
+  const { fields, remove, append } = useFieldArray({
     control,
-    name: `forms.${audienceFormIndex}.filterClauses`,
+    name: `forms.${audienceFormIndex}.filterClauses.parentCardArray.${audienceFormIndex}.sequenceFilter.sequenceCardArray.${sequenceFormIndex}.sequenceSteps.filterExpression.andGroup.filterExpressions`,
   });
 
   return (
-    <>
-      <ul>
-        {fields.map((item, index) => {
-          return (
-            <li key={item.id}>
-              {index > 0 && (
-                <div className="w-10 flex flex-col items-center justify-center space-y-2">
-                  <div className="h-5">
-                    <Separator orientation="vertical" />
-                  </div>
-                  <Badge variant="secondary">AND</Badge>
-                  <div className="h-5">
-                    <Separator orientation="vertical" />
-                  </div>
-                </div>
-              )}
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center">
-                    <CircleIcon className="text-blue-500 mr-2" />
-                    <span className="flex-grow text-sm font-medium">Include users when:</span>
-                    <div className="flex items-center space-x-2">
-                      <PersonIcon className="text-gray-600" />
-                      <FormField
-                        control={control}
-                        name={`forms.[${audienceFormIndex}].filterClauses.parentCardArray[${index}].simpleFilter.simpleCardArray[${index}].scope`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Select
-                                {...register(
-                                  `forms.[${audienceFormIndex}].filterClauses.parentCardArray[${index}].simpleFilter.simpleCardArray[${index}].scope`
-                                )}
-                                {...field}
-                                onValueChange={field.onChange}
-                              >
-                                <SelectTrigger id="user-action">
-                                  <SelectValue placeholder="Condition scoping" />
-                                </SelectTrigger>
-                                <SelectContent position="popper">
-                                  {SimpleScope.map((item) => (
-                                    <SelectItem key={item.label} value={item.id}>
-                                      {item.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+    <div>
+      {fields.map((item, cardAndIndex) => {
+        const categoryFieldName = `forms[${audienceFormIndex}].filterClauses.simpleFilter[${sequenceFormIndex}].simpleCardArray[${sequenceFormIndex}].filterExpression.andGroup.filterExpressions[${cardAndIndex}].dimensionOrMetricFilter.category`;
 
-                      <Separator orientation="vertical" />
-                      <Button variant="ghost" size="icon" onClick={() => remove(index)}>
-                        <TrashIcon className="text-gray-400" />
-                      </Button>
+        const fieldName = `forms[${audienceFormIndex}].filterClauses.simpleFilter[${sequenceFormIndex}].simpleCardArray[${sequenceFormIndex}].filterExpression.andGroup.filterExpressions[${cardAndIndex}].dimensionOrMetricFilter.fieldName`;
+
+        // Watch the specific category and item for this field
+        const selectedCategory = watch(categoryFieldName);
+        const selectedItem = watch(fieldName);
+
+        const flattenedCategories = combinedCategories.flatMap((parentCategory) =>
+          parentCategory.categories.map((category) => ({
+            ...category,
+            parentName: parentCategory.name,
+            id: `${parentCategory.name} - ${category.name}`,
+          }))
+        );
+
+        const inputCategory = flattenedCategories.find(
+          (category) => category.id === selectedCategory
+        );
+        const inputItem = inputCategory?.items.find((item) => item.apiName === selectedItem);
+
+        return (
+          <div key={item.id}>
+            {cardAndIndex > 0 && (
+              <div className="w-10 flex flex-col items-center justify-center space-y-2">
+                <div className="h-2">
+                  <Separator orientation="vertical" />
+                </div>
+                <Badge variant="secondary">AND</Badge>
+                <div className="h-2">
+                  <Separator orientation="vertical" />
+                </div>
+              </div>
+            )}
+            <Card>
+              <CardContent>
+                <div className="flex items-center justify-between mt-5">
+                  <div className="flex flex-row md:space-x-4 w-full">
+                    <div>
+                      <div>
+                        <div className="flex space-x-4">
+                          <FormField
+                            control={control}
+                            name={categoryFieldName}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select Category" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {combinedCategories.map((parentCategory) => (
+                                        <SelectGroup key={parentCategory.name}>
+                                          <SelectLabel>{parentCategory.name}</SelectLabel>
+                                          {parentCategory.categories.map((category) => (
+                                            <SelectItem
+                                              {...register(categoryFieldName)}
+                                              key={`${parentCategory.name} - ${category.name}`}
+                                              value={`${parentCategory.name} - ${category.name}`}
+                                            >
+                                              {category.name}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectGroup>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={control}
+                            name={fieldName}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <Select
+                                    {...register(fieldName)}
+                                    {...field}
+                                    disabled={!selectedCategory}
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                  >
+                                    <SelectTrigger className="truncate w-[200px]">
+                                      <SelectValue placeholder="Select Item" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {inputCategory?.items.map((item: any) => (
+                                        <SelectItem key={item.apiName} value={item.apiName}>
+                                          {item.uiName}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <Button
+                            className="flex items-center space-x-2"
+                            onClick={() => remove(cardAndIndex)}
+                          >
+                            <Cross2Icon className="text-white" />
+                          </Button>
+                        </div>
+                        <div>
+                          {inputItem && (
+                            <FormField
+                              control={control}
+                              name={`forms[${audienceFormIndex}].filterClauses[${sequenceFormIndex}].parentCardArray[${sequenceFormIndex}].simpleFilter.simpleCardArray[${cardAndIndex}].filterExpression.andGroup.filterExpressions[${cardAndIndex}].dimensionOrMetricFilter.${
+                                filterTypeMapping[inputItem.apiName] ||
+                                filterTypeMapping[inputItem.category] ||
+                                'stringFilter'
+                              }`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Filter</FormLabel>
+                                  <FormControl>
+                                    {/* Render the appropriate filter input based on the filterType */}
+                                    {renderFilterInput(
+                                      filterTypeMapping[inputItem.apiName] ||
+                                        filterTypeMapping[inputItem.category] ||
+                                        'stringFilter',
+                                      field,
+                                      sequenceFormIndex
+                                    )}
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          )}
+                        </div>
+                      </div>
+
+                      {/* ///////////////////////////////////////////////// OR FIELDS/////////////////////////////////////////////// */}
+                      <OrForm
+                        combinedCategories={combinedCategories}
+                        audienceFormIndex={audienceFormIndex}
+                        formIndex={sequenceFormIndex}
+                        cardAndIndex={cardAndIndex}
+                        control={control}
+                        register={register}
+                        watch={watch}
+                      />
                     </div>
                   </div>
-                </CardHeader>
-
-                <CardContent>
-                  <CardForm
-                    audienceFormIndex={audienceFormIndex}
-                    combinedCategories={combinedCategories}
-                    simpleFormIndex={index}
-                    {...{ control, register, watch }}
-                  />
-                </CardContent>
-              </Card>
-            </li>
-          );
-        })}
-      </ul>
-
-      <section>
-        <Button
-          className="flex items-center space-x-2"
-          variant="secondary"
-          onClick={() => {
-            append({
-              name: 'new condition group',
-              parentCardArray: [
-                {
-                  clauseType: AudienceClauseType.UNSPECIFIED,
-                  simpleFilter: {
-                    name: 'new simple filter',
-                    simpleCardArray: [
-                      {
-                        scope: AudienceFilterScope.UNSPECIFIED,
-                        filterExpression: simpleFilterExpression,
-                      },
-                    ],
-                  },
-                },
-              ],
-            });
-          }}
-        >
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+      })}
+      <div className="mt-5 flex items-center space-x-4">
+        <Button className="flex items-center space-x-2" onClick={() => append({})}>
           <PlusIcon className="text-white" />
-          <span>Add condition group to include</span>
+          <span>Add Card</span>
         </Button>
-      </section>
-    </>
+      </div>
+    </div>
   );
-}
+};

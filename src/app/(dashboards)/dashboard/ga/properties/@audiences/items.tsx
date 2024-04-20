@@ -19,12 +19,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/src/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/src/components/ui/dialog';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/src/components/ui/accordion';
 import { Button } from '@/src/components/ui/button';
-import { Cross2Icon } from '@radix-ui/react-icons';
+import { ClockIcon, Cross2Icon, MagnifyingGlassIcon } from '@radix-ui/react-icons';
 import { useFormContext } from 'react-hook-form';
 import { Input } from '@/src/components/ui/input';
 import { Checkbox } from '@/src/components/ui/checkbox';
 import { AudienceFilterExpression, AudienceType, MatchType, Operation } from '@/src/types/types';
+import { ScrollArea } from '@/src/components/ui/scroll-area';
 
 export const SimpleScope = [
   {
@@ -691,4 +707,81 @@ export const renderFilterInput = (filterType, field, currentFormIndex) => {
     default:
       return null;
   }
+};
+
+export const TimeConstraint = () => {
+  return (
+    <>
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button className="flex justify-between items-center w-full" size="icon" variant="ghost">
+            <ClockIcon className="text-gray-400" />
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="max-w-5xl mx-auto bg-white shadow rounded-lg">
+          <div className="flex">
+            <div className="flex flex-col w-64 mr-4">
+              <div className="flex items-center px-3 py-2 space-x-2 border-b">
+                <MagnifyingGlassIcon className="text-gray-400" />
+                <Input placeholder="Search items" />
+              </div>
+              <Accordion type="single" className="mt-2">
+                <AccordionItem value="events">
+                  <AccordionTrigger>Events</AccordionTrigger>
+                  <AccordionContent>
+                    <ul className="divide-y cursor-pointer">
+                      <li className="px-3 py-2">app_clear_data</li>
+                      <li className="px-3 py-2">app_exception</li>
+                      <li className="px-3 py-2">app_store_refund</li>
+                      <li className="px-3 py-2">app_store_subscription_cancel</li>
+                      <li className="px-3 py-2">app_store_subscription_convert</li>
+                      <li className="px-3 py-2">app_store_subscription_renew</li>
+                      <li className="px-3 py-2">app_update</li>
+                      <li className="px-3 py-2">first_open</li>
+                      <li className="px-3 py-2">in_app_purchase</li>
+                      <li className="px-3 py-2">notification_dismiss</li>
+                    </ul>
+                  </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="dimensions">
+                  <AccordionTrigger>Dimensions</AccordionTrigger>
+                  <AccordionContent>
+                    <ul className="divide-y cursor-pointer">
+                      <li className="px-3 py-2">User</li>
+                      <li className="px-3 py-2">Session</li>
+                    </ul>
+                  </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="metrics">
+                  <AccordionTrigger>Metrics</AccordionTrigger>
+                  <AccordionContent>
+                    <ul className="divide-y cursor-pointer">
+                      <li className="px-3 py-2">Revenue</li>
+                      <li className="px-3 py-2">Engagement</li>
+                    </ul>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </div>
+            <div className="flex-1">
+              <ScrollArea className="h-72">
+                <ul className="divide-y">
+                  <li className="px-3 py-2">app_clear_data</li>
+                  <li className="px-3 py-2 bg-blue-100">app_exception</li>
+                  <li className="px-3 py-2">app_store_refund</li>
+                  <li className="px-3 py-2">app_store_subscription_cancel</li>
+                  <li className="px-3 py-2">app_store_subscription_convert</li>
+                  <li className="px-3 py-2">app_store_subscription_renew</li>
+                  <li className="px-3 py-2">app_update</li>
+                  <li className="px-3 py-2">first_open</li>
+                  <li className="px-3 py-2">in_app_purchase</li>
+                  <li className="px-3 py-2">notification_dismiss</li>
+                </ul>
+              </ScrollArea>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
 };
