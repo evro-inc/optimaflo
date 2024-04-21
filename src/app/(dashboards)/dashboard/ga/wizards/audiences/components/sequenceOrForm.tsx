@@ -36,11 +36,7 @@ export default ({
 }) => {
   const { fields, remove, append } = useFieldArray({
     control,
-    /*     name: `forms.${audienceFormIndex}.filterClauses.${audienceFormIndex}.parentCardArray.${sequenceFormIndex}.sequenceFilter.sequenceSteps.filterExpression.orGroup.filterExpressions`, */
-
-    /*   name: `forms[${audienceFormIndex}].filterClauses[${sequenceFormIndex}].sequenceFilter.sequenceSteps[${sequenceStepIndex}].filterExpression.orGroup.filterExpressions` */
-
-    name: `forms[${audienceFormIndex}].filterClauses.sequenceFilter.sequenceSteps[${sequenceStepIndex}].filterExpression.orGroup.filterExpressions[${cardAndIndex}]`,
+    name: `forms[${audienceFormIndex}].filterClauses.sequenceFilter.sequenceSteps[${sequenceStepIndex}].filterExpression.andGroup.filterExpressions.orGroup.filterExpressions`,
   });
 
   return (
@@ -154,11 +150,10 @@ export default ({
                         {inputItem && (
                           <FormField
                             control={control}
-                            name={`forms[${sequenceFormIndex}].filterClauses[${sequenceFormIndex}].parentCardArray[${sequenceFormIndex}].simpleFilter.simpleCardArray[${index}].filterExpression.andGroup.filterExpressions[${index}].dimensionOrMetricFilter.${
-                              filterTypeMapping[inputItem.apiName] ||
+                            name={`forms[${sequenceFormIndex}].filterClauses[${sequenceFormIndex}].parentCardArray[${sequenceFormIndex}].simpleFilter.simpleCardArray[${index}].filterExpression.andGroup.filterExpressions[${index}].dimensionOrMetricFilter.${filterTypeMapping[inputItem.apiName] ||
                               filterTypeMapping[inputItem.category] ||
                               'stringFilter'
-                            }`}
+                              }`}
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>Filter</FormLabel>
@@ -166,8 +161,8 @@ export default ({
                                   {/* Render the appropriate filter input based on the filterType */}
                                   {renderFilterInput(
                                     filterTypeMapping[inputItem.apiName] ||
-                                      filterTypeMapping[inputItem.category] ||
-                                      'stringFilter',
+                                    filterTypeMapping[inputItem.category] ||
+                                    'stringFilter',
                                     field,
                                     sequenceFormIndex
                                   )}

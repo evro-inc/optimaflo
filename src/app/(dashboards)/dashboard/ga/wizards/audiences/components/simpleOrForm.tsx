@@ -35,7 +35,6 @@ export default ({
 }) => {
   const { fields, remove, append } = useFieldArray({
     control,
-    /*     name: `forms.${audienceFormIndex}.filterClauses.${audienceFormIndex}.parentCardArray.${simpleFormIndex}.simpleFilter.simpleCardArray.${cardAndIndex}.filterExpression.andGroup.filterExpressions.orGroup.filterExpressions`, */
     name: `forms[${audienceFormIndex}].filterClauses.simpleFilter.simpleCardArray[${simpleFormIndex}].filterExpression.andGroup.filterExpressions.orGroup.filterExpressions`,
   });
 
@@ -150,11 +149,10 @@ export default ({
                         {inputItem && (
                           <FormField
                             control={control}
-                            name={`forms[${simpleFormIndex}].filterClauses[${simpleFormIndex}].parentCardArray[${simpleFormIndex}].simpleFilter.simpleCardArray[${index}].filterExpression.andGroup.filterExpressions[${index}].dimensionOrMetricFilter.${
-                              filterTypeMapping[inputItem.apiName] ||
+                            name={`forms[${simpleFormIndex}].filterClauses[${simpleFormIndex}].parentCardArray[${simpleFormIndex}].simpleFilter.simpleCardArray[${index}].filterExpression.andGroup.filterExpressions[${index}].dimensionOrMetricFilter.${filterTypeMapping[inputItem.apiName] ||
                               filterTypeMapping[inputItem.category] ||
                               'stringFilter'
-                            }`}
+                              }`}
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>Filter</FormLabel>
@@ -162,8 +160,8 @@ export default ({
                                   {/* Render the appropriate filter input based on the filterType */}
                                   {renderFilterInput(
                                     filterTypeMapping[inputItem.apiName] ||
-                                      filterTypeMapping[inputItem.category] ||
-                                      'stringFilter',
+                                    filterTypeMapping[inputItem.category] ||
+                                    'stringFilter',
                                     field,
                                     simpleFormIndex
                                   )}
