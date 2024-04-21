@@ -44,9 +44,9 @@ import {
 } from '../../../properties/@audiences/items';
 import Sequence from './sequenceForm';
 import { AudienceClauseType, AudienceFilterScope } from '@/src/types/types';
-import CardForm from './cardForm';
+import CardForm from './simpleForm';
 
-export default function SimpleForm({
+export default function ConditionalForm({
   combinedCategories,
   audienceFormIndex,
   control,
@@ -59,7 +59,7 @@ export default function SimpleForm({
     remove: SimpleRemove,
   } = useFieldArray({
     control,
-    name: `forms.${audienceFormIndex}.filterClauses.parentCardArray.${audienceFormIndex}.simpleFilter`,
+    name: `forms[${audienceFormIndex}].filterClauses.simpleFilter`,
   });
 
   const {
@@ -68,7 +68,7 @@ export default function SimpleForm({
     remove: SequenceRemove,
   } = useFieldArray({
     control,
-    name: `forms.${audienceFormIndex}.filterClauses.parentCardArray.${audienceFormIndex}.sequenceFilter`,
+    name: `forms[${audienceFormIndex}].filterClauses.sequenceFilter`,
   });
 
   const {
@@ -77,7 +77,7 @@ export default function SimpleForm({
     remove: SequenceStepRemove,
   } = useFieldArray({
     control,
-    name: `forms.${audienceFormIndex}.filterClauses.parentCardArray.${audienceFormIndex}.sequenceFilter.sequenceSteps`,
+    name: `forms[${audienceFormIndex}].filterClauses.sequenceFilter.sequenceSteps`,
   });
 
   return (
@@ -109,13 +109,13 @@ export default function SimpleForm({
                       <PersonIcon className="text-gray-600" />
                       <FormField
                         control={control}
-                        name={`forms.[${audienceFormIndex}].filterClauses.parentCardArray[${simpleIndex}].simpleFilter.simpleCardArray[${simpleIndex}].scope`}
+                        name={`forms.[${audienceFormIndex}].filterClauses.simpleFilter.simpleCardArray[${simpleIndex}].scope`}
                         render={({ field }) => (
                           <FormItem>
                             <FormControl>
                               <Select
                                 {...register(
-                                  `forms.[${audienceFormIndex}].filterClauses.parentCardArray[${simpleIndex}].simpleFilter.simpleCardArray[${simpleIndex}].scope`
+                                  `forms.[${audienceFormIndex}].filterClauses.simpleFilter.simpleCardArray[${simpleIndex}].scope`
                                 )}
                                 {...field}
                                 onValueChange={field.onChange}
@@ -283,6 +283,7 @@ export default function SimpleForm({
                               variant="ghost"
                               size="icon"
                               onClick={() => SequenceStepRemove(stepIndex)}
+                              disabled={SequenceStepForm.length <= 1}
                             >
                               <TrashIcon className="text-gray-400" />
                             </Button>
@@ -294,6 +295,7 @@ export default function SimpleForm({
                         audienceFormIndex={audienceFormIndex}
                         combinedCategories={combinedCategories}
                         sequenceFormIndex={sequenceIndex}
+                        sequenceStepIndex={stepIndex}
                         {...{ control, register, watch }}
                       />
                     </CardContent>
@@ -335,21 +337,16 @@ export default function SimpleForm({
           variant="secondary"
           onClick={() => {
             SimpleAppend({
-              name: 'new condition group',
-              parentCardArray: [
-                {
-                  clauseType: AudienceClauseType.UNSPECIFIED,
-                  simpleFilter: {
-                    name: 'new simple filter',
-                    simpleCardArray: [
-                      {
-                        scope: AudienceFilterScope.UNSPECIFIED,
-                        filterExpression: simpleFilterExpression,
-                      },
-                    ],
+              clauseType: AudienceClauseType.UNSPECIFIED,
+              simpleFilter: {
+                name: 'new simple filter',
+                simpleCardArray: [
+                  {
+                    scope: AudienceFilterScope.UNSPECIFIED,
+                    filterExpression: simpleFilterExpression,
                   },
-                },
-              ],
+                ],
+              },
             });
           }}
         >

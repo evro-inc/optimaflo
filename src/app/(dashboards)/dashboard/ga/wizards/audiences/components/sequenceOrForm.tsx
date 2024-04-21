@@ -27,7 +27,8 @@ import { Badge } from '@/src/components/ui/badge';
 export default ({
   combinedCategories,
   audienceFormIndex,
-  formIndex,
+  sequenceFormIndex,
+  sequenceStepIndex,
   cardAndIndex,
   control,
   register,
@@ -35,15 +36,19 @@ export default ({
 }) => {
   const { fields, remove, append } = useFieldArray({
     control,
-    name: `forms.${audienceFormIndex}.filterClauses.${audienceFormIndex}.parentCardArray.${formIndex}.simpleFilter.simpleCardArray.${cardAndIndex}.filterExpression.andGroup.filterExpressions.orGroup.filterExpressions`,
+    /*     name: `forms.${audienceFormIndex}.filterClauses.${audienceFormIndex}.parentCardArray.${sequenceFormIndex}.sequenceFilter.sequenceSteps.filterExpression.orGroup.filterExpressions`, */
+
+    /*   name: `forms[${audienceFormIndex}].filterClauses[${sequenceFormIndex}].sequenceFilter.sequenceSteps[${sequenceStepIndex}].filterExpression.orGroup.filterExpressions` */
+
+    name: `forms[${audienceFormIndex}].filterClauses.sequenceFilter.sequenceSteps[${sequenceStepIndex}].filterExpression.orGroup.filterExpressions[${cardAndIndex}]`,
   });
 
   return (
     <div>
       {fields.map((item, index) => {
-        const categoryFieldName = `forms[${audienceFormIndex}].filterClauses[${formIndex}].parentCardArray[${formIndex}].simpleFilter.simpleCardArray[${cardAndIndex}].filterExpression.orGroup.filterExpressions[${index}].dimensionOrMetricFilter.category`;
+        const categoryFieldName = `forms[${audienceFormIndex}].filterClauses[${sequenceFormIndex}].parentCardArray[${sequenceFormIndex}].simpleFilter.simpleCardArray[${cardAndIndex}].filterExpression.orGroup.filterExpressions[${index}].dimensionOrMetricFilter.category`;
 
-        const fieldName = `forms[${audienceFormIndex}].filterClauses[${formIndex}].parentCardArray[${formIndex}].simpleFilter.simpleCardArray[${cardAndIndex}].filterExpression.orGroup.filterExpressions[${index}].dimensionOrMetricFilter.fieldName`;
+        const fieldName = `forms[${audienceFormIndex}].filterClauses[${sequenceFormIndex}].parentCardArray[${sequenceFormIndex}].simpleFilter.simpleCardArray[${cardAndIndex}].filterExpression.orGroup.filterExpressions[${index}].dimensionOrMetricFilter.fieldName`;
 
         // Watch the specific category and item for this field
         const selectedCategory = watch(categoryFieldName);
@@ -149,7 +154,7 @@ export default ({
                         {inputItem && (
                           <FormField
                             control={control}
-                            name={`forms[${formIndex}].filterClauses[${formIndex}].parentCardArray[${formIndex}].simpleFilter.simpleCardArray[${index}].filterExpression.andGroup.filterExpressions[${index}].dimensionOrMetricFilter.${
+                            name={`forms[${sequenceFormIndex}].filterClauses[${sequenceFormIndex}].parentCardArray[${sequenceFormIndex}].simpleFilter.simpleCardArray[${index}].filterExpression.andGroup.filterExpressions[${index}].dimensionOrMetricFilter.${
                               filterTypeMapping[inputItem.apiName] ||
                               filterTypeMapping[inputItem.category] ||
                               'stringFilter'
@@ -164,7 +169,7 @@ export default ({
                                       filterTypeMapping[inputItem.category] ||
                                       'stringFilter',
                                     field,
-                                    formIndex
+                                    sequenceFormIndex
                                   )}
                                 </FormControl>
                                 <FormMessage />

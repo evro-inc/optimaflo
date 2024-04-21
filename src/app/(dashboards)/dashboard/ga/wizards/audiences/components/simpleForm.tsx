@@ -22,7 +22,7 @@ import {
 import { Button } from '@/src/components/ui/button';
 import { Cross2Icon, PlusIcon } from '@radix-ui/react-icons';
 import { renderFilterInput } from '../../../properties/@audiences/items';
-import OrForm from './cardOrForm';
+import OrForm from './simpleOrForm';
 import { Separator } from '@/src/components/ui/separator';
 import { Badge } from '@/src/components/ui/badge';
 
@@ -36,15 +36,16 @@ export default ({
 }) => {
   const { fields, remove, append } = useFieldArray({
     control,
-    name: `forms.${audienceFormIndex}.filterClauses.${audienceFormIndex}.parentCardArray.${simpleFormIndex}.simpleFilter.simpleCardArray.${simpleFormIndex}.filterExpression.andGroup.filterExpressions`,
+    /*     name: `forms.${audienceFormIndex}.filterClauses.${audienceFormIndex}.parentCardArray.${simpleFormIndex}.simpleFilter.simpleCardArray.${simpleFormIndex}.filterExpression.andGroup.filterExpressions`, */
+    name: `forms[${audienceFormIndex}].filterClauses.simpleFilter.simpleCardArray[${simpleFormIndex}].filterExpression`,
   });
 
   return (
     <div>
       {fields.map((item, cardAndIndex) => {
-        const categoryFieldName = `forms[${audienceFormIndex}].filterClauses.simpleFilter[${simpleFormIndex}].simpleCardArray[${simpleFormIndex}].filterExpression.andGroup.filterExpressions[${cardAndIndex}].dimensionOrMetricFilter.category`;
+        const categoryFieldName = `forms[${audienceFormIndex}].filterClauses.simpleFilter.simpleCardArray[${cardAndIndex}].filterExpression.andGroup.filterExpressions[${cardAndIndex}].dimensionOrMetricFilter.category`;
 
-        const fieldName = `forms[${audienceFormIndex}].filterClauses.simpleFilter[${simpleFormIndex}].simpleCardArray[${simpleFormIndex}].filterExpression.andGroup.filterExpressions[${cardAndIndex}].dimensionOrMetricFilter.fieldName`;
+        const fieldName = `forms[${audienceFormIndex}].filterClauses.simpleFilter.simpleCardArray[${cardAndIndex}].filterExpression.andGroup.filterExpressions[${cardAndIndex}].dimensionOrMetricFilter.fieldName`;
 
         // Watch the specific category and item for this field
         const selectedCategory = watch(categoryFieldName);

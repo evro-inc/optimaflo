@@ -21,22 +21,29 @@ import {
 } from '@/src/components/ui/select';
 import { Button } from '@/src/components/ui/button';
 import { Cross2Icon, PlusIcon } from '@radix-ui/react-icons';
-import { renderFilterInput } from '../../../properties/@audiences/items';
-import OrForm from './cardOrForm';
+import {
+  renderFilterInput,
+  sequenceStepFilterExpression,
+} from '../../../properties/@audiences/items';
+import OrForm from './sequenceOrForm';
 import { Separator } from '@/src/components/ui/separator';
 import { Badge } from '@/src/components/ui/badge';
+import { AudienceFilterScope } from '@/src/types/types';
 
 export default ({
   combinedCategories,
   audienceFormIndex,
   sequenceFormIndex,
+  sequenceStepIndex,
   control,
   register,
   watch,
 }) => {
   const { fields, remove, append } = useFieldArray({
     control,
-    name: `forms.${audienceFormIndex}.filterClauses.parentCardArray.${audienceFormIndex}.sequenceFilter.sequenceCardArray.${sequenceFormIndex}.sequenceSteps.filterExpression.andGroup.filterExpressions`,
+    /*     name: `forms.${audienceFormIndex}.filterClauses.${audienceFormIndex}.parentCardArray.${sequenceFormIndex}.sequenceFilter.sequenceSteps.${sequenceFormIndex}.filterExpression.andGroup.filterExpressions`, */
+
+    name: `forms[${audienceFormIndex}].filterClauses[${sequenceFormIndex}].sequenceFilter.sequenceSteps[${sequenceStepIndex}].filterExpression.andGroup.filterExpressions`,
   });
 
   return (
@@ -186,7 +193,8 @@ export default ({
                       <OrForm
                         combinedCategories={combinedCategories}
                         audienceFormIndex={audienceFormIndex}
-                        formIndex={sequenceFormIndex}
+                        sequenceFormIndex={sequenceFormIndex}
+                        sequenceStepIndex={sequenceStepIndex}
                         cardAndIndex={cardAndIndex}
                         control={control}
                         register={register}
@@ -201,7 +209,17 @@ export default ({
         );
       })}
       <div className="mt-5 flex items-center space-x-4">
-        <Button className="flex items-center space-x-2" onClick={() => append({})}>
+        <Button
+          className="flex items-center space-x-2"
+          onClick={() =>
+            append({
+              scope: AudienceFilterScope.WITHIN_SAME_EVENT, // Default scope
+              immediatelyFollows: false, // Default value for immediatelyFollows
+              constraintDuration: '', // Default value for constraintDuration
+              filterExpression: sequenceStepFilterExpression, // Default filterExpression structure
+            })
+          }
+        >
           <PlusIcon className="text-white" />
           <span>Add Card</span>
         </Button>
