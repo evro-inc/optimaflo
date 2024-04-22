@@ -27,7 +27,7 @@ import {
   sequenceStepFilterExpression,
   SimpleScope,
   TimeConstraint,
-} from '../../../properties/@audiences/items';
+} from '../../../../properties/@audiences/items';
 import Sequence from './sequenceForm';
 
 import { Separator } from '@/src/components/ui/separator';

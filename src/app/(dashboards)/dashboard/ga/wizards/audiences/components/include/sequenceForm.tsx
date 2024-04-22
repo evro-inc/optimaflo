@@ -24,7 +24,7 @@ import { Cross2Icon, PlusIcon } from '@radix-ui/react-icons';
 import {
   renderFilterInput,
   sequenceStepFilterExpression,
-} from '../../../properties/@audiences/items';
+} from '../../../../properties/@audiences/items';
 import OrForm from './sequenceOrForm';
 import { Separator } from '@/src/components/ui/separator';
 import { Badge } from '@/src/components/ui/badge';

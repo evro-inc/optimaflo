@@ -21,30 +21,38 @@ import {
 } from '@/src/components/ui/select';
 import { Button } from '@/src/components/ui/button';
 import { Cross2Icon, PlusIcon } from '@radix-ui/react-icons';
-import { renderFilterInput } from '../../../properties/@audiences/items';
-import OrForm from './simpleOrForm';
+import {
+  renderFilterInput,
+  sequenceStepFilterExpression,
+} from '../../../../properties/@audiences/items';
+import OrForm from './sequenceOrForm';
 import { Separator } from '@/src/components/ui/separator';
 import { Badge } from '@/src/components/ui/badge';
+import { AudienceFilterScope } from '@/src/types/types';
 
 export default ({
   combinedCategories,
   audienceFormIndex,
-  simpleFormIndex,
+  sequenceFormIndex,
+  sequenceStepIndex,
+  removeSequence,
+  removeStep,
   control,
   register,
   watch,
 }) => {
   const { fields, remove, append } = useFieldArray({
     control,
-    name: `forms[${audienceFormIndex}].filterClauses.simpleFilter.simpleCardArray[${simpleFormIndex}].filterExpression`,
+    name: `forms[${audienceFormIndex}].filterClauses.sequenceFilter[${sequenceFormIndex}].sequenceSteps[${sequenceStepIndex}].filterExpression`,
   });
+
 
   return (
     <div>
       {fields.map((item, cardAndIndex) => {
-        const categoryFieldName = `forms[${audienceFormIndex}].filterClauses.simpleFilter.simpleCardArray[${cardAndIndex}].filterExpression.andGroup.filterExpressions[${cardAndIndex}].dimensionOrMetricFilter.category`;
+        const categoryFieldName = `forms[${audienceFormIndex}].filterClauses.sequenceFilter.sequenceSteps[${sequenceStepIndex}].filterExpression.andGroup.filterExpressions[${cardAndIndex}].dimensionOrMetricFilter.category`;
 
-        const fieldName = `forms[${audienceFormIndex}].filterClauses.simpleFilter.simpleCardArray[${cardAndIndex}].filterExpression.andGroup.filterExpressions[${cardAndIndex}].dimensionOrMetricFilter.fieldName`;
+        const fieldName = `forms[${audienceFormIndex}].filterClauses.sequenceFilter.sequenceSteps[${sequenceStepIndex}].filterExpression.andGroup.filterExpressions[${cardAndIndex}].dimensionOrMetricFilter.fieldName`;
 
         // Watch the specific category and item for this field
         const selectedCategory = watch(categoryFieldName);
@@ -62,6 +70,15 @@ export default ({
           (category) => category.id === selectedCategory
         );
         const inputItem = inputCategory?.items.find((item) => item.apiName === selectedItem);
+
+        const removeStepSequence = (cardIndex: number) => {
+          remove(cardIndex);
+          if (fields.length === 1) {
+            removeStep(sequenceStepIndex);
+            removeSequence(sequenceFormIndex);
+          }
+        };
+
 
         return (
           <div key={item.id}>
@@ -147,7 +164,7 @@ export default ({
                           />
                           <Button
                             className="flex items-center space-x-2"
-                            onClick={() => remove(cardAndIndex)}
+                            onClick={() => removeStepSequence(cardAndIndex)}
                           >
                             <Cross2Icon className="text-white" />
                           </Button>
@@ -156,7 +173,7 @@ export default ({
                           {inputItem && (
                             <FormField
                               control={control}
-                              name={`forms[${audienceFormIndex}].filterClauses[${simpleFormIndex}].parentCardArray[${simpleFormIndex}].simpleFilter.simpleCardArray[${cardAndIndex}].filterExpression.andGroup.filterExpressions[${cardAndIndex}].dimensionOrMetricFilter.${filterTypeMapping[inputItem.apiName] ||
+                              name={`forms[${audienceFormIndex}].filterClauses[${sequenceFormIndex}].parentCardArray[${sequenceFormIndex}].simpleFilter.simpleCardArray[${cardAndIndex}].filterExpression.andGroup.filterExpressions[${cardAndIndex}].dimensionOrMetricFilter.${filterTypeMapping[inputItem.apiName] ||
                                 filterTypeMapping[inputItem.category] ||
                                 'stringFilter'
                                 }`}
@@ -170,7 +187,7 @@ export default ({
                                       filterTypeMapping[inputItem.category] ||
                                       'stringFilter',
                                       field,
-                                      simpleFormIndex
+                                      sequenceFormIndex
                                     )}
                                   </FormControl>
                                   <FormMessage />
@@ -185,7 +202,8 @@ export default ({
                       <OrForm
                         combinedCategories={combinedCategories}
                         audienceFormIndex={audienceFormIndex}
-                        simpleFormIndex={simpleFormIndex}
+                        sequenceFormIndex={sequenceFormIndex}
+                        sequenceStepIndex={sequenceStepIndex}
                         cardAndIndex={cardAndIndex}
                         control={control}
                         register={register}
@@ -200,11 +218,21 @@ export default ({
         );
       })}
       <div className="mt-5 flex items-center space-x-4">
-        <Button className="flex items-center space-x-2" onClick={() => append({})}>
+        <Button
+          className="flex items-center space-x-2"
+          onClick={() =>
+            append({
+              scope: AudienceFilterScope.WITHIN_SAME_EVENT, // Default scope
+              immediatelyFollows: false, // Default value for immediatelyFollows
+              constraintDuration: '', // Default value for constraintDuration
+              filterExpression: sequenceStepFilterExpression, // Default filterExpression structure
+            })
+          }
+        >
           <PlusIcon className="text-white" />
           <span>Add Card</span>
         </Button>
       </div>
-    </div>
+    </div >
   );
 };

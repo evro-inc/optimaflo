@@ -21,13 +21,14 @@ import {
 } from '@/src/components/ui/select';
 import { Button } from '@/src/components/ui/button';
 import { Cross2Icon, PlusIcon } from '@radix-ui/react-icons';
-import { renderFilterInput } from '../../../properties/@audiences/items';
+import { filterTypeMapping, renderFilterInput } from '../../../../properties/@audiences/items';
 import { Badge } from '@/src/components/ui/badge';
 
 export default ({
   combinedCategories,
   audienceFormIndex,
-  simpleFormIndex,
+  sequenceFormIndex,
+  sequenceStepIndex,
   cardAndIndex,
   control,
   register,
@@ -35,15 +36,15 @@ export default ({
 }) => {
   const { fields, remove, append } = useFieldArray({
     control,
-    name: `forms[${audienceFormIndex}].filterClauses.simpleFilter.simpleCardArray[${simpleFormIndex}].filterExpression.andGroup.filterExpressions.orGroup.filterExpressions`,
+    name: `forms[${audienceFormIndex}].filterClauses.sequenceFilter[${sequenceFormIndex}].sequenceSteps[${sequenceStepIndex}].filterExpression.andGroup.filterExpressions.orGroup.filterExpressions`,
   });
 
   return (
     <div>
       {fields.map((item, index) => {
-        const categoryFieldName = `forms[${audienceFormIndex}].filterClauses[${simpleFormIndex}].parentCardArray[${simpleFormIndex}].simpleFilter.simpleCardArray[${cardAndIndex}].filterExpression.orGroup.filterExpressions[${index}].dimensionOrMetricFilter.category`;
+        const categoryFieldName = `forms[${audienceFormIndex}].filterClauses.sequenceFilter.sequenceSteps[${sequenceStepIndex}].filterExpression.andGroup.filterExpressions.orGroup.filterExpressions[${index}].dimensionOrMetricFilter.category`;
 
-        const fieldName = `forms[${audienceFormIndex}].filterClauses[${simpleFormIndex}].parentCardArray[${simpleFormIndex}].simpleFilter.simpleCardArray[${cardAndIndex}].filterExpression.orGroup.filterExpressions[${index}].dimensionOrMetricFilter.fieldName`;
+        const fieldName = `forms[${audienceFormIndex}].filterClauses.sequenceFilter.sequenceSteps[${sequenceStepIndex}].filterExpression.andGroup.filterExpressions.orGroup.filterExpressions[${index}].dimensionOrMetricFilter.fieldName`;
 
         // Watch the specific category and item for this field
         const selectedCategory = watch(categoryFieldName);
@@ -149,7 +150,7 @@ export default ({
                         {inputItem && (
                           <FormField
                             control={control}
-                            name={`forms[${simpleFormIndex}].filterClauses[${simpleFormIndex}].parentCardArray[${simpleFormIndex}].simpleFilter.simpleCardArray[${index}].filterExpression.andGroup.filterExpressions[${index}].dimensionOrMetricFilter.${filterTypeMapping[inputItem.apiName] ||
+                            name={`forms[${sequenceFormIndex}].filterClauses[${sequenceFormIndex}].parentCardArray[${sequenceFormIndex}].simpleFilter.simpleCardArray[${index}].filterExpression.andGroup.filterExpressions[${index}].dimensionOrMetricFilter.${filterTypeMapping[inputItem.apiName] ||
                               filterTypeMapping[inputItem.category] ||
                               'stringFilter'
                               }`}
@@ -163,7 +164,7 @@ export default ({
                                     filterTypeMapping[inputItem.category] ||
                                     'stringFilter',
                                     field,
-                                    simpleFormIndex
+                                    sequenceFormIndex
                                   )}
                                 </FormControl>
                                 <FormMessage />

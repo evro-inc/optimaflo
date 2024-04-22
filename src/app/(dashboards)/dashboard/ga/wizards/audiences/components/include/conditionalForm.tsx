@@ -41,12 +41,12 @@ import {
   simpleFilterExpression,
   SimpleScope,
   TimeConstraint,
-} from '../../../properties/@audiences/items';
+} from '../../../../properties/@audiences/items';
 import SequenceStepComponent from './sequenceStepForm';
 import { AudienceClauseType, AudienceFilterScope } from '@/src/types/types';
 import CardForm from './simpleForm';
 
-export default function ConditionalForm({
+export default function IncludeConditionalForm({
   combinedCategories,
   audienceFormIndex,
   control,
@@ -222,88 +222,6 @@ export default function ConditionalForm({
                     <Separator />
                   </div>
                 </CardHeader>
-
-                {/* {SequenceStepForm.map((step, stepIndex) => (
-                  <>
-                    <CardContent key={step.id}>
-                      {stepIndex >= 1 ? (
-                        // Custom rendering for the first step
-                        <div className="flex items-center w-full">
-                          <div className="flex flex-grow basis-full justify-start bg-gray-300 rounded p-2">
-                            <div className="flex items-center space-x-2">
-                              <Select>
-                                <SelectTrigger
-                                  id="user-action"
-                                  className="border-none outline-none focus:outline-none focus:ring-0 shadow-none"
-                                >
-                                  <SelectValue
-                                    placeholder="followed by"
-                                    className="border-none outline-none focus:outline-none focus:ring-0"
-                                  />
-                                </SelectTrigger>
-                                <SelectContent
-                                  position="popper"
-                                  className="border-none outline-none focus:outline-none focus:ring-0"
-                                >
-                                  {ImmediatelyFollows.map((item) => (
-                                    <SelectItem key={item.label} value={item.id}>
-                                      {item.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <Separator orientation="vertical" className="bg-gray-400" />
-                              {TimeConstraint()}
-                            </div>
-                          </div>
-                        </div>
-                      ) :
-                        null}
-
-                      <div className="flex items-center w-full p-5">
-                        <div className="basis-3/12">
-                          <p>Step {stepIndex + 1}</p>
-                        </div>
-                        <div className="flex flex-grow basis-9/12 justify-end">
-                          <div className="flex items-center space-x-2">
-                            <PersonIcon className="text-gray-600" />
-                            <Select>
-                              <SelectTrigger id="user-action">
-                                <SelectValue placeholder="Step scoping" />
-                              </SelectTrigger>
-                              <SelectContent position="popper">
-                                {SimpleScope.map((item) => (
-                                  <SelectItem key={item.label} value={item.id}>
-                                    {item.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <Separator orientation="vertical" />
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => SequenceStepRemove(stepIndex)}
-                              disabled={SequenceStepForm.length <= 1}
-                            >
-                              <TrashIcon className="text-gray-400" />
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-
-                      <Sequence
-                        audienceFormIndex={audienceFormIndex}
-                        combinedCategories={combinedCategories}
-                        sequenceFormIndex={sequenceIndex}
-                        sequenceStepIndex={stepIndex}
-                        removeSequence={SequenceRemove}
-                        removeStep={SequenceStepRemove}
-                        {...{ control, register, watch }}
-                      />
-                    </CardContent> 
-                  </>
-                ))} */}
 
                 <SequenceStepComponent
                   combinedCategories={combinedCategories}

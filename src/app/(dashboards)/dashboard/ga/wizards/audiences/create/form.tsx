@@ -131,8 +131,8 @@ import {
   removeExcludeStep,
   setShowExcludeStep,
 } from '@/src/redux/excludeFormSlice';
-import ConditionalForm from '../components/conditionalForm';
-import SequenceForm from '../components/sequenceForm';
+import IncludeConditionalForm from '../components/include/conditionalForm';
+import ExcludeConditionalForm from '../components/exclude/conditionalForm';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -518,156 +518,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     dispatch(decrementStep());
   };
 
-  const renderFilterInput = (filterType, field) => {
-    const { register } = useFormContext();
-
-    switch (filterType) {
-      case 'stringFilter':
-        console.log('stringFilter');
-
-        console.log('field', field);
-
-        return (
-          <>
-            <Select
-              {...register(
-                `forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression.dimensionOrMetricFilter.one_filter.stringFilter.matchType`
-              )}
-              {...field}
-              onValueChange={field.onChange}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Condition" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="EXACT">Exact</SelectItem>
-                <SelectItem value="BEGINS_WITH">Begins With</SelectItem>
-                <SelectItem value="ENDS_WITH">Ends With</SelectItem>
-                <SelectItem value="CONTAINS">Contains</SelectItem>
-                <SelectItem value="FULL_REGEXP">Full Regexp</SelectItem>
-              </SelectContent>
-            </Select>
-            <Input
-              {...register(
-                `forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression.dimensionOrMetricFilter.one_filter.stringFilter.value`
-              )}
-              {...field}
-              onValueChange={field.onChange}
-            />
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                {...register(
-                  `forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression.dimensionOrMetricFilter.one_filter.stringFilter.caseSensitive`
-                )}
-                {...field}
-                onValueChange={field.onChange}
-              />
-              <label
-                htmlFor="caseSensitive"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Case Sensitive
-              </label>
-            </div>
-          </>
-        );
-      case 'inListFilter':
-        console.log('inListFilter');
-        console.log('field', field);
-
-        return (
-          <>
-            <Input
-              {...register(
-                `forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression.dimensionOrMetricFilter.one_filter.inListFilter.values`
-              )}
-              onValueChange={field.onChange}
-              {...field}
-            />
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                {...register(
-                  `forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression.dimensionOrMetricFilter.one_filter.inListFilter.caseSensitive`
-                )}
-                {...field}
-                onValueChange={field.onChange}
-              />
-              <label
-                htmlFor="caseSensitive"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Case Sensitive
-              </label>
-            </div>
-          </>
-        );
-      case 'numericFilter':
-        console.log('numericFilter');
-        console.log('field', field);
-
-        return (
-          <>
-            <Select
-              {...register(
-                `forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression.dimensionOrMetricFilter.one_filter.numericFilter.operation`
-              )}
-              onValueChange={field.onChange}
-              {...field}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Condition" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="EQUAL">Equal</SelectItem>
-                <SelectItem value="LESS_THAN">Less Than</SelectItem>
-                <SelectItem value="LESS_THAN_OR_EQUAL">Less Than or Equal</SelectItem>
-                <SelectItem value="GREATER_THAN">Greater Than</SelectItem>
-                <SelectItem value="GREATER_THAN_OR_EQUAL">Greater Than or Equal</SelectItem>
-              </SelectContent>
-            </Select>
-            <Input
-              type="number"
-              min={0}
-              {...register(
-                `forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression.dimensionOrMetricFilter.one_filter.numericFilter.value`
-              )}
-              {...field}
-              onValueChange={field.onChange}
-            />
-          </>
-        );
-      case 'betweenFilter':
-        console.log('betweenFilter');
-        console.log('field', field);
-        return (
-          <>
-            <Input
-              type="number"
-              min={0}
-              {...register(
-                `forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression.dimensionOrMetricFilter.one_filter.betweenFilter.fromValue`
-              )}
-              {...field}
-              placeholder="From Value"
-              onValueChange={field.onChange}
-            />
-            <Input
-              type="number"
-              min={0}
-              {...register(
-                `forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression.dimensionOrMetricFilter.one_filter.betweenFilter.toValue`
-              )}
-              {...field}
-              placeholder="To Value"
-              onValueChange={field.onChange}
-            />
-          </>
-        );
-      default:
-        return null;
-    }
-  };
-
   return (
     <div className="flex h-full">
       <div className="flex items-center justify-center h-screen mx-auto">
@@ -815,7 +665,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                     </div>
                                   </div>
 
-                                  <ConditionalForm
+                                  <IncludeConditionalForm
                                     combinedCategories={combinedCategories}
                                     audienceFormIndex={index}
                                     {...{
@@ -825,7 +675,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                     }}
                                   />
 
-                                  {/*  <SequenceForm
+                                  <ExcludeConditionalForm
                                     combinedCategories={combinedCategories}
                                     audienceFormIndex={index}
                                     {...{
@@ -833,26 +683,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                       register: form.register,
                                       watch: form.watch,
                                     }}
-                                  /> */}
-
-                                  {/*   <div className="flex items-center justify-between mt-6">
-                                    <Button
-                                      className="flex items-center space-x-2"
-                                      variant="secondary"
-                                      onClick={addConditionGroup}
-                                    >
-                                      <PlusIcon className="text-white" />
-                                      <span>Add condition group to include</span>
-                                    </Button>
-                                    <Button
-                                      className="flex items-center space-x-2"
-                                      variant="secondary"
-                                      onClick={() => handleShowForm('sequence')}
-                                    >
-                                      <BarChartIcon className="text-white" />
-                                      <span>Add sequence to include</span>
-                                    </Button>
-                                  </div> */}
+                                  />
 
                                   <div className="flex flex-col md:flex-row md:space-x-4">
                                     <div className="w-full md:basis-auto">

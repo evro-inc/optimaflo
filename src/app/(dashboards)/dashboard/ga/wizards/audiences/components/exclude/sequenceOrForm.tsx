@@ -21,7 +21,7 @@ import {
 } from '@/src/components/ui/select';
 import { Button } from '@/src/components/ui/button';
 import { Cross2Icon, PlusIcon } from '@radix-ui/react-icons';
-import { renderFilterInput } from '../../../properties/@audiences/items';
+import { filterTypeMapping, renderFilterInput } from '../../../../properties/@audiences/items';
 import { Badge } from '@/src/components/ui/badge';
 
 export default ({
