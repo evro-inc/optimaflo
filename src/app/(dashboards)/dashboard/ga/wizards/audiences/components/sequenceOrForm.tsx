@@ -36,15 +36,15 @@ export default ({
 }) => {
   const { fields, remove, append } = useFieldArray({
     control,
-    name: `forms[${audienceFormIndex}].filterClauses.sequenceFilter.sequenceSteps[${sequenceStepIndex}].filterExpression.andGroup.filterExpressions.orGroup.filterExpressions`,
+    name: `forms[${audienceFormIndex}].filterClauses.sequenceFilter[${sequenceFormIndex}].sequenceSteps[${sequenceStepIndex}].filterExpression.andGroup.filterExpressions.orGroup.filterExpressions`,
   });
 
   return (
     <div>
       {fields.map((item, index) => {
-        const categoryFieldName = `forms[${audienceFormIndex}].filterClauses[${sequenceFormIndex}].parentCardArray[${sequenceFormIndex}].simpleFilter.simpleCardArray[${cardAndIndex}].filterExpression.orGroup.filterExpressions[${index}].dimensionOrMetricFilter.category`;
+        const categoryFieldName = `forms[${audienceFormIndex}].filterClauses.sequenceFilter.sequenceSteps[${sequenceStepIndex}].filterExpression.andGroup.filterExpressions.orGroup.filterExpressions[${index}].dimensionOrMetricFilter.category`;
 
-        const fieldName = `forms[${audienceFormIndex}].filterClauses[${sequenceFormIndex}].parentCardArray[${sequenceFormIndex}].simpleFilter.simpleCardArray[${cardAndIndex}].filterExpression.orGroup.filterExpressions[${index}].dimensionOrMetricFilter.fieldName`;
+        const fieldName = `forms[${audienceFormIndex}].filterClauses.sequenceFilter.sequenceSteps[${sequenceStepIndex}].filterExpression.andGroup.filterExpressions.orGroup.filterExpressions[${index}].dimensionOrMetricFilter.fieldName`;
 
         // Watch the specific category and item for this field
         const selectedCategory = watch(categoryFieldName);

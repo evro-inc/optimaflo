@@ -35,21 +35,24 @@ export default ({
   audienceFormIndex,
   sequenceFormIndex,
   sequenceStepIndex,
+  removeSequence,
+  removeStep,
   control,
   register,
   watch,
 }) => {
   const { fields, remove, append } = useFieldArray({
     control,
-    name: `forms[${audienceFormIndex}].filterClauses.sequenceFilter.sequenceSteps[${sequenceStepIndex}].filterExpression`,
+    name: `forms[${audienceFormIndex}].filterClauses.sequenceFilter[${sequenceFormIndex}].sequenceSteps[${sequenceStepIndex}].filterExpression`,
   });
+
 
   return (
     <div>
       {fields.map((item, cardAndIndex) => {
-        const categoryFieldName = `forms[${audienceFormIndex}].filterClauses.simpleFilter[${sequenceFormIndex}].simpleCardArray[${sequenceFormIndex}].filterExpression.andGroup.filterExpressions[${cardAndIndex}].dimensionOrMetricFilter.category`;
+        const categoryFieldName = `forms[${audienceFormIndex}].filterClauses.sequenceFilter.sequenceSteps[${sequenceStepIndex}].filterExpression.andGroup.filterExpressions[${cardAndIndex}].dimensionOrMetricFilter.category`;
 
-        const fieldName = `forms[${audienceFormIndex}].filterClauses.simpleFilter[${sequenceFormIndex}].simpleCardArray[${sequenceFormIndex}].filterExpression.andGroup.filterExpressions[${cardAndIndex}].dimensionOrMetricFilter.fieldName`;
+        const fieldName = `forms[${audienceFormIndex}].filterClauses.sequenceFilter.sequenceSteps[${sequenceStepIndex}].filterExpression.andGroup.filterExpressions[${cardAndIndex}].dimensionOrMetricFilter.fieldName`;
 
         // Watch the specific category and item for this field
         const selectedCategory = watch(categoryFieldName);
@@ -67,6 +70,15 @@ export default ({
           (category) => category.id === selectedCategory
         );
         const inputItem = inputCategory?.items.find((item) => item.apiName === selectedItem);
+
+        const removeStepSequence = (cardIndex: number) => {
+          remove(cardIndex);
+          if (fields.length === 1) {
+            removeStep(sequenceStepIndex);
+            removeSequence(sequenceFormIndex);
+          }
+        };
+
 
         return (
           <div key={item.id}>
@@ -152,7 +164,7 @@ export default ({
                           />
                           <Button
                             className="flex items-center space-x-2"
-                            onClick={() => remove(cardAndIndex)}
+                            onClick={() => removeStepSequence(cardAndIndex)}
                           >
                             <Cross2Icon className="text-white" />
                           </Button>
@@ -221,6 +233,6 @@ export default ({
           <span>Add Card</span>
         </Button>
       </div>
-    </div>
+    </div >
   );
 };

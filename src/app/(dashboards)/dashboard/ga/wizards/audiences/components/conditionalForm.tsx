@@ -42,7 +42,7 @@ import {
   SimpleScope,
   TimeConstraint,
 } from '../../../properties/@audiences/items';
-import Sequence from './sequenceForm';
+import SequenceStepComponent from './sequenceStepForm';
 import { AudienceClauseType, AudienceFilterScope } from '@/src/types/types';
 import CardForm from './simpleForm';
 
@@ -71,14 +71,6 @@ export default function ConditionalForm({
     name: `forms[${audienceFormIndex}].filterClauses.sequenceFilter`,
   });
 
-  const {
-    fields: SequenceStepForm,
-    append: SequenceStepAppend,
-    remove: SequenceStepRemove,
-  } = useFieldArray({
-    control,
-    name: `forms[${audienceFormIndex}].filterClauses.sequenceFilter.sequenceSteps`,
-  });
 
   return (
     <>
@@ -167,7 +159,7 @@ export default function ConditionalForm({
 
           return (
             <li key={sequenceItem.id}>
-              {SimpleForm.length > 0 && (
+              {SimpleForm.length > 0 ? (
                 <div className="w-10 flex flex-col items-center justify-center space-y-2">
                   <div className="h-5">
                     <Separator orientation="vertical" />
@@ -177,7 +169,17 @@ export default function ConditionalForm({
                     <Separator orientation="vertical" />
                   </div>
                 </div>
-              )}
+              ) : sequenceIndex > 0 ? (
+                <div className="w-10 flex flex-col items-center justify-center space-y-2">
+                  <div className="h-5">
+                    <Separator orientation="vertical" />
+                  </div>
+                  <Badge variant="secondary">AND</Badge>
+                  <div className="h-5">
+                    <Separator orientation="vertical" />
+                  </div>
+                </div>
+              ) : null}
               <Card>
                 <CardHeader>
                   <div className="flex items-center w-full">
@@ -221,7 +223,7 @@ export default function ConditionalForm({
                   </div>
                 </CardHeader>
 
-                {SequenceStepForm.map((step, stepIndex) => (
+                {/* {SequenceStepForm.map((step, stepIndex) => (
                   <>
                     <CardContent key={step.id}>
                       {stepIndex >= 1 ? (
@@ -255,9 +257,8 @@ export default function ConditionalForm({
                             </div>
                           </div>
                         </div>
-                      ) : // This part of the ternary operator needs to render something or nothing for subsequent steps.
-                      // If there's no specific content needed for subsequent steps, you can return null or omit this part.
-                      null}
+                      ) :
+                        null}
 
                       <div className="flex items-center w-full p-5">
                         <div className="basis-3/12">
@@ -296,35 +297,23 @@ export default function ConditionalForm({
                         combinedCategories={combinedCategories}
                         sequenceFormIndex={sequenceIndex}
                         sequenceStepIndex={stepIndex}
+                        removeSequence={SequenceRemove}
+                        removeStep={SequenceStepRemove}
                         {...{ control, register, watch }}
                       />
-                    </CardContent>
+                    </CardContent> 
                   </>
-                ))}
+                ))} */}
 
-                <CardFooter>
-                  <div className="flex flex-col items-center space-y-2 w-full">
-                    <Separator />
-                    <div className="w-full flex justify-start">
-                      {' '}
-                      {/* Adjusted line */}
-                      <Button
-                        className="flex items-center space-x-2"
-                        onClick={() =>
-                          SequenceStepAppend({
-                            scope: AudienceFilterScope.WITHIN_SAME_EVENT,
-                            immediatelyFollows: false,
-                            constraintDuration: '',
-                            filterExpression: sequenceStepFilterExpression,
-                          })
-                        }
-                        variant="ghost"
-                      >
-                        <span>Add Step</span>
-                      </Button>
-                    </div>
-                  </div>
-                </CardFooter>
+                <SequenceStepComponent
+                  combinedCategories={combinedCategories}
+                  audienceFormIndex={audienceFormIndex}
+                  sequenceFormIndex={sequenceIndex}
+                  removeSequence={SequenceRemove}
+                  {...{ control, register, watch }}
+                />
+
+
               </Card>
             </li>
           );
@@ -369,12 +358,6 @@ export default function ConditionalForm({
                   filterExpression: sequenceStepFilterExpression,
                 },
               ],
-            });
-            SequenceStepAppend({
-              scope: AudienceFilterScope.WITHIN_SAME_EVENT,
-              immediatelyFollows: false,
-              constraintDuration: '',
-              filterExpression: sequenceStepFilterExpression,
             });
           }}
         >
