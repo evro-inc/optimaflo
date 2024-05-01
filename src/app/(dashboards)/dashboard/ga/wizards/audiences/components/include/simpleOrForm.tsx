@@ -1,15 +1,7 @@
 import React from 'react';
 import { useFieldArray } from 'react-hook-form';
-import { Card, CardContent, CardHeader } from '@/src/components/ui/card';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/src/components/ui/form';
+import { CardContent, CardHeader } from '@/src/components/ui/card';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/src/components/ui/form';
 import {
   Select,
   SelectContent,
@@ -33,17 +25,21 @@ export default ({
   register,
   watch,
 }) => {
+  const base = `forms[${audienceFormIndex}].filterClauses[${simpleFormIndex}].simpleFilter.filterExpression.andGroup.filterExpressions[${cardAndIndex}]orGroup.filterExpressions[${cardAndIndex}]`;
+
   const { fields, remove, append } = useFieldArray({
     control,
-    name: `forms[${audienceFormIndex}].filterClauses.simpleFilter.simpleCardArray[${simpleFormIndex}].filterExpression.andGroup.filterExpressions.orGroup.filterExpressions`,
+    name: base,
   });
 
   return (
     <div>
       {fields.map((item, index) => {
-        const categoryFieldName = `forms[${audienceFormIndex}].filterClauses[${simpleFormIndex}].parentCardArray[${simpleFormIndex}].simpleFilter.simpleCardArray[${cardAndIndex}].filterExpression.orGroup.filterExpressions[${index}].dimensionOrMetricFilter.category`;
+        const baseField = `${base}.dimensionOrMetricFilter`;
 
-        const fieldName = `forms[${audienceFormIndex}].filterClauses[${simpleFormIndex}].parentCardArray[${simpleFormIndex}].simpleFilter.simpleCardArray[${cardAndIndex}].filterExpression.orGroup.filterExpressions[${index}].dimensionOrMetricFilter.fieldName`;
+        const categoryFieldName = `${baseField}.category`;
+
+        const fieldName = `${baseField}.fieldName`;
 
         // Watch the specific category and item for this field
         const selectedCategory = watch(categoryFieldName);
@@ -73,104 +69,100 @@ export default ({
             <CardContent className="p-0">
               <div className="flex items-center justify-between mt-5">
                 <div className="flex flex-row md:space-x-4 w-full">
-                  <div>
-                    <div>
-                      <div className="flex space-x-4">
-                        <FormField
-                          control={control}
-                          name={categoryFieldName}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormControl>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select Category" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {combinedCategories.map((parentCategory) => (
-                                      <SelectGroup key={parentCategory.name}>
-                                        <SelectLabel>{parentCategory.name}</SelectLabel>
-                                        {parentCategory.categories.map((category) => (
-                                          <SelectItem
-                                            {...register(categoryFieldName)}
-                                            key={`${parentCategory.name} - ${category.name}`}
-                                            value={`${parentCategory.name} - ${category.name}`}
-                                          >
-                                            {category.name}
-                                          </SelectItem>
-                                        ))}
-                                      </SelectGroup>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={control}
-                          name={fieldName}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormControl>
-                                <Select
-                                  {...register(fieldName)}
-                                  {...field}
-                                  disabled={!selectedCategory}
-                                  onValueChange={field.onChange}
-                                  defaultValue={field.value}
-                                >
-                                  <SelectTrigger className="truncate w-[200px]">
-                                    <SelectValue placeholder="Select Item" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {inputCategory?.items.map((item: any) => (
-                                      <SelectItem key={item.apiName} value={item.apiName}>
-                                        {item.uiName}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <div className="flex justify-end">
-                          <Button variant="ghost" size="icon" onClick={() => remove(index)}>
-                            <Cross2Icon className="text-gray-400" />
-                          </Button>
-                        </div>
-                      </div>
-                      <div>
-                        {inputItem && (
+                  <div className="w-full">
+                    <div className="w-full">
+                      <div className="flex space-x-4 w-full">
+                        <div className="w-5/12">
                           <FormField
                             control={control}
-                            name={`forms[${simpleFormIndex}].filterClauses[${simpleFormIndex}].parentCardArray[${simpleFormIndex}].simpleFilter.simpleCardArray[${index}].filterExpression.andGroup.filterExpressions[${index}].dimensionOrMetricFilter.${filterTypeMapping[inputItem.apiName] ||
-                              filterTypeMapping[inputItem.category] ||
-                              'stringFilter'
-                              }`}
+                            name={categoryFieldName}
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Filter</FormLabel>
                                 <FormControl>
-                                  {/* Render the appropriate filter input based on the filterType */}
-                                  {renderFilterInput(
-                                    filterTypeMapping[inputItem.apiName] ||
-                                    filterTypeMapping[inputItem.category] ||
-                                    'stringFilter',
-                                    field,
-                                    simpleFormIndex
-                                  )}
+                                  <Select
+                                    {...field}
+                                    onValueChange={(value) => {
+                                      field.onChange(value);
+                                    }}
+                                    defaultValue={field.value}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select Category" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {combinedCategories.map((parentCategory) => (
+                                        <SelectGroup key={parentCategory.name}>
+                                          <SelectLabel>{parentCategory.name}</SelectLabel>
+                                          {parentCategory.categories.map((category) => (
+                                            <SelectItem
+                                              key={`${parentCategory.name} - ${category.name}`}
+                                              value={`${parentCategory.name} - ${category.name}`}
+                                            >
+                                              {category.name}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectGroup>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
                             )}
                           />
-                        )}
+                        </div>
+                        <div className="w-5/12">
+                          <FormField
+                            control={control}
+                            name={fieldName}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <Select
+                                    {...field}
+                                    disabled={!selectedCategory}
+                                    onValueChange={(value) => {
+                                      field.onChange(value);
+                                    }}
+                                    defaultValue={field.value}
+                                  >
+                                    <SelectTrigger className="truncate">
+                                      <SelectValue placeholder="Select Item" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {inputCategory?.items.map((item: any) => (
+                                        <SelectItem key={item.apiName} value={item.apiName}>
+                                          {item.uiName}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        <div className="w-1/12">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => remove(index)}
+                          >
+                            <Cross2Icon className="text-gray-400" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div>
+                        {inputItem &&
+                          renderFilterInput(
+                            'stringFilter',
+                            audienceFormIndex,
+                            simpleFormIndex,
+                            cardAndIndex
+                          )}
                       </div>
                     </div>
                   </div>
@@ -181,6 +173,7 @@ export default ({
         );
       })}
       <Button
+        type="button"
         className="flex items-center space-x-2 text-blue-500"
         variant="ghost"
         onClick={() => append({})}

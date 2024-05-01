@@ -1,29 +1,10 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import {
-  setLoading,
-  incrementStep,
-  decrementStep,
-  setCount,
-  setShowSimpleForm,
-  removeSimpleForm,
-  FormIdentifier,
-  setShowCard,
-  removeCard,
-  removeOrForm,
-  setShowSequenceForm,
-  removeSequenceForm,
-  removeStep,
-  CardIdentifier,
-  setShowStep,
-  StepIdentifier,
-  setSelectedCategory,
-  setSelectedItem,
-} from '@/redux/formSlice';
+import { setLoading, incrementStep, decrementStep, setCount } from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { SubmitHandler, useFieldArray, useForm, useFormContext } from 'react-hook-form';
+import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { FormCreateAmountSchema, FormsSchema } from '@/src/lib/schemas/ga/audiences';
 import { Button } from '@/src/components/ui/button';
@@ -39,9 +20,7 @@ import {
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/src/components/ui/select';
@@ -50,16 +29,12 @@ import { Input } from '@/src/components/ui/input';
 import {
   AudienceClauseType,
   AudienceExclusionDurationMode,
-  AudienceFilterClause,
-  AudienceFilterExpression,
   AudienceFilterScope,
   AudienceSimpleFilter,
   AudienceType,
   FeatureResponse,
   FormCreateProps,
   LogCondition,
-  MatchType,
-  Operation,
 } from '@/src/types/types';
 import { toast } from 'sonner';
 import {
@@ -72,67 +47,16 @@ import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { createGAAudiences } from '@/src/lib/fetch/dashboard/actions/ga/audiences';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/src/components/ui/card';
 import { Checkbox } from '@/src/components/ui/checkbox';
 import {
-  filterTypeMapping,
-  ImmediatelyFollows,
-  SequenceScope,
+  LogConditionData,
   sequenceStepFilterExpression,
   simpleFilterExpression,
-  SimpleScope,
 } from '../../../properties/@audiences/items';
-import {
-  PlusIcon,
-  BarChartIcon,
-  Cross2Icon,
-  ChevronDownIcon,
-  MagnifyingGlassIcon,
-  TrashIcon,
-  CircleIcon,
-  ClockIcon,
-  ValueNoneIcon,
-} from '@radix-ui/react-icons';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/src/components/ui/dialog';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/src/components/ui/accordion';
-import { ScrollArea } from '@/src/components/ui/scroll-area';
-import { Badge } from '@/src/components/ui/badge';
-import { Separator } from '@/src/components/ui/separator';
-import { UserPlusIcon } from '@heroicons/react/24/solid';
-import {
-  setExcludeSequenceForm,
-  setExcludeSimpleForm,
-  setShowExcludeCard,
-  setExcludeParentForm,
-  removeExcludeSequenceForm,
-  removeExcludeSimpleForm,
-  removeExcludeParentForm,
-  removeExcludeCard,
-  removeExcludeStep,
-  setShowExcludeStep,
-} from '@/src/redux/excludeFormSlice';
 import IncludeConditionalForm from '../components/include/conditionalForm';
 import ExcludeConditionalForm from '../components/exclude/conditionalForm';
+import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/card';
+import { RadioGroup, RadioGroupItem } from '@/src/components/ui/radio-group';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -274,37 +198,32 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     name: '',
     displayName: '',
     description: '',
-    membershipDurationDays: 0,
+    membershipDurationDays: 1,
     adsPersonalizationEnabled: false,
     eventTrigger: {
       eventName: '',
-      logCondition: LogCondition.UNSPECIFIED,
+      logCondition: LogCondition.AudienceJoined,
     },
-    exclusionDurationMode: AudienceExclusionDurationMode.UNSPECIFIED,
+    exclusionDurationMode: AudienceExclusionDurationMode.ExcludePermanently,
     filterClauses: [
       {
-        clauseType: AudienceClauseType.UNSPECIFIED,
+        clauseType: AudienceClauseType.Include,
         simpleFilter: {
-          name: '',
-          simpleCardArray: [
-            {
-              scope: AudienceFilterScope.UNSPECIFIED,
-              filterExpression: simpleFilterExpression,
-            },
-          ],
-        },
-        sequenceFilter: {
-          scope: AudienceFilterScope.WITHIN_SAME_EVENT,
-          sequenceMaximumDuration: '',
-          sequenceSteps: [
-            {
-              scope: AudienceFilterScope.WITHIN_SAME_EVENT,
-              immediatelyFollows: false,
-              constraintDuration: '',
-              filterExpression: sequenceStepFilterExpression,
-            },
-          ],
-        },
+          scope: AudienceFilterScope.AcrossAllSessions,
+          filterExpression: simpleFilterExpression,
+        } as AudienceSimpleFilter,
+        /*  sequenceFilter: {
+           scope: AudienceFilterScope.WITHIN_SAME_EVENT,
+           sequenceMaximumDuration: '',
+           sequenceSteps: [
+             {
+               scope: AudienceFilterScope.WITHIN_SAME_EVENT,
+               immediatelyFollows: false,
+               constraintDuration: '',
+               filterExpression: sequenceStepFilterExpression,
+             },
+           ],
+         }, */
       },
     ],
   };
@@ -377,10 +296,14 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
 
   // Handle form submission
   const processForm: SubmitHandler<Forms> = async (data) => {
+    console.log('data process', data);
+
+    console.log('Form errors:', form.formState.errors);
+
     const { forms } = data;
     dispatch(setLoading(true));
 
-    toast('Creating conversion events...', {
+    toast('Creating audience...', {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
@@ -410,7 +333,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
         res.results.forEach((result) => {
           if (result.success) {
             toast.success(
-              `Custom metric ${result.name} created successfully. The table will update shortly.`,
+              `Audience ${result.name} created successfully. The table will update shortly.`,
               {
                 action: {
                   label: 'Close',
@@ -427,7 +350,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
           res.results.forEach((result) => {
             if (result.notFound) {
               toast.error(
-                `Unable to create conversion event ${result.name}. Please check your access permissions. Any other conversion events created were successful.`,
+                `Unable to create audience ${result.name}. Please check your access permissions. Any other audiences created were successful.`,
                 {
                   action: {
                     label: 'Close',
@@ -446,7 +369,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
           res.results.forEach((result) => {
             if (result.limitReached) {
               toast.error(
-                `Unable to create conversion event ${result.name}. You have ${result.remaining} more conversion event(s) you can create.`,
+                `Unable to create audience${result.name}. You have ${result.remaining} more audience(s) you can create.`,
                 {
                   action: {
                     label: 'Close',
@@ -460,14 +383,14 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
         }
         if (res.errors) {
           res.errors.forEach((error) => {
-            toast.error(`Unable to create conversion event. ${error}`, {
+            toast.error(`Unable to create audience. ${error}`, {
               action: {
                 label: 'Close',
                 onClick: () => toast.dismiss(),
               },
             });
           });
-          router.push('/dashboard/ga/properties');
+          router.refresh();
         }
         form.reset({
           forms: [formDataDefaults],
@@ -517,6 +440,11 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   const handlePrevious = () => {
     dispatch(decrementStep());
   };
+
+  /*   console.log('form.formState', form.formState);
+  
+  
+    console.log('form.formState.errors', form.formState.errors); */
 
   return (
     <div className="flex h-full">
@@ -570,7 +498,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
               <div className="w-full flex justify-center mx-auto">
                 {fields.length >= currentStep - 1 && (
                   <div key={item.id} className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
-                    <div className="max-w-xl mx-auto">
+                    <div className="mx-auto">
                       <h1>Audience {index + 1}</h1>
                       <div className="mt-12">
                         {/* Form */}
@@ -578,114 +506,90 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                         <Form {...form}>
                           <form
                             onSubmit={form.handleSubmit(processForm)}
-                            id={`createAudience - ${index - 1} `}
+                            id={`createAudience-${index - 1}`}
                             className="space-y-6"
                           >
-                            {(() => {
-                              return (
-                                <>
-                                  <div className="flex flex-col md:flex-row md:space-x-4">
-                                    <div className="w-full md:basis-1/3">
-                                      <FormField
-                                        control={form.control}
-                                        name={`forms.${index}.displayName`}
-                                        render={({ field }) => (
-                                          <FormItem>
-                                            <FormLabel>Audience Name</FormLabel>
-                                            <FormDescription>
-                                              This is the audience event name you want to create.
-                                            </FormDescription>
-                                            <FormControl>
-                                              <Input
-                                                placeholder="Audience name"
-                                                {...form.register(`forms.${index}.displayName`)}
-                                                {...field}
-                                              />
-                                            </FormControl>
+                            <>
+                              <div className="flex flex-row space-x-4">
+                                <div className="flex-auto w-9/12">
+                                  <div className="pb-3">
+                                    <FormField
+                                      control={form.control}
+                                      name={`forms.${index}.displayName`}
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>Audience Name</FormLabel>
+                                          <FormDescription>
+                                            This is the audience event name you want to create.
+                                          </FormDescription>
+                                          <FormControl>
+                                            <Input
+                                              placeholder="Audience name"
+                                              {...form.register(`forms.${index}.displayName`, {
+                                                required: 'Audience name is required',
+                                              })}
+                                              {...field}
+                                            />
+                                          </FormControl>
 
-                                            <FormMessage />
-                                          </FormItem>
-                                        )}
-                                      />
-                                    </div>
-
-                                    <div className="w-full md:basis-1/3">
-                                      <FormField
-                                        control={form.control}
-                                        name={`forms.${index}.description`}
-                                        render={({ field }) => (
-                                          <FormItem>
-                                            <FormLabel>Description</FormLabel>
-                                            <FormDescription>
-                                              This is the description of the audience event you want
-                                              to add.
-                                            </FormDescription>
-                                            <FormControl>
-                                              <Input
-                                                placeholder="Audience description"
-                                                {...form.register(`forms.${index}.description`)}
-                                                {...field}
-                                              />
-                                            </FormControl>
-
-                                            <FormMessage />
-                                          </FormItem>
-                                        )}
-                                      />
-                                    </div>
-                                    <div className="w-full md:basis-1/3">
-                                      <FormField
-                                        control={form.control}
-                                        name={`forms.${index}.membershipDurationDays`}
-                                        render={({ field }) => (
-                                          <FormItem>
-                                            <FormLabel>Membership Duration Days</FormLabel>
-                                            <FormDescription>
-                                              Required. Immutable. The duration a user should stay
-                                              in an Audience. It cannot be set to more than 540
-                                              days.
-                                            </FormDescription>
-                                            <FormControl>
-                                              <Input
-                                                type="number"
-                                                placeholder="Membership Duration Days"
-                                                {...form.register(
-                                                  `forms.${index}.membershipDurationDays`
-                                                )}
-                                                {...field}
-                                                max={540}
-                                                min={1}
-                                              />
-                                            </FormControl>
-
-                                            <FormMessage />
-                                          </FormItem>
-                                        )}
-                                      />
-                                    </div>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
                                   </div>
 
-                                  <IncludeConditionalForm
-                                    combinedCategories={combinedCategories}
-                                    audienceFormIndex={index}
-                                    {...{
-                                      control: form.control,
-                                      register: form.register,
-                                      watch: form.watch,
-                                    }}
-                                  />
+                                  <div className="py-3">
+                                    <FormField
+                                      control={form.control}
+                                      name={`forms.${index}.description`}
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>Description</FormLabel>
+                                          <FormDescription>
+                                            This is the description of the audience event you want
+                                            to add.
+                                          </FormDescription>
+                                          <FormControl>
+                                            <Input
+                                              placeholder="Audience description"
+                                              {...form.register(`forms.${index}.description`)}
+                                              {...field}
+                                            />
+                                          </FormControl>
 
-                                  <ExcludeConditionalForm
-                                    combinedCategories={combinedCategories}
-                                    audienceFormIndex={index}
-                                    {...{
-                                      control: form.control,
-                                      register: form.register,
-                                      watch: form.watch,
-                                    }}
-                                  />
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                  </div>
 
-                                  <div className="flex flex-col md:flex-row md:space-x-4">
+                                  <div className="py-3">
+                                    <IncludeConditionalForm
+                                      combinedCategories={combinedCategories}
+                                      audienceFormIndex={index}
+                                      {...{
+                                        control: form.control,
+                                        register: form.register,
+                                        watch: form.watch,
+                                        setValue: form.setValue,
+                                      }}
+                                    />
+                                  </div>
+
+                                  <div className="py-3">
+                                    <ExcludeConditionalForm
+                                      combinedCategories={combinedCategories}
+                                      audienceFormIndex={index}
+                                      {...{
+                                        control: form.control,
+                                        register: form.register,
+                                        watch: form.watch,
+                                        setValue: form.setValue,
+                                      }}
+                                    />
+                                  </div>
+
+                                  <div className="flex flex-col md:flex-row md:space-x-4 py-10">
                                     <div className="w-full md:basis-auto">
                                       <FormField
                                         control={form.control}
@@ -721,19 +625,19 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                                           onCheckedChange={(checked) => {
                                                             return checked
                                                               ? field.onChange([
-                                                                ...(Array.isArray(field.value)
-                                                                  ? field.value
-                                                                  : []),
-                                                                item.id,
-                                                              ])
+                                                                  ...(Array.isArray(field.value)
+                                                                    ? field.value
+                                                                    : []),
+                                                                  item.id,
+                                                                ])
                                                               : field.onChange(
-                                                                (Array.isArray(field.value)
-                                                                  ? field.value
-                                                                  : []
-                                                                ).filter(
-                                                                  (value) => value !== item.id
-                                                                )
-                                                              );
+                                                                  (Array.isArray(field.value)
+                                                                    ? field.value
+                                                                    : []
+                                                                  ).filter(
+                                                                    (value) => value !== item.id
+                                                                  )
+                                                                );
                                                           }}
                                                         />
                                                       </FormControl>
@@ -751,27 +655,142 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                       />
                                     </div>
                                   </div>
-                                </>
-                              );
-                            })()}
 
-                            <div className="flex justify-between">
-                              {index > 1 && (
-                                <Button type="button" onClick={handlePrevious}>
-                                  Previous
-                                </Button>
-                              )}
+                                  <div className="flex justify-start pt-10 space-x-4">
+                                    {count <= 2 && (
+                                      <Button type="button" onClick={handlePrevious}>
+                                        Previous
+                                      </Button>
+                                    )}
 
-                              {index < count ? (
-                                <Button type="button" onClick={handleNext}>
-                                  Next
-                                </Button>
-                              ) : (
-                                <Button type="submit">
-                                  {loading ? 'Submitting...' : 'Submit'}
-                                </Button>
-                              )}
-                            </div>
+                                    {index < count - 1 ? (
+                                      <Button type="button" onClick={handleNext}>
+                                        Next
+                                      </Button>
+                                    ) : (
+                                      <Button type="submit">
+                                        {loading ? 'Submitting...' : 'Submit'}
+                                      </Button>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="flex-auto w-3/12">
+                                  <Card>
+                                    <CardHeader>
+                                      <CardTitle>Additional audience settings</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                      <FormField
+                                        control={form.control}
+                                        name={`forms.${index}.membershipDurationDays`}
+                                        render={({ field }) => (
+                                          <FormItem>
+                                            <FormLabel>Membership Duration Days</FormLabel>
+                                            <FormDescription>
+                                              Required. Immutable. The duration a user should stay
+                                              in an Audience. It cannot be set to more than 540
+                                              days.
+                                            </FormDescription>
+                                            <FormControl>
+                                              <Input
+                                                type="number"
+                                                placeholder="Membership Duration Days"
+                                                {...form.register(
+                                                  `forms.${index}.membershipDurationDays`,
+                                                  {
+                                                    valueAsNumber: true,
+                                                  }
+                                                )}
+                                                {...field}
+                                                max={540}
+                                                min={1}
+                                                onChange={(e) => {
+                                                  const value = e.target.valueAsNumber;
+                                                  form.setValue(
+                                                    `forms.${index}.membershipDurationDays`,
+                                                    value
+                                                  );
+                                                }}
+                                              />
+                                            </FormControl>
+
+                                            <FormMessage />
+                                          </FormItem>
+                                        )}
+                                      />
+
+                                      <FormField
+                                        control={form.control}
+                                        name={`forms.${index}.eventTrigger.eventName`}
+                                        render={({ field }) => (
+                                          <FormItem className="py-5">
+                                            <FormLabel>Audience Trigger</FormLabel>
+                                            <FormDescription>
+                                              Specifies an event to log when a user joins the
+                                              Audience.
+                                            </FormDescription>
+                                            <FormControl>
+                                              <Input
+                                                type="string"
+                                                placeholder="Event Name"
+                                                {...form.register(
+                                                  `forms.${index}.eventTrigger.eventName`
+                                                )}
+                                                {...field}
+                                              />
+                                            </FormControl>
+
+                                            <FormMessage />
+                                          </FormItem>
+                                        )}
+                                      />
+
+                                      <FormField
+                                        control={form.control}
+                                        name={`forms.${index}.eventTrigger.logCondition`}
+                                        render={({ field }) => (
+                                          <FormItem className="space-y-3">
+                                            <FormLabel>
+                                              Log the following event when a user becomes a member
+                                              of this audience
+                                            </FormLabel>
+                                            <FormControl>
+                                              <RadioGroup
+                                                onValueChange={field.onChange}
+                                                defaultValue={field.value}
+                                                className="flex flex-col space-y-1"
+                                              >
+                                                {LogConditionData.map((item) => (
+                                                  <FormItem
+                                                    key={item.id}
+                                                    className="flex items-center space-x-3 space-y-0"
+                                                  >
+                                                    <FormControl>
+                                                      <RadioGroupItem
+                                                        value={item.id}
+                                                        checked={field.value === item.id}
+                                                      />
+                                                    </FormControl>
+                                                    <FormLabel className="font-normal">
+                                                      {item.label}
+                                                      <FormDescription>
+                                                        {item.description}
+                                                      </FormDescription>
+                                                    </FormLabel>
+                                                  </FormItem>
+                                                ))}
+                                              </RadioGroup>
+                                            </FormControl>
+                                            <FormMessage />
+                                          </FormItem>
+                                        )}
+                                      />
+                                    </CardContent>
+                                  </Card>
+                                </div>
+                              </div>
+                            </>
                           </form>
                         </Form>
 

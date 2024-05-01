@@ -113,6 +113,8 @@ export async function createGAAudiences(formData: Audience) {
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
 
+  console.log('formData', formData);
+
   let retries = 0;
   const MAX_RETRIES = 3;
   let delay = 1000;
@@ -197,10 +199,14 @@ export async function createGAAudiences(formData: Audience) {
 
               try {
                 const formDataToValidate = { forms: [identifier] };
-
+                console.log('Data to validate:', formDataToValidate);
                 const validationResult = FormsSchema.safeParse(formDataToValidate);
 
+                console.log('Validation result:', validationResult);
+
                 if (!validationResult.success) {
+                  console.log('Validation failed:', validationResult.error.issues);
+
                   let errorMessage = validationResult.error.issues
                     .map((issue) => `${issue.path[0]}: ${issue.message}`)
                     .join('. ');
@@ -211,20 +217,26 @@ export async function createGAAudiences(formData: Audience) {
                     success: false,
                     error: errorMessage,
                   };
+                } else {
+                  console.log('Validation succeeded, data:', validationResult.data.forms[0]);
                 }
 
                 // Accessing the validated property data
                 const validatedData = validationResult.data.forms[0];
 
+                console.log('validatedData', validatedData);
+
                 // Function to dynamically build filter expressions
                 const buildFilterExpression = (filterExpression: any): any => {
+                  console.log('Building filter expression for:', filterExpression);
+
                   let result: any = {};
 
                   // Handle different types of filter expressions
                   if (filterExpression.andGroup) {
                     result.andGroup = {
                       filterExpressions:
-                        filterExpression.andGroup.filterExpressions.map(buildFilterExpression),
+                        filterExpression?.andGroup?.filterExpressions?.map(buildFilterExpression),
                     };
                   } else if (filterExpression.orGroup) {
                     result.orGroup = {
@@ -240,12 +252,14 @@ export async function createGAAudiences(formData: Audience) {
                   } else if (filterExpression.eventFilter) {
                     result.eventFilter = { ...filterExpression.eventFilter };
                   }
+                  console.log('Built result:', result);
 
                   return result;
                 };
 
                 // Function to dynamically construct filter clauses from formData
                 const buildFilterClauses = (filterClauses: any[]): any[] => {
+                  console.log('Initial filter clauses:', filterClauses);
                   return filterClauses.map((clause) => {
                     let result: any = { clauseType: clause.clauseType };
 
@@ -253,7 +267,7 @@ export async function createGAAudiences(formData: Audience) {
                       result.simpleFilter = {
                         scope: clause.simpleFilter.scope,
                         filterExpression: buildFilterExpression(
-                          clause.simpleFilter.filterExpression
+                          clause?.simpleFilter?.filterExpression
                         ),
                       };
                     }
@@ -268,6 +282,7 @@ export async function createGAAudiences(formData: Audience) {
                         })),
                       };
                     }
+                    console.log('Built filter clauses:', result);
 
                     return result;
                   });
@@ -278,15 +293,16 @@ export async function createGAAudiences(formData: Audience) {
                   description: validatedData.description,
                   membershipDurationDays: validatedData.membershipDurationDays,
                   adsPersonalizationEnabled: validatedData.adsPersonalizationEnabled,
-                  eventTrigger: validatedData.eventTrigger
-                    ? {
-                        eventName: validatedData.eventTrigger.eventName,
-                        logCondition: validatedData.eventTrigger.logCondition,
-                      }
-                    : undefined, // Include eventTrigger only if present
+                  eventTrigger: {
+                    eventName: validatedData?.eventTrigger?.eventName,
+                    logCondition: validatedData?.eventTrigger?.logCondition,
+                  },
+
                   exclusionDurationMode: validatedData.exclusionDurationMode,
-                  filterClauses: buildFilterClauses(validatedData.filterClauses),
+                  filterClauses: buildFilterClauses(validatedData?.filterClauses),
                 };
+
+                console.log('Final request body to be sent:', requestBody);
 
                 // Now, requestBody is prepared with the right structure based on the type
                 const response = await fetch(url, {
@@ -296,9 +312,10 @@ export async function createGAAudiences(formData: Audience) {
                 });
 
                 const parsedResponse = await response.json();
+                console.log('Server response:', parsedResponse);
 
                 if (response.ok) {
-                  successfulCreations.push(validatedContainerData.eventName);
+                  successfulCreations.push(validatedData.displayName);
                   toCreateAudiences.delete(identifier);
                   fetchGASettings(userId);
 
@@ -307,16 +324,16 @@ export async function createGAAudiences(formData: Audience) {
                     data: { createUsage: { increment: 1 } },
                   });
                   creationResults.push({
-                    conversionEventName: validatedContainerData.eventName,
+                    conversionEventName: validatedData.displayName,
                     success: true,
-                    message: `Successfully created property ${validatedContainerData.eventName}`,
+                    message: `Successfully created property ${validatedData.displayName}`,
                   });
                 } else {
                   const errorResult = await handleApiResponseError(
                     response,
                     parsedResponse,
                     'conversionEvent',
-                    [validatedContainerData.eventName]
+                    [validatedData.displayName]
                   );
 
                   if (errorResult) {
@@ -325,34 +342,34 @@ export async function createGAAudiences(formData: Audience) {
                       errorResult.errorCode === 403 &&
                       parsedResponse.message === 'Feature limit reached'
                     ) {
-                      featureLimitReached.push(validatedContainerData.eventName);
+                      featureLimitReached.push(validatedData.displayName);
                     } else if (errorResult.errorCode === 404) {
                       notFoundLimit.push({
                         id: identifier.property,
-                        name: validatedContainerData.eventName,
+                        name: validatedData.displayName,
                       });
                     }
                   } else {
                     errors.push(
-                      `An unknown error occurred for property ${validatedContainerData.eventName}.`
+                      `An unknown error occurred for property ${validatedData.displayName}.`
                     );
                   }
 
                   toCreateAudiences.delete(identifier);
                   permissionDenied = errorResult ? true : permissionDenied;
                   creationResults.push({
-                    conversionEventName: validatedContainerData.eventName,
+                    conversionEventName: validatedData.displayName,
                     success: false,
                     message: errorResult?.message,
                   });
                 }
               } catch (error: any) {
                 errors.push(
-                  `Exception creating property ${identifier.eventName}: ${error.message}`
+                  `Exception creating property ${identifier.displayName}: ${error.message}`
                 );
                 toCreateAudiences.delete(identifier);
                 creationResults.push({
-                  conversionEventName: identifier.eventName,
+                  conversionEventName: identifier.displayName,
                   success: false,
                   message: error.message,
                 });
@@ -459,10 +476,10 @@ export async function createGAAudiences(formData: Audience) {
   // Map over formData.forms to create the results array
   const results: FeatureResult[] = formData.forms.map((form) => {
     // Ensure that form.propertyId is defined before adding it to the array
-    const conversionEventId = form.eventName ? [form.eventName] : []; // Provide an empty array as a fallback
+    const conversionEventId = form.displayName ? [form.displayName] : []; // Provide an empty array as a fallback
     return {
       id: conversionEventId, // Ensure id is an array of strings
-      name: [form.eventName], // Wrap the string in an array
+      name: [form.displayName], // Wrap the string in an array
       success: true, // or false, depending on the actual result
       // Include `notFound` if applicable
       notFound: false, // Set this to the appropriate value based on your logic

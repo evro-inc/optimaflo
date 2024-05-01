@@ -48,18 +48,11 @@ export default ({
     name: `forms[${audienceFormIndex}].filterClauses.sequenceFilter[${sequenceFormIndex}].sequenceSteps`,
   });
 
-  console.log('fields', fields);
-  console.log(sequenceFormIndex);
-
-
-
-
   return (
     <>
       {fields.map((step, stepIndex) => {
         return (
           <>
-
             <CardContent key={step.id}>
               {stepIndex >= 1 ? (
                 // Custom rendering for the first step
@@ -92,8 +85,7 @@ export default ({
                     </div>
                   </div>
                 </div>
-              ) :
-                null}
+              ) : null}
 
               <div className="flex items-center w-full p-5">
                 <div className="basis-3/12">
@@ -116,6 +108,7 @@ export default ({
                     </Select>
                     <Separator orientation="vertical" />
                     <Button
+                      type="button"
                       variant="ghost"
                       size="icon"
                       onClick={() => remove(stepIndex)}
@@ -137,17 +130,15 @@ export default ({
                 {...{ control, register, watch }}
               />
             </CardContent>
-
           </>
-        )
-      }
-      )
-      }
+        );
+      })}
       <CardFooter>
         <div className="flex flex-col items-center space-y-2 w-full">
           <Separator />
           <div className="w-full flex justify-start">
             <Button
+              type="button"
               className="flex items-center space-x-2"
               onClick={() =>
                 append({

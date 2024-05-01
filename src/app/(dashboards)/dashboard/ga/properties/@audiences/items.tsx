@@ -1,33 +1,12 @@
 import React from 'react';
-import { useFieldArray } from 'react-hook-form';
-import { Card, CardContent, CardHeader } from '@/src/components/ui/card';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/src/components/ui/form';
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/src/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/src/components/ui/dialog';
+import { Dialog, DialogContent, DialogTrigger } from '@/src/components/ui/dialog';
 import {
   Accordion,
   AccordionContent,
@@ -39,8 +18,15 @@ import { ClockIcon, Cross2Icon, MagnifyingGlassIcon } from '@radix-ui/react-icon
 import { useFormContext } from 'react-hook-form';
 import { Input } from '@/src/components/ui/input';
 import { Checkbox } from '@/src/components/ui/checkbox';
-import { AudienceFilterExpression, AudienceType, MatchType, Operation } from '@/src/types/types';
+import {
+  AudienceFilterExpression,
+  AudienceType,
+  MatchType,
+  Operation,
+  StringFilter,
+} from '@/src/types/types';
 import { ScrollArea } from '@/src/components/ui/scroll-area';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/src/components/ui/form';
 
 export const SimpleScope = [
   {
@@ -263,151 +249,203 @@ export const filterTypeMapping = {
   countCustomEvent: 'numericFilter',
 };
 
+export const MatchData = [
+  {
+    id: 'EXACT',
+    label: 'Exact',
+  },
+  {
+    id: 'BEGINS_WITH',
+    label: 'Begins With',
+  },
+  {
+    id: 'ENDS_WITH',
+    label: 'Ends With',
+  },
+  {
+    id: 'CONTAINS',
+    label: 'Contains',
+  },
+  {
+    id: 'FULL_REGEXP',
+    label: 'Full Regexp',
+  },
+];
+
 export const simpleFilterExpression: AudienceFilterExpression = {
   andGroup: {
     filterExpressions: [
       {
         orGroup: {
-          filterExpressions: [],
-        },
-        notExpression: {
-          dimensionOrMetricFilter: {
-            fieldName: '',
-            atAnyPointInTime: false,
-            inAnyNDayPeriod: 0,
-            stringFilter: {
-              matchType: MatchType.EXACT,
-              value: '',
-              caseSensitive: false,
-            },
-            inListFilter: {
-              values: [],
-              caseSensitive: false,
-            },
-            numericFilter: {
-              operation: Operation.EQUAL,
-              value: {
-                int64Value: '0',
-                doubleValue: 0,
-              },
-            },
-            betweenFilter: {
-              fromValue: {
-                int64Value: '0',
-                doubleValue: 0,
-              },
-              toValue: {
-                int64Value: '0',
-                doubleValue: 0,
-              },
-            },
-          },
-        },
-        dimensionOrMetricFilter: {
-          fieldName: '',
-          atAnyPointInTime: false,
-          inAnyNDayPeriod: 0,
-          stringFilter: {
-            matchType: MatchType.EXACT,
-            value: '',
-            caseSensitive: false,
-          },
-          inListFilter: {
-            values: [],
-            caseSensitive: false,
-          },
-          numericFilter: {
-            operation: Operation.EQUAL,
-            value: {
-              int64Value: '0',
-              doubleValue: 0,
-            },
-          },
-          betweenFilter: {
-            fromValue: {
-              int64Value: '0',
-              doubleValue: 0,
-            },
-            toValue: {
-              int64Value: '0',
-              doubleValue: 0,
-            },
-          },
-        },
-        eventFilter: {
-          eventName: '',
-          eventParameterFilterExpression: {
-            andGroup: {
-              filterExpressions: [],
-            },
-            orGroup: {
-              filterExpressions: [],
-            },
-            notExpression: {
+          filterExpressions: [
+            {
               dimensionOrMetricFilter: {
-                fieldName: '',
+                fieldName: '', // Fill in the actual field name
                 atAnyPointInTime: false,
                 inAnyNDayPeriod: 0,
                 stringFilter: {
-                  matchType: MatchType.EXACT,
-                  value: '',
+                  // Correctly use the union type
+                  matchType: MatchType.Exact,
+                  value: '', // Provide the actual value to match
                   caseSensitive: false,
-                },
-                inListFilter: {
-                  values: [],
-                  caseSensitive: false,
-                },
-                numericFilter: {
-                  operation: Operation.EQUAL,
-                  value: {
-                    int64Value: '0',
-                    doubleValue: 0,
-                  },
-                },
-                betweenFilter: {
-                  fromValue: {
-                    int64Value: '0',
-                    doubleValue: 0,
-                  },
-                  toValue: {
-                    int64Value: '0',
-                    doubleValue: 0,
-                  },
-                },
+                } as StringFilter, // Cast explicitly if needed
               },
             },
-            dimensionOrMetricFilter: {
-              fieldName: '',
-              atAnyPointInTime: false,
-              inAnyNDayPeriod: 0,
-              stringFilter: {
-                matchType: MatchType.EXACT,
-                value: '',
-                caseSensitive: false,
-              },
-              inListFilter: {
-                values: [],
-                caseSensitive: false,
-              },
-              numericFilter: {
-                operation: Operation.EQUAL,
-                value: {
-                  int64Value: '0',
-                  doubleValue: 0,
-                },
-              },
-              betweenFilter: {
-                fromValue: {
-                  int64Value: '0',
-                  doubleValue: 0,
-                },
-                toValue: {
-                  int64Value: '0',
-                  doubleValue: 0,
-                },
-              },
-            },
-          },
+
+            // ... other filters that should be OR'ed within this AND group ...
+
+            /*      {
+                   dimensionOrMetricFilter: {
+                     fieldName: '',
+                     atAnyPointInTime: false,
+                     inAnyNDayPeriod: 0,
+                     stringFilter: {
+                       matchType: MatchType.EXACT,
+                       value: '',
+                       caseSensitive: false,
+                     },
+                              inListFilter: {
+                                values: [],
+                                caseSensitive: false,
+                              },
+                              numericFilter: {
+                                operation: Operation.EQUAL,
+                                value: {
+                                  int64Value: '0',
+                                  doubleValue: 0,
+                                },
+                              },
+                              betweenFilter: {
+                                fromValue: {
+                                  int64Value: '0',
+                                  doubleValue: 0,
+                                },
+                                toValue: {
+                                  int64Value: '0',
+                                  doubleValue: 0,
+                                },
+                              }, 
+                   },
+                 }, */
+            /*    {
+                 notExpression: {
+                   dimensionOrMetricFilter: {
+                     fieldName: '',
+                     atAnyPointInTime: false,
+                     inAnyNDayPeriod: 0,
+                     stringFilter: {
+                       matchType: MatchType.EXACT,
+                       value: '',
+                       caseSensitive: false,
+                     },
+                     inListFilter: {
+                       values: [],
+                       caseSensitive: false,
+                     },
+                     numericFilter: {
+                       operation: Operation.EQUAL,
+                       value: {
+                         int64Value: '0',
+                         doubleValue: 0,
+                       },
+                     },
+                     betweenFilter: {
+                       fromValue: {
+                         int64Value: '0',
+                         doubleValue: 0,
+                       },
+                       toValue: {
+                         int64Value: '0',
+                         doubleValue: 0,
+                       },
+                     },
+                   },
+                 },
+               }, */
+
+            /*  {
+               orGroup: {
+                 filterExpressions: [],
+               },
+       
+       
+               eventFilter: {
+                 eventName: '',
+                 eventParameterFilterExpression: {
+                   andGroup: {
+                     filterExpressions: [],
+                   },
+                   orGroup: {
+                     filterExpressions: [],
+                   },
+                   notExpression: {
+                     dimensionOrMetricFilter: {
+                       fieldName: '',
+                       atAnyPointInTime: false,
+                       inAnyNDayPeriod: 0,
+                       stringFilter: {
+                         matchType: MatchType.EXACT,
+                         value: '',
+                         caseSensitive: false,
+                       },
+                       inListFilter: {
+                         values: [],
+                         caseSensitive: false,
+                       },
+                       numericFilter: {
+                         operation: Operation.EQUAL,
+                         value: {
+                           int64Value: '0',
+                           doubleValue: 0,
+                         },
+                       },
+                       betweenFilter: {
+                         fromValue: {
+                           int64Value: '0',
+                           doubleValue: 0,
+                         },
+                         toValue: {
+                           int64Value: '0',
+                           doubleValue: 0,
+                         },
+                       },
+                     },
+                   },
+                   dimensionOrMetricFilter: {
+                     fieldName: '',
+                     atAnyPointInTime: false,
+                     inAnyNDayPeriod: 0,
+                     stringFilter: {
+                       matchType: MatchType.EXACT,
+                       value: '',
+                       caseSensitive: false,
+                     },
+                     inListFilter: {
+                       values: [],
+                       caseSensitive: false,
+                     },
+                     numericFilter: {
+                       operation: Operation.EQUAL,
+                       value: {
+                         int64Value: '0',
+                         doubleValue: 0,
+                       },
+                     },
+                     betweenFilter: {
+                       fromValue: {
+                         int64Value: '0',
+                         doubleValue: 0,
+                       },
+                       toValue: {
+                         int64Value: '0',
+                         doubleValue: 0,
+                       },
+                     },
+                   },
+                 },
+               },
+             }, */
+          ],
         },
       },
     ],
@@ -563,147 +601,180 @@ export const sequenceStepFilterExpression = {
   },
 };
 
-export const renderFilterInput = (filterType, field, currentFormIndex) => {
-  const { register } = useFormContext();
+export const LogConditionData = [
+  {
+    id: 'AUDIENCE_JOINED',
+    label: 'Audience Joined',
+    description: 'The event should be logged only when a user is joined.',
+  },
+  {
+    id: 'AUDIENCE_MEMBERSHIP_RENEWED',
+    label: 'Audience Membership Renewed',
+    description:
+      'The event should be logged whenever the Audience condition is met, even if the user is already a member of the Audience.',
+  },
+];
+
+const renderStringFilter = (fieldBase) => {
+  const { control } = useFormContext();
+  const matchType = `${fieldBase}.stringFilter.matchType`;
+  const stringFilterValue = `${fieldBase}.stringFilter.value`;
+  const stringFilterCaseSensitive = `${fieldBase}.stringFilter.caseSensitive`;
+
+  return (
+    <>
+      <FormField
+        control={control}
+        name={matchType}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>String Condition</FormLabel>
+            <FormControl>
+              <Select
+                value={field.value}
+                onValueChange={(value) => {
+                  field.onChange(value);
+                }}
+                defaultValue={field.value || ''}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Match Type Condition" />
+                </SelectTrigger>
+                <SelectContent>
+                  {MatchData.map((item) => (
+                    <SelectItem key={item.id} value={item.id}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={control}
+        name={stringFilterValue}
+        render={({ field }) => (
+          <FormItem>
+            <FormControl>
+              <div>
+                <Input {...field} />
+              </div>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <div className="flex items-center space-x-2">
+        <FormField
+          control={control}
+          name={stringFilterCaseSensitive}
+          render={({ field }) => (
+            <FormItem>
+              <FormControl>
+                <div>
+                  <Checkbox {...field} checked={field.value} onCheckedChange={field.onChange} />
+                  <label
+                    htmlFor="caseSensitive"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    Case Sensitive
+                  </label>
+                </div>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+    </>
+  );
+};
+
+const renderInListFilter = (register, field, fieldBase) => (
+  <>
+    <Input
+      {...register(`${fieldBase}.inListFilter.values`)}
+      onValueChange={field.onChange}
+      {...field}
+    />
+    <div className="flex items-center space-x-2">
+      <Checkbox
+        {...register(`${fieldBase}.inListFilter.caseSensitive`)}
+        onValueChange={field.onChange}
+        {...field}
+      />
+      <label className="text-sm font-medium">Case Sensitive</label>
+    </div>
+  </>
+);
+
+const renderNumericFilter = (register, field, fieldBase) => (
+  <>
+    <Select
+      {...register(`${fieldBase}.numericFilter.operation`)}
+      onValueChange={field.onChange}
+      {...field}
+    >
+      <SelectTrigger>
+        <SelectValue placeholder="Condition" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="EQUAL">Equal</SelectItem>
+        <SelectItem value="LESS_THAN">Less Than</SelectItem>
+        <SelectItem value="LESS_THAN_OR_EQUAL">Less Than or Equal</SelectItem>
+        <SelectItem value="GREATER_THAN">Greater Than</SelectItem>
+        <SelectItem value="GREATER_THAN_OR_EQUAL">Greater Than or Equal</SelectItem>
+      </SelectContent>
+    </Select>
+    <Input
+      type="number"
+      {...register(`${fieldBase}.numericFilter.value`)}
+      onValueChange={field.onChange}
+      {...field}
+    />
+  </>
+);
+
+const renderBetweenFilter = (register, field, fieldBase) => (
+  <>
+    <Input
+      type="number"
+      min={0}
+      {...register(`${fieldBase}.betweenFilter.fromValue`)}
+      {...field}
+      placeholder="From Value"
+      onValueChange={field.onChange}
+    />
+    <Input
+      type="number"
+      min={0}
+      {...register(`${fieldBase}.betweenFilter.toValue`)}
+      {...field}
+      placeholder="To Value"
+      onValueChange={field.onChange}
+    />
+  </>
+);
+
+export const renderFilterInput = (filterType, audienceFormIndex, typeFormIndex, cardFormIndex) => {
+  const fieldBase = `forms[${audienceFormIndex}].filterClauses[${typeFormIndex}].simpleFilter.filterExpression.andGroup.filterExpressions[${cardFormIndex}].orGroup.filterExpressions[${cardFormIndex}].dimensionOrMetricFilter`;
+  const matchType = `${fieldBase}.stringFilter.matchType`;
+  const stringFilterValue = `${fieldBase}.stringFilter.value`;
 
   switch (filterType) {
     case 'stringFilter':
-      return (
-        <>
-          <Select
-            {...register(
-              `forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression.dimensionOrMetricFilter.one_filter.stringFilter.matchType`
-            )}
-            {...field}
-            onValueChange={field.onChange}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Condition" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="EXACT">Exact</SelectItem>
-              <SelectItem value="BEGINS_WITH">Begins With</SelectItem>
-              <SelectItem value="ENDS_WITH">Ends With</SelectItem>
-              <SelectItem value="CONTAINS">Contains</SelectItem>
-              <SelectItem value="FULL_REGEXP">Full Regexp</SelectItem>
-            </SelectContent>
-          </Select>
-          <Input
-            {...register(
-              `forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression.dimensionOrMetricFilter.one_filter.stringFilter.value`
-            )}
-            {...field}
-            onValueChange={field.onChange}
-          />
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              {...register(
-                `forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression.dimensionOrMetricFilter.one_filter.stringFilter.caseSensitive`
-              )}
-              {...field}
-              onValueChange={field.onChange}
-            />
-            <label
-              htmlFor="caseSensitive"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
-              Case Sensitive
-            </label>
-          </div>
-        </>
-      );
-    case 'inListFilter':
-      console.log('inListFilter');
-      console.log('field', field);
-
-      return (
-        <>
-          <Input
-            {...register(
-              `forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression.dimensionOrMetricFilter.one_filter.inListFilter.values`
-            )}
-            onValueChange={field.onChange}
-            {...field}
-          />
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              {...register(
-                `forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression.dimensionOrMetricFilter.one_filter.inListFilter.caseSensitive`
-              )}
-              {...field}
-              onValueChange={field.onChange}
-            />
-            <label
-              htmlFor="caseSensitive"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
-              Case Sensitive
-            </label>
-          </div>
-        </>
-      );
-    case 'numericFilter':
-      console.log('numericFilter');
-      console.log('field', field);
-
-      return (
-        <>
-          <Select
-            {...register(
-              `forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression.dimensionOrMetricFilter.one_filter.numericFilter.operation`
-            )}
-            onValueChange={field.onChange}
-            {...field}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Condition" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="EQUAL">Equal</SelectItem>
-              <SelectItem value="LESS_THAN">Less Than</SelectItem>
-              <SelectItem value="LESS_THAN_OR_EQUAL">Less Than or Equal</SelectItem>
-              <SelectItem value="GREATER_THAN">Greater Than</SelectItem>
-              <SelectItem value="GREATER_THAN_OR_EQUAL">Greater Than or Equal</SelectItem>
-            </SelectContent>
-          </Select>
-          <Input
-            type="number"
-            min={0}
-            {...register(
-              `forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression.dimensionOrMetricFilter.one_filter.numericFilter.value`
-            )}
-            {...field}
-            onValueChange={field.onChange}
-          />
-        </>
-      );
-    case 'betweenFilter':
-      console.log('betweenFilter');
-      console.log('field', field);
-      return (
-        <>
-          <Input
-            type="number"
-            min={0}
-            {...register(
-              `forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression.dimensionOrMetricFilter.one_filter.betweenFilter.fromValue`
-            )}
-            {...field}
-            placeholder="From Value"
-            onValueChange={field.onChange}
-          />
-          <Input
-            type="number"
-            min={0}
-            {...register(
-              `forms.${currentFormIndex}.filterClauses.simpleFilter.filterExpression.dimensionOrMetricFilter.one_filter.betweenFilter.toValue`
-            )}
-            {...field}
-            placeholder="To Value"
-            onValueChange={field.onChange}
-          />
-        </>
-      );
+      return renderStringFilter(fieldBase);
+    /*     case 'inListFilter':
+          return renderInListFilter(register, fields, fieldBase);
+        case 'numericFilter':
+          return renderNumericFilter(register, fields, fieldBase);
+        case 'betweenFilter':
+          return renderBetweenFilter(register, fields, fieldBase); */
     default:
       return null;
   }

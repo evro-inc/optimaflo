@@ -1,80 +1,23 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-export interface CategoryItem {
-  id: string;
-  uiName: string;
-  apiName: string;
-  category: string;
-}
-
-interface Category {
-  name: string;
-  items: CategoryItem[];
-}
-
-// Add/Or Form Cards
-export interface CardIdentifier {
-  id: string;
-  type: string;
-  parentId: string;
-}
-
-export interface StepIdentifier {
-  id: string;
-  type: string; // "step"
-  parentId: string;
-  cards: CardIdentifier[];
-}
-
-export interface FormIdentifier {
-  id: string;
-  type: string; // e.g., "simple", "sequence"
-  parentId: string;
-  cards: CardIdentifier[];
-  steps: StepIdentifier[];
-}
-
 interface FormState {
-  formData: FormData | null;
   loading: boolean;
   error: string | null;
   currentStep: number;
   count: number;
-  showSimpleForm: FormIdentifier[];
-  showSequenceForm: FormIdentifier[];
-  showCard: CardIdentifier[];
-  showStep: StepIdentifier[];
-  categories: Category[];
-  selectedItems: CategoryItem[];
-  selectedCategory: { [formId: string]: string };
-  selectedItem: { [formId: string]: string };
-  localSelectedItems: CategoryItem[];
 }
 
 const initialState: FormState = {
-  formData: null,
   loading: false,
   error: null,
   currentStep: 1,
   count: 1,
-  showSimpleForm: [],
-  showSequenceForm: [],
-  showCard: [],
-  showStep: [],
-  categories: [],
-  selectedItems: [],
-  selectedCategory: {},
-  selectedItem: {},
-  localSelectedItems: [],
 };
 
 const formSlice = createSlice({
   name: 'form',
   initialState,
   reducers: {
-    setFormData: (state, action: PayloadAction<FormData>) => {
-      state.formData = action.payload;
-    },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
     },
@@ -93,69 +36,10 @@ const formSlice = createSlice({
     setCount: (state, action: PayloadAction<number>) => {
       state.count = action.payload;
     },
-    setShowSimpleForm: (state, action: PayloadAction<FormIdentifier[]>) => {
-      state.showSimpleForm = action.payload;
-    },
-    removeSimpleForm: (state, action: PayloadAction<string>) => {
-      state.showSimpleForm = state.showSimpleForm.filter((form) => form.id !== action.payload);
-    },
-    setShowSequenceForm: (state, action: PayloadAction<FormIdentifier[]>) => {
-      state.showSequenceForm = action.payload;
-    },
-    removeSequenceForm: (state, action: PayloadAction<string>) => {
-      state.showSequenceForm = state.showSequenceForm.filter((form) => form.id !== action.payload);
-    },
-    setShowCard: (state, action: PayloadAction<{ parentId: string; cardType: string }>) => {
-      const uniqueId = `card-${crypto.randomUUID()}`;
-      const newCard: CardIdentifier = {
-        id: uniqueId,
-        type: action.payload.cardType,
-        parentId: action.payload.parentId,
-      };
-      state.showCard = [...state.showCard, newCard];
-    },
-    removeCard: (state, action: PayloadAction<string>) => {
-      state.showCard = state.showCard.filter((card) => card.id !== action.payload);
-    },
-
-    removeOrForm: (state, action: PayloadAction<string>) => {
-      state.showCard = state.showCard.filter((orForm) => orForm.id !== action.payload);
-    },
-    setShowStep: (state, action: PayloadAction<StepIdentifier[]>) => {
-      state.showStep = action.payload;
-    },
-    removeStep: (state, action: PayloadAction<string>) => {
-      state.showStep = state.showStep.filter((step) => step.id !== action.payload);
-    },
-
-    setSelectedCategory: (state, action: PayloadAction<{ formId: string; categoryId: string }>) => {
-      state.selectedCategory[action.payload.formId] = action.payload.categoryId;
-    },
-    setSelectedItem: (state, action: PayloadAction<{ formId: string; itemId: string }>) => {
-      state.selectedItem[action.payload.formId] = action.payload.itemId;
-    },
   },
 });
 
-export const {
-  setFormData,
-  setLoading,
-  setError,
-  setCurrentStep,
-  incrementStep,
-  decrementStep,
-  setCount,
-  setShowSimpleForm,
-  setShowSequenceForm,
-  removeSimpleForm,
-  removeSequenceForm,
-  setShowCard,
-  removeCard,
-  removeOrForm,
-  setShowStep,
-  removeStep,
-  setSelectedCategory,
-  setSelectedItem,
-} = formSlice.actions;
+export const { setLoading, setError, setCurrentStep, incrementStep, decrementStep, setCount } =
+  formSlice.actions;
 
 export default formSlice.reducer;

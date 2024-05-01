@@ -1,20 +1,16 @@
 import { z } from 'zod';
 
-// Enums as Zod enums
-export const AudienceExclusionDurationMode = z.enum([
-  'AUDIENCE_EXCLUSION_DURATION_MODE_UNSPECIFIED',
-  'EXCLUDE_TEMPORARILY',
-  'EXCLUDE_PERMANENTLY',
-]);
-
-const AudienceClauseType = z.enum(['AUDIENCE_CLAUSE_TYPE_UNSPECIFIED', 'INCLUDE', 'EXCLUDE']);
-
 const LogCondition = z.enum([
   'LOG_CONDITION_UNSPECIFIED',
   'AUDIENCE_JOINED',
   'AUDIENCE_MEMBERSHIP_RENEWED',
 ]);
-
+const AudienceExclusionDurationMode = z.enum([
+  'AUDIENCE_EXCLUSION_DURATION_MODE_UNSPECIFIED',
+  'EXCLUDE_TEMPORARILY',
+  'EXCLUDE_PERMANENTLY',
+]);
+const AudienceClauseType = z.enum(['INCLUDE', 'EXCLUDE']);
 const AudienceFilterScope = z.enum([
   'AUDIENCE_FILTER_SCOPE_UNSPECIFIED',
   'AUDIENCE_FILTER_SCOPE_WITHIN_SAME_EVENT',
@@ -30,112 +26,101 @@ const MatchType = z.enum([
   'CONTAINS',
   'FULL_REGEXP',
 ]);
-
 const Operation = z.enum(['OPERATION_UNSPECIFIED', 'EQUAL', 'LESS_THAN', 'GREATER_THAN']);
 
-// Nested object schemas
-const AudienceEventTriggerSchema = z.object({
-  eventName: z.string(),
-  logCondition: LogCondition,
-});
-
-const StringFilterSchema = z.object({
+const StringFilter = z.object({
   matchType: MatchType,
   value: z.string(),
   caseSensitive: z.boolean().optional(),
 });
 
-const InListFilterSchema = z.object({
+const InListFilter = z.object({
   values: z.array(z.string()),
   caseSensitive: z.boolean().optional(),
 });
 
-const NumericValueSchema = z.union([
+const NumericValue = z.union([
   z.object({ int64Value: z.string() }),
   z.object({ doubleValue: z.number() }),
 ]);
 
-const NumericFilterSchema = z.object({
+const NumericFilter = z.object({
   operation: Operation,
-  value: NumericValueSchema,
+  value: NumericValue,
 });
 
-const BetweenFilterSchema = z.object({
-  fromValue: NumericValueSchema,
-  toValue: NumericValueSchema,
+const BetweenFilter = z.object({
+  fromValue: NumericValue,
+  toValue: NumericValue,
 });
 
-// Recursive definitions
-const AudienceFilterExpressionSchema: z.ZodSchema<any> = z.lazy(() =>
-  z.object({
-    andGroup: AudienceFilterExpressionListSchema.optional(),
-    orGroup: AudienceFilterExpressionListSchema.optional(),
-    notExpression: z.lazy(() => AudienceFilterExpressionSchema).optional(),
-    dimensionOrMetricFilter: AudienceDimensionOrMetricFilterSchema.optional(),
-    eventFilter: AudienceEventFilterSchema.optional(),
-  })
-);
-
-const AudienceFilterExpressionListSchema = z.object({
-  filterExpressions: z.array(AudienceFilterExpressionSchema),
-});
-
-const AudienceDimensionOrMetricFilterSchema = z.object({
-  category: z.string(),
+const AudienceDimensionOrMetricFilter = z.object({
   fieldName: z.string(),
   atAnyPointInTime: z.boolean().optional(),
   inAnyNDayPeriod: z.number().optional(),
-  stringFilter: StringFilterSchema.optional(),
-  inListFilter: InListFilterSchema.optional(),
-  numericFilter: NumericFilterSchema.optional(),
-  betweenFilter: BetweenFilterSchema.optional(),
+  /* one_filter: z.union([StringFilter, InListFilter, NumericFilter, BetweenFilter]), */
+  stringFilter: StringFilter.optional(),
 });
 
-const AudienceEventFilterSchema = z.object({
-  eventName: z.string(),
-  eventParameterFilterExpression: AudienceFilterExpressionSchema.optional(),
+const AudienceFilterExpression = z.lazy(() =>
+  z.object({
+    andGroup: z
+      .object({ filterExpressions: z.array(AudienceFilterExpression).optional() })
+      .optional(),
+    orGroup: z
+      .object({ filterExpressions: z.array(AudienceFilterExpression).optional() })
+      .optional(),
+    notExpression: AudienceDimensionOrMetricFilter.optional(),
+    dimensionOrMetricFilter: AudienceDimensionOrMetricFilter.optional(),
+    eventFilter: z
+      .object({
+        eventName: z.string(),
+        eventParameterFilterExpression: AudienceFilterExpression.optional(),
+      })
+      .optional(),
+  })
+);
+
+const AudienceSimpleFilter = z.object({
+  scope: AudienceFilterScope,
+  filterExpression: AudienceFilterExpression,
 });
 
-export const AudienceSimpleFilterSchema = z.object({
-  name: z.string(),
-  simpleCardArray: z.array(
-    z.object({
-      scope: AudienceFilterScope,
-      filterExpression: AudienceFilterExpressionSchema,
-    })
-  ),
-});
-
-export const AudienceSequenceStepSchema = z.object({
+const AudienceSequenceStep = z.object({
   scope: AudienceFilterScope,
   immediatelyFollows: z.boolean().optional(),
-  constraintDuration: z.string().optional(), // This should ideally be validated as a duration
-  filterExpression: AudienceFilterExpressionSchema,
+  constraintDuration: z.string().optional(),
+  filterExpression: AudienceFilterExpression,
 });
 
-const AudienceSequenceFilterSchema = z.object({
+const AudienceSequenceFilter = z.object({
   scope: AudienceFilterScope,
-  sequenceMaximumDuration: z.string().optional(), // This should ideally be validated as a duration
-  sequenceSteps: z.array(AudienceSequenceStepSchema),
+  sequenceMaximumDuration: z.string().optional(),
+  sequenceSteps: z.array(AudienceSequenceStep),
 });
 
-const AudienceFilterClauseSchema = z.object({
+const AudienceFilterClause = z.object({
   clauseType: AudienceClauseType,
-  simpleFilter: AudienceSimpleFilterSchema.optional(),
-  sequenceFilter: AudienceSequenceFilterSchema.optional(),
+  simpleFilter: AudienceSimpleFilter.optional(),
+  sequenceFilter: AudienceSequenceFilter.optional(),
+});
+
+const AudienceEventTrigger = z.object({
+  eventName: z.string(),
+  logCondition: LogCondition,
 });
 
 const SingleFormSchema = z.object({
-  account: z.string(),
+  account: z.array(z.string()),
   property: z.string(),
   name: z.string(),
-  displayName: z.string(),
-  description: z.string(),
-  membershipDurationDays: z.number(),
+  displayName: z.string().min(3),
+  description: z.string().min(10),
+  membershipDurationDays: z.number().min(1).max(540),
   adsPersonalizationEnabled: z.boolean(),
-  eventTrigger: AudienceEventTriggerSchema.optional(),
+  eventTrigger: AudienceEventTrigger.optional(),
   exclusionDurationMode: AudienceExclusionDurationMode,
-  filterClauses: z.array(AudienceFilterClauseSchema),
+  filterClauses: z.array(AudienceFilterClause),
 });
 
 export const FormCreateAmountSchema = z.object({

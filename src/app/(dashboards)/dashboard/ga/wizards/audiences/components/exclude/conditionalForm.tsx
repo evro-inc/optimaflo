@@ -3,39 +3,17 @@ import { useFieldArray } from 'react-hook-form';
 import { Separator } from '@/src/components/ui/separator';
 import { Badge } from '@/src/components/ui/badge';
 import { Card, CardContent, CardFooter, CardHeader } from '@/src/components/ui/card';
-import {
-  PlusIcon,
-  BarChartIcon,
-  Cross2Icon,
-  ChevronDownIcon,
-  MagnifyingGlassIcon,
-  TrashIcon,
-  CircleIcon,
-  ClockIcon,
-  ValueNoneIcon,
-  PersonIcon,
-} from '@radix-ui/react-icons';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/src/components/ui/form';
+import { PlusIcon, TrashIcon, CircleIcon, PersonIcon } from '@radix-ui/react-icons';
+import { FormControl, FormField, FormItem, FormMessage } from '@/src/components/ui/form';
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/src/components/ui/select';
 import { Button } from '@/src/components/ui/button';
 import {
-  ImmediatelyFollows,
   SequenceScope,
   sequenceStepFilterExpression,
   simpleFilterExpression,
@@ -52,6 +30,7 @@ export default function ExcludeConditionalForm({
   control,
   register,
   watch,
+  setValue,
 }) {
   const {
     fields: SimpleForm,
@@ -71,7 +50,6 @@ export default function ExcludeConditionalForm({
     name: `forms[${audienceFormIndex}].filterClauses.sequenceFilter`,
   });
 
-
   return (
     <>
       {/* //////////////////////////////////////////////////////////////////////////
@@ -80,7 +58,7 @@ export default function ExcludeConditionalForm({
       <ul>
         {SimpleForm.map((simpleItem, simpleIndex) => {
           return (
-            <li key={simpleItem.id}>
+            <li key={simpleItem.id} className="pb-5">
               {simpleIndex > 0 && (
                 <div className="w-10 flex flex-col items-center justify-center space-y-2">
                   <div className="h-5">
@@ -96,7 +74,7 @@ export default function ExcludeConditionalForm({
                 <CardHeader>
                   <div className="flex items-center">
                     <CircleIcon className="text-blue-500 mr-2" />
-                    <span className="flex-grow text-sm font-medium">Include users when:</span>
+                    <span className="flex-grow text-sm font-medium">Exclude users when:</span>
                     <div className="flex items-center space-x-2">
                       <PersonIcon className="text-gray-600" />
                       <FormField
@@ -158,7 +136,7 @@ export default function ExcludeConditionalForm({
           console.log(SimpleForm.length);
 
           return (
-            <li key={sequenceItem.id}>
+            <li key={sequenceItem.id} className="pb-5">
               {SimpleForm.length > 0 ? (
                 <div className="w-10 flex flex-col items-center justify-center space-y-2">
                   <div className="h-5">
@@ -185,7 +163,7 @@ export default function ExcludeConditionalForm({
                   <div className="flex items-center w-full">
                     <div className="flex basis-5/12">
                       <CircleIcon className="text-blue-500 mr-2" />
-                      <span className="flex text-sm font-medium">Include sequence:</span>
+                      <span className="flex text-sm font-medium">Exclude sequence:</span>
                     </div>
 
                     <div className="flex flex-grow basis-7/12 justify-end">
@@ -230,8 +208,6 @@ export default function ExcludeConditionalForm({
                   removeSequence={SequenceRemove}
                   {...{ control, register, watch }}
                 />
-
-
               </Card>
             </li>
           );
@@ -240,13 +216,14 @@ export default function ExcludeConditionalForm({
 
       <section className="flex space-x-4">
         <Button
+          type="button"
           className="flex items-center space-x-2"
           variant="secondary"
           onClick={() => {
             SimpleAppend({
-              clauseType: AudienceClauseType.UNSPECIFIED,
+              clauseType: AudienceClauseType.EXCLUDE,
               simpleFilter: {
-                name: 'new simple filter',
+                name: 'new exclude simple filter',
                 simpleCardArray: [
                   {
                     scope: AudienceFilterScope.UNSPECIFIED,
@@ -262,20 +239,24 @@ export default function ExcludeConditionalForm({
         </Button>
 
         <Button
+          type="button"
           className="flex items-center space-x-2"
           variant="secondary"
           onClick={() => {
             SequenceAppend({
-              scope: AudienceFilterScope.WITHIN_SAME_EVENT,
-              sequenceMaximumDuration: '',
-              sequenceSteps: [
-                {
-                  scope: AudienceFilterScope.WITHIN_SAME_EVENT,
-                  immediatelyFollows: false,
-                  constraintDuration: '',
-                  filterExpression: sequenceStepFilterExpression,
-                },
-              ],
+              clauseType: AudienceClauseType.EXCLUDE,
+              sequenceFilter: {
+                scope: AudienceFilterScope.WITHIN_SAME_EVENT,
+                sequenceMaximumDuration: '',
+                sequenceSteps: [
+                  {
+                    scope: AudienceFilterScope.WITHIN_SAME_EVENT,
+                    immediatelyFollows: false,
+                    constraintDuration: '',
+                    filterExpression: sequenceStepFilterExpression,
+                  },
+                ],
+              },
             });
           }}
         >

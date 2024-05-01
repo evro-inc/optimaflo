@@ -1,29 +1,17 @@
 import React from 'react';
 import { useFieldArray } from 'react-hook-form';
-import { Card, CardContent, CardFooter, CardHeader } from '@/src/components/ui/card';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/src/components/ui/form';
+import { CardContent, CardFooter, CardHeader } from '@/src/components/ui/card';
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/src/components/ui/select';
 import { Button } from '@/src/components/ui/button';
-import { Cross2Icon, PersonIcon, PlusIcon, TrashIcon } from '@radix-ui/react-icons';
+import { PersonIcon, TrashIcon } from '@radix-ui/react-icons';
 import {
   ImmediatelyFollows,
-  renderFilterInput,
   sequenceStepFilterExpression,
   SimpleScope,
   TimeConstraint,
@@ -31,7 +19,6 @@ import {
 import Sequence from './sequenceForm';
 
 import { Separator } from '@/src/components/ui/separator';
-import { Badge } from '@/src/components/ui/badge';
 import { AudienceFilterScope } from '@/src/types/types';
 
 export default ({
@@ -48,18 +35,11 @@ export default ({
     name: `forms[${audienceFormIndex}].filterClauses.sequenceFilter[${sequenceFormIndex}].sequenceSteps`,
   });
 
-  console.log('fields', fields);
-  console.log(sequenceFormIndex);
-
-
-
-
   return (
     <>
       {fields.map((step, stepIndex) => {
         return (
           <>
-
             <CardContent key={step.id}>
               {stepIndex >= 1 ? (
                 // Custom rendering for the first step
@@ -92,8 +72,7 @@ export default ({
                     </div>
                   </div>
                 </div>
-              ) :
-                null}
+              ) : null}
 
               <div className="flex items-center w-full p-5">
                 <div className="basis-3/12">
@@ -137,17 +116,15 @@ export default ({
                 {...{ control, register, watch }}
               />
             </CardContent>
-
           </>
-        )
-      }
-      )
-      }
+        );
+      })}
       <CardFooter>
         <div className="flex flex-col items-center space-y-2 w-full">
           <Separator />
           <div className="w-full flex justify-start">
             <Button
+              type="button"
               className="flex items-center space-x-2"
               onClick={() =>
                 append({

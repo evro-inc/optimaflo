@@ -53,7 +53,7 @@ export interface Price {
   products?: Product;
 }
 
-export interface PriceWithProduct extends Price { }
+export interface PriceWithProduct extends Price {}
 
 export interface Subscription {
   id: string /* primary key */;
@@ -524,7 +524,7 @@ export interface AccessBinding {
 
 // Main Audience Resource
 export interface AudienceType {
-  account: string;
+  account: [];
   property: string;
   name: string;
   displayName: string;
@@ -535,138 +535,117 @@ export interface AudienceType {
   exclusionDurationMode: AudienceExclusionDurationMode;
   filterClauses: AudienceFilterClause[];
 }
+export enum LogCondition {
+  LogConditionUnspecified = 'LOG_CONDITION_UNSPECIFIED',
+  AudienceJoined = 'AUDIENCE_JOINED',
+  AudienceMembershipRenewed = 'AUDIENCE_MEMBERSHIP_RENEWED',
+}
 
-// Enums for various Audience fields
 export enum AudienceExclusionDurationMode {
-  UNSPECIFIED = 'AUDIENCE_EXCLUSION_DURATION_MODE_UNSPECIFIED',
-  TEMPORARILY = 'EXCLUDE_TEMPORARILY',
-  PERMANENTLY = 'EXCLUDE_PERMANENTLY',
+  Unspecified = 'AUDIENCE_EXCLUSION_DURATION_MODE_UNSPECIFIED',
+  ExcludeTemporarily = 'EXCLUDE_TEMPORARILY',
+  ExcludePermanently = 'EXCLUDE_PERMANENTLY',
 }
 
 export enum AudienceClauseType {
-  UNSPECIFIED = 'AUDIENCE_CLAUSE_TYPE_UNSPECIFIED',
-  INCLUDE = 'INCLUDE',
-  EXCLUDE = 'EXCLUDE',
+  Include = 'INCLUDE',
+  Exclude = 'EXCLUDE',
 }
 
-export enum LogCondition {
-  UNSPECIFIED = 'LOG_CONDITION_UNSPECIFIED',
-  JOINED = 'AUDIENCE_JOINED',
-  MEMBERSHIP_RENEWED = 'AUDIENCE_MEMBERSHIP_RENEWED',
+export enum AudienceFilterScope {
+  Unspecified = 'AUDIENCE_FILTER_SCOPE_UNSPECIFIED',
+  WithinSameEvent = 'AUDIENCE_FILTER_SCOPE_WITHIN_SAME_EVENT',
+  WithinSameSession = 'AUDIENCE_FILTER_SCOPE_WITHIN_SAME_SESSION',
+  AcrossAllSessions = 'AUDIENCE_FILTER_SCOPE_ACROSS_ALL_SESSIONS',
 }
 
-// Audience Event Trigger
-interface AudienceEventTrigger {
-  eventName: string;
-  logCondition: LogCondition;
+export enum MatchType {
+  Unspecified = 'MATCH_TYPE_UNSPECIFIED',
+  Exact = 'EXACT',
+  BeginsWith = 'BEGINS_WITH',
+  EndsWith = 'ENDS_WITH',
+  Contains = 'CONTAINS',
+  FullRegexp = 'FULL_REGEXP',
 }
 
-// Audience Filter Clause
+export enum Operation {
+  Unspecified = 'OPERATION_UNSPECIFIED',
+  Equal = 'EQUAL',
+  LessThan = 'LESS_THAN',
+  GreaterThan = 'GREATER_THAN',
+}
+
+// Define complex objects
+export interface StringFilter {
+  matchType: MatchType;
+  value: string;
+  caseSensitive?: boolean;
+}
+
+export interface InListFilter {
+  values: string[];
+  caseSensitive?: boolean;
+}
+
+export interface NumericValue {
+  int64Value?: string;
+  doubleValue?: number;
+}
+
+export interface NumericFilter {
+  operation: Operation;
+  value: NumericValue;
+}
+
+export interface BetweenFilter {
+  fromValue: NumericValue;
+  toValue: NumericValue;
+}
+
+export interface AudienceDimensionOrMetricFilter {
+  fieldName: string;
+  atAnyPointInTime?: boolean;
+  inAnyNDayPeriod?: number;
+  /* one_filter: StringFilter | InListFilter | NumericFilter | BetweenFilter; */
+  stringFilter?: StringFilter;
+}
+
+export type AudienceFilterExpression = {
+  andGroup?: { filterExpressions: AudienceFilterExpression[] };
+  orGroup?: { filterExpressions: AudienceFilterExpression[] };
+  notExpression?: AudienceDimensionOrMetricFilter;
+  dimensionOrMetricFilter?: AudienceDimensionOrMetricFilter;
+  eventFilter?: {
+    eventName: string;
+    eventParameterFilterExpression?: AudienceFilterExpression;
+  };
+};
+
+export interface AudienceSimpleFilter {
+  scope: AudienceFilterScope;
+  filterExpression: AudienceFilterExpression;
+}
+
+export interface AudienceSequenceStep {
+  scope: AudienceFilterScope;
+  immediatelyFollows?: boolean;
+  constraintDuration?: string;
+  filterExpression: AudienceFilterExpression;
+}
+
+export interface AudienceSequenceFilter {
+  scope: AudienceFilterScope;
+  sequenceMaximumDuration?: string;
+  sequenceSteps: AudienceSequenceStep[];
+}
+
 export interface AudienceFilterClause {
   clauseType: AudienceClauseType;
   simpleFilter?: AudienceSimpleFilter;
   sequenceFilter?: AudienceSequenceFilter;
 }
 
-// Filters
-export interface AudienceSimpleFilter {
-  name: string;
-  simpleCardArray: [
-    {
-      scope: AudienceFilterScope;
-      filterExpression: AudienceFilterExpression;
-    }
-  ];
-}
-
-export enum AudienceFilterScope {
-  UNSPECIFIED = 'AUDIENCE_FILTER_SCOPE_UNSPECIFIED',
-  WITHIN_SAME_EVENT = 'AUDIENCE_FILTER_SCOPE_WITHIN_SAME_EVENT',
-  WITHIN_SAME_SESSION = 'AUDIENCE_FILTER_SCOPE_WITHIN_SAME_SESSION',
-  ACROSS_ALL_SESSIONS = 'AUDIENCE_FILTER_SCOPE_ACROSS_ALL_SESSIONS',
-}
-
-interface AudienceSequenceFilter {
-  scope: AudienceFilterScope;
-  sequenceMaximumDuration: string;
-  sequenceSteps: AudienceSequenceStep[];
-}
-
-interface AudienceSequenceStep {
-  scope: AudienceFilterScope;
-  immediatelyFollows?: boolean;
-  constraintDuration?: string; // Duration format, e.g., "3.5s"
-  filterExpression: AudienceFilterExpression;
-}
-
-// Audience Filter Expression and supporting types
-export type AudienceFilterExpression = {
-  andGroup?: AudienceFilterExpressionList;
-  orGroup?: AudienceFilterExpressionList;
-  notExpression?: AudienceFilterExpression;
-  dimensionOrMetricFilter?: AudienceDimensionOrMetricFilter;
-  eventFilter?: AudienceEventFilter;
-};
-
-interface AudienceFilterExpressionList {
-  filterExpressions: AudienceFilterExpression[];
-}
-
-interface AudienceDimensionOrMetricFilter {
-  fieldName: string;
-  atAnyPointInTime?: boolean;
-  inAnyNDayPeriod?: number;
-  // Union of filters, only one of these should be set at a time
-  stringFilter?: StringFilter;
-  inListFilter?: InListFilter;
-  numericFilter?: NumericFilter;
-  betweenFilter?: BetweenFilter;
-}
-
-// Detailed filter types
-interface StringFilter {
-  matchType: MatchType;
-  value: string;
-  caseSensitive?: boolean;
-}
-
-export enum MatchType {
-  UNSPECIFIED = 'MATCH_TYPE_UNSPECIFIED',
-  EXACT = 'EXACT',
-  BEGINS_WITH = 'BEGINS_WITH',
-  ENDS_WITH = 'ENDS_WITH',
-  CONTAINS = 'CONTAINS',
-  FULL_REGEXP = 'FULL_REGEXP',
-}
-
-interface InListFilter {
-  values: string[];
-  caseSensitive?: boolean;
-}
-
-interface NumericFilter {
-  operation: Operation;
-  value: NumericValue;
-}
-
-export enum Operation {
-  UNSPECIFIED = 'OPERATION_UNSPECIFIED',
-  EQUAL = 'EQUAL',
-  LESS_THAN = 'LESS_THAN',
-  GREATER_THAN = 'GREATER_THAN',
-}
-
-type NumericValue = {
-  int64Value?: string;
-  doubleValue?: number;
-};
-
-interface BetweenFilter {
-  fromValue: NumericValue;
-  toValue: NumericValue;
-}
-
-interface AudienceEventFilter {
+export interface AudienceEventTrigger {
   eventName: string;
-  eventParameterFilterExpression?: AudienceFilterExpression;
+  logCondition: LogCondition;
 }
