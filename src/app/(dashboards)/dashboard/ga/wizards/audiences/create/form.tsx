@@ -169,6 +169,8 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     }
   }, []);
 
+  console.log('uniqueData', uniqueData);
+
   const foundTierLimit = tierLimits.find(
     (subscription) => subscription.Feature?.name === 'GA4Audiences'
   );
@@ -441,10 +443,10 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     dispatch(decrementStep());
   };
 
-  /*   console.log('form.formState', form.formState);
-  
-  
-    console.log('form.formState.errors', form.formState.errors); */
+  console.log('form.formState', form.formState);
+
+
+  console.log('form.formState.errors', form.formState.errors);
 
   return (
     <div className="flex h-full">
@@ -617,6 +619,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                                       className="flex flex-row items-start space-x-3 space-y-0"
                                                     >
                                                       <FormControl>
+                                                        {/* Need to change the value so it registers the right account and property, only sending the first property 426648744 to the API call */}
                                                         <Checkbox
                                                           checked={
                                                             Array.isArray(field.value) &&
@@ -625,19 +628,19 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                                           onCheckedChange={(checked) => {
                                                             return checked
                                                               ? field.onChange([
-                                                                  ...(Array.isArray(field.value)
-                                                                    ? field.value
-                                                                    : []),
-                                                                  item.id,
-                                                                ])
+                                                                ...(Array.isArray(field.value)
+                                                                  ? field.value
+                                                                  : []),
+                                                                item.id,
+                                                              ])
                                                               : field.onChange(
-                                                                  (Array.isArray(field.value)
-                                                                    ? field.value
-                                                                    : []
-                                                                  ).filter(
-                                                                    (value) => value !== item.id
-                                                                  )
-                                                                );
+                                                                (Array.isArray(field.value)
+                                                                  ? field.value
+                                                                  : []
+                                                                ).filter(
+                                                                  (value) => value !== item.id
+                                                                )
+                                                              );
                                                           }}
                                                         />
                                                       </FormControl>

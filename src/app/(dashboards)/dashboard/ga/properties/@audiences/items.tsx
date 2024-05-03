@@ -761,8 +761,18 @@ const renderBetweenFilter = (register, field, fieldBase) => (
   </>
 );
 
-export const renderFilterInput = (filterType, audienceFormIndex, typeFormIndex, cardFormIndex) => {
-  const fieldBase = `forms[${audienceFormIndex}].filterClauses[${typeFormIndex}].simpleFilter.filterExpression.andGroup.filterExpressions[${cardFormIndex}].orGroup.filterExpressions[${cardFormIndex}].dimensionOrMetricFilter`;
+export const renderFilterInput = (filterType, audienceFormIndex, typeFormIndex, cardFormIndex, AudienceFilterExpression) => {
+  let fieldBase = '';
+
+  if (AudienceFilterExpression == 'andGroup') {
+    fieldBase = `forms[${audienceFormIndex}].filterClauses[${typeFormIndex}].simpleFilter.filterExpression.andGroup.filterExpressions[${cardFormIndex}].orGroup.filterExpressions[${cardFormIndex}].dimensionOrMetricFilter`;
+  }
+  if (AudienceFilterExpression == 'orGroup') {
+    fieldBase = `forms[${audienceFormIndex}].filterClauses[${typeFormIndex}].simpleFilter.filterExpression.orGroup.filterExpressions[${cardFormIndex}].orGroup.filterExpressions[${cardFormIndex}].dimensionOrMetricFilter`;
+  }
+
+
+  /*   const fieldBase = `forms[${audienceFormIndex}].filterClauses[${typeFormIndex}].simpleFilter.filterExpression.andGroup.filterExpressions[${cardFormIndex}].orGroup.filterExpressions[${cardFormIndex}].dimensionOrMetricFilter`; */
   const matchType = `${fieldBase}.stringFilter.matchType`;
   const stringFilterValue = `${fieldBase}.stringFilter.value`;
 

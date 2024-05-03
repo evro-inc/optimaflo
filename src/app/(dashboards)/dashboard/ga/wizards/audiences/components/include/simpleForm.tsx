@@ -185,7 +185,8 @@ export default ({
                               'stringFilter',
                               audienceFormIndex,
                               simpleFormIndex,
-                              cardAndIndex
+                              cardAndIndex,
+                              'andGroup'
                             )}
                         </div>
                       </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useFieldArray } from 'react-hook-form';
+import { useFieldArray, useFormContext } from 'react-hook-form';
 import { CardContent, CardHeader } from '@/src/components/ui/card';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/src/components/ui/form';
 import {
@@ -15,30 +15,31 @@ import { Button } from '@/src/components/ui/button';
 import { Cross2Icon, PlusIcon } from '@radix-ui/react-icons';
 import { filterTypeMapping, renderFilterInput } from '../../../../properties/@audiences/items';
 import { Badge } from '@/src/components/ui/badge';
+import { MatchType } from '@/src/types/types';
 
 export default ({
   combinedCategories,
   audienceFormIndex,
   simpleFormIndex,
-  cardAndIndex,
-  control,
-  register,
-  watch,
+  andGroupIndex,
 }) => {
 
-  const base = `forms[${audienceFormIndex}].filterClauses[${simpleFormIndex}].simpleFilter.filterExpression.orGroup.filterExpressions`;
+  const { control, register, watch } = useFormContext();
+
+
+  const baseOrPath = `forms[${audienceFormIndex}].filterClauses[${simpleFormIndex}].simpleFilter.filterExpression.andGroup.filterExpressions[${andGroupIndex}].orGroup.filterExpressions`;
 
 
   const { fields, remove, append } = useFieldArray({
     control,
-    name: base,
+    name: baseOrPath,
   });
 
 
   return (
     <div>
       {fields.map((item, index) => {
-        const baseField = `${base}[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter`;
+        const baseField = `${baseOrPath}[${index}].dimensionOrMetricFilter`;
 
         const categoryFieldName = `${baseField}.category`;
 
@@ -184,10 +185,22 @@ export default ({
         type="button"
         className="flex items-center space-x-2 text-blue-500"
         variant="ghost"
-        onClick={() => append({})}
+        onClick={() => append({
+          dimensionOrMetricFilter: {
+            fieldName: '',  // Default value to ensure forms are initialized correctly
+            atAnyPointInTime: false,
+            inAnyNDayPeriod: 0,
+            stringFilter: {
+              matchType: MatchType.Exact,
+              value: '',  // Consider setting a default or example value if applicable
+              caseSensitive: false,
+            },
+          }
+        })}
       >
-        Or
+        OR Condition
       </Button>
+
     </div>
   );
 };
