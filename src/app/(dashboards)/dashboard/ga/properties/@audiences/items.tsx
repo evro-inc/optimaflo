@@ -761,24 +761,12 @@ const renderBetweenFilter = (register, field, fieldBase) => (
   </>
 );
 
-export const renderFilterInput = (filterType, audienceFormIndex, typeFormIndex, cardFormIndex, AudienceFilterExpression) => {
-  let fieldBase = '';
+export const renderFilterInput = (filterType, baseField, AudienceFilterExpression) => {
 
-  if (AudienceFilterExpression == 'andGroup') {
-    fieldBase = `forms[${audienceFormIndex}].filterClauses[${typeFormIndex}].simpleFilter.filterExpression.andGroup.filterExpressions[${cardFormIndex}].orGroup.filterExpressions[${cardFormIndex}].dimensionOrMetricFilter`;
-  }
-  if (AudienceFilterExpression == 'orGroup') {
-    fieldBase = `forms[${audienceFormIndex}].filterClauses[${typeFormIndex}].simpleFilter.filterExpression.orGroup.filterExpressions[${cardFormIndex}].orGroup.filterExpressions[${cardFormIndex}].dimensionOrMetricFilter`;
-  }
-
-
-  /*   const fieldBase = `forms[${audienceFormIndex}].filterClauses[${typeFormIndex}].simpleFilter.filterExpression.andGroup.filterExpressions[${cardFormIndex}].orGroup.filterExpressions[${cardFormIndex}].dimensionOrMetricFilter`; */
-  const matchType = `${fieldBase}.stringFilter.matchType`;
-  const stringFilterValue = `${fieldBase}.stringFilter.value`;
 
   switch (filterType) {
     case 'stringFilter':
-      return renderStringFilter(fieldBase);
+      return renderStringFilter(baseField);
     /*     case 'inListFilter':
           return renderInListFilter(register, fields, fieldBase);
         case 'numericFilter':

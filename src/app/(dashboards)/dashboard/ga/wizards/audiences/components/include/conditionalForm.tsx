@@ -224,7 +224,12 @@ export default function IncludeConditionalForm({
               clauseType: AudienceClauseType.Include,
               simpleFilter: {
                 scope: AudienceFilterScope.WithinSameEvent,
-                filterExpression: simpleFilterExpression,
+                filterExpression: {
+                  andGroup: {
+                    filterExpressions: [],
+                  },
+
+                },
               },
             });
           }}

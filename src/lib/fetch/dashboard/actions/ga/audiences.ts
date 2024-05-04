@@ -113,7 +113,7 @@ export async function createGAAudiences(formData: Audience) {
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
 
-  //console.log('formData', formData?.forms[0]?.filterClauses[0]?.simpleFilter?.filterExpression);
+  console.log('formData', formData?.forms[0]?.filterClauses[0]?.simpleFilter?.filterExpression);
 
   let retries = 0;
   const MAX_RETRIES = 3;

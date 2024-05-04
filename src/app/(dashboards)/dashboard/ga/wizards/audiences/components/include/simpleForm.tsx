@@ -34,25 +34,13 @@ export default ({
     name: base,
   });
 
-  const newFilterExpression = () => ({
-    dimensionOrMetricFilter: {
-      fieldName: '',
-      atAnyPointInTime: false,
-      inAnyNDayPeriod: 0,
-      stringFilter: {
-        matchType: MatchType.Exact,
-        value: '',
-        caseSensitive: false,
-      },
-    },
-  });
 
   return (
     <div>
       {fields.map((item, cardAndIndex) => {
-        console.log('item data', item);
-        console.log('cardAndIndex data', cardAndIndex);
-        console.log('fields data', fields);
+        /*         console.log('item data', item);
+                console.log('cardAndIndex data', cardAndIndex);
+                console.log('fields data', fields); */
 
         const baseField = `${base}[${cardAndIndex}].orGroup.filterExpressions[${cardAndIndex}].dimensionOrMetricFilter`;
 
@@ -95,7 +83,7 @@ export default ({
                 <div className="flex items-center justify-between mt-5">
                   <div className="flex flex-row md:space-x-4 w-full">
                     <div className="w-full">
-                      <div className="w-full">
+                      {/* <div className="w-full">
                         <div className="flex space-x-4 w-full">
                           <div className="w-5/12">
                             <FormField
@@ -105,10 +93,7 @@ export default ({
                                 <FormItem>
                                   <FormControl>
                                     <Select
-                                      {...field}
-                                      onValueChange={(value) => {
-                                        field.onChange(value);
-                                      }}
+                                      {...register(categoryFieldName, { required: true })}
                                       defaultValue={field.value}
                                     >
                                       <SelectTrigger>
@@ -145,11 +130,9 @@ export default ({
                                 <FormItem>
                                   <FormControl>
                                     <Select
-                                      {...field}
+                                      {...register(fieldName, { required: true })}
                                       disabled={!selectedCategory}
-                                      onValueChange={(value) => {
-                                        field.onChange(value);
-                                      }}
+
                                       defaultValue={field.value}
                                     >
                                       <SelectTrigger className="truncate">
@@ -189,7 +172,7 @@ export default ({
                               'andGroup'
                             )}
                         </div>
-                      </div>
+                      </div> */}
 
                       {/* ///////////////////////////////////////////////// OR FIELDS/////////////////////////////////////////////// */}
                       <OrForm
@@ -213,7 +196,22 @@ export default ({
         <Button
           type="button"
           className="flex items-center space-x-2"
-          onClick={() => append(newFilterExpression)}
+          onClick={() => append({
+            orGroup: {
+              filterExpressions: [{
+                dimensionOrMetricFilter: {
+                  fieldName: '',
+                  atAnyPointInTime: false,
+                  inAnyNDayPeriod: 0,
+                  stringFilter: {
+                    matchType: MatchType.Exact,
+                    value: '',
+                    caseSensitive: false
+                  }
+                }
+              }]
+            }
+          })}
         >
           <PlusIcon className="text-white" />
           <span>Add Card</span>

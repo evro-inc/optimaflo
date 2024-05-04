@@ -15,6 +15,7 @@ import { Button } from '@/src/components/ui/button';
 import { Cross2Icon, PlusIcon } from '@radix-ui/react-icons';
 import { filterTypeMapping, renderFilterInput } from '../../../../properties/@audiences/items';
 import { Badge } from '@/src/components/ui/badge';
+import { MatchType } from '@/src/types/types';
 
 export default ({
   combinedCategories,
@@ -26,7 +27,7 @@ export default ({
   watch,
 }) => {
 
-  const base = `forms[${audienceFormIndex}].filterClauses[${simpleFormIndex}].simpleFilter.filterExpression.orGroup.filterExpressions`;
+  const base = `forms[${audienceFormIndex}].filterClauses[${simpleFormIndex}].simpleFilter.filterExpression.andGroup.filterExpressions`;
 
 
   const { fields, remove, append } = useFieldArray({
@@ -38,7 +39,7 @@ export default ({
   return (
     <div>
       {fields.map((item, index) => {
-        const baseField = `${base}[${index}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter`;
+        const baseField = `${base}[${cardAndIndex}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter`;
 
         const categoryFieldName = `${baseField}.category`;
 
@@ -83,11 +84,12 @@ export default ({
                               <FormItem>
                                 <FormControl>
                                   <Select
+                                    {...register(categoryFieldName, { required: true })}
+                                    defaultValue={field.value}
                                     {...field}
                                     onValueChange={(value) => {
                                       field.onChange(value);
                                     }}
-                                    defaultValue={field.value}
                                   >
                                     <SelectTrigger>
                                       <SelectValue placeholder="Select Category" />
@@ -123,8 +125,9 @@ export default ({
                               <FormItem>
                                 <FormControl>
                                   <Select
-                                    {...field}
+                                    {...register(fieldName, { required: true })}
                                     disabled={!selectedCategory}
+                                    {...field}
                                     onValueChange={(value) => {
                                       field.onChange(value);
                                     }}
@@ -164,9 +167,7 @@ export default ({
 
                           renderFilterInput(
                             'stringFilter',
-                            audienceFormIndex,
-                            simpleFormIndex,
-                            index,
+                            baseField,
                             'orGroup'
                           )
 
@@ -184,7 +185,22 @@ export default ({
         type="button"
         className="flex items-center space-x-2 text-blue-500"
         variant="ghost"
-        onClick={() => append({})}
+        onClick={() => append({
+          orGroup: {
+            filterExpressions: [{
+              dimensionOrMetricFilter: {
+                fieldName: '',
+                atAnyPointInTime: false,
+                inAnyNDayPeriod: 0,
+                stringFilter: {
+                  matchType: MatchType.Exact,
+                  value: '',
+                  caseSensitive: false
+                }
+              }
+            }]
+          }
+        })}
       >
         Or
       </Button>
