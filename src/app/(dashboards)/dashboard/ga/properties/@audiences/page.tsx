@@ -35,6 +35,25 @@ export default async function AudiencePage({
   const flatProperties = properties.flat();
   const flattenedaudience = audienceData.flatMap((item) => item.audiences);
 
+  const testterAudience = flattenedaudience.find((audience) => audience.displayName === 'testter');
+
+  console.log(
+    'testterAudience',
+    testterAudience.filterClauses[0].simpleFilter.filterExpression.andGroup
+  );
+
+  console.log(
+    'testterAudience Or 1',
+    testterAudience.filterClauses[0].simpleFilter.filterExpression.andGroup.filterExpressions[0]
+      .orGroup.filterExpressions[0]
+  );
+
+  console.log(
+    'testterAudience Or 2',
+    testterAudience.filterClauses[0].simpleFilter.filterExpression.andGroup.filterExpressions[0]
+      .orGroup.filterExpressions[1]
+  );
+
   const combinedData = flattenedaudience.map((audience) => {
     const propertyId = audience.name.split('/')[1];
     const property = flatProperties.find((p) => p.name.includes(propertyId));

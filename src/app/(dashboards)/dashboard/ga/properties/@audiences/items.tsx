@@ -762,8 +762,6 @@ const renderBetweenFilter = (register, field, fieldBase) => (
 );
 
 export const renderFilterInput = (filterType, baseField, AudienceFilterExpression) => {
-
-
   switch (filterType) {
     case 'stringFilter':
       return renderStringFilter(baseField);

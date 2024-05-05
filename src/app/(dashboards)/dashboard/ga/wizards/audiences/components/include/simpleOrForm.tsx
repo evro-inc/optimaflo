@@ -26,24 +26,21 @@ export default ({
   register,
   watch,
 }) => {
-
-  const base = `forms[${audienceFormIndex}].filterClauses[${simpleFormIndex}].simpleFilter.filterExpression.andGroup.filterExpressions`;
-
+  const base = `forms[${audienceFormIndex}].filterClauses[${simpleFormIndex}].simpleFilter.filterExpression.andGroup.filterExpressions[${cardAndIndex}].orGroup.filterExpressions`;
 
   const { fields, remove, append } = useFieldArray({
     control,
     name: base,
   });
 
-
   return (
     <div>
       {fields.map((item, index) => {
-        const baseField = `${base}[${cardAndIndex}].orGroup.filterExpressions[${index}].dimensionOrMetricFilter`;
+        const baseField = `${base}[${index}].dimensionOrMetricFilter`;
 
         const categoryFieldName = `${baseField}.category`;
 
-        const fieldName = `${baseField}.fieldName`
+        const fieldName = `${baseField}.fieldName`;
 
         // Watch the specific category and item for this field
         const selectedCategory = watch(categoryFieldName);
@@ -100,7 +97,6 @@ export default ({
                                           <SelectLabel>{parentCategory.name}</SelectLabel>
                                           {parentCategory.categories.map((category) => (
                                             <SelectItem
-
                                               key={`${parentCategory.name} - ${category.name}`}
                                               value={`${parentCategory.name} - ${category.name}`}
                                             >
@@ -163,15 +159,7 @@ export default ({
                         </div>
                       </div>
                       <div>
-                        {inputItem && (
-
-                          renderFilterInput(
-                            'stringFilter',
-                            baseField,
-                            'orGroup'
-                          )
-
-                        )}
+                        {inputItem && renderFilterInput('stringFilter', baseField, 'orGroup')}
                       </div>
                     </div>
                   </div>
@@ -185,22 +173,7 @@ export default ({
         type="button"
         className="flex items-center space-x-2 text-blue-500"
         variant="ghost"
-        onClick={() => append({
-          orGroup: {
-            filterExpressions: [{
-              dimensionOrMetricFilter: {
-                fieldName: '',
-                atAnyPointInTime: false,
-                inAnyNDayPeriod: 0,
-                stringFilter: {
-                  matchType: MatchType.Exact,
-                  value: '',
-                  caseSensitive: false
-                }
-              }
-            }]
-          }
-        })}
+        onClick={() => append({})}
       >
         Or
       </Button>

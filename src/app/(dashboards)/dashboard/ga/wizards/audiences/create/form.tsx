@@ -445,7 +445,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
 
   console.log('form.formState', form.formState);
 
-
   console.log('form.formState.errors', form.formState.errors);
 
   return (
@@ -628,19 +627,19 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                                           onCheckedChange={(checked) => {
                                                             return checked
                                                               ? field.onChange([
-                                                                ...(Array.isArray(field.value)
-                                                                  ? field.value
-                                                                  : []),
-                                                                item.id,
-                                                              ])
+                                                                  ...(Array.isArray(field.value)
+                                                                    ? field.value
+                                                                    : []),
+                                                                  item.id,
+                                                                ])
                                                               : field.onChange(
-                                                                (Array.isArray(field.value)
-                                                                  ? field.value
-                                                                  : []
-                                                                ).filter(
-                                                                  (value) => value !== item.id
-                                                                )
-                                                              );
+                                                                  (Array.isArray(field.value)
+                                                                    ? field.value
+                                                                    : []
+                                                                  ).filter(
+                                                                    (value) => value !== item.id
+                                                                  )
+                                                                );
                                                           }}
                                                         />
                                                       </FormControl>

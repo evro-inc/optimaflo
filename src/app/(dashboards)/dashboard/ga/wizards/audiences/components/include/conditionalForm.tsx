@@ -228,7 +228,6 @@ export default function IncludeConditionalForm({
                   andGroup: {
                     filterExpressions: [],
                   },
-
                 },
               },
             });

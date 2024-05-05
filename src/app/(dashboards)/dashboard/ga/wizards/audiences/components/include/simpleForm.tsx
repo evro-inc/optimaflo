@@ -34,7 +34,6 @@ export default ({
     name: base,
   });
 
-
   return (
     <div>
       {fields.map((item, cardAndIndex) => {
@@ -196,22 +195,26 @@ export default ({
         <Button
           type="button"
           className="flex items-center space-x-2"
-          onClick={() => append({
-            orGroup: {
-              filterExpressions: [{
-                dimensionOrMetricFilter: {
-                  fieldName: '',
-                  atAnyPointInTime: false,
-                  inAnyNDayPeriod: 0,
-                  stringFilter: {
-                    matchType: MatchType.Exact,
-                    value: '',
-                    caseSensitive: false
-                  }
-                }
-              }]
-            }
-          })}
+          onClick={() =>
+            append({
+              orGroup: {
+                filterExpressions: [
+                  {
+                    dimensionOrMetricFilter: {
+                      fieldName: '',
+                      atAnyPointInTime: false,
+                      inAnyNDayPeriod: 0,
+                      stringFilter: {
+                        matchType: MatchType.Exact,
+                        value: '',
+                        caseSensitive: false,
+                      },
+                    },
+                  },
+                ],
+              },
+            })
+          }
         >
           <PlusIcon className="text-white" />
           <span>Add Card</span>

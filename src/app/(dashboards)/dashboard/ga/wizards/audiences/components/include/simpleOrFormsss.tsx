@@ -17,24 +17,15 @@ import { filterTypeMapping, renderFilterInput } from '../../../../properties/@au
 import { Badge } from '@/src/components/ui/badge';
 import { MatchType } from '@/src/types/types';
 
-export default ({
-  combinedCategories,
-  audienceFormIndex,
-  simpleFormIndex,
-  andGroupIndex,
-}) => {
-
+export default ({ combinedCategories, audienceFormIndex, simpleFormIndex, andGroupIndex }) => {
   const { control, register, watch } = useFormContext();
 
-
   const baseOrPath = `forms[${audienceFormIndex}].filterClauses[${simpleFormIndex}].simpleFilter.filterExpression.andGroup.filterExpressions[${andGroupIndex}].orGroup.filterExpressions`;
-
 
   const { fields, remove, append } = useFieldArray({
     control,
     name: baseOrPath,
   });
-
 
   return (
     <div>
@@ -43,7 +34,7 @@ export default ({
 
         const categoryFieldName = `${baseField}.category`;
 
-        const fieldName = `${baseField}.fieldName`
+        const fieldName = `${baseField}.fieldName`;
 
         // Watch the specific category and item for this field
         const selectedCategory = watch(categoryFieldName);
@@ -99,7 +90,6 @@ export default ({
                                           <SelectLabel>{parentCategory.name}</SelectLabel>
                                           {parentCategory.categories.map((category) => (
                                             <SelectItem
-
                                               key={`${parentCategory.name} - ${category.name}`}
                                               value={`${parentCategory.name} - ${category.name}`}
                                             >
@@ -161,17 +151,14 @@ export default ({
                         </div>
                       </div>
                       <div>
-                        {inputItem && (
-
+                        {inputItem &&
                           renderFilterInput(
                             'stringFilter',
                             audienceFormIndex,
                             simpleFormIndex,
                             index,
                             'orGroup'
-                          )
-
-                        )}
+                          )}
                       </div>
                     </div>
                   </div>
@@ -185,22 +172,23 @@ export default ({
         type="button"
         className="flex items-center space-x-2 text-blue-500"
         variant="ghost"
-        onClick={() => append({
-          dimensionOrMetricFilter: {
-            fieldName: '',  // Default value to ensure forms are initialized correctly
-            atAnyPointInTime: false,
-            inAnyNDayPeriod: 0,
-            stringFilter: {
-              matchType: MatchType.Exact,
-              value: '',  // Consider setting a default or example value if applicable
-              caseSensitive: false,
+        onClick={() =>
+          append({
+            dimensionOrMetricFilter: {
+              fieldName: '', // Default value to ensure forms are initialized correctly
+              atAnyPointInTime: false,
+              inAnyNDayPeriod: 0,
+              stringFilter: {
+                matchType: MatchType.Exact,
+                value: '', // Consider setting a default or example value if applicable
+                caseSensitive: false,
+              },
             },
-          }
-        })}
+          })
+        }
       >
         OR Condition
       </Button>
-
     </div>
   );
 };
