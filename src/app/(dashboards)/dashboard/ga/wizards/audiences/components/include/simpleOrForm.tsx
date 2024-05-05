@@ -61,11 +61,17 @@ export default ({
 
         return (
           <div key={item.id}>
-            <div className="relative border-t border-dashed my-8 flex justify-center">
-              <div className="absolute -bottom-3 left-5">
-                <Badge variant="secondary">OR</Badge>
+
+            {index > 0 && (
+              <div className="relative border-t border-dashed my-8 flex justify-center">
+                <div className="absolute -bottom-3 left-5">
+                  <Badge variant="secondary">OR</Badge>
+                </div>
               </div>
-            </div>
+            )}
+
+
+
 
             <CardContent className="p-0">
               <div className="flex items-center justify-between mt-5">
