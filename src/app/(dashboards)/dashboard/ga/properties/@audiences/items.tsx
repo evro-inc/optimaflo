@@ -67,7 +67,7 @@ export const ImmediatelyFollows = [
 
 export const filterTypeMapping = {
   // Dimensions
-  adSourceName: 'stringFilter',
+  adSourceName: 'stringFilter', // not allowed in audiences
   sourceMedium: 'stringFilter',
   source: 'stringFilter',
   medium: 'stringFilter',
