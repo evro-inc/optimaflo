@@ -1,29 +1,17 @@
 import React from 'react';
 import { useFieldArray } from 'react-hook-form';
-import { Card, CardContent, CardFooter, CardHeader } from '@/src/components/ui/card';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/src/components/ui/form';
+import { CardContent, CardFooter, CardHeader } from '@/src/components/ui/card';
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/src/components/ui/select';
 import { Button } from '@/src/components/ui/button';
-import { Cross2Icon, PersonIcon, PlusIcon, TrashIcon } from '@radix-ui/react-icons';
+import { PersonIcon, TrashIcon } from '@radix-ui/react-icons';
 import {
   ImmediatelyFollows,
-  renderFilterInput,
   sequenceStepFilterExpression,
   SimpleScope,
   TimeConstraint,
@@ -31,7 +19,6 @@ import {
 import Sequence from './sequenceForm';
 
 import { Separator } from '@/src/components/ui/separator';
-import { Badge } from '@/src/components/ui/badge';
 import { AudienceFilterScope } from '@/src/types/types';
 
 export default ({
@@ -45,7 +32,7 @@ export default ({
 }) => {
   const { fields, remove, append } = useFieldArray({
     control,
-    name: `forms[${audienceFormIndex}].filterClauses.sequenceFilter[${sequenceFormIndex}].sequenceSteps`,
+    name: `forms[${audienceFormIndex}].filterClauses[${sequenceFormIndex}].sequenceFilter.sequenceSteps`,
   });
 
   return (
@@ -108,7 +95,6 @@ export default ({
                     </Select>
                     <Separator orientation="vertical" />
                     <Button
-                      type="button"
                       variant="ghost"
                       size="icon"
                       onClick={() => remove(stepIndex)}
@@ -142,9 +128,8 @@ export default ({
               className="flex items-center space-x-2"
               onClick={() =>
                 append({
-                  scope: AudienceFilterScope.WITHIN_SAME_EVENT,
+                  scope: AudienceFilterScope.AcrossAllSessions,
                   immediatelyFollows: false,
-                  constraintDuration: '',
                   filterExpression: sequenceStepFilterExpression,
                 })
               }

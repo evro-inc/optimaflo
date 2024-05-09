@@ -182,3 +182,11 @@ export default ({
     </div>
   );
 };
+
+/* 
+        name={`forms[${simpleFormIndex}].filterClauses[${simpleFormIndex}].parentCardArray[${simpleFormIndex}].simpleFilter.simpleCardArray[${index}].filterExpression.andGroup.filterExpressions[${index}].dimensionOrMetricFilter.${
+                              filterTypeMapping[inputItem.apiName] ||
+                              filterTypeMapping[inputItem.category] ||
+                              'stringFilter'
+                            }`}
+*/

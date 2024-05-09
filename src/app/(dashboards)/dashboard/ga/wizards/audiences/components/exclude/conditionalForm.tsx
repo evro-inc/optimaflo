@@ -15,8 +15,6 @@ import {
 import { Button } from '@/src/components/ui/button';
 import {
   SequenceScope,
-  sequenceStepFilterExpression,
-  simpleFilterExpression,
   SimpleScope,
   TimeConstraint,
 } from '../../../../properties/@audiences/items';
@@ -24,7 +22,7 @@ import SequenceStepComponent from './sequenceStepForm';
 import { AudienceClauseType, AudienceFilterScope } from '@/src/types/types';
 import CardForm from './simpleForm';
 
-export default function ExcludeConditionalForm({
+export default function IncludeConditionalForm({
   combinedCategories,
   audienceFormIndex,
   control,
@@ -74,18 +72,18 @@ export default function ExcludeConditionalForm({
                 <CardHeader>
                   <div className="flex items-center">
                     <CircleIcon className="text-blue-500 mr-2" />
-                    <span className="flex-grow text-sm font-medium">Exclude users when:</span>
+                    <span className="flex-grow text-sm font-medium">Include users when:</span>
                     <div className="flex items-center space-x-2">
                       <PersonIcon className="text-gray-600" />
                       <FormField
                         control={control}
-                        name={`forms.[${audienceFormIndex}].filterClauses.simpleFilter.simpleCardArray[${simpleIndex}].scope`}
+                        name={`forms.[${audienceFormIndex}].filterClauses[${simpleIndex}].simpleFilter.scope`}
                         render={({ field }) => (
                           <FormItem>
                             <FormControl>
                               <Select
                                 {...register(
-                                  `forms.[${audienceFormIndex}].filterClauses.simpleFilter.simpleCardArray[${simpleIndex}].scope`
+                                  `forms.[${audienceFormIndex}].filterClauses[${simpleIndex}].simpleFilter.scope`
                                 )}
                                 {...field}
                                 onValueChange={field.onChange}
@@ -120,7 +118,7 @@ export default function ExcludeConditionalForm({
                     audienceFormIndex={audienceFormIndex}
                     combinedCategories={combinedCategories}
                     simpleFormIndex={simpleIndex}
-                    {...{ control, register, watch }}
+                    {...{ control, register, watch, setValue }}
                   />
                 </CardContent>
               </Card>
@@ -163,26 +161,43 @@ export default function ExcludeConditionalForm({
                   <div className="flex items-center w-full">
                     <div className="flex basis-5/12">
                       <CircleIcon className="text-blue-500 mr-2" />
-                      <span className="flex text-sm font-medium">Exclude sequence:</span>
+                      <span className="flex text-sm font-medium">Include sequence:</span>
                     </div>
 
                     <div className="flex flex-grow basis-7/12 justify-end">
                       <div className="flex items-center space-x-2">
                         <PersonIcon className="text-gray-600" />
 
-                        <Select>
-                          <SelectTrigger id="user-action">
-                            <SelectValue placeholder="Sequence scoping" />
-                          </SelectTrigger>
-                          <SelectContent position="popper">
-                            {SequenceScope.map((item) => (
-                              <SelectItem key={item.label} value={item.id}>
-                                {item.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
 
+                        <FormField
+                          control={control}
+                          name={`forms.[${audienceFormIndex}].filterClauses[${sequenceIndex}].sequenceFilter.scope`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <Select
+                                  {...register(
+                                    `forms.[${audienceFormIndex}].filterClauses[${sequenceIndex}].sequenceFilter.scope`
+                                  )}
+                                  {...field}
+                                  onValueChange={field.onChange}
+                                >
+                                  <SelectTrigger id="user-action">
+                                    <SelectValue placeholder="Sequence scoping" />
+                                  </SelectTrigger>
+                                  <SelectContent position="popper">
+                                    {SequenceScope.map((item) => (
+                                      <SelectItem key={item.label} value={item.id}>
+                                        {item.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
                         <Separator orientation="vertical" />
                         {TimeConstraint()}
                         <Separator orientation="vertical" />
@@ -221,15 +236,14 @@ export default function ExcludeConditionalForm({
           variant="secondary"
           onClick={() => {
             SimpleAppend({
-              clauseType: AudienceClauseType.EXCLUDE,
+              clauseType: AudienceClauseType.Include,
               simpleFilter: {
-                name: 'new exclude simple filter',
-                simpleCardArray: [
-                  {
-                    scope: AudienceFilterScope.UNSPECIFIED,
-                    filterExpression: simpleFilterExpression,
+                scope: AudienceFilterScope.WithinSameEvent,
+                filterExpression: {
+                  andGroup: {
+                    filterExpressions: [],
                   },
-                ],
+                },
               },
             });
           }}
@@ -244,17 +258,10 @@ export default function ExcludeConditionalForm({
           variant="secondary"
           onClick={() => {
             SequenceAppend({
-              clauseType: AudienceClauseType.EXCLUDE,
+              clauseType: AudienceClauseType.Include,
               sequenceFilter: {
-                scope: AudienceFilterScope.WITHIN_SAME_EVENT,
-                sequenceSteps: [
-                  {
-                    scope: AudienceFilterScope.WITHIN_SAME_EVENT,
-                    immediatelyFollows: false,
-                    constraintDuration: '',
-                    filterExpression: sequenceStepFilterExpression,
-                  },
-                ],
+                scope: AudienceFilterScope.AcrossAllSessions,
+                sequenceSteps: [],
               },
             });
           }}
