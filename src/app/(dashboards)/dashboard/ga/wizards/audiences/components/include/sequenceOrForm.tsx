@@ -1,6 +1,6 @@
 import React from 'react';
 import { useFieldArray } from 'react-hook-form';
-import { CardContent, CardHeader } from '@/src/components/ui/card';
+import { CardContent } from '@/src/components/ui/card';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/src/components/ui/form';
 import {
   Select,
@@ -12,8 +12,8 @@ import {
   SelectValue,
 } from '@/src/components/ui/select';
 import { Button } from '@/src/components/ui/button';
-import { Cross2Icon, PlusIcon } from '@radix-ui/react-icons';
-import { filterTypeMapping, renderFilterInput } from '../../../../properties/@audiences/items';
+import { Cross2Icon } from '@radix-ui/react-icons';
+import { renderFilterInput } from '../../../../properties/@audiences/items';
 import { Badge } from '@/src/components/ui/badge';
 
 export default ({
@@ -21,22 +21,32 @@ export default ({
   audienceFormIndex,
   sequenceFormIndex,
   sequenceStepIndex,
-  cardAndIndex,
+  andGroupFilterExpressionIndex,
   control,
   register,
   watch,
 }) => {
+
+  const base = `forms[${audienceFormIndex}].filterClauses[${sequenceFormIndex}].sequenceFilter.sequenceSteps[${sequenceStepIndex}].filterExpression.andGroup.filterExpressions[${andGroupFilterExpressionIndex}].orGroup.filterExpressions`
+
   const { fields, remove, append } = useFieldArray({
     control,
-    name: `forms[${audienceFormIndex}].filterClauses.sequenceFilter[${sequenceFormIndex}].sequenceSteps[${sequenceStepIndex}].filterExpression.andGroup.filterExpressions.orGroup.filterExpressions`,
+    name: base,
   });
 
   return (
     <div>
       {fields.map((item, index) => {
-        const categoryFieldName = `forms[${audienceFormIndex}].filterClauses.sequenceFilter[${sequenceFormIndex}].sequenceSteps[${sequenceStepIndex}].filterExpression.andGroup.filterExpressions.orGroup.filterExpressions[${index}].dimensionOrMetricFilter.category`;
 
-        const fieldName = `forms[${audienceFormIndex}].filterClauses.sequenceFilter[${sequenceFormIndex}].sequenceSteps[${sequenceStepIndex}].filterExpression.andGroup.filterExpressions.orGroup.filterExpressions[${index}].dimensionOrMetricFilter.fieldName`;
+        const baseField = `${base}[${index}].dimensionOrMetricFilter`;
+
+
+        const categoryFieldName = `${baseField}.category`;
+
+        console.log('categoryFieldName', categoryFieldName);
+
+
+        const fieldName = `${baseField}.fieldName`;
 
         // Watch the specific category and item for this field
         const selectedCategory = watch(categoryFieldName);
@@ -57,11 +67,13 @@ export default ({
 
         return (
           <div key={item.id}>
-            <div className="relative border-t border-dashed my-8 flex justify-center">
-              <div className="absolute -bottom-3 left-5">
-                <Badge variant="secondary">OR</Badge>
+            {index > 0 && (
+              <div className="relative border-t border-dashed my-8 flex justify-center">
+                <div className="absolute -bottom-3 left-5">
+                  <Badge variant="secondary">OR</Badge>
+                </div>
               </div>
-            </div>
+            )}
 
             <CardContent className="p-0">
               <div className="flex items-center justify-between mt-5">
@@ -76,7 +88,12 @@ export default ({
                             render={({ field }) => (
                               <FormItem>
                                 <FormControl>
-                                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                  <Select
+                                    {...register(categoryFieldName, { required: true })}
+                                    onValueChange={(value) => { field.onChange(value) }}
+                                    defaultValue={field.value}
+                                    {...field}
+                                  >
                                     <SelectTrigger>
                                       <SelectValue placeholder="Select Category" />
                                     </SelectTrigger>
@@ -86,7 +103,6 @@ export default ({
                                           <SelectLabel>{parentCategory.name}</SelectLabel>
                                           {parentCategory.categories.map((category) => (
                                             <SelectItem
-                                              {...register(categoryFieldName)}
                                               key={`${parentCategory.name} - ${category.name}`}
                                               value={`${parentCategory.name} - ${category.name}`}
                                             >
@@ -111,10 +127,12 @@ export default ({
                               <FormItem>
                                 <FormControl>
                                   <Select
-                                    {...register(fieldName)}
+                                    {...register(fieldName, { required: true })}
                                     {...field}
                                     disabled={!selectedCategory}
-                                    onValueChange={field.onChange}
+                                    onValueChange={(value) => {
+                                      field.onChange(value);
+                                    }}
                                     defaultValue={field.value}
                                   >
                                     <SelectTrigger className="truncate">
@@ -146,34 +164,7 @@ export default ({
                         </div>
                       </div>
                       <div>
-                        {inputItem && (
-                          <FormField
-                            control={control}
-                            name={`forms[${audienceFormIndex}].filterClauses.sequenceFilter[${sequenceFormIndex}].sequenceSteps[${sequenceStepIndex}].filterExpression.andGroup.filterExpressions[${index}].dimensionOrMetricFilter.${
-                              filterTypeMapping[inputItem.apiName] ||
-                              filterTypeMapping[inputItem.category] ||
-                              'stringFilter'
-                            }`}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Filter</FormLabel>
-                                <FormControl>
-                                  {/* Render the appropriate filter input based on the filterType */}
-                                  {renderFilterInput(
-                                    filterTypeMapping[inputItem.apiName] ||
-                                      filterTypeMapping[inputItem.category] ||
-                                      'stringFilter',
-                                    field,
-                                    audienceFormIndex,
-                                    sequenceFormIndex,
-                                    cardAndIndex
-                                  )}
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        )}
+                        {inputItem && renderFilterInput('stringFilter', baseField, 'orGroup')}
                       </div>
                     </div>
                   </div>
@@ -187,7 +178,9 @@ export default ({
         type="button"
         className="flex items-center space-x-2 text-blue-500"
         variant="ghost"
-        onClick={() => append({})}
+        onClick={() =>
+          append({})
+        }
       >
         Or
       </Button>

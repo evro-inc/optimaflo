@@ -115,14 +115,6 @@ export async function createGAAudiences(formData: Audience) {
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
 
-  /*   console.log('formData', formData);
-    console.log('formData.forms', formData.forms);
-    console.log('orGroup 1', formData?.forms[0]?.filterClauses[0]?.simpleFilter?.filterExpression.andGroup.filterExpressions[0].orGroup.filterExpressions);
-  
-  
-    console.log('orGroup 1', formData?.forms[0]?.filterClauses[0]?.simpleFilter?.filterExpression.andGroup.filterExpressions[0].orGroup.filterExpressions[0].dimensionOrMetricFilter);
-  
-    console.log('orGroup 2', formData?.forms[0]?.filterClauses[0]?.simpleFilter?.filterExpression.andGroup.filterExpressions[0].orGroup.filterExpressions[1].dimensionOrMetricFilter); */
 
   let retries = 0;
   const MAX_RETRIES = 3;
@@ -193,7 +185,7 @@ export async function createGAAudiences(formData: Audience) {
           await limiter.schedule(async () => {
             const createPromises = Array.from(toCreateAudiences).map(async (identifier) => {
               if (!identifier) {
-                errors.push(`Custom metric data not found for ${identifier}`);
+                errors.push(`Custom audience data not found for ${identifier}`);
                 toCreateAudiences.delete(identifier);
                 return;
               }
@@ -208,15 +200,8 @@ export async function createGAAudiences(formData: Audience) {
 
               try {
                 const formDataToValidate = { forms: [identifier] };
-                /*                 console.log('Data to validate:', formDataToValidate?.forms[0]?.filterClauses[0]?.simpleFilter?.filterExpression.andGroup.filterExpressions[0].orGroup);
-                
-                                console.log('Data to validate 1:', formDataToValidate?.forms[0]?.filterClauses[0]?.simpleFilter?.filterExpression.andGroup.filterExpressions[0].orGroup.filterExpressions[0].dimensionOrMetricFilter);
-                
-                                console.log('Data to validate 2:', formDataToValidate?.forms[0]?.filterClauses[0]?.simpleFilter?.filterExpression.andGroup.filterExpressions[0].orGroup.filterExpressions[1].dimensionOrMetricFilter); */
 
                 const validationResult = FormsSchema.safeParse(formDataToValidate);
-
-                console.log('Validation result:', validationResult);
 
                 if (!validationResult.success) {
                   console.log('Validation failed:', validationResult.error.issues);
@@ -238,86 +223,6 @@ export async function createGAAudiences(formData: Audience) {
                 // Accessing the validated property data
                 const validatedData = validationResult.data.forms[0];
 
-                console.log(
-                  'validatedData',
-                  validatedData?.filterClauses[0]?.simpleFilter?.filterExpression.andGroup
-                    .filterExpressions[0].orGroup.filterExpressions[0].dimensionOrMetricFilter
-                );
-
-                // Function to dynamically build filter expressions
-                const buildFilterExpression = (filterExpression: any): any => {
-                  let result: any = {};
-
-                  console.log('Initial filterExpression:', filterExpression);
-
-                  // Only one of these cases should be set per call to buildFilterExpression
-                  if (filterExpression.andGroup) {
-                    result.andGroup = {
-                      filterExpressions:
-                        filterExpression.andGroup.filterExpressions.map(buildFilterExpression),
-                    };
-                  } else if (filterExpression.orGroup) {
-                    result.orGroup = {
-                      filterExpressions:
-                        filterExpression.orGroup.filterExpressions.map(buildFilterExpression),
-                    };
-                  } else if (filterExpression.notExpression) {
-                    result.notExpression = buildFilterExpression(filterExpression.notExpression);
-                  } else if (filterExpression.dimensionOrMetricFilter) {
-                    result.dimensionOrMetricFilter = {
-                      ...filterExpression.dimensionOrMetricFilter,
-                    };
-                  } else if (filterExpression.eventFilter) {
-                    result.eventFilter = { ...filterExpression.eventFilter };
-                  }
-
-                  return result;
-                };
-
-                // This approach ensures that each function call is responsible for one logical level of filter expressions,
-                // respecting the API constraints of having distinct and/or groups.
-
-                // Function to dynamically construct filter clauses from formData
-                const buildFilterClauses = (filterClauses: any[]): any[] => {
-                  console.log(
-                    'Initial filter clauses OR:',
-                    filterClauses[0].simpleFilter.filterExpression.orGroup.filterExpressions[0]
-                      .orGroup.filterExpressions[0]
-                  );
-                  console.log(
-                    'Initial filter clauses AND:',
-                    filterClauses[0].simpleFilter.filterExpression.andGroup.filterExpressions[0]
-                      .orGroup.filterExpressions[0]
-                  );
-
-                  return filterClauses.map((clause) => {
-                    let result: any = { clauseType: clause.clauseType };
-
-                    if (clause.simpleFilter) {
-                      result.simpleFilter = {
-                        scope: clause.simpleFilter.scope,
-                        filterExpression: buildFilterExpression(
-                          clause?.simpleFilter?.filterExpression
-                        ),
-                      };
-                    }
-
-                    if (clause.sequenceFilter) {
-                      result.sequenceFilter = {
-                        scope: clause.sequenceFilter.scope,
-                        sequenceSteps: clause.sequenceFilter.sequenceSteps.map((step) => ({
-                          scope: step.scope,
-                          immediatelyFollows: step.immediatelyFollows,
-                          filterExpression: buildFilterExpression(step.filterExpression),
-                        })),
-                      };
-                    }
-                    console.log('Built filter clauses:', result);
-
-                    return result;
-                  });
-                };
-
                 let requestBody = {
                   displayName: validatedData.displayName,
                   description: validatedData.description,
@@ -332,32 +237,10 @@ export async function createGAAudiences(formData: Audience) {
                   filterClauses: validatedData?.filterClauses,
                 };
 
-                console.log('Initial request body:', requestBody);
-                console.log(
-                  'Initial request body filter clauses:',
-                  requestBody?.filterClauses[0]?.simpleFilter
-                );
-                console.log(
-                  'simple filter filter expressions:',
-                  requestBody?.filterClauses[0]?.simpleFilter?.filterExpression
-                );
-                console.log(
-                  'andgroup:',
-                  requestBody?.filterClauses[0]?.simpleFilter?.filterExpression.andGroup
-                );
-                console.log(
-                  'orGroup:',
-                  requestBody?.filterClauses[0]?.simpleFilter?.filterExpression.andGroup
-                    .filterExpressions[0].orGroup
-                );
-
-                /*         console.log('andgroup test:', requestBody?.filterClauses[0]?.simpleFilter?.filterExpression.andGroup.filterExpressions[1].orGroup.filterExpressions[0]);
-        
-        
-        
-                        console.log('Final request body to be sent:', requestBody?.filterClauses[0]?.simpleFilter?.filterExpression.andGroup.filterExpressions[0].orGroup.filterExpressions[1].dimensionOrMetricFilter); */
-
                 // Now, requestBody is prepared with the right structure based on the type
+
+                console.log('Request body for API call:', JSON.stringify(requestBody, null, 2));
+
                 const response = await fetch(url, {
                   method: 'POST',
                   headers: headers,
@@ -368,12 +251,6 @@ export async function createGAAudiences(formData: Audience) {
 
                 const parsedResponse = await response.json();
                 console.log('Parsed response:', parsedResponse);
-
-                /*         console.log('Server filterExpression:', parsedResponse.filterClauses[0].simpleFilter.filterExpression);
-        
-                        console.log('Server andGroup:', parsedResponse.filterClauses[0].simpleFilter.filterExpression.andGroup);
-        
-                        console.log('Server orGroup:', parsedResponse.filterClauses[0].simpleFilter.filterExpression.andGroup.filterExpressions[0].orGroup.filterExpressions[0].dimensionOrMetricFilter); */
 
                 if (response.ok) {
                   successfulCreations.push(validatedData.displayName);

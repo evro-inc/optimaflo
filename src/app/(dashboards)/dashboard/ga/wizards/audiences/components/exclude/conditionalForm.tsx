@@ -247,7 +247,6 @@ export default function ExcludeConditionalForm({
               clauseType: AudienceClauseType.EXCLUDE,
               sequenceFilter: {
                 scope: AudienceFilterScope.WITHIN_SAME_EVENT,
-                sequenceMaximumDuration: '',
                 sequenceSteps: [
                   {
                     scope: AudienceFilterScope.WITHIN_SAME_EVENT,

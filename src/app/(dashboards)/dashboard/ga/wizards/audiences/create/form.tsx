@@ -169,7 +169,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     }
   }, []);
 
-  console.log('uniqueData', uniqueData);
+  // console.log('uniqueData', uniqueData);
 
   const foundTierLimit = tierLimits.find(
     (subscription) => subscription.Feature?.name === 'GA4Audiences'
@@ -210,22 +210,20 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     filterClauses: [
       {
         clauseType: AudienceClauseType.Include,
-        simpleFilter: {
+        /*       simpleFilter: {
+                scope: AudienceFilterScope.AcrossAllSessions,
+                filterExpression: simpleFilterExpression,
+              } as AudienceSimpleFilter, */
+        sequenceFilter: {
           scope: AudienceFilterScope.AcrossAllSessions,
-          filterExpression: simpleFilterExpression,
-        } as AudienceSimpleFilter,
-        /*  sequenceFilter: {
-           scope: AudienceFilterScope.WITHIN_SAME_EVENT,
-           sequenceMaximumDuration: '',
-           sequenceSteps: [
-             {
-               scope: AudienceFilterScope.WITHIN_SAME_EVENT,
-               immediatelyFollows: false,
-               constraintDuration: '',
-               filterExpression: sequenceStepFilterExpression,
-             },
-           ],
-         }, */
+          sequenceSteps: [
+            {
+              scope: AudienceFilterScope.AcrossAllSessions,
+              immediatelyFollows: false,
+              filterExpression: sequenceStepFilterExpression,
+            },
+          ],
+        },
       },
     ],
   };
@@ -627,19 +625,19 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                                           onCheckedChange={(checked) => {
                                                             return checked
                                                               ? field.onChange([
-                                                                  ...(Array.isArray(field.value)
-                                                                    ? field.value
-                                                                    : []),
-                                                                  item.id,
-                                                                ])
+                                                                ...(Array.isArray(field.value)
+                                                                  ? field.value
+                                                                  : []),
+                                                                item.id,
+                                                              ])
                                                               : field.onChange(
-                                                                  (Array.isArray(field.value)
-                                                                    ? field.value
-                                                                    : []
-                                                                  ).filter(
-                                                                    (value) => value !== item.id
-                                                                  )
-                                                                );
+                                                                (Array.isArray(field.value)
+                                                                  ? field.value
+                                                                  : []
+                                                                ).filter(
+                                                                  (value) => value !== item.id
+                                                                )
+                                                              );
                                                           }}
                                                         />
                                                       </FormControl>

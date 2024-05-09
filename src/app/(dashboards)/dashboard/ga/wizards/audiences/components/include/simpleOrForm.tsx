@@ -1,7 +1,7 @@
 import React from 'react';
 import { useFieldArray } from 'react-hook-form';
-import { CardContent, CardHeader } from '@/src/components/ui/card';
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/src/components/ui/form';
+import { CardContent } from '@/src/components/ui/card';
+import { FormControl, FormField, FormItem, FormMessage } from '@/src/components/ui/form';
 import {
   Select,
   SelectContent,
@@ -12,10 +12,9 @@ import {
   SelectValue,
 } from '@/src/components/ui/select';
 import { Button } from '@/src/components/ui/button';
-import { Cross2Icon, PlusIcon } from '@radix-ui/react-icons';
-import { filterTypeMapping, renderFilterInput } from '../../../../properties/@audiences/items';
+import { Cross2Icon } from '@radix-ui/react-icons';
+import { renderFilterInput } from '../../../../properties/@audiences/items';
 import { Badge } from '@/src/components/ui/badge';
-import { MatchType } from '@/src/types/types';
 
 export default ({
   combinedCategories,
@@ -69,9 +68,6 @@ export default ({
                 </div>
               </div>
             )}
-
-
-
 
             <CardContent className="p-0">
               <div className="flex items-center justify-between mt-5">

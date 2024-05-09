@@ -32,7 +32,7 @@ export default ({
 }) => {
   const { fields, remove, append } = useFieldArray({
     control,
-    name: `forms[${audienceFormIndex}].filterClauses.sequenceFilter[${sequenceFormIndex}].sequenceSteps`,
+    name: `forms[${audienceFormIndex}].filterClauses[${sequenceFormIndex}].sequenceFilter.sequenceSteps`,
   });
 
   return (
@@ -128,9 +128,8 @@ export default ({
               className="flex items-center space-x-2"
               onClick={() =>
                 append({
-                  scope: AudienceFilterScope.WITHIN_SAME_EVENT,
+                  scope: AudienceFilterScope.AcrossAllSessions,
                   immediatelyFollows: false,
-                  constraintDuration: '',
                   filterExpression: sequenceStepFilterExpression,
                 })
               }

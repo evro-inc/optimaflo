@@ -14,7 +14,7 @@ import {
   AccordionTrigger,
 } from '@/src/components/ui/accordion';
 import { Button } from '@/src/components/ui/button';
-import { ClockIcon, Cross2Icon, MagnifyingGlassIcon } from '@radix-ui/react-icons';
+import { ClockIcon, Cross2Icon, MagnifyingGlassIcon, TimerIcon } from '@radix-ui/react-icons';
 import { useFormContext } from 'react-hook-form';
 import { Input } from '@/src/components/ui/input';
 import { Checkbox } from '@/src/components/ui/checkbox';
@@ -27,6 +27,8 @@ import {
 } from '@/src/types/types';
 import { ScrollArea } from '@/src/components/ui/scroll-area';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/src/components/ui/form';
+import { Popover, PopoverContent, PopoverTrigger } from '@/src/components/ui/popover';
+import { Switch } from '@/src/components/ui/switch';
 
 export const SimpleScope = [
   {
@@ -281,8 +283,8 @@ export const simpleFilterExpression: AudienceFilterExpression = {
             {
               dimensionOrMetricFilter: {
                 fieldName: '', // Fill in the actual field name
-                atAnyPointInTime: false,
-                inAnyNDayPeriod: 0,
+                //atAnyPointInTime: false,
+                //inAnyNDayPeriod: 0,
                 stringFilter: {
                   // Correctly use the union type
                   matchType: MatchType.Exact,
@@ -454,14 +456,64 @@ export const simpleFilterExpression: AudienceFilterExpression = {
 
 export const sequenceStepFilterExpression = {
   andGroup: {
-    filterExpressions: [],
+    filterExpressions: [{
+      orGroup: {
+        filterExpressions: [
+          {
+            dimensionOrMetricFilter: {
+              fieldName: '', // Fill in the actual field name
+              atAnyPointInTime: false,
+              inAnyNDayPeriod: 0,
+              stringFilter: {
+                // Correctly use the union type
+                matchType: MatchType.Exact,
+                value: '', // Provide the actual value to match
+                caseSensitive: false,
+              } as StringFilter, // Cast explicitly if needed
+            },
+          },
+        ],
+      }
+    }],
   },
-  orGroup: {
-    filterExpressions: [],
-  },
-  notExpression: {
+  /*   orGroup: {
+      filterExpressions: [],
+    },
+    notExpression: {
+      dimensionOrMetricFilter: {
+        category: '',
+        fieldName: '',
+        atAnyPointInTime: false,
+        inAnyNDayPeriod: 0,
+        stringFilter: {
+          matchType: MatchType.EXACT,
+          value: '',
+          caseSensitive: false,
+        },
+        inListFilter: {
+          values: [],
+          caseSensitive: false,
+        },
+        numericFilter: {
+          operation: Operation.EQUAL,
+          value: {
+            int64Value: '0',
+            doubleValue: 0,
+          },
+        },
+        betweenFilter: {
+          fromValue: {
+            int64Value: '0',
+            doubleValue: 0,
+          },
+          toValue: {
+            int64Value: '0',
+            doubleValue: 0,
+          },
+        },
+      },
+    },
     dimensionOrMetricFilter: {
-      category: '',
       fieldName: '',
       atAnyPointInTime: false,
       inAnyNDayPeriod: 0,
@@ -492,48 +544,48 @@ export const sequenceStepFilterExpression = {
         },
       },
     },
-  },
-  dimensionOrMetricFilter: {
-    fieldName: '',
-    atAnyPointInTime: false,
-    inAnyNDayPeriod: 0,
-    stringFilter: {
-      matchType: MatchType.EXACT,
-      value: '',
-      caseSensitive: false,
-    },
-    inListFilter: {
-      values: [],
-      caseSensitive: false,
-    },
-    numericFilter: {
-      operation: Operation.EQUAL,
-      value: {
-        int64Value: '0',
-        doubleValue: 0,
-      },
-    },
-    betweenFilter: {
-      fromValue: {
-        int64Value: '0',
-        doubleValue: 0,
-      },
-      toValue: {
-        int64Value: '0',
-        doubleValue: 0,
-      },
-    },
-  },
-  eventFilter: {
-    eventName: '',
-    eventParameterFilterExpression: {
-      andGroup: {
-        filterExpressions: [],
-      },
-      orGroup: {
-        filterExpressions: [],
-      },
-      notExpression: {
+    eventFilter: {
+      eventName: '',
+      eventParameterFilterExpression: {
+        andGroup: {
+          filterExpressions: [],
+        },
+        orGroup: {
+          filterExpressions: [],
+        },
+        notExpression: {
+          dimensionOrMetricFilter: {
+            fieldName: '',
+            atAnyPointInTime: false,
+            inAnyNDayPeriod: 0,
+            stringFilter: {
+              matchType: MatchType.EXACT,
+              value: '',
+              caseSensitive: false,
+            },
+            inListFilter: {
+              values: [],
+              caseSensitive: false,
+            },
+            numericFilter: {
+              operation: Operation.EQUAL,
+              value: {
+                int64Value: '0',
+                doubleValue: 0,
+              },
+            },
+            betweenFilter: {
+              fromValue: {
+                int64Value: '0',
+                doubleValue: 0,
+              },
+              toValue: {
+                int64Value: '0',
+                doubleValue: 0,
+              },
+            },
+          },
+        },
         dimensionOrMetricFilter: {
           fieldName: '',
           atAnyPointInTime: false,
@@ -566,39 +618,7 @@ export const sequenceStepFilterExpression = {
           },
         },
       },
-      dimensionOrMetricFilter: {
-        fieldName: '',
-        atAnyPointInTime: false,
-        inAnyNDayPeriod: 0,
-        stringFilter: {
-          matchType: MatchType.EXACT,
-          value: '',
-          caseSensitive: false,
-        },
-        inListFilter: {
-          values: [],
-          caseSensitive: false,
-        },
-        numericFilter: {
-          operation: Operation.EQUAL,
-          value: {
-            int64Value: '0',
-            doubleValue: 0,
-          },
-        },
-        betweenFilter: {
-          fromValue: {
-            int64Value: '0',
-            doubleValue: 0,
-          },
-          toValue: {
-            int64Value: '0',
-            doubleValue: 0,
-          },
-        },
-      },
-    },
-  },
+    }, */
 };
 
 export const LogConditionData = [
@@ -616,6 +636,9 @@ export const LogConditionData = [
 ];
 
 const renderStringFilter = (fieldBase) => {
+  console.log('fieldBase', fieldBase);
+
+
   const { control } = useFormContext();
   const matchType = `${fieldBase}.stringFilter.matchType`;
   const stringFilterValue = `${fieldBase}.stringFilter.value`;
@@ -779,76 +802,45 @@ export const renderFilterInput = (filterType, baseField, AudienceFilterExpressio
 export const TimeConstraint = () => {
   return (
     <>
-      <Dialog>
-        <DialogTrigger asChild>
-          <Button className="flex justify-between items-center w-full" size="icon" variant="ghost">
-            <ClockIcon className="text-gray-400" />
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="outline" size="icon">
+            <TimerIcon className="h-5 w-5" />
           </Button>
-        </DialogTrigger>
-        <DialogContent className="max-w-5xl mx-auto bg-white shadow rounded-lg">
-          <div className="flex">
-            <div className="flex flex-col w-64 mr-4">
-              <div className="flex items-center px-3 py-2 space-x-2 border-b">
-                <MagnifyingGlassIcon className="text-gray-400" />
-                <Input placeholder="Search items" />
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-4 bg-white shadow-lg rounded-lg border">
+          <form className="space-y-6">
+            <div className="flex justify-between items-start">
+              <div>
+                <div className="text-lg font-medium">Time Constraint</div>
+                <div className="text-sm text-muted-foreground mt-2">Within the following time period:</div>
               </div>
-              <Accordion type="single" className="mt-2">
-                <AccordionItem value="events">
-                  <AccordionTrigger>Events</AccordionTrigger>
-                  <AccordionContent>
-                    <ul className="divide-y cursor-pointer">
-                      <li className="px-3 py-2">app_clear_data</li>
-                      <li className="px-3 py-2">app_exception</li>
-                      <li className="px-3 py-2">app_store_refund</li>
-                      <li className="px-3 py-2">app_store_subscription_cancel</li>
-                      <li className="px-3 py-2">app_store_subscription_convert</li>
-                      <li className="px-3 py-2">app_store_subscription_renew</li>
-                      <li className="px-3 py-2">app_update</li>
-                      <li className="px-3 py-2">first_open</li>
-                      <li className="px-3 py-2">in_app_purchase</li>
-                      <li className="px-3 py-2">notification_dismiss</li>
-                    </ul>
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="dimensions">
-                  <AccordionTrigger>Dimensions</AccordionTrigger>
-                  <AccordionContent>
-                    <ul className="divide-y cursor-pointer">
-                      <li className="px-3 py-2">User</li>
-                      <li className="px-3 py-2">Session</li>
-                    </ul>
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="metrics">
-                  <AccordionTrigger>Metrics</AccordionTrigger>
-                  <AccordionContent>
-                    <ul className="divide-y cursor-pointer">
-                      <li className="px-3 py-2">Revenue</li>
-                      <li className="px-3 py-2">Engagement</li>
-                    </ul>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
+              <Switch id="time-constraint" />
             </div>
-            <div className="flex-1">
-              <ScrollArea className="h-72">
-                <ul className="divide-y">
-                  <li className="px-3 py-2">app_clear_data</li>
-                  <li className="px-3 py-2 bg-blue-100">app_exception</li>
-                  <li className="px-3 py-2">app_store_refund</li>
-                  <li className="px-3 py-2">app_store_subscription_cancel</li>
-                  <li className="px-3 py-2">app_store_subscription_convert</li>
-                  <li className="px-3 py-2">app_store_subscription_renew</li>
-                  <li className="px-3 py-2">app_update</li>
-                  <li className="px-3 py-2">first_open</li>
-                  <li className="px-3 py-2">in_app_purchase</li>
-                  <li className="px-3 py-2">notification_dismiss</li>
-                </ul>
-              </ScrollArea>
+
+
+            <div className="grid grid-cols-2 gap-4">
+              <Input min={1} type='number' placeholder="Start date" />
+              <Select>
+                <SelectTrigger id="end-date">
+                  <SelectValue placeholder="Time Increment" />
+                </SelectTrigger>
+                <SelectContent className="w-48">
+                  <SelectItem value="d">Days</SelectItem>
+                  <SelectItem value="h">Hours</SelectItem>
+                  <SelectItem value="m">Minutes</SelectItem>
+                  <SelectItem value="s">Seconds</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+
+            <div className="flex justify-end space-x-4">
+              <Button variant="outline">Cancel</Button>
+              <Button>Confirm</Button>
+            </div>
+          </form>
+        </PopoverContent>
+      </Popover>
     </>
   );
 };

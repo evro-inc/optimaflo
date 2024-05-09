@@ -15,8 +15,6 @@ import {
 import { Button } from '@/src/components/ui/button';
 import {
   SequenceScope,
-  sequenceStepFilterExpression,
-  simpleFilterExpression,
   SimpleScope,
   TimeConstraint,
 } from '../../../../properties/@audiences/items';
@@ -170,19 +168,36 @@ export default function IncludeConditionalForm({
                       <div className="flex items-center space-x-2">
                         <PersonIcon className="text-gray-600" />
 
-                        <Select>
-                          <SelectTrigger id="user-action">
-                            <SelectValue placeholder="Sequence scoping" />
-                          </SelectTrigger>
-                          <SelectContent position="popper">
-                            {SequenceScope.map((item) => (
-                              <SelectItem key={item.label} value={item.id}>
-                                {item.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
 
+                        <FormField
+                          control={control}
+                          name={`forms.[${audienceFormIndex}].filterClauses[${sequenceIndex}].sequenceFilter.scope`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <Select
+                                  {...register(
+                                    `forms.[${audienceFormIndex}].filterClauses[${sequenceIndex}].sequenceFilter.scope`
+                                  )}
+                                  {...field}
+                                  onValueChange={field.onChange}
+                                >
+                                  <SelectTrigger id="user-action">
+                                    <SelectValue placeholder="Sequence scoping" />
+                                  </SelectTrigger>
+                                  <SelectContent position="popper">
+                                    {SequenceScope.map((item) => (
+                                      <SelectItem key={item.label} value={item.id}>
+                                        {item.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
                         <Separator orientation="vertical" />
                         {TimeConstraint()}
                         <Separator orientation="vertical" />
@@ -245,16 +260,8 @@ export default function IncludeConditionalForm({
             SequenceAppend({
               clauseType: AudienceClauseType.Include,
               sequenceFilter: {
-                scope: AudienceFilterScope.WithinSameEvent,
-                sequenceMaximumDuration: '',
-                sequenceSteps: [
-                  {
-                    scope: AudienceFilterScope.WithinSameEvent,
-                    immediatelyFollows: false,
-                    constraintDuration: '',
-                    filterExpression: sequenceStepFilterExpression,
-                  },
-                ],
+                scope: AudienceFilterScope.AcrossAllSessions,
+                sequenceSteps: [],
               },
             });
           }}
