@@ -8,7 +8,7 @@ import {
 import { listGaAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
 import { getTierLimit } from '@/src/lib/fetch/tierLimit';
 import { getSubscription } from '@/src/lib/fetch/subscriptions';
-import FormCreateConversionEvent from './form';
+import FormCreateAudience from './form';
 import { listGAAudiences } from '@/src/lib/fetch/dashboard/actions/ga/audiences';
 
 export default async function CreateCustomDimensionPage() {
@@ -49,9 +49,12 @@ export default async function CreateCustomDimensionPage() {
 
   const flatAccounts = accounts.flat();
   const flatProperties = properties.flat();
-  const flattenedaudience = audienceData.flatMap((item) => item.audiences);
+  const flattenedaudience = audienceData.flatMap((item) => item.audiences).filter(audience => audience);
 
-  const combinedData = flattenedaudience.map((audience) => {
+  console.log('flattenedaudience', flattenedaudience);
+
+
+  const combinedDataAudiences = flattenedaudience.map((audience) => {
     const propertyId = audience.name.split('/')[1];
     const property = flatProperties.find((p) => p.name.includes(propertyId));
 
@@ -77,12 +80,14 @@ export default async function CreateCustomDimensionPage() {
     };
   });
 
+
+
   return (
     <>
       <div className="container overflow-auto">
-        <FormCreateConversionEvent
+        <FormCreateAudience
           tierLimits={tierLimits}
-          table={combinedData}
+          table={combinedDataAudiences}
           accounts={accounts}
           properties={properties}
           dimensions={uniqueDimensions}

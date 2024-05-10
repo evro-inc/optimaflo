@@ -57,6 +57,7 @@ import IncludeConditionalForm from '../components/include/conditionalForm';
 import ExcludeConditionalForm from '../components/exclude/conditionalForm';
 import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/src/components/ui/radio-group';
+import { Separator } from '@/src/components/ui/separator';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -89,6 +90,25 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   const count = useSelector((state: RootState) => state.form.count);
   const notFoundError = useSelector(selectTable).notFoundError;
   const router = useRouter();
+
+  console.log('table', table);
+
+  /// create new data structure for all account and property pairs
+  const accountPropertyPairs = properties.map((property) => {
+    const account = accounts.find((acc) => acc.name === property.parent);
+
+    return {
+      account: account.name,
+      accountName: account.displayName,
+      property: property.name,
+      propertyName: property.displayName,
+    };
+  });
+
+  console.log('accountPropertyPairs', accountPropertyPairs);
+
+
+
 
   // Dimensions
   const categorizedDimensions = dimensions.reduce((acc, item) => {
@@ -169,7 +189,10 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     }
   }, []);
 
-  // console.log('uniqueData', uniqueData);
+  console.log('uniqueData', uniqueData);
+
+
+
 
   const foundTierLimit = tierLimits.find(
     (subscription) => subscription.Feature?.name === 'GA4Audiences'
@@ -604,7 +627,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                                 audience for?
                                               </FormDescription>
                                             </div>
-                                            {uniqueData.map((item) => (
+                                            {accountPropertyPairs.map((item) => (
                                               <FormField
                                                 key={item.id}
                                                 control={form.control}
@@ -642,7 +665,17 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                                         />
                                                       </FormControl>
                                                       <FormLabel className="text-sm font-normal">
-                                                        {item.label}
+                                                        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                                                          <div>
+                                                            <span className="text-gray-600 font-semibold">Account:</span>
+                                                            <span className="ml-2 text-gray-800 font-medium">{item.accountName}</span>
+                                                          </div>
+                                                          <Separator orientation="vertical" />
+                                                          <div>
+                                                            <span className="text-gray-600 font-semibold">Property:</span>
+                                                            <span className="ml-2 text-gray-800 font-medium">{item.propertyName}</span>
+                                                          </div>
+                                                        </div>
                                                       </FormLabel>
                                                     </FormItem>
                                                   );

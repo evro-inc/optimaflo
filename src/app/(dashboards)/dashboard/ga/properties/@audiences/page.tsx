@@ -33,19 +33,24 @@ export default async function AudiencePage({
 
   const flatAccounts = accounts.flat();
   const flatProperties = properties.flat();
-  const flattenedaudience = audienceData.flatMap((item) => item.audiences);
+  const flattenedAudience = audienceData
+    .flatMap((item) => item.audiences)
+    .filter(audience => audience != null);
 
-  const testterAudience = flattenedaudience.find((audience) => audience.displayName === 'se 1');
-
-  console.log(
-    'se',
-    testterAudience.filterClauses[0].sequenceFilter
-  );
+  console.log('flatProperties', flatProperties);
+  console.log('flatAudiences', flattenedAudience);
 
 
-  const combinedData = flattenedaudience.map((audience) => {
+
+  const combinedData = flattenedAudience.map((audience) => {
     const propertyId = audience.name.split('/')[1];
+
+    console.log('propertyId', propertyId);
+
     const property = flatProperties.find((p) => p.name.includes(propertyId));
+
+    console.log('property property', property);
+
 
     const accounts = flatAccounts.find(
       (acc) =>
@@ -68,6 +73,9 @@ export default async function AudiencePage({
       adsPersonalizationEnabled: audience.adsPersonalizationEnabled,
     };
   });
+
+  console.log('combinedData', combinedData);
+
 
   return (
     <>
