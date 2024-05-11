@@ -1,5 +1,5 @@
 import React from 'react';
-import { useFieldArray } from 'react-hook-form';
+import { useFieldArray, useFormContext } from 'react-hook-form';
 import { CardContent } from '@/src/components/ui/card';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/src/components/ui/form';
 import {
@@ -22,10 +22,9 @@ export default ({
   sequenceFormIndex,
   sequenceStepIndex,
   andGroupFilterExpressionIndex,
-  control,
-  register,
-  watch,
 }) => {
+  const { watch, register, control } = useFormContext()
+
 
   const base = `forms[${audienceFormIndex}].filterClauses[${sequenceFormIndex}].sequenceFilter.sequenceSteps[${sequenceStepIndex}].filterExpression.andGroup.filterExpressions[${andGroupFilterExpressionIndex}].orGroup.filterExpressions`
 

@@ -22,7 +22,7 @@ import SequenceStepComponent from './sequenceStepForm';
 import { AudienceClauseType, AudienceFilterScope } from '@/src/types/types';
 import CardForm from './simpleForm';
 
-export default function IncludeConditionalForm({
+export default function ExcludeConditionalForm({
   combinedCategories,
   audienceFormIndex,
   control,
@@ -236,13 +236,14 @@ export default function IncludeConditionalForm({
           variant="secondary"
           onClick={() => {
             SimpleAppend({
-              clauseType: AudienceClauseType.Include,
+              clauseType: AudienceClauseType.Exclude,
               simpleFilter: {
                 scope: AudienceFilterScope.WithinSameEvent,
                 filterExpression: {
                   andGroup: {
                     filterExpressions: [],
                   },
+
                 },
               },
             });
@@ -258,7 +259,7 @@ export default function IncludeConditionalForm({
           variant="secondary"
           onClick={() => {
             SequenceAppend({
-              clauseType: AudienceClauseType.Include,
+              clauseType: AudienceClauseType.Exclude,
               sequenceFilter: {
                 scope: AudienceFilterScope.AcrossAllSessions,
                 sequenceSteps: [],

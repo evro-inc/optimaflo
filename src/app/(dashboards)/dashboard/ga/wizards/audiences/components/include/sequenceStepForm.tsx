@@ -1,5 +1,5 @@
 import React from 'react';
-import { useFieldArray } from 'react-hook-form';
+import { useFieldArray, useFormContext } from 'react-hook-form';
 import { CardContent, CardFooter, CardHeader } from '@/src/components/ui/card';
 import {
   Select,
@@ -26,10 +26,9 @@ export default ({
   audienceFormIndex,
   sequenceFormIndex,
   removeSequence,
-  control,
-  register,
-  watch,
 }) => {
+  const { watch, register, control } = useFormContext()
+
   const { fields, remove, append } = useFieldArray({
     control,
     name: `forms[${audienceFormIndex}].filterClauses[${sequenceFormIndex}].sequenceFilter.sequenceSteps`,

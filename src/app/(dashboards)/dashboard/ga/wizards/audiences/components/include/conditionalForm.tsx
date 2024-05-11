@@ -29,6 +29,7 @@ export default function IncludeConditionalForm({
   register,
   watch,
   setValue,
+  setSelectedFilterType,
 }) {
   const {
     fields: SimpleForm,
@@ -235,6 +236,7 @@ export default function IncludeConditionalForm({
           className="flex items-center space-x-2"
           variant="secondary"
           onClick={() => {
+            setSelectedFilterType('simple');
             SimpleAppend({
               clauseType: AudienceClauseType.Include,
               simpleFilter: {
@@ -257,6 +259,7 @@ export default function IncludeConditionalForm({
           className="flex items-center space-x-2"
           variant="secondary"
           onClick={() => {
+            setSelectedFilterType('sequence');
             SequenceAppend({
               clauseType: AudienceClauseType.Include,
               sequenceFilter: {

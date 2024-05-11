@@ -35,13 +35,8 @@ export default async function CreateCustomDimensionPage() {
   // Get unique dimensions
   const uniqueDimensions = Array.from(new Set(allDimensions));
   const uniqueMetrics = Array.from(new Set(allMetrics));
-  /*   const eventDimensions = propertyMetaData.flatMap(
-      (property) => property.dataRetentionSettings.dimensions.filter((dimension) => dimension.apiName.startsWith('event'))
-    );
-    const uniqueEventNames = new Set(eventDimensions.map((dimension) => dimension.apiName));
-    const uniqueEventNamesArray = Array.from(uniqueEventNames); */
 
-  const [accounts, properties, audience] = await Promise.all([
+  const [accounts, properties] = await Promise.all([
     accountData,
     propertyData,
     audienceData,
@@ -50,9 +45,6 @@ export default async function CreateCustomDimensionPage() {
   const flatAccounts = accounts.flat();
   const flatProperties = properties.flat();
   const flattenedaudience = audienceData.flatMap((item) => item.audiences).filter(audience => audience);
-
-  console.log('flattenedaudience', flattenedaudience);
-
 
   const combinedDataAudiences = flattenedaudience.map((audience) => {
     const propertyId = audience.name.split('/')[1];

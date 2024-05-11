@@ -1,22 +1,25 @@
 import React from 'react';
-import { useFieldArray } from 'react-hook-form';
+import { useFieldArray, useFormContext } from 'react-hook-form';
 import { Card, CardContent, CardHeader } from '@/src/components/ui/card';
 import { Button } from '@/src/components/ui/button';
 import { PlusIcon } from '@radix-ui/react-icons';
 import OrForm from './simpleOrForm';
 import { Separator } from '@/src/components/ui/separator';
 import { Badge } from '@/src/components/ui/badge';
-import { MatchType } from '@/src/types/types';
+import { AudienceClauseType, MatchType } from '@/src/types/types';
 
 export default ({
   combinedCategories,
   audienceFormIndex,
   simpleFormIndex,
-  control,
-  register,
-  watch,
 }) => {
+  const { setValue, watch, register, control } = useFormContext()
   const base = `forms[${audienceFormIndex}].filterClauses[${simpleFormIndex}].simpleFilter.filterExpression.andGroup.filterExpressions`;
+
+  const clauseType = `forms[${audienceFormIndex}].filterClauses[${simpleFormIndex}].clauseType`;
+
+  setValue(clauseType, AudienceClauseType.Exclude)
+
 
   const { fields, remove, append } = useFieldArray({
     control,
@@ -82,6 +85,7 @@ export default ({
                         caseSensitive: false,
                       },
                     },
+
                   },
                 ],
               },

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useFieldArray } from 'react-hook-form';
+import { useFieldArray, useFormContext } from 'react-hook-form';
 import { Card, CardContent } from '@/src/components/ui/card';
 import { Button } from '@/src/components/ui/button';
 import { PlusIcon } from '@radix-ui/react-icons';
@@ -9,19 +9,23 @@ import {
 import OrForm from './sequenceOrForm';
 import { Separator } from '@/src/components/ui/separator';
 import { Badge } from '@/src/components/ui/badge';
-import { AudienceFilterScope } from '@/src/types/types';
+import { AudienceClauseType, AudienceFilterScope } from '@/src/types/types';
 
 export default ({
   combinedCategories,
   audienceFormIndex,
   sequenceFormIndex,
   sequenceStepIndex,
-  control,
-  register,
-  watch,
 }) => {
+  const { setValue, watch, register, control } = useFormContext()
 
   const base = `forms[${audienceFormIndex}].filterClauses[${sequenceFormIndex}].sequenceFilter.sequenceSteps[${sequenceStepIndex}].filterExpression.andGroup.filterExpressions`
+
+  const clauseType = `forms[${audienceFormIndex}].filterClauses[${sequenceFormIndex}].clauseType`;
+
+  setValue(clauseType, AudienceClauseType.Exclude)
+
+
   const { fields, remove, append } = useFieldArray({
     control,
     name: base,

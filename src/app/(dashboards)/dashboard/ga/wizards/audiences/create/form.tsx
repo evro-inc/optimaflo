@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setLoading, incrementStep, decrementStep, setCount } from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -91,7 +91,8 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   const notFoundError = useSelector(selectTable).notFoundError;
   const router = useRouter();
 
-  console.log('table', table);
+  const [selectedFilterType, setSelectedFilterType] = useState<'simple' | 'sequence'>('simple');
+
 
   /// create new data structure for all account and property pairs
   const accountPropertyPairs = properties.map((property) => {
@@ -104,11 +105,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
       propertyName: property.displayName,
     };
   });
-
-  console.log('accountPropertyPairs', accountPropertyPairs);
-
-
-
 
   // Dimensions
   const categorizedDimensions = dimensions.reduce((acc, item) => {
@@ -154,45 +150,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
     },
   ];
 
-  // Extract data from table
-  const extractedData = table.map((item) => {
-    const propertyId = item.name.split('/')[1];
-    const property = item.property;
-    const accountId = item.accountId.split('/')[1];
-    const accountName = item.accountName;
-    const ids = 'accountId/' + accountId + '/' + 'propertyId/' + propertyId;
-    const names = 'account/' + accountName + '/' + 'property/' + property;
-
-    return {
-      ids,
-      names,
-    };
-  });
-
-  // Clean
-  const cleanedData = extractedData.map((item) => ({
-    id: item.ids,
-    label: item.names
-      .replace(/\/property\//g, ' - Property: ')
-      .replace(/account\//g, '')
-      .replace(/\/propertyId\//g, ' - Property ID: ')
-      .replace(/accountId\//g, 'Account ID: '),
-  }));
-
-  // Remove duplicates
-  const uniqueData = cleanedData.reduce((acc, current) => {
-    const x = acc.find((item) => item.id === current.id && item.label === current.label);
-    if (!x) {
-      return acc.concat([current]);
-    } else {
-      return acc;
-    }
-  }, []);
-
-  console.log('uniqueData', uniqueData);
-
-
-
 
   const foundTierLimit = tierLimits.find(
     (subscription) => subscription.Feature?.name === 'GA4Audiences'
@@ -230,25 +187,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
       logCondition: LogCondition.AudienceJoined,
     },
     exclusionDurationMode: AudienceExclusionDurationMode.ExcludePermanently,
-    filterClauses: [
-      {
-        clauseType: AudienceClauseType.Include,
-        /*       simpleFilter: {
-                scope: AudienceFilterScope.AcrossAllSessions,
-                filterExpression: simpleFilterExpression,
-              } as AudienceSimpleFilter, */
-        sequenceFilter: {
-          scope: AudienceFilterScope.AcrossAllSessions,
-          sequenceSteps: [
-            {
-              scope: AudienceFilterScope.AcrossAllSessions,
-              immediatelyFollows: false,
-              filterExpression: sequenceStepFilterExpression,
-            },
-          ],
-        },
-      },
-    ],
+    filterClauses: [],
   };
 
   //////////////////////////////////////////////////////////////////////
@@ -295,7 +234,27 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   }
 
   const addForm = () => {
-    append(formDataDefaults);
+    const newFilterClause = {
+      clauseType: AudienceClauseType.Include,
+    };
+
+    if (selectedFilterType === 'simple') {
+      newFilterClause['simpleFilter'] = {
+        scope: AudienceFilterScope.WithinSameEvent,
+        filterExpression: {
+          andGroup: {
+            filterExpressions: [],
+          },
+        },
+      };
+    } else if (selectedFilterType === 'sequence') {
+      newFilterClause['sequenceFilter'] = {
+        scope: AudienceFilterScope.AcrossAllSessions,
+        sequenceSteps: [],
+      };
+    }
+
+    append({ ...formDataDefaults, filterClauses: [newFilterClause] });
   };
 
   const removeForm = (index) => {
@@ -589,6 +548,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                     <IncludeConditionalForm
                                       combinedCategories={combinedCategories}
                                       audienceFormIndex={index}
+                                      setSelectedFilterType={setSelectedFilterType}
                                       {...{
                                         control: form.control,
                                         register: form.register,
@@ -640,10 +600,11 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                                     >
                                                       <FormControl>
                                                         {/* Need to change the value so it registers the right account and property, only sending the first property 426648744 to the API call */}
+
                                                         <Checkbox
                                                           checked={
                                                             Array.isArray(field.value) &&
-                                                            field.value.includes(item.id)
+                                                            field.value.includes(item.property)
                                                           }
                                                           onCheckedChange={(checked) => {
                                                             return checked
@@ -651,18 +612,19 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                                                 ...(Array.isArray(field.value)
                                                                   ? field.value
                                                                   : []),
-                                                                item.id,
+                                                                item.property,
                                                               ])
                                                               : field.onChange(
                                                                 (Array.isArray(field.value)
                                                                   ? field.value
                                                                   : []
                                                                 ).filter(
-                                                                  (value) => value !== item.id
+                                                                  (value) => value !== item.property
                                                                 )
                                                               );
                                                           }}
                                                         />
+
                                                       </FormControl>
                                                       <FormLabel className="text-sm font-normal">
                                                         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useFieldArray } from 'react-hook-form';
+import { useFieldArray, useFormContext } from 'react-hook-form';
 import { CardContent } from '@/src/components/ui/card';
 import { FormControl, FormField, FormItem, FormMessage } from '@/src/components/ui/form';
 import {
@@ -21,10 +21,9 @@ export default ({
   audienceFormIndex,
   simpleFormIndex,
   cardAndIndex,
-  control,
-  register,
-  watch,
 }) => {
+  const { watch, register, control } = useFormContext()
+
   const base = `forms[${audienceFormIndex}].filterClauses[${simpleFormIndex}].simpleFilter.filterExpression.andGroup.filterExpressions[${cardAndIndex}].orGroup.filterExpressions`;
 
   const { fields, remove, append } = useFieldArray({
@@ -182,11 +181,3 @@ export default ({
     </div>
   );
 };
-
-/* 
-        name={`forms[${simpleFormIndex}].filterClauses[${simpleFormIndex}].parentCardArray[${simpleFormIndex}].simpleFilter.simpleCardArray[${index}].filterExpression.andGroup.filterExpressions[${index}].dimensionOrMetricFilter.${
-                              filterTypeMapping[inputItem.apiName] ||
-                              filterTypeMapping[inputItem.category] ||
-                              'stringFilter'
-                            }`}
-*/
