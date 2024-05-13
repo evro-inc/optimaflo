@@ -53,11 +53,12 @@ import {
   sequenceStepFilterExpression,
   simpleFilterExpression,
 } from '../../../properties/@audiences/items';
-import IncludeConditionalForm from '../components/include/conditionalForm';
-import ExcludeConditionalForm from '../components/exclude/conditionalForm';
+import IncludeConditionalForm from '../components/conditionalForm';
+import ExcludeConditionalForm from '../components/excludeConditionalForm';
 import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/src/components/ui/radio-group';
 import { Separator } from '@/src/components/ui/separator';
+import ClauseForm from './clauseForm';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -92,7 +93,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   const router = useRouter();
 
   const [selectedFilterType, setSelectedFilterType] = useState<'simple' | 'sequence'>('simple');
-
 
   /// create new data structure for all account and property pairs
   const accountPropertyPairs = properties.map((property) => {
@@ -149,7 +149,6 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
       categories: categorizedMetrics,
     },
   ];
-
 
   const foundTierLimit = tierLimits.find(
     (subscription) => subscription.Feature?.name === 'GA4Audiences'
@@ -544,32 +543,11 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                     />
                                   </div>
 
-                                  <div className="py-3">
-                                    <IncludeConditionalForm
-                                      combinedCategories={combinedCategories}
-                                      audienceFormIndex={index}
-                                      setSelectedFilterType={setSelectedFilterType}
-                                      {...{
-                                        control: form.control,
-                                        register: form.register,
-                                        watch: form.watch,
-                                        setValue: form.setValue,
-                                      }}
-                                    />
-                                  </div>
-
-                                  <div className="py-3">
-                                    <ExcludeConditionalForm
-                                      combinedCategories={combinedCategories}
-                                      audienceFormIndex={index}
-                                      {...{
-                                        control: form.control,
-                                        register: form.register,
-                                        watch: form.watch,
-                                        setValue: form.setValue,
-                                      }}
-                                    />
-                                  </div>
+                                  <ClauseForm
+                                    combinedCategories={combinedCategories}
+                                    audienceFormIndex={index}
+                                    setSelectedFilterType={setSelectedFilterType}
+                                  />
 
                                   <div className="flex flex-col md:flex-row md:space-x-4 py-10">
                                     <div className="w-full md:basis-auto">
@@ -609,33 +587,41 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                                                           onCheckedChange={(checked) => {
                                                             return checked
                                                               ? field.onChange([
-                                                                ...(Array.isArray(field.value)
-                                                                  ? field.value
-                                                                  : []),
-                                                                item.property,
-                                                              ])
+                                                                  ...(Array.isArray(field.value)
+                                                                    ? field.value
+                                                                    : []),
+                                                                  item.property,
+                                                                ])
                                                               : field.onChange(
-                                                                (Array.isArray(field.value)
-                                                                  ? field.value
-                                                                  : []
-                                                                ).filter(
-                                                                  (value) => value !== item.property
-                                                                )
-                                                              );
+                                                                  (Array.isArray(field.value)
+                                                                    ? field.value
+                                                                    : []
+                                                                  ).filter(
+                                                                    (value) =>
+                                                                      value !== item.property
+                                                                  )
+                                                                );
                                                           }}
                                                         />
-
                                                       </FormControl>
                                                       <FormLabel className="text-sm font-normal">
                                                         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                                                           <div>
-                                                            <span className="text-gray-600 font-semibold">Account:</span>
-                                                            <span className="ml-2 text-gray-800 font-medium">{item.accountName}</span>
+                                                            <span className="text-gray-600 font-semibold">
+                                                              Account:
+                                                            </span>
+                                                            <span className="ml-2 text-gray-800 font-medium">
+                                                              {item.accountName}
+                                                            </span>
                                                           </div>
                                                           <Separator orientation="vertical" />
                                                           <div>
-                                                            <span className="text-gray-600 font-semibold">Property:</span>
-                                                            <span className="ml-2 text-gray-800 font-medium">{item.propertyName}</span>
+                                                            <span className="text-gray-600 font-semibold">
+                                                              Property:
+                                                            </span>
+                                                            <span className="ml-2 text-gray-800 font-medium">
+                                                              {item.propertyName}
+                                                            </span>
                                                           </div>
                                                         </div>
                                                       </FormLabel>

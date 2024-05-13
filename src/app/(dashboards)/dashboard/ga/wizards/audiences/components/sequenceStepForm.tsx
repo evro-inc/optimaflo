@@ -15,7 +15,7 @@ import {
   sequenceStepFilterExpression,
   SimpleScope,
   TimeConstraint,
-} from '../../../../properties/@audiences/items';
+} from '../../../properties/@audiences/items';
 import Sequence from './sequenceForm';
 
 import { Separator } from '@/src/components/ui/separator';
@@ -25,13 +25,15 @@ export default ({
   combinedCategories,
   audienceFormIndex,
   sequenceFormIndex,
+  filterClauseIindex,
+  clauseTypeValue,
   removeSequence,
 }) => {
-  const { watch, register, control } = useFormContext()
+  const { watch, register, control } = useFormContext();
 
   const { fields, remove, append } = useFieldArray({
     control,
-    name: `forms[${audienceFormIndex}].filterClauses[${sequenceFormIndex}].sequenceFilter.sequenceSteps`,
+    name: `forms[${audienceFormIndex}].filterClauses[${filterClauseIindex}].sequenceFilter.sequenceSteps`,
   });
 
   return (
@@ -110,9 +112,8 @@ export default ({
                 combinedCategories={combinedCategories}
                 sequenceFormIndex={sequenceFormIndex}
                 sequenceStepIndex={stepIndex}
-                removeSequence={removeSequence}
-                removeStep={remove}
-                {...{ control, register, watch }}
+                filterClauseIindex={filterClauseIindex}
+                clauseTypeValue={clauseTypeValue}
               />
             </CardContent>
           </>

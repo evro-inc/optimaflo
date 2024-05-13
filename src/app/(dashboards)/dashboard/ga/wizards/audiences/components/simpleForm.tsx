@@ -12,24 +12,29 @@ export default ({
   combinedCategories,
   audienceFormIndex,
   simpleFormIndex,
+  filterClauseIindex,
+  clauseTypeValue,
 }) => {
-  const { setValue, watch, register, control } = useFormContext()
-  const base = `forms[${audienceFormIndex}].filterClauses[${simpleFormIndex}].simpleFilter.filterExpression.andGroup.filterExpressions`;
+  const { setValue, control } = useFormContext();
+  const includeBase = `forms[${audienceFormIndex}].filterClauses[${filterClauseIindex}].simpleFilter.filterExpression.andGroup.filterExpressions`;
 
-  const clauseType = `forms[${audienceFormIndex}].filterClauses[${simpleFormIndex}].clauseType`;
+  const clauseType = `forms[${audienceFormIndex}].filterClauses[${filterClauseIindex}].clauseType`;
 
-  setValue(clauseType, AudienceClauseType.Exclude)
-
+  if (clauseTypeValue == AudienceClauseType.Exclude) {
+    setValue(clauseType, AudienceClauseType.Exclude);
+  }
+  if (clauseTypeValue == AudienceClauseType.Include) {
+    setValue(clauseType, AudienceClauseType.Include);
+  }
 
   const { fields, remove, append } = useFieldArray({
     control,
-    name: base,
+    name: includeBase,
   });
 
   return (
     <div>
       {fields.map((item, cardAndIndex) => {
-
         return (
           <div key={item.id}>
             {cardAndIndex > 0 && (
@@ -48,15 +53,12 @@ export default ({
                 <div className="flex items-center justify-between mt-5">
                   <div className="flex flex-row md:space-x-4 w-full">
                     <div className="w-full">
-
                       <OrForm
                         combinedCategories={combinedCategories}
                         audienceFormIndex={audienceFormIndex}
                         simpleFormIndex={simpleFormIndex}
                         cardAndIndex={cardAndIndex}
-                        control={control}
-                        register={register}
-                        watch={watch}
+                        filterClauseIindex={filterClauseIindex}
                       />
                     </div>
                   </div>
@@ -85,7 +87,6 @@ export default ({
                         caseSensitive: false,
                       },
                     },
-
                   },
                 ],
               },

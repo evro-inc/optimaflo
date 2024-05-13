@@ -13,7 +13,7 @@ import {
 } from '@/src/components/ui/select';
 import { Button } from '@/src/components/ui/button';
 import { Cross2Icon } from '@radix-ui/react-icons';
-import { renderFilterInput } from '../../../../properties/@audiences/items';
+import { renderFilterInput } from '../../../properties/@audiences/items';
 import { Badge } from '@/src/components/ui/badge';
 
 export default ({
@@ -21,10 +21,11 @@ export default ({
   audienceFormIndex,
   simpleFormIndex,
   cardAndIndex,
+  filterClauseIindex,
 }) => {
-  const { watch, register, control } = useFormContext()
+  const { watch, register, control } = useFormContext();
 
-  const base = `forms[${audienceFormIndex}].filterClauses[${simpleFormIndex}].simpleFilter.filterExpression.andGroup.filterExpressions[${cardAndIndex}].orGroup.filterExpressions`;
+  const base = `forms[${audienceFormIndex}].filterClauses[${filterClauseIindex}].simpleFilter.filterExpression.andGroup.filterExpressions[${cardAndIndex}].orGroup.filterExpressions`;
 
   const { fields, remove, append } = useFieldArray({
     control,
@@ -59,7 +60,6 @@ export default ({
 
         return (
           <div key={item.id}>
-
             {index > 0 && (
               <div className="relative border-t border-dashed my-8 flex justify-center">
                 <div className="absolute -bottom-3 left-5">

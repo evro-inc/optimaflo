@@ -35,12 +35,10 @@ export default async function AudiencePage({
   const flatProperties = properties.flat();
   const flattenedAudience = audienceData
     .flatMap((item) => item.audiences)
-    .filter(audience => audience != null);
+    .filter((audience) => audience != null);
 
   console.log('flatProperties', flatProperties);
   console.log('flatAudiences', flattenedAudience);
-
-
 
   const combinedData = flattenedAudience.map((audience) => {
     const propertyId = audience.name.split('/')[1];
@@ -50,7 +48,6 @@ export default async function AudiencePage({
     const property = flatProperties.find((p) => p.name.includes(propertyId));
 
     console.log('property property', property);
-
 
     const accounts = flatAccounts.find(
       (acc) =>
@@ -75,7 +72,6 @@ export default async function AudiencePage({
   });
 
   console.log('combinedData', combinedData);
-
 
   return (
     <>

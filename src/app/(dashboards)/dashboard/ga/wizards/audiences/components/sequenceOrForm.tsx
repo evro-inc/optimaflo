@@ -1,6 +1,6 @@
 import React from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
-import { CardContent, CardHeader } from '@/src/components/ui/card';
+import { CardContent } from '@/src/components/ui/card';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/src/components/ui/form';
 import {
   Select,
@@ -12,27 +12,35 @@ import {
   SelectValue,
 } from '@/src/components/ui/select';
 import { Button } from '@/src/components/ui/button';
-import { Cross2Icon, PlusIcon } from '@radix-ui/react-icons';
-import { filterTypeMapping, renderFilterInput } from '../../../../properties/@audiences/items';
+import { Cross2Icon } from '@radix-ui/react-icons';
+import { renderFilterInput } from '../../../properties/@audiences/items';
 import { Badge } from '@/src/components/ui/badge';
-import { MatchType } from '@/src/types/types';
 
-export default ({ combinedCategories, audienceFormIndex, simpleFormIndex, andGroupIndex }) => {
-  const { control, register, watch } = useFormContext();
+export default ({
+  combinedCategories,
+  audienceFormIndex,
+  sequenceFormIndex,
+  sequenceStepIndex,
+  filterClauseIindex,
+  andGroupFilterExpressionIndex,
+}) => {
+  const { watch, register, control } = useFormContext();
 
-  const baseOrPath = `forms[${audienceFormIndex}].filterClauses[${simpleFormIndex}].simpleFilter.filterExpression.andGroup.filterExpressions[${andGroupIndex}].orGroup.filterExpressions`;
+  const base = `forms[${audienceFormIndex}].filterClauses[${filterClauseIindex}].sequenceFilter.sequenceSteps[${sequenceStepIndex}].filterExpression.andGroup.filterExpressions[${andGroupFilterExpressionIndex}].orGroup.filterExpressions`;
 
   const { fields, remove, append } = useFieldArray({
     control,
-    name: baseOrPath,
+    name: base,
   });
 
   return (
     <div>
       {fields.map((item, index) => {
-        const baseField = `${baseOrPath}[${index}].dimensionOrMetricFilter`;
+        const baseField = `${base}[${index}].dimensionOrMetricFilter`;
 
         const categoryFieldName = `${baseField}.category`;
+
+        console.log('categoryFieldName', categoryFieldName);
 
         const fieldName = `${baseField}.fieldName`;
 
@@ -55,11 +63,13 @@ export default ({ combinedCategories, audienceFormIndex, simpleFormIndex, andGro
 
         return (
           <div key={item.id}>
-            <div className="relative border-t border-dashed my-8 flex justify-center">
-              <div className="absolute -bottom-3 left-5">
-                <Badge variant="secondary">OR</Badge>
+            {index > 0 && (
+              <div className="relative border-t border-dashed my-8 flex justify-center">
+                <div className="absolute -bottom-3 left-5">
+                  <Badge variant="secondary">OR</Badge>
+                </div>
               </div>
-            </div>
+            )}
 
             <CardContent className="p-0">
               <div className="flex items-center justify-between mt-5">
@@ -75,11 +85,12 @@ export default ({ combinedCategories, audienceFormIndex, simpleFormIndex, andGro
                               <FormItem>
                                 <FormControl>
                                   <Select
-                                    {...field}
+                                    {...register(categoryFieldName, { required: true })}
                                     onValueChange={(value) => {
                                       field.onChange(value);
                                     }}
                                     defaultValue={field.value}
+                                    {...field}
                                   >
                                     <SelectTrigger>
                                       <SelectValue placeholder="Select Category" />
@@ -114,6 +125,7 @@ export default ({ combinedCategories, audienceFormIndex, simpleFormIndex, andGro
                               <FormItem>
                                 <FormControl>
                                   <Select
+                                    {...register(fieldName, { required: true })}
                                     {...field}
                                     disabled={!selectedCategory}
                                     onValueChange={(value) => {
@@ -138,7 +150,6 @@ export default ({ combinedCategories, audienceFormIndex, simpleFormIndex, andGro
                             )}
                           />
                         </div>
-
                         <div className="w-1/12">
                           <Button
                             type="button"
@@ -151,14 +162,7 @@ export default ({ combinedCategories, audienceFormIndex, simpleFormIndex, andGro
                         </div>
                       </div>
                       <div>
-                        {inputItem &&
-                          renderFilterInput(
-                            'stringFilter',
-                            audienceFormIndex,
-                            simpleFormIndex,
-                            index,
-                            'orGroup'
-                          )}
+                        {inputItem && renderFilterInput('stringFilter', baseField, 'orGroup')}
                       </div>
                     </div>
                   </div>
@@ -172,22 +176,9 @@ export default ({ combinedCategories, audienceFormIndex, simpleFormIndex, andGro
         type="button"
         className="flex items-center space-x-2 text-blue-500"
         variant="ghost"
-        onClick={() =>
-          append({
-            dimensionOrMetricFilter: {
-              fieldName: '', // Default value to ensure forms are initialized correctly
-              atAnyPointInTime: false,
-              inAnyNDayPeriod: 0,
-              stringFilter: {
-                matchType: MatchType.Exact,
-                value: '', // Consider setting a default or example value if applicable
-                caseSensitive: false,
-              },
-            },
-          })
-        }
+        onClick={() => append({})}
       >
-        OR Condition
+        Or
       </Button>
     </div>
   );

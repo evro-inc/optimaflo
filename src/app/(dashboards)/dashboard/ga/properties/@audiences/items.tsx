@@ -456,25 +456,27 @@ export const simpleFilterExpression: AudienceFilterExpression = {
 
 export const sequenceStepFilterExpression = {
   andGroup: {
-    filterExpressions: [{
-      orGroup: {
-        filterExpressions: [
-          {
-            dimensionOrMetricFilter: {
-              fieldName: '', // Fill in the actual field name
-              atAnyPointInTime: false,
-              inAnyNDayPeriod: 0,
-              stringFilter: {
-                // Correctly use the union type
-                matchType: MatchType.Exact,
-                value: '', // Provide the actual value to match
-                caseSensitive: false,
-              } as StringFilter, // Cast explicitly if needed
+    filterExpressions: [
+      {
+        orGroup: {
+          filterExpressions: [
+            {
+              dimensionOrMetricFilter: {
+                fieldName: '', // Fill in the actual field name
+                atAnyPointInTime: false,
+                inAnyNDayPeriod: 0,
+                stringFilter: {
+                  // Correctly use the union type
+                  matchType: MatchType.Exact,
+                  value: '', // Provide the actual value to match
+                  caseSensitive: false,
+                } as StringFilter, // Cast explicitly if needed
+              },
             },
-          },
-        ],
-      }
-    }],
+          ],
+        },
+      },
+    ],
   },
   /*   orGroup: {
       filterExpressions: [],
@@ -637,7 +639,6 @@ export const LogConditionData = [
 
 const renderStringFilter = (fieldBase) => {
   console.log('fieldBase', fieldBase);
-
 
   const { control } = useFormContext();
   const matchType = `${fieldBase}.stringFilter.matchType`;
@@ -813,14 +814,15 @@ export const TimeConstraint = () => {
             <div className="flex justify-between items-start">
               <div>
                 <div className="text-lg font-medium">Time Constraint</div>
-                <div className="text-sm text-muted-foreground mt-2">Within the following time period:</div>
+                <div className="text-sm text-muted-foreground mt-2">
+                  Within the following time period:
+                </div>
               </div>
               <Switch id="time-constraint" />
             </div>
 
-
             <div className="grid grid-cols-2 gap-4">
-              <Input min={1} type='number' placeholder="Start date" />
+              <Input min={1} type="number" placeholder="Start date" />
               <Select>
                 <SelectTrigger id="end-date">
                   <SelectValue placeholder="Time Increment" />

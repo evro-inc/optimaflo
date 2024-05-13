@@ -1,6 +1,6 @@
 import React from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
-import { CardContent } from '@/src/components/ui/card';
+import { CardContent, CardHeader } from '@/src/components/ui/card';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/src/components/ui/form';
 import {
   Select,
@@ -12,38 +12,27 @@ import {
   SelectValue,
 } from '@/src/components/ui/select';
 import { Button } from '@/src/components/ui/button';
-import { Cross2Icon } from '@radix-ui/react-icons';
-import { renderFilterInput } from '../../../../properties/@audiences/items';
+import { Cross2Icon, PlusIcon } from '@radix-ui/react-icons';
+import { filterTypeMapping, renderFilterInput } from '../../../properties/@audiences/items';
 import { Badge } from '@/src/components/ui/badge';
+import { MatchType } from '@/src/types/types';
 
-export default ({
-  combinedCategories,
-  audienceFormIndex,
-  sequenceFormIndex,
-  sequenceStepIndex,
-  andGroupFilterExpressionIndex,
-}) => {
+export default ({ combinedCategories, audienceFormIndex, simpleFormIndex, andGroupIndex }) => {
+  const { control, register, watch } = useFormContext();
 
-  const { watch, register, control } = useFormContext()
-
-  const base = `forms[${audienceFormIndex}].filterClauses[${sequenceFormIndex}].sequenceFilter.sequenceSteps[${sequenceStepIndex}].filterExpression.andGroup.filterExpressions[${andGroupFilterExpressionIndex}].orGroup.filterExpressions`
+  const baseOrPath = `forms[${audienceFormIndex}].filterClauses[${simpleFormIndex}].simpleFilter.filterExpression.andGroup.filterExpressions[${andGroupIndex}].orGroup.filterExpressions`;
 
   const { fields, remove, append } = useFieldArray({
     control,
-    name: base,
+    name: baseOrPath,
   });
 
   return (
     <div>
       {fields.map((item, index) => {
-
-        const baseField = `${base}[${index}].dimensionOrMetricFilter`;
-
+        const baseField = `${baseOrPath}[${index}].dimensionOrMetricFilter`;
 
         const categoryFieldName = `${baseField}.category`;
-
-        console.log('categoryFieldName', categoryFieldName);
-
 
         const fieldName = `${baseField}.fieldName`;
 
@@ -66,13 +55,11 @@ export default ({
 
         return (
           <div key={item.id}>
-            {index > 0 && (
-              <div className="relative border-t border-dashed my-8 flex justify-center">
-                <div className="absolute -bottom-3 left-5">
-                  <Badge variant="secondary">OR</Badge>
-                </div>
+            <div className="relative border-t border-dashed my-8 flex justify-center">
+              <div className="absolute -bottom-3 left-5">
+                <Badge variant="secondary">OR</Badge>
               </div>
-            )}
+            </div>
 
             <CardContent className="p-0">
               <div className="flex items-center justify-between mt-5">
@@ -88,10 +75,11 @@ export default ({
                               <FormItem>
                                 <FormControl>
                                   <Select
-                                    {...register(categoryFieldName, { required: true })}
-                                    onValueChange={(value) => { field.onChange(value) }}
-                                    defaultValue={field.value}
                                     {...field}
+                                    onValueChange={(value) => {
+                                      field.onChange(value);
+                                    }}
+                                    defaultValue={field.value}
                                   >
                                     <SelectTrigger>
                                       <SelectValue placeholder="Select Category" />
@@ -126,7 +114,6 @@ export default ({
                               <FormItem>
                                 <FormControl>
                                   <Select
-                                    {...register(fieldName, { required: true })}
                                     {...field}
                                     disabled={!selectedCategory}
                                     onValueChange={(value) => {
@@ -151,6 +138,7 @@ export default ({
                             )}
                           />
                         </div>
+
                         <div className="w-1/12">
                           <Button
                             type="button"
@@ -163,7 +151,14 @@ export default ({
                         </div>
                       </div>
                       <div>
-                        {inputItem && renderFilterInput('stringFilter', baseField, 'orGroup')}
+                        {inputItem &&
+                          renderFilterInput(
+                            'stringFilter',
+                            audienceFormIndex,
+                            simpleFormIndex,
+                            index,
+                            'orGroup'
+                          )}
                       </div>
                     </div>
                   </div>
@@ -178,10 +173,21 @@ export default ({
         className="flex items-center space-x-2 text-blue-500"
         variant="ghost"
         onClick={() =>
-          append({})
+          append({
+            dimensionOrMetricFilter: {
+              fieldName: '', // Default value to ensure forms are initialized correctly
+              atAnyPointInTime: false,
+              inAnyNDayPeriod: 0,
+              stringFilter: {
+                matchType: MatchType.Exact,
+                value: '', // Consider setting a default or example value if applicable
+                caseSensitive: false,
+              },
+            },
+          })
         }
       >
-        Or
+        OR Condition
       </Button>
     </div>
   );

@@ -36,15 +36,13 @@ export default async function CreateCustomDimensionPage() {
   const uniqueDimensions = Array.from(new Set(allDimensions));
   const uniqueMetrics = Array.from(new Set(allMetrics));
 
-  const [accounts, properties] = await Promise.all([
-    accountData,
-    propertyData,
-    audienceData,
-  ]);
+  const [accounts, properties] = await Promise.all([accountData, propertyData, audienceData]);
 
   const flatAccounts = accounts.flat();
   const flatProperties = properties.flat();
-  const flattenedaudience = audienceData.flatMap((item) => item.audiences).filter(audience => audience);
+  const flattenedaudience = audienceData
+    .flatMap((item) => item.audiences)
+    .filter((audience) => audience);
 
   const combinedDataAudiences = flattenedaudience.map((audience) => {
     const propertyId = audience.name.split('/')[1];
@@ -71,8 +69,6 @@ export default async function CreateCustomDimensionPage() {
       adsPersonalizationEnabled: audience.adsPersonalizationEnabled,
     };
   });
-
-
 
   return (
     <>
