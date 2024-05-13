@@ -1,7 +1,7 @@
 import React from 'react';
 import { useFieldArray, useForm, useFormContext } from 'react-hook-form';
 import ConditionalForm from '../components/conditionalForm';
-import { AudienceClauseType, AudienceFilterScope } from '@/src/types/types';
+import { AudienceClauseType, AudienceFilterScope, MatchType } from '@/src/types/types';
 import { Button } from '@/src/components/ui/button';
 import { PlusIcon } from '@radix-ui/react-icons';
 
@@ -61,19 +61,22 @@ export default ({ combinedCategories, audienceFormIndex, setSelectedFilterType }
     name: `forms[${audienceFormIndex}].filterClauses.sequenceFilter`,
   });
 
-  // Function to add a new include clause
-
-  const addSimpleClauseInclude = () => {
+  // Function to add a simple clause
+  const addSimpleClause = (AudienceClause) => {
     append({
-      clauseType: AudienceClauseType.Include,
+      clauseType: AudienceClause,
       simpleFilter: {
         scope: '',
-        filterExpression: {},
+        filterExpression: {
+          andGroup: {
+            filterExpressions: [],
+          },
+        },
       },
     });
     setSelectedFilterType('simple');
     SimpleAppend({
-      clauseType: AudienceClauseType.Include,
+      clauseType: AudienceClause,
       simpleFilter: {
         scope: AudienceFilterScope.WithinSameEvent,
         filterExpression: {
@@ -85,61 +88,33 @@ export default ({ combinedCategories, audienceFormIndex, setSelectedFilterType }
     });
   };
 
-  const addSequenceClauseInclude = () => {
+  // Function to add a sequence clause
+  const addSequenceClause = (AudienceClause) => {
     append({
-      clauseType: AudienceClauseType.Include,
+      clauseType: AudienceClause,
       sequenceFilter: {
         scope: AudienceFilterScope.AcrossAllSessions,
-        sequenceSteps: [],
-      },
-    });
-    setSelectedFilterType('sequence');
-    SequenceAppend({
-      clauseType: AudienceClauseType.Include,
-      sequenceFilter: {
-        scope: AudienceFilterScope.AcrossAllSessions,
-        sequenceSteps: [],
-      },
-    });
-  };
-
-  // Function to add a new exclude clause
-  const addSimpleClauseExclude = () => {
-    append({
-      clauseType: AudienceClauseType.Exclude,
-      simpleFilter: {
-        scope: '',
-        filterExpression: {},
-      },
-    });
-    setSelectedFilterType('simple');
-    SimpleAppend({
-      clauseType: AudienceClauseType.Exclude,
-      simpleFilter: {
-        scope: AudienceFilterScope.WithinSameEvent,
-        filterExpression: {
-          andGroup: {
-            filterExpressions: [],
+        sequenceSteps: [
+          {
+            andGroup: {
+              filterExpressions: [],
+            },
           },
-        },
-      },
-    });
-  };
-
-  const addSequenceClauseExclude = () => {
-    append({
-      clauseType: AudienceClauseType.Exclude,
-      sequenceFilter: {
-        scope: AudienceFilterScope.AcrossAllSessions,
-        sequenceSteps: [],
+        ],
       },
     });
     setSelectedFilterType('sequence');
     SequenceAppend({
-      clauseType: AudienceClauseType.Exclude,
+      clauseType: AudienceClause,
       sequenceFilter: {
         scope: AudienceFilterScope.AcrossAllSessions,
-        sequenceSteps: [],
+        sequenceSteps: [
+          {
+            andGroup: {
+              filterExpressions: [],
+            },
+          },
+        ],
       },
     });
   };
@@ -164,7 +139,7 @@ export default ({ combinedCategories, audienceFormIndex, setSelectedFilterType }
             type="button"
             className="flex items-center space-x-2"
             variant="secondary"
-            onClick={addSimpleClauseInclude}
+            onClick={() => addSimpleClause(AudienceClauseType.Include)}
           >
             <PlusIcon className="text-white" />
             <span>Add condition group to include</span>
@@ -174,7 +149,7 @@ export default ({ combinedCategories, audienceFormIndex, setSelectedFilterType }
             type="button"
             className="flex items-center space-x-2"
             variant="secondary"
-            onClick={addSequenceClauseInclude}
+            onClick={() => addSequenceClause(AudienceClauseType.Include)}
           >
             <PlusIcon className="text-white" />
             <span>Add sequence to include</span>
@@ -187,7 +162,7 @@ export default ({ combinedCategories, audienceFormIndex, setSelectedFilterType }
             type="button"
             className="flex items-center space-x-2"
             variant="secondary"
-            onClick={addSimpleClauseExclude}
+            onClick={() => addSimpleClause(AudienceClauseType.Exclude)}
           >
             <PlusIcon className="text-white" />
             <span>Add condition group to exclude</span>
@@ -197,7 +172,7 @@ export default ({ combinedCategories, audienceFormIndex, setSelectedFilterType }
             type="button"
             className="flex items-center space-x-2"
             variant="secondary"
-            onClick={addSequenceClauseExclude}
+            onClick={() => addSequenceClause(AudienceClauseType.Exclude)}
           >
             <PlusIcon className="text-white" />
             <span>Add sequence to exclude</span>

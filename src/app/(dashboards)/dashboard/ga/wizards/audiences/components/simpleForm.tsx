@@ -75,20 +75,7 @@ export default ({
           onClick={() =>
             append({
               orGroup: {
-                filterExpressions: [
-                  {
-                    dimensionOrMetricFilter: {
-                      fieldName: '',
-                      atAnyPointInTime: false,
-                      inAnyNDayPeriod: 0,
-                      stringFilter: {
-                        matchType: MatchType.Exact,
-                        value: '',
-                        caseSensitive: false,
-                      },
-                    },
-                  },
-                ],
+                filterExpressions: [],
               },
             })
           }

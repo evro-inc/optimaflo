@@ -68,7 +68,11 @@ export default function ConditionalForm({
                 <CardHeader>
                   <div className="flex items-center">
                     <CircleIcon className="text-blue-500 mr-2" />
-                    <span className="flex-grow text-sm font-medium">Include users when:</span>
+                    {clauseTypeValue == AudienceClauseType.Include ? (
+                      <span className="flex-grow text-sm font-medium">Include users when:</span>
+                    ) : (
+                      <span className="flex-grow text-sm font-medium">Exclude users when:</span>
+                    )}
                     <div className="flex items-center space-x-2">
                       <PersonIcon className="text-gray-600" />
                       <FormField
@@ -225,50 +229,6 @@ export default function ConditionalForm({
           );
         })}
       </ul>
-
-      {/*       <section className="flex space-x-4">
-        <Button
-          type="button"
-          className="flex items-center space-x-2"
-          variant="secondary"
-          onClick={() => {
-            setSelectedFilterType('simple');
-            SimpleAppend({
-              clauseType: AudienceClauseType.Include,
-              simpleFilter: {
-                scope: AudienceFilterScope.WithinSameEvent,
-                filterExpression: {
-                  andGroup: {
-                    filterExpressions: [],
-                  },
-                },
-              },
-            });
-          }}
-        >
-          <PlusIcon className="text-white" />
-          <span>Add condition group to include</span>
-        </Button>
-
-        <Button
-          type="button"
-          className="flex items-center space-x-2"
-          variant="secondary"
-          onClick={() => {
-            setSelectedFilterType('sequence');
-            SequenceAppend({
-              clauseType: AudienceClauseType.Include,
-              sequenceFilter: {
-                scope: AudienceFilterScope.AcrossAllSessions,
-                sequenceSteps: [],
-              },
-            });
-          }}
-        >
-          <PlusIcon className="text-white" />
-          <span>Add sequence to include</span>
-        </Button>
-      </section> */}
     </>
   );
 }
