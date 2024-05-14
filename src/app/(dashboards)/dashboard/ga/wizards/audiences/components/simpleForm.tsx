@@ -12,13 +12,13 @@ export default ({
   combinedCategories,
   audienceFormIndex,
   simpleFormIndex,
-  filterClauseIindex,
+  filterClauseIndex,
   clauseTypeValue,
 }) => {
   const { setValue, control } = useFormContext();
-  const includeBase = `forms[${audienceFormIndex}].filterClauses[${filterClauseIindex}].simpleFilter.filterExpression.andGroup.filterExpressions`;
+  const includeBase = `forms[${audienceFormIndex}].filterClauses[${filterClauseIndex}].simpleFilter.filterExpression.andGroup.filterExpressions`;
 
-  const clauseType = `forms[${audienceFormIndex}].filterClauses[${filterClauseIindex}].clauseType`;
+  const clauseType = `forms[${audienceFormIndex}].filterClauses[${filterClauseIndex}].clauseType`;
 
   if (clauseTypeValue == AudienceClauseType.Exclude) {
     setValue(clauseType, AudienceClauseType.Exclude);
@@ -58,7 +58,7 @@ export default ({
                         audienceFormIndex={audienceFormIndex}
                         simpleFormIndex={simpleFormIndex}
                         cardAndIndex={cardAndIndex}
-                        filterClauseIindex={filterClauseIindex}
+                        filterClauseIndex={filterClauseIndex}
                       />
                     </div>
                   </div>

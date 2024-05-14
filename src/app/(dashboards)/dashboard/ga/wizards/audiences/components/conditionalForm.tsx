@@ -21,27 +21,25 @@ import CardForm from './simpleForm';
 export default function ConditionalForm({
   combinedCategories,
   audienceFormIndex,
-  setSelectedFilterType,
-  filterClauseIindex,
+  filterClauseIndex,
   clauseTypeValue,
 }) {
   const { control, register, watch, setValue } = useFormContext();
+
   const {
     fields: SimpleForm,
-    append: SimpleAppend,
     remove: SimpleRemove,
   } = useFieldArray({
     control,
-    name: `forms[${audienceFormIndex}].filterClauses.simpleFilter`,
+    name: `forms[${audienceFormIndex}].filterClauses[${filterClauseIndex}].simpleFilter`,
   });
 
   const {
     fields: SequenceForm,
-    append: SequenceAppend,
     remove: SequenceRemove,
   } = useFieldArray({
     control,
-    name: `forms[${audienceFormIndex}].filterClauses.sequenceFilter`,
+    name: `forms[${audienceFormIndex}].filterClauses[${filterClauseIndex}].sequenceFilter`,
   });
 
   return (
@@ -77,13 +75,13 @@ export default function ConditionalForm({
                       <PersonIcon className="text-gray-600" />
                       <FormField
                         control={control}
-                        name={`forms.[${audienceFormIndex}].filterClauses[${filterClauseIindex}].simpleFilter.scope`}
+                        name={`forms.[${audienceFormIndex}].filterClauses[${filterClauseIndex}].simpleFilter.scope`}
                         render={({ field }) => (
                           <FormItem>
                             <FormControl>
                               <Select
                                 {...register(
-                                  `forms.[${audienceFormIndex}].filterClauses[${filterClauseIindex}].simpleFilter.scope`
+                                  `forms.[${audienceFormIndex}].filterClauses[${filterClauseIndex}].simpleFilter.scope`
                                 )}
                                 {...field}
                                 onValueChange={field.onChange}
@@ -118,7 +116,7 @@ export default function ConditionalForm({
                     audienceFormIndex={audienceFormIndex}
                     combinedCategories={combinedCategories}
                     simpleFormIndex={simpleIndex}
-                    filterClauseIindex={filterClauseIindex}
+                    filterClauseIndex={filterClauseIndex}
                     clauseTypeValue={clauseTypeValue}
                   />
                 </CardContent>
@@ -171,13 +169,13 @@ export default function ConditionalForm({
 
                         <FormField
                           control={control}
-                          name={`forms.[${audienceFormIndex}].filterClauses[${filterClauseIindex}].sequenceFilter.scope`}
+                          name={`forms.[${audienceFormIndex}].filterClauses[${filterClauseIndex}].sequenceFilter.scope`}
                           render={({ field }) => (
                             <FormItem>
                               <FormControl>
                                 <Select
                                   {...register(
-                                    `forms.[${audienceFormIndex}].filterClauses[${filterClauseIindex}].sequenceFilter.scope`
+                                    `forms.[${audienceFormIndex}].filterClauses[${filterClauseIndex}].sequenceFilter.scope`
                                   )}
                                   {...field}
                                   onValueChange={field.onChange}
@@ -220,7 +218,7 @@ export default function ConditionalForm({
                   combinedCategories={combinedCategories}
                   audienceFormIndex={audienceFormIndex}
                   sequenceFormIndex={sequenceIndex}
-                  filterClauseIindex={filterClauseIindex}
+                  filterClauseIndex={filterClauseIndex}
                   removeSequence={SequenceRemove}
                   clauseTypeValue={clauseTypeValue}
                 />

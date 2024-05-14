@@ -21,11 +21,11 @@ export default ({
   audienceFormIndex,
   simpleFormIndex,
   cardAndIndex,
-  filterClauseIindex,
+  filterClauseIndex,
 }) => {
   const { watch, register, control } = useFormContext();
 
-  const base = `forms[${audienceFormIndex}].filterClauses[${filterClauseIindex}].simpleFilter.filterExpression.andGroup.filterExpressions[${cardAndIndex}].orGroup.filterExpressions`;
+  const base = `forms[${audienceFormIndex}].filterClauses[${filterClauseIndex}].simpleFilter.filterExpression.andGroup.filterExpressions[${cardAndIndex}].orGroup.filterExpressions`;
 
   const { fields, remove, append } = useFieldArray({
     control,
@@ -174,7 +174,11 @@ export default ({
         type="button"
         className="flex items-center space-x-2 text-blue-500"
         variant="ghost"
-        onClick={() => append({})}
+        onClick={() => append({
+          dimensionOrMetricFilter: {
+            fieldName: '',
+          },
+        })}
       >
         Or
       </Button>

@@ -14,14 +14,14 @@ export default ({
   audienceFormIndex,
   sequenceFormIndex,
   sequenceStepIndex,
-  filterClauseIindex,
+  filterClauseIndex,
   clauseTypeValue,
 }) => {
   const { setValue, watch, register, control } = useFormContext();
 
-  const base = `forms[${audienceFormIndex}].filterClauses[${filterClauseIindex}].sequenceFilter.sequenceSteps[${sequenceStepIndex}].filterExpression.andGroup.filterExpressions`;
+  const base = `forms[${audienceFormIndex}].filterClauses[${filterClauseIndex}].sequenceFilter.sequenceSteps[${sequenceStepIndex}].filterExpression.andGroup.filterExpressions`;
 
-  const clauseType = `forms[${audienceFormIndex}].filterClauses[${filterClauseIindex}].clauseType`;
+  const clauseType = `forms[${audienceFormIndex}].filterClauses[${filterClauseIndex}].clauseType`;
 
   if (clauseTypeValue == AudienceClauseType.Exclude) {
     setValue(clauseType, AudienceClauseType.Exclude);
@@ -61,7 +61,7 @@ export default ({
                         audienceFormIndex={audienceFormIndex}
                         sequenceFormIndex={sequenceFormIndex}
                         sequenceStepIndex={sequenceStepIndex}
-                        filterClauseIindex={filterClauseIindex}
+                        filterClauseIndex={filterClauseIndex}
                         andGroupFilterExpressionIndex={andGroupFilterExpressionIndex}
                       />
                     </div>

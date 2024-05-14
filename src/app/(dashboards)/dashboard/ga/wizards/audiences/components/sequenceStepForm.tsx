@@ -25,7 +25,7 @@ export default ({
   combinedCategories,
   audienceFormIndex,
   sequenceFormIndex,
-  filterClauseIindex,
+  filterClauseIndex,
   clauseTypeValue,
   removeSequence,
 }) => {
@@ -33,7 +33,7 @@ export default ({
 
   const { fields, remove, append } = useFieldArray({
     control,
-    name: `forms[${audienceFormIndex}].filterClauses[${filterClauseIindex}].sequenceFilter.sequenceSteps`,
+    name: `forms[${audienceFormIndex}].filterClauses[${filterClauseIndex}].sequenceFilter.sequenceSteps`,
   });
 
   return (
@@ -112,7 +112,7 @@ export default ({
                 combinedCategories={combinedCategories}
                 sequenceFormIndex={sequenceFormIndex}
                 sequenceStepIndex={stepIndex}
-                filterClauseIindex={filterClauseIindex}
+                filterClauseIndex={filterClauseIndex}
                 clauseTypeValue={clauseTypeValue}
               />
             </CardContent>
