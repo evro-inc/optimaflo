@@ -7,7 +7,7 @@ import { redis } from '@/src/lib/redis/cache';
 import { notFound } from 'next/navigation';
 import { currentUserOauthAccessToken } from '@/src/lib/clerk';
 import prisma from '@/src/lib/prisma';
-import { FeatureResult, FeatureResponse, AccessBinding } from '@/src/types/types';
+import { FeatureResult, FeatureResponse, KeyEventType } from '@/src/types/types';
 import {
   handleApiResponseError,
   tierCreateLimit,
@@ -15,12 +15,12 @@ import {
   tierUpdateLimit,
 } from '@/src/utils/server';
 import { fetchGASettings } from '../..';
-import { PropertyPermissionsSchema, FormsSchema } from '@/src/lib/schemas/ga/propertyAccess';
+import { KeyEvents, FormsSchema } from '@/src/lib/schemas/ga/keyEvents';
 
 /************************************************************************************
-  Function to list GA accountAccess
+  Function to list GA conversionEvents
 ************************************************************************************/
-export async function listGAAccessBindings() {
+export async function listGAKeyEvents() {
   let retries = 0;
   const MAX_RETRIES = 3;
   let delay = 1000;
@@ -32,7 +32,7 @@ export async function listGAAccessBindings() {
   const token = await currentUserOauthAccessToken(userId);
   const accessToken = token[0].token;
 
-  const cacheKey = `ga:propertyAccess:userId:${userId}`;
+  const cacheKey = `ga:keyEvents:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
 
   if (cachedValue) {
@@ -61,7 +61,7 @@ export async function listGAAccessBindings() {
 
           const urls = uniquePropertyIds.map(
             (propertyId) =>
-              `https://analyticsadmin.googleapis.com/v1alpha/properties/${propertyId}/accessBindings`
+              `https://analyticsadmin.googleapis.com/v1alpha/properties/${propertyId}/keyEvents`
           );
 
           const headers = {
@@ -75,16 +75,16 @@ export async function listGAAccessBindings() {
               const response = await fetch(url, { headers });
 
               if (!response.ok) {
-                if (response.status === 403) {
-                  continue; // Skip the current iteration and proceed with the next property
-                }
                 throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
               }
 
               const responseBody = await response.json();
-              allData.push(responseBody);
+              if (responseBody && responseBody.keyEvents && responseBody.keyEvents.length > 0) {
+                allData.push(responseBody);
+              }
+
+              // Removed the problematic line here
             } catch (error: any) {
-              // For errors other than 403, you might still want to throw or handle them differently
               throw new Error(`Error fetching data: ${error.message}`);
             }
           }
@@ -108,9 +108,9 @@ export async function listGAAccessBindings() {
 }
 
 /************************************************************************************
-  Create a single property or multiple accountAccess
+  Create a single property or multiple conversionEvents
 ************************************************************************************/
-export async function createGAAccessBindings(formData: PropertyPermissionsSchema) {
+export async function createGAKeyEvents(formData: KeyEvents) {
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
@@ -122,12 +122,12 @@ export async function createGAAccessBindings(formData: PropertyPermissionsSchema
   const successfulCreations: string[] = [];
   const featureLimitReached: string[] = [];
   const notFoundLimit: { id: string; name: string }[] = [];
-  const cacheKey = `ga:propertyAccess:userId:${userId}`;
+  const cacheKey = `ga:keyEvents:userId:${userId}`;
 
   // Refactor: Use string identifiers in the set
-  const toCreateAccessBindings = new Set(formData.forms.map((access) => access));
+  const toCreateKeyEvents = new Set(formData.forms.map((cm) => cm));
 
-  const tierLimitResponse: any = await tierCreateLimit(userId, 'GA4PropertyAccess');
+  const tierLimitResponse: any = await tierCreateLimit(userId, 'GA4KeyEvents');
   const limit = Number(tierLimitResponse.createLimit);
   const createUsage = Number(tierLimitResponse.createUsage);
   const availableCreateUsage = limit - createUsage;
@@ -143,19 +143,19 @@ export async function createGAAccessBindings(formData: PropertyPermissionsSchema
     return {
       success: false,
       limitReached: true,
-      message: 'Feature limit reached for creating user access at the account level.',
+      message: 'Feature limit reached for creating custom metric',
       results: [],
     };
   }
 
-  if (toCreateAccessBindings.size > availableCreateUsage) {
-    const attemptedCreations = Array.from(toCreateAccessBindings).map((identifier) => {
-      const user = identifier.user;
+  if (toCreateKeyEvents.size > availableCreateUsage) {
+    const attemptedCreations = Array.from(toCreateKeyEvents).map((identifier) => {
+      const keyEventNames = identifier.eventName;
       return {
         id: [], // No property ID since creation did not happen
-        name: user, // Include the property name from the identifier
+        name: keyEventNames, // Include the property name from the identifier
         success: false,
-        message: `Creation limit reached. Cannot create access at account level "${user}".`,
+        message: `Creation limit reached. Cannot create custom metric "${keyEventNames}".`,
         // remaining creation limit
         remaining: availableCreateUsage,
         limitReached: true,
@@ -164,9 +164,9 @@ export async function createGAAccessBindings(formData: PropertyPermissionsSchema
     return {
       success: false,
       features: [],
-      message: `Cannot create ${toCreateAccessBindings.size} custom metrics as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
+      message: `Cannot create ${toCreateKeyEvents.size} audience as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
       errors: [
-        `Cannot create ${toCreateAccessBindings.size} custom metrics as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
+        `Cannot create ${toCreateKeyEvents.size} keyEvents as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
       ],
       results: attemptedCreations,
       limitReached: true,
@@ -174,21 +174,22 @@ export async function createGAAccessBindings(formData: PropertyPermissionsSchema
   }
 
   let permissionDenied = false;
-  const conversionEventNames = formData.forms.map((access) => access.user);
+  const keyEventNames = formData.forms.map((cm) => cm.eventName);
 
-  if (toCreateAccessBindings.size <= availableCreateUsage) {
-    while (retries < MAX_RETRIES && toCreateAccessBindings.size > 0 && !permissionDenied) {
+  if (toCreateKeyEvents.size <= availableCreateUsage) {
+    while (retries < MAX_RETRIES && toCreateKeyEvents.size > 0 && !permissionDenied) {
       try {
         const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
         if (remaining > 0) {
           await limiter.schedule(async () => {
-            const createPromises = Array.from(toCreateAccessBindings).map(async (identifier) => {
+            const createPromises = Array.from(toCreateKeyEvents).map(async (identifier) => {
               if (!identifier) {
-                errors.push(`Account access data not found for ${identifier}`);
-                toCreateAccessBindings.delete(identifier);
+                errors.push(`Custom metric data not found for ${identifier}`);
+                toCreateKeyEvents.delete(identifier);
                 return;
               }
-              const url = `https://analyticsadmin.googleapis.com/v1alpha/${identifier.property}/accessBindings`;
+
+              const url = `https://analyticsadmin.googleapis.com/v1alpha/${identifier.property}/keyEvents`;
 
               const headers = {
                 Authorization: `Bearer ${token[0].token}`,
@@ -206,7 +207,7 @@ export async function createGAAccessBindings(formData: PropertyPermissionsSchema
                     .map((issue) => `${issue.path[0]}: ${issue.message}`)
                     .join('. ');
                   errors.push(errorMessage);
-                  toCreateAccessBindings.delete(identifier);
+                  toCreateKeyEvents.delete(identifier);
                   return {
                     identifier,
                     success: false,
@@ -215,11 +216,78 @@ export async function createGAAccessBindings(formData: PropertyPermissionsSchema
                 }
 
                 // Accessing the validated property data
-                const validatedContainerData = validationResult.data.forms[0];
+                const validatedData = validationResult.data.forms[0];
 
-                let requestBody: any = {
-                  user: validatedContainerData.user,
-                  roles: validatedContainerData.roles,
+                // Function to dynamically build filter expressions
+                const buildFilterExpression = (filterExpression: any): any => {
+                  let result: any = {};
+
+                  // Handle different types of filter expressions
+                  if (filterExpression.andGroup) {
+                    result.andGroup = {
+                      filterExpressions:
+                        filterExpression.andGroup.filterExpressions.map(buildFilterExpression),
+                    };
+                  } else if (filterExpression.orGroup) {
+                    result.orGroup = {
+                      filterExpressions:
+                        filterExpression.orGroup.filterExpressions.map(buildFilterExpression),
+                    };
+                  } else if (filterExpression.notExpression) {
+                    result.notExpression = buildFilterExpression(filterExpression.notExpression);
+                  } else if (filterExpression.dimensionOrMetricFilter) {
+                    result.dimensionOrMetricFilter = {
+                      ...filterExpression.dimensionOrMetricFilter,
+                    };
+                  } else if (filterExpression.eventFilter) {
+                    result.eventFilter = { ...filterExpression.eventFilter };
+                  }
+
+                  return result;
+                };
+
+                // Function to dynamically construct filter clauses from formData
+                const buildFilterClauses = (filterClauses: any[]): any[] => {
+                  return filterClauses.map((clause) => {
+                    let result: any = { clauseType: clause.clauseType };
+
+                    if (clause.simpleFilter) {
+                      result.simpleFilter = {
+                        scope: clause.simpleFilter.scope,
+                        filterExpression: buildFilterExpression(
+                          clause.simpleFilter.filterExpression
+                        ),
+                      };
+                    }
+
+                    if (clause.sequenceFilter) {
+                      result.sequenceFilter = {
+                        scope: clause.sequenceFilter.scope,
+                        sequenceSteps: clause.sequenceFilter.sequenceSteps.map((step) => ({
+                          scope: step.scope,
+                          immediatelyFollows: step.immediatelyFollows,
+                          filterExpression: buildFilterExpression(step.filterExpression),
+                        })),
+                      };
+                    }
+
+                    return result;
+                  });
+                };
+
+                let requestBody = {
+                  displayName: validatedData.displayName,
+                  description: validatedData.description,
+                  membershipDurationDays: validatedData.membershipDurationDays,
+                  adsPersonalizationEnabled: validatedData.adsPersonalizationEnabled,
+                  eventTrigger: validatedData.eventTrigger
+                    ? {
+                      eventName: validatedData.eventTrigger.eventName,
+                      logCondition: validatedData.eventTrigger.logCondition,
+                    }
+                    : undefined, // Include eventTrigger only if present
+                  exclusionDurationMode: validatedData.exclusionDurationMode,
+                  filterClauses: buildFilterClauses(validatedData.filterClauses),
                 };
 
                 // Now, requestBody is prepared with the right structure based on the type
@@ -232,8 +300,8 @@ export async function createGAAccessBindings(formData: PropertyPermissionsSchema
                 const parsedResponse = await response.json();
 
                 if (response.ok) {
-                  successfulCreations.push(validatedContainerData.user);
-                  toCreateAccessBindings.delete(identifier);
+                  successfulCreations.push(validatedContainerData.eventName);
+                  toCreateKeyEvents.delete(identifier);
                   fetchGASettings(userId);
 
                   await prisma.tierLimit.update({
@@ -241,16 +309,16 @@ export async function createGAAccessBindings(formData: PropertyPermissionsSchema
                     data: { createUsage: { increment: 1 } },
                   });
                   creationResults.push({
-                    conversionEventName: validatedContainerData.user,
+                    conversionEventName: validatedContainerData.eventName,
                     success: true,
-                    message: `Successfully created property ${validatedContainerData.user}`,
+                    message: `Successfully created property ${validatedContainerData.eventName}`,
                   });
                 } else {
                   const errorResult = await handleApiResponseError(
                     response,
                     parsedResponse,
                     'conversionEvent',
-                    [validatedContainerData.user]
+                    [validatedContainerData.eventName]
                   );
 
                   if (errorResult) {
@@ -259,32 +327,34 @@ export async function createGAAccessBindings(formData: PropertyPermissionsSchema
                       errorResult.errorCode === 403 &&
                       parsedResponse.message === 'Feature limit reached'
                     ) {
-                      featureLimitReached.push(validatedContainerData.user);
+                      featureLimitReached.push(validatedContainerData.eventName);
                     } else if (errorResult.errorCode === 404) {
                       notFoundLimit.push({
-                        id: identifier.account,
-                        name: validatedContainerData.user,
+                        id: identifier.property,
+                        name: validatedContainerData.eventName,
                       });
                     }
                   } else {
                     errors.push(
-                      `An unknown error occurred for property ${validatedContainerData.user}.`
+                      `An unknown error occurred for property ${validatedContainerData.eventName}.`
                     );
                   }
 
-                  toCreateAccessBindings.delete(identifier);
+                  toCreateKeyEvents.delete(identifier);
                   permissionDenied = errorResult ? true : permissionDenied;
                   creationResults.push({
-                    conversionEventName: validatedContainerData.user,
+                    conversionEventName: validatedContainerData.eventName,
                     success: false,
                     message: errorResult?.message,
                   });
                 }
               } catch (error: any) {
-                errors.push(`Exception creating property ${identifier.user}: ${error.message}`);
-                toCreateAccessBindings.delete(identifier);
+                errors.push(
+                  `Exception creating property ${identifier.eventName}: ${error.message}`
+                );
+                toCreateKeyEvents.delete(identifier);
                 creationResults.push({
-                  conversionEventName: identifier.user,
+                  conversionEventName: identifier.eventName,
                   success: false,
                   message: error.message,
                 });
@@ -321,8 +391,7 @@ export async function createGAAccessBindings(formData: PropertyPermissionsSchema
               results: featureLimitReached.map((eventName) => {
                 // Find the name associated with the propertyId
                 const conversionEventName =
-                  conversionEventNames.find((eventName) => eventName.includes(eventName)) ||
-                  'Unknown';
+                  keyEventNames.find((eventName) => eventName.includes(eventName)) || 'Unknown';
                 return {
                   id: [conversionEventName], // Ensure id is an array
                   name: [conversionEventName], // Ensure name is an array, match by propertyId or default to 'Unknown'
@@ -337,7 +406,7 @@ export async function createGAAccessBindings(formData: PropertyPermissionsSchema
             break;
           }
 
-          if (toCreateAccessBindings.size === 0) {
+          if (toCreateKeyEvents.size === 0) {
             break;
           }
         } else {
@@ -355,7 +424,7 @@ export async function createGAAccessBindings(formData: PropertyPermissionsSchema
         // This block will run regardless of the outcome of the try...catch
         if (userId) {
           await redis.del(cacheKey);
-          await revalidatePath(`dashboard/ga/access-permissions`);
+          await revalidatePath(`/dashboard/ga/properties`);
         }
       }
     }
@@ -385,16 +454,16 @@ export async function createGAAccessBindings(formData: PropertyPermissionsSchema
 
   if (successfulCreations.length > 0) {
     await redis.del(cacheKey);
-    revalidatePath(`dashboard/ga/access-permissions`);
+    revalidatePath(`/dashboard/ga/properties`);
   }
 
   // Map over formData.forms to create the results array
   const results: FeatureResult[] = formData.forms.map((form) => {
     // Ensure that form.propertyId is defined before adding it to the array
-    const conversionEventId = form.user ? [form.user] : []; // Provide an empty array as a fallback
+    const conversionEventId = form.eventName ? [form.eventName] : []; // Provide an empty array as a fallback
     return {
       id: conversionEventId, // Ensure id is an array of strings
-      name: [form.user], // Wrap the string in an array
+      name: [form.eventName], // Wrap the string in an array
       success: true, // or false, depending on the actual result
       // Include `notFound` if applicable
       notFound: false, // Set this to the appropriate value based on your logic
@@ -407,7 +476,7 @@ export async function createGAAccessBindings(formData: PropertyPermissionsSchema
     features: [], // Populate with actual property IDs if applicable
     errors: [], // Populate with actual error messages if applicable
     limitReached: false, // Set based on actual limit status
-    message: 'User access created successfully', // Customize the message as needed
+    message: 'Custom metrics created successfully', // Customize the message as needed
     results: results, // Use the correctly typed results
     notFoundError: false, // Set based on actual not found status
   };
@@ -416,7 +485,7 @@ export async function createGAAccessBindings(formData: PropertyPermissionsSchema
 /************************************************************************************
   Update a single property or multiple custom metrics
 ************************************************************************************/
-export async function updateGAAccessBindings(formData: PropertyPermissionsSchema) {
+export async function updateGAKeyEvents(formData: KeyEvents) {
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
@@ -430,9 +499,9 @@ export async function updateGAAccessBindings(formData: PropertyPermissionsSchema
   const notFoundLimit: { id: string; name: string }[] = [];
 
   // Refactor: Use string identifiers in the set
-  const toUpdateAccessBindings = new Set(formData.forms.map((access) => access));
+  const toUpdateKeyEvents = new Set(formData.forms.map((cm) => cm));
 
-  const tierLimitResponse: any = await tierUpdateLimit(userId, 'GA4PropertyAccess');
+  const tierLimitResponse: any = await tierUpdateLimit(userId, 'GA4KeyEvents');
   const limit = Number(tierLimitResponse.updateLimit);
   const updateUsage = Number(tierLimitResponse.updateUsage);
   const availableUpdateUsage = limit - updateUsage;
@@ -448,19 +517,19 @@ export async function updateGAAccessBindings(formData: PropertyPermissionsSchema
     return {
       success: false,
       limitReached: true,
-      message: 'Feature limit reached for udpating user access at the property level.',
+      message: 'Feature limit reached for creating Custom Metrics',
       results: [],
     };
   }
 
-  if (toUpdateAccessBindings.size > availableUpdateUsage) {
-    const attemptedCreations = Array.from(toUpdateAccessBindings).map((identifier) => {
-      const user = identifier.user;
+  if (toUpdateKeyEvents.size > availableUpdateUsage) {
+    const attemptedCreations = Array.from(toUpdateKeyEvents).map((identifier) => {
+      const eventName = identifier.eventName;
       return {
         id: [], // No property ID since creation did not happen
-        name: user, // Include the property name from the identifier
+        name: eventName, // Include the property name from the identifier
         success: false,
-        message: `Creation limit reached. Cannot update property access "${user}".`,
+        message: `Creation limit reached. Cannot update custom metric "${eventName}".`,
         // remaining creation limit
         remaining: availableUpdateUsage,
         limitReached: true,
@@ -469,9 +538,9 @@ export async function updateGAAccessBindings(formData: PropertyPermissionsSchema
     return {
       success: false,
       features: [],
-      message: `Cannot update ${toUpdateAccessBindings.size} property access as it exceeds the available limit. You have ${availableUpdateUsage} more creation(s) available.`,
+      message: `Cannot update ${toUpdateKeyEvents.size} custom metrics as it exceeds the available limit. You have ${availableUpdateUsage} more creation(s) available.`,
       errors: [
-        `Cannot update ${toUpdateAccessBindings.size} property access as it exceeds the available limit. You have ${availableUpdateUsage} more creation(s) available.`,
+        `Cannot update ${toUpdateKeyEvents.size} custom metrics as it exceeds the available limit. You have ${availableUpdateUsage} more creation(s) available.`,
       ],
       results: attemptedCreations,
       limitReached: true,
@@ -479,22 +548,25 @@ export async function updateGAAccessBindings(formData: PropertyPermissionsSchema
   }
 
   let permissionDenied = false;
-  const conversionEventNames = formData.forms.map((access) => access.user);
+  const keyEventNames = formData.forms.map((cm) => cm.eventName);
 
-  if (toUpdateAccessBindings.size <= availableUpdateUsage) {
-    while (retries < MAX_RETRIES && toUpdateAccessBindings.size > 0 && !permissionDenied) {
+  if (toUpdateKeyEvents.size <= availableUpdateUsage) {
+    while (retries < MAX_RETRIES && toUpdateKeyEvents.size > 0 && !permissionDenied) {
       try {
         const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
         if (remaining > 0) {
           await limiter.schedule(async () => {
-            const updatePromises = Array.from(toUpdateAccessBindings).map(async (identifier) => {
+            const updatePromises = Array.from(toUpdateKeyEvents).map(async (identifier) => {
               if (!identifier) {
                 errors.push(`Custom metrics data not found for ${identifier}`);
-                toUpdateAccessBindings.delete(identifier);
+                toUpdateKeyEvents.delete(identifier);
                 return;
               }
 
-              const url = `https://analyticsadmin.googleapis.com/v1alpha/${identifier.name}`;
+              const updateFields = ['countingMethod', 'defaultConversionValue'];
+
+              const updateMask = updateFields.join(',');
+              const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.name}?updateMask=${updateMask}`;
 
               const headers = {
                 Authorization: `Bearer ${token[0].token}`,
@@ -512,7 +584,7 @@ export async function updateGAAccessBindings(formData: PropertyPermissionsSchema
                     .map((issue) => `${issue.path[0]}: ${issue.message}`)
                     .join('. ');
                   errors.push(errorMessage);
-                  toUpdateAccessBindings.delete(identifier);
+                  toUpdateKeyEvents.delete(identifier);
                   return {
                     identifier,
                     success: false,
@@ -524,8 +596,11 @@ export async function updateGAAccessBindings(formData: PropertyPermissionsSchema
                 const validatedContainerData = validationResult.data.forms[0];
 
                 let requestBody: any = {
-                  user: validatedContainerData.user,
-                  roles: validatedContainerData.roles,
+                  countingMethod: validatedContainerData.countingMethod,
+                  defaultConversionValue: {
+                    value: validatedContainerData.defaultConversionValue?.value,
+                    currencyCode: validatedContainerData.defaultConversionValue?.currencyCode,
+                  },
                 };
 
                 // Now, requestBody is prepared with the right structure based on the type
@@ -538,24 +613,24 @@ export async function updateGAAccessBindings(formData: PropertyPermissionsSchema
                 const parsedResponse = await response.json();
 
                 if (response.ok) {
-                  successfulCreations.push(validatedContainerData.user);
-                  toUpdateAccessBindings.delete(identifier);
+                  successfulCreations.push(validatedContainerData.eventName);
+                  toUpdateKeyEvents.delete(identifier);
 
                   await prisma.tierLimit.update({
                     where: { id: tierLimitResponse.id },
                     data: { updateUsage: { increment: 1 } },
                   });
                   creationResults.push({
-                    conversionEventName: validatedContainerData.user,
+                    conversionEventName: validatedContainerData.eventName,
                     success: true,
-                    message: `Successfully updated property ${validatedContainerData.user}`,
+                    message: `Successfully updated property ${validatedContainerData.eventName}`,
                   });
                 } else {
                   const errorResult = await handleApiResponseError(
                     response,
                     parsedResponse,
-                    'accountAccess',
-                    [validatedContainerData.user]
+                    'conversionEvents',
+                    [validatedContainerData.eventName]
                   );
 
                   if (errorResult) {
@@ -564,32 +639,34 @@ export async function updateGAAccessBindings(formData: PropertyPermissionsSchema
                       errorResult.errorCode === 403 &&
                       parsedResponse.message === 'Feature limit reached'
                     ) {
-                      featureLimitReached.push(validatedContainerData.user);
+                      featureLimitReached.push(validatedContainerData.eventName);
                     } else if (errorResult.errorCode === 404) {
                       notFoundLimit.push({
-                        id: identifier.account,
-                        name: validatedContainerData.user,
+                        id: identifier.property,
+                        name: validatedContainerData.eventName,
                       });
                     }
                   } else {
                     errors.push(
-                      `An unknown error occurred for property ${validatedContainerData.user}.`
+                      `An unknown error occurred for property ${validatedContainerData.eventName}.`
                     );
                   }
 
-                  toUpdateAccessBindings.delete(identifier);
+                  toUpdateKeyEvents.delete(identifier);
                   permissionDenied = errorResult ? true : permissionDenied;
                   creationResults.push({
-                    conversionEventName: validatedContainerData.user,
+                    conversionEventName: validatedContainerData.eventName,
                     success: false,
                     message: errorResult?.message,
                   });
                 }
               } catch (error: any) {
-                errors.push(`Exception creating property ${identifier.user}: ${error.message}`);
-                toUpdateAccessBindings.delete(identifier);
+                errors.push(
+                  `Exception creating property ${identifier.eventName}: ${error.message}`
+                );
+                toUpdateKeyEvents.delete(identifier);
                 creationResults.push({
-                  conversionEventName: identifier.user,
+                  conversionEventName: identifier.eventName,
                   success: false,
                   message: error.message,
                 });
@@ -626,8 +703,7 @@ export async function updateGAAccessBindings(formData: PropertyPermissionsSchema
               results: featureLimitReached.map((eventName) => {
                 // Find the name associated with the propertyId
                 const conversionEventName =
-                  conversionEventNames.find((eventName) => eventName.includes(eventName)) ||
-                  'Unknown';
+                  keyEventNames.find((eventName) => eventName.includes(eventName)) || 'Unknown';
                 return {
                   id: [conversionEventName], // Ensure id is an array
                   name: [conversionEventName], // Ensure name is an array, match by propertyId or default to 'Unknown'
@@ -642,7 +718,7 @@ export async function updateGAAccessBindings(formData: PropertyPermissionsSchema
             break;
           }
 
-          if (toUpdateAccessBindings.size === 0) {
+          if (toUpdateKeyEvents.size === 0) {
             break;
           }
         } else {
@@ -683,19 +759,19 @@ export async function updateGAAccessBindings(formData: PropertyPermissionsSchema
   }
 
   if (successfulCreations.length > 0) {
-    const cacheKey = `ga:propertyAccess:userId:${userId}`;
+    const cacheKey = `ga:keyEvents:userId:${userId}`;
 
     await redis.del(cacheKey);
-    revalidatePath(`dashboard/ga/access-permissions`);
+    revalidatePath(`/dashboard/ga/properties`);
   }
 
   // Map over formData.forms to update the results array
   const results: FeatureResult[] = formData.forms.map((form) => {
     // Ensure that form.propertyId is defined before adding it to the array
-    const conversionEventId = form.user ? [form.user] : []; // Provide an empty array as a fallback
+    const conversionEventId = form.eventName ? [form.eventName] : []; // Provide an empty array as a fallback
     return {
       id: conversionEventId, // Ensure id is an array of strings
-      name: [form.user], // Wrap the string in an array
+      name: [form.eventName], // Wrap the string in an array
       success: true, // or false, depending on the actual result
       // Include `notFound` if applicable
       notFound: false, // Set this to the appropriate value based on your logic
@@ -717,9 +793,9 @@ export async function updateGAAccessBindings(formData: PropertyPermissionsSchema
 /************************************************************************************
   Delete a single property or multiple custom metrics
 ************************************************************************************/
-export async function deleteGAAccessBindings(
-  selectedAccessBindings: Set<AccessBinding>,
-  conversionEventNames: string[]
+export async function deleteGAKeyEvents(
+  selectedKeyEvents: Set<KeyEventType>,
+  keyEventNames: string[]
 ): Promise<FeatureResponse> {
   // Initialization of retry mechanism
   let retries = 0;
@@ -733,16 +809,16 @@ export async function deleteGAAccessBindings(
   }> = [];
   const featureLimitReached: { name: string }[] = [];
   const notFoundLimit: { name: string }[] = [];
-  const toDeleteAccessBindings = new Set<AccessBinding>(selectedAccessBindings);
+  const toDeleteKeyEvents = new Set<KeyEventType>(selectedKeyEvents);
   // Authenticating user and getting user ID
   const { userId } = await auth();
   // If user ID is not found, return a 'not found' error
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
-  const cacheKey = `ga:propertyAccess:userId:${userId}`;
+  const cacheKey = `ga:keyEvents:userId:${userId}`;
 
   // Check for feature limit using Prisma ORM
-  const tierLimitResponse: any = await tierDeleteLimit(userId, 'GA4PropertyAccess');
+  const tierLimitResponse: any = await tierDeleteLimit(userId, 'GA4KeyEvents');
   const limit = Number(tierLimitResponse.deleteLimit);
   const deleteUsage = Number(tierLimitResponse.deleteUsage);
   const availableDeleteUsage = limit - deleteUsage;
@@ -754,29 +830,29 @@ export async function deleteGAAccessBindings(
       success: false,
       limitReached: true,
       errors: [],
-      message: 'Feature limit reached for deleting user access at the account level. ',
+      message: 'Feature limit reached for deleting key events',
       results: [],
     };
   }
 
-  if (toDeleteAccessBindings.size > availableDeleteUsage) {
+  if (toDeleteKeyEvents.size > availableDeleteUsage) {
     // If the deletion request exceeds the available limit
     return {
       success: false,
       features: [],
       errors: [
-        `Cannot delete ${toDeleteAccessBindings.size} user as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
+        `Cannot delete ${toDeleteKeyEvents.size} key events as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
       ],
       results: [],
       limitReached: true,
-      message: `Cannot delete ${toDeleteAccessBindings.size} user as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
+      message: `Cannot delete ${toDeleteKeyEvents.size} key events as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
     };
   }
   let permissionDenied = false;
 
-  if (toDeleteAccessBindings.size <= availableDeleteUsage) {
+  if (toDeleteKeyEvents.size <= availableDeleteUsage) {
     // Retry loop for deletion requests
-    while (retries < MAX_RETRIES && toDeleteAccessBindings.size > 0 && !permissionDenied) {
+    while (retries < MAX_RETRIES && toDeleteKeyEvents.size > 0 && !permissionDenied) {
       try {
         // Enforcing rate limit
         const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
@@ -784,7 +860,7 @@ export async function deleteGAAccessBindings(
         if (remaining > 0) {
           await limiter.schedule(async () => {
             // Creating promises for each property deletion
-            const deletePromises = Array.from(toDeleteAccessBindings).map(async (identifier) => {
+            const deletePromises = Array.from(toDeleteKeyEvents).map(async (identifier) => {
               const url = `https://analyticsadmin.googleapis.com/v1alpha/${identifier.name}`;
 
               const headers = {
@@ -800,13 +876,24 @@ export async function deleteGAAccessBindings(
                 });
 
                 const parsedResponse = await response.json();
+                // log json response
+                const cleanedParentId = identifier.name.split('/')[1];
 
                 if (response.ok) {
-                  IdsProcessed.add(identifier?.user);
+                  IdsProcessed.add(identifier.name);
                   successfulDeletions.push({
-                    name: identifier.user,
+                    name: identifier.name,
                   });
-                  toDeleteAccessBindings.delete(identifier);
+
+                  toDeleteKeyEvents.delete(identifier);
+
+                  await prisma.ga.deleteMany({
+                    where: {
+                      accountId: `${identifier.account.split('/')[1]}`,
+                      propertyId: cleanedParentId,
+                      userId: userId, // Ensure this matches the user ID
+                    },
+                  });
 
                   await prisma.tierLimit.update({
                     where: { id: tierLimitResponse.id },
@@ -815,15 +902,15 @@ export async function deleteGAAccessBindings(
 
                   return {
                     name: identifier.name,
-                    eventName: identifier.user,
+                    eventName: identifier.eventName,
                     success: true,
                   };
                 } else {
                   const errorResult = await handleApiResponseError(
                     response,
                     parsedResponse,
-                    'GA4PropertyAccess',
-                    conversionEventNames
+                    'GA4KeyEvents',
+                    keyEventNames
                   );
 
                   if (errorResult) {
@@ -833,19 +920,17 @@ export async function deleteGAAccessBindings(
                       parsedResponse.message === 'Feature limit reached'
                     ) {
                       featureLimitReached.push({
-                        name: identifier.user,
+                        name: identifier.name,
                       });
                     } else if (errorResult.errorCode === 404) {
                       notFoundLimit.push({
-                        name: identifier.user,
+                        name: identifier.name,
                       });
                     } else {
-                      errors.push(
-                        `An unknown error occurred for property ${conversionEventNames}.`
-                      );
+                      errors.push(`An unknown error occurred for property ${keyEventNames}.`);
                     }
 
-                    toDeleteAccessBindings.delete(identifier);
+                    toDeleteKeyEvents.delete(identifier);
                     permissionDenied = errorResult ? true : permissionDenied;
                   }
                 }
@@ -853,8 +938,8 @@ export async function deleteGAAccessBindings(
                 // Handling exceptions during fetch
                 errors.push(`Error deleting property ${identifier.name}: ${error.message}`);
               }
-              IdsProcessed.add(identifier.user);
-              toDeleteAccessBindings.delete(identifier);
+              IdsProcessed.add(identifier.name);
+              toDeleteKeyEvents.delete(identifier);
               return { name: identifier.name, success: false };
             });
 
@@ -867,13 +952,13 @@ export async function deleteGAAccessBindings(
               success: false,
               limitReached: false,
               notFoundError: true, // Set the notFoundError flag
-              message: `Could not delete user. Please check your permissions. Property Name: 
-              ${conversionEventNames.find((name) =>
+              message: `Could not delete custom metric. Please check your permissions. Property Name: 
+              ${keyEventNames.find((name) =>
                 name.includes(name)
-              )}. All other users were successfully deleted.`,
+              )}. All other custom metrics were successfully deleted.`,
               results: notFoundLimit.map(({ name }) => ({
                 id: [name], // Combine accountId and propertyId into a single array of strings
-                name: [conversionEventNames.find((name) => name.includes(name)) || 'Unknown'], // Ensure name is an array, match by propertyId or default to 'Unknown'
+                name: [keyEventNames.find((name) => name.includes(name)) || 'Unknown'], // Ensure name is an array, match by propertyId or default to 'Unknown'
                 success: false,
                 notFound: true,
               })),
@@ -884,19 +969,19 @@ export async function deleteGAAccessBindings(
               success: false,
               limitReached: true,
               notFoundError: false,
-              message: `Feature limit reached for user account access: ${featureLimitReached.join(
+              message: `Feature limit reached for custom metrics: ${featureLimitReached.join(
                 ', '
               )}`,
               results: featureLimitReached.map(({ name }) => ({
                 id: [name], // Ensure id is an array
-                name: [conversionEventNames.find((name) => name.includes(name)) || 'Unknown'], // Ensure name is an array, match by accountId or default to 'Unknown'
+                name: [keyEventNames.find((name) => name.includes(name)) || 'Unknown'], // Ensure name is an array, match by accountId or default to 'Unknown'
                 success: false,
                 featureLimitReached: true,
               })),
             };
           }
           // Update tier limit usage as before (not shown in code snippet)
-          if (successfulDeletions.length === selectedAccessBindings.size) {
+          if (successfulDeletions.length === selectedKeyEvents.size) {
             break; // Exit loop if all custom metrics are processed successfully
           }
           if (permissionDenied) {
@@ -918,7 +1003,7 @@ export async function deleteGAAccessBindings(
       } finally {
         await redis.del(cacheKey);
 
-        await revalidatePath('/dashboard/ga/access-permissions');
+        await revalidatePath('/dashboard/ga/properties');
       }
     }
   }
@@ -938,7 +1023,7 @@ export async function deleteGAAccessBindings(
       errors: errors,
       results: successfulDeletions.map(({ name }) => ({
         id: [name], // Ensure id is an array
-        name: [conversionEventNames.find((name) => name.includes(name)) || 'Unknown'], // Ensure name is an array and provide a default value
+        name: [keyEventNames.find((name) => name.includes(name)) || 'Unknown'], // Ensure name is an array and provide a default value
         success: true,
       })),
       // Add a general message if needed
@@ -949,7 +1034,7 @@ export async function deleteGAAccessBindings(
   if (successfulDeletions.length > 0) {
     await redis.del(cacheKey);
     // Revalidate paths if needed
-    revalidatePath('/dashboard/ga/access-permissions');
+    revalidatePath('/dashboard/ga/properties');
   }
 
   // Returning the result of the deletion process
@@ -961,7 +1046,7 @@ export async function deleteGAAccessBindings(
     notFoundError: notFoundLimit.length > 0,
     results: successfulDeletions.map(({ name }) => ({
       id: [name], // Ensure id is an array
-      name: [conversionEventNames.find((name) => name.includes(name)) || 'Unknown'], // Ensure name is an array
+      name: [keyEventNames.find((name) => name.includes(name)) || 'Unknown'], // Ensure name is an array
       success: true,
     })),
   };

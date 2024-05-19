@@ -665,3 +665,31 @@ interface AudienceEventFilter {
   eventName: string;
   eventParameterFilterExpression?: AudienceFilterExpression;
 }
+
+/*********************************************************
+ Key Events
+ *********************************************************/
+export enum CountingMethod {
+  UNSPECIFIED = 'COUNTING_METHOD_UNSPECIFIED',
+  ONCE_PER_EVENT = 'ONCE_PER_EVENT',
+  ONCE_PER_SESSION = 'ONCE_PER_SESSION',
+}
+
+// Default Value type
+interface DefaultValue {
+  numericValue: number;
+  currencyCode: string;
+}
+
+// Key Event type
+export interface KeyEventType {
+  account: string;
+  property: string;
+  name: string;
+  eventName: string;
+  createTime: string; // RFC3339 timestamp format
+  deletable: boolean;
+  custom: boolean;
+  countingMethod: CountingMethod;
+  defaultValue?: DefaultValue;
+}
