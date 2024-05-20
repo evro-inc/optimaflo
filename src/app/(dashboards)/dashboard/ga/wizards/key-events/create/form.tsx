@@ -51,6 +51,7 @@ import { Switch } from '@/src/components/ui/switch';
 import { CountMethodData, Currencies } from '../../../properties/@keyEvents/items';
 import { Checkbox } from '@/src/components/ui/checkbox';
 import { Separator } from '@/src/components/ui/separator';
+import { Label } from '@/src/components/ui/label';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -224,8 +225,6 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
 
       const res = (await createGAKeyEvents({ forms: formsToSubmit })) as FeatureResponse;
 
-      console.log('res', res);
-
       if (res.success) {
         res.results.forEach((result) => {
           if (result.success) {
@@ -263,19 +262,18 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
         }
 
         if (res.limitReached) {
-          res.results.forEach((result) => {
-            if (result.limitReached) {
-              toast.error(
-                `Unable to create key event ${result.name}. You have ${result.remaining} more key event(s) you can create.`,
-                {
-                  action: {
-                    label: 'Close',
-                    onClick: () => toast.dismiss(),
-                  },
-                }
-              );
+          console.log('res55', res);
+
+          toast.error(
+            `Unable to create key event(s). You have hit your current limit for this feature.`,
+            {
+              action: {
+                label: 'Close',
+                onClick: () => toast.dismiss(),
+              },
             }
-          });
+          );
+
           dispatch(setIsLimitReached(true));
         }
         if (res.errors) {
@@ -412,7 +410,7 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
                                   render={({ field }) => (
                                     <FormItem>
                                       <FormLabel>New Key Event Name</FormLabel>
-                                      <FormDescription>
+                                      <FormDescription className="h-16">
                                         This is the key event name you want to create.
                                       </FormDescription>
                                       <FormControl>
@@ -436,7 +434,7 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
                                   render={({ field }) => (
                                     <FormItem>
                                       <FormLabel>Counting Method</FormLabel>
-                                      <FormDescription>
+                                      <FormDescription className="h-16">
                                         The method by which Key Events will be counted across
                                         multiple events within a session.
                                       </FormDescription>
@@ -471,11 +469,13 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
                               </div>
                             </div>
 
-                            <div className="flex flex-col md:flex-row md:space-x-4">
+                            <div className="flex flex-col md:flex-row md:space-x-4 items-center">
                               <Switch
+                                id="default-key"
                                 checked={includeDefaultValue}
                                 onCheckedChange={(checked) => setIncludeDefaultValue(checked)}
                               />
+                              <Label htmlFor="default-key">Set default key event value</Label>
                             </div>
 
                             {includeDefaultValue && (
@@ -487,7 +487,7 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
                                     render={({ field }) => (
                                       <FormItem>
                                         <FormLabel>Numeric Value</FormLabel>
-                                        <FormDescription>
+                                        <FormDescription className="h-20">
                                           This will be used to populate the "value" parameter for
                                           all occurrences of this Key Event (specified by eventName)
                                           where that parameter is unset.
@@ -518,7 +518,7 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
                                     render={({ field }) => (
                                       <FormItem>
                                         <FormLabel>Currency Code</FormLabel>
-                                        <FormDescription>
+                                        <FormDescription className="h-20">
                                           When an occurrence of this Key Event (specified by
                                           eventName) has no set currency this currency will be
                                           applied as the default.

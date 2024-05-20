@@ -147,7 +147,7 @@ export async function createGAKeyEvents(formData: KeyEvents) {
     return {
       success: false,
       limitReached: true,
-      message: 'Feature limit reached for creating custom metric',
+      message: 'Feature limit reached for creating key events.',
       results: [],
     };
   }
@@ -336,9 +336,7 @@ export async function createGAKeyEvents(formData: KeyEvents) {
               success: false,
               limitReached: true,
               notFoundError: false,
-              message: `Feature limit reached for custom metrics: ${featureLimitReached.join(
-                ', '
-              )}`,
+              message: `Feature limit reached for key events: ${featureLimitReached.join(', ')}`,
               results: featureLimitReached.map((eventName) => {
                 // Find the name associated with the propertyId
                 const conversionEventName =
