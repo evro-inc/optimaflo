@@ -177,6 +177,13 @@ export async function handleApiResponseError(
       }
       break;
 
+    case 409:
+      return {
+        success: false,
+        errorCode: 409,
+        message: `The ${feature} already exists. Please try again.`,
+      };
+
     case 429:
       return {
         success: false,

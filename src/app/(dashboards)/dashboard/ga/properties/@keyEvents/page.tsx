@@ -25,8 +25,6 @@ export default async function KeyEventsPage({
   const propertyData = await listGAProperties();
   const keyEventsData = await listGAKeyEvents();
 
-  console.log('keyEventsData', keyEventsData);
-
   const [accounts, properties, keyEvents] = await Promise.all([
     accountData,
     propertyData,
@@ -56,12 +54,8 @@ export default async function KeyEventsPage({
       ...keyEvents,
       account,
       accountName,
-      property: property ? property?.displayName : 'Unknown Property Name',
-      propertyId: property ? property?.name : 'Unknown Property Id',
-      /* displayName: keyEvents.displayName,
-      name: keyEvents.name, */
-      /*  membershipDurationDays: keyEvents.membershipDurationDays,
-       adsPersonalizationEnabled: keyEvents.adsPersonalizationEnabled, */
+      propertyName: property ? property?.displayName : 'Unknown Property Name',
+      property: property ? property?.name : 'Unknown Property Id',
     };
   });
 

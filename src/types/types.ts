@@ -683,13 +683,12 @@ interface DefaultValue {
 
 // Key Event type
 export interface KeyEventType {
-  account: string;
-  property: string;
-  name: string;
+  account: [];
+  property?: string;
   eventName: string;
-  createTime: string; // RFC3339 timestamp format
-  deletable: boolean;
-  custom: boolean;
+  custom?: boolean;
   countingMethod: CountingMethod;
   defaultValue?: DefaultValue;
+  deletable?: boolean;
+  name?: string;
 }

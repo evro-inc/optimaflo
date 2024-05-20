@@ -88,7 +88,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
   const handleCreateClick = useCreateHookForm(
     userId,
     'GA4KeyEvents',
-    '/dashboard/ga/wizards/keyEvents/create'
+    '/dashboard/ga/wizards/key-events/create'
   );
 
   const onCreateButtonClick = () => {
@@ -102,7 +102,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
   const handleUpdateClick = useUpdateHookForm(
     userId,
     'GA4KeyEvents',
-    '/dashboard/ga/wizards/keyEvents/update',
+    '/dashboard/ga/wizards/key-events/update',
     rowSelectedCount
   );
 

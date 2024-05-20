@@ -9,24 +9,20 @@ export const CountingMethod = z.enum([
 
 const DefaultValueSchema = z.object({
   numericValue: z.number(),
-  currencyCode: z.string().regex(/^[A-Z]{3}$/, 'Must be a valid ISO 4217 currency code'),
+  currencyCode: z.string(),
 });
 
 const KeyEventSchema = z.object({
-  name: z.string(),
+  account: z.array(z.string()),
+
   eventName: z.string(),
-  deletable: z.boolean(),
-  custom: z.boolean(),
+  custom: z.boolean().optional(),
   countingMethod: CountingMethod,
   defaultValue: DefaultValueSchema.optional(),
-});
-
-export const KeyEventsSchema = z.object({
-  keyEvents: z.array(KeyEventSchema),
+  name: z.string().optional(),
 });
 
 // Export the type inferred from KeyEventsSchema for type safety
-
 export const FormCreateAmountSchema = z.object({
   amount: z.number(),
 });

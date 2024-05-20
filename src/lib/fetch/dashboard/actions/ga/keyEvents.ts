@@ -79,6 +79,7 @@ export async function listGAKeyEvents() {
               }
 
               const responseBody = await response.json();
+
               if (responseBody && responseBody.keyEvents && responseBody.keyEvents.length > 0) {
                 allData.push(responseBody);
               }
@@ -89,6 +90,7 @@ export async function listGAKeyEvents() {
             }
           }
         });
+
         redis.set(cacheKey, JSON.stringify(allData), 'EX', 3600);
 
         return allData;
@@ -111,6 +113,8 @@ export async function listGAKeyEvents() {
   Create a single property or multiple conversionEvents
 ************************************************************************************/
 export async function createGAKeyEvents(formData: KeyEvents) {
+  console.log('formData', formData);
+
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
@@ -182,182 +186,129 @@ export async function createGAKeyEvents(formData: KeyEvents) {
         const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
         if (remaining > 0) {
           await limiter.schedule(async () => {
-            const createPromises = Array.from(toCreateKeyEvents).map(async (identifier) => {
-              if (!identifier) {
-                errors.push(`Custom metric data not found for ${identifier}`);
-                toCreateKeyEvents.delete(identifier);
-                return;
-              }
+            const createPromises = formData.forms.map(async (identifier) => {
+              for (const account of identifier.account) {
+                const url = `https://analyticsadmin.googleapis.com/v1alpha/${account}/keyEvents`;
 
-              const url = `https://analyticsadmin.googleapis.com/v1alpha/${identifier.property}/keyEvents`;
-
-              const headers = {
-                Authorization: `Bearer ${token[0].token}`,
-                'Content-Type': 'application/json',
-                'Accept-Encoding': 'gzip',
-              };
-
-              try {
-                const formDataToValidate = { forms: [identifier] };
-
-                const validationResult = FormsSchema.safeParse(formDataToValidate);
-
-                if (!validationResult.success) {
-                  let errorMessage = validationResult.error.issues
-                    .map((issue) => `${issue.path[0]}: ${issue.message}`)
-                    .join('. ');
-                  errors.push(errorMessage);
+                if (!identifier) {
+                  errors.push(`Custom metric data not found for ${identifier}`);
                   toCreateKeyEvents.delete(identifier);
-                  return {
-                    identifier,
-                    success: false,
-                    error: errorMessage,
+                  return;
+                }
+
+                const headers = {
+                  Authorization: `Bearer ${token[0].token}`,
+                  'Content-Type': 'application/json',
+                  'Accept-Encoding': 'gzip',
+                };
+
+                try {
+                  const formDataToValidate = { forms: [identifier] };
+
+                  const validationResult = FormsSchema.safeParse(formDataToValidate);
+
+                  if (!validationResult.success) {
+                    let errorMessage = validationResult.error.issues
+                      .map((issue) => `${issue.path[0]}: ${issue.message}`)
+                      .join('. ');
+                    errors.push(errorMessage);
+                    toCreateKeyEvents.delete(identifier);
+                    return {
+                      identifier,
+                      success: false,
+                      error: errorMessage,
+                    };
+                  }
+
+                  // Accessing the validated property data
+                  const validatedData = validationResult.data.forms[0];
+
+                  console.log('validatedData', validatedData);
+
+                  let requestBody: any = {
+                    eventName: validatedData.eventName,
+                    custom: validatedData.custom,
+                    countingMethod: validatedData.countingMethod,
                   };
-                }
 
-                // Accessing the validated property data
-                const validatedData = validationResult.data.forms[0];
-
-                // Function to dynamically build filter expressions
-                const buildFilterExpression = (filterExpression: any): any => {
-                  let result: any = {};
-
-                  // Handle different types of filter expressions
-                  if (filterExpression.andGroup) {
-                    result.andGroup = {
-                      filterExpressions:
-                        filterExpression.andGroup.filterExpressions.map(buildFilterExpression),
-                    };
-                  } else if (filterExpression.orGroup) {
-                    result.orGroup = {
-                      filterExpressions:
-                        filterExpression.orGroup.filterExpressions.map(buildFilterExpression),
-                    };
-                  } else if (filterExpression.notExpression) {
-                    result.notExpression = buildFilterExpression(filterExpression.notExpression);
-                  } else if (filterExpression.dimensionOrMetricFilter) {
-                    result.dimensionOrMetricFilter = {
-                      ...filterExpression.dimensionOrMetricFilter,
-                    };
-                  } else if (filterExpression.eventFilter) {
-                    result.eventFilter = { ...filterExpression.eventFilter };
+                  if (validatedData.defaultValue) {
+                    requestBody.defaultValue = validatedData.defaultValue;
                   }
 
-                  return result;
-                };
+                  console.log('requestBody', requestBody);
 
-                // Function to dynamically construct filter clauses from formData
-                const buildFilterClauses = (filterClauses: any[]): any[] => {
-                  return filterClauses.map((clause) => {
-                    let result: any = { clauseType: clause.clauseType };
-
-                    if (clause.simpleFilter) {
-                      result.simpleFilter = {
-                        scope: clause.simpleFilter.scope,
-                        filterExpression: buildFilterExpression(
-                          clause.simpleFilter.filterExpression
-                        ),
-                      };
-                    }
-
-                    if (clause.sequenceFilter) {
-                      result.sequenceFilter = {
-                        scope: clause.sequenceFilter.scope,
-                        sequenceSteps: clause.sequenceFilter.sequenceSteps.map((step) => ({
-                          scope: step.scope,
-                          immediatelyFollows: step.immediatelyFollows,
-                          filterExpression: buildFilterExpression(step.filterExpression),
-                        })),
-                      };
-                    }
-
-                    return result;
+                  // Now, requestBody is prepared with the right structure based on the type
+                  const response = await fetch(url, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(requestBody),
                   });
-                };
 
-                let requestBody = {
-                  displayName: validatedData.displayName,
-                  description: validatedData.description,
-                  membershipDurationDays: validatedData.membershipDurationDays,
-                  adsPersonalizationEnabled: validatedData.adsPersonalizationEnabled,
-                  eventTrigger: validatedData.eventTrigger
-                    ? {
-                      eventName: validatedData.eventTrigger.eventName,
-                      logCondition: validatedData.eventTrigger.logCondition,
-                    }
-                    : undefined, // Include eventTrigger only if present
-                  exclusionDurationMode: validatedData.exclusionDurationMode,
-                  filterClauses: buildFilterClauses(validatedData.filterClauses),
-                };
+                  console.log('response', response);
 
-                // Now, requestBody is prepared with the right structure based on the type
-                const response = await fetch(url, {
-                  method: 'POST',
-                  headers: headers,
-                  body: JSON.stringify(requestBody),
-                });
+                  const parsedResponse = await response.json();
+                  console.log('parsedResponse', parsedResponse);
 
-                const parsedResponse = await response.json();
+                  if (response.ok) {
+                    successfulCreations.push(validatedData.eventName);
+                    toCreateKeyEvents.delete(identifier);
+                    fetchGASettings(userId);
 
-                if (response.ok) {
-                  successfulCreations.push(validatedContainerData.eventName);
-                  toCreateKeyEvents.delete(identifier);
-                  fetchGASettings(userId);
-
-                  await prisma.tierLimit.update({
-                    where: { id: tierLimitResponse.id },
-                    data: { createUsage: { increment: 1 } },
-                  });
-                  creationResults.push({
-                    conversionEventName: validatedContainerData.eventName,
-                    success: true,
-                    message: `Successfully created property ${validatedContainerData.eventName}`,
-                  });
-                } else {
-                  const errorResult = await handleApiResponseError(
-                    response,
-                    parsedResponse,
-                    'conversionEvent',
-                    [validatedContainerData.eventName]
-                  );
-
-                  if (errorResult) {
-                    errors.push(`${errorResult.message}`);
-                    if (
-                      errorResult.errorCode === 403 &&
-                      parsedResponse.message === 'Feature limit reached'
-                    ) {
-                      featureLimitReached.push(validatedContainerData.eventName);
-                    } else if (errorResult.errorCode === 404) {
-                      notFoundLimit.push({
-                        id: identifier.property,
-                        name: validatedContainerData.eventName,
-                      });
-                    }
+                    await prisma.tierLimit.update({
+                      where: { id: tierLimitResponse.id },
+                      data: { createUsage: { increment: 1 } },
+                    });
+                    creationResults.push({
+                      conversionEventName: validatedData.eventName,
+                      success: true,
+                      message: `Successfully created property ${validatedData.eventName}`,
+                    });
                   } else {
-                    errors.push(
-                      `An unknown error occurred for property ${validatedContainerData.eventName}.`
+                    const errorResult = await handleApiResponseError(
+                      response,
+                      parsedResponse,
+                      `GA4 Key Event: ${validatedData.eventName}`,
+                      [validatedData.eventName]
                     );
-                  }
 
+                    if (errorResult) {
+                      errors.push(`${errorResult.message}`);
+                      if (
+                        errorResult.errorCode === 403 &&
+                        parsedResponse.message === 'Feature limit reached'
+                      ) {
+                        featureLimitReached.push(validatedData.eventName);
+                      } else if (errorResult.errorCode === 404) {
+                        notFoundLimit.push({
+                          id: account,
+                          name: validatedData.eventName,
+                        });
+                      }
+                    } else {
+                      errors.push(
+                        `An unknown error occurred for property ${validatedData.eventName}.`
+                      );
+                    }
+
+                    toCreateKeyEvents.delete(identifier);
+                    permissionDenied = errorResult ? true : permissionDenied;
+                    creationResults.push({
+                      conversionEventName: validatedData.eventName,
+                      success: false,
+                      message: errorResult?.message,
+                    });
+                  }
+                } catch (error: any) {
+                  errors.push(
+                    `Exception creating property ${identifier.eventName}: ${error.message}`
+                  );
                   toCreateKeyEvents.delete(identifier);
-                  permissionDenied = errorResult ? true : permissionDenied;
                   creationResults.push({
-                    conversionEventName: validatedContainerData.eventName,
+                    conversionEventName: identifier.eventName,
                     success: false,
-                    message: errorResult?.message,
+                    message: error.message,
                   });
                 }
-              } catch (error: any) {
-                errors.push(
-                  `Exception creating property ${identifier.eventName}: ${error.message}`
-                );
-                toCreateKeyEvents.delete(identifier);
-                creationResults.push({
-                  conversionEventName: identifier.eventName,
-                  success: false,
-                  message: error.message,
-                });
               }
             });
 
@@ -459,14 +410,11 @@ export async function createGAKeyEvents(formData: KeyEvents) {
 
   // Map over formData.forms to create the results array
   const results: FeatureResult[] = formData.forms.map((form) => {
-    // Ensure that form.propertyId is defined before adding it to the array
-    const conversionEventId = form.eventName ? [form.eventName] : []; // Provide an empty array as a fallback
     return {
-      id: conversionEventId, // Ensure id is an array of strings
-      name: [form.eventName], // Wrap the string in an array
-      success: true, // or false, depending on the actual result
-      // Include `notFound` if applicable
-      notFound: false, // Set this to the appropriate value based on your logic
+      id: form.account.map((account) => account), // Map over account array
+      name: [form.eventName],
+      success: true,
+      notFound: false,
     };
   });
 
@@ -629,7 +577,7 @@ export async function updateGAKeyEvents(formData: KeyEvents) {
                   const errorResult = await handleApiResponseError(
                     response,
                     parsedResponse,
-                    'conversionEvents',
+                    'GA4 Key Event',
                     [validatedContainerData.eventName]
                   );
 
@@ -861,6 +809,8 @@ export async function deleteGAKeyEvents(
           await limiter.schedule(async () => {
             // Creating promises for each property deletion
             const deletePromises = Array.from(toDeleteKeyEvents).map(async (identifier) => {
+              console.log('identifier', identifier);
+
               const url = `https://analyticsadmin.googleapis.com/v1alpha/${identifier.name}`;
 
               const headers = {
@@ -877,13 +827,15 @@ export async function deleteGAKeyEvents(
 
                 const parsedResponse = await response.json();
                 // log json response
-                const cleanedParentId = identifier.name.split('/')[1];
+                const cleanedParentId = identifier?.name?.split('/')[1];
 
                 if (response.ok) {
-                  IdsProcessed.add(identifier.name);
-                  successfulDeletions.push({
-                    name: identifier.name,
-                  });
+                  if (identifier.name) {
+                    IdsProcessed.add(identifier.name);
+                    successfulDeletions.push({
+                      name: identifier.name,
+                    });
+                  }
 
                   toDeleteKeyEvents.delete(identifier);
 
@@ -909,7 +861,7 @@ export async function deleteGAKeyEvents(
                   const errorResult = await handleApiResponseError(
                     response,
                     parsedResponse,
-                    'GA4KeyEvents',
+                    'GA4 Key Event',
                     keyEventNames
                   );
 
@@ -919,13 +871,19 @@ export async function deleteGAKeyEvents(
                       errorResult.errorCode === 403 &&
                       parsedResponse.message === 'Feature limit reached'
                     ) {
-                      featureLimitReached.push({
-                        name: identifier.name,
-                      });
+                      if (typeof identifier.name === 'string') {
+                        // Ensure identifier.name is a string
+                        featureLimitReached.push({
+                          name: identifier.name,
+                        });
+                      }
                     } else if (errorResult.errorCode === 404) {
-                      notFoundLimit.push({
-                        name: identifier.name,
-                      });
+                      if (typeof identifier.name === 'string') {
+                        // Ensure identifier.name is a string
+                        notFoundLimit.push({
+                          name: identifier.name,
+                        });
+                      }
                     } else {
                       errors.push(`An unknown error occurred for property ${keyEventNames}.`);
                     }
@@ -938,7 +896,9 @@ export async function deleteGAKeyEvents(
                 // Handling exceptions during fetch
                 errors.push(`Error deleting property ${identifier.name}: ${error.message}`);
               }
-              IdsProcessed.add(identifier.name);
+              if (identifier.name) {
+                IdsProcessed.add(identifier.name);
+              }
               toDeleteKeyEvents.delete(identifier);
               return { name: identifier.name, success: false };
             });

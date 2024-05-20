@@ -22,23 +22,42 @@ export const useDeleteHook = (selectedRows, table) => {
       },
     });
 
-    // Use Object.values to get the values from the selectedRows object and cast them to GA4AccountType
-    const ga4CustomDimensionToDelete = Object.values(
-      selectedRows as Record<string, KeyEventType>
-    ).map((prop) => {
-      return prop;
-    });
-
-    console.log('ga4CustomDimensionToDelete', ga4CustomDimensionToDelete);
-
-    const customKeyEventNames = ga4CustomDimensionToDelete.map((ke) => ke.eventName);
-
-    const response: FeatureResponse = await deleteGAKeyEvents(
-      new Set(ga4CustomDimensionToDelete),
-      customKeyEventNames
+    // Filter for deletable key events
+    const deletableKeyEvents = Object.values(selectedRows as Record<string, KeyEventType>).filter(
+      (keyEvent) => keyEvent.deletable
     );
 
-    console.log('response', response);
+    const nonDeletableKeyEvents = Object.values(
+      selectedRows as Record<string, KeyEventType>
+    ).filter((keyEvent) => !keyEvent.deletable);
+
+    // Show toast for non-deletable key events
+    if (nonDeletableKeyEvents.length > 0) {
+      const nonDeletableEventNames = nonDeletableKeyEvents.map((ke) => ke.eventName).join(', ');
+      toast.error(`These key events cannot be deleted: ${nonDeletableEventNames}`, {
+        action: {
+          label: 'Close',
+          onClick: () => toast.dismiss(),
+        },
+      });
+    }
+
+    if (deletableKeyEvents.length === 0) {
+      toast.error('No deletable key events selected.', {
+        action: {
+          label: 'Close',
+          onClick: () => toast.dismiss(),
+        },
+      });
+      return;
+    }
+
+    const customKeyEventNames = deletableKeyEvents.map((ke) => ke.eventName);
+
+    const response: FeatureResponse = await deleteGAKeyEvents(
+      new Set(deletableKeyEvents),
+      customKeyEventNames
+    );
 
     if (!response.success) {
       let message = response.message || 'An error occurred.';
@@ -48,8 +67,6 @@ export const useDeleteHook = (selectedRows, table) => {
       if (response.notFoundError) {
         dispatch(setNotFoundError(true));
       }
-      // console.log('response', response);
-      console.log('response.message', message);
 
       toast.error(message, {
         action: {
