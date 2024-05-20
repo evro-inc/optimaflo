@@ -122,7 +122,7 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
     countingMethod: CountingMethod.ONCE_PER_EVENT,
     defaultValue: {
       numericValue: 0,
-      currencyCode: Currencies.USD,
+      currencyCode: 'USD',
     },
   };
 
@@ -196,11 +196,10 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
 
     const uniqueKeyEvents = new Set(forms.map((form) => form.name));
     for (const form of forms) {
-      console.log('form', form);
+      const identifier = `${form.account}-${form.eventName}`;
 
-      const identifier = `${form.account}-${form.name}`;
       if (uniqueKeyEvents.has(identifier)) {
-        toast.error(`Duplicate key event found for ${form.account} - ${form.name}`, {
+        toast.error(`Duplicate key event found for ${form.account} - ${form.eventName}`, {
           action: {
             label: 'Close',
             onClick: () => toast.dismiss(),
@@ -218,7 +217,6 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
         if (includeDefaultValue) {
           return { ...rest, defaultValue };
         }
-        console.log('rest', rest);
 
         return rest;
       });
@@ -262,8 +260,6 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
         }
 
         if (res.limitReached) {
-          console.log('res55', res);
-
           toast.error(
             `Unable to create key event(s). You have hit your current limit for this feature.`,
             {
@@ -394,12 +390,6 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
                       className="space-y-6"
                     >
                       {(() => {
-                        const currentIndex = currentStep - 2; // Adjust for zero-based index
-                        const selectedAccountId = form.watch(`forms.${currentIndex}.account`);
-                        const filteredProperties = properties.filter(
-                          (property) => property.parent === selectedAccountId
-                        );
-
                         return (
                           <>
                             <div className="flex flex-col md:flex-row md:space-x-4">
