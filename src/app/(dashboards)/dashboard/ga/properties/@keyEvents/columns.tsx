@@ -44,7 +44,7 @@ export const columns: ColumnDef<KeyEventType>[] = [
     },
   },
   {
-    accessorKey: 'property',
+    accessorKey: 'propertyName',
     header: ({ column }) => {
       return (
         <Button

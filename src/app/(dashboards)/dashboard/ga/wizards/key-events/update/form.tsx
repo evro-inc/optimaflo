@@ -6,7 +6,7 @@ import { setLoading, incrementStep, decrementStep } from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { FormsSchema } from '@/src/lib/schemas/ga/dimensions';
+import { FormsSchema } from '@/src/lib/schemas/ga/keyEvents';
 import { Button } from '@/src/components/ui/button';
 import {
   Form,
@@ -19,9 +19,9 @@ import {
 } from '@/src/components/ui/form';
 
 import { Input } from '@/src/components/ui/input';
-import { FeatureResponse, CustomDimensionType, DimensionScope } from '@/src/types/types';
+import { FeatureResponse, KeyEventType } from '@/src/types/types';
 import { toast } from 'sonner';
-import { updateGACustomDimensions } from '@/src/lib/fetch/dashboard/actions/ga/dimensions';
+import { updateGAKeyEvents } from '@/src/lib/fetch/dashboard/actions/ga/keyEvents';
 import {
   selectTable,
   setErrorDetails,
@@ -40,8 +40,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/src/components/ui/select';
-import { DimensionScopeType } from '../../../properties/@dimensions/dimensionItems';
 import { Switch } from '@/src/components/ui/switch';
+import { Label } from '@/src/components/ui/label';
+import { CountMethodData, Currencies } from '../../../properties/@keyEvents/items';
+import { Checkbox } from '@/src/components/ui/checkbox';
+import { Separator } from '@/src/components/ui/separator';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -59,7 +62,7 @@ const ErrorModal = dynamic(
 
 type Forms = z.infer<typeof FormsSchema>;
 
-const FormUpdateCustomDimension = () => {
+const FormUpdateKeyEvents = () => {
   const dispatch = useDispatch();
   const loading = useSelector((state: RootState) => state.form.loading);
   const error = useSelector((state: RootState) => state.form.error);
@@ -71,15 +74,25 @@ const FormUpdateCustomDimension = () => {
   const currentFormIndex = currentStep - 1; // Adjust for 0-based index
   const currentFormData = selectedRowData[currentFormIndex]; // Get data for the current step
 
-  const formDataDefaults: CustomDimensionType[] = Object.values(selectedRowData).map((rowData) => ({
-    name: rowData.name,
-    parameterName: rowData.parameterName,
-    displayName: rowData.displayName,
-    description: rowData.description,
-    scope: rowData.scope as DimensionScope,
-    disallowAdsPersonalization: rowData.disallowAdsPersonalization,
-    account: rowData.account,
-    property: rowData.property,
+  console.log("selectedRowData", selectedRowData);
+
+  if (Object.keys(selectedRowData).length === 0) {
+    router.push('/dashboard/ga/properties');
+  }
+
+  console.log("selectedRowData", selectedRowData);
+
+
+
+  const formDataDefaults: KeyEventType[] = Object.values(selectedRowData).map((rowData) => ({
+    accountProperty: rowData.name,
+    eventName: rowData.eventName,
+    countingMethod: rowData.countingMethod,
+    defaultValue: {
+      numericValue: rowData.defaultValue.numericValue,
+      currencyCode: rowData.defaultValue.currencyCode,
+    },
+    includeDefaultValue: rowData.defaultValue?.numericValue !== undefined || rowData.defaultValue?.currencyCode !== undefined,
   }));
 
   if (notFoundError) {
@@ -100,16 +113,14 @@ const FormUpdateCustomDimension = () => {
     name: 'forms',
   });
 
+  const includeDefaultValue = form.watch('forms');
+
   const handleNext = async () => {
     // Determine the names of the fields in the current form to validate
     const currentFormFields = [
-      `forms.${currentFormIndex}.displayName`,
-      `forms.${currentFormIndex}.parameterName`,
-      `forms.${currentFormIndex}.scope`,
-      `forms.${currentFormIndex}.disallowAdsPersonalization`,
-      `forms.${currentFormIndex}.description`,
-      `forms.${currentFormIndex}.account`,
-      `forms.${currentFormIndex}.property`,
+      `forms.${currentFormIndex}.countingMethod`,
+      `forms.${currentFormIndex}.defaultValue.numericValue`,
+      `forms.${currentFormIndex}.defaultValue.currencyCode`,
     ];
 
     // Trigger validation for only the current form's fields
@@ -127,7 +138,7 @@ const FormUpdateCustomDimension = () => {
     }
   };
 
-  const handlePrevious = () => {
+  const handlePrevious = (index) => {
     dispatch(decrementStep());
   };
 
@@ -136,18 +147,22 @@ const FormUpdateCustomDimension = () => {
 
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
-    toast('Updating custom Dimension...', {
+    toast('Updating key event...', {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
       },
     });
 
-    const uniqueCustomDimensions = new Set(forms.map((form) => form.property));
+    const uniqueKeyEvents = new Set(forms.map((form) => form.name));
     for (const form of forms) {
-      const identifier = `${form.property}-${form.displayName}`;
-      if (uniqueCustomDimensions.has(identifier)) {
-        toast.error(`Duplicate custom dimension found for ${form.property} - ${form.displayName}`, {
+      console.log("form", form);
+
+
+      const identifier = `${form.accountProperty}-${form.eventName}`;
+
+      if (uniqueKeyEvents.has(identifier)) {
+        toast.error(`Duplicate key event found for ${form.accountProperty} - ${form.eventName}`, {
           action: {
             label: 'Close',
             onClick: () => toast.dismiss(),
@@ -156,17 +171,17 @@ const FormUpdateCustomDimension = () => {
         dispatch(setLoading(false));
         return;
       }
-      uniqueCustomDimensions.add(identifier);
+      uniqueKeyEvents.add(identifier);
     }
 
     try {
-      const res = (await updateGACustomDimensions({ forms })) as FeatureResponse;
+      const res = (await updateGAKeyEvents({ forms })) as FeatureResponse;
 
       if (res.success) {
         res.results.forEach((result) => {
           if (result.success) {
             toast.success(
-              `Custom dimension ${result.name} created successfully. The table will update shortly.`,
+              `Key Event ${result.name} created successfully. The table will update shortly.`,
               {
                 action: {
                   label: 'Close',
@@ -183,7 +198,7 @@ const FormUpdateCustomDimension = () => {
           res.results.forEach((result) => {
             if (result.notFound) {
               toast.error(
-                `Unable to create custom dimension ${result.name}. Please check your access permissions. Any other custom dimensions created were successful.`,
+                `Unable to create key event ${result.name}. Please check your access permissions. Any other key events created were successful.`,
                 {
                   action: {
                     label: 'Close',
@@ -199,36 +214,30 @@ const FormUpdateCustomDimension = () => {
         }
 
         if (res.limitReached) {
-          res.results.forEach((result) => {
-            if (result.limitReached) {
-              toast.error(
-                `Unable to create custom dimension ${result.name}. You have ${result.remaining} more custom dimension(s) you can create.`,
-                {
-                  action: {
-                    label: 'Close',
-                    onClick: () => toast.dismiss(),
-                  },
-                }
-              );
+          toast.error(
+            `Unable to create key event(s). You have hit your current limit for this feature.`,
+            {
+              action: {
+                label: 'Close',
+                onClick: () => toast.dismiss(),
+              },
             }
-          });
+          );
+
           dispatch(setIsLimitReached(true));
         }
-
         if (res.errors) {
           res.errors.forEach((error) => {
-            toast.error(`Unable to create custom dimension. ${error}`, {
+            toast.error(`Unable to create key event. ${error}`, {
               action: {
                 label: 'Close',
                 onClick: () => toast.dismiss(),
               },
             });
           });
-          router.push('/dashboard/ga/properties');
         }
-
         form.reset({
-          forms: formDataDefaults,
+          forms: [formDataDefaults],
         });
       }
 
@@ -253,45 +262,43 @@ const FormUpdateCustomDimension = () => {
     <div className="flex items-center justify-center h-screen">
       {/* Conditional rendering based on the currentStep */}
 
-      {currentStep && (
+      {fields.map((field, index) => currentStep === index + 1 && (
         <div className="w-full">
           {/* Render only the form corresponding to the current step - 1 
               (since step 1 is for selecting the number of forms) */}
           {fields.length > 0 && fields.length >= currentStep && (
             <div
-              key={fields[currentStep - 1].id}
+              key={field.id}
               className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
             >
               <div className="max-w-xl mx-auto">
-                <h1>{fields[currentFormIndex]?.displayName}</h1>
+                <h1>{fields[currentFormIndex]?.eventName}</h1>
                 <div className="mt-12">
                   {/* Form */}
                   <Form {...form}>
                     <form
                       onSubmit={form.handleSubmit(processForm)}
-                      id={`updateCustomDimension-${currentFormIndex}`}
+                      id={`createStream-${index}`}
                       className="space-y-6"
                     >
-                      {fields.length > 0 &&
-                        fields.map((field, index) => {
-                          if (index === currentStep - 1) {
-                            return (
-                              <>
-                                <FormField
+                      {(() => {
+                        return (
+                          <>
+                            <div className="flex flex-col md:flex-row md:space-x-4">
+                              <div className="w-full md:basis-1/2">
+                                {/*  <FormField
                                   control={form.control}
-                                  name={`forms.${currentFormIndex}.displayName`}
+                                  name={`forms.${index}.eventName`}
                                   render={({ field }) => (
                                     <FormItem>
-                                      <FormLabel>New Custom Dimension Name</FormLabel>
-                                      <FormDescription>
-                                        This is the custom dimension name you want to create.
+                                      <FormLabel>New Key Event Name</FormLabel>
+                                      <FormDescription className="h-16">
+                                        This is the key event name you want to create.
                                       </FormDescription>
                                       <FormControl>
                                         <Input
                                           placeholder="Name of the custom dismenion"
-                                          {...form.register(
-                                            `forms.${currentFormIndex}.displayName`
-                                          )}
+                                          {...form.register(`forms.${index}.eventName`)}
                                           {...field}
                                         />
                                       </FormControl>
@@ -299,73 +306,156 @@ const FormUpdateCustomDimension = () => {
                                       <FormMessage />
                                     </FormItem>
                                   )}
-                                />
+                                /> */}
+                                <p>{form.getValues(`forms.${index}.eventName`)}</p>
 
+                              </div>
+
+                              <div className="w-full md:basis-1/2">
                                 <FormField
                                   control={form.control}
-                                  name={`forms.${currentFormIndex}.description`}
+                                  name={`forms.${index}.countingMethod`}
                                   render={({ field }) => (
                                     <FormItem>
-                                      <FormLabel>Description Name</FormLabel>
-                                      <FormDescription>
-                                        Max length of 150 characters.
+                                      <FormLabel>Counting Method</FormLabel>
+                                      <FormDescription className="h-16">
+                                        The method by which Key Events will be counted across
+                                        multiple events within a session.
                                       </FormDescription>
                                       <FormControl>
-                                        <Input
-                                          placeholder="Name of the parameter name"
-                                          {...form.register(
-                                            `forms.${currentFormIndex}.description`
-                                          )}
+                                        <Select
+                                          {...form.register(`forms.${index}.countingMethod`)}
                                           {...field}
-                                        />
+                                          onValueChange={field.onChange}
+                                        >
+                                          <SelectTrigger>
+                                            <SelectValue placeholder="Select a key event type." />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectGroup>
+                                              {Object.entries(CountMethodData).map(
+                                                ([label, value]) => (
+                                                  <SelectItem key={value} value={value}>
+                                                    {label}
+                                                  </SelectItem>
+                                                )
+                                              )}
+                                            </SelectGroup>
+                                          </SelectContent>
+                                        </Select>
                                       </FormControl>
-
                                       <FormMessage />
                                     </FormItem>
                                   )}
                                 />
+                              </div>
+                            </div>
 
-                                {currentFormData?.scope === 'USER' && (
-                                  <div className="flex flex-row">
-                                    <div className="basis-auto">
-                                      <FormField
-                                        control={form.control}
-                                        name={`forms.${currentFormIndex}.disallowAdsPersonalization`}
-                                        render={({ field }) => (
-                                          <FormItem>
-                                            <div className="space-y-0.5">
-                                              <FormLabel>Disallow Ads Personalization</FormLabel>
-                                              <FormDescription>
-                                                If set to true, sets this dimension as NPA and
-                                                excludes it from ads personalization. This is
-                                                currently only supported by user-scoped custom
-                                                dimensions.
-                                              </FormDescription>
-                                            </div>
-                                            <FormControl>
-                                              <Switch
-                                                checked={field.value}
-                                                onCheckedChange={field.onChange}
-                                              />
-                                            </FormControl>
-                                          </FormItem>
-                                        )}
-                                      />
-                                    </div>
-                                  </div>
-                                )}
-                              </>
-                            );
-                          }
-                          return null;
-                        })}
+                            <div className="flex items-center">
+                              <Switch
+                                id={`default-key-${index}`}
+                                checked={
+                                  includeDefaultValue[index]?.includeDefaultValue || false
+                                }
+                                onCheckedChange={(checked) =>
+                                  form.setValue(`forms.${index}.includeDefaultValue`, checked)
+                                }
+                              />
+                              <Label htmlFor={`default-key-${index}`} className="ml-2">
+                                Set default key event value
+                              </Label>
+                            </div>
 
+                            {includeDefaultValue[index]?.includeDefaultValue && (
+                              <div className="flex flex-col md:flex-row md:space-x-4">
+                                <div className="w-full md:basis-1/2">
+                                  <FormField
+                                    control={form.control}
+                                    name={`forms.${index}.defaultValue.numericValue`}
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Numeric Value</FormLabel>
+                                        <FormDescription className="h-20">
+                                          This will be used to populate the "value" parameter
+                                          for all occurrences of this Key Event (specified by
+                                          eventName) where that parameter is unset.
+                                        </FormDescription>
+                                        <FormControl>
+                                          <Input
+                                            placeholder="Numeric value"
+                                            {...form.register(
+                                              `forms.${index}.defaultValue.numericValue`
+                                            )}
+                                            {...field}
+                                            type="number"
+                                            min={0}
+                                            onChange={(e) =>
+                                              field.onChange(Number(e.target.value))
+                                            }
+                                          />
+                                        </FormControl>
+
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                </div>
+                                <div className="w-full md:basis-1/2">
+                                  <FormField
+                                    control={form.control}
+                                    name={`forms.${index}.defaultValue.currencyCode`}
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Currency Code</FormLabel>
+                                        <FormDescription className="h-20">
+                                          When an occurrence of this Key Event (specified by
+                                          eventName) has no set currency this currency will be
+                                          applied as the default.
+                                        </FormDescription>
+                                        <FormControl>
+                                          <Select
+                                            {...form.register(
+                                              `forms.${index}.defaultValue.currencyCode`
+                                            )}
+                                            {...field}
+                                            onValueChange={field.onChange}
+                                          >
+                                            <SelectTrigger>
+                                              <SelectValue placeholder="Select a currency." />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              <SelectGroup>
+                                                {Object.entries(Currencies).map(
+                                                  ([code, name]) => (
+                                                    <SelectItem key={code} value={code}>
+                                                      {name} ({code})
+                                                    </SelectItem>
+                                                  )
+                                                )}
+                                              </SelectGroup>
+                                            </SelectContent>
+                                          </Select>
+                                        </FormControl>
+
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
                       <div className="flex justify-between">
-                        <Button type="button" onClick={handlePrevious} disabled={currentStep === 1}>
-                          Previous
-                        </Button>
+                        {index >= 1 && (
+                          <Button type="button" onClick={handlePrevious}>
+                            Previous
+                          </Button>
+                        )}
 
-                        {currentStep < fields.length ? (
+
+                        {currentStep - 1 < fields.length ? (
                           <Button type="button" onClick={handleNext}>
                             Next
                           </Button>
@@ -382,9 +472,11 @@ const FormUpdateCustomDimension = () => {
             </div>
           )}
         </div>
-      )}
+      )
+      )
+      }
     </div>
   );
 };
 
-export default FormUpdateCustomDimension;
+export default FormUpdateKeyEvents;

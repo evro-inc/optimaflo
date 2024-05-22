@@ -174,6 +174,12 @@ export async function handleApiResponseError(
           errorCode: 403,
           message: 'Feature limit reached',
         };
+      } else {
+        return {
+          success: false,
+          errorCode: response.status,
+          message: parsedResponse.error.message
+        }
       }
       break;
 

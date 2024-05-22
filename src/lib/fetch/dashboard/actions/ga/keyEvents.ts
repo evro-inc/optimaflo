@@ -187,7 +187,7 @@ export async function createGAKeyEvents(formData: KeyEvents) {
         if (remaining > 0) {
           await limiter.schedule(async () => {
             const createPromises = formData.forms.map(async (identifier) => {
-              for (const account of identifier.account) {
+              for (const account of identifier.accountProperty) {
                 const url = `https://analyticsadmin.googleapis.com/v1alpha/${account}/keyEvents`;
 
                 if (!identifier) {
@@ -409,7 +409,7 @@ export async function createGAKeyEvents(formData: KeyEvents) {
   // Map over formData.forms to create the results array
   const results: FeatureResult[] = formData.forms.map((form) => {
     return {
-      id: form.account.map((account) => account), // Map over account array
+      id: form.accountProperty.map((account) => account), // Map over account array
       name: [form.eventName],
       success: true,
       notFound: false,
@@ -432,6 +432,7 @@ export async function createGAKeyEvents(formData: KeyEvents) {
   Update a single property or multiple custom metrics
 ************************************************************************************/
 export async function updateGAKeyEvents(formData: KeyEvents) {
+
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
@@ -443,6 +444,7 @@ export async function updateGAKeyEvents(formData: KeyEvents) {
   const successfulCreations: string[] = [];
   const featureLimitReached: string[] = [];
   const notFoundLimit: { id: string; name: string }[] = [];
+  const cacheKey = `ga:keyEvents:userId:${userId}`;
 
   // Refactor: Use string identifiers in the set
   const toUpdateKeyEvents = new Set(formData.forms.map((cm) => cm));
@@ -452,7 +454,7 @@ export async function updateGAKeyEvents(formData: KeyEvents) {
   const updateUsage = Number(tierLimitResponse.updateUsage);
   const availableUpdateUsage = limit - updateUsage;
 
-  const creationResults: {
+  const updateResults: {
     conversionEventName: string;
     success: boolean;
     message?: string;
@@ -463,20 +465,20 @@ export async function updateGAKeyEvents(formData: KeyEvents) {
     return {
       success: false,
       limitReached: true,
-      message: 'Feature limit reached for creating Custom Metrics',
+      message: 'Feature limit reached for creating key events.',
       results: [],
     };
   }
 
   if (toUpdateKeyEvents.size > availableUpdateUsage) {
     const attemptedCreations = Array.from(toUpdateKeyEvents).map((identifier) => {
-      const eventName = identifier.eventName;
+      const keyEventNames = identifier.eventName;
       return {
-        id: [], // No property ID since creation did not happen
-        name: eventName, // Include the property name from the identifier
+        id: [], // No property ID since update did not happen
+        name: keyEventNames, // Include the property name from the identifier
         success: false,
-        message: `Creation limit reached. Cannot update custom metric "${eventName}".`,
-        // remaining creation limit
+        message: `Creation limit reached. Cannot update custom metric "${keyEventNames}".`,
+        // remaining update limit
         remaining: availableUpdateUsage,
         limitReached: true,
       };
@@ -484,9 +486,9 @@ export async function updateGAKeyEvents(formData: KeyEvents) {
     return {
       success: false,
       features: [],
-      message: `Cannot update ${toUpdateKeyEvents.size} custom metrics as it exceeds the available limit. You have ${availableUpdateUsage} more creation(s) available.`,
+      message: `Cannot update ${toUpdateKeyEvents.size} audience as it exceeds the available limit. You have ${availableUpdateUsage} more update(s) available.`,
       errors: [
-        `Cannot update ${toUpdateKeyEvents.size} custom metrics as it exceeds the available limit. You have ${availableUpdateUsage} more creation(s) available.`,
+        `Cannot update ${toUpdateKeyEvents.size} keyEvents as it exceeds the available limit. You have ${availableUpdateUsage} more update(s) available.`,
       ],
       results: attemptedCreations,
       limitReached: true,
@@ -502,120 +504,136 @@ export async function updateGAKeyEvents(formData: KeyEvents) {
         const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
         if (remaining > 0) {
           await limiter.schedule(async () => {
-            const updatePromises = Array.from(toUpdateKeyEvents).map(async (identifier) => {
-              if (!identifier) {
-                errors.push(`Custom metrics data not found for ${identifier}`);
-                toUpdateKeyEvents.delete(identifier);
-                return;
-              }
+            const updatePromises = formData.forms.map(async (identifier) => {
+              for (const account of identifier.accountProperty) {
 
-              const updateFields = ['countingMethod', 'defaultConversionValue'];
-
-              const updateMask = updateFields.join(',');
-              const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.name}?updateMask=${updateMask}`;
-
-              const headers = {
-                Authorization: `Bearer ${token[0].token}`,
-                'Content-Type': 'application/json',
-                'Accept-Encoding': 'gzip',
-              };
-
-              try {
-                const formDataToValidate = { forms: [identifier] };
-
-                const validationResult = FormsSchema.safeParse(formDataToValidate);
-
-                if (!validationResult.success) {
-                  let errorMessage = validationResult.error.issues
-                    .map((issue) => `${issue.path[0]}: ${issue.message}`)
-                    .join('. ');
-                  errors.push(errorMessage);
-                  toUpdateKeyEvents.delete(identifier);
-                  return {
-                    identifier,
-                    success: false,
-                    error: errorMessage,
-                  };
+                (identifier) => {
+                  if (!identifier) {
+                    errors.push(`Key event data not found for ${identifier}`);
+                    toUpdateKeyEvents.delete(identifier);
+                    return;
+                  }
                 }
+                const updateFields = ['countingMethod', 'defaultConversionValue'];
 
-                // Accessing the validated property data
-                const validatedContainerData = validationResult.data.forms[0];
+                const updateMask = updateFields.join(',');
 
-                let requestBody: any = {
-                  countingMethod: validatedContainerData.countingMethod,
-                  defaultConversionValue: {
-                    value: validatedContainerData.defaultConversionValue?.value,
-                    currencyCode: validatedContainerData.defaultConversionValue?.currencyCode,
-                  },
+                const url = `https://analyticsadmin.googleapis.com/v1alpha${identifier.name}?updateMask=${updateMask}`;
+
+
+                const headers = {
+                  Authorization: `Bearer ${token[0].token}`,
+                  'Content-Type': 'application/json',
+                  'Accept-Encoding': 'gzip',
                 };
 
-                // Now, requestBody is prepared with the right structure based on the type
-                const response = await fetch(url, {
-                  method: 'PATCH',
-                  headers: headers,
-                  body: JSON.stringify(requestBody),
-                });
+                try {
+                  const formDataToValidate = { forms: [identifier] };
 
-                const parsedResponse = await response.json();
+                  const validationResult = FormsSchema.safeParse(formDataToValidate);
 
-                if (response.ok) {
-                  successfulCreations.push(validatedContainerData.eventName);
-                  toUpdateKeyEvents.delete(identifier);
-
-                  await prisma.tierLimit.update({
-                    where: { id: tierLimitResponse.id },
-                    data: { updateUsage: { increment: 1 } },
-                  });
-                  creationResults.push({
-                    conversionEventName: validatedContainerData.eventName,
-                    success: true,
-                    message: `Successfully updated property ${validatedContainerData.eventName}`,
-                  });
-                } else {
-                  const errorResult = await handleApiResponseError(
-                    response,
-                    parsedResponse,
-                    'GA4 Key Event',
-                    [validatedContainerData.eventName]
-                  );
-
-                  if (errorResult) {
-                    errors.push(`${errorResult.message}`);
-                    if (
-                      errorResult.errorCode === 403 &&
-                      parsedResponse.message === 'Feature limit reached'
-                    ) {
-                      featureLimitReached.push(validatedContainerData.eventName);
-                    } else if (errorResult.errorCode === 404) {
-                      notFoundLimit.push({
-                        id: identifier.property,
-                        name: validatedContainerData.eventName,
-                      });
-                    }
-                  } else {
-                    errors.push(
-                      `An unknown error occurred for property ${validatedContainerData.eventName}.`
-                    );
+                  if (!validationResult.success) {
+                    let errorMessage = validationResult.error.issues
+                      .map((issue) => `${issue.path[0]}: ${issue.message}`)
+                      .join('. ');
+                    errors.push(errorMessage);
+                    toUpdateKeyEvents.delete(identifier);
+                    return {
+                      identifier,
+                      success: false,
+                      error: errorMessage,
+                    };
                   }
 
+                  // Accessing the validated property data
+                  const validatedData = validationResult.data.forms[0];
+
+                  console.log('validatedData', validatedData);
+
+                  let requestBody: any = {
+                    eventName: validatedData.eventName,
+                    custom: validatedData.custom,
+                    countingMethod: validatedData.countingMethod,
+                  };
+
+                  if (validatedData.defaultValue) {
+                    requestBody.defaultValue = validatedData.defaultValue;
+                  }
+
+                  console.log('requestBody', requestBody);
+
+                  // Now, requestBody is prepared with the right structure based on the type
+                  const response = await fetch(url, {
+                    method: 'PATCH',
+                    headers: headers,
+                    body: JSON.stringify(requestBody),
+                  });
+
+                  console.log('response', response);
+
+                  const parsedResponse = await response.json();
+                  console.log('parsedResponse', parsedResponse);
+
+                  if (response.ok) {
+                    successfulCreations.push(validatedData.eventName);
+                    toUpdateKeyEvents.delete(identifier);
+                    fetchGASettings(userId);
+
+                    await prisma.tierLimit.update({
+                      where: { id: tierLimitResponse.id },
+                      data: { updateUsage: { increment: 1 } },
+                    });
+                    updateResults.push({
+                      conversionEventName: validatedData.eventName,
+                      success: true,
+                      message: `Successfully updated property ${validatedData.eventName}`,
+                    });
+                  } else {
+                    const errorResult = await handleApiResponseError(
+                      response,
+                      parsedResponse,
+                      `GA4 Key Event: ${validatedData.eventName}`,
+                      [validatedData.eventName]
+                    );
+
+                    if (errorResult) {
+                      errors.push(`${errorResult.message}`);
+                      if (
+                        errorResult.errorCode === 403 &&
+                        parsedResponse.message === 'Feature limit reached'
+                      ) {
+                        featureLimitReached.push(validatedData.eventName);
+                      } else if (errorResult.errorCode === 404) {
+                        notFoundLimit.push({
+                          id: account,
+                          name: validatedData.eventName,
+                        });
+                      }
+                    } else {
+                      errors.push(
+                        `An unknown error occurred for property ${validatedData.eventName}.`
+                      );
+                    }
+
+                    toUpdateKeyEvents.delete(identifier);
+                    permissionDenied = errorResult ? true : permissionDenied;
+                    updateResults.push({
+                      conversionEventName: validatedData.eventName,
+                      success: false,
+                      message: errorResult?.message,
+                    });
+                  }
+                } catch (error: any) {
+                  errors.push(
+                    `Exception creating property ${identifier.eventName}: ${error.message}`
+                  );
                   toUpdateKeyEvents.delete(identifier);
-                  permissionDenied = errorResult ? true : permissionDenied;
-                  creationResults.push({
-                    conversionEventName: validatedContainerData.eventName,
+                  updateResults.push({
+                    conversionEventName: identifier.eventName,
                     success: false,
-                    message: errorResult?.message,
+                    message: error.message,
                   });
                 }
-              } catch (error: any) {
-                errors.push(
-                  `Exception creating property ${identifier.eventName}: ${error.message}`
-                );
-                toUpdateKeyEvents.delete(identifier);
-                creationResults.push({
-                  conversionEventName: identifier.eventName,
-                  success: false,
-                  message: error.message,
-                });
               }
             });
 
@@ -643,9 +661,7 @@ export async function updateGAKeyEvents(formData: KeyEvents) {
               success: false,
               limitReached: true,
               notFoundError: false,
-              message: `Feature limit reached for custom metrics: ${featureLimitReached.join(
-                ', '
-              )}`,
+              message: `Feature limit reached for key events: ${featureLimitReached.join(', ')}`,
               results: featureLimitReached.map((eventName) => {
                 // Find the name associated with the propertyId
                 const conversionEventName =
@@ -678,6 +694,12 @@ export async function updateGAKeyEvents(formData: KeyEvents) {
         } else {
           break;
         }
+      } finally {
+        // This block will run regardless of the outcome of the try...catch
+        if (userId) {
+          await redis.del(cacheKey);
+          await revalidatePath(`/dashboard/ga/properties`);
+        }
       }
     }
   }
@@ -705,22 +727,17 @@ export async function updateGAKeyEvents(formData: KeyEvents) {
   }
 
   if (successfulCreations.length > 0) {
-    const cacheKey = `ga:keyEvents:userId:${userId}`;
-
     await redis.del(cacheKey);
     revalidatePath(`/dashboard/ga/properties`);
   }
 
   // Map over formData.forms to update the results array
   const results: FeatureResult[] = formData.forms.map((form) => {
-    // Ensure that form.propertyId is defined before adding it to the array
-    const conversionEventId = form.eventName ? [form.eventName] : []; // Provide an empty array as a fallback
     return {
-      id: conversionEventId, // Ensure id is an array of strings
-      name: [form.eventName], // Wrap the string in an array
-      success: true, // or false, depending on the actual result
-      // Include `notFound` if applicable
-      notFound: false, // Set this to the appropriate value based on your logic
+      id: form.accountProperty.map((account) => account), // Map over account array
+      name: [form.eventName],
+      success: true,
+      notFound: false,
     };
   });
 
@@ -730,12 +747,11 @@ export async function updateGAKeyEvents(formData: KeyEvents) {
     features: [], // Populate with actual property IDs if applicable
     errors: [], // Populate with actual error messages if applicable
     limitReached: false, // Set based on actual limit status
-    message: 'Custom Metric updated successfully', // Customize the message as needed
+    message: 'Custom metrics updated successfully', // Customize the message as needed
     results: results, // Use the correctly typed results
     notFoundError: false, // Set based on actual not found status
   };
 }
-
 /************************************************************************************
   Delete a single property or multiple custom metrics
 ************************************************************************************/
@@ -824,7 +840,9 @@ export async function deleteGAKeyEvents(
                 });
 
                 const parsedResponse = await response.json();
-                // log json response
+                console.log("parsedResponse", parsedResponse);
+
+
                 const cleanedParentId = identifier?.name?.split('/')[1];
 
                 if (response.ok) {
@@ -839,7 +857,7 @@ export async function deleteGAKeyEvents(
 
                   await prisma.ga.deleteMany({
                     where: {
-                      accountId: `${identifier.account.split('/')[1]}`,
+                      accountId: `${identifier?.name?.split('/')[1]}`,
                       propertyId: cleanedParentId,
                       userId: userId, // Ensure this matches the user ID
                     },

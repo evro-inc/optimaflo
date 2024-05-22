@@ -1,5 +1,5 @@
 import React from 'react';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { currentUser } from '@clerk/nextjs';
 import { listGAProperties } from '@/src/lib/fetch/dashboard/actions/ga/properties';
 import { listGaAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
@@ -51,6 +51,18 @@ export default async function CreateKeyEventsPage() {
       propertyId: property ? property?.name : 'Unknown Property Id',
     };
   });
+  const foundTierLimit = tierLimits.find(
+    (subscription) => subscription.Feature?.name === 'GA4KeyEvents'
+  );
+  const createLimit = foundTierLimit?.createLimit || 0;
+  const createUsage = foundTierLimit?.createUsage || 0;
+  const remainingCreate = createLimit - createUsage;
+
+  if (remainingCreate <= 0) {
+    redirect('/dashboard/ga/properties'); // Replace with the actual path you want to redirect to
+  }
+
+
 
   return (
     <>

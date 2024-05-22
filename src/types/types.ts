@@ -683,7 +683,7 @@ interface DefaultValue {
 
 // Key Event type
 export interface KeyEventType {
-  account: [];
+  accountProperty: [];
   property?: string;
   eventName: string;
   custom?: boolean;
@@ -691,4 +691,5 @@ export interface KeyEventType {
   defaultValue?: DefaultValue;
   deletable?: boolean;
   name?: string;
+  includeDefaultValue: boolean;
 }

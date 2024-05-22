@@ -6,7 +6,7 @@ import { setLoading, incrementStep, decrementStep, setCount } from '@/redux/form
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { FormCreateAmountSchema, FormsSchema } from '@/src/lib/schemas/ga/keyEvents';
+import { FormKeyEvents, FormsSchema } from '@/src/lib/schemas/ga/keyEvents';
 import { Button } from '@/src/components/ui/button';
 import {
   Form,
@@ -52,6 +52,7 @@ import { CountMethodData, Currencies } from '../../../properties/@keyEvents/item
 import { Checkbox } from '@/src/components/ui/checkbox';
 import { Separator } from '@/src/components/ui/separator';
 import { Label } from '@/src/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/src/components/ui/radio-group';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -69,7 +70,7 @@ const ErrorModal = dynamic(
 
 type Forms = z.infer<typeof FormsSchema>;
 
-const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
+const FormCreateKeyEvents: React.FC<FormCreateProps> = ({
   tierLimits,
   properties = [],
   table = [],
@@ -82,8 +83,6 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
   const count = useSelector((state: RootState) => state.form.count);
   const notFoundError = useSelector(selectTable).notFoundError;
   const router = useRouter();
-
-  const [includeDefaultValue, setIncludeDefaultValue] = useState(false);
 
   const accountPropertyPairs = properties.map((property) => {
     const account = accounts.find((acc) => acc.name === property.parent);
@@ -98,7 +97,6 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
   const foundTierLimit = tierLimits.find(
     (subscription) => subscription.Feature?.name === 'GA4KeyEvents'
   );
-  const currentFormIndex = currentStep - 2;
 
   const createLimit = foundTierLimit?.createLimit;
   const createUsage = foundTierLimit?.createUsage;
@@ -116,18 +114,15 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
     .filter((account) => account.properties.length > 0);
 
   const formDataDefaults: KeyEventType = {
-    account: accountsWithProperties[0].name,
+    accountProperty: accountsWithProperties[0].name,
     eventName: '',
-    custom: false,
     countingMethod: CountingMethod.ONCE_PER_EVENT,
-    defaultValue: {
-      numericValue: 0,
-      currencyCode: 'USD',
-    },
+    defaultValue: undefined,
+    includeDefaultValue: false,
   };
 
   const formCreateAmount = useForm({
-    resolver: zodResolver(FormCreateAmountSchema),
+    resolver: zodResolver(FormKeyEvents),
     defaultValues: {
       amount: 1,
     },
@@ -157,6 +152,9 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
     control: form.control,
     name: 'forms',
   });
+
+  const includeDefaultValue = form.watch('forms');
+
   const addForm = () => {
     append(formDataDefaults);
   };
@@ -183,9 +181,31 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
     dispatch(setCount(amount));
   };
 
+
+  const handleValueChange = (newValue, index) => {
+    if (newValue === 'false') {
+      form.setValue(`forms.${index}.defaultValue`, undefined);
+      form.setValue(`forms.${index}.includeDefaultValue`, false);
+    } else {
+      form.setValue(`forms.${index}.defaultValue`, {
+        numericValue: 0,
+        currencyCode: 'USD',
+      });
+      form.setValue(`forms.${index}.includeDefaultValue`, true);
+    }
+  };
+
+  const handleNumericValueChange = (value, index) => {
+    form.setValue(`forms.${index}.defaultValue.numericValue`, parseFloat(value));
+  };
+
+
   const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
     dispatch(setLoading(true)); // Set loading to true using Redux action
+
+    console.log("data", forms);
+
 
     toast('Creating key events...', {
       action: {
@@ -196,10 +216,10 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
 
     const uniqueKeyEvents = new Set(forms.map((form) => form.name));
     for (const form of forms) {
-      const identifier = `${form.account}-${form.eventName}`;
+      const identifier = `${form.accountProperty}-${form.eventName}`;
 
       if (uniqueKeyEvents.has(identifier)) {
-        toast.error(`Duplicate key event found for ${form.account} - ${form.eventName}`, {
+        toast.error(`Duplicate key event found for ${form.accountProperty} - ${form.eventName}`, {
           action: {
             label: 'Close',
             onClick: () => toast.dismiss(),
@@ -214,7 +234,7 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
     try {
       const formsToSubmit = forms.map((form) => {
         const { defaultValue, ...rest } = form;
-        if (includeDefaultValue) {
+        if (form.includeDefaultValue) {
           return { ...rest, defaultValue };
         }
 
@@ -305,23 +325,32 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
   };
 
   const handleNext = async () => {
-    const currentFormPath = `forms.${currentFormIndex}`;
-
-    // Start with the common fields that are always present
-    const fieldsToValidate = [
-      `${currentFormPath}.eventName`,
-      `${currentFormPath}.countingMethod`,
-      `${currentFormPath}.defaultValue.numericValue`,
-      `${currentFormPath}.defaultValue.currencyCode`,
-    ];
-
-    // Now, trigger validation for these fields
-    const isFormValid = await form.trigger(fieldsToValidate as any);
-
-    if (isFormValid) {
+    if (currentStep === 1) {
       dispatch(incrementStep());
+    } else {
+      const currentFormIndex = currentStep - 2;
+      const currentFormPath = `forms.${currentFormIndex}`;
+
+      const fieldsToValidate = [
+        `${currentFormPath}.eventName`,
+        `${currentFormPath}.countingMethod`,
+      ];
+
+      if (includeDefaultValue[currentFormIndex]?.includeDefaultValue) {
+        fieldsToValidate.push(
+          `${currentFormPath}.defaultValue.numericValue`,
+          `${currentFormPath}.defaultValue.currencyCode`
+        );
+      }
+
+      const isFormValid = await form.trigger(fieldsToValidate as any);
+
+      if (isFormValid) {
+        dispatch(incrementStep());
+      }
     }
   };
+
 
   const handlePrevious = () => {
     dispatch(decrementStep());
@@ -329,8 +358,7 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
 
   return (
     <div className="flex items-center justify-center h-screen overflow-auto">
-      {/* Conditional rendering based on the currentStep */}
-      {currentStep === 1 && (
+      {currentStep === 1 ? (
         <Form {...formCreateAmount}>
           <form className="w-full md:w-2/3 space-y-6">
             {/* Amount selection logic */}
@@ -367,295 +395,307 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = ({
             </Button>
           </form>
         </Form>
-      )}
-
-      {currentStep > 1 && (
-        <div className="w-full">
-          {/* Render only the form corresponding to the current step - 1 
+      ) : (
+        fields.map(
+          (field, index) =>
+            currentStep === index + 2 && (
+              <div className="w-full">
+                {/* Render only the form corresponding to the current step - 1 
               (since step 1 is for selecting the number of forms) */}
-          {fields.length >= currentStep - 1 && (
-            <div
-              key={fields[currentStep - 2].id}
-              className="max-w-full md:max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-1"
-            >
-              <div className="max-w-full md:max-w-xl mx-auto">
-                <h1>Key Event {currentStep - 1}</h1>
-                <div className="mt-2 md:mt-12">
-                  {/* Form */}
+                <div
+                  key={field.id}
+                  className="max-w-full md:max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-1"
+                >
+                  <div className="max-w-full md:max-w-xl mx-auto">
+                    <h1>Key Event {index + 1}</h1>
+                    <div className="mt-2 md:mt-12">
+                      {/* Form */}
 
-                  <Form {...form}>
-                    <form
-                      onSubmit={form.handleSubmit(processForm)}
-                      id={`createStream-${currentStep - 1}`}
-                      className="space-y-6"
-                    >
-                      {(() => {
-                        return (
-                          <>
-                            <div className="flex flex-col md:flex-row md:space-x-4">
-                              <div className="w-full md:basis-1/2">
-                                <FormField
-                                  control={form.control}
-                                  name={`forms.${currentStep - 2}.eventName`}
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>New Key Event Name</FormLabel>
-                                      <FormDescription className="h-16">
-                                        This is the key event name you want to create.
-                                      </FormDescription>
-                                      <FormControl>
-                                        <Input
-                                          placeholder="Name of the custom dismenion"
-                                          {...form.register(`forms.${currentStep - 2}.eventName`)}
-                                          {...field}
-                                        />
-                                      </FormControl>
+                      <Form {...form}>
+                        <form
+                          onSubmit={form.handleSubmit(processForm)}
+                          id={`createStream-${index}`}
+                          className="space-y-6"
+                        >
+                          {(() => {
+                            return (
+                              <>
+                                <div className="flex flex-col md:flex-row md:space-x-4">
+                                  <div className="w-full md:basis-1/2">
+                                    <FormField
+                                      control={form.control}
+                                      name={`forms.${index}.eventName`}
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>New Key Event Name</FormLabel>
+                                          <FormDescription className="h-16">
+                                            This is the key event name you want to create.
+                                          </FormDescription>
+                                          <FormControl>
+                                            <Input
+                                              placeholder="Name of the custom dismenion"
+                                              {...form.register(`forms.${index}.eventName`)}
+                                              {...field}
+                                            />
+                                          </FormControl>
 
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                              </div>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                  </div>
 
-                              <div className="w-full md:basis-1/2">
-                                <FormField
-                                  control={form.control}
-                                  name={`forms.${currentStep - 2}.countingMethod`}
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Counting Method</FormLabel>
-                                      <FormDescription className="h-16">
-                                        The method by which Key Events will be counted across
-                                        multiple events within a session.
-                                      </FormDescription>
-                                      <FormControl>
-                                        <Select
-                                          {...form.register(
-                                            `forms.${currentStep - 2}.countingMethod`
-                                          )}
-                                          {...field}
-                                          onValueChange={field.onChange}
-                                        >
-                                          <SelectTrigger>
-                                            <SelectValue placeholder="Select a key event type." />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            <SelectGroup>
-                                              {Object.entries(CountMethodData).map(
-                                                ([label, value]) => (
-                                                  <SelectItem key={value} value={value}>
-                                                    {label}
-                                                  </SelectItem>
-                                                )
-                                              )}
-                                            </SelectGroup>
-                                          </SelectContent>
-                                        </Select>
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                              </div>
-                            </div>
-
-                            <div className="flex flex-col md:flex-row md:space-x-4 items-center">
-                              <Switch
-                                id="default-key"
-                                checked={includeDefaultValue}
-                                onCheckedChange={(checked) => setIncludeDefaultValue(checked)}
-                              />
-                              <Label htmlFor="default-key">Set default key event value</Label>
-                            </div>
-
-                            {includeDefaultValue && (
-                              <div className="flex flex-col md:flex-row md:space-x-4">
-                                <div className="w-full md:basis-1/2">
-                                  <FormField
-                                    control={form.control}
-                                    name={`forms.${currentStep - 2}.defaultValue.numericValue`}
-                                    render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel>Numeric Value</FormLabel>
-                                        <FormDescription className="h-20">
-                                          This will be used to populate the "value" parameter for
-                                          all occurrences of this Key Event (specified by eventName)
-                                          where that parameter is unset.
-                                        </FormDescription>
-                                        <FormControl>
-                                          <Input
-                                            {...field}
-                                            placeholder="Numeric value"
-                                            {...form.register(
-                                              `forms.${currentStep - 2}.defaultValue.numericValue`
-                                            )}
-                                            {...field}
-                                            type="number"
-                                            min={0}
-                                            onChange={(e) => field.onChange(Number(e.target.value))}
-                                          />
-                                        </FormControl>
-
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
+                                  <div className="w-full md:basis-1/2">
+                                    <FormField
+                                      control={form.control}
+                                      name={`forms.${index}.countingMethod`}
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>Counting Method</FormLabel>
+                                          <FormDescription className="h-16">
+                                            The method by which Key Events will be counted across
+                                            multiple events within a session.
+                                          </FormDescription>
+                                          <FormControl>
+                                            <Select
+                                              {...form.register(`forms.${index}.countingMethod`)}
+                                              {...field}
+                                              onValueChange={field.onChange}
+                                            >
+                                              <SelectTrigger>
+                                                <SelectValue placeholder="Select a key event type." />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectGroup>
+                                                  {Object.entries(CountMethodData).map(
+                                                    ([label, value]) => (
+                                                      <SelectItem key={value} value={value}>
+                                                        {label}
+                                                      </SelectItem>
+                                                    )
+                                                  )}
+                                                </SelectGroup>
+                                              </SelectContent>
+                                            </Select>
+                                          </FormControl>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                  </div>
                                 </div>
-                                <div className="w-full md:basis-1/2">
+
+
+
+                                <div className="flex flex-col md:flex-row md:space-x-4">
                                   <FormField
                                     control={form.control}
-                                    name={`forms.${currentStep - 2}.defaultValue.currencyCode`}
+                                    name={`forms.${index}.defaultValue`}
                                     render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel>Currency Code</FormLabel>
-                                        <FormDescription className="h-20">
-                                          When an occurrence of this Key Event (specified by
-                                          eventName) has no set currency this currency will be
-                                          applied as the default.
-                                        </FormDescription>
+                                      <FormItem className="space-y-3">
+                                        <FormLabel>Default Conversion Value</FormLabel>
                                         <FormControl>
-                                          <Select
-                                            {...form.register(
-                                              `forms.${currentStep - 2}.defaultValue.currencyCode`
-                                            )}
-                                            {...field}
-                                            onValueChange={field.onChange}
+                                          <RadioGroup
+                                            onValueChange={(newValue) => handleValueChange(newValue, index)}
+                                            value={field.value ? 'true' : 'false'}
+                                            className="flex flex-col space-y-1"
                                           >
-                                            <SelectTrigger>
-                                              <SelectValue placeholder="Select a currency." />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                              <SelectGroup>
-                                                {Object.entries(Currencies).map(([code, name]) => (
-                                                  <SelectItem key={code} value={code}>
-                                                    {name} ({code})
-                                                  </SelectItem>
-                                                ))}
-                                              </SelectGroup>
-                                            </SelectContent>
-                                          </Select>
-                                        </FormControl>
+                                            <FormItem className="flex items-center space-x-3 space-y-0">
+                                              <FormControl>
+                                                <RadioGroupItem value="false" />
+                                              </FormControl>
+                                              <FormLabel className="font-normal">
+                                                Don't set a default conversion value
+                                              </FormLabel>
+                                            </FormItem>
+                                            <FormItem className="flex items-center space-x-3 space-y-0">
+                                              <FormControl>
+                                                <RadioGroupItem value="true" />
+                                              </FormControl>
+                                              <FormLabel className="font-normal">
+                                                Set a default conversion value
+                                              </FormLabel>
+                                              {field.value && (
+                                                <div className="flex items-center space-x-3">
+                                                  <Input
+                                                    placeholder="Enter default conversion value"
+                                                    {...form.register(
+                                                      `forms.${index}.defaultValue.numericValue`,
+                                                      {
+                                                        valueAsNumber: true,
+                                                        setValueAs: (value) =>
+                                                          value === '' ? undefined : Number(value),
+                                                      }
+                                                    )}
+                                                    type="number"
+                                                    min={0}
+                                                    onChange={(e) =>
+                                                      handleNumericValueChange(e.target.value, index)
+                                                    }
+                                                  />
 
+                                                  <Select
+                                                    value={form.watch(
+                                                      `forms.${index}.defaultValue.currencyCode`
+                                                    )}
+                                                    onValueChange={(selectedCurrency) => {
+                                                      form.setValue(
+                                                        `forms.${index}.defaultValue.currencyCode`,
+                                                        selectedCurrency,
+                                                        { shouldValidate: true }
+                                                      );
+                                                    }}
+                                                  >
+                                                    <SelectTrigger>
+                                                      <SelectValue placeholder="Select currency" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                      <SelectGroup>
+                                                        {Object.entries(Currencies).map(
+                                                          ([code, name]) => (
+                                                            <SelectItem key={code} value={code}>
+                                                              {code} - {name}
+                                                            </SelectItem>
+                                                          )
+                                                        )}
+                                                      </SelectGroup>
+                                                    </SelectContent>
+                                                  </Select>
+                                                </div>
+                                              )}
+                                            </FormItem>
+                                          </RadioGroup>
+                                        </FormControl>
                                         <FormMessage />
                                       </FormItem>
                                     )}
                                   />
                                 </div>
-                              </div>
+
+
+
+
+
+
+
+
+
+
+
+
+                                <div className="flex flex-col md:flex-row md:space-x-4 py-10">
+                                  <div className="w-full md:basis-auto">
+                                    <FormField
+                                      control={form.control}
+                                      name={`forms.${index}.accountProperty`}
+                                      render={() => (
+                                        <FormItem>
+                                          <div className="mb-4">
+                                            <FormLabel className="text-base">
+                                              Account and Property Selection
+                                            </FormLabel>
+                                            <FormDescription>
+                                              Which account and property do you want to create the
+                                              audience for?
+                                            </FormDescription>
+                                          </div>
+                                          {accountPropertyPairs.map((item) => (
+                                            <FormField
+                                              key={item.id}
+                                              control={form.control}
+                                              name={`forms.${index}.accountProperty`}
+                                              render={({ field }) => {
+                                                return (
+                                                  <FormItem
+                                                    key={item.id}
+                                                    className="flex flex-row items-start space-x-3 space-y-0"
+                                                  >
+                                                    <FormControl>
+                                                      <Checkbox
+                                                        checked={
+                                                          Array.isArray(field.value) &&
+                                                          field.value.includes(item.property)
+                                                        }
+                                                        onCheckedChange={(checked) => {
+                                                          return checked
+                                                            ? field.onChange([
+                                                              ...(Array.isArray(field.value)
+                                                                ? field.value
+                                                                : []),
+                                                              item.property,
+                                                            ])
+                                                            : field.onChange(
+                                                              (Array.isArray(field.value)
+                                                                ? field.value
+                                                                : []
+                                                              ).filter(
+                                                                (value) => value !== item.property
+                                                              )
+                                                            );
+                                                        }}
+                                                      />
+                                                    </FormControl>
+                                                    <FormLabel className="text-sm font-normal">
+                                                      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                                                        <div>
+                                                          <span className="text-gray-600 font-semibold">
+                                                            Account:
+                                                          </span>
+                                                          <span className="ml-2 text-gray-800 font-medium">
+                                                            {item.accountName}
+                                                          </span>
+                                                        </div>
+                                                        <Separator orientation="vertical" />
+                                                        <div>
+                                                          <span className="text-gray-600 font-semibold">
+                                                            Property:
+                                                          </span>
+                                                          <span className="ml-2 text-gray-800 font-medium">
+                                                            {item.propertyName}
+                                                          </span>
+                                                        </div>
+                                                      </div>
+                                                    </FormLabel>
+                                                  </FormItem>
+                                                );
+                                              }}
+                                            />
+                                          ))}
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                  </div>
+                                </div>
+                              </>
+                            );
+                          })()}
+                          <div className="flex justify-between">
+                            <Button type="button" onClick={handlePrevious}>
+                              Previous
+                            </Button>
+
+                            {currentStep - 1 < count ? (
+                              <Button type="button" onClick={handleNext}>
+                                Next
+                              </Button>
+                            ) : (
+                              <Button type="submit">{loading ? 'Submitting...' : 'Submit'}</Button>
                             )}
+                          </div>
+                        </form>
+                      </Form>
 
-                            <div className="flex flex-col md:flex-row md:space-x-4 py-10">
-                              <div className="w-full md:basis-auto">
-                                <FormField
-                                  control={form.control}
-                                  name={`forms.${currentStep - 2}.account`}
-                                  render={() => (
-                                    <FormItem>
-                                      <div className="mb-4">
-                                        <FormLabel className="text-base">
-                                          Account and Property Selection
-                                        </FormLabel>
-                                        <FormDescription>
-                                          Which account and property do you want to create the
-                                          audience for?
-                                        </FormDescription>
-                                      </div>
-                                      {accountPropertyPairs.map((item) => (
-                                        <FormField
-                                          key={item.id}
-                                          control={form.control}
-                                          name={`forms.${currentStep - 2}.account`}
-                                          render={({ field }) => {
-                                            return (
-                                              <FormItem
-                                                key={item.id}
-                                                className="flex flex-row items-start space-x-3 space-y-0"
-                                              >
-                                                <FormControl>
-                                                  <Checkbox
-                                                    checked={
-                                                      Array.isArray(field.value) &&
-                                                      field.value.includes(item.property)
-                                                    }
-                                                    onCheckedChange={(checked) => {
-                                                      return checked
-                                                        ? field.onChange([
-                                                            ...(Array.isArray(field.value)
-                                                              ? field.value
-                                                              : []),
-                                                            item.property,
-                                                          ])
-                                                        : field.onChange(
-                                                            (Array.isArray(field.value)
-                                                              ? field.value
-                                                              : []
-                                                            ).filter(
-                                                              (value) => value !== item.property
-                                                            )
-                                                          );
-                                                    }}
-                                                  />
-                                                </FormControl>
-                                                <FormLabel className="text-sm font-normal">
-                                                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                                                    <div>
-                                                      <span className="text-gray-600 font-semibold">
-                                                        Account:
-                                                      </span>
-                                                      <span className="ml-2 text-gray-800 font-medium">
-                                                        {item.accountName}
-                                                      </span>
-                                                    </div>
-                                                    <Separator orientation="vertical" />
-                                                    <div>
-                                                      <span className="text-gray-600 font-semibold">
-                                                        Property:
-                                                      </span>
-                                                      <span className="ml-2 text-gray-800 font-medium">
-                                                        {item.propertyName}
-                                                      </span>
-                                                    </div>
-                                                  </div>
-                                                </FormLabel>
-                                              </FormItem>
-                                            );
-                                          }}
-                                        />
-                                      ))}
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                              </div>
-                            </div>
-                          </>
-                        );
-                      })()}
-                      <div className="flex justify-between">
-                        <Button type="button" onClick={handlePrevious}>
-                          Previous
-                        </Button>
-
-                        {currentStep - 1 < count ? (
-                          <Button type="button" onClick={handleNext}>
-                            Next
-                          </Button>
-                        ) : (
-                          <Button type="submit">{loading ? 'Submitting...' : 'Submit'}</Button>
-                        )}
-                      </div>
-                    </form>
-                  </Form>
-
-                  {/* End Form */}
+                      {/* End Form */}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            )
+        )
       )}
     </div>
   );
 };
 
-export default FormCreateCustomDimension;
+export default FormCreateKeyEvents;

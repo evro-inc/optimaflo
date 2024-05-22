@@ -7,22 +7,21 @@ export const CountingMethod = z.enum([
   'ONCE_PER_SESSION',
 ]);
 
-const DefaultValueSchema = z.object({
-  numericValue: z.number(),
-  currencyCode: z.string().regex(/^[A-Z]{3}$/, 'Must be a valid ISO 4217 currency code'),
-});
-
 const KeyEventSchema = z.object({
-  account: z.array(z.string()),
+  accountProperty: z.array(z.string()),
   eventName: z.string().min(1),
   custom: z.boolean().optional(),
   countingMethod: CountingMethod,
-  defaultValue: DefaultValueSchema.optional(),
+  defaultValue: z.object({
+    numericValue: z.number(),
+    currencyCode: z.string().regex(/^[A-Z]{3}$/, 'Must be a valid ISO 4217 currency code'),
+  }).optional(),
   name: z.string().optional(),
+  includeDefaultValue: z.boolean(),
 });
 
 // Export the type inferred from KeyEventsSchema for type safety
-export const FormCreateAmountSchema = z.object({
+export const FormKeyEvents = z.object({
   amount: z.number(),
 });
 // If you need to validate an array of CustomConversion objects like in your original FormsSchema
