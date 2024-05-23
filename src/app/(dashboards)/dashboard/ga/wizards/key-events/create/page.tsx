@@ -62,8 +62,6 @@ export default async function CreateKeyEventsPage() {
     redirect('/dashboard/ga/properties'); // Replace with the actual path you want to redirect to
   }
 
-
-
   return (
     <>
       <div className="container">

@@ -113,7 +113,7 @@ export async function listGAKeyEvents() {
   Create a single property or multiple conversionEvents
 ************************************************************************************/
 export async function createGAKeyEvents(formData: KeyEvents) {
-  console.log('formData', formData);
+  console.log('formData create', formData);
 
   const { userId } = await auth();
   if (!userId) return notFound();
@@ -227,7 +227,6 @@ export async function createGAKeyEvents(formData: KeyEvents) {
 
                   let requestBody: any = {
                     eventName: validatedData.eventName,
-                    custom: validatedData.custom,
                     countingMethod: validatedData.countingMethod,
                   };
 
@@ -432,10 +431,11 @@ export async function createGAKeyEvents(formData: KeyEvents) {
   Update a single property or multiple custom metrics
 ************************************************************************************/
 export async function updateGAKeyEvents(formData: KeyEvents) {
-
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
+
+  console.log('formData', formData);
 
   let retries = 0;
   const MAX_RETRIES = 3;
@@ -506,20 +506,24 @@ export async function updateGAKeyEvents(formData: KeyEvents) {
           await limiter.schedule(async () => {
             const updatePromises = formData.forms.map(async (identifier) => {
               for (const account of identifier.accountProperty) {
-
                 (identifier) => {
                   if (!identifier) {
                     errors.push(`Key event data not found for ${identifier}`);
                     toUpdateKeyEvents.delete(identifier);
                     return;
                   }
+                };
+                const updateFields: string[] = ['countingMethod'];
+
+                if (identifier.includeDefaultValue == true && identifier.defaultValue) {
+                  updateFields.push('defaultValue');
                 }
-                const updateFields = ['countingMethod', 'defaultConversionValue'];
 
                 const updateMask = updateFields.join(',');
 
-                const url = `https://analyticsadmin.googleapis.com/v1alpha${identifier.name}?updateMask=${updateMask}`;
+                const url = `https://analyticsadmin.googleapis.com/v1alpha/${identifier.accountProperty}?updateMask=${updateMask}`;
 
+                console.log('url back', url);
 
                 const headers = {
                   Authorization: `Bearer ${token[0].token}`,
@@ -551,8 +555,6 @@ export async function updateGAKeyEvents(formData: KeyEvents) {
                   console.log('validatedData', validatedData);
 
                   let requestBody: any = {
-                    eventName: validatedData.eventName,
-                    custom: validatedData.custom,
                     countingMethod: validatedData.countingMethod,
                   };
 
@@ -840,8 +842,7 @@ export async function deleteGAKeyEvents(
                 });
 
                 const parsedResponse = await response.json();
-                console.log("parsedResponse", parsedResponse);
-
+                console.log('parsedResponse', parsedResponse);
 
                 const cleanedParentId = identifier?.name?.split('/')[1];
 

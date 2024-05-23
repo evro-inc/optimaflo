@@ -15,7 +15,6 @@ export default async function UpdateCustomDimensionPage() {
 
   const tierLimits = await getTierLimit(subscriptionId);
 
-
   const foundTierLimit = tierLimits.find(
     (subscription) => subscription.Feature?.name === 'GA4KeyEvents'
   );
@@ -26,7 +25,6 @@ export default async function UpdateCustomDimensionPage() {
   if (remainingCreate <= 0) {
     redirect('/dashboard/ga/properties'); // Replace with the actual path you want to redirect to
   }
-
 
   return (
     <>

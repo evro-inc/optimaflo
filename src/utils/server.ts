@@ -178,8 +178,8 @@ export async function handleApiResponseError(
         return {
           success: false,
           errorCode: response.status,
-          message: parsedResponse.error.message
-        }
+          message: parsedResponse.error.message,
+        };
       }
       break;
 

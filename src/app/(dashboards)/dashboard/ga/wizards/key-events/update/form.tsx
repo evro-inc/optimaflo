@@ -19,7 +19,7 @@ import {
 } from '@/src/components/ui/form';
 
 import { Input } from '@/src/components/ui/input';
-import { FeatureResponse, KeyEventType } from '@/src/types/types';
+import { CountingMethod, FeatureResponse, KeyEventType } from '@/src/types/types';
 import { toast } from 'sonner';
 import { updateGAKeyEvents } from '@/src/lib/fetch/dashboard/actions/ga/keyEvents';
 import {
@@ -45,6 +45,7 @@ import { Label } from '@/src/components/ui/label';
 import { CountMethodData, Currencies } from '../../../properties/@keyEvents/items';
 import { Checkbox } from '@/src/components/ui/checkbox';
 import { Separator } from '@/src/components/ui/separator';
+import { RadioGroup, RadioGroupItem } from '@/src/components/ui/radio-group';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -74,25 +75,27 @@ const FormUpdateKeyEvents = () => {
   const currentFormIndex = currentStep - 1; // Adjust for 0-based index
   const currentFormData = selectedRowData[currentFormIndex]; // Get data for the current step
 
-  console.log("selectedRowData", selectedRowData);
+  console.log('selectedRowData', selectedRowData);
 
   if (Object.keys(selectedRowData).length === 0) {
     router.push('/dashboard/ga/properties');
   }
 
-  console.log("selectedRowData", selectedRowData);
-
-
+  console.log('selectedRowData', selectedRowData);
 
   const formDataDefaults: KeyEventType[] = Object.values(selectedRowData).map((rowData) => ({
-    accountProperty: rowData.name,
-    eventName: rowData.eventName,
-    countingMethod: rowData.countingMethod,
-    defaultValue: {
-      numericValue: rowData.defaultValue.numericValue,
-      currencyCode: rowData.defaultValue.currencyCode,
-    },
-    includeDefaultValue: rowData.defaultValue?.numericValue !== undefined || rowData.defaultValue?.currencyCode !== undefined,
+    accountProperty: Array.isArray(rowData.name) ? rowData.name : [rowData.name], // Ensure accountProperty is an array
+    eventName: rowData.eventName ?? '',
+    countingMethod: rowData.countingMethod ?? CountingMethod.UNSPECIFIED,
+    defaultValue: rowData.defaultValue
+      ? {
+          numericValue: rowData.defaultValue.numericValue ?? undefined,
+          currencyCode: rowData.defaultValue.currencyCode ?? undefined,
+        }
+      : undefined,
+    includeDefaultValue:
+      rowData.defaultValue?.numericValue !== undefined ||
+      rowData.defaultValue?.currencyCode !== undefined,
   }));
 
   if (notFoundError) {
@@ -114,6 +117,27 @@ const FormUpdateKeyEvents = () => {
   });
 
   const includeDefaultValue = form.watch('forms');
+
+  const handleValueChange = (newValue, index) => {
+    if (newValue === 'false') {
+      form.setValue(`forms.${index}.defaultValue`, undefined, { shouldValidate: true });
+      form.setValue(`forms.${index}.includeDefaultValue`, false, { shouldValidate: true });
+    } else {
+      form.setValue(
+        `forms.${index}.defaultValue`,
+        {
+          numericValue: 0,
+          currencyCode: 'USD',
+        },
+        { shouldValidate: true }
+      );
+      form.setValue(`forms.${index}.includeDefaultValue`, true, { shouldValidate: true });
+    }
+  };
+
+  const handleNumericValueChange = (value, index) => {
+    form.setValue(`forms.${index}.defaultValue.numericValue`, parseFloat(value));
+  };
 
   const handleNext = async () => {
     // Determine the names of the fields in the current form to validate
@@ -141,9 +165,12 @@ const FormUpdateKeyEvents = () => {
   const handlePrevious = (index) => {
     dispatch(decrementStep());
   };
+  console.log('Form errors:', form.formState.errors); // Log form errors if any
 
   const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
+
+    console.log('forms', forms);
 
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
@@ -156,8 +183,7 @@ const FormUpdateKeyEvents = () => {
 
     const uniqueKeyEvents = new Set(forms.map((form) => form.name));
     for (const form of forms) {
-      console.log("form", form);
-
+      console.log('form', form);
 
       const identifier = `${form.accountProperty}-${form.eventName}`;
 
@@ -175,7 +201,15 @@ const FormUpdateKeyEvents = () => {
     }
 
     try {
-      const res = (await updateGAKeyEvents({ forms })) as FeatureResponse;
+      const formsToSubmit = forms.map((form) => {
+        const { defaultValue, ...rest } = form;
+        if (form.includeDefaultValue) {
+          return { ...rest, defaultValue };
+        }
+
+        return rest;
+      });
+      const res = (await updateGAKeyEvents({ forms: formsToSubmit })) as FeatureResponse;
 
       if (res.success) {
         res.results.forEach((result) => {
@@ -237,7 +271,7 @@ const FormUpdateKeyEvents = () => {
           });
         }
         form.reset({
-          forms: [formDataDefaults],
+          forms: formDataDefaults,
         });
       }
 
@@ -262,31 +296,30 @@ const FormUpdateKeyEvents = () => {
     <div className="flex items-center justify-center h-screen">
       {/* Conditional rendering based on the currentStep */}
 
-      {fields.map((field, index) => currentStep === index + 1 && (
-        <div className="w-full">
-          {/* Render only the form corresponding to the current step - 1 
+      {fields.map(
+        (field, index) =>
+          currentStep === index + 1 && (
+            <div className="w-full">
+              {/* Render only the form corresponding to the current step - 1 
               (since step 1 is for selecting the number of forms) */}
-          {fields.length > 0 && fields.length >= currentStep && (
-            <div
-              key={field.id}
-              className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-            >
-              <div className="max-w-xl mx-auto">
-                <h1>{fields[currentFormIndex]?.eventName}</h1>
-                <div className="mt-12">
-                  {/* Form */}
-                  <Form {...form}>
-                    <form
-                      onSubmit={form.handleSubmit(processForm)}
-                      id={`createStream-${index}`}
-                      className="space-y-6"
-                    >
-                      {(() => {
-                        return (
-                          <>
-                            <div className="flex flex-col md:flex-row md:space-x-4">
-                              <div className="w-full md:basis-1/2">
-                                {/*  <FormField
+              {fields.length > 0 && fields.length >= currentStep && (
+                <div key={field.id} className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
+                  <div className="max-w-xl mx-auto">
+                    <h1>{fields[currentFormIndex]?.eventName}</h1>
+                    <div className="mt-12">
+                      {/* Form */}
+                      <Form {...form}>
+                        <form
+                          onSubmit={form.handleSubmit(processForm)}
+                          id={`createStream-${index}`}
+                          className="space-y-6"
+                        >
+                          {(() => {
+                            return (
+                              <>
+                                <div className="flex flex-col md:flex-row md:space-x-4">
+                                  <div className="w-full md:basis-1/2">
+                                    {/*  <FormField
                                   control={form.control}
                                   name={`forms.${index}.eventName`}
                                   render={({ field }) => (
@@ -307,174 +340,171 @@ const FormUpdateKeyEvents = () => {
                                     </FormItem>
                                   )}
                                 /> */}
-                                <p>{form.getValues(`forms.${index}.eventName`)}</p>
+                                    <p>{form.getValues(`forms.${index}.eventName`)}</p>
+                                  </div>
 
-                              </div>
+                                  <div className="w-full md:basis-1/2">
+                                    <FormField
+                                      control={form.control}
+                                      name={`forms.${index}.countingMethod`}
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>Counting Method</FormLabel>
+                                          <FormDescription className="h-16">
+                                            The method by which Key Events will be counted across
+                                            multiple events within a session.
+                                          </FormDescription>
+                                          <FormControl>
+                                            <Select
+                                              {...form.register(`forms.${index}.countingMethod`)}
+                                              {...field}
+                                              onValueChange={field.onChange}
+                                            >
+                                              <SelectTrigger>
+                                                <SelectValue placeholder="Select a key event type." />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectGroup>
+                                                  {Object.entries(CountMethodData).map(
+                                                    ([label, value]) => (
+                                                      <SelectItem key={value} value={value}>
+                                                        {label}
+                                                      </SelectItem>
+                                                    )
+                                                  )}
+                                                </SelectGroup>
+                                              </SelectContent>
+                                            </Select>
+                                          </FormControl>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                  </div>
+                                </div>
 
-                              <div className="w-full md:basis-1/2">
-                                <FormField
-                                  control={form.control}
-                                  name={`forms.${index}.countingMethod`}
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Counting Method</FormLabel>
-                                      <FormDescription className="h-16">
-                                        The method by which Key Events will be counted across
-                                        multiple events within a session.
-                                      </FormDescription>
-                                      <FormControl>
-                                        <Select
-                                          {...form.register(`forms.${index}.countingMethod`)}
-                                          {...field}
-                                          onValueChange={field.onChange}
-                                        >
-                                          <SelectTrigger>
-                                            <SelectValue placeholder="Select a key event type." />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            <SelectGroup>
-                                              {Object.entries(CountMethodData).map(
-                                                ([label, value]) => (
-                                                  <SelectItem key={value} value={value}>
-                                                    {label}
-                                                  </SelectItem>
-                                                )
-                                              )}
-                                            </SelectGroup>
-                                          </SelectContent>
-                                        </Select>
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                              </div>
-                            </div>
-
-                            <div className="flex items-center">
-                              <Switch
-                                id={`default-key-${index}`}
-                                checked={
-                                  includeDefaultValue[index]?.includeDefaultValue || false
-                                }
-                                onCheckedChange={(checked) =>
-                                  form.setValue(`forms.${index}.includeDefaultValue`, checked)
-                                }
-                              />
-                              <Label htmlFor={`default-key-${index}`} className="ml-2">
-                                Set default key event value
-                              </Label>
-                            </div>
-
-                            {includeDefaultValue[index]?.includeDefaultValue && (
-                              <div className="flex flex-col md:flex-row md:space-x-4">
-                                <div className="w-full md:basis-1/2">
+                                <div className="flex flex-col md:flex-row md:space-x-4">
                                   <FormField
                                     control={form.control}
-                                    name={`forms.${index}.defaultValue.numericValue`}
+                                    name={`forms.${index}.defaultValue`}
                                     render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel>Numeric Value</FormLabel>
-                                        <FormDescription className="h-20">
-                                          This will be used to populate the "value" parameter
-                                          for all occurrences of this Key Event (specified by
-                                          eventName) where that parameter is unset.
-                                        </FormDescription>
+                                      <FormItem className="space-y-3">
+                                        <FormLabel>Default Conversion Value</FormLabel>
                                         <FormControl>
-                                          <Input
-                                            placeholder="Numeric value"
-                                            {...form.register(
-                                              `forms.${index}.defaultValue.numericValue`
-                                            )}
-                                            {...field}
-                                            type="number"
-                                            min={0}
-                                            onChange={(e) =>
-                                              field.onChange(Number(e.target.value))
+                                          <RadioGroup
+                                            onValueChange={(newValue) =>
+                                              handleValueChange(newValue, index)
                                             }
-                                          />
-                                        </FormControl>
-
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
-                                </div>
-                                <div className="w-full md:basis-1/2">
-                                  <FormField
-                                    control={form.control}
-                                    name={`forms.${index}.defaultValue.currencyCode`}
-                                    render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel>Currency Code</FormLabel>
-                                        <FormDescription className="h-20">
-                                          When an occurrence of this Key Event (specified by
-                                          eventName) has no set currency this currency will be
-                                          applied as the default.
-                                        </FormDescription>
-                                        <FormControl>
-                                          <Select
-                                            {...form.register(
-                                              `forms.${index}.defaultValue.currencyCode`
-                                            )}
-                                            {...field}
-                                            onValueChange={field.onChange}
+                                            value={
+                                              form.watch(`forms.${index}.includeDefaultValue`)
+                                                ? 'true'
+                                                : 'false'
+                                            }
+                                            className="flex flex-col space-y-1"
                                           >
-                                            <SelectTrigger>
-                                              <SelectValue placeholder="Select a currency." />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                              <SelectGroup>
-                                                {Object.entries(Currencies).map(
-                                                  ([code, name]) => (
-                                                    <SelectItem key={code} value={code}>
-                                                      {name} ({code})
-                                                    </SelectItem>
-                                                  )
-                                                )}
-                                              </SelectGroup>
-                                            </SelectContent>
-                                          </Select>
-                                        </FormControl>
+                                            <FormItem className="flex items-center space-x-3 space-y-0">
+                                              <FormControl>
+                                                <RadioGroupItem value="false" />
+                                              </FormControl>
+                                              <FormLabel className="font-normal">
+                                                Don't set a default conversion value
+                                              </FormLabel>
+                                            </FormItem>
+                                            <FormItem className="flex items-center space-x-3 space-y-0">
+                                              <FormControl>
+                                                <RadioGroupItem value="true" />
+                                              </FormControl>
+                                              <FormLabel className="font-normal">
+                                                Set a default conversion value
+                                              </FormLabel>
+                                              {form.watch(`forms.${index}.includeDefaultValue`) && (
+                                                <div className="flex items-center space-x-3">
+                                                  <Input
+                                                    placeholder="Enter default conversion value"
+                                                    {...form.register(
+                                                      `forms.${index}.defaultValue.numericValue`,
+                                                      {
+                                                        valueAsNumber: true,
+                                                        setValueAs: (value) =>
+                                                          value === '' ? undefined : Number(value),
+                                                      }
+                                                    )}
+                                                    type="number"
+                                                    min={0}
+                                                    onChange={(e) =>
+                                                      handleNumericValueChange(
+                                                        e.target.value,
+                                                        index
+                                                      )
+                                                    }
+                                                  />
 
+                                                  <Select
+                                                    value={form.watch(
+                                                      `forms.${index}.defaultValue.currencyCode`
+                                                    )}
+                                                    onValueChange={(selectedCurrency) => {
+                                                      form.setValue(
+                                                        `forms.${index}.defaultValue.currencyCode`,
+                                                        selectedCurrency,
+                                                        { shouldValidate: true }
+                                                      );
+                                                    }}
+                                                  >
+                                                    <SelectTrigger>
+                                                      <SelectValue placeholder="Select currency" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                      <SelectGroup>
+                                                        {Object.entries(Currencies).map(
+                                                          ([code, name]) => (
+                                                            <SelectItem key={code} value={code}>
+                                                              {code} - {name}
+                                                            </SelectItem>
+                                                          )
+                                                        )}
+                                                      </SelectGroup>
+                                                    </SelectContent>
+                                                  </Select>
+                                                </div>
+                                              )}
+                                            </FormItem>
+                                          </RadioGroup>
+                                        </FormControl>
                                         <FormMessage />
                                       </FormItem>
                                     )}
                                   />
                                 </div>
-                              </div>
+                              </>
+                            );
+                          })()}
+                          <div className="flex justify-between">
+                            {index >= 1 && (
+                              <Button type="button" onClick={handlePrevious}>
+                                Previous
+                              </Button>
                             )}
-                          </>
-                        );
-                      })()}
-                      <div className="flex justify-between">
-                        {index >= 1 && (
-                          <Button type="button" onClick={handlePrevious}>
-                            Previous
-                          </Button>
-                        )}
 
+                            {currentStep < fields.length ? (
+                              <Button type="button" onClick={handleNext}>
+                                Next
+                              </Button>
+                            ) : (
+                              <Button type="submit">{loading ? 'Submitting...' : 'Submit'}</Button>
+                            )}
+                          </div>
+                        </form>
+                      </Form>
 
-                        {currentStep - 1 < fields.length ? (
-                          <Button type="button" onClick={handleNext}>
-                            Next
-                          </Button>
-                        ) : (
-                          <Button type="submit">{loading ? 'Submitting...' : 'Submit'}</Button>
-                        )}
-                      </div>
-                    </form>
-                  </Form>
-
-                  {/* End Form */}
+                      {/* End Form */}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
-          )}
-        </div>
-      )
-      )
-      }
+          )
+      )}
     </div>
   );
 };

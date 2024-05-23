@@ -677,13 +677,13 @@ export enum CountingMethod {
 
 // Default Value type
 interface DefaultValue {
-  numericValue: number;
-  currencyCode: string;
+  numericValue?: number;
+  currencyCode?: string;
 }
 
 // Key Event type
 export interface KeyEventType {
-  accountProperty: [];
+  accountProperty: string[];
   property?: string;
   eventName: string;
   custom?: boolean;

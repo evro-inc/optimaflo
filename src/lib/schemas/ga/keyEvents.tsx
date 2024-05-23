@@ -10,12 +10,16 @@ export const CountingMethod = z.enum([
 const KeyEventSchema = z.object({
   accountProperty: z.array(z.string()),
   eventName: z.string().min(1),
-  custom: z.boolean().optional(),
   countingMethod: CountingMethod,
-  defaultValue: z.object({
-    numericValue: z.number(),
-    currencyCode: z.string().regex(/^[A-Z]{3}$/, 'Must be a valid ISO 4217 currency code'),
-  }).optional(),
+  defaultValue: z
+    .object({
+      numericValue: z.number().optional(),
+      currencyCode: z
+        .string()
+        .regex(/^[A-Z]{3}$/, 'Must be a valid ISO 4217 currency code')
+        .optional(),
+    })
+    .optional(),
   name: z.string().optional(),
   includeDefaultValue: z.boolean(),
 });

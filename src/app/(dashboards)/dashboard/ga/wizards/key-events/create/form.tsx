@@ -181,7 +181,6 @@ const FormCreateKeyEvents: React.FC<FormCreateProps> = ({
     dispatch(setCount(amount));
   };
 
-
   const handleValueChange = (newValue, index) => {
     if (newValue === 'false') {
       form.setValue(`forms.${index}.defaultValue`, undefined);
@@ -199,13 +198,11 @@ const FormCreateKeyEvents: React.FC<FormCreateProps> = ({
     form.setValue(`forms.${index}.defaultValue.numericValue`, parseFloat(value));
   };
 
-
   const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
-    console.log("data", forms);
-
+    console.log('data', forms);
 
     toast('Creating key events...', {
       action: {
@@ -351,7 +348,6 @@ const FormCreateKeyEvents: React.FC<FormCreateProps> = ({
     }
   };
 
-
   const handlePrevious = () => {
     dispatch(decrementStep());
   };
@@ -433,7 +429,7 @@ const FormCreateKeyEvents: React.FC<FormCreateProps> = ({
                                           </FormDescription>
                                           <FormControl>
                                             <Input
-                                              placeholder="Name of the custom dismenion"
+                                              placeholder="Name of the event name"
                                               {...form.register(`forms.${index}.eventName`)}
                                               {...field}
                                             />
@@ -485,8 +481,6 @@ const FormCreateKeyEvents: React.FC<FormCreateProps> = ({
                                   </div>
                                 </div>
 
-
-
                                 <div className="flex flex-col md:flex-row md:space-x-4">
                                   <FormField
                                     control={form.control}
@@ -496,7 +490,9 @@ const FormCreateKeyEvents: React.FC<FormCreateProps> = ({
                                         <FormLabel>Default Conversion Value</FormLabel>
                                         <FormControl>
                                           <RadioGroup
-                                            onValueChange={(newValue) => handleValueChange(newValue, index)}
+                                            onValueChange={(newValue) =>
+                                              handleValueChange(newValue, index)
+                                            }
                                             value={field.value ? 'true' : 'false'}
                                             className="flex flex-col space-y-1"
                                           >
@@ -530,7 +526,10 @@ const FormCreateKeyEvents: React.FC<FormCreateProps> = ({
                                                     type="number"
                                                     min={0}
                                                     onChange={(e) =>
-                                                      handleNumericValueChange(e.target.value, index)
+                                                      handleNumericValueChange(
+                                                        e.target.value,
+                                                        index
+                                                      )
                                                     }
                                                   />
 
@@ -572,17 +571,6 @@ const FormCreateKeyEvents: React.FC<FormCreateProps> = ({
                                   />
                                 </div>
 
-
-
-
-
-
-
-
-
-
-
-
                                 <div className="flex flex-col md:flex-row md:space-x-4 py-10">
                                   <div className="w-full md:basis-auto">
                                     <FormField
@@ -619,19 +607,19 @@ const FormCreateKeyEvents: React.FC<FormCreateProps> = ({
                                                         onCheckedChange={(checked) => {
                                                           return checked
                                                             ? field.onChange([
-                                                              ...(Array.isArray(field.value)
-                                                                ? field.value
-                                                                : []),
-                                                              item.property,
-                                                            ])
+                                                                ...(Array.isArray(field.value)
+                                                                  ? field.value
+                                                                  : []),
+                                                                item.property,
+                                                              ])
                                                             : field.onChange(
-                                                              (Array.isArray(field.value)
-                                                                ? field.value
-                                                                : []
-                                                              ).filter(
-                                                                (value) => value !== item.property
-                                                              )
-                                                            );
+                                                                (Array.isArray(field.value)
+                                                                  ? field.value
+                                                                  : []
+                                                                ).filter(
+                                                                  (value) => value !== item.property
+                                                                )
+                                                              );
                                                         }}
                                                       />
                                                     </FormControl>
