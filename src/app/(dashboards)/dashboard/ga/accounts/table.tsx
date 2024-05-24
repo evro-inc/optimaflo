@@ -145,9 +145,9 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
         <div className="ml-auto space-x-4">
           <Button onClick={refreshAllCache}>Refresh</Button>
 
-          {/* <Button disabled={isCreatePending} onClick={onCreateButtonClick}>
+          <Button disabled={isCreatePending} onClick={onCreateButtonClick}>
             {isCreatePending ? 'Creating...' : 'Create'}
-          </Button> */}
+          </Button>
 
           <Button
             disabled={Object.keys(table.getState().rowSelection).length === 0 || isUpdatePending}

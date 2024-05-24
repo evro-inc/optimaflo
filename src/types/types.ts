@@ -53,7 +53,7 @@ export interface Price {
   products?: Product;
 }
 
-export interface PriceWithProduct extends Price {}
+export interface PriceWithProduct extends Price { }
 
 export interface Subscription {
   id: string /* primary key */;
@@ -272,9 +272,21 @@ export type Workspace = {
 };
 
 export type GA4AccountType = {
-  name: string;
+  regionCode: string;
   displayName: string;
 };
+
+// Define the request type
+export type ProvisionAccountTicketRequest = {
+  account: GA4AccountType;
+  redirectUri: string;
+};
+
+// Define the response type
+export type ProvisionAccountTicketResponse = {
+  accountTicketId: string;
+};
+
 export type GA4PropertyType = {
   name: string;
   parent: string;
