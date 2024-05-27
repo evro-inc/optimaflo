@@ -11,7 +11,6 @@ export default async function CreateCustomDimensionPage() {
   if (!user) return notFound();
 
   const subscription = await getSubscription(user.id);
-  console.log('Subscription:', subscription);
 
   const subscriptionId = subscription.id;
 

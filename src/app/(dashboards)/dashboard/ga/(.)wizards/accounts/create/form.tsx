@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { FormCreateAmountSchema, FormsSchema } from '@/src/lib/schemas/ga/accounts';
+import { FormsPropertySchema } from '@/src/lib/schemas/ga/properties';
 import { Button } from '@/src/components/ui/button';
 import {
   Form,
@@ -28,7 +29,12 @@ import {
 } from '@/src/components/ui/select';
 
 import { Input } from '@/src/components/ui/input';
-import { FeatureResponse, ProvisionAccountTicketRequest, Role } from '@/src/types/types';
+import {
+  FeatureResponse,
+  GA4PropertyType,
+  ProvisionAccountTicketRequest,
+  Role,
+} from '@/src/types/types';
 import { toast } from 'sonner';
 import {
   selectTable,
@@ -71,6 +77,7 @@ const ErrorModal = dynamic(
 );
 
 type Forms = z.infer<typeof FormsSchema>;
+type FromsProperty = z.infer<typeof FormsPropertySchema>;
 
 const FormCreateAccount /* : React.FC<FormCreateProps> */ = ({ tierLimits }) => {
   const dispatch = useDispatch();
@@ -82,8 +89,6 @@ const FormCreateAccount /* : React.FC<FormCreateProps> */ = ({ tierLimits }) => 
   const router = useRouter();
   const { user } = useUser();
   const [tosUrls, setTosUrls] = useState<string[]>([]); // Add state for TOS URLs
-
-  console.log('user:', user?.primaryEmailAddress?.emailAddress);
 
   const foundTierLimit = tierLimits.find(
     (subscription) => subscription.Feature?.name === 'GA4Properties'
@@ -99,7 +104,19 @@ const FormCreateAccount /* : React.FC<FormCreateProps> */ = ({ tierLimits }) => 
       displayName: '',
     },
     redirectUri: '',
-    propertyName: '',
+  };
+
+  const formDataPropertyDefaults: GA4PropertyType = {
+    name: '',
+    parent: '',
+    currencyCode: 'USD',
+    displayName: '',
+    industryCategory: 'AUTOMOTIVE',
+    timeZone: 'America/New_York',
+    propertyType: 'PROPERTY_TYPE_ORDINARY',
+    retention: 'FOURTEEN_MONTHS',
+    resetOnNewActivity: true,
+    acknowledgment: true,
   };
 
   const formCreateAmount = useForm({
@@ -129,10 +146,23 @@ const FormCreateAccount /* : React.FC<FormCreateProps> */ = ({ tierLimits }) => 
     resolver: zodResolver(FormsSchema),
   });
 
+  const formProperty = useForm<FromsProperty>({
+    defaultValues: {
+      forms: [formDataPropertyDefaults],
+    },
+    resolver: zodResolver(FormsPropertySchema),
+  });
+
   const { fields, append } = useFieldArray({
     control: form.control,
     name: 'forms',
   });
+
+  const { fields: propertyFields } = useFieldArray({
+    control: formProperty.control,
+    name: 'forms',
+  });
+
   const addForm = () => {
     append(formDataDefaults);
   };
@@ -160,6 +190,12 @@ const FormCreateAccount /* : React.FC<FormCreateProps> */ = ({ tierLimits }) => 
     const { forms } = data;
     dispatch(setLoading(true));
 
+    const accountData = data.forms;
+    const propertyData = formProperty.getValues().forms;
+
+    console.log('accountData:', accountData);
+    console.log('propertyData:', propertyData);
+
     toast('Creating accounts...', {
       action: {
         label: 'Close',
@@ -175,7 +211,6 @@ const FormCreateAccount /* : React.FC<FormCreateProps> */ = ({ tierLimits }) => 
           .filter((result) => result.success)
           .map((result) => {
             const tosUrl = `https://analytics.google.com/analytics/web/?provisioningSignup=false#/termsofservice/${result.id}`;
-            console.log('Account tosUrl:', tosUrl);
             return tosUrl;
           });
 
@@ -406,28 +441,28 @@ const FormCreateAccount /* : React.FC<FormCreateProps> */ = ({ tierLimits }) => 
                           </FormItem>
                         )}
                       />
-
-                      <FormField
-                        control={form.control}
-                        name={`forms.${currentStep - 2}.propertyName`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>New Property Name</FormLabel>
-                            <FormDescription>
-                              This is the account name you want to create.
-                            </FormDescription>
-                            <FormControl>
-                              <Input
-                                placeholder="Name of the property"
-                                {...form.register(`forms.${currentStep - 2}.propertyName`)}
-                                {...field}
-                              />
-                            </FormControl>
-
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      {propertyFields.length >= currentStep - 1 && (
+                        <FormField
+                          control={formProperty.control}
+                          name={`forms.${currentStep - 2}.displayName`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Property Name</FormLabel>
+                              <FormDescription>
+                                This is the name of the property you want to create.
+                              </FormDescription>
+                              <FormControl>
+                                <Input
+                                  placeholder="Name of the property"
+                                  {...formProperty.register(`forms.${currentStep - 2}.displayName`)}
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
 
                       <div className="flex justify-between">
                         <Button type="button" onClick={handlePrevious}>

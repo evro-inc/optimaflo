@@ -16,11 +16,11 @@ import {
   tierUpdateLimit,
 } from '@/src/utils/server';
 import { fetchGASettings } from '../..';
-import { FormsSchema } from '@/src/lib/schemas/ga/properties';
+import { FormsPropertySchema } from '@/src/lib/schemas/ga/properties';
 
 // Define the types for the form data
-type FormCreateSchema = z.infer<typeof FormsSchema>;
-type FormUpdateSchema = z.infer<typeof FormsSchema>;
+type FormCreateSchema = z.infer<typeof FormsPropertySchema>;
+type FormUpdateSchema = z.infer<typeof FormsPropertySchema>;
 
 /************************************************************************************
   Function to list GA properties
@@ -508,7 +508,7 @@ export async function createProperties(formData: FormCreateSchema) {
               try {
                 const formDataToValidate = { forms: [propertyData] };
 
-                const validationResult = FormsSchema.safeParse(formDataToValidate);
+                const validationResult = FormsPropertySchema.safeParse(formDataToValidate);
 
                 if (!validationResult.success) {
                   let errorMessage = validationResult.error.issues
@@ -847,7 +847,7 @@ export async function updateProperties(formData: FormUpdateSchema) {
               try {
                 const formDataToValidate = { forms: [propertyData] };
 
-                const validationResult = FormsSchema.safeParse(formDataToValidate);
+                const validationResult = FormsPropertySchema.safeParse(formDataToValidate);
 
                 if (!validationResult.success) {
                   let errorMessage = validationResult.error.issues
@@ -1176,7 +1176,7 @@ export async function updateDataRetentionSettings(formData: FormUpdateSchema) {
             try {
               const formDataToValidate = { forms: [propertyData] };
 
-              const validationResult = FormsSchema.safeParse(formDataToValidate);
+              const validationResult = FormsPropertySchema.safeParse(formDataToValidate);
 
               if (!validationResult.success) {
                 let errorMessage = validationResult.error.issues
@@ -1469,7 +1469,7 @@ export async function acknowledgeUserDataCollection(selectedRows) {
               try {
                 const rowDataToValidate = { forms: [propertyData] };
 
-                const validationResult = FormsSchema.safeParse(rowDataToValidate);
+                const validationResult = FormsPropertySchema.safeParse(rowDataToValidate);
 
                 if (!validationResult.success) {
                   let errorMessage = validationResult.error.issues

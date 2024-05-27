@@ -6,7 +6,7 @@ import { setLoading, incrementStep, decrementStep, setCount } from '@/redux/form
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { FormCreateAmountSchema, FormsSchema } from '@/src/lib/schemas/ga/properties';
+import { FormCreateAmountSchema, FormsPropertySchema } from '@/src/lib/schemas/ga/properties';
 import { Button } from '@/src/components/ui/button';
 import {
   Form,
@@ -60,7 +60,7 @@ const ErrorModal = dynamic(
   { ssr: false }
 );
 
-type Forms = z.infer<typeof FormsSchema>;
+type Forms = z.infer<typeof FormsPropertySchema>;
 
 const FormCreateProperty: React.FC<FormCreateProps> = ({
   tierLimits,
@@ -132,7 +132,7 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
     defaultValues: {
       forms: [formDataDefaults],
     },
-    resolver: zodResolver(FormsSchema),
+    resolver: zodResolver(FormsPropertySchema),
   });
 
   const { fields, append } = useFieldArray({

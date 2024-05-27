@@ -9,16 +9,19 @@ import { z } from 'zod'; // Importing Zod for schema validation
 import { revalidatePath } from 'next/cache'; // Importing function to revalidate cached paths in Next.js
 import { currentUserOauthAccessToken } from '@/src/lib/clerk'; // Importing function to get the current user's OAuth access token
 import { redis } from '@/src/lib/redis/cache'; // Importing Redis cache instance
-import { notFound } from 'next/navigation'; // Importing utility for handling 'not found' navigation in Next.js
+import { notFound, redirect } from 'next/navigation'; // Importing utility for handling 'not found' navigation in Next.js
 import {
   handleApiResponseError,
   tierCreateLimit,
   tierDeleteLimit,
   tierUpdateLimit,
 } from '@/src/utils/server';
-import { FeatureResponse, FeatureResult } from '@/src/types/types';
+import { FeatureResponse, FeatureResult, Role } from '@/src/types/types';
 import prisma from '@/src/lib/prisma';
 import { fetchGASettings } from '../..';
+import { createGAAccessBindings } from './accountPermissions';
+import { currentUser } from '@clerk/nextjs/server';
+import { createProperties } from './properties';
 
 // Defining a type for form update schema using Zod
 type FormUpdateSchema = z.infer<typeof FormsSchema>;
@@ -707,6 +710,10 @@ export async function createAccounts(formData: FormCreateSchema) {
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
+  const user = await currentUser();
+  let provisionedAccount: any;
+
+  console.log('formData: ', formData);
 
   let retries = 0;
   const MAX_RETRIES = 3;
@@ -717,7 +724,7 @@ export async function createAccounts(formData: FormCreateSchema) {
   const notFoundLimit: { id: string; name: string }[] = [];
 
   // Refactor: Use string identifiers in the set
-  const toCreateAccounts = new Set(formData.forms.map((acct) => `${acct.displayName}`));
+  const toCreateAccounts = new Set(formData.forms.map((acct) => `${acct.account.displayName}`));
 
   const tierLimitResponse: any = await tierCreateLimit(userId, 'GA4Accounts');
   const limit = Number(tierLimitResponse.createLimit);
@@ -767,7 +774,7 @@ export async function createAccounts(formData: FormCreateSchema) {
 
   let permissionDenied = false;
   let accountTicketIds = [] as string[];
-  const accountNames = formData.forms.map((acct) => acct.displayName);
+  const accountNames = formData.forms.map((acct) => acct.account.displayName);
 
   if (toCreateAccounts.size <= availableCreateUsage) {
     while (retries < MAX_RETRIES && toCreateAccounts.size > 0 && !permissionDenied) {
@@ -777,7 +784,9 @@ export async function createAccounts(formData: FormCreateSchema) {
           await limiter.schedule(async () => {
             const createPromises = Array.from(toCreateAccounts).map(async (identifier: any) => {
               const [displayName] = identifier.split('-');
-              const accountData = formData.forms.find((acct) => acct.displayName === displayName);
+              const accountData = formData.forms.find(
+                (acct) => acct.account.displayName === displayName
+              );
 
               if (!accountData) {
                 errors.push(`Account data not found for ${identifier}`);
@@ -794,6 +803,8 @@ export async function createAccounts(formData: FormCreateSchema) {
 
               try {
                 const formDataToValidate = { forms: [accountData] };
+
+                console.log('formDataToValidate: ', formDataToValidate);
 
                 const validationResult = FormsSchema.safeParse(formDataToValidate);
 
@@ -814,8 +825,8 @@ export async function createAccounts(formData: FormCreateSchema) {
                 const validatedAccountData = validationResult.data.forms[0];
                 const requestBody = {
                   account: {
-                    displayName: validatedAccountData.displayName,
-                    regionCode: 'US',
+                    displayName: validatedAccountData.account.displayName,
+                    regionCode: validatedAccountData.account.regionCode,
                   }, // Populate with the account details
                   redirectUri: 'https://www.optimaflo.io/dashboard/ga/accounts', // Provide the redirectUri for ToS acceptance
                 };
@@ -826,13 +837,87 @@ export async function createAccounts(formData: FormCreateSchema) {
                   body: JSON.stringify(requestBody),
                 });
 
-                let parsedResponse;
+                const parsedResponse = await response.json();
 
                 if (response.ok) {
-                  const ticket = await response.json();
-                  accountTicketIds.push(ticket.accountTicketId);
+                  const accountTicketId = parsedResponse.accountTicketId;
+                  accountTicketIds.push(accountTicketId);
 
-                  successfulCreations.push(accountData.displayName);
+                  const pollAccountStatus = async (
+                    displayName,
+                    interval = 5000,
+                    timeout = 60000
+                  ) => {
+                    const startTime = Date.now();
+
+                    const poll = async () => {
+                      try {
+                        const accounts = await listGaAccounts();
+
+                        // Ensure displayName is a string
+                        const cleanDisplayName = Array.isArray(displayName)
+                          ? displayName[0]
+                          : displayName;
+
+                        provisionedAccount = accounts.find((account) => {
+                          return account.displayName === cleanDisplayName;
+                        });
+
+                        if (provisionedAccount) {
+                          clearInterval(pollInterval);
+
+                          const email = user?.emailAddresses[0]?.emailAddress;
+
+                          const accessBindingData = [
+                            {
+                              account: provisionedAccount.name,
+                              roles: [
+                                'predefinedRoles/admin',
+                                'predefinedRoles/no-cost-data',
+                                'predefinedRoles/no-revenue-data',
+                              ] as Role[], // Explicitly cast to Role[]
+                              user: email || '',
+                              name: '',
+                            },
+                          ];
+
+                          (await createGAAccessBindings({
+                            forms: accessBindingData,
+                          })) as FeatureResponse;
+
+                          await createProperties({
+                            forms: [
+                              {
+                                displayName: validatedAccountData?.propertyName,
+                                timeZone: 'America/New_York',
+                                currencyCode: 'USD',
+                                industryCategory: 'AUTOMOTIVE',
+                                name: provisionedAccount.displayName,
+                                parent: provisionedAccount.name,
+                                propertyType: 'PROPERTY_TYPE_ORDINARY',
+                                retention: 'FOURTEEN_MONTHS',
+                                resetOnNewActivity: true,
+                                acknowledgment: true,
+                              },
+                            ],
+                          });
+                        } else if (Date.now() - startTime > timeout) {
+                          clearInterval(pollInterval);
+                          console.error('Polling timed out, TOS not accepted.');
+                          // Handle timeout (e.g., notify user, retry)
+                        }
+                      } catch (error) {
+                        console.error('Error during polling:', error);
+                        clearInterval(pollInterval);
+                        // Handle error (e.g., retry or notify user)
+                      }
+                    };
+
+                    const pollInterval = setInterval(poll, interval);
+                  };
+                  await pollAccountStatus(validatedAccountData.account.displayName);
+
+                  successfulCreations.push(accountData.account.displayName);
                   toCreateAccounts.delete(identifier);
                   fetchGASettings(userId);
 
@@ -841,18 +926,16 @@ export async function createAccounts(formData: FormCreateSchema) {
                     data: { createUsage: { increment: 1 } },
                   });
                   creationResults.push({
-                    accountName: accountData.displayName,
+                    accountName: accountData.account.displayName,
                     success: true,
-                    message: `Successfully created account ${accountData.displayName}`,
+                    message: `Successfully created account ${accountData.account.displayName}`,
                   });
                 } else {
-                  parsedResponse = await response.json();
-
                   const errorResult = await handleApiResponseError(
                     response,
                     parsedResponse,
                     'GA4Account',
-                    [accountData.displayName]
+                    [accountData.account.displayName]
                   );
 
                   if (errorResult) {
@@ -873,25 +956,25 @@ export async function createAccounts(formData: FormCreateSchema) {
                     }
                   } else {
                     errors.push(
-                      `An unknown error occurred for account ${accountData.displayName}.`
+                      `An unknown error occurred for account ${accountData.account.displayName}.`
                     );
                   }
 
                   toCreateAccounts.delete(identifier);
                   permissionDenied = errorResult ? true : permissionDenied;
                   creationResults.push({
-                    accountName: accountData.displayName,
+                    accountName: accountData.account.displayName,
                     success: false,
                     message: errorResult?.message,
                   });
                 }
               } catch (error: any) {
                 errors.push(
-                  `Exception creating account ${accountData.displayName}: ${error.message}`
+                  `Exception creating account ${accountData.account.displayName}: ${error.message}`
                 );
                 toCreateAccounts.delete(identifier);
                 creationResults.push({
-                  accountName: accountData.displayName,
+                  accountName: accountData.account.displayName,
                   success: false,
                   message: error.message,
                 });
@@ -1001,8 +1084,8 @@ export async function createAccounts(formData: FormCreateSchema) {
     const accountTicketId = accountTicketIds[index];
 
     return {
-      id: accountTicketId, // Ensure id is an array of strings
-      name: [form.displayName], // Wrap the string in an array
+      id: [accountTicketId], // Ensure id is an array of strings
+      name: [form.account.displayName], // Wrap the string in an array
       success: true, // or false, depending on the actual result
       // Include `notFound` if applicable
       notFound: false, // Set this to the appropriate value based on your logic
@@ -1017,6 +1100,7 @@ export async function createAccounts(formData: FormCreateSchema) {
     message: 'Accounts created successfully', // Customize the message as needed
     results: results, // Use the correctly typed results
     notFoundError: false, // Set based on actual not found status
+    accountTicketIds: accountTicketIds,
   };
   // Return the response with the correctly typed results
   return finalResults;

@@ -88,7 +88,6 @@ export async function listGAAccessBindings() {
               throw new Error(`Error fetching data: ${error.message}`);
             }
           }
-
         });
         redis.set(cacheKey, JSON.stringify(allData), 'EX', 3600);
 
