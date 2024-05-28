@@ -48,9 +48,10 @@ import { LimitReached } from '@/src/components/client/modals/limitReached';
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  limits: any;
 }
 
-export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData, TValue>) {
+export function DataTable<TData, TValue>({ columns, data, limits }: DataTableProps<TData, TValue>) {
   const dispatch = useDispatch();
   const [isCreatePending, startCreateTransition] = useTransition();
   const [isUpdatePending, startUpdateTransition] = useTransition();
@@ -90,12 +91,49 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
 
   const handleCreateClick = useCreateHookForm(
     userId,
-    'GA4Accounts',
+    ['GA4Accounts', 'GA4Properties', 'GA4AccountAccess'],
     '/dashboard/ga/wizards/accounts/create'
   );
 
   const onCreateButtonClick = () => {
     startCreateTransition(() => {
+      const accountLimit = limits.find((limit) => limit.Feature.name === 'GA4Accounts');
+      const propertyLimit = limits.find((limit) => limit.Feature.name === 'GA4Properties');
+      const accountAccessLimit = limits.find((limit) => limit.Feature.name === 'GA4AccountAccess');
+
+      if (accountLimit.createUsage >= accountLimit.createLimit) {
+        toast.error('You have reached the limit for creating GA4 accounts.', {
+          action: {
+            label: 'Close',
+            onClick: () => toast.dismiss(),
+          },
+        });
+      }
+
+      if (propertyLimit.createUsage >= propertyLimit.createLimit) {
+        toast.error(
+          'You have reached the limit for creating GA4 properties which is used to create a default property.',
+          {
+            action: {
+              label: 'Close',
+              onClick: () => toast.dismiss(),
+            },
+          }
+        );
+      }
+
+      if (accountAccessLimit.createUsage >= accountAccessLimit.createLimit) {
+        toast.error(
+          'You have reached the limit for creating GA4 account access which is used to grant you admin access.',
+          {
+            action: {
+              label: 'Close',
+              onClick: () => toast.dismiss(),
+            },
+          }
+        );
+      }
+
       handleCreateClick().catch((error) => {
         throw new Error(error);
       });

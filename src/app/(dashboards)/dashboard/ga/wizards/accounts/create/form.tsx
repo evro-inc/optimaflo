@@ -145,7 +145,9 @@ const FormCreateAccount /* : React.FC<FormCreateProps> */ = ({ tierLimits }) => 
     // First, reset the current forms to start fresh
     // Note: This step might need adjustment based on your exact requirements
     // and the behavior you observe with your form state management
-    form.reset({ forms: [] }); // Clear existing forms
+    const newForms = Array(amount).fill(formDataDefaults);
+
+    form.reset({ forms: newForms }); // Clear existing forms
 
     // Then, append new forms based on the selected amount
     for (let i = 0; i < amount; i++) {
@@ -288,6 +290,8 @@ const FormCreateAccount /* : React.FC<FormCreateProps> */ = ({ tierLimits }) => 
   const handlePrevious = () => {
     dispatch(decrementStep());
   };
+
+  console.log('form errors', form.formState.errors);
 
   return (
     <div className="flex items-center justify-center h-screen">

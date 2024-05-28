@@ -5,6 +5,8 @@ import { Skeleton } from '@/src/components/ui/skeleton';
 import { DataTable } from './table';
 import { columns } from './columns';
 import { listGaAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
+import { getTierLimit } from '@/src/lib/fetch/tierLimit';
+import { getSubscription } from '@/src/lib/fetch/subscriptions';
 
 export default async function AccountPage({
   searchParams,
@@ -18,7 +20,16 @@ export default async function AccountPage({
   const currentPage = Number(searchParams?.page) || 1;
   const { userId } = auth();
   if (!userId) return notFound();
-  const accounts = await listGaAccounts();
+
+  const subscription = await getSubscription(userId);
+
+  const subscriptionId = subscription.id;
+
+  const tierLimits = await getTierLimit(subscriptionId);
+
+  const accountData = await listGaAccounts();
+
+  const [accounts, limits] = await Promise.all([accountData, tierLimits]);
 
   return (
     <>
@@ -46,7 +57,7 @@ export default async function AccountPage({
         }
       >
         <div className="container mx-auto py-10">
-          <DataTable columns={columns} data={accounts} />
+          <DataTable columns={columns} data={accounts} limits={limits} />
         </div>
       </Suspense>
     </>

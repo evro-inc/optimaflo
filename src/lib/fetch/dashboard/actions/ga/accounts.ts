@@ -885,7 +885,8 @@ export async function createAccounts(formData: FormCreateSchema) {
                             forms: accessBindingData,
                           })) as FeatureResponse;
 
-                          await createProperties({
+                          // After calling createProperties, handle the response correctly
+                          const propertyResponse = await createProperties({
                             forms: [
                               {
                                 displayName: validatedAccountData?.propertyName,
@@ -901,6 +902,17 @@ export async function createAccounts(formData: FormCreateSchema) {
                               },
                             ],
                           });
+
+                          // Check if property creation was successful
+                          if (
+                            propertyResponse.success &&
+                            propertyResponse.results.every((res) => res.success)
+                          ) {
+                            await prisma.tierLimit.update({
+                              where: { id: tierLimitResponse.id },
+                              data: { createUsage: { increment: 1 } },
+                            });
+                          }
                         } else if (Date.now() - startTime > timeout) {
                           clearInterval(pollInterval);
                           console.error('Polling timed out, TOS not accepted.');
@@ -921,10 +933,6 @@ export async function createAccounts(formData: FormCreateSchema) {
                   toCreateAccounts.delete(identifier);
                   fetchGASettings(userId);
 
-                  await prisma.tierLimit.update({
-                    where: { id: tierLimitResponse.id },
-                    data: { createUsage: { increment: 1 } },
-                  });
                   creationResults.push({
                     accountName: accountData.account.displayName,
                     success: true,
