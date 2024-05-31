@@ -30,7 +30,7 @@ type FormCreateSchema = z.infer<typeof FormsSchema>;
 /************************************************************************************
  * List All Google Tag Manager Accounts
  ************************************************************************************/
-export async function listGaAccounts() {
+export async function listGaAccounts(bypassCache = false) {
   // Initialization of retry mechanism
   let retries = 0;
   const MAX_RETRIES = 3;
@@ -47,12 +47,13 @@ export async function listGaAccounts() {
 
   const cacheKey = `ga:accounts:userId:${userId}`;
 
-  const cachedValue = await redis.get(cacheKey);
-
-  if (cachedValue) {
-    return JSON.parse(cachedValue);
+  // bypass cache if the bypassCache flag is set to true. This is used on account creation to ensure the latest data is fetched
+  if (!bypassCache) {
+    const cachedValue = await redis.get(cacheKey);
+    if (cachedValue) {
+      return JSON.parse(cachedValue);
+    }
   }
-
   // Loop for retry mechanism
   while (retries < MAX_RETRIES) {
     try {
@@ -823,6 +824,9 @@ export async function createAccounts(formData: FormCreateSchema) {
 
                 // Accessing the validated account data
                 const validatedAccountData = validationResult.data.forms[0];
+
+                console.log('validatedAccountData: ', validatedAccountData);
+
                 const requestBody = {
                   account: {
                     displayName: validatedAccountData.account.displayName,
@@ -839,6 +843,8 @@ export async function createAccounts(formData: FormCreateSchema) {
 
                 const parsedResponse = await response.json();
 
+                console.log('parsedResponse: ', parsedResponse);
+
                 if (response.ok) {
                   const accountTicketId = parsedResponse.accountTicketId;
                   accountTicketIds.push(accountTicketId);
@@ -852,16 +858,22 @@ export async function createAccounts(formData: FormCreateSchema) {
 
                     const poll = async () => {
                       try {
-                        const accounts = await listGaAccounts();
+                        const accounts = await listGaAccounts(true);
+
+                        console.log('accounts poll: ', accounts);
 
                         // Ensure displayName is a string
                         const cleanDisplayName = Array.isArray(displayName)
                           ? displayName[0]
                           : displayName;
 
+                        console.log('cleanDisplayName: ', cleanDisplayName);
+
                         provisionedAccount = accounts.find((account) => {
                           return account.displayName === cleanDisplayName;
                         });
+
+                        console.log('provisionedAccount: ', provisionedAccount);
 
                         if (provisionedAccount) {
                           clearInterval(pollInterval);
@@ -903,23 +915,30 @@ export async function createAccounts(formData: FormCreateSchema) {
                             ],
                           });
 
+                          console.log('propertyResponse: ', propertyResponse);
+
                           // Check if property creation was successful
                           if (
                             propertyResponse.success &&
                             propertyResponse.results.every((res) => res.success)
                           ) {
+                            console.log('Property creation successful');
+
                             await prisma.tierLimit.update({
                               where: { id: tierLimitResponse.id },
                               data: { createUsage: { increment: 1 } },
                             });
+                          }
+                          if (!propertyResponse.success) {
+                            errors.push(`${propertyResponse.message}`);
                           }
                         } else if (Date.now() - startTime > timeout) {
                           clearInterval(pollInterval);
                           console.error('Polling timed out, TOS not accepted.');
                           // Handle timeout (e.g., notify user, retry)
                         }
-                      } catch (error) {
-                        console.error('Error during polling:', error);
+                      } catch (error: any) {
+                        errors.push(error);
                         clearInterval(pollInterval);
                         // Handle error (e.g., retry or notify user)
                       }

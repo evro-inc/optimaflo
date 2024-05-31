@@ -86,7 +86,7 @@ const FormCreateAccount /* : React.FC<FormCreateProps> */ = ({ tierLimits }) => 
   console.log('user:', user?.primaryEmailAddress?.emailAddress);
 
   const foundTierLimit = tierLimits.find(
-    (subscription) => subscription.Feature?.name === 'GA4Properties'
+    (subscription) => subscription.Feature?.name === 'GA4Accounts'
   );
 
   const createLimit = foundTierLimit?.createLimit;
@@ -139,28 +139,18 @@ const FormCreateAccount /* : React.FC<FormCreateProps> */ = ({ tierLimits }) => 
 
   // Adjust handleAmountSubmit or create a new function to handle selection change
   const handleAmountChange = (selectedAmount) => {
-    // Convert the selected amount to a number
     const amount = parseInt(selectedAmount);
+    const newForms = Array(amount).fill(formDataDefaults); // Create a new array with the selected amount of forms
 
-    // First, reset the current forms to start fresh
-    // Note: This step might need adjustment based on your exact requirements
-    // and the behavior you observe with your form state management
-    const newForms = Array(amount).fill(formDataDefaults);
-
-    form.reset({ forms: newForms }); // Clear existing forms
-
-    // Then, append new forms based on the selected amount
-    for (let i = 0; i < amount; i++) {
-      addForm(); // Use your existing addForm function that calls append
-    }
-
-    // Update the stream count in your state management (if necessary)
-    dispatch(setCount(amount));
+    form.reset({ forms: newForms }); // Reset the forms with the new array
+    dispatch(setCount(amount)); // Update the count state
   };
 
   const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
     dispatch(setLoading(true));
+
+    console.log('Forms:', forms);
 
     toast('Creating accounts...', {
       action: {
@@ -268,20 +258,17 @@ const FormCreateAccount /* : React.FC<FormCreateProps> */ = ({ tierLimits }) => 
   };
 
   const handleNext = async () => {
-    const currentFormIndex = currentStep - 2; // Adjusting for the array index and step count
+    const currentFormIndex = currentStep - 2;
     const currentFormPath = `forms.${currentFormIndex}`;
     const currentFormData = form.getValues(currentFormPath as `forms.${number}`);
 
-    // Start with the common fields that are always present
     const fieldsToValidate = [
       `${currentFormPath}.account.displayName`,
       `${currentFormPath}.account.regionCode`,
       `${currentFormPath}.redirectUri`,
     ];
 
-    // Now, trigger validation for these fields
     const isFormValid = await form.trigger(fieldsToValidate as any);
-
     if (isFormValid) {
       dispatch(incrementStep());
     }
@@ -292,13 +279,13 @@ const FormCreateAccount /* : React.FC<FormCreateProps> */ = ({ tierLimits }) => 
   };
 
   console.log('form errors', form.formState.errors);
+  console.log('form', form.formState);
 
   return (
     <div className="flex items-center justify-center h-screen">
       {currentStep === 1 && (
         <Form {...formCreateAmount}>
           <form className="w-2/3 space-y-6">
-            {/* Amount selection logic */}
             <FormField
               control={formCreateAmount.control}
               name="amount"

@@ -1,7 +1,6 @@
 import React from 'react';
 import { notFound, redirect } from 'next/navigation';
 import { currentUser } from '@clerk/nextjs';
-import { listGaAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
 import { getTierLimit } from '@/src/lib/fetch/tierLimit';
 import { getSubscription } from '@/src/lib/fetch/subscriptions';
 import FormCreateAccount from './form';
@@ -11,24 +10,14 @@ export default async function CreateCustomDimensionPage() {
   if (!user) return notFound();
 
   const subscription = await getSubscription(user.id);
-  console.log('Subscription:', subscription);
 
   const subscriptionId = subscription.id;
-
   const tierLimits = await getTierLimit(subscriptionId);
-
-  const accountData = await listGaAccounts();
-
-  const [accounts, limits] = await Promise.all([accountData, tierLimits]);
-
-  console.log('Accounts:', accounts);
-  console.log('Limits:', limits);
+  const [limits] = await Promise.all([tierLimits]);
 
   const accountLimit = limits.find((limit) => limit.Feature.name === 'GA4Accounts');
   const propertyLimit = limits.find((limit) => limit.Feature.name === 'GA4Properties');
   const accountAccessLimit = limits.find((limit) => limit.Feature.name === 'GA4AccountAccess');
-
-  console.log('Account Limit:', accountLimit);
 
   if (accountLimit.createUsage >= accountLimit.createLimit) {
     redirect('/dashboard/ga/accounts');
