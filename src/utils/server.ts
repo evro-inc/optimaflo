@@ -1,10 +1,14 @@
 'use server';
 import { notFound } from 'next/navigation';
 import prisma from '../lib/prisma';
-import { auth } from '@clerk/nextjs';
+import { auth, currentUser } from '@clerk/nextjs';
 import { revalidatePath } from 'next/cache';
 import { redis } from '../lib/redis/cache';
 import { fetchGASettings, fetchGtmSettings } from '../lib/fetch/dashboard';
+import { listGaAccounts } from '../lib/fetch/dashboard/actions/ga/accounts';
+import { FeatureResponse, Role } from '../types/types';
+import { createGAAccessBindings } from '../lib/fetch/dashboard/actions/ga/accountPermissions';
+import { createProperties } from '../lib/fetch/dashboard/actions/ga/properties';
 
 // Define the type for the pagination and filtering result
 type PaginatedFilteredResult<T> = {
@@ -296,3 +300,48 @@ export async function revalidate(keys, path, userId) {
   await pipeline.exec(); // Execute all queued commands in a batch
   await revalidatePath(path);
 }
+
+export const pollAccountStatus = async (displayName, interval = 5000, timeout = 60000) => {
+  let provisionedAccount;
+  const startTime = Date.now();
+
+  const poll = async () => {
+    try {
+      const accounts = await listGaAccounts(true);
+
+      console.log('accounts poll: ', accounts);
+
+      // Ensure displayName is a string
+      const cleanDisplayName = Array.isArray(displayName) ? displayName[0] : displayName;
+
+      console.log('cleanDisplayName: ', cleanDisplayName);
+
+      provisionedAccount = accounts.find((account) => {
+        return account.displayName === cleanDisplayName;
+      });
+
+      console.log('provisionedAccount: ', provisionedAccount);
+
+      if (provisionedAccount || Date.now() - startTime >= timeout) {
+        clearInterval(pollInterval);
+      }
+    } catch (error) {
+      clearInterval(pollInterval);
+      // Handle error (e.g., retry or notify user)
+    }
+  };
+
+  const pollInterval = setInterval(poll, interval);
+
+  // Wait until the polling completes or the timeout is reached
+  await new Promise<void>((resolve) => {
+    const intervalCheck = setInterval(() => {
+      if (provisionedAccount || Date.now() - startTime >= timeout) {
+        clearInterval(intervalCheck);
+        resolve();
+      }
+    }, interval);
+  });
+
+  return provisionedAccount;
+};

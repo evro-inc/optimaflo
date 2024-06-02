@@ -1,3 +1,5 @@
+import prisma from '../lib/prisma';
+
 // Function to get the URL. I've tried moving this function to a separate file, but it didn't work. I'm not sure why.
 export const getURL = () => {
   let vercelUrl = process.env.VERCEL_URL; // Assign VERCEL_URL to vercelUrl

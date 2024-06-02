@@ -55,6 +55,8 @@ import {
 import { createGAAccessBindings } from '@/src/lib/fetch/dashboard/actions/ga/accountPermissions';
 import { useUser } from '@clerk/nextjs';
 import OpenTabs from '@/src/components/client/UI/OpenTabs';
+import { createProperties } from '@/src/lib/fetch/dashboard/actions/ga/properties';
+import { pollAccountStatus } from '@/src/utils/server';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -82,6 +84,10 @@ const FormCreateAccount /* : React.FC<FormCreateProps> */ = ({ tierLimits }) => 
   const router = useRouter();
   const { user } = useUser();
   const [tosUrls, setTosUrls] = useState<string[]>([]); // Add state for TOS URLs
+  const [tosAccepted, setTosAccepted] = useState(false);
+  const [accountCreationResponse, setAccountCreationResponse] = useState<FeatureResponse | null>(
+    null
+  );
 
   console.log('user:', user?.primaryEmailAddress?.emailAddress);
 
@@ -146,6 +152,78 @@ const FormCreateAccount /* : React.FC<FormCreateProps> */ = ({ tierLimits }) => 
     dispatch(setCount(amount)); // Update the count state
   };
 
+  /*   useEffect(() => {
+      if (tosUrls.length > 0 && tosAccepted) {
+        handleProvisioningAfterTosAcceptance();
+      }
+    }, [tosUrls, tosAccepted]);
+  
+    const handleProvisioningAfterTosAcceptance = async () => {
+      if (!accountCreationResponse) return;
+  
+      console.log('Account creation response 2:', accountCreationResponse);
+  
+  
+      for (const result of accountCreationResponse.results) {
+        if (result.success) {
+          console.log('Result:', result);
+  
+  
+          const { name } = result;
+          console.log('Name:', name);
+  
+  
+          const provisionedAccount = await pollAccountStatus(name, 5000, 60000);
+  
+          console.log('Provisioned account:', provisionedAccount);
+  
+  
+          if (provisionedAccount) {
+            const email = user?.primaryEmailAddress?.emailAddress || '';
+  
+            const accessBindingData = [
+              {
+                account: provisionedAccount.name,
+                roles: [
+                  'predefinedRoles/admin',
+                  'predefinedRoles/no-cost-data',
+                  'predefinedRoles/no-revenue-data',
+                ] as Role[],
+                user: email,
+                name: '',
+              },
+            ];
+  
+            await createGAAccessBindings({ forms: accessBindingData });
+            await createProperties({
+              forms: [
+                {
+                  displayName: provisionedAccount?.displayName,
+                  timeZone: 'America/New_York',
+                  currencyCode: 'USD',
+                  industryCategory: 'AUTOMOTIVE',
+                  parent: provisionedAccount.name,
+                  propertyType: 'PROPERTY_TYPE_ORDINARY',
+                  retention: 'FOURTEEN_MONTHS',
+                  resetOnNewActivity: true,
+                  acknowledgment: true,
+                },
+              ],
+            });
+  
+            toast.success(`Account ${result.name} created successfully. The table will update shortly.`, {
+              action: {
+                label: 'Close',
+                onClick: () => toast.dismiss(),
+              },
+            });
+          }
+        }
+      }
+  
+      router.push('/dashboard/ga/accounts');
+    };
+   */
   const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
     dispatch(setLoading(true));
@@ -161,6 +239,8 @@ const FormCreateAccount /* : React.FC<FormCreateProps> */ = ({ tierLimits }) => 
 
     try {
       const res = (await createAccounts({ forms })) as FeatureResponse;
+      setAccountCreationResponse(res);
+      console.log('Account creation response:', res);
 
       if (res.success) {
         const tosUrls = res.results
@@ -174,6 +254,8 @@ const FormCreateAccount /* : React.FC<FormCreateProps> */ = ({ tierLimits }) => 
         setTosUrls(tosUrls);
 
         res.results.forEach((result) => {
+          console.log('Result:', result);
+
           if (result.success) {
             toast.success(
               `Account ${result.name} created successfully. The table will update shortly.`,
@@ -280,6 +362,37 @@ const FormCreateAccount /* : React.FC<FormCreateProps> */ = ({ tierLimits }) => 
 
   console.log('form errors', form.formState.errors);
   console.log('form', form.formState);
+
+  const pollForTosStatus = async () => {
+    if (!accountCreationResponse) return;
+
+    const checkStatus = async (name: string) => {
+      const res = await fetch(`/api/dashboard/tos?code=${name}`);
+      const data = await res.json();
+      return data.message === 'ToS signed successfully';
+    };
+
+    const allAccepted = await Promise.all(
+      accountCreationResponse.results.map(async (result) => {
+        if (result.success) {
+          const isAccepted = await checkStatus(result.id);
+          return isAccepted;
+        }
+        return false;
+      })
+    );
+
+    if (allAccepted.every(Boolean)) {
+      setTosAccepted(true);
+    }
+  };
+
+  useEffect(() => {
+    if (tosUrls.length > 0 && !tosAccepted) {
+      const interval = setInterval(pollForTosStatus, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [tosUrls, tosAccepted]);
 
   return (
     <div className="flex items-center justify-center h-screen">
@@ -438,12 +551,15 @@ const FormCreateAccount /* : React.FC<FormCreateProps> */ = ({ tierLimits }) => 
                               <AlertDialogHeader>
                                 <AlertDialogTitle>
                                   Before continuing, please verify that pop-up blockers have been
-                                  turned off for OptimaFlo.
+                                  turned off for OptimaFlo and you're logged in with the correct
+                                  account.
                                 </AlertDialogTitle>
                                 <AlertDialogDescription>
                                   This action will open a tab per account to acknowledge terms of
                                   service for GA4. Please verify that you have turn off your pop-up
-                                  blocker.
+                                  blocker. You must be logged in with the correct Google account to
+                                  accept the Terms of Service. This is the same account you're using
+                                  to create the account.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
@@ -468,7 +584,7 @@ const FormCreateAccount /* : React.FC<FormCreateProps> */ = ({ tierLimits }) => 
           )}
         </div>
       )}
-      {tosUrls.length > 0 && <OpenTabs urls={tosUrls} />}
+      {tosUrls.length > 0 && <OpenTabs urls={tosUrls} onTosAccepted={() => setTosAccepted(true)} />}
     </div>
   );
 };

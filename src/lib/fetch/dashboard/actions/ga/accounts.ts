@@ -832,7 +832,7 @@ export async function createAccounts(formData: FormCreateSchema) {
                     displayName: validatedAccountData.account.displayName,
                     regionCode: validatedAccountData.account.regionCode,
                   }, // Populate with the account details
-                  redirectUri: 'https://www.optimaflo.io/dashboard/ga/accounts', // Provide the redirectUri for ToS acceptance
+                  redirectUri: 'http://localhost:3000/dashboard/ga/tos', // Provide the redirectUri for ToS acceptance
                 };
 
                 const response = await fetch(url, {
@@ -843,114 +843,21 @@ export async function createAccounts(formData: FormCreateSchema) {
 
                 const parsedResponse = await response.json();
 
-                console.log('parsedResponse: ', parsedResponse);
+                console.log('Response Status:', response.status);
+                console.log('Parsed Response:', parsedResponse);
 
                 if (response.ok) {
                   const accountTicketId = parsedResponse.accountTicketId;
                   accountTicketIds.push(accountTicketId);
 
-                  const pollAccountStatus = async (
-                    displayName,
-                    interval = 5000,
-                    timeout = 60000
-                  ) => {
-                    const startTime = Date.now();
-
-                    const poll = async () => {
-                      try {
-                        const accounts = await listGaAccounts(true);
-
-                        console.log('accounts poll: ', accounts);
-
-                        // Ensure displayName is a string
-                        const cleanDisplayName = Array.isArray(displayName)
-                          ? displayName[0]
-                          : displayName;
-
-                        console.log('cleanDisplayName: ', cleanDisplayName);
-
-                        provisionedAccount = accounts.find((account) => {
-                          return account.displayName === cleanDisplayName;
-                        });
-
-                        console.log('provisionedAccount: ', provisionedAccount);
-
-                        if (provisionedAccount) {
-                          clearInterval(pollInterval);
-
-                          const email = user?.emailAddresses[0]?.emailAddress;
-
-                          const accessBindingData = [
-                            {
-                              account: provisionedAccount.name,
-                              roles: [
-                                'predefinedRoles/admin',
-                                'predefinedRoles/no-cost-data',
-                                'predefinedRoles/no-revenue-data',
-                              ] as Role[], // Explicitly cast to Role[]
-                              user: email || '',
-                              name: '',
-                            },
-                          ];
-
-                          (await createGAAccessBindings({
-                            forms: accessBindingData,
-                          })) as FeatureResponse;
-
-                          // After calling createProperties, handle the response correctly
-                          const propertyResponse = await createProperties({
-                            forms: [
-                              {
-                                displayName: validatedAccountData?.propertyName,
-                                timeZone: 'America/New_York',
-                                currencyCode: 'USD',
-                                industryCategory: 'AUTOMOTIVE',
-                                name: provisionedAccount.displayName,
-                                parent: provisionedAccount.name,
-                                propertyType: 'PROPERTY_TYPE_ORDINARY',
-                                retention: 'FOURTEEN_MONTHS',
-                                resetOnNewActivity: true,
-                                acknowledgment: true,
-                              },
-                            ],
-                          });
-
-                          console.log('propertyResponse: ', propertyResponse);
-
-                          // Check if property creation was successful
-                          if (
-                            propertyResponse.success &&
-                            propertyResponse.results.every((res) => res.success)
-                          ) {
-                            console.log('Property creation successful');
-
-                            await prisma.tierLimit.update({
-                              where: { id: tierLimitResponse.id },
-                              data: { createUsage: { increment: 1 } },
-                            });
-                          }
-                          if (!propertyResponse.success) {
-                            errors.push(`${propertyResponse.message}`);
-                          }
-                        } else if (Date.now() - startTime > timeout) {
-                          clearInterval(pollInterval);
-                          console.error('Polling timed out, TOS not accepted.');
-                          // Handle timeout (e.g., notify user, retry)
-                        }
-                      } catch (error: any) {
-                        errors.push(error);
-                        clearInterval(pollInterval);
-                        // Handle error (e.g., retry or notify user)
-                      }
-                    };
-
-                    const pollInterval = setInterval(poll, interval);
-                  };
-                  await pollAccountStatus(validatedAccountData.account.displayName);
-
                   successfulCreations.push(accountData.account.displayName);
                   toCreateAccounts.delete(identifier);
                   fetchGASettings(userId);
+
+                  await prisma.tierLimit.update({
+                    where: { id: tierLimitResponse.id },
+                    data: { createUsage: { increment: 1 } },
+                  });
 
                   creationResults.push({
                     accountName: accountData.account.displayName,

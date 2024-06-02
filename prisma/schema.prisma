@@ -217,11 +217,12 @@ model gtm {
 }
 
 model ga {
-  id         String @id @default(cuid())
-  userId     String @map("user_id")
-  accountId  String @map("account_id")
-  propertyId String @map("property_id")
-  User       User   @relation(fields: [userId], references: [id])
+  id         String  @id @default(cuid())
+  userId     String  @map("user_id")
+  accountId  String  @map("account_id")
+  propertyId String  @map("property_id")
+  status     String?
+  User       User    @relation(fields: [userId], references: [id])
 
   @@unique([userId, accountId, propertyId], name: "userId_accountId_propertyId")
   @@index([userId], name: "gaSettingsUserId")
