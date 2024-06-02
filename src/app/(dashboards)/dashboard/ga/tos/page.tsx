@@ -1,33 +1,21 @@
-'use client';
+'use server';
+import React, { Suspense } from 'react';
+import { notFound } from 'next/navigation';
+import { auth } from '@clerk/nextjs';
+import GATos from './client';
+import { currentUserOauthAccessToken } from '@/src/lib/clerk';
 
-import { useEffect } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+export default async function Page() {
+  const { userId } = auth();
+  if (!userId) return notFound();
 
-const GATos = () => {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const code = searchParams.get('code');
-  console.log('code: ', code);
+  const tokenData = await currentUserOauthAccessToken(userId);
+  const token = tokenData[0].token;
 
-  useEffect(() => {
-    if (code) {
-      fetch(`/api/dashboard/tos?code=${code}`)
-        .then((response) => response.json())
-        .then((data) => {
-          console.log('ToS signed response:', data);
-          // Handle success or error
-          if (data.message === 'ToS signed successfully') {
-            // Redirect to the desired page after a short delay
-            setTimeout(() => {
-              router.push('/dashboard/ga/accounts');
-            }, 2000); // 2-second delay before redirect
-          }
-        })
-        .catch((error) => console.error('Error handling callback:', error));
-    }
-  }, [code, router]);
 
-  return <div>Thank you for signing the Terms of Service. You will be redirected shortly.</div>;
-};
-
-export default GATos;
+  return (
+    <div className="container mx-auto py-10">
+      <GATos token={token} />
+    </div>
+  );
+}

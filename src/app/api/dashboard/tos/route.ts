@@ -17,6 +17,9 @@ export async function GET(request: NextRequest) {
   try {
     const accounts = await listGaAccounts(true);
 
+    console.log('Accounts:', accounts);
+
+
     if (!accounts.data.items || !accounts.data.items.some((account) => account.id === code)) {
       return NextResponse.json({ error: 'Access denied.' }, { status: 403 });
     }
