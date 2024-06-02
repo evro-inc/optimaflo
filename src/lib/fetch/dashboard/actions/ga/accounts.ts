@@ -832,7 +832,7 @@ export async function createAccounts(formData: FormCreateSchema) {
                     displayName: validatedAccountData.account.displayName,
                     regionCode: validatedAccountData.account.regionCode,
                   }, // Populate with the account details
-                  redirectUri: 'https://optimaflo.io/dashboard/ga/tos', // Provide the redirectUri for ToS acceptance
+                  redirectUri: 'https://optimaflo.ngrok.io/dashboard/ga/tos', // Provide the redirectUri for ToS acceptance
                 };
 
                 const response = await fetch(url, {

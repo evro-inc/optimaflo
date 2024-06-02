@@ -16,6 +16,7 @@ const GATos = ({ token }) => {
 
             fetch(`/api/dashboard/tos?accountId=${accountId}&accountTicketId=${accountTicketId}`, {
                 method: 'GET',
+                credentials: 'include',
                 headers: {
                     Authorization: `Bearer ${token[0].token}`,
                     'Content-Type': 'application/json',
