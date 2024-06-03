@@ -113,8 +113,6 @@ export async function listGAKeyEvents() {
   Create a single property or multiple conversionEvents
 ************************************************************************************/
 export async function createGAKeyEvents(formData: KeyEvents) {
-  console.log('formData create', formData);
-
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
@@ -223,8 +221,6 @@ export async function createGAKeyEvents(formData: KeyEvents) {
                   // Accessing the validated property data
                   const validatedData = validationResult.data.forms[0];
 
-                  console.log('validatedData', validatedData);
-
                   let requestBody: any = {
                     eventName: validatedData.eventName,
                     countingMethod: validatedData.countingMethod,
@@ -234,8 +230,6 @@ export async function createGAKeyEvents(formData: KeyEvents) {
                     requestBody.defaultValue = validatedData.defaultValue;
                   }
 
-                  console.log('requestBody', requestBody);
-
                   // Now, requestBody is prepared with the right structure based on the type
                   const response = await fetch(url, {
                     method: 'POST',
@@ -243,10 +237,7 @@ export async function createGAKeyEvents(formData: KeyEvents) {
                     body: JSON.stringify(requestBody),
                   });
 
-                  console.log('response', response);
-
                   const parsedResponse = await response.json();
-                  console.log('parsedResponse', parsedResponse);
 
                   if (response.ok) {
                     successfulCreations.push(validatedData.eventName);
@@ -435,8 +426,6 @@ export async function updateGAKeyEvents(formData: KeyEvents) {
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
 
-  console.log('formData', formData);
-
   let retries = 0;
   const MAX_RETRIES = 3;
   let delay = 1000;
@@ -513,17 +502,15 @@ export async function updateGAKeyEvents(formData: KeyEvents) {
                     return;
                   }
                 };
-                const updateFields: string[] = ['countingMethod'];
+                const updateFields: string[] = ['countingMethod', 'defaultValue'];
 
-                if (identifier.includeDefaultValue == true && identifier.defaultValue) {
+                /* if (identifier.includeDefaultValue == true && identifier.defaultValue) {
                   updateFields.push('defaultValue');
-                }
+                } */
 
                 const updateMask = updateFields.join(',');
 
                 const url = `https://analyticsadmin.googleapis.com/v1alpha/${identifier.accountProperty}?updateMask=${updateMask}`;
-
-                console.log('url back', url);
 
                 const headers = {
                   Authorization: `Bearer ${token[0].token}`,
@@ -552,8 +539,6 @@ export async function updateGAKeyEvents(formData: KeyEvents) {
                   // Accessing the validated property data
                   const validatedData = validationResult.data.forms[0];
 
-                  console.log('validatedData', validatedData);
-
                   let requestBody: any = {
                     countingMethod: validatedData.countingMethod,
                   };
@@ -562,8 +547,6 @@ export async function updateGAKeyEvents(formData: KeyEvents) {
                     requestBody.defaultValue = validatedData.defaultValue;
                   }
 
-                  console.log('requestBody', requestBody);
-
                   // Now, requestBody is prepared with the right structure based on the type
                   const response = await fetch(url, {
                     method: 'PATCH',
@@ -571,10 +554,7 @@ export async function updateGAKeyEvents(formData: KeyEvents) {
                     body: JSON.stringify(requestBody),
                   });
 
-                  console.log('response', response);
-
                   const parsedResponse = await response.json();
-                  console.log('parsedResponse', parsedResponse);
 
                   if (response.ok) {
                     successfulCreations.push(validatedData.eventName);
@@ -825,8 +805,6 @@ export async function deleteGAKeyEvents(
           await limiter.schedule(async () => {
             // Creating promises for each property deletion
             const deletePromises = Array.from(toDeleteKeyEvents).map(async (identifier) => {
-              console.log('identifier', identifier);
-
               const url = `https://analyticsadmin.googleapis.com/v1alpha/${identifier.name}`;
 
               const headers = {
@@ -842,7 +820,6 @@ export async function deleteGAKeyEvents(
                 });
 
                 const parsedResponse = await response.json();
-                console.log('parsedResponse', parsedResponse);
 
                 const cleanedParentId = identifier?.name?.split('/')[1];
 

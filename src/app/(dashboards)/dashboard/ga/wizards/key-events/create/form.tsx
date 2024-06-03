@@ -202,8 +202,6 @@ const FormCreateKeyEvents: React.FC<FormCreateProps> = ({
     const { forms } = data;
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
-    console.log('data', forms);
-
     toast('Creating key events...', {
       action: {
         label: 'Close',

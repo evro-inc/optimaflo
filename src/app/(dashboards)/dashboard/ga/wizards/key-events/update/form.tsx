@@ -75,13 +75,9 @@ const FormUpdateKeyEvents = () => {
   const currentFormIndex = currentStep - 1; // Adjust for 0-based index
   const currentFormData = selectedRowData[currentFormIndex]; // Get data for the current step
 
-  console.log('selectedRowData', selectedRowData);
-
   if (Object.keys(selectedRowData).length === 0) {
     router.push('/dashboard/ga/properties');
   }
-
-  console.log('selectedRowData', selectedRowData);
 
   const formDataDefaults: KeyEventType[] = Object.values(selectedRowData).map((rowData) => ({
     accountProperty: Array.isArray(rowData.name) ? rowData.name : [rowData.name], // Ensure accountProperty is an array
@@ -165,12 +161,9 @@ const FormUpdateKeyEvents = () => {
   const handlePrevious = (index) => {
     dispatch(decrementStep());
   };
-  console.log('Form errors:', form.formState.errors); // Log form errors if any
 
   const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
-
-    console.log('forms', forms);
 
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
@@ -183,8 +176,6 @@ const FormUpdateKeyEvents = () => {
 
     const uniqueKeyEvents = new Set(forms.map((form) => form.name));
     for (const form of forms) {
-      console.log('form', form);
-
       const identifier = `${form.accountProperty}-${form.eventName}`;
 
       if (uniqueKeyEvents.has(identifier)) {
