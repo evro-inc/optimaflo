@@ -678,3 +678,31 @@ interface AudienceEventFilter {
   eventName: string;
   eventParameterFilterExpression?: AudienceFilterExpression;
 }
+
+/*********************************************************
+ Key Events
+ *********************************************************/
+export enum CountingMethod {
+  UNSPECIFIED = 'COUNTING_METHOD_UNSPECIFIED',
+  ONCE_PER_EVENT = 'ONCE_PER_EVENT',
+  ONCE_PER_SESSION = 'ONCE_PER_SESSION',
+}
+
+// Default Value type
+interface DefaultValue {
+  numericValue?: number;
+  currencyCode?: string;
+}
+
+// Key Event type
+export interface KeyEventType {
+  accountProperty: string[];
+  property?: string;
+  eventName: string;
+  custom?: boolean;
+  countingMethod: CountingMethod;
+  defaultValue?: DefaultValue;
+  deletable?: boolean;
+  name?: string;
+  includeDefaultValue: boolean;
+}
