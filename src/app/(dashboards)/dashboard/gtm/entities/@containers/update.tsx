@@ -2,8 +2,8 @@
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UpdateContainers } from '@/src/lib/fetch/dashboard/actions/gtm/containers';
-import { LimitReached } from '../../../../../components/client/modals/limitReached';
-import { ButtonGroup } from '../../../../../components/client/ButtonGroup/ButtonGroup';
+import { LimitReached } from '../../../../../../components/client/modals/limitReached';
+import { ButtonGroup } from '../../../../../../components/client/ButtonGroup/ButtonGroup';
 import { z } from 'zod';
 import { FormSchema } from '@/src/lib/schemas/gtm/containers';
 import {

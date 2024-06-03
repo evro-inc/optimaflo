@@ -1,14 +1,13 @@
 import React, { Suspense } from 'react';
-import { DataTable } from '@/src/app/(dashboards)/dashboard/gtm/workspaces/table';
+import { DataTable } from '@/src/app/(dashboards)/dashboard/gtm/entities/@containers/table';
 import { auth } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
-import { listGtmWorkspaces } from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
 import { listGtmContainers } from '@/src/lib/fetch/dashboard/actions/gtm/containers';
 import { listGtmAccounts } from '@/src/lib/fetch/dashboard/actions/gtm/accounts';
 import { Skeleton } from '@/src/components/ui/skeleton';
 import { columns } from './columns';
 
-export default async function WorkspacePage({
+export default async function ContainerPage({
   searchParams,
 }: {
   searchParams?: {
@@ -23,31 +22,20 @@ export default async function WorkspacePage({
 
   const accountData = await listGtmAccounts();
   const containerData = await listGtmContainers();
-  const workspaceData = await listGtmWorkspaces();
 
-  const [accounts, containers, workspaces] = await Promise.all([
-    accountData,
-    containerData,
-    workspaceData,
-  ]);
+  const [accounts, containers] = await Promise.all([accountData, containerData]);
 
-  const flatContainers = containers.flat();
-  const flatWorkspaces = workspaces.flat();
-
-  const combinedData = flatWorkspaces.map((workspace) => {
-    const account = accounts.find((a) => a.accountId === workspace.accountId);
-    const container = flatContainers.find((c) => c.containerId === workspace.containerId);
-    if (account && container) {
+  const combinedData = containers.flat().map((container) => {
+    const account = accounts.find((a) => a.accountId === container.accountId);
+    if (account) {
       return {
-        ...workspace,
+        ...container,
         accountName: account.name,
-        containerName: container.name,
       };
     } else {
       return {
-        ...workspace,
+        ...container,
         accountName: 'Unknown Account',
-        containerName: 'Unknown Container',
       };
     }
   });

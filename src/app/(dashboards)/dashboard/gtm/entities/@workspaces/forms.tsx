@@ -2,43 +2,49 @@
 import dynamic from 'next/dynamic';
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { selectGlobal, toggleCreate, toggleUpdate } from '@/src/redux/globalSlice';
+import {
+  selectGlobal, // This was changed from selectEntity
+  toggleCreate, // This was changed to be specific for workspaces
+  toggleUpdate, // This was changed to be specific for workspaces
+} from '@/src/redux/globalSlice'; // This was changed from sharedSlice
 import { selectTable, setIsLimitReached } from '@/src/redux/tableSlice';
 import { useError } from '@/src/hooks/helpers';
 
 import { ErrorMessage } from '@/src/components/client/modals/Error';
 
-//dynamic import for buttons
+// Dynamic imports for modals and forms
 const LimitReachedModal = dynamic(
   () =>
-    import('../../../../../components/client/modals/limitReached').then((mod) => mod.LimitReached),
+    import('../../../../../../components/client/modals/limitReached').then(
+      (mod) => mod.LimitReached
+    ),
   { ssr: false }
 );
 
 const NotFoundErrorModal = dynamic(
   () =>
-    import('../../../../../components/client/modals/notFoundError').then(
+    import('../../../../../../components/client/modals/notFoundError').then(
       (mod) => mod.NotFoundError
     ),
   { ssr: false }
 );
 
-const FormCreateContainer = dynamic(() => import('./create'), {
+const FormCreateWorkspace = dynamic(() => import('./create'), {
   ssr: false,
 });
 
-const FormUpdateContainer = dynamic(() => import('./update'), {
+const FormUpdateWorkspace = dynamic(() => import('./update'), {
   ssr: false,
 });
 
-// In the component render method
-
-export default function ContainerForms({ accounts, selectedRows, table }) {
+function WorkspaceForms({ accounts, selectedRows, table }) {
   const dispatch = useDispatch();
   const { showCreate, showUpdate } = useSelector(selectGlobal);
   const { isLimitReached, notFoundError } = useSelector(selectTable);
 
   const { error, clearError } = useError();
+
+  const tableData = table.getRowModel().rows.map((row) => row.original);
 
   return (
     <>
@@ -51,14 +57,15 @@ export default function ContainerForms({ accounts, selectedRows, table }) {
 
       {/* Forms */}
       {showCreate && (
-        <FormCreateContainer
+        <FormCreateWorkspace
           showOptions={showCreate}
           onClose={() => dispatch(toggleCreate())}
           accounts={accounts}
+          table={tableData}
         />
       )}
       {showUpdate && (
-        <FormUpdateContainer
+        <FormUpdateWorkspace
           showOptions={showUpdate}
           onClose={() => dispatch(toggleUpdate())}
           accounts={accounts}
@@ -69,3 +76,5 @@ export default function ContainerForms({ accounts, selectedRows, table }) {
     </>
   );
 }
+
+export default WorkspaceForms;

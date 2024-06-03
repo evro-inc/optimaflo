@@ -8,12 +8,16 @@ import SideBar from '@/src/components/client/Navbar/SideBar';
 import { notFound } from 'next/navigation';
 import { currentUser } from '@clerk/nextjs';
 
-export default async function ProfileLayout({
-  // Layouts must accept a children prop.
-  // This will be populated with nested layouts or pages
+export default async function EntityLayout({
   children,
+  accounts,
+  containers,
+  workspaces,
 }: {
   children: React.ReactNode;
+  accounts: React.ReactNode;
+  containers: React.ReactNode;
+  workspaces: React.ReactNode;
 }) {
   const user = await currentUser();
   if (!user) return notFound();
@@ -28,6 +32,9 @@ export default async function ProfileLayout({
       <div className="flex-1 overflow-y-auto overflow-x-hidden pt-16 bg-secondary/10 pb-1">
         {/* Page Heading */}
         {children}
+        {accounts}
+        {containers}
+        {workspaces}
       </div>
     </>
   );

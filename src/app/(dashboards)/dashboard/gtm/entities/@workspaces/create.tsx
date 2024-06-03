@@ -1,8 +1,8 @@
 'use client';
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LimitReached } from '../../../../../components/client/modals/limitReached';
-import { ButtonGroup } from '../../../../../components/client/ButtonGroup/ButtonGroup';
+import { LimitReached } from '../../../../../../components/client/modals/limitReached';
+import { ButtonGroup } from '../../../../../../components/client/ButtonGroup/ButtonGroup';
 import { FeatureResponse, FormCreateWorkspaceProps } from '@/src/types/types';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -44,7 +44,7 @@ import { Button } from '@/src/components/ui/button';
 
 const NotFoundErrorModal = dynamic(
   () =>
-    import('../../../../../components/client/modals/notFoundError').then(
+    import('../../../../../../components/client/modals/notFoundError').then(
       (mod) => mod.NotFoundError
     ),
   { ssr: false }

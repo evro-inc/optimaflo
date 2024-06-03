@@ -15,22 +15,16 @@ export const NavItems = [
     isChidren: true,
     children: [
       {
-        title: 'Accounts',
+        title: 'Entities',
         icon: MixIcon,
         color: 'text-pink-500',
-        href: '/dashboard/gtm/accounts',
+        href: '/dashboard/gtm/entities',
       },
       {
-        title: 'Containers',
+        title: 'Configurations',
         icon: MixIcon,
         color: 'text-pink-500',
-        href: '/dashboard/gtm/containers',
-      },
-      {
-        title: 'Workspaces',
-        icon: MixIcon,
-        color: 'text-pink-500',
-        href: '/dashboard/gtm/workspaces',
+        href: '/dashboard/gtm/configurations',
       },
     ],
   },

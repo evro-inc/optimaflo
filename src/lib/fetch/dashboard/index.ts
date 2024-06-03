@@ -1,6 +1,4 @@
 //API HELPERS
-import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager/v2';
-import { OAuth2Client } from 'google-auth-library';
 import prisma from '@/src/lib/prisma';
 import { clerkClient } from '@clerk/nextjs';
 
