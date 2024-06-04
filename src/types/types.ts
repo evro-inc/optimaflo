@@ -251,25 +251,6 @@ export interface FeatureResponse {
   notFoundError?: boolean;
   revalidationSuccess?: boolean;
 }
-export type GTMAccountType = {
-  accountId: string;
-  name: string;
-};
-
-export type Container = {
-  accountId: string;
-  containerId: string;
-  name: string;
-  publicId: string;
-  usageContext: string[];
-};
-
-export type Workspace = {
-  accountId: string;
-  containerId: string;
-  workspaceId: string;
-  name: string;
-};
 
 export type GA4AccountType = {
   name: string;
@@ -692,4 +673,183 @@ export interface KeyEventType {
   deletable?: boolean;
   name?: string;
   includeDefaultValue: boolean;
+}
+
+/*********************************************************
+ GTM 
+ *********************************************************/
+export type GTMAccountType = {
+  accountId: string;
+  name: string;
+};
+
+export type Container = {
+  accountId: string;
+  containerId: string;
+  name: string;
+  publicId: string;
+  usageContext: string[];
+};
+
+export type Workspace = {
+  accountId: string;
+  containerId: string;
+  workspaceId: string;
+  name: string;
+};
+
+export type FormCreateBuiltInVariableProps = {
+  showOptions?: boolean;
+  onClose?: () => void;
+  tierLimits?: any;
+  table: any;
+  accounts?: any;
+  properties?: any;
+  containers?: any;
+  workspaces?: any;
+};
+
+/*********************************************************
+ GTM Built-In Variables
+ *********************************************************/
+// Path parameters
+interface PathParameters {
+  parent: string; // Example: accounts/{account_id}/containers/{container_id}/workspaces/{workspace_id}
+}
+
+// Query parameters
+type BuiltInVariableType =
+  | 'advertiserId'
+  | 'advertisingTrackingEnabled'
+  | 'ampBrowserLanguage'
+  | 'ampCanonicalHost'
+  | 'ampCanonicalPath'
+  | 'ampCanonicalUrl'
+  | 'ampClientId'
+  | 'ampClientMaxScrollX'
+  | 'ampClientMaxScrollY'
+  | 'ampClientScreenHeight'
+  | 'ampClientScreenWidth'
+  | 'ampClientScrollX'
+  | 'ampClientScrollY'
+  | 'ampClientTimestamp'
+  | 'ampClientTimezone'
+  | 'ampGtmEvent'
+  | 'ampPageDownloadTime'
+  | 'ampPageLoadTime'
+  | 'ampPageViewId'
+  | 'ampReferrer'
+  | 'ampTitle'
+  | 'ampTotalEngagedTime'
+  | 'appId'
+  | 'appName'
+  | 'appVersionCode'
+  | 'appVersionName'
+  | 'builtInVariableTypeUnspecified'
+  | 'clickClasses'
+  | 'clickElement'
+  | 'clickId'
+  | 'clickTarget'
+  | 'clickText'
+  | 'clickUrl'
+  | 'clientName'
+  | 'containerId'
+  | 'containerVersion'
+  | 'debugMode'
+  | 'deviceName'
+  | 'elementVisibilityFirstTime'
+  | 'elementVisibilityRatio'
+  | 'elementVisibilityRecentTime'
+  | 'elementVisibilityTime'
+  | 'environmentName'
+  | 'errorLine'
+  | 'errorMessage'
+  | 'errorUrl'
+  | 'event'
+  | 'eventName'
+  | 'firebaseEventParameterCampaign'
+  | 'firebaseEventParameterCampaignAclid'
+  | 'firebaseEventParameterCampaignAnid'
+  | 'firebaseEventParameterCampaignClickTimestamp'
+  | 'firebaseEventParameterCampaignContent'
+  | 'firebaseEventParameterCampaignCp1'
+  | 'firebaseEventParameterCampaignGclid'
+  | 'firebaseEventParameterCampaignSource'
+  | 'firebaseEventParameterCampaignTerm'
+  | 'firebaseEventParameterCurrency'
+  | 'firebaseEventParameterDynamicLinkAcceptTime'
+  | 'firebaseEventParameterDynamicLinkLinkid'
+  | 'firebaseEventParameterNotificationMessageDeviceTime'
+  | 'firebaseEventParameterNotificationMessageId'
+  | 'firebaseEventParameterNotificationMessageName'
+  | 'firebaseEventParameterNotificationMessageTime'
+  | 'firebaseEventParameterNotificationTopic'
+  | 'firebaseEventParameterPreviousAppVersion'
+  | 'firebaseEventParameterPreviousOsVersion'
+  | 'firebaseEventParameterPrice'
+  | 'firebaseEventParameterProductId'
+  | 'firebaseEventParameterQuantity'
+  | 'firebaseEventParameterValue'
+  | 'firstPartyServingUrl'
+  | 'formClasses'
+  | 'formElement'
+  | 'formId'
+  | 'formTarget'
+  | 'formText'
+  | 'formUrl'
+  | 'historySource'
+  | 'htmlId'
+  | 'language'
+  | 'newHistoryFragment'
+  | 'newHistoryState'
+  | 'newHistoryUrl'
+  | 'oldHistoryFragment'
+  | 'oldHistoryState'
+  | 'oldHistoryUrl'
+  | 'osVersion'
+  | 'pageHostname'
+  | 'pagePath'
+  | 'pageUrl'
+  | 'platform'
+  | 'queryString'
+  | 'randomNumber'
+  | 'referrer'
+  | 'requestMethod'
+  | 'requestPath'
+  | 'resolution'
+  | 'scrollDepthDirection'
+  | 'scrollDepthThreshold'
+  | 'scrollDepthUnits'
+  | 'sdkVersion'
+  | 'serverPageLocationHostname'
+  | 'serverPageLocationPath'
+  | 'serverPageLocationUrl'
+  | 'videoCurrentTime'
+  | 'videoDuration'
+  | 'videoPercent'
+  | 'videoProvider'
+  | 'videoStatus'
+  | 'videoTitle'
+  | 'videoUrl'
+  | 'videoVisible'
+  | 'visitorRegion';
+
+export interface QueryParameters {
+  type: BuiltInVariableType[];
+  entity: [];
+}
+
+// Built-In Variable
+export interface BuiltInVariable {
+  path: string; // GTM BuiltInVariable's API relative path
+  accountId: string; // GTM Account ID
+  containerId: string; // GTM Container ID
+  workspaceId: string; // GTM Workspace ID
+  type: string; // Type of built-in variable
+  name: string; // Name of the built-in variable
+}
+
+// API Response
+interface BuiltInVariablesResponse {
+  builtInVariable: BuiltInVariable[]; // List of created built-in variables
 }

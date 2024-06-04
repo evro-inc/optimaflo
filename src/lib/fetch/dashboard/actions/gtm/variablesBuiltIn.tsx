@@ -1,6 +1,6 @@
 'use server';
 import { revalidatePath } from 'next/cache';
-import { FormSchema } from '@/src/lib/schemas/gtm/builtInVariables';
+import { FormsSchema } from '@/src/lib/schemas/gtm/builtInVariables';
 import z from 'zod';
 import { auth } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
@@ -19,8 +19,8 @@ import {
 import { fetchGtmSettings } from '../..';
 
 // Define the types for the form data
-type FormCreateSchema = z.infer<typeof FormSchema>;
-type FormUpdateSchema = z.infer<typeof FormSchema>;
+type FormCreateSchema = z.infer<typeof FormsSchema>;
+type FormUpdateSchema = z.infer<typeof FormsSchema>;
 
 /************************************************************************************
   Function to list or get one GTM builtInVariables
@@ -67,7 +67,7 @@ export async function listGtmBuiltInVariables() {
 
           const urls = Array.from(uniquePairs).map((pair: any) => {
             const [accountId, containerId, workspaceId] = pair.split('-');
-            return `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/builtInVariables`;
+            return `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/built_in_variables`;
           });
 
           const headers = {
@@ -79,6 +79,7 @@ export async function listGtmBuiltInVariables() {
           for (const url of urls) {
             try {
               const response = await fetch(url, { headers });
+
               if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
               }
@@ -389,6 +390,8 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
 
+  console.log('formData', formData.forms);
+
   const MAX_RETRIES = 3;
   let delay = 1000;
   const errors: string[] = [];
@@ -401,10 +404,8 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
   // Refactor: Use string identifiers in the set
   const toCreateBuiltInVariables = new Set(
     formData.forms.map((ws) => ({
-      accountId: ws.accountId,
-      containerId: ws.containerId,
-      name: ws.name,
-      description: ws.description,
+      entity: ws.entity,
+      type: ws.type,
     }))
   );
 
@@ -457,7 +458,9 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
 
   let permissionDenied = false;
   // Corrected property name to 'name' based on the lint context provided
-  const builtInVariableNames = formData.forms.map((cd) => cd.name);
+  const builtInVariableNames = formData.forms.map((cd) => cd.type);
+
+  console.log('builtInVariableNames', builtInVariableNames);
 
   if (toCreateBuiltInVariables.size <= availableCreateUsage) {
     // Initialize retries variable to ensure proper loop execution
@@ -469,121 +472,132 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
           await limiter.schedule(async () => {
             const createPromises = Array.from(toCreateBuiltInVariables).map(
               async (identifier: any) => {
-                const { accountId, name: builtInVariableName } = identifier;
-                accountIdForCache = accountId;
-                containerIdForCache = identifier.containerId;
+                console.log('identifier', identifier);
+
                 const builtInVariableData = formData.forms.find(
-                  (cd) => cd.accountId === accountId && cd.name === builtInVariableName
+                  (prop) => prop.type === identifier.type && prop.entity === identifier.entity
                 );
+
+                console.log('builtInVariableData', builtInVariableData);
 
                 if (!builtInVariableData) {
                   errors.push(`Container data not found for ${identifier}`);
                   toCreateBuiltInVariables.delete(identifier);
                   return;
                 }
+                for (const entity of builtInVariableData.entity) {
+                  const accountId = entity.split('-')[0];
+                  const containerId = entity.split('-')[1];
+                  const workspaceId = entity.split('-')[2];
 
-                const url = `https://www.googleapis.com/tagmanager/v2/accounts/${builtInVariableData.accountId}/containers/${builtInVariableData.containerId}/builtInVariables`;
-                const headers = {
-                  Authorization: `Bearer ${token[0].token}`,
-                  'Content-Type': 'application/json',
-                  'Accept-Encoding': 'gzip',
-                };
+                  const url = new URL(
+                    `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/built_in_variables`
+                  );
 
-                try {
-                  const formDataToValidate = { forms: [builtInVariableData] };
-
-                  const validationResult = FormSchema.safeParse(formDataToValidate);
-
-                  if (!validationResult.success) {
-                    let errorMessage = validationResult.error.issues
-                      .map((issue) => `${issue.path[0]}: ${issue.message}`)
-                      .join('. ');
-                    errors.push(errorMessage);
-                    toCreateBuiltInVariables.delete(identifier);
-                    return {
-                      builtInVariableData,
-                      success: false,
-                      error: errorMessage,
-                    };
-                  }
-
-                  // Accessing the validated builtInVariable data
-                  const validatedContainerData = validationResult.data.forms[0];
-
-                  const response = await fetch(url, {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify({
-                      accountId: validatedContainerData.accountId,
-                      name: validatedContainerData.name,
-                      description: validatedContainerData.description,
-                      containerId: validatedContainerData.containerId,
-                    }),
+                  // Add optional query parameters
+                  const params = new URLSearchParams();
+                  builtInVariableData.type.forEach((type) => {
+                    params.append('type', type);
                   });
+                  url.search = params.toString();
 
-                  const parsedResponse = await response.json();
+                  const headers = {
+                    Authorization: `Bearer ${token[0].token}`,
+                    'Content-Type': 'application/json',
+                    'Accept-Encoding': 'gzip',
+                  };
 
-                  if (response.ok) {
-                    successfulCreations.push(builtInVariableName);
-                    toCreateBuiltInVariables.delete(identifier);
-                    fetchGtmSettings(userId);
-                    await prisma.tierLimit.update({
-                      where: { id: tierLimitResponse.id },
-                      data: { createUsage: { increment: 1 } },
-                    });
-                    creationResults.push({
-                      builtInVariableName: builtInVariableName,
-                      success: true,
-                      message: `Successfully created builtInVariable ${builtInVariableName}`,
-                    });
-                  } else {
-                    const errorResult = await handleApiResponseError(
-                      response,
-                      parsedResponse,
-                      'builtInVariable',
-                      [builtInVariableName]
-                    );
+                  try {
+                    const formDataToValidate = { forms: [builtInVariableData] };
 
-                    if (errorResult) {
-                      errors.push(`${errorResult.message}`);
-                      if (
-                        errorResult.errorCode === 403 &&
-                        parsedResponse.message === 'Feature limit reached'
-                      ) {
-                        featureLimitReached.push(builtInVariableName);
-                      } else if (errorResult.errorCode === 404) {
-                        const builtInVariableName =
-                          builtInVariableNames.find((name) => name.includes(identifier.name)) ||
-                          'Unknown';
-                        notFoundLimit.push({
-                          id: identifier.containerId,
-                          name: builtInVariableName,
-                        });
-                      }
-                    } else {
-                      errors.push(
-                        `An unknown error occurred for builtInVariable ${builtInVariableName}.`
-                      );
+                    const validationResult = FormsSchema.safeParse(formDataToValidate);
+
+                    if (!validationResult.success) {
+                      let errorMessage = validationResult.error.issues
+                        .map((issue) => `${issue.path[0]}: ${issue.message}`)
+                        .join('. ');
+                      errors.push(errorMessage);
+                      toCreateBuiltInVariables.delete(identifier);
+                      return {
+                        builtInVariableData,
+                        success: false,
+                        error: errorMessage,
+                      };
                     }
 
+                    // Accessing the validated builtInVariable data
+                    const validatedContainerData = validationResult.data.forms[0];
+
+                    const response = await fetch(url, {
+                      method: 'POST',
+                      headers: headers,
+                    });
+
+                    console.log('response', response);
+
+                    const parsedResponse = await response.json();
+                    console.log('Parsed Response:', parsedResponse);
+
+                    if (response.ok) {
+                      successfulCreations.push(identifier);
+                      toCreateBuiltInVariables.delete(identifier);
+                      fetchGtmSettings(userId);
+                      await prisma.tierLimit.update({
+                        where: { id: tierLimitResponse.id },
+                        data: { createUsage: { increment: 1 } },
+                      });
+                      creationResults.push({
+                        success: true,
+                        message: `Successfully created builtInVariable ${builtInVariableData}`,
+                        builtInVariableName: '',
+                      });
+                    } else {
+                      const errorResult = await handleApiResponseError(
+                        response,
+                        parsedResponse,
+                        'builtInVariable',
+                        [JSON.stringify(builtInVariableData)]
+                      );
+
+                      if (errorResult) {
+                        errors.push(`${errorResult.message}`);
+                        if (
+                          errorResult.errorCode === 403 &&
+                          parsedResponse.message === 'Feature limit reached'
+                        ) {
+                          featureLimitReached.push(identifier);
+                        } else if (errorResult.errorCode === 404) {
+                          const builtInVariableName =
+                            builtInVariableNames.find((name) => name.includes(identifier.name)) ||
+                            'Unknown';
+                          notFoundLimit.push({
+                            id: identifier.containerId,
+                            name: Array.isArray(builtInVariableName)
+                              ? builtInVariableName.join(', ')
+                              : builtInVariableName,
+                          });
+                        }
+                      } else {
+                        errors.push(`An unknown error occurred for builtInVariable.`);
+                      }
+
+                      toCreateBuiltInVariables.delete(identifier);
+                      permissionDenied = errorResult ? true : permissionDenied;
+                      creationResults.push({
+                        builtInVariableName: identifier.name,
+                        success: false,
+                        message: errorResult?.message,
+                      });
+                    }
+                  } catch (error: any) {
+                    errors.push(`Exception creating builtInVariable: ${error.message}`);
                     toCreateBuiltInVariables.delete(identifier);
-                    permissionDenied = errorResult ? true : permissionDenied;
                     creationResults.push({
-                      builtInVariableName: builtInVariableName,
+                      builtInVariableName: identifier.name,
                       success: false,
-                      message: errorResult?.message,
+                      message: error.message,
                     });
                   }
-                } catch (error: any) {
-                  errors.push(
-                    `Exception creating builtInVariable ${builtInVariableName}: ${error.message}`
-                  );
-                  toCreateBuiltInVariables.delete(identifier);
-                  creationResults.push({
-                    builtInVariableName: builtInVariableName,
-                    success: false,
-                    message: error.message,
-                  });
                 }
               }
             );
@@ -617,12 +631,9 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
               )}`,
               results: featureLimitReached.map((builtInVariableId) => {
                 // Find the name associated with the builtInVariableId
-                const builtInVariableName =
-                  builtInVariableNames.find((name) => name.includes(builtInVariableId)) ||
-                  'Unknown';
                 return {
                   id: [builtInVariableId], // Ensure id is an array
-                  name: [builtInVariableName], // Ensure name is an array, match by builtInVariableId or default to 'Unknown'
+                  name: [builtInVariableNames], // Ensure name is an array, match by builtInVariableId or default to 'Unknown'
                   success: false,
                   featureLimitReached: true,
                 };
@@ -689,11 +700,9 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
 
   // Map over formData.forms to create the results array
   const results: FeatureResult[] = formData.forms.map((form) => {
-    // Ensure that form.builtInVariableId is defined before adding it to the array
-    const builtInVariableId = form.builtInVariableId ? [form.builtInVariableId] : []; // Provide an empty array as a fallback
     return {
-      id: builtInVariableId, // Ensure id is an array of strings
-      name: [form.name], // Wrap the string in an array
+      id: form.entity, // Ensure id is an array of strings
+      name: [form.type], // Wrap the string in an array
       success: true, // or false, depending on the actual result
       // Include `notFound` if applicable
       notFound: false, // Set this to the appropriate value based on your logic

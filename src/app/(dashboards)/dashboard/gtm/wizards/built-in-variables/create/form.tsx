@@ -6,7 +6,7 @@ import { setLoading, incrementStep, decrementStep, setCount } from '@/redux/form
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { FormKeyEvents, FormsSchema } from '@/src/lib/schemas/ga/keyEvents';
+import { FormCreateAmountSchema, FormsSchema } from '@/src/lib/schemas/gtm/builtInVariables';
 import { Button } from '@/src/components/ui/button';
 import {
   Form,
@@ -32,8 +32,9 @@ import {
   KeyEventType,
   DimensionScope,
   FeatureResponse,
-  FormCreateProps,
+  FormCreateBuiltInVariableProps,
   CountingMethod,
+  QueryParameters,
 } from '@/src/types/types';
 import { toast } from 'sonner';
 import {
@@ -46,13 +47,21 @@ import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { createGAKeyEvents } from '@/src/lib/fetch/dashboard/actions/ga/keyEvents';
-import { DimensionScopeType } from '../../../properties/@dimensions/dimensionItems';
 import { Switch } from '@/src/components/ui/switch';
-import { CountMethodData, Currencies } from '../../../properties/@keyEvents/items';
 import { Checkbox } from '@/src/components/ui/checkbox';
 import { Separator } from '@/src/components/ui/separator';
 import { Label } from '@/src/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/src/components/ui/radio-group';
+import { BuiltInVariableGroups } from '../../../configurations/@builtInVariables/items';
+import { CreateBuiltInVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variablesBuiltIn';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/src/components/ui/tabs';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from '@/src/components/ui/carousel';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -70,11 +79,13 @@ const ErrorModal = dynamic(
 
 type Forms = z.infer<typeof FormsSchema>;
 
-const FormCreateKeyEvents: React.FC<FormCreateProps> = ({
+const FormCreateBuiltInVariable: React.FC<FormCreateBuiltInVariableProps> = ({
   tierLimits,
   properties = [],
   table = [],
   accounts = [],
+  containers = [],
+  workspaces = [],
 }) => {
   const dispatch = useDispatch();
   const loading = useSelector((state: RootState) => state.form.loading);
@@ -84,15 +95,36 @@ const FormCreateKeyEvents: React.FC<FormCreateProps> = ({
   const notFoundError = useSelector(selectTable).notFoundError;
   const router = useRouter();
 
-  const accountPropertyPairs = properties.map((property) => {
-    const account = accounts.find((acc) => acc.name === property.parent);
-    return {
-      account: account.name,
-      accountName: account.displayName,
-      property: property.name,
-      propertyName: property.displayName,
-    };
-  });
+  console.log('table', table);
+
+  console.log('BuiltInVariableGroups', BuiltInVariableGroups);
+
+  const gtmAccountContainerWorkspacesPairs = table.reduce(
+    (acc, item) => {
+      const account = accounts.find((acc) => acc.accountId === item.accountId);
+      const container = containers.find((cont) => cont.containerId === item.containerId);
+      const workspace = workspaces.find((ws) => ws.workspaceId === item.workspaceId);
+
+      const identifier = `${account.accountId}-${container.containerId}-${workspace.workspaceId}`;
+
+      if (!acc.seen.has(identifier)) {
+        acc.seen.add(identifier);
+        acc.result.push({
+          account: account.accountId,
+          accountName: account.name,
+          container: container.containerId,
+          containerName: container.name,
+          workspace: workspace.workspaceId,
+          workspaceName: workspace.name,
+        });
+      }
+
+      return acc;
+    },
+    { seen: new Set(), result: [] }
+  ).result;
+
+  console.log('gtmAccountContainerWorkspacesPairs', gtmAccountContainerWorkspacesPairs);
 
   const foundTierLimit = tierLimits.find(
     (subscription) => subscription.Feature?.name === 'GA4KeyEvents'
@@ -102,27 +134,13 @@ const FormCreateKeyEvents: React.FC<FormCreateProps> = ({
   const createUsage = foundTierLimit?.createUsage;
   const remainingCreate = createLimit - createUsage;
 
-  const accountsWithProperties = accounts
-    .map((account) => {
-      const accountProperties = properties.filter((property) => property.parent === account.name);
-
-      return {
-        ...account,
-        properties: accountProperties,
-      };
-    })
-    .filter((account) => account.properties.length > 0);
-
-  const formDataDefaults: KeyEventType = {
-    accountProperty: accountsWithProperties[0].name,
-    eventName: '',
-    countingMethod: CountingMethod.ONCE_PER_EVENT,
-    defaultValue: undefined,
-    includeDefaultValue: false,
+  const formDataDefaults: QueryParameters = {
+    type: ['clickClasses'],
+    entity: [],
   };
 
   const formCreateAmount = useForm({
-    resolver: zodResolver(FormKeyEvents),
+    resolver: zodResolver(FormCreateAmountSchema),
     defaultValues: {
       amount: 1,
     },
@@ -159,64 +177,41 @@ const FormCreateKeyEvents: React.FC<FormCreateProps> = ({
     append(formDataDefaults);
   };
 
-  /*   const scopeSelection = form.watch(`forms.${currentFormIndex}.scope`);
-   */
-
   // Adjust handleAmountSubmit or create a new function to handle selection change
   const handleAmountChange = (selectedAmount) => {
-    // Convert the selected amount to a number
     const amount = parseInt(selectedAmount);
+    form.reset({ forms: [] });
 
-    // First, reset the current forms to start fresh
-    // Note: This step might need adjustment based on your exact requirements
-    // and the behavior you observe with your form state management
-    form.reset({ forms: [] }); // Clear existing forms
-
-    // Then, append new forms based on the selected amount
     for (let i = 0; i < amount; i++) {
       addForm(); // Use your existing addForm function that calls append
     }
 
-    // Update the key event count in your state management (if necessary)
     dispatch(setCount(amount));
-  };
-
-  const handleValueChange = (newValue, index) => {
-    if (newValue === 'false') {
-      form.setValue(`forms.${index}.defaultValue`, undefined);
-      form.setValue(`forms.${index}.includeDefaultValue`, false);
-    } else {
-      form.setValue(`forms.${index}.defaultValue`, {
-        numericValue: 0,
-        currencyCode: 'USD',
-      });
-      form.setValue(`forms.${index}.includeDefaultValue`, true);
-    }
-  };
-
-  const handleNumericValueChange = (value, index) => {
-    form.setValue(`forms.${index}.defaultValue.numericValue`, parseFloat(value));
   };
 
   const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
-    dispatch(setLoading(true)); // Set loading to true using Redux action
+    dispatch(setLoading(true));
 
-    console.log('data', forms);
+    console.log('forms', forms);
 
-    toast('Creating key events...', {
+    toast('Creating Built-In Variables...', {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
       },
     });
 
-    const uniqueKeyEvents = new Set(forms.map((form) => form.name));
+    const uniqueKeyEvents = new Set<string>();
+    console.log('uniqueKeyEvents', uniqueKeyEvents);
+
     for (const form of forms) {
-      const identifier = `${form.accountProperty}-${form.eventName}`;
+      console.log('form 1', form);
+
+      const identifier = JSON.stringify({ entity: form.entity, type: form.type });
 
       if (uniqueKeyEvents.has(identifier)) {
-        toast.error(`Duplicate key event found for ${form.accountProperty} - ${form.eventName}`, {
+        toast.error(`Duplicate key event found for ${form.entity} - ${form.type}`, {
           action: {
             label: 'Close',
             onClick: () => toast.dismiss(),
@@ -229,16 +224,7 @@ const FormCreateKeyEvents: React.FC<FormCreateProps> = ({
     }
 
     try {
-      const formsToSubmit = forms.map((form) => {
-        const { defaultValue, ...rest } = form;
-        if (form.includeDefaultValue) {
-          return { ...rest, defaultValue };
-        }
-
-        return rest;
-      });
-
-      const res = (await createGAKeyEvents({ forms: formsToSubmit })) as FeatureResponse;
+      const res = (await CreateBuiltInVariables({ forms })) as FeatureResponse;
 
       if (res.success) {
         res.results.forEach((result) => {
@@ -255,7 +241,7 @@ const FormCreateKeyEvents: React.FC<FormCreateProps> = ({
           }
         });
 
-        router.push('/dashboard/ga/properties');
+        router.push('/dashboard/gtm/configurations');
       } else {
         if (res.notFoundError) {
           res.results.forEach((result) => {
@@ -363,7 +349,7 @@ const FormCreateKeyEvents: React.FC<FormCreateProps> = ({
               name="amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>How many key events do you want to create?</FormLabel>
+                  <FormLabel>How many key built-in variable forms do you want to create?</FormLabel>
                   <Select
                     onValueChange={(value) => {
                       handleAmountChange(value); // Call the modified handler
@@ -395,214 +381,168 @@ const FormCreateKeyEvents: React.FC<FormCreateProps> = ({
         fields.map(
           (field, index) =>
             currentStep === index + 2 && (
-              <div className="w-full">
+              <div>
                 {/* Render only the form corresponding to the current step - 1 
               (since step 1 is for selecting the number of forms) */}
                 <div
                   key={field.id}
                   className="max-w-full md:max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-1"
                 >
-                  <div className="max-w-full md:max-w-xl mx-auto">
-                    <h1>Key Event {index + 1}</h1>
+                  <div className="max-w-full mx-auto">
+                    <h1>Built In Variable {index + 1}</h1>
                     <div className="mt-2 md:mt-12">
                       {/* Form */}
 
                       <Form {...form}>
                         <form
                           onSubmit={form.handleSubmit(processForm)}
-                          id={`createStream-${index}`}
+                          id={`createVar-${index}`}
                           className="space-y-6"
                         >
                           {(() => {
                             return (
                               <>
-                                <div className="flex flex-col md:flex-row md:space-x-4">
-                                  <div className="w-full md:basis-1/2">
-                                    <FormField
-                                      control={form.control}
-                                      name={`forms.${index}.eventName`}
-                                      render={({ field }) => (
-                                        <FormItem>
-                                          <FormLabel>New Key Event Name</FormLabel>
-                                          <FormDescription className="h-16">
-                                            This is the key event name you want to create.
-                                          </FormDescription>
-                                          <FormControl>
-                                            <Input
-                                              placeholder="Name of the event name"
-                                              {...form.register(`forms.${index}.eventName`)}
-                                              {...field}
-                                            />
-                                          </FormControl>
-
-                                          <FormMessage />
-                                        </FormItem>
-                                      )}
-                                    />
-                                  </div>
-
-                                  <div className="w-full md:basis-1/2">
-                                    <FormField
-                                      control={form.control}
-                                      name={`forms.${index}.countingMethod`}
-                                      render={({ field }) => (
-                                        <FormItem>
-                                          <FormLabel>Counting Method</FormLabel>
-                                          <FormDescription className="h-16">
-                                            The method by which Key Events will be counted across
-                                            multiple events within a session.
-                                          </FormDescription>
-                                          <FormControl>
-                                            <Select
-                                              {...form.register(`forms.${index}.countingMethod`)}
-                                              {...field}
-                                              onValueChange={field.onChange}
-                                            >
-                                              <SelectTrigger>
-                                                <SelectValue placeholder="Select a key event type." />
-                                              </SelectTrigger>
-                                              <SelectContent>
-                                                <SelectGroup>
-                                                  {Object.entries(CountMethodData).map(
-                                                    ([label, value]) => (
-                                                      <SelectItem key={value} value={value}>
-                                                        {label}
-                                                      </SelectItem>
-                                                    )
-                                                  )}
-                                                </SelectGroup>
-                                              </SelectContent>
-                                            </Select>
-                                          </FormControl>
-                                          <FormMessage />
-                                        </FormItem>
-                                      )}
-                                    />
-                                  </div>
-                                </div>
-
-                                <div className="flex flex-col md:flex-row md:space-x-4">
-                                  <FormField
-                                    control={form.control}
-                                    name={`forms.${index}.defaultValue`}
-                                    render={({ field }) => (
-                                      <FormItem className="space-y-3">
-                                        <FormLabel>Default Conversion Value</FormLabel>
-                                        <FormControl>
-                                          <RadioGroup
-                                            onValueChange={(newValue) =>
-                                              handleValueChange(newValue, index)
-                                            }
-                                            value={field.value ? 'true' : 'false'}
-                                            className="flex flex-col space-y-1"
-                                          >
-                                            <FormItem className="flex items-center space-x-3 space-y-0">
-                                              <FormControl>
-                                                <RadioGroupItem value="false" />
-                                              </FormControl>
-                                              <FormLabel className="font-normal">
-                                                Don't set a default conversion value
-                                              </FormLabel>
-                                            </FormItem>
-                                            <FormItem className="flex items-center space-x-3 space-y-0">
-                                              <FormControl>
-                                                <RadioGroupItem value="true" />
-                                              </FormControl>
-                                              <FormLabel className="font-normal">
-                                                Set a default conversion value
-                                              </FormLabel>
-                                              {field.value && (
-                                                <div className="flex items-center space-x-3">
-                                                  <Input
-                                                    placeholder="Enter default conversion value"
-                                                    {...form.register(
-                                                      `forms.${index}.defaultValue.numericValue`,
-                                                      {
-                                                        valueAsNumber: true,
-                                                        setValueAs: (value) =>
-                                                          value === '' ? undefined : Number(value),
-                                                      }
-                                                    )}
-                                                    type="number"
-                                                    min={0}
-                                                    onChange={(e) =>
-                                                      handleNumericValueChange(
-                                                        e.target.value,
-                                                        index
-                                                      )
-                                                    }
-                                                  />
-
-                                                  <Select
-                                                    value={form.watch(
-                                                      `forms.${index}.defaultValue.currencyCode`
-                                                    )}
-                                                    onValueChange={(selectedCurrency) => {
-                                                      form.setValue(
-                                                        `forms.${index}.defaultValue.currencyCode`,
-                                                        selectedCurrency,
-                                                        { shouldValidate: true }
-                                                      );
-                                                    }}
-                                                  >
-                                                    <SelectTrigger>
-                                                      <SelectValue placeholder="Select currency" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                      <SelectGroup>
-                                                        {Object.entries(Currencies).map(
-                                                          ([code, name]) => (
-                                                            <SelectItem key={code} value={code}>
-                                                              {code} - {name}
-                                                            </SelectItem>
-                                                          )
-                                                        )}
-                                                      </SelectGroup>
-                                                    </SelectContent>
-                                                  </Select>
+                                <div>
+                                  <div>
+                                    <div className="w-full mx-auto">
+                                      <Tabs defaultValue="click">
+                                        {/* <Carousel
+                                          opts={{
+                                            align: "start",
+                                          }}
+                                          className="w-full max-w-lg"
+                                        >
+                                          <CarouselContent>
+                                            {Array.from({ length: Math.ceil(Object.keys(BuiltInVariableGroups).length) }).map((_, carouselIndex) => (
+                                              <CarouselItem key={carouselIndex} className="md:basis-1/2 lg:basis-1/3">
+                                                <div className="p-1">
+                                                  <TabsList className="flex">
+                                                    {Object.keys(BuiltInVariableGroups).slice(carouselIndex, (carouselIndex + 1)).map((groupName) => (
+                                                      <TabsTrigger key={groupName} value={groupName}>
+                                                        {groupName}
+                                                      </TabsTrigger>
+                                                    ))}
+                                                  </TabsList>
                                                 </div>
-                                              )}
-                                            </FormItem>
-                                          </RadioGroup>
-                                        </FormControl>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
+                                              </CarouselItem>
+                                            ))}
+                                          </CarouselContent>
+                                          <CarouselPrevious type='button' />
+                                          <CarouselNext type='button' />
+                                        </Carousel> */}
+
+                                        <TabsList className="flex border-b">
+                                          {Object.keys(BuiltInVariableGroups).map((groupName) => (
+                                            <TabsTrigger
+                                              key={groupName}
+                                              value={groupName}
+                                              className="flex-shrink-0 min-w-[100px]"
+                                            >
+                                              {groupName}
+                                            </TabsTrigger>
+                                          ))}
+                                        </TabsList>
+
+                                        {Object.entries(BuiltInVariableGroups).map(
+                                          ([groupName, variables]) => (
+                                            <TabsContent key={groupName} value={groupName}>
+                                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 min-h-[150px]">
+                                                {Array.from({
+                                                  length: Math.ceil(variables.length / 5),
+                                                }).map((_, colIndex) => (
+                                                  <div key={colIndex}>
+                                                    {variables
+                                                      .slice(colIndex * 5, (colIndex + 1) * 5)
+                                                      .map((variable, varIndex) => (
+                                                        <FormField
+                                                          key={varIndex}
+                                                          control={form.control}
+                                                          name={`forms.${index}.type`}
+                                                          render={({ field }) => (
+                                                            <FormItem className="flex items-start space-x-3 space-y-0 mb-2">
+                                                              <FormControl>
+                                                                <Checkbox
+                                                                  checked={
+                                                                    Array.isArray(field.value) &&
+                                                                    field.value.includes(
+                                                                      variable as (typeof field.value)[number]
+                                                                    )
+                                                                  }
+                                                                  onCheckedChange={(checked) => {
+                                                                    return checked
+                                                                      ? field.onChange([
+                                                                          ...(Array.isArray(
+                                                                            field.value
+                                                                          )
+                                                                            ? field.value
+                                                                            : []),
+                                                                          variable as (typeof field.value)[number],
+                                                                        ])
+                                                                      : field.onChange(
+                                                                          (Array.isArray(
+                                                                            field.value
+                                                                          )
+                                                                            ? field.value
+                                                                            : []
+                                                                          ).filter(
+                                                                            (value) =>
+                                                                              value !== variable
+                                                                          )
+                                                                        );
+                                                                  }}
+                                                                />
+                                                              </FormControl>
+                                                              <FormLabel className="text-sm font-normal">
+                                                                {variable}
+                                                              </FormLabel>
+                                                            </FormItem>
+                                                          )}
+                                                        />
+                                                      ))}
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </TabsContent>
+                                          )
+                                        )}
+                                      </Tabs>
+                                    </div>
+                                  </div>
                                 </div>
 
                                 <div className="flex flex-col md:flex-row md:space-x-4 py-10">
                                   <div className="w-full md:basis-auto">
                                     <FormField
                                       control={form.control}
-                                      name={`forms.${index}.accountProperty`}
+                                      name={`forms.${index}.entity`}
                                       render={() => (
                                         <FormItem>
                                           <div className="mb-4">
                                             <FormLabel className="text-base">
-                                              Account and Property Selection
+                                              Entity Selection
                                             </FormLabel>
                                             <FormDescription>
-                                              Which account and property do you want to create the
-                                              audience for?
+                                              Which account, container, and workspace do you want to
+                                              create the built-in variable(s) for?
                                             </FormDescription>
                                           </div>
-                                          {accountPropertyPairs.map((item) => (
+                                          {gtmAccountContainerWorkspacesPairs.map((item, idx) => (
                                             <FormField
-                                              key={item.id}
+                                              key={`${item.account}-${item.container}-${item.workspace}`}
                                               control={form.control}
-                                              name={`forms.${index}.accountProperty`}
+                                              name={`forms.${index}.entity`}
                                               render={({ field }) => {
+                                                const compositeValue = `${item.account}-${item.container}-${item.workspace}`;
                                                 return (
                                                   <FormItem
-                                                    key={item.id}
+                                                    key={compositeValue}
                                                     className="flex flex-row items-start space-x-3 space-y-0"
                                                   >
                                                     <FormControl>
                                                       <Checkbox
                                                         checked={
                                                           Array.isArray(field.value) &&
-                                                          field.value.includes(item.property)
+                                                          field.value.includes(compositeValue)
                                                         }
                                                         onCheckedChange={(checked) => {
                                                           return checked
@@ -610,14 +550,15 @@ const FormCreateKeyEvents: React.FC<FormCreateProps> = ({
                                                                 ...(Array.isArray(field.value)
                                                                   ? field.value
                                                                   : []),
-                                                                item.property,
+                                                                compositeValue,
                                                               ])
                                                             : field.onChange(
                                                                 (Array.isArray(field.value)
                                                                   ? field.value
                                                                   : []
                                                                 ).filter(
-                                                                  (value) => value !== item.property
+                                                                  (value) =>
+                                                                    value !== compositeValue
                                                                 )
                                                               );
                                                         }}
@@ -636,10 +577,19 @@ const FormCreateKeyEvents: React.FC<FormCreateProps> = ({
                                                         <Separator orientation="vertical" />
                                                         <div>
                                                           <span className="text-gray-600 font-semibold">
-                                                            Property:
+                                                            Container:
                                                           </span>
                                                           <span className="ml-2 text-gray-800 font-medium">
-                                                            {item.propertyName}
+                                                            {item.containerName}
+                                                          </span>
+                                                        </div>
+                                                        <Separator orientation="vertical" />
+                                                        <div>
+                                                          <span className="text-gray-600 font-semibold">
+                                                            Workspace:
+                                                          </span>
+                                                          <span className="ml-2 text-gray-800 font-medium">
+                                                            {item.workspaceName}
                                                           </span>
                                                         </div>
                                                       </div>
@@ -686,4 +636,4 @@ const FormCreateKeyEvents: React.FC<FormCreateProps> = ({
   );
 };
 
-export default FormCreateKeyEvents;
+export default FormCreateBuiltInVariable;
