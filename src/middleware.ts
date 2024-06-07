@@ -122,9 +122,11 @@ export default authMiddleware({
     '/features',
     '/pricing',
     '/contact',
+    '/dashboard/ga/tos(.*)',
     '/tos',
     '/privacy',
     '/api/webhooks(.*)',
+    '/api/dashboard/tos(.*)',
   ],
   apiRoutes: [
     '/api/dashboard/(.*)',
