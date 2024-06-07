@@ -6,10 +6,8 @@ export const BuiltInVariableGroups = {
     'historySource',
     'newHistoryFragment',
     'newHistoryState',
-    'newHistoryUrl',
     'oldHistoryFragment',
     'oldHistoryState',
-    'oldHistoryUrl',
   ],
   Page: ['pageHostname', 'pagePath', 'pageUrl', 'referrer'],
 

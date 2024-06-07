@@ -1,5 +1,4 @@
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager';
-import { boolean } from 'joi';
 import Stripe from 'stripe';
 
 export interface PageMeta {
@@ -53,7 +52,7 @@ export interface Price {
   products?: Product;
 }
 
-export interface PriceWithProduct extends Price {}
+export interface PriceWithProduct extends Price { }
 
 export interface Subscription {
   id: string /* primary key */;
@@ -712,11 +711,6 @@ export type FormCreateBuiltInVariableProps = {
 /*********************************************************
  GTM Built-In Variables
  *********************************************************/
-// Path parameters
-interface PathParameters {
-  parent: string; // Example: accounts/{account_id}/containers/{container_id}/workspaces/{workspace_id}
-}
-
 // Query parameters
 type BuiltInVariableType =
   | 'advertiserId'
@@ -836,7 +830,7 @@ type BuiltInVariableType =
 
 export interface QueryParameters {
   type: BuiltInVariableType[];
-  entity: [];
+  entity: string[];
 }
 
 // Built-In Variable
@@ -847,9 +841,4 @@ export interface BuiltInVariable {
   workspaceId: string; // GTM Workspace ID
   type: string; // Type of built-in variable
   name: string; // Name of the built-in variable
-}
-
-// API Response
-interface BuiltInVariablesResponse {
-  builtInVariable: BuiltInVariable[]; // List of created built-in variables
 }

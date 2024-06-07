@@ -34,7 +34,7 @@ import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
 import { revalidate } from '@/src/utils/server';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
-import { useDeleteHook } from './delete';
+import { useDeleteHook, useRevertHook } from './delete';
 import { useCreateHookForm, useUpdateHookForm } from '@/src/hooks/useCRUD';
 import { setSelectedRows } from '@/src/redux/tableSlice';
 import { useDispatch } from 'react-redux';
@@ -53,8 +53,6 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const dispatch = useDispatch();
   const [isCreatePending, startCreateTransition] = useTransition();
-  const [isUpdatePending, startUpdateTransition] = useTransition();
-
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
 
@@ -83,8 +81,8 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     return acc;
   }, {});
 
-  const rowSelectedCount = Object.keys(selectedRowData).length;
-
+  /*   const rowSelectedCount = Object.keys(selectedRowData).length;
+   */
   const handleCreateClick = useCreateHookForm(
     userId,
     'GTMBuiltInVariables',
@@ -99,22 +97,23 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     });
   };
 
-  const handleUpdateClick = useUpdateHookForm(
-    userId,
-    'GTMBuiltInVariables',
-    '/dashboard/ga/wizards/built-in-variables/create',
-    rowSelectedCount
-  );
-
-  const onUpdateButtonClick = () => {
-    startUpdateTransition(() => {
-      handleUpdateClick().catch((error) => {
-        throw new Error(error);
+  /*   const handleUpdateClick = useUpdateHookForm(
+      userId,
+      'GTMBuiltInVariables',
+      '/dashboard/ga/wizards/built-in-variables/create',
+      rowSelectedCount
+    );
+  
+    const onUpdateButtonClick = () => {
+      startUpdateTransition(() => {
+        handleUpdateClick().catch((error) => {
+          throw new Error(error);
+        });
       });
-    });
-  };
+    }; */
 
   const handleDelete = useDeleteHook(selectedRowData, table);
+  const handleRevert = useRevertHook(selectedRowData, table);
 
   const refreshAllCache = async () => {
     toast.info('Updating our systems. This may take a minute or two to update on screen.', {
@@ -142,8 +141,8 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
       <div className="flex items-center py-4">
         <Input
           placeholder="Filter conversion event names..."
-          value={(table.getColumn('eventName')?.getFilterValue() as string) ?? ''}
-          onChange={(event) => table.getColumn('eventName')?.setFilterValue(event.target.value)}
+          value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
+          onChange={(event) => table.getColumn('name')?.setFilterValue(event.target.value)}
           className="max-w-sm"
         />
 
@@ -154,17 +153,26 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
             {isCreatePending ? 'Loading...' : 'Create'}
           </Button>
 
-          <Button
+          {/*  <Button
             disabled={Object.keys(table.getState().rowSelection).length === 0 || isUpdatePending}
             onClick={onUpdateButtonClick}
           >
             {isUpdatePending ? 'Loading...' : 'Update'}
-          </Button>
+          </Button> */}
 
           <ButtonDelete
             disabled={Object.keys(table.getState().rowSelection).length === 0}
             onDelete={handleDelete}
+            action={'Delete'}
           />
+
+          <ButtonDelete
+            disabled={Object.keys(table.getState().rowSelection).length === 0}
+            onDelete={handleRevert}
+            action={'Revert'}
+          />
+
+
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
