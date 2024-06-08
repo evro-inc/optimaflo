@@ -1,10 +1,29 @@
 import { z } from 'zod';
 
+const UsageContextType = z.enum(['web', 'android', 'ios']);
+
 // Helper function to validate domain name (simplified example)
 const isValidDomainName = (domain: string) => {
   const domainRegex = /^(?:[a-zA-Z0-9-]{1,63}\.){1,125}[a-zA-Z]{2,63}$/;
   return domainRegex.test(domain);
 };
+
+const FeaturesSchema = z.object({
+  supportUserPermissions: z.boolean(),
+  supportEnvironments: z.boolean(),
+  supportWorkspaces: z.boolean(),
+  supportGtagConfigs: z.boolean(),
+  supportBuiltInVariables: z.boolean(),
+  supportClients: z.boolean(),
+  supportFolders: z.boolean(),
+  supportTags: z.boolean(),
+  supportTemplates: z.boolean(),
+  supportTriggers: z.boolean(),
+  supportVariables: z.boolean(),
+  supportVersions: z.boolean(),
+  supportZones: z.boolean(),
+  supportTransformations: z.boolean(),
+});
 
 export const FormCreateAmountSchema = z.object({
   amount: z.number(),
@@ -13,8 +32,13 @@ export const FormCreateAmountSchema = z.object({
 // Schema for container create form data
 // Define the schema for a single form
 const SingleFormSchema = z.object({
+  path: z.string(),
   accountId: z.string().nonempty('Account Id is required'),
-  usageContext: z.array(z.string()).nonempty('Usage Context is required').or(z.string()),
+  containerId: z.string().optional(),
+  publicId: z.string(),
+  tagIds: z.array(z.string()).optional(),
+  features: FeaturesSchema,
+  usageContext: z.array(UsageContextType),
   name: z.string().nonempty('Container Name is required'),
   domainName: z
     .string()
@@ -42,7 +66,8 @@ const SingleFormSchema = z.object({
         message: 'Notes must be between 1 and 500 characters',
       }
     ),
-  containerId: z.string().optional(),
+  tagManagerUrl: z.string(),
+  taggingServerUrls: z.array(z.string()).optional(),
 });
 
 // Define the schema for the entire form with field array

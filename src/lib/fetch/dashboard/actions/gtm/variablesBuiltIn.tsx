@@ -138,8 +138,7 @@ export async function DeleteBuiltInVariables(
   const toDeleteBuiltInVariables = new Set<string>(selectedBuiltInVariables);
   let accountIdForCache: string | undefined;
 
-  console.log("toDeleteBuiltInVariables", toDeleteBuiltInVariables);
-
+  console.log('toDeleteBuiltInVariables', toDeleteBuiltInVariables);
 
   // Authenticating user and getting user ID
   const { userId } = await auth();
@@ -191,7 +190,6 @@ export async function DeleteBuiltInVariables(
           await limiter.schedule(async () => {
             // Creating promises for each container deletion
             const deletePromises = Array.from(toDeleteBuiltInVariables).map(async (combinedId) => {
-
               console.log('combinedId', combinedId);
 
               const [accountId, containerId, workspaceId] = combinedId.split('-');
@@ -218,20 +216,17 @@ export async function DeleteBuiltInVariables(
 
                 console.log('response', response);
 
-
                 const parsedResponse = await response.json();
                 console.log('Parsed Response:', parsedResponse);
 
-
                 if (response.ok) {
-
                   builtInVariableNames.forEach(async (variableName) => {
                     console.log('variableName', variableName);
 
                     containerIdsProcessed.add(containerId);
                     successfulDeletions.push({
                       combinedId: `${accountId}-${containerId}-${workspaceId}`,
-                      name: variableName
+                      name: variableName,
                     });
 
                     await prisma.tierLimit.update({
@@ -248,7 +243,6 @@ export async function DeleteBuiltInVariables(
                     success: true,
                   };
                 } else {
-
                   const errorResult = await handleApiResponseError(
                     response,
                     parsedResponse,
@@ -262,33 +256,31 @@ export async function DeleteBuiltInVariables(
                       errorResult.errorCode === 403 &&
                       parsedResponse.message === 'Feature limit reached'
                     ) {
-
-
                       builtInVariableNames.forEach((variable) => {
                         featureLimitReached.push({
                           combinedId: `${accountId}-${containerId}-${workspaceId}`,
-                          name: builtInVariableNames.find((name) => name.includes(variable.type)) || 'Unknown'
+                          name:
+                            builtInVariableNames.find((name) => name.includes(variable.type)) ||
+                            'Unknown',
                         });
-
                       });
-
-
                     } else if (errorResult.errorCode === 404) {
                       builtInVariableNames.forEach((variable) => {
                         notFoundLimit.push({
                           combinedId: `${accountId}-${containerId}-${workspaceId}`,
-                          name: builtInVariableNames.find((name) => name.includes(variable.type)) || 'Unknown'
+                          name:
+                            builtInVariableNames.find((name) => name.includes(variable.type)) ||
+                            'Unknown',
                         });
                       });
                     }
-
                   } else {
-                    errors.push(`An unknown error occurred for built-in variable ${builtInVariableNames}.`);
+                    errors.push(
+                      `An unknown error occurred for built-in variable ${builtInVariableNames}.`
+                    );
                   }
 
-                  toDeleteBuiltInVariables.delete(
-                    `${accountId}-${containerId}-${workspaceId}`
-                  );
+                  toDeleteBuiltInVariables.delete(`${accountId}-${containerId}-${workspaceId}`);
                   permissionDenied = errorResult ? true : permissionDenied;
 
                   if (selectedBuiltInVariables.size > 0) {
@@ -298,7 +290,9 @@ export async function DeleteBuiltInVariables(
                 }
               } catch (error: any) {
                 // Handling exceptions during fetch
-                errors.push(`Error deleting built-in variable ${accountId}-${containerId}-${workspaceId}: ${error.message}`);
+                errors.push(
+                  `Error deleting built-in variable ${accountId}-${containerId}-${workspaceId}: ${error.message}`
+                );
               }
               containerIdsProcessed.add(containerId);
               toDeleteBuiltInVariables.delete(`${accountId}-${containerId}-${workspaceId}`);
@@ -388,9 +382,7 @@ export async function DeleteBuiltInVariables(
   if (errors.length > 0) {
     return {
       success: false,
-      features: successfulDeletions.map(
-        ({ combinedId }) => combinedId
-      ),
+      features: successfulDeletions.map(({ combinedId }) => combinedId),
       errors: errors,
       results: successfulDeletions.map(({ combinedId, name }) => {
         const [accountId, containerId, workspaceId] = combinedId.split('-');
@@ -417,14 +409,11 @@ export async function DeleteBuiltInVariables(
 
   const totalDeletedVariables = successfulDeletions.length;
 
-
   // Returning the result of the deletion process
   return {
     success: errors.length === 0,
     message: `Successfully deleted ${totalDeletedVariables} built-in variable(s)`,
-    features: successfulDeletions.map(
-      ({ combinedId }) => combinedId
-    ),
+    features: successfulDeletions.map(({ combinedId }) => combinedId),
     errors: errors,
     notFoundError: notFoundLimit.length > 0,
     results: successfulDeletions.map(({ combinedId, name }) => {
@@ -460,13 +449,14 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
   // Refactor: Use string identifiers in the set
   const toCreateBuiltInVariables = new Set(
     formData.forms.flatMap((form) =>
-      Array.isArray(form.entity) ? form.entity.map((entity) => ({
-        entity,
-        type: form.type,
-      })) : [{ entity: form.entity, type: form.type }]
+      Array.isArray(form.entity)
+        ? form.entity.map((entity) => ({
+            entity,
+            type: form.type,
+          }))
+        : [{ entity: form.entity, type: form.type }]
     )
   );
-
 
   console.log('toCreateBuiltInVariables', toCreateBuiltInVariables);
 
@@ -531,7 +521,6 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
           await limiter.schedule(async () => {
             const createPromises = Array.from(toCreateBuiltInVariables).map(
               async (identifier: any) => {
-
                 console.log('identifier', identifier);
 
                 const builtInVariableData = formData.forms.find(
@@ -539,7 +528,6 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
                 );
 
                 console.log('builtInVariableData', builtInVariableData);
-
 
                 if (!builtInVariableData) {
                   errors.push(`Built-in variable data not found for ${identifier}`);
@@ -549,10 +537,9 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
 
                 const [accountId, containerId, workspaceId] = identifier.entity.split('-');
 
-                console.log("accountId", accountId);
-                console.log("containerId", containerId);
-                console.log("workspaceId", workspaceId);
-
+                console.log('accountId', accountId);
+                console.log('containerId', containerId);
+                console.log('workspaceId', workspaceId);
 
                 accountIdForCache = accountId;
                 containerIdForCache = containerId;
@@ -563,15 +550,12 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
 
                 console.log('url call: ', url);
 
-
                 const params = new URLSearchParams();
                 builtInVariableData.type.forEach((type) => {
                   params.append('type', type);
                 });
 
                 console.log('params', params);
-
-
 
                 const finalUrl = url + '?' + params.toString();
 
@@ -584,7 +568,6 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
                 };
 
                 console.log('headers', headers);
-
 
                 try {
                   const response = await fetch(finalUrl, {
@@ -661,7 +644,6 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
                     message: error.message,
                   });
                 }
-
               }
             );
 
@@ -732,7 +714,6 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
         }
       }
     }
-
   }
 
   if (permissionDenied) {
@@ -774,7 +755,6 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
       notFound: false, // Set this to the appropriate value based on your logic
     };
   });
-
 
   // Return the response with the correctly typed results
   return {
@@ -1219,7 +1199,6 @@ export async function RevertBuiltInVariables(
 
             console.log('url revert: ', url);
 
-
             const headers = {
               Authorization: `Bearer ${token[0].token}`,
               'Content-Type': 'application/json',
@@ -1234,18 +1213,15 @@ export async function RevertBuiltInVariables(
 
               console.log('response', response);
 
-
               const parsedResponse = await response.json();
               console.log('Parsed Response:', parsedResponse);
 
-
               if (response.ok) {
-
                 builtInVariableNames.forEach(async (variableName) => {
                   containerIdsProcessed.add(containerId);
                   successfulDeletions.push({
                     combinedId: `${accountId}-${containerId}-${workspaceId}`,
-                    name: variableName
+                    name: variableName,
                   });
                 });
 
@@ -1257,7 +1233,6 @@ export async function RevertBuiltInVariables(
                   success: true,
                 };
               } else {
-
                 const errorResult = await handleApiResponseError(
                   response,
                   parsedResponse,
@@ -1271,33 +1246,31 @@ export async function RevertBuiltInVariables(
                     errorResult.errorCode === 403 &&
                     parsedResponse.message === 'Feature limit reached'
                   ) {
-
-
                     builtInVariableNames.forEach((variable) => {
                       featureLimitReached.push({
                         combinedId: `${accountId}-${containerId}-${workspaceId}`,
-                        name: builtInVariableNames.find((name) => name.includes(variable.type)) || 'Unknown'
+                        name:
+                          builtInVariableNames.find((name) => name.includes(variable.type)) ||
+                          'Unknown',
                       });
-
                     });
-
-
                   } else if (errorResult.errorCode === 404) {
                     builtInVariableNames.forEach((variable) => {
                       notFoundLimit.push({
                         combinedId: `${accountId}-${containerId}-${workspaceId}`,
-                        name: builtInVariableNames.find((name) => name.includes(variable.type)) || 'Unknown'
+                        name:
+                          builtInVariableNames.find((name) => name.includes(variable.type)) ||
+                          'Unknown',
                       });
                     });
                   }
-
                 } else {
-                  errors.push(`An unknown error occurred for built-in variable ${builtInVariableNames}.`);
+                  errors.push(
+                    `An unknown error occurred for built-in variable ${builtInVariableNames}.`
+                  );
                 }
 
-                toDeleteBuiltInVariables.delete(
-                  `${accountId}-${containerId}-${workspaceId}`
-                );
+                toDeleteBuiltInVariables.delete(`${accountId}-${containerId}-${workspaceId}`);
                 permissionDenied = errorResult ? true : permissionDenied;
 
                 if (selectedBuiltInVariables.size > 0) {
@@ -1307,7 +1280,9 @@ export async function RevertBuiltInVariables(
               }
             } catch (error: any) {
               // Handling exceptions during fetch
-              errors.push(`Error deleting built-in variable ${accountId}-${containerId}-${workspaceId}: ${error.message}`);
+              errors.push(
+                `Error deleting built-in variable ${accountId}-${containerId}-${workspaceId}: ${error.message}`
+              );
             }
             containerIdsProcessed.add(containerId);
             toDeleteBuiltInVariables.delete(`${accountId}-${containerId}-${workspaceId}`);
@@ -1325,8 +1300,8 @@ export async function RevertBuiltInVariables(
             notFoundError: true, // Set the notFoundError flag
             message: `Could not delete built-in variable. Please check your permissions. Container Name: 
               ${builtInVariableNames.find((name) =>
-              name.includes(name)
-            )}. All other variables were successfully deleted.`,
+                name.includes(name)
+              )}. All other variables were successfully deleted.`,
             results: notFoundLimit.map(({ combinedId, name }) => {
               const [accountId, containerId, workspaceId] = combinedId.split('-');
               return {
@@ -1397,9 +1372,7 @@ export async function RevertBuiltInVariables(
   if (errors.length > 0) {
     return {
       success: false,
-      features: successfulDeletions.map(
-        ({ combinedId }) => combinedId
-      ),
+      features: successfulDeletions.map(({ combinedId }) => combinedId),
       errors: errors,
       results: successfulDeletions.map(({ combinedId, name }) => {
         const [accountId, containerId, workspaceId] = combinedId.split('-');
@@ -1415,7 +1388,6 @@ export async function RevertBuiltInVariables(
   }
   // If there are successful deletions, update the deleteUsage
   if (successfulDeletions.length > 0) {
-
     const specificCacheKey = `gtm:builtInVariables:userId:${userId}`;
     await redis.del(specificCacheKey);
 
@@ -1425,14 +1397,11 @@ export async function RevertBuiltInVariables(
 
   const totalDeletedVariables = successfulDeletions.length;
 
-
   // Returning the result of the deletion process
   return {
     success: errors.length === 0,
     message: `Successfully deleted ${totalDeletedVariables} built-in variable(s)`,
-    features: successfulDeletions.map(
-      ({ combinedId }) => combinedId
-    ),
+    features: successfulDeletions.map(({ combinedId }) => combinedId),
     errors: errors,
     notFoundError: notFoundLimit.length > 0,
     results: successfulDeletions.map(({ combinedId, name }) => {

@@ -1,6 +1,9 @@
 'use client';
 
-import { DeleteBuiltInVariables, RevertBuiltInVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variablesBuiltIn';
+import {
+  DeleteBuiltInVariables,
+  RevertBuiltInVariables,
+} from '@/src/lib/fetch/dashboard/actions/gtm/variablesBuiltIn';
 import {
   clearSelectedRows,
   setErrorDetails,
@@ -31,25 +34,24 @@ export const useDeleteHook = (selectedRows, table) => {
 
     console.log('ga4BuiltInVarToDelete:', ga4BuiltInVarToDelete);
 
-
     const toDeleteSet = new Set(
-      ga4BuiltInVarToDelete.map((prop) => {
-        console.log('prop:', prop);
+      ga4BuiltInVarToDelete
+        .map((prop) => {
+          console.log('prop:', prop);
 
-        if (prop.accountId && prop.containerId && prop.workspaceId) {
-          return `${prop.accountId}-${prop.containerId}-${prop.workspaceId}`;
-        }
-        console.error('Invalid format for:', prop);
-        return ''; // Return an empty string for invalid entries
-      }).filter(Boolean) // Filter out any empty strings
+          if (prop.accountId && prop.containerId && prop.workspaceId) {
+            return `${prop.accountId}-${prop.containerId}-${prop.workspaceId}`;
+          }
+          console.error('Invalid format for:', prop);
+          return ''; // Return an empty string for invalid entries
+        })
+        .filter(Boolean) // Filter out any empty strings
     );
 
     console.log('toDeleteSet:', toDeleteSet);
 
-
     const builtInVarDisplayNames = ga4BuiltInVarToDelete.flatMap((prop) => prop.type);
     console.log('builtInVarDisplayNames:', builtInVarDisplayNames);
-
 
     const response: FeatureResponse = await DeleteBuiltInVariables(
       toDeleteSet,
@@ -96,7 +98,6 @@ export const useDeleteHook = (selectedRows, table) => {
   return handleDelete;
 };
 
-
 export const useRevertHook = (selectedRows, table) => {
   const dispatch = useDispatch();
 
@@ -116,15 +117,17 @@ export const useRevertHook = (selectedRows, table) => {
     });
 
     const toDeleteSet = new Set(
-      ga4BuiltInVarToDelete.map((prop) => {
-        console.log('prop:', prop);
+      ga4BuiltInVarToDelete
+        .map((prop) => {
+          console.log('prop:', prop);
 
-        if (prop.accountId && prop.containerId && prop.workspaceId) {
-          return `${prop.accountId}-${prop.containerId}-${prop.workspaceId}`;
-        }
-        console.error('Invalid format for:', prop);
-        return ''; // Return an empty string for invalid entries
-      }).filter(Boolean) // Filter out any empty strings
+          if (prop.accountId && prop.containerId && prop.workspaceId) {
+            return `${prop.accountId}-${prop.containerId}-${prop.workspaceId}`;
+          }
+          console.error('Invalid format for:', prop);
+          return ''; // Return an empty string for invalid entries
+        })
+        .filter(Boolean) // Filter out any empty strings
     );
 
     const builtInVarDisplayNames = ga4BuiltInVarToDelete.flatMap((prop) => prop.type);

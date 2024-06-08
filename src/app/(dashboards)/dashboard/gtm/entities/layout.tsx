@@ -13,11 +13,13 @@ export default async function EntityLayout({
   accounts,
   containers,
   workspaces,
+  versions,
 }: {
   children: React.ReactNode;
   accounts: React.ReactNode;
   containers: React.ReactNode;
   workspaces: React.ReactNode;
+  versions: React.ReactNode;
 }) {
   const user = await currentUser();
   if (!user) return notFound();
@@ -35,6 +37,7 @@ export default async function EntityLayout({
         {accounts}
         {containers}
         {workspaces}
+        {versions}
       </div>
     </>
   );

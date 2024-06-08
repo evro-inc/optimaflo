@@ -53,7 +53,10 @@ import { Separator } from '@/src/components/ui/separator';
 import { Label } from '@/src/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/src/components/ui/radio-group';
 import { BuiltInVariableGroups } from '../../../configurations/@builtInVariables/items';
-import { CreateBuiltInVariables, listGtmBuiltInVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variablesBuiltIn';
+import {
+  CreateBuiltInVariables,
+  listGtmBuiltInVariables,
+} from '@/src/lib/fetch/dashboard/actions/gtm/variablesBuiltIn';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/src/components/ui/tabs';
 import {
   Carousel,
@@ -107,7 +110,6 @@ const FormCreateBuiltInVariable: React.FC<FormCreateBuiltInVariableProps> = ({
     });
     setSelectAll((prev) => !prev);
   };
-
 
   useEffect(() => {
     const fetchCreatedVariables = async () => {
@@ -366,7 +368,6 @@ const FormCreateBuiltInVariable: React.FC<FormCreateBuiltInVariableProps> = ({
     dispatch(decrementStep());
   };
 
-
   const handleEntitySelection = (entity, checked) => {
     const newSelectedEntities = new Set(selectedEntities);
     if (checked) {
@@ -386,7 +387,6 @@ const FormCreateBuiltInVariable: React.FC<FormCreateBuiltInVariableProps> = ({
         createdVar.type === variable
     );
   };
-
 
   return (
     <div className="flex items-center justify-center h-screen overflow-auto">
@@ -455,7 +455,13 @@ const FormCreateBuiltInVariable: React.FC<FormCreateBuiltInVariableProps> = ({
                                 <div>
                                   <div>
                                     <div className="w-full mx-auto">
-                                      <Tabs defaultValue={Object.keys(BuiltInVariableGroups).includes("click") ? "click" : Object.keys(BuiltInVariableGroups)[0]}>
+                                      <Tabs
+                                        defaultValue={
+                                          Object.keys(BuiltInVariableGroups).includes('click')
+                                            ? 'click'
+                                            : Object.keys(BuiltInVariableGroups)[0]
+                                        }
+                                      >
                                         {/* <Carousel
                                           opts={{
                                             align: "start",
@@ -513,32 +519,65 @@ const FormCreateBuiltInVariable: React.FC<FormCreateBuiltInVariableProps> = ({
                                                               <FormControl>
                                                                 <Checkbox
                                                                   checked={
-                                                                    (Array.isArray(field.value) && field.value.includes(variable)) ||
-                                                                    Array.from(selectedEntities).some((entityStr) => {
-                                                                      const entity = JSON.parse(entityStr);
-                                                                      return isVariableDisabled(variable, entity);
+                                                                    (Array.isArray(field.value) &&
+                                                                      field.value.includes(
+                                                                        variable
+                                                                      )) ||
+                                                                    Array.from(
+                                                                      selectedEntities
+                                                                    ).some((entityStr) => {
+                                                                      const entity =
+                                                                        JSON.parse(entityStr);
+                                                                      return isVariableDisabled(
+                                                                        variable,
+                                                                        entity
+                                                                      );
                                                                     })
                                                                   }
                                                                   onCheckedChange={(checked) => {
-                                                                    if (!Array.from(selectedEntities).some((entityStr) => {
-                                                                      const entity = JSON.parse(entityStr);
-                                                                      return isVariableDisabled(variable, entity);
-                                                                    })) {
+                                                                    if (
+                                                                      !Array.from(
+                                                                        selectedEntities
+                                                                      ).some((entityStr) => {
+                                                                        const entity =
+                                                                          JSON.parse(entityStr);
+                                                                        return isVariableDisabled(
+                                                                          variable,
+                                                                          entity
+                                                                        );
+                                                                      })
+                                                                    ) {
                                                                       return checked
                                                                         ? field.onChange([
-                                                                          ...(Array.isArray(field.value) ? field.value : []),
-                                                                          variable,
-                                                                        ])
+                                                                            ...(Array.isArray(
+                                                                              field.value
+                                                                            )
+                                                                              ? field.value
+                                                                              : []),
+                                                                            variable,
+                                                                          ])
                                                                         : field.onChange(
-                                                                          (Array.isArray(field.value) ? field.value : []).filter(
-                                                                            (value) => value !== variable
-                                                                          )
-                                                                        );
+                                                                            (Array.isArray(
+                                                                              field.value
+                                                                            )
+                                                                              ? field.value
+                                                                              : []
+                                                                            ).filter(
+                                                                              (value) =>
+                                                                                value !== variable
+                                                                            )
+                                                                          );
                                                                     }
                                                                   }}
-                                                                  disabled={Array.from(selectedEntities).some((entityStr) => {
-                                                                    const entity = JSON.parse(entityStr);
-                                                                    return isVariableDisabled(variable, entity);
+                                                                  disabled={Array.from(
+                                                                    selectedEntities
+                                                                  ).some((entityStr) => {
+                                                                    const entity =
+                                                                      JSON.parse(entityStr);
+                                                                    return isVariableDisabled(
+                                                                      variable,
+                                                                      entity
+                                                                    );
                                                                   })}
                                                                 />
                                                               </FormControl>
@@ -546,14 +585,13 @@ const FormCreateBuiltInVariable: React.FC<FormCreateBuiltInVariableProps> = ({
                                                                 {variable}
                                                               </FormLabel>
                                                               {fieldState.error && (
-                                                                <FormMessage>{fieldState.error.message}</FormMessage>
+                                                                <FormMessage>
+                                                                  {fieldState.error.message}
+                                                                </FormMessage>
                                                               )}
                                                             </FormItem>
                                                           )}
                                                         />
-
-
-
                                                       ))}
                                                   </div>
                                                 ))}
@@ -564,9 +602,10 @@ const FormCreateBuiltInVariable: React.FC<FormCreateBuiltInVariableProps> = ({
                                       </Tabs>
                                     </div>
                                     <Button type="button" onClick={handleSelectAll}>
-                                      {selectAll ? 'Unselect All Built-In Variables' : 'Select All Built-In Variables'}
+                                      {selectAll
+                                        ? 'Unselect All Built-In Variables'
+                                        : 'Select All Built-In Variables'}
                                     </Button>
-
                                   </div>
                                 </div>
 
@@ -582,7 +621,8 @@ const FormCreateBuiltInVariable: React.FC<FormCreateBuiltInVariableProps> = ({
                                               Entity Selection
                                             </FormLabel>
                                             <FormDescription>
-                                              Which account, container, and workspace do you want to create the built-in variable(s) for?
+                                              Which account, container, and workspace do you want to
+                                              create the built-in variable(s) for?
                                             </FormDescription>
                                           </div>
                                           {gtmAccountContainerWorkspacesPairs.map((item, idx) => (
@@ -595,7 +635,7 @@ const FormCreateBuiltInVariable: React.FC<FormCreateBuiltInVariableProps> = ({
                                                 const entity = {
                                                   account: item.account,
                                                   container: item.container,
-                                                  workspace: item.workspace
+                                                  workspace: item.workspace,
                                                 };
                                                 return (
                                                   <FormItem
@@ -612,20 +652,20 @@ const FormCreateBuiltInVariable: React.FC<FormCreateBuiltInVariableProps> = ({
                                                           handleEntitySelection(entity, checked);
                                                           return checked
                                                             ? field.onChange([
-                                                              ...(Array.isArray(field.value)
-                                                                ? field.value
-                                                                : []),
-                                                              compositeValue,
-                                                            ])
+                                                                ...(Array.isArray(field.value)
+                                                                  ? field.value
+                                                                  : []),
+                                                                compositeValue,
+                                                              ])
                                                             : field.onChange(
-                                                              (Array.isArray(field.value)
-                                                                ? field.value
-                                                                : []
-                                                              ).filter(
-                                                                (value) =>
-                                                                  value !== compositeValue
-                                                              )
-                                                            );
+                                                                (Array.isArray(field.value)
+                                                                  ? field.value
+                                                                  : []
+                                                                ).filter(
+                                                                  (value) =>
+                                                                    value !== compositeValue
+                                                                )
+                                                              );
                                                         }}
                                                       />
                                                     </FormControl>
@@ -670,7 +710,6 @@ const FormCreateBuiltInVariable: React.FC<FormCreateBuiltInVariableProps> = ({
                                     />
                                   </div>
                                 </div>
-
                               </>
                             );
                           })()}

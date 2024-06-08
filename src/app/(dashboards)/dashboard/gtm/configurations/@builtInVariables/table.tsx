@@ -40,6 +40,18 @@ import { setSelectedRows } from '@/src/redux/tableSlice';
 import { useDispatch } from 'react-redux';
 import { useTransition } from 'react';
 import { LimitReached } from '@/src/components/client/modals/limitReached';
+import { Drawer, DrawerContent, DrawerTrigger } from '@/src/components/ui/drawer';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from '@/src/components/ui/card';
+import { Label } from '@radix-ui/react-label';
+import { Textarea } from '@/src/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/src/components/ui/tabs';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -172,7 +184,102 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
             action={'Revert'}
           />
 
+          <Drawer>
+            <DrawerTrigger asChild>
+              <Button variant="outline">Submit</Button>
+            </DrawerTrigger>
+            <DrawerContent>
+              <div className="grid gap-6 p-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Update Profile</CardTitle>
+                    <CardDescription>Make changes to your profile information.</CardDescription>
+                  </CardHeader>
 
+                  <Tabs defaultValue="publish">
+                    <TabsList>
+                      <TabsTrigger value="publish">Pubish and Create Version</TabsTrigger>
+                      <TabsTrigger value="version">Create Version</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="publish">
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="name">Name</Label>
+                            <Input id="name" defaultValue="John Doe" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="email">Email</Label>
+                            <Input id="email" type="email" defaultValue="john@example.com" />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="bio">Bio</Label>
+                          <Textarea id="bio" rows={3} defaultValue="I'm a software engineer." />
+                        </div>
+                      </CardContent>
+                    </TabsContent>
+                    <TabsContent value="version">
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="name">Name</Label>
+                            <Input id="name" defaultValue="John Doe" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="email">Email</Label>
+                            <Input id="email" type="email" defaultValue="john@example.com" />
+                          </div>
+                        </div>
+                      </CardContent>
+                    </TabsContent>
+                  </Tabs>
+
+                  <CardFooter>
+                    <Button>Save Changes</Button>
+                  </CardFooter>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Recent Orders</CardTitle>
+                    <CardDescription>View your recent orders and order history.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Order</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Total</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow>
+                          <TableCell className="font-medium">#1234</TableCell>
+                          <TableCell>2023-06-01</TableCell>
+                          <TableCell>Delivered</TableCell>
+                          <TableCell>$99.99</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-medium">#1235</TableCell>
+                          <TableCell>2023-05-25</TableCell>
+                          <TableCell>Shipped</TableCell>
+                          <TableCell>$49.99</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="font-medium">#1236</TableCell>
+                          <TableCell>2023-05-15</TableCell>
+                          <TableCell>Pending</TableCell>
+                          <TableCell>$79.99</TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              </div>
+            </DrawerContent>
+          </Drawer>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
