@@ -40,15 +40,13 @@ import { setSelectedRows } from '@/src/redux/tableSlice';
 import { useDispatch } from 'react-redux';
 import { useTransition } from 'react';
 import { LimitReached } from '@/src/components/client/modals/limitReached';
-import PublishGTM from '@/src/components/client/GTM/versions/publish';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
-  changes?: any;
 }
 
-export function DataTable<TData, TValue>({ columns, data, changes }: DataTableProps<TData, TValue>) {
+export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData, TValue>) {
   const { user } = useUser();
   const userId = user?.id as string;
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -173,10 +171,6 @@ export function DataTable<TData, TValue>({ columns, data, changes }: DataTablePr
             onDelete={handleRevert}
             action={'Revert'}
           />
-
-          <PublishGTM changes={changes} />
-
-
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

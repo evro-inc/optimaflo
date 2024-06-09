@@ -7,7 +7,6 @@ import { ColumnDef } from '@tanstack/react-table';
 import { ArrowUpDown } from 'lucide-react';
 
 export const columns: ColumnDef<BuiltInVariable>[] = [
-
   {
     accessorKey: 'builtInVariable.name',
     header: ({ column }) => {
@@ -51,7 +50,7 @@ export const columns: ColumnDef<BuiltInVariable>[] = [
     },
   },
   {
-    accessorKey: 'builtInVariable.accountId',
+    accessorKey: 'accountName',
     header: ({ column }) => {
       return (
         <Button
@@ -65,7 +64,7 @@ export const columns: ColumnDef<BuiltInVariable>[] = [
     },
   },
   {
-    accessorKey: 'builtInVariable.containerId',
+    accessorKey: 'containerName',
     header: ({ column }) => {
       return (
         <Button
@@ -79,7 +78,7 @@ export const columns: ColumnDef<BuiltInVariable>[] = [
     },
   },
   {
-    accessorKey: 'builtInVariable.workspaceId',
+    accessorKey: 'workspaceName',
     header: ({ column }) => {
       return (
         <Button

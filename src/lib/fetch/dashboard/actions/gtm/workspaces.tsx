@@ -1406,8 +1406,6 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
   };
 }
 
-
-
 /************************************************************************************
   Function to list or get one GTM workspaces
 ************************************************************************************/
@@ -1423,7 +1421,6 @@ export async function getStatusGtmWorkspaces() {
   const token = await currentUserOauthAccessToken(userId);
   const accessToken = token[0].token;
   let responseBody: any;
-
 
   await fetchGtmSettings(userId);
 
@@ -1454,7 +1451,6 @@ export async function getStatusGtmWorkspaces() {
           });
 
           console.log('URLS', urls);
-
 
           const headers = {
             Authorization: `Bearer ${accessToken}`,

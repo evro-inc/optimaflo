@@ -7,7 +7,7 @@ import { DataTable } from './table';
 import { listGtmBuiltInVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variablesBuiltIn';
 import { listGtmAccounts } from '@/src/lib/fetch/dashboard/actions/gtm/accounts';
 import { listGtmContainers } from '@/src/lib/fetch/dashboard/actions/gtm/containers';
-import { getStatusGtmWorkspaces, listGtmWorkspaces } from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
+import { listGtmWorkspaces } from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
 
 export default async function KeyEventsPage({
   searchParams,
@@ -26,33 +26,18 @@ export default async function KeyEventsPage({
   const containerData = await listGtmContainers();
   const workspaceData = await listGtmWorkspaces();
   const builtInVarData = await listGtmBuiltInVariables();
-  const wsChangeData = await getStatusGtmWorkspaces()
 
-
-  const [accounts, containers, workspaces, builtInVar, wsChanges] = await Promise.all([
+  const [accounts, containers, workspaces, builtInVar] = await Promise.all([
     accountData,
     containerData,
     workspaceData,
     builtInVarData,
-    wsChangeData,
   ]);
 
   const flatAccounts = accounts.flat();
   const flatContainers = containers.flat();
   const flatWorkspaces = workspaces.flat();
   const flatBuiltInVars = builtInVar.flat();
-
-  const flatChanges = wsChanges.flat();
-
-  const transformedData = flatChanges.flatMap((changeSet, index) =>
-    changeSet.workspaceChange.map((change, itemIndex) => ({
-      setId: index + 1,
-      changeId: itemIndex + 1,
-      ...change
-    }))
-  );
-
-
 
   const combinedData = flatBuiltInVars.map((vars) => {
     const accountId = vars.accountId;
@@ -99,7 +84,7 @@ export default async function KeyEventsPage({
         }
       >
         <div className="container mx-auto py-10">
-          <DataTable columns={columns} data={combinedData} changes={transformedData} />
+          <DataTable columns={columns} data={combinedData} />
         </div>
       </Suspense>
     </>

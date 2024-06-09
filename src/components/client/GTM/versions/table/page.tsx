@@ -7,7 +7,10 @@ import { DataTable } from './table';
 import { listGtmBuiltInVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variablesBuiltIn';
 import { listGtmAccounts } from '@/src/lib/fetch/dashboard/actions/gtm/accounts';
 import { listGtmContainers } from '@/src/lib/fetch/dashboard/actions/gtm/containers';
-import { getStatusGtmWorkspaces, listGtmWorkspaces } from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
+import {
+  getStatusGtmWorkspaces,
+  listGtmWorkspaces,
+} from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
 
 export default async function KeyEventsPage({
   searchParams,
@@ -26,10 +29,9 @@ export default async function KeyEventsPage({
   const containerData = await listGtmContainers();
   const workspaceData = await listGtmWorkspaces();
   const builtInVarData = await listGtmBuiltInVariables();
-  const wsChanges = await getStatusGtmWorkspaces()
+  const wsChanges = await getStatusGtmWorkspaces();
 
   console.log('wsChanges:', wsChanges);
-
 
   const [accounts, containers, workspaces, builtInVar] = await Promise.all([
     accountData,
