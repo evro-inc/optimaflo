@@ -30,36 +30,21 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from '@/src/components/ui/dropdown-menu';
-import { useUser } from '@clerk/nextjs';
-import { toast } from 'sonner';
-import { revalidate } from '@/src/utils/server';
-import { ButtonDelete } from '@/src/components/client/Button/Button';
-import { useDeleteHook, useRevertHook } from './delete';
-import { useCreateHookForm, useUpdateHookForm } from '@/src/hooks/useCRUD';
-import { setSelectedRows } from '@/src/redux/tableSlice';
-import { useDispatch } from 'react-redux';
-import { useTransition } from 'react';
 import { LimitReached } from '@/src/components/client/modals/limitReached';
-import PublishGTM from '@/src/components/client/GTM/versions/publish';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
-  data: TData[];
-  changes?: any;
+  data: TData[] | any; // added any, need to change to correct type
 }
 
-export function DataTable<TData, TValue>({ columns, data, changes }: DataTableProps<TData, TValue>) {
-  const { user } = useUser();
-  const userId = user?.id as string;
+export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-  const dispatch = useDispatch();
-  const [isCreatePending, startCreateTransition] = useTransition();
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
 
   const table = useReactTable({
-    data,
+    data: data.changes,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -78,105 +63,17 @@ export function DataTable<TData, TValue>({ columns, data, changes }: DataTablePr
     },
   });
 
-  const selectedRowData = table.getSelectedRowModel().rows.reduce((acc, row) => {
-    acc[row.id] = row.original;
-    return acc;
-  }, {});
-
-  /*   const rowSelectedCount = Object.keys(selectedRowData).length;
-   */
-  const handleCreateClick = useCreateHookForm(
-    userId,
-    'GTMBuiltInVariables',
-    '/dashboard/gtm/wizards/built-in-variables/create'
-  );
-
-  const onCreateButtonClick = () => {
-    startCreateTransition(() => {
-      handleCreateClick().catch((error) => {
-        throw new Error(error);
-      });
-    });
-  };
-
-  /*   const handleUpdateClick = useUpdateHookForm(
-      userId,
-      'GTMBuiltInVariables',
-      '/dashboard/ga/wizards/built-in-variables/create',
-      rowSelectedCount
-    );
-  
-    const onUpdateButtonClick = () => {
-      startUpdateTransition(() => {
-        handleUpdateClick().catch((error) => {
-          throw new Error(error);
-        });
-      });
-    }; */
-
-  const handleDelete = useDeleteHook(selectedRowData, table);
-  const handleRevert = useRevertHook(selectedRowData, table);
-
-  const refreshAllCache = async () => {
-    toast.info('Updating our systems. This may take a minute or two to update on screen.', {
-      action: {
-        label: 'Close',
-        onClick: () => toast.dismiss(),
-      },
-    });
-    const keys = [
-      `gtm:accounts:userId:${userId}`,
-      `gtm:containers:userId:${userId}`,
-      `gtm:workspaces:userId:${userId}`,
-      `gtm:builtInVariables:userId:${userId}`,
-    ];
-    await revalidate(keys, '/dashboard/gtm/configurations', userId);
-  };
-
-  dispatch(setSelectedRows(selectedRowData)); // Update the selected rows in Redux
-
   return (
     <div>
-      <h2 className="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0">
-        Workspace Changes
-      </h2>
       <div className="flex items-center py-4">
         <Input
-          placeholder="Filter conversion event names..."
+          placeholder="Filter by change name..."
           value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
           onChange={(event) => table.getColumn('name')?.setFilterValue(event.target.value)}
           className="max-w-sm"
         />
 
         <div className="ml-auto space-x-4">
-          <Button onClick={refreshAllCache}>Refresh</Button>
-
-          <Button disabled={isCreatePending} onClick={onCreateButtonClick}>
-            {isCreatePending ? 'Loading...' : 'Create'}
-          </Button>
-
-          {/*  <Button
-            disabled={Object.keys(table.getState().rowSelection).length === 0 || isUpdatePending}
-            onClick={onUpdateButtonClick}
-          >
-            {isUpdatePending ? 'Loading...' : 'Update'}
-          </Button> */}
-
-          <ButtonDelete
-            disabled={Object.keys(table.getState().rowSelection).length === 0}
-            onDelete={handleDelete}
-            action={'Delete'}
-          />
-
-          <ButtonDelete
-            disabled={Object.keys(table.getState().rowSelection).length === 0}
-            onDelete={handleRevert}
-            action={'Revert'}
-          />
-
-          <PublishGTM changes={changes} />
-
-
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -241,10 +138,7 @@ export function DataTable<TData, TValue>({ columns, data, changes }: DataTablePr
         </Table>
       </div>
       <div className="flex items-center justify-end space-x-2 py-4">
-        <div className="flex-1 text-sm text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length} of{' '}
-          {table.getFilteredRowModel().rows.length} row(s) selected.
-        </div>
+
         <Button
           variant="outline"
           size="sm"

@@ -1405,3 +1405,90 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
     notFoundError: false, // Set based on actual not found status
   };
 }
+
+
+
+/************************************************************************************
+  Function to list or get one GTM workspaces
+************************************************************************************/
+export async function getStatusGtmWorkspaces() {
+  let retries = 0;
+  const MAX_RETRIES = 3;
+  let delay = 1000;
+
+  // Authenticating the user and getting the user ID
+  const { userId } = await auth();
+  if (!userId) return notFound();
+
+  const token = await currentUserOauthAccessToken(userId);
+  const accessToken = token[0].token;
+  let responseBody: any;
+
+
+  await fetchGtmSettings(userId);
+
+  const gtmData = await prisma.user.findFirst({
+    where: { id: userId },
+    include: { gtm: true },
+  });
+
+  if (!gtmData || !gtmData.gtm) {
+    throw new Error('No GTM data found for the user.');
+  }
+
+  while (retries < MAX_RETRIES) {
+    try {
+      const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
+
+      if (remaining > 0) {
+        let allData: any[] = [];
+
+        await limiter.schedule(async () => {
+          const uniquePairs = new Set(
+            gtmData.gtm.map((data) => `${data.accountId}-${data.containerId}-${data.workspaceId}`)
+          );
+
+          const urls = Array.from(uniquePairs).map((pair: any) => {
+            const [accountId, containerId, workspaceId] = pair.split('-');
+            return `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/status`;
+          });
+
+          console.log('URLS', urls);
+
+
+          const headers = {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+            'Accept-Encoding': 'gzip',
+          };
+
+          for (const url of urls) {
+            try {
+              const response = await fetch(url, { headers });
+              if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
+              }
+              responseBody = await response.json();
+              allData.push(responseBody || []);
+            } catch (error: any) {
+              throw new Error(`Error fetching data: ${error.message}`);
+            }
+          }
+        });
+
+        const flattenedData = allData.flat();
+        return flattenedData;
+      }
+    } catch (error: any) {
+      if (error.code === 429 || error.status === 429) {
+        const jitter = Math.random() * 200;
+        await new Promise((resolve) => setTimeout(resolve, delay + jitter));
+        delay *= 2;
+        retries++;
+      } else {
+        throw error;
+      }
+    }
+  }
+  throw new Error('Maximum retries reached without a successful response.');
+}
