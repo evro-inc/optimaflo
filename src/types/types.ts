@@ -52,7 +52,7 @@ export interface Price {
   products?: Product;
 }
 
-export interface PriceWithProduct extends Price {}
+export interface PriceWithProduct extends Price { }
 
 export interface Subscription {
   id: string /* primary key */;
@@ -237,6 +237,7 @@ export interface FeatureResult {
   remaining?: number;
   message?: string;
   errors?: string[];
+  response?: any;
 }
 
 export interface FeatureResponse {
@@ -1232,4 +1233,42 @@ export interface Transformation {
   tagManagerUrl?: string;
   parentFolderId?: string;
   notes?: string;
+}
+
+
+/*********************************************************
+ GTM Envs
+ *********************************************************/
+
+// Enum for environment types
+export enum EnvironmentType {
+  Latest = 'latest',
+  Live = 'live',
+  User = 'user',
+  Workspace = 'workspace',
+}
+
+// Type for authorizationTimestamp
+export interface AuthorizationTimestamp {
+  seconds: number;
+  nanos: number;
+}
+
+// Type for the Google Tag Manager Environment
+export interface GoogleTagEnvironment {
+  path: string;
+  accountId: string;
+  containerId: string;
+  environmentId: string;
+  type: EnvironmentType;
+  fingerprint: string;
+  name: string;
+  description: string;
+  enableDebug: boolean;
+  url: string;
+  authorizationCode: string;
+  authorizationTimestamp: AuthorizationTimestamp;
+  containerVersionId: string;
+  workspaceId: string;
+  tagManagerUrl: string;
 }

@@ -9,6 +9,7 @@ import {
   listGtmWorkspaces,
   getStatusGtmWorkspaces,
 } from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
+import { listGtmEnvs } from '@/src/lib/fetch/dashboard/actions/gtm/envs';
 
 export default async function Page() {
   const { userId } = auth();
@@ -18,21 +19,26 @@ export default async function Page() {
   const containerData = await listGtmContainers();
   const workspaceData = await listGtmWorkspaces();
   const wsChangeData = await getStatusGtmWorkspaces();
+  const gtmEnvsData = await listGtmEnvs();
 
-  const [accounts, containers, workspaces, wsChanges] = await Promise.all([
+  const [accounts, containers, workspaces, wsChanges, gtmEnvs] = await Promise.all([
     accountData,
     containerData,
     workspaceData,
     wsChangeData,
+    gtmEnvsData
   ]);
 
   const flatAccounts = accounts.flat();
   const flatContainers = containers.flat();
   const flatWorkspaces = workspaces.flat();
   const flatChanges = wsChanges.flat();
+  const flatEnvs = gtmEnvs.flat();
+
+  const filteredEnvs = flatEnvs.filter(env => env.type !== 'workspace');
 
   const transformedData = flatChanges.flatMap((changeSet, index) =>
-    changeSet.workspaceChange.map((change, itemIndex) => ({
+    (changeSet.workspaceChange || []).map((change, itemIndex) => ({
       setId: index + 1,
       changeId: itemIndex + 1,
       ...change,
@@ -55,12 +61,17 @@ export default async function Page() {
     return {
       ...vars,
       accountName,
+      accountId,
       containerName,
+      containerId,
       workspaceName,
+      workspaceId,
     };
   });
 
-  console.log('combinedData', combinedData);
+  //console.log('combinedData: ', combinedData);
+
+
 
   return (
     <div className="container mx-auto py-10">
@@ -68,7 +79,7 @@ export default async function Page() {
         <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
           Configurations
         </h1>
-        <PublishGTM changes={combinedData} />
+        <PublishGTM changes={combinedData} envs={filteredEnvs} />
       </div>
       {/* Other content can go here */}
     </div>

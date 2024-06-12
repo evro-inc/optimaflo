@@ -56,6 +56,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
 
+
   const table = useReactTable({
     data,
     columns,
@@ -136,7 +137,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
   return (
     <div>
       <h2 className="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0">
-        Workspace Changes
+        Built-In Variables
       </h2>
       <div className="flex items-center py-4">
         <Input

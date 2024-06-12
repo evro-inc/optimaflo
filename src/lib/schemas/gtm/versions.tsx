@@ -1,4 +1,11 @@
+import { workerData } from 'worker_threads';
 import { z } from 'zod';
+
+const CreateVersionSchema = z.object({
+  entityId: z.array(z.string()).optional(),
+  name: z.string().min(1, 'Version Name is required'),
+  notes: z.string().optional(),
+});
 
 // Enum for built-in variable types
 export const BuiltInVariableType = z.enum([
@@ -230,6 +237,7 @@ const SingleFormSchema = z.object({
   accountId: z.string(),
   containerId: z.string(),
   containerVersionId: z.string(),
+  environmentId: z.string(),
   name: z.string(),
   deleted: z.boolean(),
   description: z.string(),
@@ -246,6 +254,7 @@ const SingleFormSchema = z.object({
   client: z.array(ClientSchema),
   gtagConfig: z.array(GtagConfigSchema),
   transformation: z.array(TransformationSchema),
+  createVersion: CreateVersionSchema,
 });
 
 export const FormSchema = z.object({

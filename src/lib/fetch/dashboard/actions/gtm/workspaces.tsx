@@ -398,11 +398,11 @@ export async function CreateWorkspaces(formData: FormCreateSchema) {
 
   // Refactor: Use string identifiers in the set
   const toCreateWorkspaces = new Set(
-    formData.forms.map((ws) => ({
-      accountId: ws.accountId,
-      containerId: ws.containerId,
-      name: ws.name,
-      description: ws.description,
+    formData.forms.map((prop) => ({
+      accountId: prop.accountId,
+      containerId: prop.containerId,
+      name: prop.name,
+      description: prop.description,
     }))
   );
 
@@ -721,12 +721,12 @@ export async function UpdateWorkspaces(formData: FormUpdateSchema) {
 
   // Refactor: Use string identifiers in the set
   const toUpdateWorkspaces = new Set(
-    formData.forms.map((ws) => ({
-      accountId: ws.accountId,
-      containerId: ws.containerId,
-      name: ws.name,
-      description: ws.description,
-      workspaceId: ws.workspaceId,
+    formData.forms.map((prop) => ({
+      accountId: prop.accountId,
+      containerId: prop.containerId,
+      name: prop.name,
+      description: prop.description,
+      workspaceId: prop.workspaceId,
     }))
   );
 
@@ -789,11 +789,11 @@ export async function UpdateWorkspaces(formData: FormUpdateSchema) {
               accountIdForCache = identifier.accountId;
               containerIdForCache = identifier.containerId;
               const workspaceData = formData.forms.find(
-                (ws) =>
-                  ws.accountId === identifier.accountId &&
-                  ws.containerId === identifier.containerId &&
-                  ws.name === identifier.name &&
-                  ws.description === identifier.description
+                (prop) =>
+                  prop.accountId === identifier.accountId &&
+                  prop.containerId === identifier.containerId &&
+                  prop.name === identifier.name &&
+                  prop.description === identifier.description
               );
 
               if (!workspaceData) {
@@ -1063,11 +1063,24 @@ export async function UpdateWorkspaces(formData: FormUpdateSchema) {
 export async function createGTMVersion(formData: FormUpdateSchema) {
   const { userId } = await auth();
   if (!userId) return notFound();
+
   const token = await currentUserOauthAccessToken(userId);
+  const accessToken = token[0].token;
 
   let retries = 0;
   const MAX_RETRIES = 3;
   let delay = 1000;
+
+  await fetchGtmSettings(userId);
+  console.log('createGTMVersion formData', formData);
+
+  /*   const cacheKey = `gtm:workspaces:userId:${userId}`;
+    const cachedValue = await redis.get(cacheKey);
+    if (cachedValue) {
+      return JSON.parse(cachedValue);
+    }
+   */
+
   const errors: string[] = [];
   const successfulCreations: string[] = [];
   const featureLimitReached: string[] = [];
@@ -1078,14 +1091,17 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
 
   // Refactor: Use string identifiers in the set
   const toCreateVersions = new Set(
-    formData.forms.map((ws) => ({
-      accountId: ws.accountId,
-      containerId: ws.containerId,
-      workspaceId: ws.workspaceId,
-      name: ws.name,
-      notes: ws.description, // Assuming description maps to notes
+    formData.forms.map((prop) => ({
+      accountId: prop.accountId,
+      containerId: prop.containerId,
+      workspaceId: prop.workspaceId,
+      name: prop.name,
+      notes: prop.description, // Assuming description maps to notes
     }))
   );
+
+  console.log('toCreateVersions', toCreateVersions);
+
 
   const tierLimitResponse: any = await tierCreateLimit(userId, 'GTMVersions');
   const limit = Number(tierLimitResponse.updateLimit);
@@ -1096,6 +1112,7 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
     workspaceName: string;
     success: boolean;
     message?: string;
+    response?: any;
   }[] = [];
 
   // Handling feature limit
@@ -1143,13 +1160,16 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
         if (remaining > 0) {
           await limiter.schedule(async () => {
             const createPromises = Array.from(toCreateVersions).map(async (identifier) => {
+              console.log('identifier', identifier);
+
+
               accountIdForCache = identifier.accountId;
               containerIdForCache = identifier.containerId;
               const workspaceData = formData.forms.find(
-                (ws) =>
-                  ws.accountId === identifier.accountId &&
-                  ws.containerId === identifier.containerId &&
-                  ws.workspaceId === identifier.workspaceId
+                (prop) =>
+                  prop.accountId === identifier.accountId &&
+                  prop.containerId === identifier.containerId &&
+                  prop.workspaceId === identifier.workspaceId
               );
 
               if (!workspaceData) {
@@ -1159,11 +1179,16 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
               }
 
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${workspaceData.accountId}/containers/${workspaceData.containerId}/workspaces/${workspaceData.workspaceId}:create_version`;
+              console.log('url version', url);
+
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${accessToken}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
+
+              console.log('headers 1', headers);
+
 
               try {
                 const formDataToValidate = { forms: [workspaceData] };
@@ -1189,14 +1214,21 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
                   name: validatedWorkspaceData.name,
                   notes: validatedWorkspaceData.description,
                 });
+                console.log('validatedWorkspaceData', validatedWorkspaceData);
+
 
                 const response = await fetch(url, {
                   method: 'POST',
                   headers: headers,
                   body: payload,
                 });
+                console.log('response', response);
 
-                let parsedResponse;
+
+                const parsedResponse = await response.json();
+                console.log('parsedResponse', parsedResponse);
+
+
                 const workspaceName = workspaceData.name;
 
                 if (response.ok) {
@@ -1204,6 +1236,16 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
                     `${validatedWorkspaceData.workspaceId}-${validatedWorkspaceData.containerId}`
                   );
                   toCreateVersions.delete(identifier);
+
+
+                  await prisma.gtm.deleteMany({
+                    where: {
+                      accountId: validatedWorkspaceData.accountId,
+                      containerId: validatedWorkspaceData.containerId,
+                      workspaceId: validatedWorkspaceData.workspaceId,
+                      userId: userId, // Ensure this matches the user ID
+                    },
+                  });
 
                   await prisma.tierLimit.update({
                     where: { id: tierLimitResponse.id },
@@ -1214,9 +1256,10 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
                     workspaceName: workspaceName,
                     success: true,
                     message: `Successfully created version for workspace ${workspaceName}`,
+                    response: parsedResponse,
                   });
                 } else {
-                  parsedResponse = await response.json();
+
 
                   const errorResult = await handleApiResponseError(
                     response,
@@ -1250,6 +1293,7 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
                     workspaceName: workspaceName,
                     success: false,
                     message: errorResult?.message,
+                    response: parsedResponse,
                   });
                 }
               } catch (error: any) {
@@ -1261,6 +1305,7 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
                   workspaceName: workspaceData.name,
                   success: false,
                   message: error.message,
+                  response: error,
                 });
               }
             });
@@ -1382,15 +1427,14 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
   }
 
   // Map over formData.forms to update the results array
-  const results: FeatureResult[] = formData.forms.map((form) => {
-    // Ensure that form.workspaceId is defined before adding it to the array
-    const workspaceId = form.workspaceId ? [form.workspaceId] : []; // Provide an empty array as a fallback
+  const results: FeatureResult[] = creationResults.map((result) => {
     return {
-      id: workspaceId, // Ensure id is an array of strings
-      name: [form.name], // Wrap the string in an array
-      success: true, // or false, depending on the actual result
-      // Include `notFound` if applicable
-      notFound: false, // Set this to the appropriate value based on your logic
+      id: [result.workspaceName],
+      name: [result.workspaceName],
+      success: result.success,
+      message: result.message,
+      response: result.response, // Include the response in the result
+      notFound: false,
     };
   });
 

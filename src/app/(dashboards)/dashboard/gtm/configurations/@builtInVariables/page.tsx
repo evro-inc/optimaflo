@@ -27,6 +27,9 @@ export default async function KeyEventsPage({
   const workspaceData = await listGtmWorkspaces();
   const builtInVarData = await listGtmBuiltInVariables();
 
+  //console.log('builtInVarData:', builtInVarData);
+
+
   const [accounts, containers, workspaces, builtInVar] = await Promise.all([
     accountData,
     containerData,
@@ -38,6 +41,9 @@ export default async function KeyEventsPage({
   const flatContainers = containers.flat();
   const flatWorkspaces = workspaces.flat();
   const flatBuiltInVars = builtInVar.flat();
+
+  //console.log('flatBuiltInVars:', flatBuiltInVars);
+
 
   const combinedData = flatBuiltInVars.map((vars) => {
     const accountId = vars.accountId;
@@ -57,6 +63,9 @@ export default async function KeyEventsPage({
       workspaceName,
     };
   });
+
+  //console.log('combinedData var:', combinedData);
+
 
   return (
     <>

@@ -69,6 +69,8 @@ export async function listGtmBuiltInVariables() {
             const [accountId, containerId, workspaceId] = pair.split('-');
             return `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/built_in_variables`;
           });
+          console.log("urls vars: ", urls);
+
 
           const headers = {
             Authorization: `Bearer ${accessToken}`,
@@ -84,6 +86,9 @@ export async function listGtmBuiltInVariables() {
                 throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
               }
               const responseBody = await response.json();
+              //console.log("responseBody: ", responseBody);
+
+
               allData.push(responseBody.builtInVariable || []);
             } catch (error: any) {
               throw new Error(`Error fetching data: ${error.message}`);
@@ -91,6 +96,9 @@ export async function listGtmBuiltInVariables() {
           }
         });
         redis.set(cacheKey, JSON.stringify(allData.flat()));
+
+        // console.log("allData: ", allData);
+
 
         return allData;
       }
@@ -137,8 +145,6 @@ export async function DeleteBuiltInVariables(
 
   const toDeleteBuiltInVariables = new Set<string>(selectedBuiltInVariables);
   let accountIdForCache: string | undefined;
-
-  console.log('toDeleteBuiltInVariables', toDeleteBuiltInVariables);
 
   // Authenticating user and getting user ID
   const { userId } = await auth();
@@ -190,7 +196,6 @@ export async function DeleteBuiltInVariables(
           await limiter.schedule(async () => {
             // Creating promises for each container deletion
             const deletePromises = Array.from(toDeleteBuiltInVariables).map(async (combinedId) => {
-              console.log('combinedId', combinedId);
 
               const [accountId, containerId, workspaceId] = combinedId.split('-');
               accountIdForCache = accountId;
@@ -214,14 +219,10 @@ export async function DeleteBuiltInVariables(
                   headers: headers,
                 });
 
-                console.log('response', response);
-
                 const parsedResponse = await response.json();
-                console.log('Parsed Response:', parsedResponse);
 
                 if (response.ok) {
                   builtInVariableNames.forEach(async (variableName) => {
-                    console.log('variableName', variableName);
 
                     containerIdsProcessed.add(containerId);
                     successfulDeletions.push({
@@ -398,7 +399,6 @@ export async function DeleteBuiltInVariables(
   }
   // If there are successful deletions, update the deleteUsage
   if (successfulDeletions.length > 0) {
-    console.log('log3', accountIdForCache);
 
     const specificCacheKey = `gtm:builtInVariables:userId:${userId}`;
     await redis.del(specificCacheKey);
@@ -435,7 +435,6 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
 
-  console.log('formData', formData.forms);
 
   const MAX_RETRIES = 3;
   let delay = 1000;
@@ -451,14 +450,13 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
     formData.forms.flatMap((form) =>
       Array.isArray(form.entity)
         ? form.entity.map((entity) => ({
-            entity,
-            type: form.type,
-          }))
+          entity,
+          type: form.type,
+        }))
         : [{ entity: form.entity, type: form.type }]
     )
   );
 
-  console.log('toCreateBuiltInVariables', toCreateBuiltInVariables);
 
   const tierLimitResponse: any = await tierCreateLimit(userId, 'GTMBuiltInVariables');
   const limit = Number(tierLimitResponse.createLimit);
@@ -521,13 +519,11 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
           await limiter.schedule(async () => {
             const createPromises = Array.from(toCreateBuiltInVariables).map(
               async (identifier: any) => {
-                console.log('identifier', identifier);
 
                 const builtInVariableData = formData.forms.find(
                   (prop) => prop.type === identifier.type && prop.entity.includes(identifier.entity)
                 );
 
-                console.log('builtInVariableData', builtInVariableData);
 
                 if (!builtInVariableData) {
                   errors.push(`Built-in variable data not found for ${identifier}`);
@@ -537,10 +533,6 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
 
                 const [accountId, containerId, workspaceId] = identifier.entity.split('-');
 
-                console.log('accountId', accountId);
-                console.log('containerId', containerId);
-                console.log('workspaceId', workspaceId);
-
                 accountIdForCache = accountId;
                 containerIdForCache = containerId;
 
@@ -548,18 +540,14 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
                   `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/built_in_variables`
                 );
 
-                console.log('url call: ', url);
-
                 const params = new URLSearchParams();
                 builtInVariableData.type.forEach((type) => {
                   params.append('type', type);
                 });
 
-                console.log('params', params);
 
                 const finalUrl = url + '?' + params.toString();
 
-                console.log('url FINAL: ', finalUrl);
 
                 const headers = {
                   Authorization: `Bearer ${token[0].token}`,
@@ -567,7 +555,6 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
                   'Accept-Encoding': 'gzip',
                 };
 
-                console.log('headers', headers);
 
                 try {
                   const response = await fetch(finalUrl, {
@@ -575,10 +562,8 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
                     headers: headers,
                   });
 
-                  console.log('response', response);
 
                   const parsedResponse = await response.json();
-                  console.log('Parsed Response:', parsedResponse);
 
                   if (response.ok) {
                     const numberOfCreatedVariables = builtInVariableData.type.length; // Get the number of created variables
@@ -706,7 +691,6 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
       } finally {
         // This block will run regardless of the outcome of the try...catch
         if (accountIdForCache && containerIdForCache && userId) {
-          console.log('log1', accountIdForCache);
 
           const cacheKey = `gtm:builtInVariables:userId:${userId}`;
           await redis.del(cacheKey);
@@ -739,7 +723,6 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
   }
 
   if (successfulCreations.length > 0 && accountIdForCache && containerIdForCache) {
-    console.log('log2', accountIdForCache);
 
     const cacheKey = `gtm:builtInVariables:userId:${userId}`;
     await redis.del(cacheKey);
@@ -1197,8 +1180,6 @@ export async function RevertBuiltInVariables(
 
             url += params.toString();
 
-            console.log('url revert: ', url);
-
             const headers = {
               Authorization: `Bearer ${token[0].token}`,
               'Content-Type': 'application/json',
@@ -1211,10 +1192,7 @@ export async function RevertBuiltInVariables(
                 headers: headers,
               });
 
-              console.log('response', response);
-
               const parsedResponse = await response.json();
-              console.log('Parsed Response:', parsedResponse);
 
               if (response.ok) {
                 builtInVariableNames.forEach(async (variableName) => {
@@ -1300,8 +1278,8 @@ export async function RevertBuiltInVariables(
             notFoundError: true, // Set the notFoundError flag
             message: `Could not delete built-in variable. Please check your permissions. Container Name: 
               ${builtInVariableNames.find((name) =>
-                name.includes(name)
-              )}. All other variables were successfully deleted.`,
+              name.includes(name)
+            )}. All other variables were successfully deleted.`,
             results: notFoundLimit.map(({ combinedId, name }) => {
               const [accountId, containerId, workspaceId] = combinedId.split('-');
               return {
