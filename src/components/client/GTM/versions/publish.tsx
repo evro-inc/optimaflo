@@ -363,21 +363,24 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
           forms: createVersionData,
         })) as FeatureResponse;
 
+        console.log('resCreateVersion', resCreateVersion);
+
+
         if (resCreateVersion.success) {
-          const versionId =
-            resCreateVersion.results[0].response.containerVersion.containerVersionId;
-          const environment = forms.map((form) => form.environmentId).flat();
-          console.log('environment', environment);
-          console.log('versionId', versionId);
+          const versionId = resCreateVersion.results[0].response.containerVersion.containerVersionId;
+          const environments = forms.flatMap((form) => form?.environmentId?.split(','));
 
-          const envId = environment.find((env) => (env ? env.split('-')[0] : ''));
-          console.log('envid', envId);
+          console.log('environments', environments);
 
-          const envType = environment.map((env) => (env ? env.split('-')[1] : ''));
+          // Separate live and non-live environments
+          const liveEnvironments = environments.filter((env) => env && env.split('-')[1].toLowerCase() === 'live');
+          const nonLiveEnvironments = environments.filter((env) => env && env.split('-')[1].toLowerCase() !== 'live');
 
-          console.log('envType', envType);
+          console.log('liveEnvironments', liveEnvironments);
+          console.log('nonLiveEnvironments', nonLiveEnvironments);
 
-          if (envType.includes('live') || envType.includes('Live')) {
+
+          if (liveEnvironments.length > 0) {
             const publishData = extractPublishData(forms, versionId);
             console.log('publishData', publishData);
 
@@ -389,12 +392,14 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
             } else {
               handleResponseErrors(res, dispatch);
             }
-          } else {
+          }
+
+          if (nonLiveEnvironments.length > 0) {
             const resUpdateEnv = (await UpdateEnvs({
               forms: createVersionData.map((data) => ({
                 ...data,
                 containerVersionId: versionId,
-                environmentId: envId,
+                environmentId: nonLiveEnvironments.find((env) => env ? env.split('-')[0] : ''),
               })),
             })) as FeatureResponse;
 
@@ -464,11 +469,18 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
 
     console.log('newEntityId', newEntityId);
 
+    const envValue = forms[index].environmentId ? forms[index].environmentId.split(',') : [];
+    const newEnvValue = checked
+      ? [...envValue, `${environmentId}-${name}`]
+      : envValue.filter((value) => value !== `${environmentId}-${name}`);
+
+    console.log('newEnvValue', newEnvValue);
+
     // Update both accountId and createVersion.entityId
     form.setValue(`forms.${index}.accountId`, accountId);
     form.setValue(`forms.${index}.containerId`, containerId);
     form.setValue(`forms.${index}.createVersion.entityId`, newEntityId);
-    form.setValue(`forms.${index}.environmentId`, envId + '-' + name);
+    form.setValue(`forms.${index}.environmentId`, newEnvValue.join(','));
   };
 
   /*   const handleEnvironmentCheckboxChange = (checked, item, index) => {
@@ -542,17 +554,15 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
                         <TabsList className="grid w-full grid-cols-2">
                           <TabsTrigger
                             value="publish"
-                            className={`relative p-2 transition-colors ${
-                              activeTab === 'publish' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
-                            }`}
+                            className={`relative p-2 transition-colors ${activeTab === 'publish' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
+                              }`}
                           >
                             Pubish and Create Version
                           </TabsTrigger>
                           <TabsTrigger
                             value="version"
-                            className={`relative p-2 transition-colors ${
-                              activeTab === 'version' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
-                            }`}
+                            className={`relative p-2 transition-colors ${activeTab === 'version' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
+                              }`}
                           >
                             Create Version
                           </TabsTrigger>

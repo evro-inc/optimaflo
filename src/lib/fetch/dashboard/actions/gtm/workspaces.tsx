@@ -1075,6 +1075,9 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
 
   await fetchGtmSettings(userId);
 
+  console.log('formData version', formData);
+
+
   /*   const cacheKey = `gtm:workspaces:userId:${userId}`;
     const cachedValue = await redis.get(cacheKey);
     if (cachedValue) {
@@ -1090,9 +1093,16 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
   let accountIdForCache: string | undefined;
   let containerIdForCache: string | undefined;
 
+
+  const uniqueForms = formData.forms.filter((value, index, self) =>
+    index === self.findIndex((t) => (
+      t.workspaceId === value.workspaceId && t.accountId === value.accountId && t.containerId === value.containerId
+    ))
+  );
+
   // Refactor: Use string identifiers in the set
   const toCreateVersions = new Set(
-    formData.forms.map((prop) => ({
+    uniqueForms.map((prop) => ({
       accountId: prop.accountId,
       containerId: prop.containerId,
       workspaceId: prop.workspaceId,
@@ -1149,7 +1159,7 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
   }
 
   let permissionDenied = false;
-  const workspaceNames = formData.forms.map((cd) => cd.name);
+  const workspaceNames = uniqueForms.map((cd) => cd.name);
 
   if (toCreateVersions.size <= availableUpdateUsage) {
     while (retries < MAX_RETRIES && toCreateVersions.size > 0 && !permissionDenied) {
@@ -1160,7 +1170,7 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
             const createPromises = Array.from(toCreateVersions).map(async (identifier) => {
               accountIdForCache = identifier.accountId;
               containerIdForCache = identifier.containerId;
-              const workspaceData = formData.forms.find(
+              const workspaceData = uniqueForms.find(
                 (prop) =>
                   prop.accountId === identifier.accountId &&
                   prop.containerId === identifier.containerId &&
@@ -1351,7 +1361,7 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
             };
           }
 
-          if (successfulCreations.length === formData.forms.length) {
+          if (successfulCreations.length === uniqueForms.length) {
             break;
           }
 
