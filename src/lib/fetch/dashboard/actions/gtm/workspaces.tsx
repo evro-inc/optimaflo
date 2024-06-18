@@ -1077,7 +1077,6 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
 
   console.log('formData version', formData);
 
-
   /*   const cacheKey = `gtm:workspaces:userId:${userId}`;
     const cachedValue = await redis.get(cacheKey);
     if (cachedValue) {
@@ -1093,11 +1092,15 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
   let accountIdForCache: string | undefined;
   let containerIdForCache: string | undefined;
 
-
-  const uniqueForms = formData.forms.filter((value, index, self) =>
-    index === self.findIndex((t) => (
-      t.workspaceId === value.workspaceId && t.accountId === value.accountId && t.containerId === value.containerId
-    ))
+  const uniqueForms = formData.forms.filter(
+    (value, index, self) =>
+      index ===
+      self.findIndex(
+        (t) =>
+          t.workspaceId === value.workspaceId &&
+          t.accountId === value.accountId &&
+          t.containerId === value.containerId
+      )
   );
 
   // Refactor: Use string identifiers in the set

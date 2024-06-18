@@ -365,20 +365,23 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
 
         console.log('resCreateVersion', resCreateVersion);
 
-
         if (resCreateVersion.success) {
-          const versionId = resCreateVersion.results[0].response.containerVersion.containerVersionId;
+          const versionId =
+            resCreateVersion.results[0].response.containerVersion.containerVersionId;
           const environments = forms.flatMap((form) => form?.environmentId?.split(','));
 
           console.log('environments', environments);
 
           // Separate live and non-live environments
-          const liveEnvironments = environments.filter((env) => env && env.split('-')[1].toLowerCase() === 'live');
-          const nonLiveEnvironments = environments.filter((env) => env && env.split('-')[1].toLowerCase() !== 'live');
+          const liveEnvironments = environments.filter(
+            (env) => env && env.split('-')[1].toLowerCase() === 'live'
+          );
+          const nonLiveEnvironments = environments.filter(
+            (env) => env && env.split('-')[1].toLowerCase() !== 'live'
+          );
 
           console.log('liveEnvironments', liveEnvironments);
           console.log('nonLiveEnvironments', nonLiveEnvironments);
-
 
           if (liveEnvironments.length > 0) {
             const publishData = extractPublishData(forms, versionId);
@@ -399,7 +402,7 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
               forms: createVersionData.map((data) => ({
                 ...data,
                 containerVersionId: versionId,
-                environmentId: nonLiveEnvironments.find((env) => env ? env.split('-')[0] : ''),
+                environmentId: nonLiveEnvironments.find((env) => (env ? env.split('-')[0] : '')),
               })),
             })) as FeatureResponse;
 
@@ -483,30 +486,6 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
     form.setValue(`forms.${index}.environmentId`, newEnvValue.join(','));
   };
 
-  /*   const handleEnvironmentCheckboxChange = (checked, item, index) => {
-      const valueKey = `${item.accountId}-${item.containerId}-${item.type}-${item.environmentId}`;
-      console.log('Environment Checkbox Change:', { checked, item, index, valueKey });
-  
-      const forms = form.watch('forms');
-      const fieldValue = Array.isArray(forms[index].environmentId) ? forms[index].environmentId : [];
-  
-      const newValue = checked
-        ? [...fieldValue, valueKey]
-        : fieldValue.filter((value) => value !== valueKey);
-  
-      // Set the new environmentId
-      form.setValue(`forms.${index}.environmentId`, newValue);
-  
-      // Log the updated form values
-      console.log('Updated forms:', form.getValues());
-    }; */
-
-  const hasWorkspaceChanges = (accountId, containerId) => {
-    return changes.some(
-      (change) => change.accountId === accountId && change.containerId === containerId
-    );
-  };
-
   console.log('form errors', form.formState.errors);
 
   return (
@@ -554,15 +533,17 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
                         <TabsList className="grid w-full grid-cols-2">
                           <TabsTrigger
                             value="publish"
-                            className={`relative p-2 transition-colors ${activeTab === 'publish' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
-                              }`}
+                            className={`relative p-2 transition-colors ${
+                              activeTab === 'publish' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
+                            }`}
                           >
                             Pubish and Create Version
                           </TabsTrigger>
                           <TabsTrigger
                             value="version"
-                            className={`relative p-2 transition-colors ${activeTab === 'version' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
-                              }`}
+                            className={`relative p-2 transition-colors ${
+                              activeTab === 'version' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
+                            }`}
                           >
                             Create Version
                           </TabsTrigger>
@@ -687,65 +668,6 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
                                   )}
                                 />
                               </div>
-
-                              {/* <FormField
-                                control={form.control}
-                                name={`forms.${index}.environmentId`}
-                                render={({ field }) => {
-                                  const fieldValue = Array.isArray(field.value) ? field.value : [];
-                                  return (
-                                    <FormItem>
-                                      <div className="mb-4">
-                                        <FormLabel className="text-base">
-                                          Publish to Environment
-                                        </FormLabel>
-                                        <FormDescription>
-                                          Select the GTM entities you want to publish the changes
-                                          to.
-                                        </FormDescription>
-                                      </div>
-                                      {uniqueEnvs.map((item) => {
-                                        const valueKey = `${item.accountId}-${item.containerId}-${item.type}-${item.environmentId}`;
-                                        return (
-                                          <FormField
-                                            key={valueKey}
-                                            control={form.control}
-                                            name={`forms.${index}.environmentId`}
-                                            render={({ field }) => {
-                                              const disabled = !hasWorkspaceChanges(
-                                                item.accountId,
-                                                item.containerId
-                                              );
-                                              return (
-                                                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                                                  <FormControl>
-                                                    <Checkbox
-                                                      checked={fieldValue.includes(valueKey)}
-                                                      onCheckedChange={(checked) =>
-                                                        handleEnvironmentCheckboxChange(
-                                                          checked,
-                                                          item,
-                                                          index
-                                                        )
-                                                      }
-                                                      disabled={disabled}
-                                                    />
-                                                  </FormControl>
-                                                  <FormLabel className="font-normal">
-                                                    {item.name} - {item.accountId} -{' '}
-                                                    {item.containerId}
-                                                  </FormLabel>
-                                                </FormItem>
-                                              );
-                                            }}
-                                          />
-                                        );
-                                      })}
-                                      <FormMessage />
-                                    </FormItem>
-                                  );
-                                }}
-                              /> */}
                             </div>
                           </CardContent>
                         </TabsContent>
@@ -834,7 +756,11 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
                                                     `${item.accountId}-${item.containerId}-${item.workspaceId}`
                                                   )}
                                                   onCheckedChange={(checked) =>
-                                                    handleCheckboxChange(checked, item, index)
+                                                    handleCheckboxChange(
+                                                      checked,
+                                                      `${item.accountId}-${item.containerId}-${item.workspaceId}`,
+                                                      index
+                                                    )
                                                   }
                                                 />
                                               </FormControl>
