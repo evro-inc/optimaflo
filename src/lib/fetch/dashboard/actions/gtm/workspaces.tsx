@@ -25,7 +25,7 @@ type FormUpdateSchema = z.infer<typeof FormSchema>;
 /************************************************************************************
   Function to list or get one GTM workspaces
 ************************************************************************************/
-export async function listGtmWorkspaces() {
+export async function listGtmWorkspaces(skipCache = false) {
   let retries = 0;
   const MAX_RETRIES = 3;
   let delay = 1000;
@@ -40,11 +40,13 @@ export async function listGtmWorkspaces() {
   let responseBody: any;
 
   const cacheKey = `gtm:workspaces:userId:${userId}`;
-  const cachedValue = await redis.get(cacheKey);
-  if (cachedValue) {
-    return JSON.parse(cachedValue);
-  }
 
+  if (!skipCache) {
+    const cachedValue = await redis.get(cacheKey);
+    if (cachedValue) {
+      return JSON.parse(cachedValue);
+    }
+  }
   await fetchGtmSettings(userId);
 
   const gtmData = await prisma.user.findFirst({
@@ -1072,7 +1074,6 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
   let delay = 1000;
 
   await fetchGtmSettings(userId);
-  console.log('createGTMVersion formData', formData);
 
   /*   const cacheKey = `gtm:workspaces:userId:${userId}`;
     const cachedValue = await redis.get(cacheKey);
@@ -1099,9 +1100,6 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
       notes: prop.description, // Assuming description maps to notes
     }))
   );
-
-  console.log('toCreateVersions', toCreateVersions);
-
 
   const tierLimitResponse: any = await tierCreateLimit(userId, 'GTMVersions');
   const limit = Number(tierLimitResponse.updateLimit);
@@ -1160,9 +1158,6 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
         if (remaining > 0) {
           await limiter.schedule(async () => {
             const createPromises = Array.from(toCreateVersions).map(async (identifier) => {
-              console.log('identifier', identifier);
-
-
               accountIdForCache = identifier.accountId;
               containerIdForCache = identifier.containerId;
               const workspaceData = formData.forms.find(
@@ -1179,16 +1174,12 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
               }
 
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${workspaceData.accountId}/containers/${workspaceData.containerId}/workspaces/${workspaceData.workspaceId}:create_version`;
-              console.log('url version', url);
 
               const headers = {
                 Authorization: `Bearer ${accessToken}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
-
-              console.log('headers 1', headers);
-
 
               try {
                 const formDataToValidate = { forms: [workspaceData] };
@@ -1214,20 +1205,14 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
                   name: validatedWorkspaceData.name,
                   notes: validatedWorkspaceData.description,
                 });
-                console.log('validatedWorkspaceData', validatedWorkspaceData);
-
 
                 const response = await fetch(url, {
                   method: 'POST',
                   headers: headers,
                   body: payload,
                 });
-                console.log('response', response);
-
 
                 const parsedResponse = await response.json();
-                console.log('parsedResponse', parsedResponse);
-
 
                 const workspaceName = workspaceData.name;
 
@@ -1236,7 +1221,6 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
                     `${validatedWorkspaceData.workspaceId}-${validatedWorkspaceData.containerId}`
                   );
                   toCreateVersions.delete(identifier);
-
 
                   await prisma.gtm.deleteMany({
                     where: {
@@ -1259,8 +1243,6 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
                     response: parsedResponse,
                   });
                 } else {
-
-
                   const errorResult = await handleApiResponseError(
                     response,
                     parsedResponse,
@@ -1451,7 +1433,7 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
 }
 
 /************************************************************************************
-  Function to list or get one GTM workspaces
+  Function to list or get one GTM workspaces - Error: Error fetching data: HTTP error! status: 429. Too Many Requests
 ************************************************************************************/
 export async function getStatusGtmWorkspaces() {
   let retries = 0;
@@ -1493,8 +1475,6 @@ export async function getStatusGtmWorkspaces() {
             const [accountId, containerId, workspaceId] = pair.split('-');
             return `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/status`;
           });
-
-          console.log('URLS', urls);
 
           const headers = {
             Authorization: `Bearer ${accessToken}`,

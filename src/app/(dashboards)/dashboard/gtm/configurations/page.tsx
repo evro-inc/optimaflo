@@ -26,7 +26,7 @@ export default async function Page() {
     containerData,
     workspaceData,
     wsChangeData,
-    gtmEnvsData
+    gtmEnvsData,
   ]);
 
   const flatAccounts = accounts.flat();
@@ -35,7 +35,7 @@ export default async function Page() {
   const flatChanges = wsChanges.flat();
   const flatEnvs = gtmEnvs.flat();
 
-  const filteredEnvs = flatEnvs.filter(env => env.type !== 'workspace');
+  const filteredEnvs = flatEnvs.filter((env) => env.type !== 'workspace');
 
   const transformedData = flatChanges.flatMap((changeSet, index) =>
     (changeSet.workspaceChange || []).map((change, itemIndex) => ({
@@ -69,9 +69,7 @@ export default async function Page() {
     };
   });
 
-  //console.log('combinedData: ', combinedData);
-
-
+  console.log('filteredEnvs', filteredEnvs);
 
   return (
     <div className="container mx-auto py-10">

@@ -31,8 +31,6 @@ export default async function KeyEventsPage({
   const builtInVarData = await listGtmBuiltInVariables();
   const wsChanges = await getStatusGtmWorkspaces();
 
-  console.log('wsChanges:', wsChanges);
-
   const [accounts, containers, workspaces, builtInVar] = await Promise.all([
     accountData,
     containerData,
@@ -90,7 +88,7 @@ export default async function KeyEventsPage({
         }
       >
         <div className="container mx-auto py-10">
-          <DataTable columns={columns} data={combinedData} changes={wsChanges} />
+          <DataTable columns={columns} data={combinedData} />
         </div>
       </Suspense>
     </>

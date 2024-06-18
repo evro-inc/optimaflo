@@ -34,8 +34,6 @@ export default async function VersionsPage({
   const flatContainers = containers.flat();
   const flatVersions = versions.flatMap((item) => item.containerVersionHeader);
 
-  console.log('flatVersions', flatVersions);
-
   const combinedData = flatVersions.map((vs) => {
     const account = accounts.find((a) => a.accountId === vs.accountId);
     const container = flatContainers.find((c) => c.containerId === vs.containerId);
@@ -53,8 +51,6 @@ export default async function VersionsPage({
       };
     }
   });
-
-  console.log('combinedData', combinedData);
 
   return (
     <>

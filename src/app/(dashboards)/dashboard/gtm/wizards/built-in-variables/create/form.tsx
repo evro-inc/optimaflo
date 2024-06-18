@@ -115,7 +115,6 @@ const FormCreateBuiltInVariable: React.FC<FormCreateBuiltInVariableProps> = ({
     const fetchCreatedVariables = async () => {
       try {
         const data = await listGtmBuiltInVariables();
-        console.log('data', data);
 
         setCreatedVariables(data);
       } catch (error) {
@@ -150,8 +149,6 @@ const FormCreateBuiltInVariable: React.FC<FormCreateBuiltInVariableProps> = ({
     },
     { seen: new Set(), result: [] }
   ).result;
-
-  console.log('gtmAccountContainerWorkspacesPairs', gtmAccountContainerWorkspacesPairs);
 
   const foundTierLimit = tierLimits.find(
     (subscription) => subscription.Feature?.name === 'GA4KeyEvents'
@@ -223,8 +220,6 @@ const FormCreateBuiltInVariable: React.FC<FormCreateBuiltInVariableProps> = ({
     const { forms } = data;
     dispatch(setLoading(true));
 
-    console.log('forms', forms);
-
     toast('Creating Built-In Variables...', {
       action: {
         label: 'Close',
@@ -233,11 +228,8 @@ const FormCreateBuiltInVariable: React.FC<FormCreateBuiltInVariableProps> = ({
     });
 
     const uniqueKeyEvents = new Set<string>();
-    console.log('uniqueKeyEvents', uniqueKeyEvents);
 
     for (const form of forms) {
-      console.log('form 1', form);
-
       const identifier = JSON.stringify({ entity: form.entity, type: form.type });
 
       if (uniqueKeyEvents.has(identifier)) {

@@ -20,10 +20,9 @@ import { Textarea } from '@/src/components/ui/textarea';
 import { Label } from '@radix-ui/react-label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@radix-ui/react-tabs';
 import clsx from 'clsx';
-import { useState } from 'react';
+import { Dispatch, useState } from 'react';
 import { DataTable } from './table/table';
 import { columns } from './table/columns';
-import { RadioGroup, RadioGroupItem } from '@/src/components/ui/radio-group';
 import {
   Form,
   FormControl,
@@ -46,50 +45,106 @@ import { useRouter } from 'next/navigation';
 import { setErrorDetails, setIsLimitReached, setNotFoundError } from '@/src/redux/tableSlice';
 import { RootState } from '@/src/redux/store';
 import { createGTMVersion } from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
-import { UpdateEnvs } from '@/src/lib/fetch/dashboard/actions/gtm/envs';
+import { getGtmEnv, UpdateEnvs } from '@/src/lib/fetch/dashboard/actions/gtm/envs';
 import { Checkbox } from '@/src/components/ui/checkbox';
+import { revalidate } from '@/src/utils/server';
+import { useUser } from '@clerk/nextjs';
+import { A } from '@upstash/redis/zmscore-b6b93f14';
 
 type Forms = z.infer<typeof FormSchema>;
-
 
 function getUniqueAccountAndContainerInfo(changes) {
   const accountContainerSet = new Set();
 
-  changes.forEach(change => {
-    if (change.accountId && change.containerId && change.accountName && change.containerName && change.workspaceId) {
+  changes.forEach((change) => {
+    if (
+      change.accountId &&
+      change.containerId &&
+      change.accountName &&
+      change.containerName &&
+      change.workspaceId
+    ) {
       const accountContainerInfo = JSON.stringify({
         accountId: change.accountId,
         containerId: change.containerId,
         accountName: change.accountName,
         containerName: change.containerName,
-        workspaceId: change.workspaceId
+        workspaceId: change.workspaceId,
       });
       accountContainerSet.add(accountContainerInfo);
     }
   });
 
-  return Array.from(accountContainerSet).map(info => JSON.parse(info));
+  return Array.from(accountContainerSet).map((info) => JSON.parse(info));
 }
+function mergeUniqueInfo(accountContainerInfo, envs) {
+  return accountContainerInfo.map((info) => {
+    const relatedEnvs = envs
+      .filter((env) => env.accountId === info.accountId && env.containerId === info.containerId)
+      .map((env) => ({
+        type: env.type,
+        name: env.name,
+        environmentId: env.environmentId,
+      }));
 
-
-
+    return {
+      ...info,
+      environments: relatedEnvs,
+    };
+  });
+}
 
 function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
   const dispatch = useDispatch();
   const router = useRouter();
+  const { user } = useUser();
+  const userId = user?.id as string;
 
   const loading = useSelector((state: RootState) => state.form.loading);
   const [snap, setSnap] = useState<number | string | null>('250px');
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('publish');
 
+  console.log('envs', envs);
+  console.log('changes', changes);
+
+  const uniqueEnvs: {
+    type: string;
+    name: string;
+    accountId: string;
+    containerId: string;
+    environmentId: string;
+  }[] = [];
+  const seenTypes = new Set<string>();
+
+  envs.forEach((env) => {
+    const typeNameKey = `${env.environmentId}-${env.type}-${env.name}-${env.accountId}-${env.containerId}`;
+    if (env.type !== 'latest') {
+      seenTypes.add(typeNameKey);
+      uniqueEnvs.push({
+        type: env.type,
+        name: env.name,
+        accountId: env.accountId,
+        containerId: env.containerId,
+        environmentId: env.environmentId,
+      });
+    }
+  });
 
   const uniqueAccountContainerInfo = getUniqueAccountAndContainerInfo(changes);
+
+  console.log('A uniqueAccountContainerInfo', uniqueAccountContainerInfo);
+  console.log('A uniqueEnvs', uniqueEnvs);
+
+  const combinedInfo = mergeUniqueInfo(uniqueAccountContainerInfo, uniqueEnvs);
+  console.log('Combined Info', combinedInfo);
 
   const formDataDefaults = {
     path: '',
     accountId: '',
     containerId: '',
     containerVersionId: '',
-    environementId: '',
+    environmentId: '',
     name: '',
     deleted: false,
     description: '',
@@ -99,7 +154,7 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
       containerId: '',
       name: '',
       description: '',
-      fingerprint: ''
+      fingerprint: '',
     },
     tag: [],
     trigger: [],
@@ -116,10 +171,9 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
     createVersion: {
       entityId: '',
       name: '',
-      notes: ''
-    }
+      notes: '',
+    },
   };
-
 
   const form = useForm<Forms>({
     defaultValues: {
@@ -133,158 +187,126 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
     name: 'forms',
   });
 
-
-  console.log("form state error", form.formState.errors);
-
-
-  const processForm: SubmitHandler<Forms> = async (data) => {
-    const { forms } = data;
-    dispatch(setLoading(true)); // Set loading to true using Redux action
-
-    console.log('data', forms);
-
-
-
-    toast('Publishing GTM...', {
+  // Utility function to show toast notifications
+  const showToast = (message: string, isError: boolean = false) => {
+    toast(message, {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
       },
     });
+  };
 
-    /*     const uniqueKeyEvents = new Set(forms.map((form) => form.name));
-        for (const form of forms) {
-          const identifier = `${form.accountProperty}-${form.eventName}`;
-    
-          if (uniqueKeyEvents.has(identifier)) {
-            toast.error(`Duplicate key event found for ${form.accountProperty} - ${form.eventName}`, {
-              action: {
-                label: 'Close',
-                onClick: () => toast.dismiss(),
-              },
-            });
-            dispatch(setLoading(false));
-            return;
-          }
-          uniqueKeyEvents.add(identifier);
-        } */
+  // Function to extract and transform createVersion data
+  const extractCreateVersionData = (forms: Forms[]) => {
+    const createVersionData = forms.flatMap((form) => {
+      const { createVersion } = form;
+      const entityIdPairs = createVersion.entityId || [];
 
-    try {
-      let res: FeatureResponse = { success: false, results: [] };
-      let resUpdateEnv: FeatureResponse = { success: false, results: [] };
-
-      // Extract and transform the createVersion data
-      const createVersionData = forms.flatMap(form => {
-        const { createVersion } = form;
-        const entityIdPairs = createVersion.entityId || [];
-
-        return entityIdPairs.map(id => {
-          const [accountId, containerId, workspaceId] = id.split('-');
-          return {
-            accountId,
-            containerId,
-            name: createVersion.name,
-            description: createVersion.notes,
-            workspaceId: workspaceId,
-          };
-        });
+      return entityIdPairs.map((id) => {
+        const [accountId, containerId, workspaceId] = id.split('-');
+        return {
+          accountId,
+          containerId,
+          name: createVersion.name,
+          description: createVersion.notes,
+          workspaceId: workspaceId,
+        };
       });
+    });
 
+    return forms.flatMap((form) => {
+      const { createVersion } = form;
+      const entityIdPairs = createVersion.entityId || [];
 
+      return entityIdPairs.map((id) => {
+        const [accountId, containerId, workspaceId] = id.split('-');
+        return {
+          accountId,
+          containerId,
+          name: createVersion.name,
+          description: createVersion.notes,
+          workspaceId,
+        };
+      });
+    });
+  };
 
-      const resCreateVersion = (await createGTMVersion({ forms: createVersionData })) as FeatureResponse;
+  // Function to extract publish data
+  const extractPublishData = (forms: Forms[], containerVersionId: string) => {
+    return forms.flatMap((form) => {
+      const { accountId, containerId, environmentId, createVersion } = form;
 
-      if (resCreateVersion.success) {
-        const publishData = forms.flatMap(form => {
-          const { accountId, containerId, environmentId, createVersion } = form;
+      return {
+        accountId,
+        containerId,
+        containerVersionId,
+        environmentId,
+        name: createVersion.name,
+        description: createVersion.notes,
+      };
+    });
+  };
 
-          return {
-            accountId,
-            containerId,
-            containerVersionId: resCreateVersion.results[0].response.containerVersion.containerVersionId,
-            environmentId: environmentId,
-            name: createVersion.name,
-            description: createVersion.notes,
-          };
-        }
-        );
+  // Function to extract environment update data
+  const extractEnvUpdateData = (forms, containerVersionId) => {
+    return forms.flatMap((form) => {
+      const { accountId, containerId, environmentId, createVersion } = form;
 
-        res = await publishGTM({ forms: publishData }) as FeatureResponse;
+      return environmentId.map((envId) => {
+        const [accId, contId, type, envIdPart] = envId.split('-');
+        return {
+          accountId: accId,
+          containerId: contId,
+          environmentId: envIdPart,
+          containerVersionId,
+          workspaceId: form.workspaceId, // ensure workspaceId is correctly set if needed
+          name: createVersion.name,
+          description: createVersion.notes,
+        };
+      });
+    });
+  };
 
-      }
-
-
-      if (res.success) {
-        const envData = forms.flatMap(form => {
-          const { accountId, containerId, environmentId, createVersion } = form;
-
-          return {
-            accountId,
-            containerId,
-            environmentId: environmentId.split('-')[1],
-            containerVersionId: resCreateVersion.results[0].response.containerVersion.containerVersionId,
-            workspaceId: environmentId.split('-')[3],
-            name: createVersion.name,
-            description: createVersion.notes,
-          };
-        }
-        );
-
-        console.log('envData', envData);
-
-
-        resUpdateEnv = (await UpdateEnvs({ forms: envData })) as FeatureResponse;
-      }
-
-      console.log('resUpdateEnv', resUpdateEnv);
-
-
-
-
-      console.log('resCreateVersion', resCreateVersion.results);
-      console.log('resUpdateEnv', resUpdateEnv);
-      console.log('res', res);
-
-
-      if (res.success) {
-        res.results.forEach((result) => {
-          if (result.success) {
-            toast.success(
-              `Key Event ${result.name} created successfully. The table will update shortly.`,
-              {
-                action: {
-                  label: 'Close',
-                  onClick: () => toast.dismiss(),
-                },
-              }
-            );
+  // Function to handle response success
+  const handleResponseSuccess = async (
+    res: FeatureResponse,
+    userId: string,
+    setIsDrawerOpen: (isOpen: boolean) => void
+  ) => {
+    res.results.forEach((result) => {
+      if (result.success) {
+        toast.success(
+          `Key Event ${result.name} created successfully. The table will update shortly.`,
+          {
+            action: {
+              label: 'Close',
+              onClick: () => toast.dismiss(),
+            },
           }
-        });
+        );
+      }
+    });
 
-        router.push('/dashboard/gtm/configurations');
-      } else {
-        if (res.notFoundError) {
-          res.results.forEach((result) => {
-            if (result.notFound) {
-              toast.error(
-                `Unable to create key event ${result.name}. Please check your access permissions. Any other key events created were successful.`,
-                {
-                  action: {
-                    label: 'Close',
-                    onClick: () => toast.dismiss(),
-                  },
-                }
-              );
-            }
-          });
+    const keys = [
+      `gtm:accounts:userId:${userId}`,
+      `gtm:containers:userId:${userId}`,
+      `gtm:workspaces:userId:${userId}`,
+      `gtm:builtInVariables:userId:${userId}`,
+    ];
+    await revalidate(keys, '/dashboard/gtm/configurations', userId);
 
-          dispatch(setErrorDetails(res.results)); // Assuming results contain the error details
-          dispatch(setNotFoundError(true)); // Dispatch the not found error action
-        }
+    router.push('/dashboard/gtm/configurations');
+    setIsDrawerOpen(false);
+  };
 
-        if (res.limitReached) {
+  // Function to handle response errors
+  const handleResponseErrors = (res: FeatureResponse, dispatch: Dispatch<any>) => {
+    if (res.notFoundError) {
+      res.results.forEach((result) => {
+        if (result.notFound) {
           toast.error(
-            `Unable to create key event(s). You have hit your current limit for this feature.`,
+            `Unable to create key event ${result.name}. Please check your access permissions. Any other key events created were successful.`,
             {
               action: {
                 label: 'Close',
@@ -292,45 +314,144 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
               },
             }
           );
+        }
+      });
 
-          dispatch(setIsLimitReached(true));
+      dispatch(setErrorDetails(res.results));
+      dispatch(setNotFoundError(true));
+    }
+
+    if (res.limitReached) {
+      toast.error(
+        `Unable to create key event(s). You have hit your current limit for this feature.`,
+        {
+          action: {
+            label: 'Close',
+            onClick: () => toast.dismiss(),
+          },
         }
-        if (res.errors) {
-          res.errors.forEach((error) => {
-            toast.error(`Unable to create key event. ${error}`, {
-              action: {
-                label: 'Close',
-                onClick: () => toast.dismiss(),
-              },
-            });
-          });
-        }
-        form.reset({
-          forms: [formDataDefaults],
+      );
+
+      dispatch(setIsLimitReached(true));
+    }
+
+    if (res.errors) {
+      res.errors.forEach((error) => {
+        toast.error(`Unable to create key event. ${error}`, {
+          action: {
+            label: 'Close',
+            onClick: () => toast.dismiss(),
+          },
         });
-      }
+      });
+    }
+  };
 
-      // Reset the forms here, regardless of success or limit reached
-      form.reset({
-        forms: [formDataDefaults],
-      });
-    } catch (error) {
-      toast.error('An unexpected error occurred.', {
-        action: {
-          label: 'Close',
-          onClick: () => toast.dismiss(),
-        },
-      });
-      return { success: false };
-    } finally {
-      dispatch(setLoading(false)); // Set loading to false
+  // Main form processing function
+  const processForm: SubmitHandler<Forms> = async (data) => {
+    const { forms } = data;
+    dispatch(setLoading(true)); // Set loading to true using Redux action
+    console.log('forms process: ', forms);
+
+    if (activeTab === 'publish') {
+      showToast('Publishing GTM...', false);
+
+      try {
+        const createVersionData = extractCreateVersionData(forms);
+
+        const resCreateVersion = (await createGTMVersion({
+          forms: createVersionData,
+        })) as FeatureResponse;
+
+        if (resCreateVersion.success) {
+          const versionId =
+            resCreateVersion.results[0].response.containerVersion.containerVersionId;
+          const environment = forms.map((form) => form.environmentId).flat();
+          console.log('environment', environment);
+          console.log('versionId', versionId);
+
+          const envId = environment.find((env) => (env ? env.split('-')[0] : ''));
+          console.log('envid', envId);
+
+          const envType = environment.map((env) => (env ? env.split('-')[1] : ''));
+
+          console.log('envType', envType);
+
+          if (envType.includes('live') || envType.includes('Live')) {
+            const publishData = extractPublishData(forms, versionId);
+            console.log('publishData', publishData);
+
+            const res = (await publishGTM({ forms: publishData })) as FeatureResponse;
+            console.log('res', res);
+
+            if (res.success && resCreateVersion.success) {
+              await handleResponseSuccess(res, userId, setIsDrawerOpen);
+            } else {
+              handleResponseErrors(res, dispatch);
+            }
+          } else {
+            const resUpdateEnv = (await UpdateEnvs({
+              forms: createVersionData.map((data) => ({
+                ...data,
+                containerVersionId: versionId,
+                environmentId: envId,
+              })),
+            })) as FeatureResponse;
+
+            console.log('resUpdateEnv', resUpdateEnv);
+
+            if (resUpdateEnv.success) {
+              await handleResponseSuccess(resUpdateEnv, userId, setIsDrawerOpen);
+            } else {
+              handleResponseErrors(resUpdateEnv, dispatch);
+            }
+          }
+        }
+
+        form.reset({ forms: [formDataDefaults] });
+      } catch (error) {
+        toast.error('An unexpected error occurred.', {
+          action: {
+            label: 'Close',
+            onClick: () => toast.dismiss(),
+          },
+        });
+      } finally {
+        dispatch(setLoading(false)); // Set loading to false
+      }
+    } else if (activeTab === 'version') {
+      showToast('Creating version...', false);
+
+      try {
+        const createVersionData = extractCreateVersionData(forms);
+        const res = (await createGTMVersion({ forms: createVersionData })) as FeatureResponse;
+
+        if (res.success) {
+          await handleResponseSuccess(res, userId, setIsDrawerOpen);
+        } else {
+          handleResponseErrors(res, dispatch);
+        }
+
+        form.reset({ forms: [formDataDefaults] });
+      } catch (error) {
+        toast.error('An unexpected error occurred.', {
+          action: {
+            label: 'Close',
+            onClick: () => toast.dismiss(),
+          },
+        });
+      } finally {
+        dispatch(setLoading(false)); // Set loading to false
+      }
     }
   };
 
   const handleCheckboxChange = (checked, item, index) => {
-    const entityId = `${item.accountId}-${item.containerId}-${item.workspaceId}`;
-    const accountId = item.accountId;
-    const containerId = item.containerId;
+    console.log('itme', item);
+
+    const [accountId, containerId, workspaceId, environmentId, name] = item.split('-');
+
+    const envId = environmentId;
 
     const forms = form.watch('forms');
     const fieldValue = Array.isArray(forms[index].createVersion.entityId)
@@ -338,20 +459,60 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
       : [];
 
     const newEntityId = checked
-      ? [...fieldValue, entityId]
-      : fieldValue.filter((value) => value !== entityId);
+      ? [...fieldValue, item]
+      : fieldValue.filter((value) => value !== item);
+
+    console.log('newEntityId', newEntityId);
 
     // Update both accountId and createVersion.entityId
     form.setValue(`forms.${index}.accountId`, accountId);
     form.setValue(`forms.${index}.containerId`, containerId);
     form.setValue(`forms.${index}.createVersion.entityId`, newEntityId);
+    form.setValue(`forms.${index}.environmentId`, envId + '-' + name);
   };
 
+  /*   const handleEnvironmentCheckboxChange = (checked, item, index) => {
+      const valueKey = `${item.accountId}-${item.containerId}-${item.type}-${item.environmentId}`;
+      console.log('Environment Checkbox Change:', { checked, item, index, valueKey });
+  
+      const forms = form.watch('forms');
+      const fieldValue = Array.isArray(forms[index].environmentId) ? forms[index].environmentId : [];
+  
+      const newValue = checked
+        ? [...fieldValue, valueKey]
+        : fieldValue.filter((value) => value !== valueKey);
+  
+      // Set the new environmentId
+      form.setValue(`forms.${index}.environmentId`, newValue);
+  
+      // Log the updated form values
+      console.log('Updated forms:', form.getValues());
+    }; */
+
+  const hasWorkspaceChanges = (accountId, containerId) => {
+    return changes.some(
+      (change) => change.accountId === accountId && change.containerId === containerId
+    );
+  };
+
+  console.log('form errors', form.formState.errors);
+
   return (
-    <Drawer snapPoints={[0.4, 1]} activeSnapPoint={snap} setActiveSnapPoint={setSnap}>
+    <Drawer
+      snapPoints={[0.4, 1]}
+      activeSnapPoint={snap}
+      setActiveSnapPoint={setSnap}
+      open={isDrawerOpen}
+      onOpenChange={setIsDrawerOpen}
+    >
       <DrawerTrigger asChild>
-        <Button variant="outline" type="button">
-          Submit
+        <Button
+          variant="outline"
+          type="button"
+          onClick={() => setIsDrawerOpen(true)}
+          disabled={changes.length === 0}
+        >
+          Publish
         </Button>
       </DrawerTrigger>
       <DrawerOverlay className="fixed inset-0 bg-black/40" />
@@ -363,46 +524,53 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
               'overflow-hidden': snap !== 1,
             })}
           >
-            {/*  <div className="flex justify-between items-center">
-              <span className="text-lg font-semibold">Submit Changes</span>
-              <Button type="submit">{loading ? 'Submitting...' : 'Submit'}</Button>
-            </div> */}
-
             {fields.map((field, index) => {
-
-              // console.log('FIELD', field);
               return (
                 <Form {...form}>
-                  <form onSubmit={form.handleSubmit(processForm)}
-                    className="space-y-6"
-                  >
-
+                  <form onSubmit={form.handleSubmit(processForm)} className="space-y-6">
                     <Card>
                       <CardHeader className="grid grid-cols-2 items-center">
-                        <CardTitle className="col-start-1 col-end-2">Submission Configuration</CardTitle>
-                        <Button type="submit" className="col-start-2 col-end-3 justify-self-end">{loading ? 'Submitting...' : 'Submit'}</Button>
+                        <CardTitle className="col-start-1 col-end-2">
+                          Submission Configuration
+                        </CardTitle>
+                        <Button type="submit" className="col-start-2 col-end-3 justify-self-end">
+                          {loading ? 'Submitting...' : 'Submit'}
+                        </Button>
                       </CardHeader>
 
-
-
-                      <Tabs defaultValue="publish">
+                      <Tabs defaultValue="publish" value={activeTab} onValueChange={setActiveTab}>
                         <TabsList className="grid w-full grid-cols-2">
-                          <TabsTrigger value="publish">Pubish and Create Version</TabsTrigger>
-                          <TabsTrigger value="version">Create Version</TabsTrigger>
+                          <TabsTrigger
+                            value="publish"
+                            className={`relative p-2 transition-colors ${
+                              activeTab === 'publish' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
+                            }`}
+                          >
+                            Pubish and Create Version
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="version"
+                            className={`relative p-2 transition-colors ${
+                              activeTab === 'version' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
+                            }`}
+                          >
+                            Create Version
+                          </TabsTrigger>
                         </TabsList>
                         <TabsContent value="publish">
                           <CardContent className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                               <div className="space-y-2">
-                                {/* <Input id="versionName" defaultValue="GTM Change" /> */}
-
                                 <FormField
                                   control={form.control}
                                   name={`forms.${index}.createVersion.name`}
                                   render={({ field }) => (
                                     <FormItem>
                                       <FormLabel>Version Name</FormLabel>
-                                      <FormDescription>The version name will be applied to all containers you are trying to publish.</FormDescription>
+                                      <FormDescription>
+                                        The version name will be applied to all containers you are
+                                        trying to publish.
+                                      </FormDescription>
                                       <FormControl>
                                         <Input
                                           placeholder="This name will be applied on all containers you are currently trying to publish."
@@ -414,33 +582,27 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
                                     </FormItem>
                                   )}
                                 />
-
-
                               </div>
                             </div>
                             <div className="space-y-2">
-
-
                               <FormField
                                 control={form.control}
                                 name={`forms.${index}.createVersion.notes`}
                                 render={({ field }) => (
                                   <FormItem>
                                     <FormLabel>Version Description</FormLabel>
-                                    <FormDescription>The version description will be applied to all containers you are trying to publish.</FormDescription>
+                                    <FormDescription>
+                                      The version description will be applied to all containers you
+                                      are trying to publish. Optional.
+                                    </FormDescription>
                                     <FormControl>
-                                      {/* <Input
-                                      placeholder="Name of the event name"
-                                      {...form.register(`createVersion.notes`)}
-                                      {...field}
-                                    /> */}
                                       <Textarea
-                                        id="description" rows={3}
+                                        id="description"
+                                        rows={3}
                                         defaultValue="Pushing GTM changes."
                                         {...form.register(`forms.${index}.createVersion.notes`)}
                                         {...field}
                                       />
-
                                     </FormControl>
                                     <FormMessage />
                                   </FormItem>
@@ -448,41 +610,188 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
                               />
                             </div>
 
-                            <div className='flex justify-evenly'>
-
-                              <div className="space-y-2">
-
-
+                            <div className="flex">
+                              <div className="space-y-2 pr-10">
                                 <FormField
                                   control={form.control}
-                                  name={`forms.${index}.environmentId`}
+                                  name={`forms.${index}.createVersion.entityId`}
+                                  render={() => (
+                                    <FormItem>
+                                      {combinedInfo.map((item) => (
+                                        <FormItem key={`${item.accountId}-${item.containerId}`}>
+                                          <div className="mb-4">
+                                            <FormLabel className="text-base">
+                                              Choose GTM Entity
+                                            </FormLabel>
+                                            <FormDescription>
+                                              Select the GTM entities you want to publish the
+                                              changes to.
+                                            </FormDescription>
+                                          </div>
+                                          {item.environments.map((env) => {
+                                            return (
+                                              <FormField
+                                                key={`${item.accountId}-${item.containerId}-${env.environmentId}`} // Ensure a unique key
+                                                control={form.control}
+                                                name={`forms.${index}.createVersion.entityId`}
+                                                render={({ field }) => {
+                                                  // Ensure field.value is an array
+                                                  const fieldValue = Array.isArray(field.value)
+                                                    ? field.value
+                                                    : [];
+                                                  const envId = `${item.accountId}-${item.containerId}-${item.workspaceId}-${env.environmentId}-${env.name}`;
+                                                  return (
+                                                    <FormItem
+                                                      key={envId}
+                                                      className="flex flex-row items-start space-x-3 space-y-0"
+                                                    >
+                                                      <FormControl>
+                                                        <Checkbox
+                                                          checked={fieldValue.includes(envId)}
+                                                          onCheckedChange={(checked) =>
+                                                            handleCheckboxChange(
+                                                              checked,
+                                                              envId,
+                                                              index
+                                                            )
+                                                          }
+                                                        />
+                                                      </FormControl>
+                                                      <FormLabel className="font-normal">
+                                                        {env.name} - {item.accountName} -{' '}
+                                                        {item.containerName} (ID:{' '}
+                                                        {env.environmentId})
+                                                      </FormLabel>
+                                                    </FormItem>
+                                                  );
+                                                }}
+                                              />
+                                            );
+                                          })}
+                                          <FormMessage />
+                                        </FormItem>
+                                      ))}
+
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+
+                              {/* <FormField
+                                control={form.control}
+                                name={`forms.${index}.environmentId`}
+                                render={({ field }) => {
+                                  const fieldValue = Array.isArray(field.value) ? field.value : [];
+                                  return (
+                                    <FormItem>
+                                      <div className="mb-4">
+                                        <FormLabel className="text-base">
+                                          Publish to Environment
+                                        </FormLabel>
+                                        <FormDescription>
+                                          Select the GTM entities you want to publish the changes
+                                          to.
+                                        </FormDescription>
+                                      </div>
+                                      {uniqueEnvs.map((item) => {
+                                        const valueKey = `${item.accountId}-${item.containerId}-${item.type}-${item.environmentId}`;
+                                        return (
+                                          <FormField
+                                            key={valueKey}
+                                            control={form.control}
+                                            name={`forms.${index}.environmentId`}
+                                            render={({ field }) => {
+                                              const disabled = !hasWorkspaceChanges(
+                                                item.accountId,
+                                                item.containerId
+                                              );
+                                              return (
+                                                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                                                  <FormControl>
+                                                    <Checkbox
+                                                      checked={fieldValue.includes(valueKey)}
+                                                      onCheckedChange={(checked) =>
+                                                        handleEnvironmentCheckboxChange(
+                                                          checked,
+                                                          item,
+                                                          index
+                                                        )
+                                                      }
+                                                      disabled={disabled}
+                                                    />
+                                                  </FormControl>
+                                                  <FormLabel className="font-normal">
+                                                    {item.name} - {item.accountId} -{' '}
+                                                    {item.containerId}
+                                                  </FormLabel>
+                                                </FormItem>
+                                              );
+                                            }}
+                                          />
+                                        );
+                                      })}
+                                      <FormMessage />
+                                    </FormItem>
+                                  );
+                                }}
+                              /> */}
+                            </div>
+                          </CardContent>
+                        </TabsContent>
+                        <TabsContent value="version">
+                          <CardContent className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <FormField
+                                  control={form.control}
+                                  name={`forms.${index}.createVersion.name`}
                                   render={({ field }) => (
-                                    <FormItem className="space-y-3">
-                                      <FormLabel>Publish to Environment</FormLabel>
+                                    <FormItem>
+                                      <FormLabel>Version Name</FormLabel>
+                                      <FormDescription>
+                                        The version name will be applied to all containers you are
+                                        trying to publish.
+                                      </FormDescription>
                                       <FormControl>
-                                        <RadioGroup
-                                          onValueChange={field.onChange}
-                                          defaultValue={field.value}
-                                          className="flex flex-col space-y-1"
-                                        >
-                                          {envs.map((env: any) => (
-                                            <FormItem key={env.id} className="flex items-center space-x-3 space-y-0">
-                                              <FormControl>
-                                                <RadioGroupItem value={`${env.type}-${env.environmentId}`} />
-                                              </FormControl>
-                                              <FormLabel className="font-normal">{env.name}</FormLabel>
-                                            </FormItem>
-                                          ))}
-                                        </RadioGroup>
+                                        <Input
+                                          placeholder="This name will be applied on all containers you are currently trying to publish."
+                                          {...form.register(`forms.${index}.createVersion.name`)}
+                                          {...field}
+                                        />
                                       </FormControl>
                                       <FormMessage />
                                     </FormItem>
                                   )}
                                 />
-
                               </div>
-
-
+                            </div>
+                            <div className="space-y-2">
+                              <FormField
+                                control={form.control}
+                                name={`forms.${index}.createVersion.notes`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Version Description</FormLabel>
+                                    <FormDescription>
+                                      The version description will be applied to all containers you
+                                      are trying to publish. Optional.
+                                    </FormDescription>
+                                    <FormControl>
+                                      <Textarea
+                                        id="description"
+                                        rows={3}
+                                        defaultValue="Pushing GTM changes."
+                                        {...form.register(`forms.${index}.createVersion.notes`)}
+                                        {...field}
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                            <div className="space-y-2">
                               <FormField
                                 control={form.control}
                                 name={`forms.${index}.createVersion.entityId`}
@@ -496,12 +805,14 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
                                     </div>
                                     {uniqueAccountContainerInfo.map((item) => (
                                       <FormField
-                                        key={`${item.accountId}-${item.containerId}`}  // Ensure a unique key
+                                        key={`${item.accountId}-${item.containerId}`} // Ensure a unique key
                                         control={form.control}
                                         name={`forms.${index}.createVersion.entityId`}
                                         render={({ field }) => {
                                           // Ensure field.value is an array
-                                          const fieldValue = Array.isArray(field.value) ? field.value : [];
+                                          const fieldValue = Array.isArray(field.value)
+                                            ? field.value
+                                            : [];
                                           return (
                                             <FormItem
                                               key={`${item.accountId}-${item.containerId}`}
@@ -512,7 +823,9 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
                                                   checked={fieldValue.includes(
                                                     `${item.accountId}-${item.containerId}-${item.workspaceId}`
                                                   )}
-                                                  onCheckedChange={(checked) => handleCheckboxChange(checked, item, index)}
+                                                  onCheckedChange={(checked) =>
+                                                    handleCheckboxChange(checked, item, index)
+                                                  }
                                                 />
                                               </FormControl>
                                               <FormLabel className="font-normal">
@@ -528,36 +841,15 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
                                   </FormItem>
                                 )}
                               />
-
-                            </div>
-
-                          </CardContent>
-                        </TabsContent>
-                        <TabsContent value="version">
-                          <CardContent className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                <Label htmlFor="versionName">Version Name</Label>
-                                <Input id="versionName" defaultValue="GTM Change" />
-                              </div>
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="description">Version Description</Label>
-                              <Textarea id="description" rows={3} defaultValue="Pushing GTM changes." />
                             </div>
                           </CardContent>
                         </TabsContent>
                       </Tabs>
                     </Card>
-
                   </form>
                 </Form>
-
-              )
+              );
             })}
-
-
-
 
             <Card>
               <CardHeader>

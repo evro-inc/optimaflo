@@ -31,6 +31,8 @@ import {
   DropdownMenuTrigger,
 } from '@/src/components/ui/dropdown-menu';
 import { LimitReached } from '@/src/components/client/modals/limitReached';
+import { ButtonDelete } from '../../../Button/Button';
+import { useRevertHook } from './delete';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -63,6 +65,16 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     },
   });
 
+  const selectedRowData = table.getSelectedRowModel().rows.reduce((acc, row) => {
+    acc[row.id] = row.original;
+    return acc;
+  }, {});
+
+  const selectedRowArray = Object.values(selectedRowData);
+  const builtInVariables = selectedRowArray.map((row: any) => row.builtInVariable);
+
+  const handleRevert = useRevertHook(builtInVariables, table);
+
   return (
     <div>
       <div className="flex items-center py-4">
@@ -74,6 +86,14 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
         />
 
         <div className="ml-auto space-x-4">
+          {/* Revert */}
+
+          <ButtonDelete
+            disabled={Object.keys(table.getState().rowSelection).length === 0}
+            onDelete={handleRevert}
+            action={'Revert'}
+          />
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline">Columns</Button>

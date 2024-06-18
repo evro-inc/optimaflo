@@ -34,7 +34,7 @@ import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
 import { revalidate } from '@/src/utils/server';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
-import { useDeleteHook, useRevertHook } from './delete';
+import { useDeleteHook } from './delete';
 import { useCreateHookForm, useUpdateHookForm } from '@/src/hooks/useCRUD';
 import { setSelectedRows } from '@/src/redux/tableSlice';
 import { useDispatch } from 'react-redux';
@@ -55,7 +55,6 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
   const [isCreatePending, startCreateTransition] = useTransition();
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
-
 
   const table = useReactTable({
     data,
@@ -81,6 +80,8 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     acc[row.id] = row.original;
     return acc;
   }, {});
+
+  console.log('selectedRowData', selectedRowData);
 
   /*   const rowSelectedCount = Object.keys(selectedRowData).length;
    */
@@ -114,7 +115,6 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     }; */
 
   const handleDelete = useDeleteHook(selectedRowData, table);
-  const handleRevert = useRevertHook(selectedRowData, table);
 
   const refreshAllCache = async () => {
     toast.info('Updating our systems. This may take a minute or two to update on screen.', {
@@ -165,12 +165,6 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
             disabled={Object.keys(table.getState().rowSelection).length === 0}
             onDelete={handleDelete}
             action={'Delete'}
-          />
-
-          <ButtonDelete
-            disabled={Object.keys(table.getState().rowSelection).length === 0}
-            onDelete={handleRevert}
-            action={'Revert'}
           />
 
           <DropdownMenu>

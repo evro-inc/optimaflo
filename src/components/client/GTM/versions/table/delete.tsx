@@ -32,13 +32,9 @@ export const useDeleteHook = (selectedRows, table) => {
       return prop;
     });
 
-    console.log('ga4BuiltInVarToDelete:', ga4BuiltInVarToDelete);
-
     const toDeleteSet = new Set(
       ga4BuiltInVarToDelete
         .map((prop) => {
-          console.log('prop:', prop);
-
           if (prop.accountId && prop.containerId && prop.workspaceId) {
             return `${prop.accountId}-${prop.containerId}-${prop.workspaceId}`;
           }
@@ -48,10 +44,7 @@ export const useDeleteHook = (selectedRows, table) => {
         .filter(Boolean) // Filter out any empty strings
     );
 
-    console.log('toDeleteSet:', toDeleteSet);
-
     const builtInVarDisplayNames = ga4BuiltInVarToDelete.flatMap((prop) => prop.type);
-    console.log('builtInVarDisplayNames:', builtInVarDisplayNames);
 
     const response: FeatureResponse = await DeleteBuiltInVariables(
       toDeleteSet,
@@ -110,32 +103,13 @@ export const useRevertHook = (selectedRows, table) => {
     });
 
     // Use Object.values to get the values from the selectedRows object and cast them to GA4AccountType
-    const ga4BuiltInVarToDelete = Object.values(
+    const ga4BuiltInVarToRevert = Object.values(
       selectedRows as Record<string, BuiltInVariable>
     ).map((prop) => {
       return prop;
     });
 
-    const toDeleteSet = new Set(
-      ga4BuiltInVarToDelete
-        .map((prop) => {
-          console.log('prop:', prop);
-
-          if (prop.accountId && prop.containerId && prop.workspaceId) {
-            return `${prop.accountId}-${prop.containerId}-${prop.workspaceId}`;
-          }
-          console.error('Invalid format for:', prop);
-          return ''; // Return an empty string for invalid entries
-        })
-        .filter(Boolean) // Filter out any empty strings
-    );
-
-    const builtInVarDisplayNames = ga4BuiltInVarToDelete.flatMap((prop) => prop.type);
-
-    const response: FeatureResponse = await RevertBuiltInVariables(
-      toDeleteSet,
-      builtInVarDisplayNames
-    );
+    const response: FeatureResponse = await RevertBuiltInVariables(ga4BuiltInVarToRevert);
 
     if (!response.success) {
       let message = response.message || 'An error occurred.';

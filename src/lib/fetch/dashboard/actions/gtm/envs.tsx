@@ -18,6 +18,7 @@ import {
 } from '@/src/utils/server';
 import { fetchGtmSettings } from '../..';
 import { GoogleTagEnvironmentType } from '@/src/lib/schemas/gtm/envs';
+import { EnvironmentApi } from 'svix/dist/openapi';
 
 const MAX_RETRIES = 3;
 const INITIAL_DELAY = 1000;
@@ -107,7 +108,178 @@ export async function listGtmEnvs() {
   throw new Error('Maximum retries reached without a successful response.');
 }
 
+/************************************************************************************
+  Function to list GTM envs
+************************************************************************************/
+export async function getGtmEnv(formData: GoogleTagEnvironmentType) {
+  let retries = 0;
+  let delay = INITIAL_DELAY;
 
+  const { userId } = await auth();
+  if (!userId) return notFound();
+
+  const token = await currentUserOauthAccessToken(userId);
+  const accessToken = token[0].token;
+
+  console.log('formData', formData);
+
+  // Ensure environmentId is always an array
+  const toGetEnv = new Set(
+    formData.forms.map((env) => ({
+      accountId: env.accountId,
+      containerId: env.containerId,
+      name: env.name,
+      description: env.description,
+      envIds: Array.isArray(env.environmentId) ? env.environmentId : [env.environmentId],
+    }))
+  );
+
+  await fetchGtmSettings(userId);
+
+  const errors: string[] = [];
+  const successfulFetches: any[] = [];
+  const notFoundEnvs: { id: string; name: string }[] = [];
+  let permissionDenied = false;
+
+  while (retries < MAX_RETRIES && toGetEnv.size > 0 && !permissionDenied) {
+    try {
+      const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
+
+      if (remaining > 0) {
+        let allData: any[] = [];
+
+        await limiter.schedule(async () => {
+          const getPromises = Array.from(toGetEnv).map(async (env) => {
+            console.log('env g', env);
+
+            const fetchEnvPromises = env.envIds.map(async (envIdString) => {
+              if (typeof envIdString === 'string') {
+                const [accountId, containerId, , envId] = envIdString.split('-');
+                const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/environments/${envId}`;
+
+                const headers = {
+                  Authorization: `Bearer ${accessToken}`,
+                  'Content-Type': 'application/json',
+                  'Accept-Encoding': 'gzip',
+                };
+
+                try {
+                  const response = await fetch(url, {
+                    method: 'GET',
+                    headers: headers,
+                  });
+
+                  if (!response.ok) {
+                    throw new Error(
+                      `HTTP error! status: ${response.status}. ${response.statusText}`
+                    );
+                  }
+
+                  const responseBody = await response.json();
+                  console.log('responseBody', responseBody);
+
+                  allData.push(responseBody.environment || []);
+                  successfulFetches.push({
+                    id: responseBody.environmentId,
+                    name: responseBody.name,
+                  });
+                } catch (error: any) {
+                  if (error.code === 404) {
+                    notFoundEnvs.push({ id: envIdString, name: env.name });
+                  } else {
+                    errors.push(`Error fetching data for ${envIdString}: ${error.message}`);
+                  }
+                }
+              } else {
+                console.error('env.envId is not a valid string:', envIdString);
+              }
+            });
+
+            await Promise.all(fetchEnvPromises);
+          });
+
+          await Promise.all(getPromises);
+        });
+
+        if (notFoundEnvs.length > 0) {
+          return {
+            success: false,
+            limitReached: false,
+            notFoundError: true,
+            features: [],
+            results: notFoundEnvs.map((item) => ({
+              id: [item.id],
+              name: [item.name],
+              success: false,
+              notFound: true,
+            })),
+          };
+        }
+
+        if (successfulFetches.length === formData.forms.length) {
+          break;
+        }
+
+        if (toGetEnv.size === 0) {
+          break;
+        }
+      } else {
+        throw new Error('Rate limit exceeded');
+      }
+    } catch (error: any) {
+      if (error.code === 429 || error.status === 429) {
+        await new Promise((resolve) => setTimeout(resolve, delay + Math.random() * 200));
+        delay *= 2;
+        retries++;
+      } else {
+        break;
+      }
+    } finally {
+      if (userId) {
+        const cacheKey = `gtm:envs:userId:${userId}`;
+        await redis.del(cacheKey);
+        await revalidatePath(`/dashboard/gtm/configurations`);
+      }
+    }
+  }
+
+  if (permissionDenied) {
+    return {
+      success: false,
+      errors: errors,
+      results: [],
+      message: errors.join(', '),
+    };
+  }
+
+  if (errors.length > 0) {
+    return {
+      success: false,
+      features: successfulFetches,
+      errors: errors,
+      results: successfulFetches.map((env) => ({
+        id: [env.id],
+        name: [env.name],
+        success: true,
+      })),
+      message: errors.join(', '),
+    };
+  }
+
+  return {
+    success: true,
+    features: [],
+    errors: [],
+    limitReached: false,
+    message: 'Environments fetched successfully',
+    results: successfulFetches.map((env) => ({
+      id: [env.id],
+      name: [env.name],
+      success: true,
+    })),
+    notFoundError: false,
+  };
+}
 
 /************************************************************************************
   Udpate GTM Environments
@@ -117,8 +289,7 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
 
-  console.log('formData update env', formData);
-
+  console.log('formData', formData);
 
   let retries = 0;
   let delay = INITIAL_DELAY;
@@ -130,7 +301,6 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
   let accountIdForCache: string | undefined;
   let containerIdForCache: string | undefined;
 
-
   // Refactor: Use string identifiers in the set
   const toUpdateEnvs = new Set(
     formData.forms.map((env) => ({
@@ -138,12 +308,11 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
       containerId: env.containerId,
       name: env.name,
       description: env.description,
-      envId: env.environmentId,
+      envId: env.environmentId.split('-')[0],
     }))
   );
 
   console.log('toUpdateEnvs', toUpdateEnvs);
-
 
   const tierLimitResponse: any = await tierUpdateLimit(userId, 'GTMEnvs');
   const limit = Number(tierLimitResponse.updateLimit);
@@ -201,8 +370,7 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
         if (remaining > 0) {
           await limiter.schedule(async () => {
             const updatePromises = Array.from(toUpdateEnvs).map(async (identifier) => {
-              console.log('identifier env', identifier);
-
+              console.log('identifier', identifier);
 
               accountIdForCache = identifier.accountId;
               containerIdForCache = identifier.containerId;
@@ -213,11 +381,10 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
                   env.containerId === identifier.containerId &&
                   env.name === identifier.name &&
                   env.description === identifier.description &&
-                  env.environmentId === identifier.envId
+                  env.environmentId.split('-')[0] === identifier.envId
               );
 
-              console.log('envData env', envData);
-
+              console.log('envData', envData);
 
               if (!envData) {
                 errors.push(`Container data not found for ${identifier}`);
@@ -225,9 +392,11 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
                 return;
               }
 
-              const url = `https://www.googleapis.com/tagmanager/v2/accounts/${envData.accountId}/containers/${envData.containerId}/environments/${envData.environmentId}`;
+              const envNumber = envData.environmentId.split('-')[0];
 
-              console.log('url env', url);
+              const url = `https://www.googleapis.com/tagmanager/v2/accounts/${envData.accountId}/containers/${envData.containerId}/environments/${envNumber}`;
+
+              console.log('url', url);
 
               const headers = {
                 Authorization: `Bearer ${token[0].token}`,
@@ -235,19 +404,13 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
                 'Accept-Encoding': 'gzip',
               };
 
-              console.log('headers env', headers);
-
-
               try {
                 const formDataToValidate = { forms: [envData] };
-
-                console.log('formDataToValidate env', formDataToValidate);
-
+                console.log('formDataToValidate', formDataToValidate);
 
                 const validationResult = FormSchema.safeParse(formDataToValidate);
 
-                console.log('validationResult env', validationResult);
-
+                console.log('validationResult', validationResult);
 
                 if (!validationResult.success) {
                   let errorMessage = validationResult.error.issues
@@ -264,19 +427,19 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
 
                 // Accessing the validated env data
                 const validatedenvData = validationResult.data.forms[0];
-                console.log('validatedenvData env', validatedenvData);
 
-
+                console.log('validatedenvData', validatedenvData);
 
                 const payload = JSON.stringify({
                   accountId: validatedenvData.accountId,
-                  name: validatedenvData.name,
+                  name: validatedenvData.environmentId.split('-')[1],
                   description: validatedenvData.description,
                   containerId: validatedenvData.containerId,
-                  envId: validatedenvData.environmentId,
+                  envId: validatedenvData.environmentId.split('-')[0],
+                  containerVersionId: validatedenvData.containerVersionId,
                 });
 
-                console.log('payload env', payload);
+                console.log('payload', payload);
 
                 const response = await fetch(url, {
                   method: 'PUT',
@@ -284,12 +447,11 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
                   body: payload,
                 });
 
-                console.log('response env', response);
-
+                console.log('response', response);
 
                 const parsedResponse = await response.json();
-                console.log('parsedResponse env', parsedResponse);
 
+                console.log('parsedResponse', parsedResponse);
 
                 const envName = envData.name;
 
@@ -314,8 +476,6 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
                     message: `Successfully updated env ${envName}`,
                   });
                 } else {
-
-
                   const errorResult = await handleApiResponseError(
                     response,
                     parsedResponse,
@@ -351,9 +511,7 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
                   });
                 }
               } catch (error: any) {
-                errors.push(
-                  `Exception updating env ${envData.environmentId}: ${error.message}`
-                );
+                errors.push(`Exception updating env ${envData.environmentId}: ${error.message}`);
                 toUpdateEnvs.delete(identifier);
                 UpdateResults.push({
                   envName: envData.name,
@@ -390,8 +548,7 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
               message: `Feature limit reached for envs: ${featureLimitReached.join(', ')}`,
               results: featureLimitReached.map((envId) => {
                 // Find the name associated with the envId
-                const envName =
-                  envNames.find((name) => name.includes(envId)) || 'Unknown';
+                const envName = envNames.find((name) => name.includes(envId)) || 'Unknown';
                 return {
                   id: [envId], // Ensure id is an array
                   name: [envName], // Ensure name is an array, match by envId or default to 'Unknown'
@@ -410,8 +567,7 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
               message: `Feature limit reached for envs: ${featureLimitReached.join(', ')}`,
               results: featureLimitReached.map((envId) => {
                 // Find the name associated with the envId
-                const envName =
-                  envNames.find((name) => name.includes(envId)) || 'Unknown';
+                const envName = envNames.find((name) => name.includes(envId)) || 'Unknown';
                 return {
                   id: [envId], // Ensure id is an array
                   name: [envName], // Ensure name is an array, match by envId or default to 'Unknown'

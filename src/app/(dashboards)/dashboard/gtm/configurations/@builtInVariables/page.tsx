@@ -7,9 +7,12 @@ import { DataTable } from './table';
 import { listGtmBuiltInVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variablesBuiltIn';
 import { listGtmAccounts } from '@/src/lib/fetch/dashboard/actions/gtm/accounts';
 import { listGtmContainers } from '@/src/lib/fetch/dashboard/actions/gtm/containers';
-import { listGtmWorkspaces } from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
+import {
+  getStatusGtmWorkspaces,
+  listGtmWorkspaces,
+} from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
 
-export default async function KeyEventsPage({
+export default async function BuiltInVarPage({
   searchParams,
 }: {
   searchParams?: {
@@ -26,24 +29,29 @@ export default async function KeyEventsPage({
   const containerData = await listGtmContainers();
   const workspaceData = await listGtmWorkspaces();
   const builtInVarData = await listGtmBuiltInVariables();
+  const statusData = await getStatusGtmWorkspaces();
 
-  //console.log('builtInVarData:', builtInVarData);
-
-
-  const [accounts, containers, workspaces, builtInVar] = await Promise.all([
+  const [accounts, containers, workspaces, builtInVar, status] = await Promise.all([
     accountData,
     containerData,
     workspaceData,
     builtInVarData,
+    statusData,
   ]);
 
   const flatAccounts = accounts.flat();
   const flatContainers = containers.flat();
   const flatWorkspaces = workspaces.flat();
   const flatBuiltInVars = builtInVar.flat();
+  const flatStatus = status.flat();
 
-  //console.log('flatBuiltInVars:', flatBuiltInVars);
-
+  const statusDataFlat = flatStatus.flatMap((changeSet, index) =>
+    (changeSet.workspaceChange || []).map((change, itemIndex) => ({
+      setId: index + 1,
+      changeId: itemIndex + 1,
+      ...change,
+    }))
+  );
 
   const combinedData = flatBuiltInVars.map((vars) => {
     const accountId = vars.accountId;
@@ -56,16 +64,24 @@ export default async function KeyEventsPage({
     const containerName = containers ? containers.name : 'Container Name Unknown';
     const workspaceName = workspaces ? workspaces.name : 'Workspace Name Unknown';
 
+    const isPublished = statusDataFlat.find(
+      (p) =>
+        p.builtInVariable.name === vars.name &&
+        p.builtInVariable.accountId === vars.accountId &&
+        p.builtInVariable.containerId === vars.containerId &&
+        p.builtInVariable.workspaceId === vars.workspaceId
+    )
+      ? 'Unpublished'
+      : 'Published';
+
     return {
       ...vars,
       accountName,
       containerName,
       workspaceName,
+      isPublished,
     };
   });
-
-  //console.log('combinedData var:', combinedData);
-
 
   return (
     <>

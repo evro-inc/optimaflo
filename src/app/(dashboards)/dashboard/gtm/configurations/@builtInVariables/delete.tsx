@@ -32,13 +32,9 @@ export const useDeleteHook = (selectedRows, table) => {
       return prop;
     });
 
-    console.log('ga4BuiltInVarToDelete:', ga4BuiltInVarToDelete);
-
     const toDeleteSet = new Set(
       ga4BuiltInVarToDelete
         .map((prop) => {
-          console.log('prop:', prop);
-
           if (prop.accountId && prop.containerId && prop.workspaceId) {
             return `${prop.accountId}-${prop.containerId}-${prop.workspaceId}`;
           }
@@ -48,10 +44,7 @@ export const useDeleteHook = (selectedRows, table) => {
         .filter(Boolean) // Filter out any empty strings
     );
 
-    console.log('toDeleteSet:', toDeleteSet);
-
     const builtInVarDisplayNames = ga4BuiltInVarToDelete.flatMap((prop) => prop.type);
-    console.log('builtInVarDisplayNames:', builtInVarDisplayNames);
 
     const response: FeatureResponse = await DeleteBuiltInVariables(
       toDeleteSet,
@@ -119,8 +112,6 @@ export const useRevertHook = (selectedRows, table) => {
     const toDeleteSet = new Set(
       ga4BuiltInVarToDelete
         .map((prop) => {
-          console.log('prop:', prop);
-
           if (prop.accountId && prop.containerId && prop.workspaceId) {
             return `${prop.accountId}-${prop.containerId}-${prop.workspaceId}`;
           }

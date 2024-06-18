@@ -4,7 +4,7 @@ import { z } from 'zod';
 const CreateVersionSchema = z.object({
   entityId: z.array(z.string()).optional(),
   name: z.string().min(1, 'Version Name is required'),
-  notes: z.string().optional(),
+  notes: z.string().min(1, 'Version Description is required'),
 });
 
 // Enum for built-in variable types
@@ -237,7 +237,7 @@ const SingleFormSchema = z.object({
   accountId: z.string(),
   containerId: z.string(),
   containerVersionId: z.string(),
-  environmentId: z.string(),
+  environmentId: z.string().optional(),
   name: z.string(),
   deleted: z.boolean(),
   description: z.string(),

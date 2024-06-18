@@ -1,12 +1,7 @@
 import { z } from 'zod';
 
 // Enum for environment types
-const EnvironmentType = z.enum([
-  'latest',
-  'live',
-  'user',
-  'workspace',
-]);
+const EnvironmentType = z.enum(['latest', 'live', 'user', 'workspace']);
 
 // Schema for authorizationTimestamp
 const AuthorizationTimestampSchema = z.object({
@@ -26,11 +21,9 @@ const GoogleTagEnvironmentSchema = z.object({
   url: z.string().optional(),
 });
 
-
 export const FormSchema = z.object({
   forms: z.array(GoogleTagEnvironmentSchema),
 });
-
 
 // Export the type inferred from GoogleTagEnvironmentSchema for type safety
 export type GoogleTagEnvironmentType = z.infer<typeof FormSchema>;
