@@ -69,8 +69,6 @@ export default async function Page() {
     };
   });
 
-  console.log('filteredEnvs', filteredEnvs);
-
   return (
     <div className="container mx-auto py-10">
       <div className="flex justify-between items-center mb-6">

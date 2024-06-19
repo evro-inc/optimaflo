@@ -83,8 +83,6 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
 
   console.log('selectedRowData', selectedRowData);
 
-  /*   const rowSelectedCount = Object.keys(selectedRowData).length;
-   */
   const handleCreateClick = useCreateHookForm(
     userId,
     'GTMBuiltInVariables',
@@ -98,21 +96,6 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
       });
     });
   };
-
-  /*   const handleUpdateClick = useUpdateHookForm(
-      userId,
-      'GTMBuiltInVariables',
-      '/dashboard/ga/wizards/built-in-variables/create',
-      rowSelectedCount
-    );
-  
-    const onUpdateButtonClick = () => {
-      startUpdateTransition(() => {
-        handleUpdateClick().catch((error) => {
-          throw new Error(error);
-        });
-      });
-    }; */
 
   const handleDelete = useDeleteHook(selectedRowData, table);
 

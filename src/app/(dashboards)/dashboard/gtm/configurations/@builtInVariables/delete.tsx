@@ -17,6 +17,9 @@ import { toast } from 'sonner';
 export const useDeleteHook = (selectedRows, table) => {
   const dispatch = useDispatch();
 
+  console.log('selectedRows', selectedRows);
+
+
   const handleDelete = async () => {
     toast('Deleting built-in variables...', {
       action: {
@@ -32,24 +35,12 @@ export const useDeleteHook = (selectedRows, table) => {
       return prop;
     });
 
-    const toDeleteSet = new Set(
-      ga4BuiltInVarToDelete
-        .map((prop) => {
-          if (prop.accountId && prop.containerId && prop.workspaceId) {
-            return `${prop.accountId}-${prop.containerId}-${prop.workspaceId}`;
-          }
-          console.error('Invalid format for:', prop);
-          return ''; // Return an empty string for invalid entries
-        })
-        .filter(Boolean) // Filter out any empty strings
-    );
+    console.log('ga4BuiltInVarToDelete', ga4BuiltInVarToDelete);
 
-    const builtInVarDisplayNames = ga4BuiltInVarToDelete.flatMap((prop) => prop.type);
 
-    const response: FeatureResponse = await DeleteBuiltInVariables(
-      toDeleteSet,
-      builtInVarDisplayNames
-    );
+
+
+    const response: FeatureResponse = await DeleteBuiltInVariables(ga4BuiltInVarToDelete);
 
     if (!response.success) {
       let message = response.message || 'An error occurred.';

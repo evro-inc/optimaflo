@@ -289,7 +289,7 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
 
-  console.log('formData', formData);
+  console.log('formData update', formData);
 
   let retries = 0;
   let delay = INITIAL_DELAY;
@@ -312,7 +312,7 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
     }))
   );
 
-  console.log('toUpdateEnvs', toUpdateEnvs);
+  console.log('toUpdateEnvs update', toUpdateEnvs);
 
   const tierLimitResponse: any = await tierUpdateLimit(userId, 'GTMEnvs');
   const limit = Number(tierLimitResponse.updateLimit);
@@ -384,7 +384,7 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
                   env.environmentId.split('-')[0] === identifier.envId
               );
 
-              console.log('envData', envData);
+              console.log('envData update', envData);
 
               if (!envData) {
                 errors.push(`Container data not found for ${identifier}`);
@@ -396,7 +396,7 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
 
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${envData.accountId}/containers/${envData.containerId}/environments/${envNumber}`;
 
-              console.log('url', url);
+              console.log('url update', url);
 
               const headers = {
                 Authorization: `Bearer ${token[0].token}`,
@@ -406,11 +406,11 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
 
               try {
                 const formDataToValidate = { forms: [envData] };
-                console.log('formDataToValidate', formDataToValidate);
+                console.log('formDataToValidate update', formDataToValidate);
 
                 const validationResult = FormSchema.safeParse(formDataToValidate);
 
-                console.log('validationResult', validationResult);
+                console.log('validationResult update', validationResult);
 
                 if (!validationResult.success) {
                   let errorMessage = validationResult.error.issues
@@ -428,7 +428,7 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
                 // Accessing the validated env data
                 const validatedenvData = validationResult.data.forms[0];
 
-                console.log('validatedenvData', validatedenvData);
+                console.log('validatedenvData update', validatedenvData);
 
                 const payload = JSON.stringify({
                   accountId: validatedenvData.accountId,
@@ -439,7 +439,7 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
                   containerVersionId: validatedenvData.containerVersionId,
                 });
 
-                console.log('payload', payload);
+                console.log('payload update', payload);
 
                 const response = await fetch(url, {
                   method: 'PUT',
@@ -447,11 +447,11 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
                   body: payload,
                 });
 
-                console.log('response', response);
+                console.log('response update', response);
 
                 const parsedResponse = await response.json();
 
-                console.log('parsedResponse', parsedResponse);
+                console.log('parsedResponse update', parsedResponse);
 
                 const envName = envData.name;
 

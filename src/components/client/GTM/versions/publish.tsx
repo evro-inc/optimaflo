@@ -233,20 +233,40 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
   };
 
   // Function to extract publish data
-  const extractPublishData = (forms: Forms[], containerVersionId: string) => {
-    return forms.flatMap((form) => {
-      const { accountId, containerId, environmentId, createVersion } = form;
+  const extractPublishData = (forms: Forms[], versionPaths: string[]) => {
+    console.log('extractPublishData forms', forms);
+    console.log('containerVersionId', versionPaths);
 
-      return {
-        accountId,
-        containerId,
-        containerVersionId,
-        environmentId,
-        name: createVersion.name,
-        description: createVersion.notes,
-      };
+    const dataForm = forms.flatMap((form) => {
+      console.log('inside form', form);
+
+      return form.createVersion.entityId.map((entityId) => {
+        const [accountId, containerId, workspaceId, environmentId, environmentType] = entityId.split('-');
+
+        // Find the corresponding versionPath
+        const versionPath = versionPaths.find(vp => vp.includes(`accounts/${accountId}/containers/${containerId}`));
+        const containerVersionId = versionPath ? versionPath.split('/').pop() : '';
+
+        const data = {
+          accountId,
+          containerId,
+          containerVersionId,
+          environmentId,
+          name: form.createVersion.name,
+          description: form.createVersion.notes,
+        };
+
+        console.log('data in', data);
+
+        return data;
+      });
     });
+
+    return dataForm;
   };
+
+
+
 
   // Function to extract environment update data
   const extractEnvUpdateData = (forms, containerVersionId) => {
@@ -350,6 +370,7 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
   // Main form processing function
   const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
+
     dispatch(setLoading(true)); // Set loading to true using Redux action
     console.log('forms process: ', forms);
 
@@ -366,9 +387,12 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
         console.log('resCreateVersion', resCreateVersion);
 
         if (resCreateVersion.success) {
-          const versionId =
-            resCreateVersion.results[0].response.containerVersion.containerVersionId;
+          const versionPath =
+            resCreateVersion.results.map((result) => result.response.containerVersion.path) || '';
           const environments = forms.flatMap((form) => form?.environmentId?.split(','));
+
+          console.log('versionId', versionPath);
+
 
           console.log('environments', environments);
 
@@ -384,7 +408,7 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
           console.log('nonLiveEnvironments', nonLiveEnvironments);
 
           if (liveEnvironments.length > 0) {
-            const publishData = extractPublishData(forms, versionId);
+            const publishData = extractPublishData(forms, versionPath);
             console.log('publishData', publishData);
 
             const res = (await publishGTM({ forms: publishData })) as FeatureResponse;
@@ -401,7 +425,7 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
             const resUpdateEnv = (await UpdateEnvs({
               forms: createVersionData.map((data) => ({
                 ...data,
-                containerVersionId: versionId,
+                containerVersionId: versionPath,
                 environmentId: nonLiveEnvironments.find((env) => (env ? env.split('-')[0] : '')),
               })),
             })) as FeatureResponse;
@@ -533,17 +557,15 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
                         <TabsList className="grid w-full grid-cols-2">
                           <TabsTrigger
                             value="publish"
-                            className={`relative p-2 transition-colors ${
-                              activeTab === 'publish' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
-                            }`}
+                            className={`relative p-2 transition-colors ${activeTab === 'publish' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
+                              }`}
                           >
                             Pubish and Create Version
                           </TabsTrigger>
                           <TabsTrigger
                             value="version"
-                            className={`relative p-2 transition-colors ${
-                              activeTab === 'version' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
-                            }`}
+                            className={`relative p-2 transition-colors ${activeTab === 'version' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
+                              }`}
                           >
                             Create Version
                           </TabsTrigger>
@@ -608,17 +630,17 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
                                   name={`forms.${index}.createVersion.entityId`}
                                   render={() => (
                                     <FormItem>
+                                      <div className="mb-4">
+                                        <FormLabel className="text-base">
+                                          Choose GTM Entity
+                                        </FormLabel>
+                                        <FormDescription>
+                                          Select the GTM entities you want to publish the
+                                          changes to.
+                                        </FormDescription>
+                                      </div>
                                       {combinedInfo.map((item) => (
                                         <FormItem key={`${item.accountId}-${item.containerId}`}>
-                                          <div className="mb-4">
-                                            <FormLabel className="text-base">
-                                              Choose GTM Entity
-                                            </FormLabel>
-                                            <FormDescription>
-                                              Select the GTM entities you want to publish the
-                                              changes to.
-                                            </FormDescription>
-                                          </div>
                                           {item.environments.map((env) => {
                                             return (
                                               <FormField
