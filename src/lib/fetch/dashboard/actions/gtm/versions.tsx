@@ -144,9 +144,9 @@ export async function publishGTM(formData: ContainerVersionType) {
   console.log('toPublishVersions pub:', toPublishVersions);
 
   const tierLimitResponse: any = await tierCreateLimit(userId, 'GTMVersions');
-  const limit = Number(tierLimitResponse.updateLimit);
-  const updateUsage = Number(tierLimitResponse.updateUsage);
-  const availableUpdateUsage = limit - updateUsage;
+  const limit = Number(tierLimitResponse.createLimit);
+  const createUsage = Number(tierLimitResponse.createUsage);
+  const availableUpdateUsage = limit - createUsage;
 
   const publishResults: {
     workspaceName: string;
@@ -247,7 +247,7 @@ export async function publishGTM(formData: ContainerVersionType) {
 
                   await prisma.tierLimit.update({
                     where: { id: tierLimitResponse.id },
-                    data: { updateUsage: { increment: 1 } },
+                    data: { createUsage: { increment: 1 } },
                   });
 
                   publishResults.push({

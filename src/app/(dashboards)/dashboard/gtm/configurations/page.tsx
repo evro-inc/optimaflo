@@ -10,10 +10,16 @@ import {
   getStatusGtmWorkspaces,
 } from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
 import { listGtmEnvs } from '@/src/lib/fetch/dashboard/actions/gtm/envs';
+import { getSubscription } from '@/src/lib/fetch/subscriptions';
+import { getTierLimit } from '@/src/lib/fetch/tierLimit';
 
 export default async function Page() {
   const { userId } = auth();
   if (!userId) return notFound();
+
+  const subscription = await getSubscription(userId);
+  const subscriptionId = subscription.id;
+  const tierLimits = await getTierLimit(subscriptionId);
 
   const accountData = await listGtmAccounts();
   const containerData = await listGtmContainers();
@@ -75,7 +81,7 @@ export default async function Page() {
         <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
           Configurations
         </h1>
-        <PublishGTM changes={combinedData} envs={filteredEnvs} />
+        <PublishGTM changes={combinedData} envs={filteredEnvs} tierLimits={tierLimits} />
       </div>
       {/* Other content can go here */}
     </div>

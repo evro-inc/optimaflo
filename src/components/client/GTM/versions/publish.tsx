@@ -94,7 +94,7 @@ function mergeUniqueInfo(accountContainerInfo, envs) {
   });
 }
 
-function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
+function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; tierLimits: any }) {
   const dispatch = useDispatch();
   const router = useRouter();
   const { user } = useUser();
@@ -107,6 +107,35 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
 
   console.log('envs', envs);
   console.log('changes', changes);
+
+  /************ Tier Limits Workspaces ************/
+  const tierLimitGTMWorkspaces = tierLimits.find(
+    (subscription) => subscription.Feature?.name === 'GTMWorkspaces'
+  );
+  const createLimitGTMWorkspaces = tierLimitGTMWorkspaces?.createLimit;
+  const createUsageGTMWorkspaces = tierLimitGTMWorkspaces?.createUsage;
+  const remainingCreateGTMWorkspaces = createLimitGTMWorkspaces - createUsageGTMWorkspaces;
+
+  /************ Tier Limits GTM Versions ************/
+  const tierLimitGTMVersions = tierLimits.find(
+    (subscription) => subscription.Feature?.name === 'GTMVersions'
+  );
+  const createLimitGTMVersions = tierLimitGTMVersions?.createLimit;
+  const createUsageGTMVersions = tierLimitGTMVersions?.createUsage;
+  const remainingCreateGTMVersions = createLimitGTMVersions - createUsageGTMVersions;
+
+  /************ Tier Limits GTM Environments ************/
+  const tierLimitGTMEnvs = tierLimits.find(
+    (subscription) => subscription.Feature?.name === 'GTMEnvs'
+  );
+  const createLimitGTMEnvs = tierLimitGTMEnvs?.updateLimit;
+  const createUsageGTMEnvs = tierLimitGTMEnvs?.updateUsage;
+  const remainingCreateGTMEnvs = createLimitGTMEnvs - createUsageGTMEnvs;
+
+  console.log('A changes', changes);
+  console.log('remainingCreateGTMWorkspaces', remainingCreateGTMWorkspaces);
+  console.log('remainingCreateGTMVersions', remainingCreateGTMVersions);
+  console.log('remainingCreateGTMEnvs', remainingCreateGTMEnvs);
 
   const uniqueEnvs: {
     type: string;
@@ -133,12 +162,7 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
 
   const uniqueAccountContainerInfo = getUniqueAccountAndContainerInfo(changes);
 
-  console.log('A uniqueAccountContainerInfo', uniqueAccountContainerInfo);
-  console.log('A uniqueEnvs', uniqueEnvs);
-
   const combinedInfo = mergeUniqueInfo(uniqueAccountContainerInfo, uniqueEnvs);
-  console.log('Combined Info', combinedInfo);
-
   const formDataDefaults = {
     path: '',
     accountId: '',
@@ -220,9 +244,6 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
 
   // Function to extract publish data
   const extractPublishData = (forms: Forms[], versionPaths: string[]) => {
-    console.log('extractPublishData forms', forms);
-    console.log('containerVersionId', versionPaths);
-
     const publishData = forms.flatMap((form) => {
       // Filter out non-live environments before mapping
       return (
@@ -262,8 +283,6 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
   // Function to extract environment update data
   const extractEnvUpdateData = (forms: Forms[], versionPaths: string[]) => {
     return forms.flatMap((form) => {
-      console.log('inside form2', form);
-
       const { createVersion } = form;
       return createVersion.entityId
         .map((entityId) => {
@@ -375,10 +394,36 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
     dispatch(setLoading(true)); // Set loading to true using Redux action
     console.log('forms process: ', forms);
 
-    if (activeTab === 'publish') {
-      showToast('Publishing GTM...', false);
+    const uniqueCreateVersions = new Set(forms.flatMap((form) => form?.environmentId?.split(',')))
+      .size;
+    const uniquePublishVersions = new Set(forms.flatMap((form) => form?.environmentId?.split(',')))
+      .size;
+    const uniqueEnvironments = new Set(
+      forms.flatMap((form) =>
+        form?.environmentId?.split(',').filter((env) => !env.toLowerCase().includes('live'))
+      )
+    ).size;
 
+    if (activeTab === 'publish') {
       try {
+        // Check tier limits
+        if (
+          uniqueCreateVersions > remainingCreateGTMWorkspaces ||
+          uniquePublishVersions > remainingCreateGTMVersions ||
+          uniqueEnvironments > remainingCreateGTMEnvs
+        ) {
+          toast.error('You have reached your limit for publishing.', {
+            action: {
+              label: 'Close',
+              onClick: () => toast.dismiss(),
+            },
+          });
+          dispatch(setIsLimitReached(true));
+          dispatch(setLoading(false)); // Set loading to false
+          return;
+        }
+        showToast('Publishing GTM...', false);
+
         const createVersionData = extractCreateVersionData(forms);
 
         const resCreateVersion = (await createGTMVersion({
@@ -413,9 +458,6 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
             (env) => env && env.split('-')[1].toLowerCase() !== 'live'
           );
 
-          console.log('liveEnvironments', liveEnvironments);
-          console.log('nonLiveEnvironments', nonLiveEnvironments);
-
           if (liveEnvironments.length > 0) {
             const publishData = extractPublishData(forms, versionPath);
             console.log('publishData', publishData);
@@ -432,13 +474,10 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
 
           if (nonLiveEnvironments.length > 0) {
             const envUpdateData = extractEnvUpdateData(forms, versionPath);
-            console.log('envUpdateData', envUpdateData);
 
             const resUpdateEnv = (await UpdateEnvs({
               forms: envUpdateData, // Filter out live environments
             })) as FeatureResponse;
-
-            console.log('resUpdateEnv', resUpdateEnv);
 
             if (resUpdateEnv.success) {
               await handleResponseSuccess(resUpdateEnv, userId, setIsDrawerOpen);
@@ -460,9 +499,21 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
         dispatch(setLoading(false)); // Set loading to false
       }
     } else if (activeTab === 'version') {
-      showToast('Creating version...', false);
-
       try {
+        // Check tier limits
+        if (uniqueEnvironments > remainingCreateGTMEnvs) {
+          toast.error('You have reached your limit for creating versions.', {
+            action: {
+              label: 'Close',
+              onClick: () => toast.dismiss(),
+            },
+          });
+          dispatch(setIsLimitReached(true));
+          dispatch(setLoading(false)); // Set loading to false
+          return;
+        }
+
+        showToast('Creating version...', false);
         const createVersionData = extractCreateVersionData(forms);
         const res = (await createGTMVersion({ forms: createVersionData })) as FeatureResponse;
 
@@ -487,8 +538,6 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
   };
 
   const handleCheckboxChange = (checked, item, index) => {
-    console.log('itme', item);
-
     const [accountId, containerId, workspaceId, environmentId, name] = item.split('-');
 
     const envId = environmentId;
@@ -502,14 +551,10 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
       ? [...fieldValue, item]
       : fieldValue.filter((value) => value !== item);
 
-    console.log('newEntityId', newEntityId);
-
     const envValue = forms[index].environmentId ? forms[index].environmentId.split(',') : [];
     const newEnvValue = checked
       ? [...envValue, `${environmentId}-${name}`]
       : envValue.filter((value) => value !== `${environmentId}-${name}`);
-
-    console.log('newEnvValue', newEnvValue);
 
     // Update both accountId and createVersion.entityId
     form.setValue(`forms.${index}.accountId`, accountId);
@@ -569,7 +614,7 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
                               activeTab === 'publish' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
                             }`}
                           >
-                            Pubish and Create Version
+                            Publish and Create Version
                           </TabsTrigger>
                           <TabsTrigger
                             value="version"
