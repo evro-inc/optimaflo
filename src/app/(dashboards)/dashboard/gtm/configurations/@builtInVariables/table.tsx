@@ -81,8 +81,6 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     return acc;
   }, {});
 
-  console.log('selectedRowData', selectedRowData);
-
   const handleCreateClick = useCreateHookForm(
     userId,
     'GTMBuiltInVariables',

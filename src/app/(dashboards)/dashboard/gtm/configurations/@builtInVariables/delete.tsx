@@ -17,8 +17,6 @@ import { toast } from 'sonner';
 export const useDeleteHook = (selectedRows, table) => {
   const dispatch = useDispatch();
 
-  console.log('selectedRows', selectedRows);
-
 
   const handleDelete = async () => {
     toast('Deleting built-in variables...', {
@@ -34,11 +32,6 @@ export const useDeleteHook = (selectedRows, table) => {
     ).map((prop) => {
       return prop;
     });
-
-    console.log('ga4BuiltInVarToDelete', ga4BuiltInVarToDelete);
-
-
-
 
     const response: FeatureResponse = await DeleteBuiltInVariables(ga4BuiltInVarToDelete);
 

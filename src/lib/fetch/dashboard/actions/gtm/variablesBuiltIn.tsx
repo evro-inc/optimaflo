@@ -199,7 +199,6 @@ export async function DeleteBuiltInVariables(ga4BuiltInVarToDelete: BuiltInVaria
               params.append('type', type);
 
               url += params.toString();
-              console.log('url', url);
 
               const headers = {
                 Authorization: `Bearer ${token[0].token}`,
@@ -212,8 +211,6 @@ export async function DeleteBuiltInVariables(ga4BuiltInVarToDelete: BuiltInVaria
                   method: 'DELETE',
                   headers: headers,
                 });
-
-                console.log('response', response);
 
                 const parsedResponse = await response.json();
 

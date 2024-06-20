@@ -215,21 +215,7 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
       });
     });
 
-    return forms.flatMap((form) => {
-      const { createVersion } = form;
-      const entityIdPairs = createVersion.entityId || [];
-
-      return entityIdPairs.map((id) => {
-        const [accountId, containerId, workspaceId] = id.split('-');
-        return {
-          accountId,
-          containerId,
-          name: createVersion.name,
-          description: createVersion.notes,
-          workspaceId,
-        };
-      });
-    });
+    return createVersionData
   };
 
   // Function to extract publish data
@@ -269,24 +255,34 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
 
 
   // Function to extract environment update data
-  const extractEnvUpdateData = (forms, containerVersionId) => {
+  const extractEnvUpdateData = (forms: Forms[], versionPaths: string[]) => {
     return forms.flatMap((form) => {
-      const { accountId, containerId, environmentId, createVersion } = form;
+      console.log('inside form', form);
 
-      return environmentId.map((envId) => {
-        const [accId, contId, type, envIdPart] = envId.split('-');
-        return {
-          accountId: accId,
-          containerId: contId,
-          environmentId: envIdPart,
-          containerVersionId,
-          workspaceId: form.workspaceId, // ensure workspaceId is correctly set if needed
-          name: createVersion.name,
-          description: createVersion.notes,
-        };
-      });
+      const { createVersion } = form;
+      return createVersion.entityId.map((entityId) => {
+        const [accountId, containerId, workspaceId, environmentId, environmentType] = entityId.split('-');
+
+        // Find the corresponding versionPath
+        const versionPath = versionPaths.find(vp => vp.includes(`accounts/${accountId}/containers/${containerId}`));
+        const containerVersionId = versionPath ? versionPath.split('/').pop() : '';
+
+        // Only return non-live environments
+        if (environmentType.toLowerCase() !== 'live') {
+          return {
+            accountId,
+            containerId,
+            environmentId,
+            containerVersionId,
+            name: environmentType,
+          };
+        }
+        return null;
+      }).filter(data => data !== null);
     });
   };
+
+
 
   // Function to handle response success
   const handleResponseSuccess = async (
@@ -326,7 +322,7 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
       res.results.forEach((result) => {
         if (result.notFound) {
           toast.error(
-            `Unable to create key event ${result.name}. Please check your access permissions. Any other key events created were successful.`,
+            `There was an error with the publishing of your changes ${result.name}. Please check your access permissions. Any other key events created were successful.`,
             {
               action: {
                 label: 'Close',
@@ -343,7 +339,7 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
 
     if (res.limitReached) {
       toast.error(
-        `Unable to create key event(s). You have hit your current limit for this feature.`,
+        `There was an error with the publishing of your changes. You have hit your current limit for this feature.`,
         {
           action: {
             label: 'Close',
@@ -357,7 +353,7 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
 
     if (res.errors) {
       res.errors.forEach((error) => {
-        toast.error(`Unable to create key event. ${error}`, {
+        toast.error(`There was an error with the publishing of your changes. ${error}`, {
           action: {
             label: 'Close',
             onClick: () => toast.dismiss(),
@@ -385,6 +381,15 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
         })) as FeatureResponse;
 
         console.log('resCreateVersion', resCreateVersion);
+
+        if (resCreateVersion.success == false) {
+          toast.error(`${resCreateVersion.message}`, {
+            action: {
+              label: 'Close',
+              onClick: () => toast.dismiss(),
+            },
+          });
+        }
 
         if (resCreateVersion.success) {
           const versionPath =
@@ -422,13 +427,16 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
           }
 
           if (nonLiveEnvironments.length > 0) {
+
+            const envUpdateData = extractEnvUpdateData(forms, versionPath);
+            console.log('envUpdateData', envUpdateData);
+
+
             const resUpdateEnv = (await UpdateEnvs({
-              forms: createVersionData.map((data) => ({
-                ...data,
-                containerVersionId: versionPath,
-                environmentId: nonLiveEnvironments.find((env) => (env ? env.split('-')[0] : '')),
-              })),
+              forms: envUpdateData // Filter out live environments
             })) as FeatureResponse;
+
+
 
             console.log('resUpdateEnv', resUpdateEnv);
 

@@ -121,7 +121,6 @@ export async function getGtmEnv(formData: GoogleTagEnvironmentType) {
   const token = await currentUserOauthAccessToken(userId);
   const accessToken = token[0].token;
 
-  console.log('formData', formData);
 
   // Ensure environmentId is always an array
   const toGetEnv = new Set(
@@ -291,6 +290,11 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
 
   console.log('formData update', formData);
 
+  const containerVersionId = formData.forms.map((env) => env.containerVersionId);
+
+  console.log('containerVersionId update', containerVersionId);
+
+
   let retries = 0;
   let delay = INITIAL_DELAY;
   const errors: string[] = [];
@@ -307,8 +311,8 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
       accountId: env.accountId,
       containerId: env.containerId,
       name: env.name,
-      description: env.description,
-      envId: env.environmentId.split('-')[0],
+      envId: env.environmentId,
+      containerVersionId: env.containerVersionId,
     }))
   );
 
@@ -370,7 +374,7 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
         if (remaining > 0) {
           await limiter.schedule(async () => {
             const updatePromises = Array.from(toUpdateEnvs).map(async (identifier) => {
-              console.log('identifier', identifier);
+              console.log('identifier update', identifier);
 
               accountIdForCache = identifier.accountId;
               containerIdForCache = identifier.containerId;
@@ -380,8 +384,8 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
                   env.accountId === identifier.accountId &&
                   env.containerId === identifier.containerId &&
                   env.name === identifier.name &&
-                  env.description === identifier.description &&
-                  env.environmentId.split('-')[0] === identifier.envId
+                  env.environmentId.split('-')[0] === identifier.envId &&
+                  env.containerVersionId === identifier.containerVersionId
               );
 
               console.log('envData update', envData);
@@ -432,8 +436,7 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
 
                 const payload = JSON.stringify({
                   accountId: validatedenvData.accountId,
-                  name: validatedenvData.environmentId.split('-')[1],
-                  description: validatedenvData.description,
+                  name: validatedenvData.name,
                   containerId: validatedenvData.containerId,
                   envId: validatedenvData.environmentId.split('-')[0],
                   containerVersionId: validatedenvData.containerVersionId,

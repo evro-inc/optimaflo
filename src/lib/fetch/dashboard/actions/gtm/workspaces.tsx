@@ -1075,8 +1075,6 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
 
   await fetchGtmSettings(userId);
 
-  console.log('formData version', formData);
-
   /*   const cacheKey = `gtm:workspaces:userId:${userId}`;
     const cachedValue = await redis.get(cacheKey);
     if (cachedValue) {

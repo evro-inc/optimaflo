@@ -16,7 +16,7 @@ const GoogleTagEnvironmentSchema = z.object({
   environmentId: z.string(),
   containerVersionId: z.string(),
   name: z.string(),
-  description: z.string(),
+  description: z.string().optional(),
   enableDebug: z.boolean().optional(),
   url: z.string().optional(),
 });
