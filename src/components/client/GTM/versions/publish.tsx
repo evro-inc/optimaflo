@@ -215,7 +215,7 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
       });
     });
 
-    return createVersionData
+    return createVersionData;
   };
 
   // Function to extract publish data
@@ -223,66 +223,74 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
     console.log('extractPublishData forms', forms);
     console.log('containerVersionId', versionPaths);
 
-    const dataForm = forms.flatMap((form) => {
-      console.log('inside form', form);
+    const publishData = forms.flatMap((form) => {
+      // Filter out non-live environments before mapping
+      return (
+        form.createVersion.entityId
+          .filter((entityId) => {
+            const [, , , , environmentType] = entityId.split('-');
+            return environmentType.toLowerCase() === 'live';
+          })
+          .map((entityId) => {
+            const [accountId, containerId, workspaceId, environmentId, environmentType] =
+              entityId.split('-');
 
-      return form.createVersion.entityId.map((entityId) => {
-        const [accountId, containerId, workspaceId, environmentId, environmentType] = entityId.split('-');
+            // Find the corresponding versionPath
+            const versionPath = versionPaths.find((vp) =>
+              vp.includes(`accounts/${accountId}/containers/${containerId}`)
+            );
+            const containerVersionId = versionPath ? versionPath.split('/').pop() : '';
 
-        // Find the corresponding versionPath
-        const versionPath = versionPaths.find(vp => vp.includes(`accounts/${accountId}/containers/${containerId}`));
-        const containerVersionId = versionPath ? versionPath.split('/').pop() : '';
-
-        const data = {
-          accountId,
-          containerId,
-          containerVersionId,
-          environmentId,
-          name: form.createVersion.name,
-          description: form.createVersion.notes,
-        };
-
-        console.log('data in', data);
-
-        return data;
-      });
+            return {
+              accountId,
+              containerId,
+              containerVersionId,
+              environmentId,
+              name: form.createVersion.name,
+              description: form.createVersion.notes,
+              environmentType,
+            };
+          })
+          // Filter out any undefined or null values that may have slipped through
+          .filter((data) => data !== undefined && data !== null)
+      );
     });
 
-    return dataForm;
+    return publishData;
   };
-
-
-
 
   // Function to extract environment update data
   const extractEnvUpdateData = (forms: Forms[], versionPaths: string[]) => {
     return forms.flatMap((form) => {
-      console.log('inside form', form);
+      console.log('inside form2', form);
 
       const { createVersion } = form;
-      return createVersion.entityId.map((entityId) => {
-        const [accountId, containerId, workspaceId, environmentId, environmentType] = entityId.split('-');
+      return createVersion.entityId
+        .map((entityId) => {
+          const [accountId, containerId, workspaceId, environmentId, environmentType] =
+            entityId.split('-');
 
-        // Find the corresponding versionPath
-        const versionPath = versionPaths.find(vp => vp.includes(`accounts/${accountId}/containers/${containerId}`));
-        const containerVersionId = versionPath ? versionPath.split('/').pop() : '';
+          // Find the corresponding versionPath
+          const versionPath = versionPaths.find((vp) =>
+            vp.includes(`accounts/${accountId}/containers/${containerId}`)
+          );
+          const containerVersionId = versionPath ? versionPath.split('/').pop() : '';
 
-        // Only return non-live environments
-        if (environmentType.toLowerCase() !== 'live') {
-          return {
-            accountId,
-            containerId,
-            environmentId,
-            containerVersionId,
-            name: environmentType,
-          };
-        }
-        return null;
-      }).filter(data => data !== null);
+          // Only return non-live environments
+          if (environmentType.toLowerCase() !== 'live') {
+            return {
+              accountId,
+              containerId,
+              environmentId,
+              containerVersionId,
+              name: environmentType,
+            };
+          }
+          return null;
+        })
+        .filter((data) => data !== null);
     });
   };
-
-
 
   // Function to handle response success
   const handleResponseSuccess = async (
@@ -292,15 +300,12 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
   ) => {
     res.results.forEach((result) => {
       if (result.success) {
-        toast.success(
-          `Key Event ${result.name} created successfully. The table will update shortly.`,
-          {
-            action: {
-              label: 'Close',
-              onClick: () => toast.dismiss(),
-            },
-          }
-        );
+        toast.success(`${result.name} published successfully. The table will update shortly.`, {
+          action: {
+            label: 'Close',
+            onClick: () => toast.dismiss(),
+          },
+        });
       }
     });
 
@@ -398,7 +403,6 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
 
           console.log('versionId', versionPath);
 
-
           console.log('environments', environments);
 
           // Separate live and non-live environments
@@ -427,16 +431,12 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
           }
 
           if (nonLiveEnvironments.length > 0) {
-
             const envUpdateData = extractEnvUpdateData(forms, versionPath);
             console.log('envUpdateData', envUpdateData);
 
-
             const resUpdateEnv = (await UpdateEnvs({
-              forms: envUpdateData // Filter out live environments
+              forms: envUpdateData, // Filter out live environments
             })) as FeatureResponse;
-
-
 
             console.log('resUpdateEnv', resUpdateEnv);
 
@@ -565,15 +565,17 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
                         <TabsList className="grid w-full grid-cols-2">
                           <TabsTrigger
                             value="publish"
-                            className={`relative p-2 transition-colors ${activeTab === 'publish' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
-                              }`}
+                            className={`relative p-2 transition-colors ${
+                              activeTab === 'publish' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
+                            }`}
                           >
                             Pubish and Create Version
                           </TabsTrigger>
                           <TabsTrigger
                             value="version"
-                            className={`relative p-2 transition-colors ${activeTab === 'version' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
-                              }`}
+                            className={`relative p-2 transition-colors ${
+                              activeTab === 'version' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
+                            }`}
                           >
                             Create Version
                           </TabsTrigger>
@@ -643,8 +645,8 @@ function PublishGTM({ changes, envs }: { changes: any; envs: any }) {
                                           Choose GTM Entity
                                         </FormLabel>
                                         <FormDescription>
-                                          Select the GTM entities you want to publish the
-                                          changes to.
+                                          Select the GTM entities you want to publish the changes
+                                          to.
                                         </FormDescription>
                                       </div>
                                       {combinedInfo.map((item) => (

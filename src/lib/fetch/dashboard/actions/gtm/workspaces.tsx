@@ -1502,7 +1502,14 @@ export async function getStatusGtmWorkspaces() {
               responseBody = await response.json();
               allData.push(responseBody || []);
             } catch (error: any) {
-              throw new Error(`Error fetching data: ${error.message}`);
+              if (error.code === 429 || error.status === 429) {
+                const jitter = Math.random() * 200;
+                await new Promise((resolve) => setTimeout(resolve, delay + jitter));
+                delay *= 2;
+                retries++;
+              } else {
+                throw new Error(`Error fetching data: ${error.message}`);
+              }
             }
           }
         });

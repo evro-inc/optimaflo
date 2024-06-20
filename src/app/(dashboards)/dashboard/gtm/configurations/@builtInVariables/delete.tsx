@@ -17,7 +17,6 @@ import { toast } from 'sonner';
 export const useDeleteHook = (selectedRows, table) => {
   const dispatch = useDispatch();
 
-
   const handleDelete = async () => {
     toast('Deleting built-in variables...', {
       action: {

@@ -112,7 +112,9 @@ export async function listGtmBuiltInVariables() {
 /************************************************************************************
   Delete a single or multiple builtInVariables
 ************************************************************************************/
-export async function DeleteBuiltInVariables(ga4BuiltInVarToDelete: BuiltInVariable[]): Promise<FeatureResponse> {
+export async function DeleteBuiltInVariables(
+  ga4BuiltInVarToDelete: BuiltInVariable[]
+): Promise<FeatureResponse> {
   // Initialization of retry mechanism
   let retries = 0;
   const MAX_RETRIES = 3;
@@ -226,7 +228,6 @@ export async function DeleteBuiltInVariables(ga4BuiltInVarToDelete: BuiltInVaria
                     data: { deleteUsage: { increment: 1 } },
                   });
 
-
                   toDeleteBuiltInVariables.delete(
                     `${accountId}-${containerId}-${workspaceId}-${type}`
                   );
@@ -254,13 +255,11 @@ export async function DeleteBuiltInVariables(ga4BuiltInVarToDelete: BuiltInVaria
                         combinedId: `${accountId}-${containerId}-${workspaceId}`,
                         name: type,
                       });
-
                     } else if (errorResult.errorCode === 404) {
                       notFoundLimit.push({
                         combinedId: `${accountId}-${containerId}-${workspaceId}`,
                         name: type,
                       });
-
                     }
                   } else {
                     errors.push(`An unknown error occurred for built-in variable ${type}.`);
@@ -268,8 +267,6 @@ export async function DeleteBuiltInVariables(ga4BuiltInVarToDelete: BuiltInVaria
 
                   toDeleteBuiltInVariables.delete(`${accountId}-${containerId}-${workspaceId}`);
                   permissionDenied = errorResult ? true : permissionDenied;
-
-
                 }
               } catch (error: any) {
                 // Handling exceptions during fetch
@@ -292,7 +289,9 @@ export async function DeleteBuiltInVariables(ga4BuiltInVarToDelete: BuiltInVaria
               limitReached: false,
               notFoundError: true, // Set the notFoundError flag
               message: `Could not delete built-in variable. Please check your permissions. Container Name: 
-              ${notFoundLimit.map(({ name }) => name).join(', ')}. All other variables were successfully deleted.`,
+              ${notFoundLimit
+                .map(({ name }) => name)
+                .join(', ')}. All other variables were successfully deleted.`,
               results: notFoundLimit.map(({ combinedId, name }) => {
                 const [accountId, containerId, workspaceId] = combinedId.split('-');
                 return {
@@ -428,9 +427,9 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
     formData.forms.flatMap((form) =>
       Array.isArray(form.entity)
         ? form.entity.map((entity) => ({
-          entity,
-          type: form.type,
-        }))
+            entity,
+            type: form.type,
+          }))
         : [{ entity: form.entity, type: form.type }]
     )
   );

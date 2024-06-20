@@ -121,7 +121,6 @@ export async function getGtmEnv(formData: GoogleTagEnvironmentType) {
   const token = await currentUserOauthAccessToken(userId);
   const accessToken = token[0].token;
 
-
   // Ensure environmentId is always an array
   const toGetEnv = new Set(
     formData.forms.map((env) => ({
@@ -293,7 +292,6 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
   const containerVersionId = formData.forms.map((env) => env.containerVersionId);
 
   console.log('containerVersionId update', containerVersionId);
-
 
   let retries = 0;
   let delay = INITIAL_DELAY;
