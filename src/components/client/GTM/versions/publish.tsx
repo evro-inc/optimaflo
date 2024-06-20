@@ -432,7 +432,7 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
 
         console.log('resCreateVersion', resCreateVersion);
 
-        if (resCreateVersion.success == false) {
+        if (!resCreateVersion.success) {
           toast.error(`${resCreateVersion.message}`, {
             action: {
               label: 'Close',
@@ -441,51 +441,47 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
           });
         }
 
-        if (resCreateVersion.success) {
-          const versionPath =
-            resCreateVersion.results.map((result) => result.response.containerVersion.path) || '';
-          const environments = forms.flatMap((form) => form?.environmentId?.split(','));
 
-          console.log('versionId', versionPath);
+        const versionPath =
+          resCreateVersion.results.map((result) => result.response.containerVersion.path) || '';
+        const environments = forms.flatMap((form) => form?.environmentId?.split(','));
 
-          console.log('environments', environments);
+        // Separate live and non-live environments
+        const liveEnvironments = environments.filter(
+          (env) => env && env.split('-')[1].toLowerCase() === 'live'
+        );
+        const nonLiveEnvironments = environments.filter(
+          (env) => env && env.split('-')[1].toLowerCase() !== 'live'
+        );
 
-          // Separate live and non-live environments
-          const liveEnvironments = environments.filter(
-            (env) => env && env.split('-')[1].toLowerCase() === 'live'
-          );
-          const nonLiveEnvironments = environments.filter(
-            (env) => env && env.split('-')[1].toLowerCase() !== 'live'
-          );
+        if (liveEnvironments.length > 0) {
+          const publishData = extractPublishData(forms, versionPath);
+          console.log('publishData', publishData);
 
-          if (liveEnvironments.length > 0) {
-            const publishData = extractPublishData(forms, versionPath);
-            console.log('publishData', publishData);
+          const res = (await publishGTM({ forms: publishData })) as FeatureResponse;
+          console.log('res', res);
 
-            const res = (await publishGTM({ forms: publishData })) as FeatureResponse;
-            console.log('res', res);
-
-            if (res.success && resCreateVersion.success) {
-              await handleResponseSuccess(res, userId, setIsDrawerOpen);
-            } else {
-              handleResponseErrors(res, dispatch);
-            }
-          }
-
-          if (nonLiveEnvironments.length > 0) {
-            const envUpdateData = extractEnvUpdateData(forms, versionPath);
-
-            const resUpdateEnv = (await UpdateEnvs({
-              forms: envUpdateData, // Filter out live environments
-            })) as FeatureResponse;
-
-            if (resUpdateEnv.success) {
-              await handleResponseSuccess(resUpdateEnv, userId, setIsDrawerOpen);
-            } else {
-              handleResponseErrors(resUpdateEnv, dispatch);
-            }
+          if (res.success && resCreateVersion.success) {
+            await handleResponseSuccess(res, userId, setIsDrawerOpen);
+          } else {
+            handleResponseErrors(res, dispatch);
           }
         }
+
+        if (nonLiveEnvironments.length > 0) {
+          const envUpdateData = extractEnvUpdateData(forms, versionPath);
+
+          const resUpdateEnv = (await UpdateEnvs({
+            forms: envUpdateData, // Filter out live environments
+          })) as FeatureResponse;
+
+          if (resUpdateEnv.success) {
+            await handleResponseSuccess(resUpdateEnv, userId, setIsDrawerOpen);
+          } else {
+            handleResponseErrors(resUpdateEnv, dispatch);
+          }
+        }
+
 
         form.reset({ forms: [formDataDefaults] });
       } catch (error) {
@@ -610,17 +606,15 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
                         <TabsList className="grid w-full grid-cols-2">
                           <TabsTrigger
                             value="publish"
-                            className={`relative p-2 transition-colors ${
-                              activeTab === 'publish' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
-                            }`}
+                            className={`relative p-2 transition-colors ${activeTab === 'publish' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
+                              }`}
                           >
                             Publish and Create Version
                           </TabsTrigger>
                           <TabsTrigger
                             value="version"
-                            className={`relative p-2 transition-colors ${
-                              activeTab === 'version' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
-                            }`}
+                            className={`relative p-2 transition-colors ${activeTab === 'version' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
+                              }`}
                           >
                             Create Version
                           </TabsTrigger>
