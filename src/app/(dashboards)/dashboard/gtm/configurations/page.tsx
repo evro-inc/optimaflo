@@ -83,7 +83,6 @@ export default async function Page() {
         </h1>
         <PublishGTM changes={combinedData} envs={filteredEnvs} tierLimits={tierLimits} />
       </div>
-      {/* Other content can go here */}
     </div>
   );
 }
