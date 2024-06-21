@@ -4,9 +4,7 @@ import {
   Card,
   CardHeader,
   CardTitle,
-  CardDescription,
   CardContent,
-  CardFooter,
 } from '@/src/components/ui/card';
 import {
   Drawer,
@@ -17,7 +15,6 @@ import {
 } from '@/src/components/ui/drawer';
 import { Input } from '@/src/components/ui/input';
 import { Textarea } from '@/src/components/ui/textarea';
-import { Label } from '@radix-ui/react-label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@radix-ui/react-tabs';
 import clsx from 'clsx';
 import { Dispatch, useState } from 'react';
@@ -45,11 +42,10 @@ import { useRouter } from 'next/navigation';
 import { setErrorDetails, setIsLimitReached, setNotFoundError } from '@/src/redux/tableSlice';
 import { RootState } from '@/src/redux/store';
 import { createGTMVersion } from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
-import { getGtmEnv, UpdateEnvs } from '@/src/lib/fetch/dashboard/actions/gtm/envs';
+import { UpdateEnvs } from '@/src/lib/fetch/dashboard/actions/gtm/envs';
 import { Checkbox } from '@/src/components/ui/checkbox';
 import { revalidate } from '@/src/utils/server';
 import { useUser } from '@clerk/nextjs';
-import { A } from '@upstash/redis/zmscore-b6b93f14';
 
 type Forms = z.infer<typeof FormSchema>;
 
@@ -193,7 +189,7 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
     gtagConfig: [],
     transformation: [],
     createVersion: {
-      entityId: '',
+      entityId: [],
       name: '',
       notes: '',
     },
@@ -222,7 +218,7 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
   };
 
   // Function to extract and transform createVersion data
-  const extractCreateVersionData = (forms: Forms[]) => {
+  const extractCreateVersionData = (forms: Forms['forms']) => {
     const createVersionData = forms.flatMap((form) => {
       const { createVersion } = form;
       const entityIdPairs = createVersion.entityId || [];
@@ -243,18 +239,65 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
   };
 
   // Function to extract publish data
-  const extractPublishData = (forms: Forms[], versionPaths: string[]) => {
-    const publishData = forms.flatMap((form) => {
-      // Filter out non-live environments before mapping
-      return (
-        form.createVersion.entityId
+  const extractPublishData = (forms: Forms['forms'], versionPaths: string[]) => {
+    return forms.flatMap((form) => {
+      if (form.createVersion && form.createVersion.entityId) {
+        return form.createVersion.entityId
           .filter((entityId) => {
             const [, , , , environmentType] = entityId.split('-');
             return environmentType.toLowerCase() === 'live';
           })
           .map((entityId) => {
-            const [accountId, containerId, workspaceId, environmentId, environmentType] =
-              entityId.split('-');
+            const [accountId, containerId, , environmentId, environmentType] = entityId.split('-');
+
+            const versionPath = versionPaths.find((vp) =>
+              vp.includes(`accounts/${accountId}/containers/${containerId}`)
+            );
+            const containerVersionId = versionPath ? versionPath.split('/').pop() : '';
+
+            return {
+              path: form.path,
+              accountId,
+              containerId,
+              containerVersionId: containerVersionId || '',
+              environmentId,
+              name: form.createVersion.name,
+              description: form.createVersion.notes,
+              environmentType,
+              deleted: form.deleted,
+              fingerprint: form.fingerprint,
+              container: form.container,
+              tag: form.tag,
+              trigger: form.trigger,
+              variable: form.variable,
+              folder: form.folder,
+              builtInVariable: form.builtInVariable,
+              tagManagerUrl: form.tagManagerUrl,
+              zone: form.zone,
+              customTemplate: form.customTemplate,
+              client: form.client,
+              gtagConfig: form.gtagConfig,
+              transformation: form.transformation,
+              createVersion: form.createVersion,  // Ensure createVersion is included
+            };
+          });
+      }
+      return [];
+    });
+  };
+
+
+
+  // Function to extract environment update data
+  const extractEnvUpdateData = (forms: Forms['forms'], versionPaths: string[]) => {
+    return forms.flatMap((form) => {
+      const { createVersion } = form;
+
+      // Check if createVersion and entityId are defined
+      if (createVersion && createVersion.entityId) {
+        return createVersion.entityId
+          .map((entityId) => {
+            const [accountId, containerId, , environmentId, environmentType] = entityId.split('-');
 
             // Find the corresponding versionPath
             const versionPath = versionPaths.find((vp) =>
@@ -262,54 +305,26 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
             );
             const containerVersionId = versionPath ? versionPath.split('/').pop() : '';
 
-            return {
-              accountId,
-              containerId,
-              containerVersionId,
-              environmentId,
-              name: form.createVersion.name,
-              description: form.createVersion.notes,
-              environmentType,
-            };
+            // Only return non-live environments
+            if (environmentType.toLowerCase() !== 'live') {
+              return {
+                accountId,
+                containerId,
+                environmentId,
+                containerVersionId,
+                name: environmentType,
+              };
+            }
+            return null;
           })
-          // Filter out any undefined or null values that may have slipped through
-          .filter((data) => data !== undefined && data !== null)
-      );
-    });
+          .filter((data) => data !== null);
+      }
 
-    return publishData;
-  };
-
-  // Function to extract environment update data
-  const extractEnvUpdateData = (forms: Forms[], versionPaths: string[]) => {
-    return forms.flatMap((form) => {
-      const { createVersion } = form;
-      return createVersion.entityId
-        .map((entityId) => {
-          const [accountId, containerId, workspaceId, environmentId, environmentType] =
-            entityId.split('-');
-
-          // Find the corresponding versionPath
-          const versionPath = versionPaths.find((vp) =>
-            vp.includes(`accounts/${accountId}/containers/${containerId}`)
-          );
-          const containerVersionId = versionPath ? versionPath.split('/').pop() : '';
-
-          // Only return non-live environments
-          if (environmentType.toLowerCase() !== 'live') {
-            return {
-              accountId,
-              containerId,
-              environmentId,
-              containerVersionId,
-              name: environmentType,
-            };
-          }
-          return null;
-        })
-        .filter((data) => data !== null);
+      // Return an empty array if createVersion or entityId are not defined
+      return [];
     });
   };
+
 
   // Function to handle response success
   const handleResponseSuccess = async (
@@ -604,17 +619,15 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
                         <TabsList className="grid w-full grid-cols-2">
                           <TabsTrigger
                             value="publish"
-                            className={`relative p-2 transition-colors ${
-                              activeTab === 'publish' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
-                            }`}
+                            className={`relative p-2 transition-colors ${activeTab === 'publish' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
+                              }`}
                           >
                             Publish and Create Version
                           </TabsTrigger>
                           <TabsTrigger
                             value="version"
-                            className={`relative p-2 transition-colors ${
-                              activeTab === 'version' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
-                            }`}
+                            className={`relative p-2 transition-colors ${activeTab === 'version' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
+                              }`}
                           >
                             Create Version
                           </TabsTrigger>
