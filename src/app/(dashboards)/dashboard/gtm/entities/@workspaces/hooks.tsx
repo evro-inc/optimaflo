@@ -7,7 +7,10 @@ import {
   setIsLimitReached,
   setNotFoundError,
 } from '@/src/redux/tableSlice';
-import { createGTMVersion, DeleteWorkspaces } from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
+import {
+  createGTMVersion,
+  DeleteWorkspaces,
+} from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
 import { WorkspaceType, FeatureResponse } from '@/src/types/types';
 import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
@@ -92,15 +95,15 @@ export const useCreateVersionHook = (selectedRows, table) => {
     });
 
     // Use Object.values to get the values from the selectedRows object and cast them to WorkspaceType
-    const workspacesToCreateVersion = Object.values(selectedRows as Record<string, WorkspaceType>).map(
-      (workspace) => ({
-        accountId: workspace.accountId,
-        containerId: workspace.containerId,
-        workspaceId: workspace.workspaceId,
-        name: workspace.name,
-        description: workspace.description,
-      })
-    );
+    const workspacesToCreateVersion = Object.values(
+      selectedRows as Record<string, WorkspaceType>
+    ).map((workspace) => ({
+      accountId: workspace.accountId,
+      containerId: workspace.containerId,
+      workspaceId: workspace.workspaceId,
+      name: workspace.name,
+      description: workspace.description,
+    }));
 
     const formData = {
       forms: workspacesToCreateVersion,
@@ -145,4 +148,4 @@ export const useCreateVersionHook = (selectedRows, table) => {
   };
 
   return handleCreateVersion;
-}
+};

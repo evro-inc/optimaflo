@@ -257,9 +257,22 @@ const SingleFormSchema = z.object({
   createVersion: CreateVersionSchema,
 });
 
+const updateVersionSchema = z.object({
+  accountId: z.string(),
+  containerId: z.string(),
+  containerVersionId: z.string(),
+  name: z.string().min(1, 'Version Name is required'),
+  description: z.string().min(1, 'Version Description is required'),
+});
+
 export const FormSchema = z.object({
   forms: z.array(SingleFormSchema),
 });
 
+export const UpdateVersionFormSchema = z.object({
+  updateVersion: z.array(updateVersionSchema),
+});
+
 // Export the type inferred from FormSchema for type safety
 export type ContainerVersionType = z.infer<typeof FormSchema>;
+export type UpdateVersionSchemaType = z.infer<typeof UpdateVersionFormSchema>;

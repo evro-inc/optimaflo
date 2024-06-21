@@ -1,11 +1,7 @@
 // src/app/(dashboards)/dashboard/gtm/versions/delete.tsx
 'use client';
 
-import {
-  setErrorDetails,
-  setIsLimitReached,
-  setNotFoundError,
-} from '@/src/redux/tableSlice';
+import { setErrorDetails, setIsLimitReached, setNotFoundError } from '@/src/redux/tableSlice';
 import { DeleteVersions } from '@/src/lib/fetch/dashboard/actions/gtm/versions';
 import { GTMContainerVersion, FeatureResponse } from '@/src/types/types';
 import { useDispatch } from 'react-redux';
@@ -23,7 +19,9 @@ export const useDeleteHook = (selectedRows, table) => {
     });
 
     // Use Object.values to get the values from the selectedRows object and cast them to WorkspaceType
-    const versionsToDelete: GTMContainerVersion[] = Object.values(selectedRows as Record<string, GTMContainerVersion>);
+    const versionsToDelete: GTMContainerVersion[] = Object.values(
+      selectedRows as Record<string, GTMContainerVersion>
+    );
 
     const response: FeatureResponse = await DeleteVersions(versionsToDelete);
 

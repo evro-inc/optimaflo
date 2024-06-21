@@ -290,8 +290,8 @@ export async function DeleteBuiltInVariables(
               notFoundError: true, // Set the notFoundError flag
               message: `Could not delete built-in variable. Please check your permissions. Container Name: 
               ${notFoundLimit
-                  .map(({ name }) => name)
-                  .join(', ')}. All other variables were successfully deleted.`,
+                .map(({ name }) => name)
+                .join(', ')}. All other variables were successfully deleted.`,
               results: notFoundLimit.map(({ combinedId, name }) => {
                 const [accountId, containerId, workspaceId] = combinedId.split('-');
                 return {
@@ -427,9 +427,9 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
     formData.forms.flatMap((form) =>
       Array.isArray(form.entity)
         ? form.entity.map((entity) => ({
-          entity,
-          type: form.type,
-        }))
+            entity,
+            type: form.type,
+          }))
         : [{ entity: form.entity, type: form.type }]
     )
   );
@@ -718,7 +718,6 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
     notFoundError: false, // Set based on actual not found status
   };
 }
-
 
 /************************************************************************************
   Revert a single or multiple builtInVariables - Remove limits from revert. Users shouldn't be limited when reverting changes.

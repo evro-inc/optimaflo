@@ -105,11 +105,10 @@ export function DataTable<TData, TValue>({
   }, {});
   const rowSelectedCount = Object.keys(selectedRowData).length;
 
-
   const handleUpdateClick = useUpdateHookForm(
     userId,
-    'GTMWorkspaces',
-    '/dashboard/gtm/wizards/workspaces/update',
+    'GTMVersions',
+    '/dashboard/gtm/wizards/versions/update',
     rowSelectedCount
   );
 
@@ -136,8 +135,6 @@ export function DataTable<TData, TValue>({
 
         <div className="ml-auto space-x-4">
           <Button onClick={refreshAllCache}>Refresh</Button>
-
-
 
           <Button
             disabled={Object.keys(table.getState().rowSelection).length === 0 || isUpdatePending}

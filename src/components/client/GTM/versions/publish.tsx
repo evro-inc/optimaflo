@@ -1,11 +1,6 @@
 'use client';
 import { Button } from '@/src/components/ui/button';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from '@/src/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/src/components/ui/card';
 import {
   Drawer,
   DrawerTrigger,
@@ -278,15 +273,13 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
               client: form.client,
               gtagConfig: form.gtagConfig,
               transformation: form.transformation,
-              createVersion: form.createVersion,  // Ensure createVersion is included
+              createVersion: form.createVersion, // Ensure createVersion is included
             };
           });
       }
       return [];
     });
   };
-
-
 
   // Function to extract environment update data
   const extractEnvUpdateData = (forms: Forms['forms'], versionPaths: string[]) => {
@@ -324,7 +317,6 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
       return [];
     });
   };
-
 
   // Function to handle response success
   const handleResponseSuccess = async (
@@ -619,15 +611,17 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
                         <TabsList className="grid w-full grid-cols-2">
                           <TabsTrigger
                             value="publish"
-                            className={`relative p-2 transition-colors ${activeTab === 'publish' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
-                              }`}
+                            className={`relative p-2 transition-colors ${
+                              activeTab === 'publish' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
+                            }`}
                           >
                             Publish and Create Version
                           </TabsTrigger>
                           <TabsTrigger
                             value="version"
-                            className={`relative p-2 transition-colors ${activeTab === 'version' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
-                              }`}
+                            className={`relative p-2 transition-colors ${
+                              activeTab === 'version' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
+                            }`}
                           >
                             Create Version
                           </TabsTrigger>
