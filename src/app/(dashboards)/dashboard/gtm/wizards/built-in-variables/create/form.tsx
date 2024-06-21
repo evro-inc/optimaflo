@@ -20,22 +20,11 @@ import {
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/src/components/ui/select';
-
-import { Input } from '@/src/components/ui/input';
-import {
-  KeyEventType,
-  DimensionScope,
-  FeatureResponse,
-  FormCreateBuiltInVariableProps,
-  CountingMethod,
-  QueryParameters,
-} from '@/src/types/types';
+import { FeatureResponse, FormCreateBuiltInVariableProps } from '@/src/types/types';
 import { toast } from 'sonner';
 import {
   selectTable,
@@ -46,25 +35,14 @@ import {
 import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { createGAKeyEvents } from '@/src/lib/fetch/dashboard/actions/ga/keyEvents';
-import { Switch } from '@/src/components/ui/switch';
 import { Checkbox } from '@/src/components/ui/checkbox';
 import { Separator } from '@/src/components/ui/separator';
-import { Label } from '@/src/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/src/components/ui/radio-group';
 import { BuiltInVariableGroups } from '../../../configurations/@builtInVariables/items';
 import {
   CreateBuiltInVariables,
   listGtmBuiltInVariables,
 } from '@/src/lib/fetch/dashboard/actions/gtm/variablesBuiltIn';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/src/components/ui/tabs';
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from '@/src/components/ui/carousel';
 import { BuiltInVariableType } from '@/src/types/gtm';
 
 const NotFoundErrorModal = dynamic(
@@ -151,7 +129,7 @@ const FormCreateBuiltInVariable: React.FC<FormCreateBuiltInVariableProps> = ({
   ).result;
 
   const foundTierLimit = tierLimits.find(
-    (subscription) => subscription.Feature?.name === 'GA4KeyEvents'
+    (subscription) => subscription.Feature?.name === 'GTMBuiltInVariables'
   );
 
   const createLimit = foundTierLimit?.createLimit;
@@ -233,7 +211,7 @@ const FormCreateBuiltInVariable: React.FC<FormCreateBuiltInVariableProps> = ({
       const identifier = JSON.stringify({ entity: form.entity, type: form.type });
 
       if (uniqueKeyEvents.has(identifier)) {
-        toast.error(`Duplicate key event found for ${form.entity} - ${form.type}`, {
+        toast.error(`Duplicate built-in variable found for ${form.entity} - ${form.type}`, {
           action: {
             label: 'Close',
             onClick: () => toast.dismiss(),
@@ -360,23 +338,25 @@ const FormCreateBuiltInVariable: React.FC<FormCreateBuiltInVariableProps> = ({
     dispatch(decrementStep());
   };
 
-  const handleEntitySelection = (entity, checked) => {
+  const handleEntitySelection = (entity, checked, index) => {
     const newSelectedEntities = new Set(selectedEntities);
     if (checked) {
-      newSelectedEntities.add(JSON.stringify(entity));
+      newSelectedEntities.add(JSON.stringify({ ...entity, formIndex: index }));
     } else {
-      newSelectedEntities.delete(JSON.stringify(entity));
+      newSelectedEntities.delete(JSON.stringify({ ...entity, formIndex: index }));
     }
     setSelectedEntities(newSelectedEntities);
   };
 
-  const isVariableDisabled = (variable, entity) => {
+  const isVariableDisabled = (variable, entity, currentFormIndex) => {
+    const currentFormEntities = includeDefaultValue[currentFormIndex]?.entity || [];
     return createdVariables.some(
       (createdVar) =>
         createdVar.accountId === entity.account &&
         createdVar.containerId === entity.container &&
         createdVar.workspaceId === entity.workspace &&
-        createdVar.type === variable
+        createdVar.type === variable &&
+        currentFormEntities.includes(`${entity.account}-${entity.container}-${entity.workspace}`)
     );
   };
 
@@ -454,31 +434,6 @@ const FormCreateBuiltInVariable: React.FC<FormCreateBuiltInVariableProps> = ({
                                             : Object.keys(BuiltInVariableGroups)[0]
                                         }
                                       >
-                                        {/* <Carousel
-                                          opts={{
-                                            align: "start",
-                                          }}
-                                          className="w-full max-w-lg"
-                                        >
-                                          <CarouselContent>
-                                            {Array.from({ length: Math.ceil(Object.keys(BuiltInVariableGroups).length) }).map((_, carouselIndex) => (
-                                              <CarouselItem key={carouselIndex} className="md:basis-1/2 lg:basis-1/3">
-                                                <div className="p-1">
-                                                  <TabsList className="flex">
-                                                    {Object.keys(BuiltInVariableGroups).slice(carouselIndex, (carouselIndex + 1)).map((groupName) => (
-                                                      <TabsTrigger key={groupName} value={groupName}>
-                                                        {groupName}
-                                                      </TabsTrigger>
-                                                    ))}
-                                                  </TabsList>
-                                                </div>
-                                              </CarouselItem>
-                                            ))}
-                                          </CarouselContent>
-                                          <CarouselPrevious type='button' />
-                                          <CarouselNext type='button' />
-                                        </Carousel> */}
-
                                         <TabsList className="flex border-b">
                                           {Object.keys(BuiltInVariableGroups).map((groupName) => (
                                             <TabsTrigger
@@ -506,83 +461,92 @@ const FormCreateBuiltInVariable: React.FC<FormCreateBuiltInVariableProps> = ({
                                                           key={varIndex}
                                                           control={form.control}
                                                           name={`forms.${index}.type`}
-                                                          render={({ field, fieldState }) => (
-                                                            <FormItem className="flex items-start space-x-3 space-y-0 mb-2">
-                                                              <FormControl>
-                                                                <Checkbox
-                                                                  checked={
-                                                                    (Array.isArray(field.value) &&
-                                                                      field.value.includes(
-                                                                        variable
-                                                                      )) ||
-                                                                    Array.from(
-                                                                      selectedEntities
-                                                                    ).some((entityStr) => {
-                                                                      const entity =
-                                                                        JSON.parse(entityStr);
-                                                                      return isVariableDisabled(
-                                                                        variable,
-                                                                        entity
-                                                                      );
-                                                                    })
-                                                                  }
-                                                                  onCheckedChange={(checked) => {
-                                                                    if (
-                                                                      !Array.from(
+                                                          render={({ field, fieldState }) => {
+                                                            const isDisabled =
+                                                              selectedEntities.size > 0 &&
+                                                              Array.from(selectedEntities).some(
+                                                                (entityStr) => {
+                                                                  const entity =
+                                                                    JSON.parse(entityStr);
+                                                                  return isVariableDisabled(
+                                                                    variable,
+                                                                    entity,
+                                                                    index
+                                                                  );
+                                                                }
+                                                              );
+
+                                                            return (
+                                                              <FormItem className="flex items-start space-x-3 space-y-0 mb-2">
+                                                                <FormControl>
+                                                                  <Checkbox
+                                                                    checked={
+                                                                      (Array.isArray(field.value) &&
+                                                                        field.value.includes(
+                                                                          variable
+                                                                        )) ||
+                                                                      Array.from(
                                                                         selectedEntities
                                                                       ).some((entityStr) => {
                                                                         const entity =
                                                                           JSON.parse(entityStr);
                                                                         return isVariableDisabled(
                                                                           variable,
-                                                                          entity
+                                                                          entity,
+                                                                          index
                                                                         );
                                                                       })
-                                                                    ) {
-                                                                      return checked
-                                                                        ? field.onChange([
-                                                                            ...(Array.isArray(
-                                                                              field.value
-                                                                            )
-                                                                              ? field.value
-                                                                              : []),
-                                                                            variable,
-                                                                          ])
-                                                                        : field.onChange(
-                                                                            (Array.isArray(
-                                                                              field.value
-                                                                            )
-                                                                              ? field.value
-                                                                              : []
-                                                                            ).filter(
-                                                                              (value) =>
-                                                                                value !== variable
-                                                                            )
-                                                                          );
                                                                     }
-                                                                  }}
-                                                                  disabled={Array.from(
-                                                                    selectedEntities
-                                                                  ).some((entityStr) => {
-                                                                    const entity =
-                                                                      JSON.parse(entityStr);
-                                                                    return isVariableDisabled(
-                                                                      variable,
-                                                                      entity
-                                                                    );
-                                                                  })}
-                                                                />
-                                                              </FormControl>
-                                                              <FormLabel className="text-sm font-normal">
-                                                                {variable}
-                                                              </FormLabel>
-                                                              {fieldState.error && (
-                                                                <FormMessage>
-                                                                  {fieldState.error.message}
-                                                                </FormMessage>
-                                                              )}
-                                                            </FormItem>
-                                                          )}
+                                                                    onCheckedChange={(checked) => {
+                                                                      if (
+                                                                        !Array.from(
+                                                                          selectedEntities
+                                                                        ).some((entityStr) => {
+                                                                          const entity =
+                                                                            JSON.parse(entityStr);
+                                                                          return isVariableDisabled(
+                                                                            variable,
+                                                                            entity,
+                                                                            index
+                                                                          );
+                                                                        })
+                                                                      ) {
+                                                                        return checked
+                                                                          ? field.onChange([
+                                                                              ...(Array.isArray(
+                                                                                field.value
+                                                                              )
+                                                                                ? field.value
+                                                                                : []),
+                                                                              variable,
+                                                                            ])
+                                                                          : field.onChange(
+                                                                              (Array.isArray(
+                                                                                field.value
+                                                                              )
+                                                                                ? field.value
+                                                                                : []
+                                                                              ).filter(
+                                                                                (value) =>
+                                                                                  value !== variable
+                                                                              )
+                                                                            );
+                                                                      }
+                                                                    }}
+                                                                    disabled={isDisabled}
+                                                                  />
+                                                                </FormControl>
+                                                                <FormLabel className="text-sm font-normal">
+                                                                  {variable}
+                                                                </FormLabel>
+                                                                {fieldState.error && (
+                                                                  <FormMessage>
+                                                                    {fieldState.error.message}
+                                                                  </FormMessage>
+                                                                )}
+                                                              </FormItem>
+                                                            );
+                                                          }}
                                                         />
                                                       ))}
                                                   </div>
@@ -641,7 +605,11 @@ const FormCreateBuiltInVariable: React.FC<FormCreateBuiltInVariableProps> = ({
                                                           field.value.includes(compositeValue)
                                                         }
                                                         onCheckedChange={(checked) => {
-                                                          handleEntitySelection(entity, checked);
+                                                          handleEntitySelection(
+                                                            entity,
+                                                            checked,
+                                                            index
+                                                          );
                                                           return checked
                                                             ? field.onChange([
                                                                 ...(Array.isArray(field.value)

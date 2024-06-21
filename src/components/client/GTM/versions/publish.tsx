@@ -441,7 +441,6 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
           });
         }
 
-
         const versionPath =
           resCreateVersion.results.map((result) => result.response.containerVersion.path) || '';
         const environments = forms.flatMap((form) => form?.environmentId?.split(','));
@@ -481,7 +480,6 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
             handleResponseErrors(resUpdateEnv, dispatch);
           }
         }
-
 
         form.reset({ forms: [formDataDefaults] });
       } catch (error) {
@@ -606,15 +604,17 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
                         <TabsList className="grid w-full grid-cols-2">
                           <TabsTrigger
                             value="publish"
-                            className={`relative p-2 transition-colors ${activeTab === 'publish' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
-                              }`}
+                            className={`relative p-2 transition-colors ${
+                              activeTab === 'publish' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
+                            }`}
                           >
                             Publish and Create Version
                           </TabsTrigger>
                           <TabsTrigger
                             value="version"
-                            className={`relative p-2 transition-colors ${activeTab === 'version' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
-                              }`}
+                            className={`relative p-2 transition-colors ${
+                              activeTab === 'version' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
+                            }`}
                           >
                             Create Version
                           </TabsTrigger>
