@@ -1,14 +1,13 @@
-// src/app/(dashboards)/dashboard/gtm/workspaces/delete.tsx
+// src/app/(dashboards)/dashboard/gtm/versions/delete.tsx
 'use client';
 
 import {
-  clearSelectedRows,
   setErrorDetails,
   setIsLimitReached,
   setNotFoundError,
 } from '@/src/redux/tableSlice';
-import { DeleteWorkspaces } from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
-import { WorkspaceType, FeatureResponse } from '@/src/types/types';
+import { DeleteVersions } from '@/src/lib/fetch/dashboard/actions/gtm/versions';
+import { GTMContainerVersion, FeatureResponse } from '@/src/types/types';
 import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
 
@@ -16,7 +15,7 @@ export const useDeleteHook = (selectedRows, table) => {
   const dispatch = useDispatch();
 
   const handleDelete = async () => {
-    toast('Deleting workspaces...', {
+    toast('Deleting version(s)...', {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
@@ -24,22 +23,9 @@ export const useDeleteHook = (selectedRows, table) => {
     });
 
     // Use Object.values to get the values from the selectedRows object and cast them to WorkspaceType
-    const workspacesToDelete = Object.values(selectedRows as Record<string, WorkspaceType>).map(
-      (workspace) => {
-        return `${workspace.accountId}-${workspace.containerId}-${workspace.workspaceId}`;
-      }
-    );
+    const versionsToDelete: GTMContainerVersion[] = Object.values(selectedRows as Record<string, GTMContainerVersion>);
 
-    const workspaceNames = workspacesToDelete.map((workspaceId) => {
-      // Extract the workspaceId part from the concatenated string
-      // Find the workspace by its workspaceId and return its name or 'Unknown'
-      return selectedRows[workspaceId]?.name || 'Unknown';
-    });
-
-    const response: FeatureResponse = await DeleteWorkspaces(
-      new Set(workspacesToDelete),
-      workspaceNames
-    );
+    const response: FeatureResponse = await DeleteVersions(versionsToDelete);
 
     if (!response.success) {
       let message = response.message || 'An error occurred.';

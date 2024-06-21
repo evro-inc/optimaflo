@@ -34,7 +34,7 @@ import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
 import { revalidate } from '@/src/utils/server';
 import { useDispatch } from 'react-redux';
-import { useDeleteHook } from './delete';
+import { useCreateVersionHook, useDeleteHook } from './hooks';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
 import { useCreateHookForm, useUpdateHookForm } from '@/src/hooks/useCRUD';
 import { useTransition } from 'react';
@@ -61,6 +61,7 @@ export function DataTable<TData, TValue>({
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [isCreatePending, startCreateTransition] = useTransition();
+  const [isCreateVersionPending, startCreateVersionTransition] = useTransition();
   const [isUpdatePending, startUpdateTransition] = useTransition();
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
@@ -134,7 +135,10 @@ export function DataTable<TData, TValue>({
       });
     });
   };
+
   const handleDelete = useDeleteHook(selectedRowData, table);
+  const handleCreateVersion = useCreateVersionHook(selectedRowData, table);
+
   dispatch(setSelectedRows(selectedRowData)); // Update the selected rows in Redux
 
   return (
@@ -152,7 +156,11 @@ export function DataTable<TData, TValue>({
           <Button onClick={refreshAllCache}>Refresh</Button>
 
           <Button disabled={isCreatePending} onClick={onCreateButtonClick}>
-            {isCreatePending ? 'Loading...' : 'Create'}
+            {isCreatePending ? 'Loading...' : 'Create Workspace'}
+          </Button>
+
+          <Button disabled={isCreateVersionPending} onClick={handleCreateVersion}>
+            {isCreateVersionPending ? 'Loading...' : 'Create Version'}
           </Button>
 
           <Button
@@ -165,6 +173,7 @@ export function DataTable<TData, TValue>({
           <ButtonDelete
             disabled={Object.keys(table.getState().rowSelection).length === 0}
             onDelete={handleDelete}
+            action={''}
           />
 
           <DropdownMenu>

@@ -8,9 +8,9 @@ import {
   setIsLimitReached,
   setNotFoundError,
 } from '@/src/redux/tableSlice';
-import { DeleteWorkspaces } from '@/src/lib/fetch/dashboard/actions/ga/workspaces';
+import { DeleteWorkspaces } from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
 
-import { DeleteWorkspacesResponse, WorkspaceType } from '@/src/types/types';
+import { WorkspaceType } from '@/src/types/types';
 
 function ButtonDel() {
   const dispatch = useDispatch();
@@ -35,7 +35,7 @@ function ButtonDel() {
         return await DeleteWorkspaces(accountId, workspacesToDeleteSet);
       });
 
-      const responses: DeleteWorkspacesResponse[] = await Promise.all(deleteOperations);
+      const responses = await Promise.all(deleteOperations);
 
       const limitReached = responses.some((response) => response.limitReached);
       const notFoundErrorOccurred = responses.some((response) =>

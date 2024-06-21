@@ -314,7 +314,7 @@ export async function DeleteContainers(
           // Otherwise, just invalidate cache for the single account
           const cacheKey = `gtm:containers:userId:${userId}`;
           await redis.del(cacheKey);
-          await revalidatePath(`/dashboard/gtm/containers`);
+          await revalidatePath(`/dashboard/gtm/entities`);
         }
       }
     }
@@ -349,7 +349,7 @@ export async function DeleteContainers(
     // Update the Redis cache
     await redis.del(cacheKey);
     // Revalidate paths if needed
-    revalidatePath(`/dashboard/gtm/containers`);
+    revalidatePath(`/dashboard/gtm/entities`);
   }
 
   // Returning the result of the deletion process
@@ -620,7 +620,7 @@ export async function CreateContainers(formData: Schema) {
         if (userId) {
           const cacheKey = `gtm:containers:userId:${userId}`;
           await redis.del(cacheKey);
-          await revalidatePath(`/dashboard/gtm/containers`);
+          await revalidatePath(`/dashboard/gtm/entities`);
         }
       }
     }
@@ -652,7 +652,7 @@ export async function CreateContainers(formData: Schema) {
     const cacheKey = `gtm:containers:userId:${userId}`;
 
     await redis.del(cacheKey);
-    revalidatePath(`/dashboard/gtm/containers`);
+    revalidatePath(`/dashboard/gtm/entities`);
   }
 
   // Map over formData.forms to create the results array
@@ -879,7 +879,7 @@ export async function UpdateContainers(formData: Schema) {
 
           const cacheKey = `gtm:containers:userId:${userId}`;
           await redis.del(cacheKey);
-          await revalidatePath(`/dashboard/gtm/containers`);
+          await revalidatePath(`/dashboard/gtm/entities`);
 
           if (notFoundLimit.length > 0) {
             return {
@@ -939,7 +939,7 @@ export async function UpdateContainers(formData: Schema) {
         // This block will run regardless of the outcome of the try...catch
         if (accountIdsForCache && userId) {
           await redis.del(`gtm:containers:accountId:${accountIdsForCache}:userId:${userId}`);
-          await revalidatePath(`/dashboard/gtm/containers`);
+          await revalidatePath(`/dashboard/gtm/entities`);
         }
       }
     }
@@ -969,7 +969,7 @@ export async function UpdateContainers(formData: Schema) {
 
   if (successfulUpdates.length > 0) {
     await redis.del(`gtm:containers:accountId:${accountIdsForCache}:userId:${userId}`);
-    revalidatePath(`/dashboard/gtm/containers`);
+    revalidatePath(`/dashboard/gtm/entities`);
   }
 
   // Map over formData.forms to update the results array

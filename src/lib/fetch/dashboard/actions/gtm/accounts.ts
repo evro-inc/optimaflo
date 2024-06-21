@@ -245,7 +245,7 @@ export async function updateAccounts(
           await redis.set(cacheKey, JSON.stringify(updatedAccounts), 'EX', 60 * 60 * 2);
 
           // Revalidating the path to update the cached data
-          const path = `/dashboard/gtm/accounts`;
+          const path = `/dashboard/gtm/entities`;
           revalidatePath(path);
 
           // Returning success with the updated workspaces

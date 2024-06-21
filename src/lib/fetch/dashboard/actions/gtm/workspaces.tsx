@@ -326,7 +326,7 @@ export async function DeleteWorkspaces(
         const cacheKey = `gtm:workspaces:userId:${userId}`;
         await redis.del(cacheKey);
 
-        await revalidatePath(`/dashboard/gtm/configurations`);
+        await revalidatePath(`/dashboard/gtm/entities`);
       }
     }
   }
@@ -361,7 +361,7 @@ export async function DeleteWorkspaces(
     await redis.del(specificCacheKey);
 
     // Revalidate paths if needed
-    revalidatePath(`/dashboard/gtm/configurations`);
+    revalidatePath(`/dashboard/gtm/entities`);
   }
 
   // Returning the result of the deletion process
@@ -643,7 +643,7 @@ export async function CreateWorkspaces(formData: FormCreateSchema) {
         if (accountIdForCache && containerIdForCache && userId) {
           const cacheKey = `gtm:workspaces:userId:${userId}`;
           await redis.del(cacheKey);
-          await revalidatePath(`/dashboard/gtm/configurations`);
+          await revalidatePath(`/dashboard/gtm/entities`);
         }
       }
     }
@@ -674,7 +674,7 @@ export async function CreateWorkspaces(formData: FormCreateSchema) {
   if (successfulCreations.length > 0 && accountIdForCache && containerIdForCache) {
     const cacheKey = `gtm:workspaces:userId:${userId}`;
     await redis.del(cacheKey);
-    revalidatePath(`/dashboard/gtm/configurations`);
+    revalidatePath(`/dashboard/gtm/entities`);
   }
 
   // Map over formData.forms to create the results array
@@ -1000,7 +1000,7 @@ export async function UpdateWorkspaces(formData: FormUpdateSchema) {
         if (accountIdForCache && containerIdForCache && userId) {
           const cacheKey = `gtm:workspaces:userId:${userId}`;
           await redis.del(cacheKey);
-          await revalidatePath(`/dashboard/gtm/configurations`);
+          await revalidatePath(`/dashboard/gtm/entities`);
         }
       }
     }
@@ -1031,7 +1031,7 @@ export async function UpdateWorkspaces(formData: FormUpdateSchema) {
   if (successfulUpdates.length > 0 && accountIdForCache && containerIdForCache) {
     const cacheKey = `gtm:workspaces:userId:${userId}`;
     await redis.del(cacheKey);
-    revalidatePath(`/dashboard/gtm/configurations`);
+    revalidatePath(`/dashboard/gtm/entities`);
   }
 
   // Map over formData.forms to update the results array
@@ -1385,7 +1385,7 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
         if (accountIdForCache && containerIdForCache && userId) {
           const cacheKey = `gtm:workspaces:userId:${userId}`;
           await redis.del(cacheKey);
-          await revalidatePath(`/dashboard/gtm/configurations`);
+          await revalidatePath(`/dashboard/gtm/entities`);
         }
       }
     }
@@ -1416,7 +1416,7 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
   if (successfulCreations.length > 0 && accountIdForCache && containerIdForCache) {
     const cacheKey = `gtm:workspaces:userId:${userId}`;
     await redis.del(cacheKey);
-    revalidatePath(`/dashboard/gtm/configurations`);
+    revalidatePath(`/dashboard/gtm/entities`);
   }
 
   // Map over formData.forms to update the results array
