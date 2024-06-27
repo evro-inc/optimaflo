@@ -17,13 +17,24 @@ export const UserPermissionSchema = z.object({
   accountId: z.string(),
   accountAccess: AccountAccessSchema,
   containerAccess: z.array(ContainerAccessSchema),
-  emailAddress: z.string().email({ message: 'Invalid email address' }).optional(),
+  emailAddress: z
+    .string()
+    .email({ message: 'Invalid email address' })
+    .refine((value) => value.endsWith('@gmail.com'), {
+      message: 'Email address must be a Gmail address',
+    })
+    .optional(),
 });
 
 export const FormSchema = z.object({
   emailAddresses: z.array(
     z.object({
-      emailAddress: z.string().email({ message: 'Invalid email address' }),
+      emailAddress: z
+        .string()
+        .email({ message: 'Invalid email address' })
+        .refine((value) => value.endsWith('@gmail.com'), {
+          message: 'Email address must be a Gmail address',
+        }),
     })
   ),
   permissions: z.array(UserPermissionSchema),

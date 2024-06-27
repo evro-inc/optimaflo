@@ -10,35 +10,41 @@ import {
 } from '@/src/components/ui/form';
 import { Input } from '@/src/components/ui/input';
 import { MinusIcon, PlusIcon } from '@radix-ui/react-icons';
-import React from 'react';
-import { useFieldArray } from 'react-hook-form';
+import React, { useEffect } from 'react';
+import { useFieldArray, useFormContext } from 'react-hook-form';
 
 type FieldItem = {
   id: string;
   emailAddress?: string;
 };
 
-export default ({ nestIndex, form }) => {
+export default ({ nestIndex }) => {
+  const { control, register, getValues, setValue } = useFormContext();
   const { fields, remove, append } = useFieldArray({
-    control: form.control,
-    name: `emailAddresses.${nestIndex}.emailAddress`,
+    control,
+    name: `emailAddresses`,
   });
 
   return (
     <div>
-      <FormField
-        control={form.control}
-        name={`emailAddresses.${nestIndex}.emailAddress`}
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Email Address:</FormLabel>
-            <FormDescription>Which email address do you want to provide access to.</FormDescription>
-            {fields.map((item: FieldItem, k) => {
-              return (
+      <FormLabel>Email Address:</FormLabel>
+      <FormDescription>Which email address do you want to provide access to.</FormDescription>
+      {fields.map((item: FieldItem, k) => {
+        const currentEmailAddress = getValues(`emailAddresses.${k}.emailAddress`);
+        if (currentEmailAddress) {
+          setValue(`permissions.${k}.emailAddress`, currentEmailAddress || '');
+        }
+
+        return (
+          <FormField
+            control={control}
+            name={`emailAddresses.${k}.emailAddress`}
+            render={({ field }) => (
+              <FormItem>
                 <div className="flex items-center space-x-4" key={item.id}>
                   <FormControl className="flex-grow">
                     <Input
-                      {...form.register(`emailAddresses.${nestIndex}.emailAddress`)}
+                      {...register(`emailAddresses.${k}.emailAddress`)}
                       placeholder="Email Address"
                     />
                   </FormControl>
@@ -46,12 +52,13 @@ export default ({ nestIndex, form }) => {
                     <MinusIcon />
                   </Button>
                 </div>
-              );
-            })}
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        );
+      })}
 
       <Button
         className="mt-4"

@@ -28,6 +28,7 @@ export default async function PermissionsFormPage() {
   ]);
 
   const flatPermissions = permissions.flatMap((item) => item);
+  const flatAccounts = accounts.flat();
   const flatContainers = containers.flat();
 
   const combinedData = flatPermissions.flatMap((prop) => {
@@ -59,7 +60,12 @@ export default async function PermissionsFormPage() {
   return (
     <>
       <div className="container">
-        <FormCreatePermissions tierLimits={tierLimits} table={combinedData} accounts={accounts} />
+        <FormCreatePermissions
+          tierLimits={tierLimits}
+          table={combinedData}
+          accounts={flatAccounts}
+          containers={flatContainers}
+        />
       </div>
     </>
   );

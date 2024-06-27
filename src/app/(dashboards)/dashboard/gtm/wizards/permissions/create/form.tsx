@@ -85,6 +85,7 @@ const FormCreatePermission: React.FC<FormCreateProps> = ({
   tierLimits,
   table = [],
   accounts = [],
+  containers = [],
 }) => {
   const dispatch = useDispatch();
   const loading = useSelector((state: RootState) => state.form.loading);
@@ -363,6 +364,7 @@ const FormCreatePermission: React.FC<FormCreateProps> = ({
                               index={currentStep - 2}
                               table={table}
                               accounts={accounts}
+                              containers={containers}
                             />
                           </div>
                         ))}

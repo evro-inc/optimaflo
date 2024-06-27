@@ -33,14 +33,14 @@ type FieldItem = {
   containerId?: string;
 };
 
-export default ({ accounts, index, form, table }) => {
+export default ({ accounts, containers, index, form, table }) => {
   const { setValue, getValues } = useFormContext();
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: `forms.${index}`,
   });
 
-  console.log('table', table);
+  console.log('accounts', accounts);
 
   const accountIdsWithContainers = new Set(table.map((permission) => permission.accountId));
 
@@ -145,7 +145,7 @@ export default ({ accounts, index, form, table }) => {
                   <MinusIcon />
                 </Button>
               </div>
-              <ContainerPermissions form={form} index={index} table={table} />
+              <ContainerPermissions form={form} index={index} table={containers} />
             </div>
           );
         })}

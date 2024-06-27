@@ -23,11 +23,6 @@ import React from 'react';
 import { useFieldArray } from 'react-hook-form';
 import { containerAccessPermissions } from '../../../entities/@permissions/items';
 
-type FieldItem = {
-  id: string;
-  emailAddress?: string;
-};
-
 export const ContainerPermissions: React.FC<{ form: any; index: number; table: any }> = ({
   form,
   index,
@@ -38,10 +33,15 @@ export const ContainerPermissions: React.FC<{ form: any; index: number; table: a
     name: `permissions.${index}.containerAccess`,
   });
 
+  console.log('table c', table);
+
   const selectedAccountId = form.watch(`permissions.${index}.accountId`);
   const filteredContainers = table.filter(
     (permission) => permission.accountId === selectedAccountId
   );
+
+  console.log('filteredContainers', filteredContainers);
+
   return (
     <>
       {fields.map((field, containerIndex) => (
@@ -75,10 +75,7 @@ export const ContainerPermissions: React.FC<{ form: any; index: number; table: a
                         <SelectLabel>Containers</SelectLabel>
                         {filteredContainers.length > 0 ? (
                           filteredContainers.map((container) => (
-                            <SelectItem
-                              key={container.containerAccess.containerId}
-                              value={container.containerAccess.containerId}
-                            >
+                            <SelectItem key={container.containerId} value={container.containerId}>
                               {container.containerName || container.name}
                             </SelectItem>
                           ))
