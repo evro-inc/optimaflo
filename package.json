@@ -30,7 +30,7 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
-    "@clerk/nextjs": "^4.29.5",
+    "@clerk/nextjs": "^4.31.3",
     "@google-analytics/admin": "^4.9.0",
     "@googleapis/firebase": "^6.4.0",
     "@heroicons/react": "^2.1.1",

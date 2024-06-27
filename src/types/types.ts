@@ -698,7 +698,7 @@ export type Workspace = {
   name: string;
 };
 
-export type FormCreateBuiltInVariableProps = {
+export type FormCreateGTMProps = {
   showOptions?: boolean;
   onClose?: () => void;
   tierLimits?: any;
@@ -733,7 +733,7 @@ interface Parameter {
  GTM Built-In Variables
  *********************************************************/
 // Query parameters
-type BuiltInVariableType =
+export type BuiltInVariableType =
   | 'advertiserId'
   | 'advertisingTrackingEnabled'
   | 'ampBrowserLanguage'
@@ -1062,6 +1062,29 @@ export interface Trigger {
 /*********************************************************
  GTM Variables
  *********************************************************/
+export type VariableType =
+  | 'k'
+  | 'aev'
+  | 'c'
+  | 'jsm'
+  | 'v'
+  | 'd'
+  | 'f'
+  | 'j'
+  | 'gas'
+  | 'smm'
+  | 'remm'
+  | 'u'
+  | 'vis'
+  | 'e'
+  | 'ev'
+  | 'r'
+  | 'uv'
+  | 'awec'
+  | 'cid'
+  | 'dbg'
+  | 'ctv';
+
 interface FormatValue {
   caseConversionType: 'lowercase' | 'none' | 'uppercase';
   convertNullToValue?: Parameter;
@@ -1079,6 +1102,7 @@ export interface Variable {
   name: string;
   type: string;
   notes?: string;
+  decodeCookie: string;
   scheduleStartMs?: number;
   scheduleEndMs?: number;
   parameter?: Parameter[];
@@ -1270,4 +1294,44 @@ export interface GoogleTagEnvironment {
   containerVersionId: string;
   workspaceId: string;
   tagManagerUrl: string;
+}
+
+/*********************************************************
+ GTM Permissions
+ *********************************************************/
+// Enum for account access permissions
+export enum AccountPermission {
+  UNSPECIFIED = 'accountPermissionUnspecified',
+  ADMIN = 'admin',
+  NO_ACCESS = 'noAccess',
+  USER = 'user',
+}
+
+export enum ContainerPermission {
+  APPROVE = 'approve',
+  UNSPECIFIED = 'containerPermissionUnspecified',
+  EDIT = 'edit',
+  NO_ACCESS = 'noAccess',
+  PUBLISH = 'publish',
+  READ = 'read',
+}
+
+export interface AccountAccess {
+  permission: AccountPermission;
+}
+
+export interface ContainerAccess {
+  containerId: string;
+  permission: ContainerPermission;
+}
+
+export interface UserPermission {
+  accountId: string;
+  emailAddress: string;
+  accountAccess: AccountAccess;
+  containerAccess: ContainerAccess[];
+}
+
+export interface FormValues {
+  permissions: UserPermission[];
 }

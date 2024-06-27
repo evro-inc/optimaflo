@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/src/components/ui/select';
-import { FeatureResponse, FormCreateBuiltInVariableProps } from '@/src/types/types';
+import { FeatureResponse, FormCreateGTMProps } from '@/src/types/types';
 import { toast } from 'sonner';
 import {
   selectTable,
@@ -61,7 +61,7 @@ const ErrorModal = dynamic(
 
 type Forms = z.infer<typeof FormsSchema>;
 
-const FormCreateBuiltInVariable: React.FC<FormCreateBuiltInVariableProps> = ({
+const FormCreateBuiltInVariable: React.FC<FormCreateGTMProps> = ({
   tierLimits,
   properties = [],
   table = [],

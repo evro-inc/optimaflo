@@ -24,7 +24,7 @@ type Schema = z.infer<typeof FormSchema>;
 /************************************************************************************
   Function to list GTM containers
 ************************************************************************************/
-export async function listGtmContainers() {
+export async function listGtmContainers(skipCache = false) {
   let retries = 0;
   const MAX_RETRIES = 3;
   let delay = 1000;
@@ -38,10 +38,12 @@ export async function listGtmContainers() {
   const accessToken = token[0].token;
 
   const cacheKey = `gtm:containers:userId:${userId}`;
-  const cachedValue = await redis.get(cacheKey);
 
-  if (cachedValue) {
-    return JSON.parse(cachedValue);
+  if (!skipCache) {
+    const cacheData = await redis.get(cacheKey);
+    if (cacheData) {
+      return JSON.parse(cacheData);
+    }
   }
 
   await fetchGtmSettings(userId);

@@ -62,7 +62,7 @@ export default async function BuiltInVariablePage() {
   const remainingCreate = createLimit - createUsage;
 
   if (remainingCreate <= 0) {
-    redirect('/dashboard/ga/properties'); // Replace with the actual path you want to redirect to
+    redirect('/dashboard/gtm/configurations'); // Replace with the actual path you want to redirect to
   }
 
   return (

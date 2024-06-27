@@ -36,7 +36,7 @@ import { revalidate } from '@/src/utils/server';
 import { useDispatch } from 'react-redux';
 import { useDeleteHook } from './delete';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
-import { useUpdateHookForm } from '@/src/hooks/useCRUD';
+import { useCreateHookForm, useUpdateHookForm } from '@/src/hooks/useCRUD';
 import { useTransition } from 'react';
 import { setSelectedRows } from '@/src/redux/tableSlice';
 import { LimitReached } from '@/src/components/client/modals/limitReached';
@@ -63,6 +63,7 @@ export function DataTable<TData, TValue>({
   const [isUpdatePending, startUpdateTransition] = useTransition();
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
+  const [isCreatePending, startCreateTransition] = useTransition();
 
   const table = useReactTable({
     data,
@@ -108,6 +109,20 @@ export function DataTable<TData, TValue>({
     rowSelectedCount
   );
 
+  const handleCreateClick = useCreateHookForm(
+    userId,
+    'GTMPermissions',
+    '/dashboard/gtm/wizards/permissions/create'
+  );
+
+  const onCreateButtonClick = () => {
+    startCreateTransition(() => {
+      handleCreateClick().catch((error) => {
+        throw new Error(error);
+      });
+    });
+  };
+
   const onUpdateButtonClick = () => {
     startUpdateTransition(() => {
       handleUpdateClick().catch((error) => {
@@ -133,6 +148,10 @@ export function DataTable<TData, TValue>({
 
         <div className="ml-auto space-x-4">
           <Button onClick={refreshAllCache}>Refresh</Button>
+
+          <Button disabled={isCreatePending} onClick={onCreateButtonClick}>
+            {isCreatePending ? 'Loading...' : 'Create'}
+          </Button>
 
           <Button
             disabled={Object.keys(table.getState().rowSelection).length === 0 || isUpdatePending}

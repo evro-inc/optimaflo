@@ -31,14 +31,8 @@ export default async function PermissionsPage({
     permissionData,
   ]);
 
-  console.log('accounts:', accounts);
-  console.log('containers:', containers);
-  console.log('permissions:', permissions);
-
   const flatPermissions = permissions.flatMap((item) => item);
   const flatContainers = containers.flat();
-  console.log('flatContainers:', flatContainers);
-  console.log('flatPermissions:', flatPermissions);
 
   const combinedData = flatPermissions.flatMap((prop) => {
     const account = accounts.find((a) => a.accountId === prop.accountId);
@@ -54,7 +48,6 @@ export default async function PermissionsPage({
       };
     });
   });
-  console.log('combinedData:', combinedData);
 
   return (
     <>

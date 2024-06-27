@@ -1,17 +1,8 @@
+import { AccountPermission, ContainerPermission } from '@/src/types/types';
 import { z } from 'zod';
 
-// Enum for account permissions
-const AccountPermissionType = z.enum(['accountPermissionUnspecified', 'admin', 'noAccess', 'user']);
-
-// Enum for container permissions
-const ContainerPermissionType = z.enum([
-  'approve',
-  'containerPermissionUnspecified',
-  'edit',
-  'noAccess',
-  'publish',
-  'read',
-]);
+const AccountPermissionType = z.nativeEnum(AccountPermission);
+const ContainerPermissionType = z.nativeEnum(ContainerPermission);
 
 const AccountAccessSchema = z.object({
   permission: AccountPermissionType,
@@ -22,13 +13,25 @@ const ContainerAccessSchema = z.object({
   permission: ContainerPermissionType,
 });
 
-const UserPermissionSchema = z.object({
-  path: z.string(),
+export const UserPermissionSchema = z.object({
   accountId: z.string(),
-  emailAddress: z.string(),
   accountAccess: AccountAccessSchema,
   containerAccess: z.array(ContainerAccessSchema),
+  emailAddress: z.string().email({ message: 'Invalid email address' }).optional(),
 });
 
-// Export the type inferred from UserPermissionSchema for type safety
+export const FormSchema = z.object({
+  emailAddresses: z.array(
+    z.object({
+      emailAddress: z.string().email({ message: 'Invalid email address' }),
+    })
+  ),
+  permissions: z.array(UserPermissionSchema),
+});
+
+export const FormCreateAmountSchema = z.object({
+  amount: z.number(),
+});
+
 export type UserPermissionType = z.infer<typeof UserPermissionSchema>;
+export type FormValuesType = z.infer<typeof FormSchema>;
