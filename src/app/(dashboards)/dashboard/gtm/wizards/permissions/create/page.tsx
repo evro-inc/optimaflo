@@ -57,12 +57,19 @@ export default async function PermissionsFormPage() {
     redirect('/dashboard/gtm/entities');
   }
 
+  const accountIdsWithContainers = new Set(combinedData.map((permission) => permission.accountId));
+
+  const accountsWithContainers = accounts.filter((account) =>
+    accountIdsWithContainers.has(account.accountId)
+  );
+
+
   return (
     <>
       <div className="container">
         <FormCreatePermissions
           tierLimits={tierLimits}
-          table={combinedData}
+          table={accountsWithContainers}
           accounts={flatAccounts}
           containers={flatContainers}
         />

@@ -1,148 +1,168 @@
 import { Button } from '@/src/components/ui/button';
 import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    Form,
+    FormControl,
+    FormDescription,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from '@/src/components/ui/form';
-import { Input } from '@/src/components/ui/input';
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectLabel,
+    SelectTrigger,
+    SelectValue,
 } from '@/src/components/ui/select';
 import { MinusIcon, PlusIcon } from '@radix-ui/react-icons';
-import React from 'react';
-import { useFieldArray } from 'react-hook-form';
+import React, { useMemo } from 'react';
+import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 import { containerAccessPermissions } from '../../../entities/@permissions/items';
 
-export const ContainerPermissions: React.FC<{ form: any; index: number; table: any }> = ({
-  form,
-  index,
-  table,
+export const ContainerPermissions: React.FC<{ index: number; table: any }> = ({
+    index,
+    table,
 }) => {
-  const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name: `permissions.${index}.containerAccess`,
-  });
+    const { setValue, getValues, control, register, watch } = useFormContext();
+    const { fields, append, remove } = useFieldArray({
+        control: control,
+        name: `permissions.${index}.containerAccess`,
+    });
 
-  console.log('table c', table);
 
-  const selectedAccountId = form.watch(`permissions.${index}.accountId`);
-  const filteredContainers = table.filter(
-    (permission) => permission.accountId === selectedAccountId
-  );
+    const selectedContainerIds = useWatch({
+        control,
+        name: `permissions.${index}.containerAccess`
+    })?.map(container => container.containerId) || [];
 
-  console.log('filteredContainers', filteredContainers);
+    const selectedAccountId = useWatch({
+        control,
+        name: `permissions.${index}.accountId`
+    });
 
-  return (
-    <>
-      {fields.map((field, containerIndex) => (
-        <div key={field.id} className="flex space-x-4">
-          <FormField
-            control={form.control}
-            name={`permissions.${index}.containerAccess.${containerIndex}.containerId`}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Container ID</FormLabel>
-                <FormControl>
-                  <Select
-                    {...form.register(
-                      `permissions.${index}.containerAccess.${containerIndex}.containerId`
-                    )}
-                    value={form.getValues(
-                      `permissions.${index}.containerAccess.${containerIndex}.containerId`
-                    )}
-                    onValueChange={(value) => {
-                      form.setValue(
-                        `permissions.${index}.containerAccess.${containerIndex}.containerId`,
-                        value
-                      );
-                    }}
-                  >
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Select a container." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectLabel>Containers</SelectLabel>
-                        {filteredContainers.length > 0 ? (
-                          filteredContainers.map((container) => (
-                            <SelectItem key={container.containerId} value={container.containerId}>
-                              {container.containerName || container.name}
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <SelectItem value="none" disabled>
-                            No containers available
-                          </SelectItem>
-                        )}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name={`permissions.${index}.containerAccess.${containerIndex}.permission`}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Container Permission</FormLabel>
-                <FormControl>
-                  <Select
-                    {...form.register(
-                      `permissions.${index}.containerAccess.${containerIndex}.permission`
-                    )}
-                    value={form.getValues(
-                      `permissions.${index}.containerAccess.${containerIndex}.permission`
-                    )}
-                    onValueChange={(value) => {
-                      form.setValue(
-                        `permissions.${index}.containerAccess.${containerIndex}.permission`,
-                        value
-                      );
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Permission" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectLabel>Permissions</SelectLabel>
-                        {containerAccessPermissions.map((container) => (
-                          <SelectItem key={container.value} value={container.value}>
-                            {container.label}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <Button type="button" onClick={() => remove(containerIndex)}>
-            <MinusIcon />
-          </Button>
+    const filteredContainers = useMemo(() => {
+        return table.filter(
+            (permission) => permission.accountId === selectedAccountId
+        );
+    }, [table, selectedAccountId]);
+
+    const isAddContainerDisabled = useMemo(() => {
+        return selectedContainerIds.length >= filteredContainers.length;
+    }, [selectedContainerIds, filteredContainers]);
+
+
+    return (
+        <div className='flex flex-col'>
+            <FormLabel className='mb-3'>Container ID and Permissions</FormLabel>
+            {fields.map((field, containerIndex) => {
+                const currentContainerId = getValues(`permissions.${index}.containerAccess.${containerIndex}.containerId`);
+                const availableContainers = filteredContainers.filter(
+                    (container) => !selectedContainerIds.includes(container.containerId) || container.containerId === currentContainerId
+                );
+
+                return (
+                    <div key={field.id} className="flex space-x-4 mb-3">
+
+                        <FormField
+                            control={control}
+                            name={`permissions.${index}.containerAccess.${containerIndex}.containerId`}
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormControl>
+                                        <Select
+                                            {...register(
+                                                `permissions.${index}.containerAccess.${containerIndex}.containerId`
+                                            )}
+                                            value={currentContainerId}
+                                            onValueChange={(value) => {
+                                                setValue(
+                                                    `permissions.${index}.containerAccess.${containerIndex}.containerId`,
+                                                    value
+                                                );
+                                            }}
+                                        >
+                                            <SelectTrigger className="w-[180px]">
+                                                <SelectValue placeholder="Select a container." />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectGroup>
+                                                    <SelectLabel>Containers</SelectLabel>
+                                                    {availableContainers.length > 0 ? (
+                                                        availableContainers.map((container) => (
+                                                            <SelectItem key={container.containerId} value={container.containerId}>
+                                                                {container.containerName || container.name}
+                                                            </SelectItem>
+                                                        ))
+                                                    ) : (
+                                                        <SelectItem value="none" disabled>
+                                                            No containers available
+                                                        </SelectItem>
+                                                    )}
+                                                </SelectGroup>
+                                            </SelectContent>
+                                        </Select>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={control}
+                            name={`permissions.${index}.containerAccess.${containerIndex}.permission`}
+                            render={({ field }) => (
+                                <FormItem>
+
+                                    <FormControl>
+                                        <Select
+                                            {...register(
+                                                `permissions.${index}.containerAccess.${containerIndex}.permission`
+                                            )}
+                                            value={getValues(
+                                                `permissions.${index}.containerAccess.${containerIndex}.permission`
+                                            )}
+                                            onValueChange={(value) => {
+                                                setValue(
+                                                    `permissions.${index}.containerAccess.${containerIndex}.permission`,
+                                                    value
+                                                );
+                                            }}
+                                        >
+                                            <SelectTrigger className="w-[180px]">
+                                                <SelectValue placeholder="Select Permission" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectGroup>
+                                                    <SelectLabel>Permissions</SelectLabel>
+                                                    {containerAccessPermissions.map((container) => (
+                                                        <SelectItem key={container.value} value={container.value}>
+                                                            {container.label}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectGroup>
+                                            </SelectContent>
+                                        </Select>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <Button type="button" onClick={() => remove(containerIndex)}>
+                            <MinusIcon />
+                        </Button>
+                    </div>
+                )
+            })}
+            <Button
+                type="button"
+                onClick={() => append({ containerId: '', permission: 'containerPermissionUnspecified' })}
+                className='mt-10 flex-initial w-32'
+                disabled={isAddContainerDisabled}
+            >
+                Add Container
+            </Button>
         </div>
-      ))}
-      <Button
-        type="button"
-        onClick={() => append({ containerId: '', permission: 'containerPermissionUnspecified' })}
-      >
-        Add Container
-      </Button>
-    </>
-  );
+    );
 };

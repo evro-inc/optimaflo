@@ -9,8 +9,8 @@ import {
   FormMessage,
 } from '@/src/components/ui/form';
 import { MinusIcon, PlusIcon } from '@radix-ui/react-icons';
-import React from 'react';
-import { useFieldArray, useFormContext } from 'react-hook-form';
+import React, { useMemo } from 'react';
+import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 import {
   Select,
   SelectContent,
@@ -33,32 +33,22 @@ type FieldItem = {
   containerId?: string;
 };
 
-export default ({ accounts, containers, index, form, table }) => {
-  const { setValue, getValues } = useFormContext();
+export default ({ accountsWithContainers, containers }) => {
+  const { setValue, getValues, control, register } = useFormContext();
   const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name: `forms.${index}`,
+    control: control,
+    name: `permissions`,
   });
 
-  console.log('accounts', accounts);
+  const selectedAccountIds = useWatch({
+    control,
+    name: 'permissions',
+  })?.map(permission => permission.accountId) || [];
 
-  const accountIdsWithContainers = new Set(table.map((permission) => permission.accountId));
-
-  const accountsWithContainers = accounts.filter((account) =>
-    accountIdsWithContainers.has(account.accountId)
+  const isAddEntityDisabled = useMemo(
+    () => selectedAccountIds.length >= accountsWithContainers.length,
+    [selectedAccountIds, accountsWithContainers]
   );
-
-  console.log('accountsWithContainers', accountsWithContainers);
-
-  const allCombinations = accountsWithContainers.flatMap((account) =>
-    table
-      .filter((permission) => permission.accountId === account.accountId)
-      .map((permission) => ({
-        accountId: account.accountId,
-        containerId: permission.containerAccess.containerId,
-      }))
-  );
-
   return (
     <>
       <div className="flex flex-col space-y-4">
@@ -69,19 +59,24 @@ export default ({ accounts, containers, index, form, table }) => {
           </FormDescription>
         </div>
         {fields.map((item: FieldItem, index) => {
+          const currentAccountId = getValues(`permissions.${index}.accountId`);
+          const availableAccounts = accountsWithContainers.filter(
+            account => !selectedAccountIds.includes(account.accountId) || account.accountId === currentAccountId
+          );
+
           return (
             <div className="space-y-2">
-              <div key={item.id} className="flex items-center space-x-2">
+              <div key={item.id} className="flex items-center space-x-4 pb-5">
                 <FormField
-                  control={form.control}
+                  control={control}
                   name={`permissions.${index}.accountId`}
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Account ID</FormLabel>
                       <FormControl>
                         <Select
-                          {...form.register(`permissions.${index}.accountId`)}
-                          value={getValues(`permissions.${index}.accountId`)}
+                          {...register(`permissions.${index}.accountId`)}
+                          value={currentAccountId}
                           onValueChange={(value) => {
                             setValue(`permissions.${index}.accountId`, value);
                           }}
@@ -92,7 +87,7 @@ export default ({ accounts, containers, index, form, table }) => {
                           <SelectContent>
                             <SelectGroup>
                               <SelectLabel>Account</SelectLabel>
-                              {accountsWithContainers.map((account) => (
+                              {availableAccounts.map((account) => (
                                 <SelectItem key={account.accountId} value={account.accountId}>
                                   {account.name}
                                 </SelectItem>
@@ -107,21 +102,21 @@ export default ({ accounts, containers, index, form, table }) => {
                 />
 
                 <FormField
-                  control={form.control}
+                  control={control}
                   name={`permissions.${index}.accountAccess.permission`}
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Account Permission</FormLabel>
                       <FormControl>
                         <Select
-                          {...form.register(`permissions.${index}.accountAccess.permission`)}
+                          {...register(`permissions.${index}.accountAccess.permission`)}
                           {...field}
                           onValueChange={(value) => {
                             setValue(`permissions.${index}.accountAccess.permission`, value);
                           }}
                         >
                           <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Select an account permission." />
+                            <SelectValue placeholder="Select a permission." />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectGroup>
@@ -145,7 +140,7 @@ export default ({ accounts, containers, index, form, table }) => {
                   <MinusIcon />
                 </Button>
               </div>
-              <ContainerPermissions form={form} index={index} table={containers} />
+              <ContainerPermissions index={index} table={containers} />
             </div>
           );
         })}
@@ -154,9 +149,13 @@ export default ({ accounts, containers, index, form, table }) => {
           className="mt-4"
           type="button"
           onClick={() =>
-            append({ accountId: '', containerId: '', permission: AccountPermission.ADMIN })
+            append({
+              accountId: '',
+              accountAccess: { permission: AccountPermission.UNSPECIFIED },
+              containerAccess: [{ containerId: '', permission: ContainerPermission.UNSPECIFIED }],
+            })
           }
-          disabled={fields.length >= allCombinations.length}
+          disabled={isAddEntityDisabled}
         >
           <PlusIcon /> Add Entity
         </Button>
