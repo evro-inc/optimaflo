@@ -22,25 +22,26 @@ import React, { useMemo } from 'react';
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 import { containerAccessPermissions } from '../../../entities/@permissions/items';
 
-export const ContainerPermissions: React.FC<{ index: number; table: any }> = ({
-    index,
+export const ContainerPermissions: React.FC<{ formIndex: number; permissionIndex: number; table: any }> = ({
+    formIndex,
+    permissionIndex,
     table,
 }) => {
     const { setValue, getValues, control, register, watch } = useFormContext();
     const { fields, append, remove } = useFieldArray({
         control: control,
-        name: `permissions.${index}.containerAccess`,
+        name: `forms.${formIndex}.permissions.${permissionIndex}.containerAccess`,
     });
 
 
     const selectedContainerIds = useWatch({
         control,
-        name: `permissions.${index}.containerAccess`
+        name: `forms.${formIndex}.permissions.${permissionIndex}.containerAccess`
     })?.map(container => container.containerId) || [];
 
     const selectedAccountId = useWatch({
         control,
-        name: `permissions.${index}.accountId`
+        name: `forms.${formIndex}.permissions.${permissionIndex}.accountId`
     });
 
     const filteredContainers = useMemo(() => {
@@ -58,7 +59,7 @@ export const ContainerPermissions: React.FC<{ index: number; table: any }> = ({
         <div className='flex flex-col'>
             <FormLabel className='mb-3'>Container ID and Permissions</FormLabel>
             {fields.map((field, containerIndex) => {
-                const currentContainerId = getValues(`permissions.${index}.containerAccess.${containerIndex}.containerId`);
+                const currentContainerId = getValues(`forms.${formIndex}.permissions.${permissionIndex}.containerAccess.${containerIndex}.containerId`);
                 const availableContainers = filteredContainers.filter(
                     (container) => !selectedContainerIds.includes(container.containerId) || container.containerId === currentContainerId
                 );
@@ -68,18 +69,18 @@ export const ContainerPermissions: React.FC<{ index: number; table: any }> = ({
 
                         <FormField
                             control={control}
-                            name={`permissions.${index}.containerAccess.${containerIndex}.containerId`}
+                            name={`forms.${formIndex}.permissions.${permissionIndex}.containerAccess.${containerIndex}.containerId`}
                             render={({ field }) => (
                                 <FormItem>
                                     <FormControl>
                                         <Select
                                             {...register(
-                                                `permissions.${index}.containerAccess.${containerIndex}.containerId`
+                                                `forms.${formIndex}.permissions.${permissionIndex}.containerAccess.${containerIndex}.containerId`
                                             )}
                                             value={currentContainerId}
                                             onValueChange={(value) => {
                                                 setValue(
-                                                    `permissions.${index}.containerAccess.${containerIndex}.containerId`,
+                                                    `forms.${formIndex}.permissions.${permissionIndex}.containerAccess.${containerIndex}.containerId`,
                                                     value
                                                 );
                                             }}
@@ -111,21 +112,21 @@ export const ContainerPermissions: React.FC<{ index: number; table: any }> = ({
                         />
                         <FormField
                             control={control}
-                            name={`permissions.${index}.containerAccess.${containerIndex}.permission`}
+                            name={`forms.${formIndex}.permissions.${permissionIndex}.containerAccess.${containerIndex}.permission`}
                             render={({ field }) => (
                                 <FormItem>
 
                                     <FormControl>
                                         <Select
                                             {...register(
-                                                `permissions.${index}.containerAccess.${containerIndex}.permission`
+                                                `forms.${formIndex}.permissions.${permissionIndex}.containerAccess.${containerIndex}.permission`
                                             )}
                                             value={getValues(
-                                                `permissions.${index}.containerAccess.${containerIndex}.permission`
+                                                `forms.${formIndex}.permissions.${permissionIndex}.containerAccess.${containerIndex}.permission`
                                             )}
                                             onValueChange={(value) => {
                                                 setValue(
-                                                    `permissions.${index}.containerAccess.${containerIndex}.permission`,
+                                                    `forms.${formIndex}.permissions.${permissionIndex}.containerAccess.${containerIndex}.permission`,
                                                     value
                                                 );
                                             }}

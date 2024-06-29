@@ -113,35 +113,31 @@ const FormCreatePermission: React.FC<FormCreateProps> = ({
 
     const form = useForm<FormValuesType>({
         defaultValues: {
-            emailAddresses: [{ emailAddress: '' }],
-            permissions: [defaultUserPermission],
+            forms: [{
+                emailAddresses: [{ emailAddress: '' }],
+                permissions: [defaultUserPermission],
+            }]
         },
         resolver: zodResolver(FormSchema),
     });
 
     const {
-        fields: permissionFields,
-        append: appendPermission,
-        remove: removePermission,
+        fields: formFields,
+        append: appendForm,
+        remove: removeForm,
     } = useFieldArray({
         control: form.control,
-        name: 'permissions',
+        name: 'forms',
     });
 
-    const {
-        fields: emailFields,
-        append: appendEmail,
-        remove: removeEmail,
-    } = useFieldArray({
-        control: form.control,
-        name: 'emailAddresses',
-    });
 
     // Effect to update propertyCount when amount changes
     useEffect(() => {
         const amount = parseInt(formCreateAmount.getValues('amount').toString());
         dispatch(setCount(amount));
     }, [formCreateAmount.watch('amount'), dispatch]);
+
+
 
     if (notFoundError) {
         return <NotFoundErrorModal />;
@@ -150,19 +146,28 @@ const FormCreatePermission: React.FC<FormCreateProps> = ({
         return <ErrorModal />;
     }
 
-    const handleAmountChange = (selectedAmount: string) => {
+    const handleAmountChange = (selectedAmount) => {
+        // Convert the selected amount to a number
         const amount = parseInt(selectedAmount);
-        form.reset({ emailAddresses: [], permissions: [] });
 
+        // First, reset the current forms to start fresh
+        // Note: This step might need adjustment based on your exact requirements
+        // and the behavior you observe with your form state management
+        form.reset({ forms: [] }); // Clear existing forms
+
+        // Then, append new forms based on the selected amount
         for (let i = 0; i < amount; i++) {
-            appendEmail({ emailAddress: '' });
-            appendPermission(defaultUserPermission);
+            appendForm({
+                emailAddresses: [{ emailAddress: '' }],
+                permissions: [JSON.parse(JSON.stringify(defaultUserPermission))], // Deep copy
+            });
         }
 
+        // Update the container count in your state management (if necessary)
         dispatch(setCount(amount));
     };
 
-    const processForm = async (data: FormValuesType) => {
+    const processForm: SubmitHandler<FormValuesType> = async (data) => {
         dispatch(setLoading(true));
 
         console.log('data', data);
@@ -172,36 +177,41 @@ const FormCreatePermission: React.FC<FormCreateProps> = ({
         });
 
         const uniquePermissions = new Set();
-        data.permissions.forEach((permission) => {
-            data.emailAddresses.forEach((email) => {
-                const identifier = `${permission.accountId}-${permission.accountAccess.permission}-${email.emailAddress}`;
-                permission.containerAccess.forEach((container) => {
-                    const containerIdentifier = `${identifier}-${container.containerId}-${container.permission}`;
-                    if (uniquePermissions.has(containerIdentifier)) {
-                        toast.error(
-                            `Duplicate property found for ${permission.accountId} - ${permission.accountAccess.permission} - ${email.emailAddress}`,
-                            {
-                                action: { label: 'Close', onClick: () => toast.dismiss() },
-                            }
-                        );
-                        dispatch(setLoading(false));
-                        return;
-                    }
-                    uniquePermissions.add(containerIdentifier);
+        data.forms.forEach((formSet) => {
+            formSet.permissions.forEach((permission) => {
+                formSet.emailAddresses.forEach((email) => {
+                    const identifier = `${permission.accountId}-${permission.accountAccess.permission}-${email.emailAddress}`;
+                    permission.containerAccess.forEach((container) => {
+                        const containerIdentifier = `${identifier}-${container.containerId}-${container.permission}`;
+                        if (uniquePermissions.has(containerIdentifier)) {
+                            toast.error(
+                                `Duplicate property found for ${permission.accountId} - ${permission.accountAccess.permission} - ${email.emailAddress}`,
+                                {
+                                    action: { label: 'Close', onClick: () => toast.dismiss() },
+                                }
+                            );
+                            dispatch(setLoading(false));
+                            return;
+                        }
+                        uniquePermissions.add(containerIdentifier);
+                    });
                 });
             });
         });
 
-        const generatedPermissions = data.emailAddresses.flatMap((email) => {
-            return data.permissions.map((permission) => ({
-                ...permission,
-                emailAddress: email.emailAddress,
-            }));
+        const generatedPermissions = data.forms.flatMap((formSet) => {
+            return formSet.emailAddresses.flatMap((email) => {
+                return formSet.permissions.map((permission) => ({
+                    ...permission,
+                    emailAddress: email.emailAddress,
+                }));
+            });
         });
+
 
         try {
             const res = (await CreatePermissions({
-                emailAddresses: data.emailAddresses,
+                emailAddresses: data.forms.flatMap(formSet => formSet.emailAddresses),
                 permissions: generatedPermissions,
             })) as FeatureResponse;
 
@@ -221,7 +231,7 @@ const FormCreatePermission: React.FC<FormCreateProps> = ({
                 handleErrors(res);
             }
 
-            form.reset({ permissions: [defaultUserPermission] });
+            form.reset({ forms: [{ permissions: [defaultUserPermission], emailAddresses: [{ emailAddress: '' }] }] });
         } catch (error) {
             toast.error('An unexpected error occurred.', {
                 action: { label: 'Close', onClick: () => toast.dismiss() },
@@ -271,19 +281,18 @@ const FormCreatePermission: React.FC<FormCreateProps> = ({
         }
     };
 
-    const handleNext = async () => {
-        const currentFormIndex = currentStep - 2; // Adjusting for the array index and step count
-        const currentFormPath = `permissions.${currentFormIndex}`;
 
-        // Start with the common fields that are always present
+    /// Needs IDS after permssions/emailAddresses
+    const handleNext = async () => {
+        const currentFormIndex = currentStep - 2;
+        const currentFormPermissions = `forms.${currentFormIndex}`;
+
+
         const fieldsToValidate = [
-            `${currentFormPath}.name`,
-            `${currentFormPath}.accountId`,
-            `${currentFormPath}.containerId`,
-            `${currentFormPath}.description`,
+            `${currentFormPermissions}.emailAddresses`,
+            `${currentFormPermissions}.permissions`,
         ];
 
-        // Now, trigger validation for these fields
         const isFormValid = await form.trigger(fieldsToValidate as any);
 
         if (isFormValid) {
@@ -311,7 +320,7 @@ const FormCreatePermission: React.FC<FormCreateProps> = ({
                             name="amount"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>How many properties do you want to create?</FormLabel>
+                                    <FormLabel>How many permissions do you want to create?</FormLabel>
                                     <Select
                                         onValueChange={(value) => {
                                             handleAmountChange(value);
@@ -343,9 +352,9 @@ const FormCreatePermission: React.FC<FormCreateProps> = ({
 
             {currentStep > 1 && (
                 <div className="w-full">
-                    {permissionFields.length >= currentStep - 1 && (
+                    {formFields.length >= currentStep - 1 && (
                         <div
-                            key={permissionFields[currentStep - 2].id}
+                            key={formFields[currentStep - 2].id}
                             className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
                         >
                             <div className="max-w-xl mx-auto">
@@ -356,18 +365,20 @@ const FormCreatePermission: React.FC<FormCreateProps> = ({
                                             id="createPermission"
                                             className="space-y-6"
                                         >
-                                            {permissionFields
-                                                .slice(currentStep - 2, currentStep - 1)
-                                                .map((field, index) => (
-                                                    <div key={field.id} className="space-y-4">
-                                                        <h3>Permission {currentStep - 1}</h3>
-                                                        <EmailAddressField />
-                                                        <EntitySelection
-                                                            accountsWithContainers={table}
-                                                            containers={containers}
-                                                        />
-                                                    </div>
-                                                ))}
+
+
+
+
+                                            <div key={formFields[currentStep - 2].id} className="space-y-4">
+                                                <h3>Permission {currentStep - 1}</h3>
+                                                <EmailAddressField formIndex={currentStep - 2} control={form.control} register={form.register} getValues={form.getValues} setValue={form.setValue} />
+                                                <EntitySelection
+                                                    accountsWithContainers={table}
+                                                    containers={containers}
+                                                    formIndex={currentStep - 2}
+                                                />
+                                            </div>
+
                                             <div className="flex justify-between">
                                                 <Button type="button" onClick={handlePrevious}>
                                                     Previous

@@ -13,43 +13,41 @@ import { MinusIcon, PlusIcon } from '@radix-ui/react-icons';
 import React, { useEffect } from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
 
-type FieldItem = {
-    id: string;
-    emailAddress?: string;
-};
-
-export default () => {
-    const { control, register, getValues, setValue } = useFormContext();
+export default ({ formIndex, control, register, getValues, setValue }) => {
     const { fields, remove, append } = useFieldArray({
         control,
-        name: `emailAddresses`,
+        name: `forms.${formIndex}.emailAddresses`,
     });
 
     return (
         <div>
             <FormLabel>Email Address:</FormLabel>
             <FormDescription>Which email address do you want to provide access to.</FormDescription>
-            {fields.map((item: FieldItem, k) => {
-                const currentEmailAddress = getValues(`emailAddresses.${k}.emailAddress`);
+            {fields.map((item, index) => {
+                const currentEmailAddress = getValues(`forms.${formIndex}.emailAddresses.${index}.emailAddress`);
                 if (currentEmailAddress) {
-                    setValue(`permissions.${k}.emailAddress`, currentEmailAddress || '');
+                    setValue(`forms.${formIndex}.permissions.${index}.emailAddress`, currentEmailAddress || '');
                 }
 
+                console.log("formIndex", formIndex);
+                console.log("index", index);
+
+
                 return (
-                    <div className='py-3'>
+                    <div className='py-3' key={item.id}>
                         <FormField
                             control={control}
-                            name={`emailAddresses.${k}.emailAddress`}
+                            name={`forms.${formIndex}.emailAddresses.${index}.emailAddress`}
                             render={({ field }) => (
                                 <FormItem>
-                                    <div className="flex items-center space-x-4" key={item.id}>
+                                    <div className="flex items-center space-x-4">
                                         <FormControl className="flex-grow">
                                             <Input
-                                                {...register(`emailAddresses.${k}.emailAddress`)}
+                                                {...register(`forms.${formIndex}.emailAddresses.${index}.emailAddress`)}
                                                 placeholder="Email Address"
                                             />
                                         </FormControl>
-                                        <Button type="button" onClick={() => remove(k)}>
+                                        <Button type="button" onClick={() => remove(index)}>
                                             <MinusIcon />
                                         </Button>
                                     </div>
