@@ -63,7 +63,6 @@ export default async function PermissionsFormPage() {
     accountIdsWithContainers.has(account.accountId)
   );
 
-
   return (
     <>
       <div className="container">

@@ -17,7 +17,9 @@ export const UserPermissionSchema = z.object({
   accountId: z.string(),
   accountAccess: AccountAccessSchema,
   containerAccess: z.array(ContainerAccessSchema),
-  emailAddress: z.string().email({ message: 'Invalid email address' })
+  emailAddress: z
+    .string()
+    .email({ message: 'Invalid email address' })
     .refine((value) => value.endsWith('@gmail.com'), {
       message: 'Email address must be a Gmail address',
     }),
@@ -45,8 +47,13 @@ export const FormSchema = z.object({
   forms: z.array(FormSetSchema),
 });
 
+export const TransformedFormSchema = z.object({
+  forms: z.array(UserPermissionSchema),
+});
+
 export type UserPermissionType = z.infer<typeof UserPermissionSchema>;
 export type EmailAddressType = z.infer<typeof EmailAddressSchema>;
 export type FormSetType = z.infer<typeof FormSetSchema>;
 export type FormValuesType = z.infer<typeof FormSchema>;
 export type FormCreateAmountType = z.infer<typeof FormCreateAmountSchema>;
+export type TransformedDataSchemaType = z.infer<typeof TransformedFormSchema>;

@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache';
 import {
   FormSchema,
   FormValuesType,
+  TransformedFormSchema,
   UserPermissionSchema,
 } from '@/src/lib/schemas/gtm/userPermissions';
 import { auth } from '@clerk/nextjs';
@@ -133,14 +134,7 @@ export async function CreatePermissions(formData: FormValuesType) {
   let accountIdForCache: string | undefined;
   let containerIdForCache: string | undefined;
 
-  const generatedPermissions = formData.emailAddresses.flatMap((email) =>
-    formData.permissions.map((permission) => ({
-      ...permission,
-      emailAddress: email.emailAddress,
-    }))
-  );
-
-  const toCreatePermissions = new Set(generatedPermissions);
+  const toCreatePermissions = new Set(formData.forms);
 
   console.log('toCreatePermissions: ', toCreatePermissions);
 
@@ -192,7 +186,9 @@ export async function CreatePermissions(formData: FormValuesType) {
   }
 
   let permissionDenied = false;
-  const permissionNames = formData.permissions.map((cd) => cd.accountId);
+  const permissionNames = formData.forms.flatMap((form) =>
+    form.permissions ? form.permissions.map((permission) => permission.accountId) : []
+  );
 
   if (toCreatePermissions.size <= availableCreateUsage) {
     // Initialize retries variable to ensure proper loop execution
@@ -228,15 +224,16 @@ export async function CreatePermissions(formData: FormValuesType) {
                 'Accept-Encoding': 'gzip',
               };
 
+              let validatedContainerData;
+
               try {
                 const formDataToValidate = {
-                  emailAddresses: formData.emailAddresses,
-                  permissions: [permissionData],
+                  forms: [permissionData],
                 };
 
                 console.log('formDataToValidate', formDataToValidate);
 
-                const validationResult = FormSchema.safeParse(formDataToValidate);
+                const validationResult = TransformedFormSchema.safeParse(formDataToValidate);
 
                 console.log('validationResult: ', validationResult);
 
@@ -254,7 +251,7 @@ export async function CreatePermissions(formData: FormValuesType) {
                 }
 
                 // Accessing the validated permission data
-                const validatedContainerData = validationResult.data.permissions[0];
+                validatedContainerData = validationResult.data.forms[0];
 
                 console.log('validatedContainerData: ', validatedContainerData);
 
@@ -276,7 +273,7 @@ export async function CreatePermissions(formData: FormValuesType) {
                 console.log('parsedResponse: ', parsedResponse);
 
                 if (response.ok) {
-                  successfulCreations.push(permissionName);
+                  successfulCreations.push(validatedContainerData.emailAddress);
                   toCreatePermissions.delete(identifier);
                   fetchGtmSettings(userId);
                   await prisma.tierLimit.update({
@@ -284,16 +281,16 @@ export async function CreatePermissions(formData: FormValuesType) {
                     data: { createUsage: { increment: 1 } },
                   });
                   creationResults.push({
-                    permissionName: permissionName,
+                    permissionName: validatedContainerData.emailAddress,
                     success: true,
-                    message: `Successfully created permission ${permissionName}`,
+                    message: `Successfully created permission for ${validatedContainerData.emailAddress}`,
                   });
                 } else {
                   const errorResult = await handleApiResponseError(
                     response,
                     parsedResponse,
                     'permission',
-                    [permissionName]
+                    [validatedContainerData.emailAddress]
                   );
 
                   if (errorResult) {
@@ -302,7 +299,7 @@ export async function CreatePermissions(formData: FormValuesType) {
                       errorResult.errorCode === 403 &&
                       parsedResponse.message === 'Feature limit reached'
                     ) {
-                      featureLimitReached.push(permissionName);
+                      featureLimitReached.push(validatedContainerData.emailAddress);
                     } else if (errorResult.errorCode === 404) {
                       const permissionName =
                         permissionNames.find((name) => name.includes(identifier.name)) || 'Unknown';
@@ -312,22 +309,26 @@ export async function CreatePermissions(formData: FormValuesType) {
                       });
                     }
                   } else {
-                    errors.push(`An unknown error occurred for permission ${permissionName}.`);
+                    errors.push(
+                      `An unknown error occurred for permission ${validatedContainerData.emailAddress}.`
+                    );
                   }
 
                   toCreatePermissions.delete(identifier);
                   permissionDenied = errorResult ? true : permissionDenied;
                   creationResults.push({
-                    permissionName: permissionName,
+                    permissionName: validatedContainerData.emailAddress,
                     success: false,
                     message: errorResult?.message,
                   });
                 }
               } catch (error: any) {
-                errors.push(`Exception creating permission ${permissionName}: ${error.message}`);
+                errors.push(
+                  `Exception creating permission ${validatedContainerData.emailAddress}: ${error.message}`
+                );
                 toCreatePermissions.delete(identifier);
                 creationResults.push({
-                  permissionName: permissionName,
+                  permissionName: validatedContainerData.emailAddress,
                   success: false,
                   message: error.message,
                 });
@@ -373,7 +374,7 @@ export async function CreatePermissions(formData: FormValuesType) {
             };
           }
 
-          if (successfulCreations.length === formData.permissions.length) {
+          if (successfulCreations.length === formData.forms.length) {
             break;
           }
 
@@ -431,17 +432,16 @@ export async function CreatePermissions(formData: FormValuesType) {
   }
 
   // Map over formData.forms to create the results array
-  const results: FeatureResult[] = formData.permissions.map((form) => {
-    // Ensure that form.permissionId is defined before adding it to the array
-    const permissionId = form.permissionId ? [form.permissionId] : []; // Provide an empty array as a fallback
-    return {
-      id: permissionId, // Ensure id is an array of strings
-      name: [form.name], // Wrap the string in an array
-      success: true, // or false, depending on the actual result
-      // Include `notFound` if applicable
-      notFound: false, // Set this to the appropriate value based on your logic
-    };
-  });
+  const results: FeatureResult[] = formData.forms.flatMap((form) =>
+    form.emailAddresses
+      ? form.emailAddresses.map((emailObj) => ({
+          id: [], // Ensure id is an array of strings
+          name: [emailObj.emailAddress], // Wrap the string in an array
+          success: true, // or false, depending on the actual result
+          notFound: false, // Set this to the appropriate value based on your logic
+        }))
+      : []
+  );
 
   // Return the response with the correctly typed results
   return {

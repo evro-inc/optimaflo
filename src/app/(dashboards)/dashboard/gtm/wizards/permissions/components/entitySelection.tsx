@@ -1,3 +1,4 @@
+'use client';
 import { Button } from '@/src/components/ui/button';
 import {
   Form,
@@ -9,7 +10,7 @@ import {
   FormMessage,
 } from '@/src/components/ui/form';
 import { MinusIcon, PlusIcon } from '@radix-ui/react-icons';
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 import {
   Select,
@@ -26,6 +27,9 @@ import {
 } from '../../../entities/@permissions/items';
 import { AccountPermission, ContainerPermission } from '@/src/types/types';
 import { ContainerPermissions } from './containerPermissions';
+import { useDispatch, useSelector } from 'react-redux';
+import { addForm, updatePermissions } from '@/src/redux/gtm/userPermissionSlice';
+import { RootState } from '@/src/redux/store';
 
 type FieldItem = {
   id: string;
@@ -34,21 +38,39 @@ type FieldItem = {
 };
 
 export default ({ accountsWithContainers, containers, formIndex }) => {
+  const dispatch = useDispatch();
   const { setValue, getValues, control, register } = useFormContext();
+
+  const forms = useSelector((state: RootState) => state.gtmUserPermission.forms);
+  console.log('forms state', forms);
+
   const { fields, append, remove } = useFieldArray({
     control: control,
     name: `forms.${formIndex}.permissions`,
   });
 
-  const selectedAccountIds = useWatch({
-    control,
-    name: `forms.${formIndex}.permissions`,
-  })?.map(permission => permission.accountId) || [];
+  useEffect(() => {
+    if (!forms[formIndex]) {
+      dispatch(addForm());
+    }
+  }, [formIndex, forms, dispatch]);
+
+  const selectedAccountIds =
+    useWatch({
+      control,
+      name: `forms.${formIndex}.permissions`,
+    })?.map((permission) => permission.accountId) || [];
 
   const isAddEntityDisabled = useMemo(
     () => selectedAccountIds.length >= accountsWithContainers.length,
     [selectedAccountIds, accountsWithContainers]
   );
+
+  useEffect(() => {
+    const updatedPermissions = getValues(`forms.${formIndex}.permissions`);
+    dispatch(updatePermissions({ formIndex, permissions: updatedPermissions }));
+  }, [fields, getValues, formIndex, dispatch]);
+
   return (
     <>
       <div className="flex flex-col space-y-4">
@@ -59,10 +81,17 @@ export default ({ accountsWithContainers, containers, formIndex }) => {
           </FormDescription>
         </div>
         {fields.map((item: FieldItem, permissionIndex) => {
-          const currentAccountId = getValues(`forms.${formIndex}.permissions.${permissionIndex}.accountId`);
-          const availableAccounts = accountsWithContainers.filter(
-            account => !selectedAccountIds.includes(account.accountId) || account.accountId === currentAccountId
+          const currentAccountId = getValues(
+            `forms.${formIndex}.permissions.${permissionIndex}.accountId`
           );
+          const availableAccounts = accountsWithContainers.filter(
+            (account) =>
+              !selectedAccountIds.includes(account.accountId) ||
+              account.accountId === currentAccountId
+          );
+
+          console.log('formIndex perm', formIndex);
+          console.log('index perm', permissionIndex);
 
           return (
             <div className="space-y-2" key={item.id}>
@@ -75,10 +104,17 @@ export default ({ accountsWithContainers, containers, formIndex }) => {
                       <FormLabel>Account ID</FormLabel>
                       <FormControl>
                         <Select
-                          {...register(`forms.${formIndex}.permissions.${permissionIndex}.accountId`)}
+                          {...register(
+                            `forms.${formIndex}.permissions.${permissionIndex}.accountId`
+                          )}
                           value={currentAccountId}
                           onValueChange={(value) => {
-                            setValue(`forms.${formIndex}.permissions.${permissionIndex}.accountId`, value);
+                            const newPermissions = [...getValues(`forms.${formIndex}.permissions`)];
+                            newPermissions[permissionIndex] = {
+                              ...newPermissions[permissionIndex],
+                              accountId: value,
+                            };
+                            setValue(`forms.${formIndex}.permissions`, newPermissions);
                           }}
                         >
                           <SelectTrigger className="w-[180px]">
@@ -109,10 +145,20 @@ export default ({ accountsWithContainers, containers, formIndex }) => {
                       <FormLabel>Account Permission</FormLabel>
                       <FormControl>
                         <Select
-                          {...register(`forms.${formIndex}.permissions.${permissionIndex}.accountAccess.permission`)}
+                          {...register(
+                            `forms.${formIndex}.permissions.${permissionIndex}.accountAccess.permission`
+                          )}
                           {...field}
                           onValueChange={(value) => {
-                            setValue(`forms.${formIndex}.permissions.${permissionIndex}.accountAccess.permission`, value);
+                            const newPermissions = [...getValues(`forms.${formIndex}.permissions`)];
+                            newPermissions[permissionIndex] = {
+                              ...newPermissions[permissionIndex],
+                              accountAccess: {
+                                ...newPermissions[permissionIndex].accountAccess,
+                                permission: value,
+                              },
+                            };
+                            setValue(`forms.${formIndex}.permissions`, newPermissions);
                           }}
                         >
                           <SelectTrigger className="w-[180px]">
@@ -140,7 +186,11 @@ export default ({ accountsWithContainers, containers, formIndex }) => {
                   <MinusIcon />
                 </Button>
               </div>
-              <ContainerPermissions formIndex={formIndex} permissionIndex={permissionIndex} table={containers} />
+              <ContainerPermissions
+                formIndex={formIndex}
+                permissionIndex={permissionIndex}
+                table={containers}
+              />
             </div>
           );
         })}

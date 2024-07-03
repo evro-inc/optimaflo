@@ -9,6 +9,7 @@ import sidebarReducer from './sidebarSlice';
 import profileReducer from './profileSlice';
 import formReducer from './formSlice';
 import excludeFormReducer from './excludeFormSlice';
+import gtmUserPermission from './gtm/userPermissionSlice';
 
 const rootReducer = combineReducers({
   user: userReducer,
@@ -20,6 +21,7 @@ const rootReducer = combineReducers({
   profile: profileReducer,
   form: formReducer,
   excludeForm: excludeFormReducer,
+  gtmUserPermission: gtmUserPermission,
 });
 
 export const store = configureStore({
