@@ -206,8 +206,14 @@ const FormCreatePermission: React.FC<FormCreateProps> = ({
     const validation = TransformedFormSchema.safeParse(transformedData);
     if (!validation.success) {
       // Handle validation errors
-      console.error('Validation failed', validation.error.errors);
-      toast.error('Validation failed. Please check the form inputs.');
+      const errorMessages = validation.error.issues.map((issue) => {
+        const field = issue.path.join('.');
+        return `${field}: ${issue.message}`;
+      });
+
+      // Display each error message using toast.error
+      errorMessages.forEach((message) => toast.error(message));
+
       dispatch(setLoading(false));
       return;
     }
@@ -310,21 +316,55 @@ const FormCreatePermission: React.FC<FormCreateProps> = ({
     }
   };
 
-  /// Needs IDS after permssions/emailAddresses
   const handleNext = async () => {
-    const currentFormIndex = currentStep - 2;
-    const currentFormPermissions = `forms.${currentFormIndex}`;
-
-    const fieldsToValidate = [
-      `${currentFormPermissions}.emailAddresses`,
-      `${currentFormPermissions}.permissions`,
-    ];
-
-    const isFormValid = await form.trigger(fieldsToValidate as any);
-
-    if (isFormValid) {
+    if (currentStep === 1) {
+      // Skip validation on the first step and directly increment the step
       dispatch(incrementStep());
+      return;
     }
+
+    const currentFormIndex = currentStep - 2;
+    const emailAddressesField = `forms.${currentFormIndex}.emailAddresses` as const;
+    const permissionsField = `forms.${currentFormIndex}.permissions` as const;
+
+    const fieldsToValidate = [`${emailAddressesField}`, `${permissionsField}`] as const;
+
+    // Validate only the current form fields
+    const isFormValid = await form.trigger(fieldsToValidate);
+
+    // Perform schema validation using the transformed data
+    const transformedData = transformData({
+      forms: [form.getValues(`forms.${currentFormIndex}`)],
+    });
+    const validation = TransformedFormSchema.safeParse(transformedData);
+
+    if (!validation.success) {
+      // Handle validation errors
+      const errorMessages = validation.error.issues.map((issue) => {
+        const field = issue.path.join('.');
+        return `${field}: ${issue.message}`;
+      });
+
+      // Display each error message using toast.error
+      errorMessages.forEach((message) => toast.error(message));
+
+      dispatch(setLoading(false));
+      return;
+    }
+
+    if (!isFormValid) {
+      const emailAddressesErrors = form.getFieldState(emailAddressesField).error;
+      const permissionsErrors = form.getFieldState(permissionsField).error;
+
+      [emailAddressesErrors, permissionsErrors].forEach((error) => {
+        if (error) {
+          toast.error(`${error.ref?.name}: ${error.message}`);
+        }
+      });
+      return;
+    }
+
+    dispatch(incrementStep());
   };
 
   const handlePrevious = () => {

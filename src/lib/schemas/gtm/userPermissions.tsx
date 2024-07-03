@@ -9,14 +9,16 @@ const AccountAccessSchema = z.object({
 });
 
 const ContainerAccessSchema = z.object({
-  containerId: z.string(),
+  containerId: z.string().min(1, 'Container ID is required'),
   permission: ContainerPermissionType,
 });
 
 export const UserPermissionSchema = z.object({
-  accountId: z.string(),
+  accountId: z.string().min(1, 'Account ID is required'),
   accountAccess: AccountAccessSchema,
-  containerAccess: z.array(ContainerAccessSchema),
+  containerAccess: z
+    .array(ContainerAccessSchema)
+    .min(1, { message: 'At least one container access is required' }),
   emailAddress: z
     .string()
     .email({ message: 'Invalid email address' })
@@ -35,8 +37,12 @@ export const EmailAddressSchema = z.object({
 });
 
 export const FormSetSchema = z.object({
-  emailAddresses: z.array(EmailAddressSchema),
-  permissions: z.array(UserPermissionSchema),
+  emailAddresses: z
+    .array(EmailAddressSchema)
+    .min(1, { message: 'At least one email address is required' }),
+  permissions: z
+    .array(UserPermissionSchema)
+    .min(1, { message: 'At least one permission is required' }),
 });
 
 export const FormCreateAmountSchema = z.object({
@@ -44,11 +50,13 @@ export const FormCreateAmountSchema = z.object({
 });
 
 export const FormSchema = z.object({
-  forms: z.array(FormSetSchema),
+  forms: z.array(FormSetSchema).min(1, { message: 'At least one form set is required' }),
 });
 
 export const TransformedFormSchema = z.object({
-  forms: z.array(UserPermissionSchema),
+  forms: z
+    .array(UserPermissionSchema)
+    .min(1, { message: 'At least one transformed form is required' }),
 });
 
 export type UserPermissionType = z.infer<typeof UserPermissionSchema>;
