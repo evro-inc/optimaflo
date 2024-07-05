@@ -436,7 +436,7 @@ const FormCreatePermission: React.FC<FormCreateProps> = ({
                             className={`space-y-4 ${currentStep - 2 !== index ? 'hidden' : ''}`}
                           >
                             <h3>Permission {currentStep - 1}</h3>
-                            <EmailAddressField formIndex={currentStep - 2} />
+                            <EmailAddressField formIndex={currentStep - 2} type={'create'} />
                             <EntitySelection
                               accountsWithContainers={table}
                               containers={containers}

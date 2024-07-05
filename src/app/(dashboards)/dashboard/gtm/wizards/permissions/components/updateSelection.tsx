@@ -30,6 +30,7 @@ import { ContainerPermissions } from './containerPermissions';
 import { useDispatch, useSelector } from 'react-redux';
 import { addForm, updatePermissions } from '@/src/redux/gtm/userPermissionSlice';
 import { RootState } from '@/src/redux/store';
+import { Input } from '@/src/components/ui/input';
 
 type FieldItem = {
   id: string;
@@ -37,23 +38,29 @@ type FieldItem = {
   containerId?: string;
 };
 
-export default ({ accountsWithContainers, containers, formIndex, table }: { accountsWithContainers: any; containers: any; formIndex: number, table?: any }) => {
+export default ({ accountsWithContainers, containers, formIndex, selectedRowData }) => {
   const dispatch = useDispatch();
   const { setValue, getValues, control, register } = useFormContext();
 
-  const forms = useSelector((state: RootState) => state.gtmUserPermission.forms);
-  console.log('forms state', forms);
+  //const forms = useSelector((state: RootState) => state.gtmUserPermission.forms);
+  //console.log('forms state', forms);
+
+  console.log('selectedRowData 2', selectedRowData);
+  const selectedRowDataArray = Array.isArray(selectedRowData) ? selectedRowData : Object.values(selectedRowData);
+
+  const uniqueAccountIds = [...new Set(selectedRowDataArray.map(row => row.accountId))];
+  const uniqueEmailAddresses = [...new Set(selectedRowDataArray.map(row => row.emailAddress))];
 
   const { fields, append, remove } = useFieldArray({
     control: control,
     name: `forms.${formIndex}.permissions`,
   });
 
-  useEffect(() => {
-    if (!forms[formIndex]) {
-      dispatch(addForm());
-    }
-  }, [formIndex, forms, dispatch]);
+  /*   useEffect(() => {
+      if (!forms[formIndex]) {
+        dispatch(addForm());
+      }
+    }, [formIndex, forms, dispatch]); */
 
   const selectedAccountIds =
     useWatch({
@@ -71,9 +78,14 @@ export default ({ accountsWithContainers, containers, formIndex, table }: { acco
     dispatch(updatePermissions({ formIndex, permissions: updatedPermissions }));
   }, [fields, getValues, formIndex, dispatch]);
 
+  console.log("fields", fields);
+
+
   return (
     <>
       <div className="flex flex-col space-y-4">
+
+
         <div>
           <FormLabel>Entity Selection and Permissions</FormLabel>
           <FormDescription>
@@ -81,20 +93,59 @@ export default ({ accountsWithContainers, containers, formIndex, table }: { acco
           </FormDescription>
         </div>
         {fields.map((item: FieldItem, permissionIndex) => {
-          const currentAccountId = getValues(
-            `forms.${formIndex}.permissions.${permissionIndex}.accountId`
-          );
+          const currentAccountId = getValues(`forms.${formIndex}.permissions.${permissionIndex}.accountId`);
+          const currentEmailAddress = getValues(`forms.${formIndex}.permissions.${permissionIndex}.emailAddress`);
           const availableAccounts = accountsWithContainers.filter(
-            (account) =>
-              !selectedAccountIds.includes(account.accountId) ||
-              account.accountId === currentAccountId
+            (account) => !selectedAccountIds.includes(account.accountId) || account.accountId === currentAccountId
           );
 
-          console.log('formIndex perm', formIndex);
-          console.log('index perm', permissionIndex);
+          console.log("availableAccounts", availableAccounts);
+
 
           return (
             <div className="space-y-2" key={item.id}>
+              <FormField
+                control={control}
+                name={`forms.${formIndex}.permissions.${permissionIndex}.emailAddress`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email Address</FormLabel>
+                    <FormControl>
+                      <Select
+                        {...register(
+                          `forms.${formIndex}.permissions.${permissionIndex}.emailAddress`
+                        )}
+                        value={currentEmailAddress}
+                        onValueChange={(value) => {
+                          const newPermissions = [...getValues(`forms.${formIndex}.permissions`)];
+                          newPermissions[permissionIndex] = {
+                            ...newPermissions[permissionIndex],
+                            emailAddress: value,
+                          };
+                          setValue(`forms.${formIndex}.permissions`, newPermissions);
+                        }}
+                      >
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue placeholder="Select an email address." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            <SelectLabel>Email Address</SelectLabel>
+                            {uniqueEmailAddresses.map((email, index) => (
+                              <SelectItem key={index} value={email}>
+                                {email}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+
               <div className="flex items-center space-x-4 pb-5">
                 <FormField
                   control={control}
@@ -104,9 +155,7 @@ export default ({ accountsWithContainers, containers, formIndex, table }: { acco
                       <FormLabel>Account ID</FormLabel>
                       <FormControl>
                         <Select
-                          {...register(
-                            `forms.${formIndex}.permissions.${permissionIndex}.accountId`
-                          )}
+                          {...register(`forms.${formIndex}.permissions.${permissionIndex}.accountId`)}
                           value={currentAccountId}
                           onValueChange={(value) => {
                             const newPermissions = [...getValues(`forms.${formIndex}.permissions`)];
@@ -123,9 +172,9 @@ export default ({ accountsWithContainers, containers, formIndex, table }: { acco
                           <SelectContent>
                             <SelectGroup>
                               <SelectLabel>Account</SelectLabel>
-                              {availableAccounts.map((account) => (
-                                <SelectItem key={account.accountId} value={account.accountId}>
-                                  {account.name}
+                              {uniqueAccountIds.map((accountId, index) => (
+                                <SelectItem key={index} value={accountId}>
+                                  {accountId}
                                 </SelectItem>
                               ))}
                             </SelectGroup>
@@ -136,6 +185,8 @@ export default ({ accountsWithContainers, containers, formIndex, table }: { acco
                     </FormItem>
                   )}
                 />
+
+
 
                 <FormField
                   control={control}
@@ -186,11 +237,12 @@ export default ({ accountsWithContainers, containers, formIndex, table }: { acco
                   <MinusIcon />
                 </Button>
               </div>
-              <ContainerPermissions
+              {/* <ContainerPermissions
                 formIndex={formIndex}
                 permissionIndex={permissionIndex}
                 table={containers}
-              />
+                selectedRowData={selectedRowData}
+              /> */}
             </div>
           );
         })}

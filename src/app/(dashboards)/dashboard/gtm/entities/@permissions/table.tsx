@@ -154,7 +154,7 @@ export function DataTable<TData, TValue>({
           </Button>
 
           <Button
-            disabled={Object.keys(table.getState().rowSelection).length === 0 || isUpdatePending}
+            disabled={isCreatePending}
             onClick={onUpdateButtonClick}
           >
             {isUpdatePending ? 'Loading...' : 'Update'}
