@@ -153,10 +153,7 @@ export function DataTable<TData, TValue>({
             {isCreatePending ? 'Loading...' : 'Create'}
           </Button>
 
-          <Button
-            disabled={isCreatePending}
-            onClick={onUpdateButtonClick}
-          >
+          <Button disabled={isCreatePending} onClick={onUpdateButtonClick}>
             {isUpdatePending ? 'Loading...' : 'Update'}
           </Button>
 

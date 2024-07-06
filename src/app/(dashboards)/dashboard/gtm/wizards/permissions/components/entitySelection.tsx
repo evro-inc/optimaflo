@@ -37,7 +37,19 @@ type FieldItem = {
   containerId?: string;
 };
 
-export default ({ accountsWithContainers, containers, formIndex, table }: { accountsWithContainers: any; containers: any; formIndex: number, table?: any }) => {
+export default ({
+  accountsWithContainers,
+  containers,
+  formIndex,
+  table = [],
+  type,
+}: {
+  accountsWithContainers: any;
+  containers: any;
+  formIndex: number;
+  table?: any;
+  type: string;
+}) => {
   const dispatch = useDispatch();
   const { setValue, getValues, control, register } = useFormContext();
 
@@ -71,6 +83,33 @@ export default ({ accountsWithContainers, containers, formIndex, table }: { acco
     dispatch(updatePermissions({ formIndex, permissions: updatedPermissions }));
   }, [fields, getValues, formIndex, dispatch]);
 
+  const selectedEmailAddresses = useSelector(
+    (state: RootState) => state.gtmUserPermission.forms[formIndex]?.emailAddresses || []
+  );
+  const selectedEmailAddress = selectedEmailAddresses[0]?.emailAddress || '';
+
+  const availableAccounts = useMemo(() => {
+    if (type === 'update') {
+      const accounts = table.map((item) => ({
+        accountId: item.accountId,
+        accountName: item.accountName,
+      }));
+      // Remove duplicates based on accountId
+      const uniqueAccounts = accounts.filter(
+        (value, index, self) => index === self.findIndex((t) => t.accountId === value.accountId)
+      );
+      return uniqueAccounts;
+    } else {
+      return accountsWithContainers.filter(
+        (account) =>
+          !selectedAccountIds.includes(account.accountId) ||
+          account.accountId === selectedEmailAddress
+      );
+    }
+  }, [selectedEmailAddress, table, accountsWithContainers, selectedAccountIds, type]);
+
+  console.log('avaliableAccounts', availableAccounts);
+
   return (
     <>
       <div className="flex flex-col space-y-4">
@@ -84,14 +123,6 @@ export default ({ accountsWithContainers, containers, formIndex, table }: { acco
           const currentAccountId = getValues(
             `forms.${formIndex}.permissions.${permissionIndex}.accountId`
           );
-          const availableAccounts = accountsWithContainers.filter(
-            (account) =>
-              !selectedAccountIds.includes(account.accountId) ||
-              account.accountId === currentAccountId
-          );
-
-          console.log('formIndex perm', formIndex);
-          console.log('index perm', permissionIndex);
 
           return (
             <div className="space-y-2" key={item.id}>
@@ -125,7 +156,7 @@ export default ({ accountsWithContainers, containers, formIndex, table }: { acco
                               <SelectLabel>Account</SelectLabel>
                               {availableAccounts.map((account) => (
                                 <SelectItem key={account.accountId} value={account.accountId}>
-                                  {account.name}
+                                  {account.accountName || account.name}
                                 </SelectItem>
                               ))}
                             </SelectGroup>

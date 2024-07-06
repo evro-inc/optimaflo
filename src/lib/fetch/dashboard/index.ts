@@ -64,6 +64,8 @@ export async function fetchGtmSettings(userId: string) {
   const MAX_RETRIES = 3;
   let success = false;
 
+  const fetchedCompositeKeySet = new Set();
+
   while (retries < MAX_RETRIES && !success) {
     try {
       // Fetch the list of accounts
@@ -96,7 +98,10 @@ export async function fetchGtmSettings(userId: string) {
 
           // Inside the loop for workspaceIds
           for (const workspaceId of workspaceIds) {
-            if (!existingCompositeKeySet.has(`${accountId}-${containerId}-${workspaceId}`)) {
+            const compositeKey = `${accountId}-${containerId}-${workspaceId}`;
+            fetchedCompositeKeySet.add(compositeKey);
+
+            if (!existingCompositeKeySet.has(compositeKey)) {
               await prisma.gtm.upsert({
                 where: {
                   userId_accountId_containerId_workspaceId: {
@@ -123,6 +128,26 @@ export async function fetchGtmSettings(userId: string) {
           }
         }
       }
+
+      // Delete records that are no longer present in the fetched data
+      const recordsToDelete = existingRecords.filter(
+        (rec) =>
+          !fetchedCompositeKeySet.has(`${rec.accountId}-${rec.containerId}-${rec.workspaceId}`)
+      );
+
+      for (const record of recordsToDelete) {
+        await prisma.gtm.delete({
+          where: {
+            userId_accountId_containerId_workspaceId: {
+              userId: record.userId,
+              accountId: record.accountId,
+              containerId: record.containerId,
+              workspaceId: record.workspaceId,
+            },
+          },
+        });
+      }
+
       success = true;
     } catch (error: any) {
       if (error.message.includes('Quota exceeded')) {

@@ -30,9 +30,7 @@ export default async function PermissionsFormPage() {
 
   const accountData = await listGtmAccounts(true);
   const containerData = await listGtmContainers(true);
-  const permissionData = await listGtmPermissions();
-
-  console.log("permissionData", permissionData);
+  const permissionData = await listGtmPermissions(true);
 
   const [accounts, containers, permissions] = await Promise.all([
     accountData,
@@ -46,6 +44,7 @@ export default async function PermissionsFormPage() {
 
   const combinedData = flatPermissions.flatMap((prop) => {
     const account = accounts.find((a) => a.accountId === prop.accountId);
+    console.log('prop', prop);
 
     return prop.containerAccess.map((containerAccess) => {
       const container = flatContainers.find((c) => c.containerId === containerAccess.containerId);
@@ -59,15 +58,13 @@ export default async function PermissionsFormPage() {
     });
   });
 
-  console.log("combinedData", combinedData);
-
+  console.log('combinedData', combinedData);
 
   const accountIdsWithContainers = new Set(combinedData.map((permission) => permission.accountId));
 
   const accountsWithContainers = accounts.filter((account) =>
     accountIdsWithContainers.has(account.accountId)
   );
-  const uniqueEmails = [...new Set(combinedData.map(item => item.emailAddress))];
 
   return (
     <>
@@ -77,7 +74,6 @@ export default async function PermissionsFormPage() {
           table={combinedData}
           accounts={accountsWithContainers}
           containers={flatContainers}
-          uniqueEmails={uniqueEmails}
         />
       </div>
     </>

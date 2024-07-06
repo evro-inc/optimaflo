@@ -43,7 +43,7 @@ const EmailForm = ({ formIndex, type, table = [] }: Props) => {
     name: `forms.${formIndex}.emailAddresses`,
   });
 
-  console.log("table", table);
+  console.log('table', table);
 
   const emailButtonClick = () => {
     append({ emailAddress: '' });
@@ -54,8 +54,14 @@ const EmailForm = ({ formIndex, type, table = [] }: Props) => {
     return [...new Set(emails)];
   }, [table]);
 
-  console.log('u email', uniqueEmails);
+  const selectedEmail = watch(`forms.${formIndex}.emailAddresses`);
 
+  useEffect(() => {
+    const emailAddresses = getValues(`forms.${formIndex}.emailAddresses`).map(
+      (item) => item.emailAddress
+    );
+    dispatch(updateEmailAddresses({ formIndex, emailAddresses }));
+  }, [selectedEmail, formIndex, getValues, dispatch]);
 
   if (type === 'update') {
     return (
@@ -75,7 +81,11 @@ const EmailForm = ({ formIndex, type, table = [] }: Props) => {
                       <Select
                         value={field.value}
                         onValueChange={(value) => {
-                          setValue(`forms.${formIndex}.emailAddresses.${index}.emailAddress`, value);
+                          setValue(
+                            `forms.${formIndex}.emailAddresses.${index}.emailAddress`,
+                            value
+                          );
+                          dispatch(updateEmailAddresses({ formIndex, emailAddresses: [value] }));
                         }}
                       >
                         <SelectTrigger className="w-[180px]">
@@ -98,7 +108,6 @@ const EmailForm = ({ formIndex, type, table = [] }: Props) => {
                 </FormItem>
               )}
             />
-
           </div>
         ))}
       </div>

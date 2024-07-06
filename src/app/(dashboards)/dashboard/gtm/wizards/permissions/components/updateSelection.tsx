@@ -46,10 +46,12 @@ export default ({ accountsWithContainers, containers, formIndex, selectedRowData
   //console.log('forms state', forms);
 
   console.log('selectedRowData 2', selectedRowData);
-  const selectedRowDataArray = Array.isArray(selectedRowData) ? selectedRowData : Object.values(selectedRowData);
+  const selectedRowDataArray = Array.isArray(selectedRowData)
+    ? selectedRowData
+    : Object.values(selectedRowData);
 
-  const uniqueAccountIds = [...new Set(selectedRowDataArray.map(row => row.accountId))];
-  const uniqueEmailAddresses = [...new Set(selectedRowDataArray.map(row => row.emailAddress))];
+  const uniqueAccountIds = [...new Set(selectedRowDataArray.map((row) => row.accountId))];
+  const uniqueEmailAddresses = [...new Set(selectedRowDataArray.map((row) => row.emailAddress))];
 
   const { fields, append, remove } = useFieldArray({
     control: control,
@@ -78,14 +80,11 @@ export default ({ accountsWithContainers, containers, formIndex, selectedRowData
     dispatch(updatePermissions({ formIndex, permissions: updatedPermissions }));
   }, [fields, getValues, formIndex, dispatch]);
 
-  console.log("fields", fields);
-
+  console.log('fields', fields);
 
   return (
     <>
       <div className="flex flex-col space-y-4">
-
-
         <div>
           <FormLabel>Entity Selection and Permissions</FormLabel>
           <FormDescription>
@@ -93,14 +92,19 @@ export default ({ accountsWithContainers, containers, formIndex, selectedRowData
           </FormDescription>
         </div>
         {fields.map((item: FieldItem, permissionIndex) => {
-          const currentAccountId = getValues(`forms.${formIndex}.permissions.${permissionIndex}.accountId`);
-          const currentEmailAddress = getValues(`forms.${formIndex}.permissions.${permissionIndex}.emailAddress`);
+          const currentAccountId = getValues(
+            `forms.${formIndex}.permissions.${permissionIndex}.accountId`
+          );
+          const currentEmailAddress = getValues(
+            `forms.${formIndex}.permissions.${permissionIndex}.emailAddress`
+          );
           const availableAccounts = accountsWithContainers.filter(
-            (account) => !selectedAccountIds.includes(account.accountId) || account.accountId === currentAccountId
+            (account) =>
+              !selectedAccountIds.includes(account.accountId) ||
+              account.accountId === currentAccountId
           );
 
-          console.log("availableAccounts", availableAccounts);
-
+          console.log('availableAccounts', availableAccounts);
 
           return (
             <div className="space-y-2" key={item.id}>
@@ -145,7 +149,6 @@ export default ({ accountsWithContainers, containers, formIndex, selectedRowData
                 )}
               />
 
-
               <div className="flex items-center space-x-4 pb-5">
                 <FormField
                   control={control}
@@ -155,7 +158,9 @@ export default ({ accountsWithContainers, containers, formIndex, selectedRowData
                       <FormLabel>Account ID</FormLabel>
                       <FormControl>
                         <Select
-                          {...register(`forms.${formIndex}.permissions.${permissionIndex}.accountId`)}
+                          {...register(
+                            `forms.${formIndex}.permissions.${permissionIndex}.accountId`
+                          )}
                           value={currentAccountId}
                           onValueChange={(value) => {
                             const newPermissions = [...getValues(`forms.${formIndex}.permissions`)];
@@ -185,8 +190,6 @@ export default ({ accountsWithContainers, containers, formIndex, selectedRowData
                     </FormItem>
                   )}
                 />
-
-
 
                 <FormField
                   control={control}

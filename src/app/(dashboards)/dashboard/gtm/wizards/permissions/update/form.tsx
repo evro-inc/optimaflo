@@ -102,8 +102,7 @@ const FormUpdatePermissions: React.FC<FormCreateProps> = ({
     state.gtmUserPermission.forms.flatMap((form) => form.emailAddresses)
   );
 
-  console.log("combinedData", table);
-
+  console.log('combinedData', table);
 
   const foundTierLimit = tierLimits.find(
     (subscription) => subscription.Feature?.name === 'GTMPermissions'
@@ -445,6 +444,7 @@ const FormUpdatePermissions: React.FC<FormCreateProps> = ({
                               containers={containers}
                               formIndex={currentStep - 2}
                               table={table}
+                              type={'update'}
                             />
                           </div>
                         ))}
