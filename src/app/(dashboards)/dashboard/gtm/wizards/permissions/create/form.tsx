@@ -441,7 +441,6 @@ const FormCreatePermission: React.FC<FormCreateProps> = ({
                               accountsWithContainers={table}
                               containers={containers}
                               formIndex={currentStep - 2}
-                              type={'create'}
                             />
                           </div>
                         ))}

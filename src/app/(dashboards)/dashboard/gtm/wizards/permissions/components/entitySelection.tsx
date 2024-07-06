@@ -48,13 +48,15 @@ export default ({
   containers: any;
   formIndex: number;
   table?: any;
-  type: string;
+  type?: string;
 }) => {
   const dispatch = useDispatch();
   const { setValue, getValues, control, register } = useFormContext();
 
   const forms = useSelector((state: RootState) => state.gtmUserPermission.forms);
   console.log('forms state', forms);
+
+  console.log('accountsWithContainers', accountsWithContainers);
 
   const { fields, append, remove } = useFieldArray({
     control: control,
@@ -100,11 +102,7 @@ export default ({
       );
       return uniqueAccounts;
     } else {
-      return accountsWithContainers.filter(
-        (account) =>
-          !selectedAccountIds.includes(account.accountId) ||
-          account.accountId === selectedEmailAddress
-      );
+      return accountsWithContainers;
     }
   }, [selectedEmailAddress, table, accountsWithContainers, selectedAccountIds, type]);
 
