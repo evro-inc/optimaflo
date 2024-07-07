@@ -51,14 +51,13 @@ import {
 import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { CreatePermissions } from '@/src/lib/fetch/dashboard/actions/gtm/permissions';
+import { CreatePermissions, UpdatePermissions } from '@/src/lib/fetch/dashboard/actions/gtm/permissions';
 import {
   accountAccessPermissions,
   containerAccessPermissions,
 } from '../../../entities/@permissions/items';
 import EmailForm from '../components/email';
 import EntitySelection from '../components/entitySelection';
-import { ContainerPermissions } from '../components/containerPermissions';
 import Email from '../components/email';
 import { addForm } from '@/src/redux/gtm/userPermissionSlice';
 
@@ -102,7 +101,6 @@ const FormUpdatePermissions: React.FC<FormCreateProps> = ({
     state.gtmUserPermission.forms.flatMap((form) => form.emailAddresses)
   );
 
-  console.log('combinedData', table);
 
   const foundTierLimit = tierLimits.find(
     (subscription) => subscription.Feature?.name === 'GTMPermissions'
@@ -155,12 +153,12 @@ const FormUpdatePermissions: React.FC<FormCreateProps> = ({
     }
   }, [formCreateAmount.watch('amount'), dispatch, forms]);
 
-  if (notFoundError) {
-    return <NotFoundErrorModal />;
-  }
-  if (error) {
-    return <ErrorModal />;
-  }
+  /*   if (notFoundError) {
+      return <NotFoundErrorModal />;
+    }
+    if (error) {
+      return <ErrorModal />;
+    } */
 
   const handleAmountChange = (selectedAmount) => {
     const amount = parseInt(selectedAmount);
@@ -183,9 +181,6 @@ const FormUpdatePermissions: React.FC<FormCreateProps> = ({
     }
   };
 
-  useEffect(() => {
-    console.log('emailAddresses', emailAddresses);
-  }, [emailAddresses]);
 
   const transformData = (data: FormValuesType) => {
     const transformedForms = data.forms.flatMap((form) => {
@@ -199,13 +194,55 @@ const FormUpdatePermissions: React.FC<FormCreateProps> = ({
     return { forms: transformedForms };
   };
 
+  const findPaths = (data, table) => {
+    return data.forms.map(form => {
+      return form.permissions.map(permission => {
+        const emailAddress = form.emailAddresses[0].emailAddress;
+        const accountId = permission.accountId;
+
+        // Create a set to ensure unique paths
+        const uniquePaths = new Set();
+
+        const matches = table.filter(
+          entry => entry.emailAddress === emailAddress && entry.accountId === accountId
+        );
+
+        matches.forEach(match => {
+          uniquePaths.add(match.path);
+        });
+
+        return {
+          ...permission,
+          paths: Array.from(uniquePaths), // Convert the set back to an array
+        };
+      });
+    });
+  };
+
+
+
+
   const processForm: SubmitHandler<FormValuesType> = async (data) => {
     dispatch(setLoading(true));
+
+    console.log("data", data);
+    console.log('table data', table);
+
 
     const transformedData = transformData(data);
     console.log('transformedData', transformedData);
 
-    const validation = TransformedFormSchema.safeParse(transformedData);
+
+    const permissionsWithPaths = findPaths(data, table);
+    const updatedTransformedData = {
+      forms: transformedData.forms.map((form, index) => ({
+        ...form,
+        permissions: permissionsWithPaths[index],
+      })),
+    };
+
+
+    const validation = TransformedFormSchema.safeParse(updatedTransformedData);
     if (!validation.success) {
       // Handle validation errors
       const errorMessages = validation.error.issues.map((issue) => {
@@ -220,7 +257,7 @@ const FormUpdatePermissions: React.FC<FormCreateProps> = ({
       return;
     }
 
-    toast('Creating permissions...', {
+    toast('Updating permissions...', {
       action: { label: 'Close', onClick: () => toast.dismiss() },
     });
 
@@ -248,7 +285,9 @@ const FormUpdatePermissions: React.FC<FormCreateProps> = ({
     });
 
     try {
-      const res = (await CreatePermissions(transformedData)) as FeatureResponse;
+      console.log("updatedTransformedData", updatedTransformedData);
+
+      const res = (await UpdatePermissions(updatedTransformedData)) as FeatureResponse;
 
       if (res.success) {
         res.results.forEach((result) => {

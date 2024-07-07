@@ -88,23 +88,27 @@ export default ({
   const selectedEmailAddresses = useSelector(
     (state: RootState) => state.gtmUserPermission.forms[formIndex]?.emailAddresses || []
   );
-  const selectedEmailAddress = selectedEmailAddresses[0]?.emailAddress || '';
 
   const availableAccounts = useMemo(() => {
     if (type === 'update') {
       const accounts = table.map((item) => ({
         accountId: item.accountId,
         accountName: item.accountName,
+        email: item.emailAddress
       }));
-      // Remove duplicates based on accountId
-      const uniqueAccounts = accounts.filter(
+
+      const accountAccess = accounts.filter(account => selectedEmailAddresses.includes(account.email));
+      const uniqueAccounts = accountAccess.filter(
         (value, index, self) => index === self.findIndex((t) => t.accountId === value.accountId)
       );
-      return uniqueAccounts;
+
+      return uniqueAccounts.filter(account => selectedEmailAddresses.includes(account.email));
+
     } else {
       return accountsWithContainers;
     }
-  }, [selectedEmailAddress, table, accountsWithContainers, selectedAccountIds, type]);
+  }, [selectedEmailAddresses, table, accountsWithContainers, selectedAccountIds, type]);
+
 
   console.log('avaliableAccounts', availableAccounts);
 
