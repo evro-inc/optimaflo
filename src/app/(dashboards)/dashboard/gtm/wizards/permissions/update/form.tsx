@@ -183,31 +183,31 @@ const FormUpdatePermissions: React.FC<FormCreateProps> = ({
 
 
   const transformData = (data: FormValuesType) => {
-    const transformedForms = data.forms.flatMap((form) => {
-      return form.emailAddresses.flatMap((emailObj) => {
-        return form.permissions.map((permission) => ({
+    return data.forms.flatMap((form) =>
+      form.emailAddresses.flatMap((emailObj) =>
+        form.permissions.map((permission) => ({
           ...permission,
           emailAddress: emailObj.emailAddress,
-        }));
-      });
-    });
-    return { forms: transformedForms };
+        }))
+      )
+    );
   };
 
+
   const findPaths = (data, table) => {
-    return data.forms.map(form => {
-      return form.permissions.map(permission => {
-        const emailAddress = form.emailAddresses[0].emailAddress;
+    return {
+      forms: data.map((permission) => {
+        const emailAddress = permission.emailAddress;
         const accountId = permission.accountId;
 
         // Create a set to ensure unique paths
         const uniquePaths = new Set();
 
         const matches = table.filter(
-          entry => entry.emailAddress === emailAddress && entry.accountId === accountId
+          (entry) => entry.emailAddress === emailAddress && entry.accountId === accountId
         );
 
-        matches.forEach(match => {
+        matches.forEach((match) => {
           uniquePaths.add(match.path);
         });
 
@@ -215,9 +215,10 @@ const FormUpdatePermissions: React.FC<FormCreateProps> = ({
           ...permission,
           paths: Array.from(uniquePaths), // Convert the set back to an array
         };
-      });
-    });
+      }),
+    };
   };
+
 
 
 
@@ -228,21 +229,28 @@ const FormUpdatePermissions: React.FC<FormCreateProps> = ({
     console.log("data", data);
     console.log('table data', table);
 
+    // build new array by matching data and table data. The final return should include the path with the rest of data in the format of the schema.
+
 
     const transformedData = transformData(data);
     console.log('transformedData', transformedData);
 
 
-    const permissionsWithPaths = findPaths(data, table);
-    const updatedTransformedData = {
-      forms: transformedData.forms.map((form, index) => ({
-        ...form,
-        permissions: permissionsWithPaths[index],
-      })),
-    };
+    const permissionsWithPaths = findPaths(transformedData, table);
+    console.log("permissionsWithPaths", permissionsWithPaths);
 
 
-    const validation = TransformedFormSchema.safeParse(updatedTransformedData);
+    if (permissionsWithPaths.forms.length === 0) {
+      toast.error('No valid permissions found after processing.', {
+        action: { label: 'Close', onClick: () => toast.dismiss() },
+      });
+      dispatch(setLoading(false));
+      return;
+    }
+
+
+
+    const validation = TransformedFormSchema.safeParse(permissionsWithPaths);
     if (!validation.success) {
       // Handle validation errors
       const errorMessages = validation.error.issues.map((issue) => {
@@ -285,9 +293,8 @@ const FormUpdatePermissions: React.FC<FormCreateProps> = ({
     });
 
     try {
-      console.log("updatedTransformedData", updatedTransformedData);
 
-      const res = (await UpdatePermissions(updatedTransformedData)) as FeatureResponse;
+      const res = (await UpdatePermissions(permissionsWithPaths)) as FeatureResponse;
 
       if (res.success) {
         res.results.forEach((result) => {
@@ -320,9 +327,11 @@ const FormUpdatePermissions: React.FC<FormCreateProps> = ({
   const handleErrors = (res: FeatureResponse) => {
     if (res.notFoundError) {
       res.results.forEach((result) => {
+        console.log('result', result);
+
         if (result.notFound) {
           toast.error(
-            `Unable to create permission ${result.name}. Please check your access permissions. Any other properties created were successful.`,
+            `${result.message} Any other user permissions created were successful.`,
             {
               action: { label: 'Close', onClick: () => toast.dismiss() },
             }

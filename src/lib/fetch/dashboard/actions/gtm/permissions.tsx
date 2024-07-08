@@ -130,7 +130,7 @@ export async function CreatePermissions(formData: FormValuesType) {
   const errors: string[] = [];
   const successfulCreations: string[] = [];
   const featureLimitReached: string[] = [];
-  const notFoundLimit: { id: string; name: string }[] = [];
+  const notFoundLimit: { id: string; name: string; message?: string; }[] = [];
   let accountIdForCache: string | undefined;
   let containerIdForCache: string | undefined;
 
@@ -224,7 +224,7 @@ export async function CreatePermissions(formData: FormValuesType) {
                 'Accept-Encoding': 'gzip',
               };
 
-              let validatedContainerData;
+              let validatedPermissionData;
 
               try {
                 const formDataToValidate = {
@@ -251,18 +251,18 @@ export async function CreatePermissions(formData: FormValuesType) {
                 }
 
                 // Accessing the validated permission data
-                validatedContainerData = validationResult.data.forms[0];
+                validatedPermissionData = validationResult.data.forms[0];
 
-                console.log('validatedContainerData: ', validatedContainerData);
+                console.log('validatedPermissionData: ', validatedPermissionData);
 
                 const response = await fetch(url, {
                   method: 'POST',
                   headers: headers,
                   body: JSON.stringify({
-                    accountId: validatedContainerData.accountId,
-                    emailAddress: validatedContainerData.emailAddress,
-                    accountAccess: validatedContainerData.accountAccess,
-                    containerAccess: validatedContainerData.containerAccess,
+                    accountId: validatedPermissionData.accountId,
+                    emailAddress: validatedPermissionData.emailAddress,
+                    accountAccess: validatedPermissionData.accountAccess,
+                    containerAccess: validatedPermissionData.containerAccess,
                   }),
                 });
 
@@ -273,7 +273,7 @@ export async function CreatePermissions(formData: FormValuesType) {
                 console.log('parsedResponse: ', parsedResponse);
 
                 if (response.ok) {
-                  successfulCreations.push(validatedContainerData.emailAddress);
+                  successfulCreations.push(validatedPermissionData.emailAddress);
                   toCreatePermissions.delete(identifier);
                   fetchGtmSettings(userId);
                   await prisma.tierLimit.update({
@@ -281,16 +281,16 @@ export async function CreatePermissions(formData: FormValuesType) {
                     data: { createUsage: { increment: 1 } },
                   });
                   creationResults.push({
-                    permissionName: validatedContainerData.emailAddress,
+                    permissionName: validatedPermissionData.emailAddress,
                     success: true,
-                    message: `Successfully created permission for ${validatedContainerData.emailAddress}`,
+                    message: `Successfully created permission for ${validatedPermissionData.emailAddress}`,
                   });
                 } else {
                   const errorResult = await handleApiResponseError(
                     response,
                     parsedResponse,
                     'permission',
-                    [validatedContainerData.emailAddress]
+                    [validatedPermissionData.emailAddress]
                   );
 
                   if (errorResult) {
@@ -299,7 +299,7 @@ export async function CreatePermissions(formData: FormValuesType) {
                       errorResult.errorCode === 403 &&
                       parsedResponse.message === 'Feature limit reached'
                     ) {
-                      featureLimitReached.push(validatedContainerData.emailAddress);
+                      featureLimitReached.push(validatedPermissionData.emailAddress);
                     } else if (errorResult.errorCode === 404) {
                       const permissionName =
                         permissionNames.find((name) => name.includes(identifier.name)) || 'Unknown';
@@ -310,25 +310,25 @@ export async function CreatePermissions(formData: FormValuesType) {
                     }
                   } else {
                     errors.push(
-                      `An unknown error occurred for permission ${validatedContainerData.emailAddress}.`
+                      `An unknown error occurred for permission ${validatedPermissionData.emailAddress}.`
                     );
                   }
 
                   toCreatePermissions.delete(identifier);
                   permissionDenied = errorResult ? true : permissionDenied;
                   creationResults.push({
-                    permissionName: validatedContainerData.emailAddress,
+                    permissionName: validatedPermissionData.emailAddress,
                     success: false,
                     message: errorResult?.message,
                   });
                 }
               } catch (error: any) {
                 errors.push(
-                  `Exception creating permission ${validatedContainerData.emailAddress}: ${error.message}`
+                  `Exception creating permission ${validatedPermissionData.emailAddress}: ${error.message}`
                 );
                 toCreatePermissions.delete(identifier);
                 creationResults.push({
-                  permissionName: validatedContainerData.emailAddress,
+                  permissionName: validatedPermissionData.emailAddress,
                   success: false,
                   message: error.message,
                 });
@@ -472,7 +472,7 @@ export async function UpdatePermissions(formData: FormValuesType) {
   const errors: string[] = [];
   const successfulCreations: string[] = [];
   const featureLimitReached: string[] = [];
-  const notFoundLimit: { id: string; name: string }[] = [];
+  const notFoundLimit: { id: string; name: string; message?: string; }[] = [];
   let accountIdForCache: string | undefined;
   let containerIdForCache: string | undefined;
 
@@ -531,6 +531,9 @@ export async function UpdatePermissions(formData: FormValuesType) {
   const permissionNames = formData.forms.flatMap((form) =>
     form.permissions ? form.permissions.map((permission) => permission.accountId) : []
   );
+
+  console.log("permissionNames", permissionNames);
+
   // need id permission
   if (toUpdatePermissions.size <= availableUpdateUsage) {
     // Initialize retries variable to ensure proper loop execution
@@ -542,17 +545,17 @@ export async function UpdatePermissions(formData: FormValuesType) {
           await limiter.schedule(async () => {
             const updatePromises = Array.from(toUpdatePermissions).map(async (identifier: any) => {
               console.log('identifier: ', identifier);
-              console.log('identifier with paths: ', JSON.stringify(identifier, null, 2));
 
-              const { accountId, emailAddress, accountAccess, containerAccess, permissions } = identifier;
+              const { accountId, emailAddress, accountAccess, containerAccess, paths } = identifier;
               accountIdForCache = accountId;
               containerIdForCache = identifier.containerAccess[0].containerId;
+
               const permissionData = {
                 accountId: accountId,
                 emailAddress: emailAddress,
                 accountAccess: accountAccess,
                 containerAccess: containerAccess,
-                permissions: permissions
+                paths: paths
               };
 
               console.log("permissionData", permissionData);
@@ -564,14 +567,17 @@ export async function UpdatePermissions(formData: FormValuesType) {
                 return;
               }
 
-              /* const url = `https://www.googleapis.com/tagmanager/v2/accounts/${permissionData.accountId}/user_permissions/${permissionData.accountId}`; */
+              const url = `https://www.googleapis.com/tagmanager/v2/${permissionData.paths}`;
+
+              console.log("url", url);
+
               const headers = {
                 Authorization: `Bearer ${token[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
 
-              let validatedContainerData;
+              let validatedPermissionData;
 
               try {
                 const formDataToValidate = {
@@ -598,114 +604,89 @@ export async function UpdatePermissions(formData: FormValuesType) {
                 }
 
                 // Accessing the validated permission data
-                validatedContainerData = validationResult.data.forms[0];
+                validatedPermissionData = validationResult.data.forms[0];
 
-                console.log('validatedContainerData: ', validatedContainerData);
+                console.log('validatedPermissionData: ', validatedPermissionData);
 
-                // Ensure permissions and paths are properly defined
-                if (!permissionData.permissions) {
-                  permissionData.permissions = [];
-                }
-
-                // Add a check to initialize paths if they are not already
-                permissionData.permissions.forEach(permission => {
-                  if (!permission.paths) {
-                    permission.paths = [];
-                  }
+                const response = await fetch(url, {
+                  method: 'PUT',
+                  headers: headers,
+                  body: JSON.stringify({
+                    accountId: validatedPermissionData.accountId,
+                    emailAddress: validatedPermissionData.emailAddress,
+                    accountAccess: validatedPermissionData.accountAccess,
+                    containerAccess: validatedPermissionData.containerAccess,
+                  }),
                 });
 
-                const pathUpdatePromises = permissionData.permissions.flatMap(permission =>
-                  permission.paths.map(async (path) => {
-                    const url = `https://www.googleapis.com/tagmanager/v2/${path}`;
+                console.log('response: ', response);
 
-                    const response = await fetch(url, {
-                      method: 'PUT',
-                      headers: headers,
-                      body: JSON.stringify({
-                        accountId: validatedContainerData.accountId,
-                        emailAddress: validatedContainerData.emailAddress,
-                        accountAccess: validatedContainerData.accountAccess,
-                        containerAccess: validatedContainerData.containerAccess,
-                      }),
-                    });
+                const parsedResponse = await response.json();
 
-                    console.log('response: ', response);
+                console.log('parsedResponse: ', parsedResponse);
 
-                    const parsedResponse = await response.json();
+                if (response.ok) {
+                  successfulCreations.push(validatedPermissionData.emailAddress);
+                  toUpdatePermissions.delete(identifier);
+                  fetchGtmSettings(userId);
+                  await prisma.tierLimit.update({
+                    where: { id: tierLimitResponse.id },
+                    data: { updateUsage: { increment: 1 } },
+                  });
+                  updateResults.push({
+                    permissionName: validatedPermissionData.emailAddress,
+                    success: true,
+                    message: `Successfully updated permission for ${validatedPermissionData.emailAddress}`,
+                  });
+                } else {
+                  const errorResult = await handleApiResponseError(
+                    response,
+                    parsedResponse,
+                    'GTM User Admin Access',
+                    [validatedPermissionData.emailAddress]
+                  );
 
-                    console.log('parsedResponse: ', parsedResponse);
-
-                    if (response.ok) {
-                      successfulCreations.push(validatedContainerData.emailAddress);
-                      toUpdatePermissions.delete(identifier);
-                      fetchGtmSettings(userId);
-                      await prisma.tierLimit.update({
-                        where: { id: tierLimitResponse.id },
-                        data: { updateUsage: { increment: 1 } },
-                      });
-                      updateResults.push({
-                        permissionName: validatedContainerData.emailAddress,
-                        success: true,
-                        message: `Successfully updated permission for ${validatedContainerData.emailAddress}`,
-                      });
-                    } else {
-                      const errorResult = await handleApiResponseError(
-                        response,
-                        parsedResponse,
-                        'permission',
-                        [validatedContainerData.emailAddress]
-                      );
-
-                      if (errorResult) {
-                        errors.push(`${errorResult.message}`);
-                        if (
-                          errorResult.errorCode === 403 &&
-                          parsedResponse.message === 'Feature limit reached'
-                        ) {
-                          featureLimitReached.push(validatedContainerData.emailAddress);
-                        } else if (errorResult.errorCode === 404) {
-                          const permissionName =
-                            permissionNames.find((name) => name.includes(identifier.name)) || 'Unknown';
-                          notFoundLimit.push({
-                            id: identifier.containerId,
-                            name: permissionName,
-                          });
-                        }
-                      } else {
-                        errors.push(
-                          `An unknown error occurred for permission ${validatedContainerData.emailAddress}.`
-                        );
-                      }
-
-                      toUpdatePermissions.delete(identifier);
-                      permissionDenied = errorResult ? true : permissionDenied;
-                      updateResults.push({
-                        permissionName: validatedContainerData.emailAddress,
-                        success: false,
-                        message: errorResult?.message,
+                  if (errorResult) {
+                    errors.push(`${errorResult.message}`);
+                    if (
+                      errorResult.errorCode === 403 &&
+                      parsedResponse.message === 'Feature limit reached'
+                    ) {
+                      featureLimitReached.push(validatedPermissionData.emailAddress);
+                    } else if (errorResult.errorCode === 404) {
+                      const permissionName =
+                        permissionNames.find((emailAddress) => emailAddress.includes(identifier.emailAddress)) || 'Unknown';
+                      notFoundLimit.push({
+                        id: identifier.containerId,
+                        name: permissionName,
+                        message: errorResult.message + ' ' + `You may need to ask an admin to grant admin permissions for Account ID: ${validatedPermissionData.accountId}.`,
                       });
                     }
-                  })
-                );
+                  } else {
+                    errors.push(
+                      `An unknown error occurred for permission ${validatedPermissionData.emailAddress}.`
+                    );
+                  }
 
-                await Promise.all(pathUpdatePromises);
-
-
-                await Promise.all(pathUpdatePromises);
+                  toUpdatePermissions.delete(identifier);
+                  permissionDenied = errorResult ? true : permissionDenied;
+                  updateResults.push({
+                    permissionName: validatedPermissionData.emailAddress,
+                    success: false,
+                    message: errorResult?.message,
+                  });
+                }
               } catch (error: any) {
                 errors.push(
-                  `Exception creating permission ${validatedContainerData.emailAddress}: ${error.message}`
+                  `Exception creating permission ${validatedPermissionData.emailAddress}: ${error.message}`
                 );
                 toUpdatePermissions.delete(identifier);
                 updateResults.push({
-                  permissionName: validatedContainerData.emailAddress,
+                  permissionName: validatedPermissionData.emailAddress,
                   success: false,
                   message: error.message,
                 });
               }
-
-
-
             });
 
             await Promise.all(updatePromises);
@@ -715,12 +696,13 @@ export async function UpdatePermissions(formData: FormValuesType) {
             return {
               success: false,
               limitReached: false,
-              notFoundError: true, // Set the notFoundError flag
+              notFoundError: true,
               features: [],
 
               results: notFoundLimit.map((item) => ({
                 id: item.id,
                 name: item.name,
+                message: item.message,
                 success: false,
                 notFound: true,
               })),
@@ -736,7 +718,7 @@ export async function UpdatePermissions(formData: FormValuesType) {
               results: featureLimitReached.map((permissionId) => {
                 // Find the name associated with the permissionId
                 const permissionName =
-                  permissionNames.find((name) => name.includes(permissionId)) || 'Unknown';
+                  permissionNames.find((emailAddress) => emailAddress.includes(permissionId)) || 'Unknown';
                 return {
                   id: [permissionId], // Ensure id is an array
                   name: [permissionName], // Ensure name is an array, match by permissionId or default to 'Unknown'
