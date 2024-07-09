@@ -4,15 +4,15 @@ import { auth } from '@clerk/nextjs';
 import { Skeleton } from '@/src/components/ui/skeleton';
 import { columns } from './columns';
 import { DataTable } from './table';
-import { listGtmBuiltInVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variablesBuiltIn';
 import { listGtmAccounts } from '@/src/lib/fetch/dashboard/actions/gtm/accounts';
 import { listGtmContainers } from '@/src/lib/fetch/dashboard/actions/gtm/containers';
 import {
   getStatusGtmWorkspaces,
   listGtmWorkspaces,
 } from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
+import { listVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variables';
 
-export default async function BuiltInVarPage({
+export default async function varPage({
   searchParams,
 }: {
   searchParams?: {
@@ -28,21 +28,21 @@ export default async function BuiltInVarPage({
   const accountData = await listGtmAccounts();
   const containerData = await listGtmContainers();
   const workspaceData = await listGtmWorkspaces();
-  const builtInVarData = await listGtmBuiltInVariables();
+  const varData = await listVariables();
   const statusData = await getStatusGtmWorkspaces();
 
-  const [accounts, containers, workspaces, builtInVar, status] = await Promise.all([
+  const [accounts, containers, workspaces, variable, status] = await Promise.all([
     accountData,
     containerData,
     workspaceData,
-    builtInVarData,
+    varData,
     statusData,
   ]);
 
   const flatAccounts = accounts.flat();
   const flatContainers = containers.flat();
   const flatWorkspaces = workspaces.flat();
-  const flatBuiltInVars = builtInVar.flat();
+  const flatVars = variable.flat();
   const flatStatus = status.flat();
 
   const statusDataFlat = flatStatus.flatMap((changeSet, index) =>
@@ -53,7 +53,7 @@ export default async function BuiltInVarPage({
     }))
   );
 
-  const combinedData = flatBuiltInVars.map((vars) => {
+  const combinedData = flatVars.map((vars) => {
     const accountId = vars.accountId;
     const containerId = vars.containerId;
     const workspaceId = vars.workspaceId;

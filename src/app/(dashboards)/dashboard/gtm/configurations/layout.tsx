@@ -11,9 +11,11 @@ import { currentUser } from '@clerk/nextjs';
 export default async function EntityLayout({
   children,
   builtInVariables,
+  variables,
 }: {
   children: React.ReactNode;
   builtInVariables: React.ReactNode;
+  variables: React.ReactNode;
 }) {
   const user = await currentUser();
   if (!user) return notFound();
@@ -29,6 +31,7 @@ export default async function EntityLayout({
         {/* Page Heading */}
         {children}
         {builtInVariables}
+        {variables}
       </div>
     </>
   );

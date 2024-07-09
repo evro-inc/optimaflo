@@ -29,7 +29,7 @@ const FormatValueSchema = z.object({
   convertUndefinedToValue: ParameterSchema.optional(),
 });
 
-const VariableSchema = z.object({
+export const VariableSchema = z.object({
   path: z.string(),
   accountId: z.string(),
   containerId: z.string(),
@@ -49,5 +49,13 @@ const VariableSchema = z.object({
   formatValue: FormatValueSchema.optional(),
 });
 
+export const FormCreateAmountSchema = z.object({
+  amount: z.number(),
+});
+
+export const FormsSchema = z.object({
+  forms: z.array(VariableSchema),
+});
+
 // Export the type inferred from VariableSchema for type safety
-export type VariableType = z.infer<typeof VariableSchema>;
+export type VariableType = z.infer<typeof FormsSchema>;

@@ -1084,6 +1084,8 @@ export type VariableType =
   | 'awec'
   | 'cid'
   | 'dbg'
+  | 'gtes'
+  | 'gtcs'
   | 'ctv';
 
 interface FormatValue {
@@ -1095,13 +1097,13 @@ interface FormatValue {
 }
 
 export interface Variable {
-  path: string;
+  path?: string;
   accountId: string;
   containerId: string;
   workspaceId: string;
   variableId: string;
   name: string;
-  type: string;
+  type: VariableType;
   notes?: string;
   decodeCookie: string;
   scheduleStartMs?: number;

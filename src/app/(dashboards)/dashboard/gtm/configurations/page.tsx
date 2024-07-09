@@ -52,9 +52,9 @@ export default async function Page() {
   );
 
   const combinedData = transformedData.map((vars) => {
-    const accountId = vars.builtInVariable.accountId;
-    const containerId = vars.builtInVariable.containerId;
-    const workspaceId = vars.builtInVariable.workspaceId;
+    const accountId = vars.variable.accountId;
+    const containerId = vars.variable.containerId;
+    const workspaceId = vars.variable.workspaceId;
 
     const accounts = flatAccounts.find((p) => p.accountId === accountId);
     const containers = flatContainers.find((p) => p.containerId === containerId);
