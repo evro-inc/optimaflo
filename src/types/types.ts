@@ -1331,6 +1331,7 @@ export interface UserPermission {
   emailAddress: string;
   accountAccess: AccountAccess;
   containerAccess: ContainerAccess[];
+  path?: string;
 }
 
 export interface FormValues {

@@ -94,21 +94,21 @@ export default ({
       const accounts = table.map((item) => ({
         accountId: item.accountId,
         accountName: item.accountName,
-        email: item.emailAddress
+        email: item.emailAddress,
       }));
 
-      const accountAccess = accounts.filter(account => selectedEmailAddresses.includes(account.email));
+      const accountAccess = accounts.filter((account) =>
+        selectedEmailAddresses.includes(account.email)
+      );
       const uniqueAccounts = accountAccess.filter(
         (value, index, self) => index === self.findIndex((t) => t.accountId === value.accountId)
       );
 
-      return uniqueAccounts.filter(account => selectedEmailAddresses.includes(account.email));
-
+      return uniqueAccounts.filter((account) => selectedEmailAddresses.includes(account.email));
     } else {
       return accountsWithContainers;
     }
   }, [selectedEmailAddresses, table, accountsWithContainers, selectedAccountIds, type]);
-
 
   console.log('avaliableAccounts', availableAccounts);
 

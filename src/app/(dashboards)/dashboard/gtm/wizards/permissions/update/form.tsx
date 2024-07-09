@@ -51,7 +51,10 @@ import {
 import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { CreatePermissions, UpdatePermissions } from '@/src/lib/fetch/dashboard/actions/gtm/permissions';
+import {
+  CreatePermissions,
+  UpdatePermissions,
+} from '@/src/lib/fetch/dashboard/actions/gtm/permissions';
 import {
   accountAccessPermissions,
   containerAccessPermissions,
@@ -100,7 +103,6 @@ const FormUpdatePermissions: React.FC<FormCreateProps> = ({
   const emailAddresses = useSelector((state: RootState) =>
     state.gtmUserPermission.forms.flatMap((form) => form.emailAddresses)
   );
-
 
   const foundTierLimit = tierLimits.find(
     (subscription) => subscription.Feature?.name === 'GTMPermissions'
@@ -153,12 +155,19 @@ const FormUpdatePermissions: React.FC<FormCreateProps> = ({
     }
   }, [formCreateAmount.watch('amount'), dispatch, forms]);
 
-  /*   if (notFoundError) {
-      return <NotFoundErrorModal />;
-    }
-    if (error) {
-      return <ErrorModal />;
-    } */
+  if (notFoundError) {
+    return (
+      <NotFoundErrorModal
+        onClose={() => {
+          dispatch(setNotFoundError(false));
+          router.push('/dashboard/gtm/entities');
+        }}
+      />
+    );
+  }
+  if (error) {
+    return <ErrorModal />;
+  }
 
   const handleAmountChange = (selectedAmount) => {
     const amount = parseInt(selectedAmount);
@@ -181,7 +190,6 @@ const FormUpdatePermissions: React.FC<FormCreateProps> = ({
     }
   };
 
-
   const transformData = (data: FormValuesType) => {
     return data.forms.flatMap((form) =>
       form.emailAddresses.flatMap((emailObj) =>
@@ -192,7 +200,6 @@ const FormUpdatePermissions: React.FC<FormCreateProps> = ({
       )
     );
   };
-
 
   const findPaths = (data, table) => {
     return {
@@ -219,26 +226,19 @@ const FormUpdatePermissions: React.FC<FormCreateProps> = ({
     };
   };
 
-
-
-
-
   const processForm: SubmitHandler<FormValuesType> = async (data) => {
     dispatch(setLoading(true));
 
-    console.log("data", data);
+    console.log('data', data);
     console.log('table data', table);
 
     // build new array by matching data and table data. The final return should include the path with the rest of data in the format of the schema.
 
-
     const transformedData = transformData(data);
     console.log('transformedData', transformedData);
 
-
     const permissionsWithPaths = findPaths(transformedData, table);
-    console.log("permissionsWithPaths", permissionsWithPaths);
-
+    console.log('permissionsWithPaths', permissionsWithPaths);
 
     if (permissionsWithPaths.forms.length === 0) {
       toast.error('No valid permissions found after processing.', {
@@ -247,8 +247,6 @@ const FormUpdatePermissions: React.FC<FormCreateProps> = ({
       dispatch(setLoading(false));
       return;
     }
-
-
 
     const validation = TransformedFormSchema.safeParse(permissionsWithPaths);
     if (!validation.success) {
@@ -293,7 +291,6 @@ const FormUpdatePermissions: React.FC<FormCreateProps> = ({
     });
 
     try {
-
       const res = (await UpdatePermissions(permissionsWithPaths)) as FeatureResponse;
 
       if (res.success) {
@@ -327,15 +324,10 @@ const FormUpdatePermissions: React.FC<FormCreateProps> = ({
   const handleErrors = (res: FeatureResponse) => {
     if (res.notFoundError) {
       res.results.forEach((result) => {
-        console.log('result', result);
-
         if (result.notFound) {
-          toast.error(
-            `${result.message} Any other user permissions created were successful.`,
-            {
-              action: { label: 'Close', onClick: () => toast.dismiss() },
-            }
-          );
+          toast.error(`${result.message} Any other user permissions created were successful.`, {
+            action: { label: 'Close', onClick: () => toast.dismiss() },
+          });
         }
       });
       dispatch(setErrorDetails(res.results));

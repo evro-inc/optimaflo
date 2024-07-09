@@ -1,9 +1,8 @@
-// src/app/(dashboards)/dashboard/gtm/versions/delete.tsx
 'use client';
 
 import { setErrorDetails, setIsLimitReached, setNotFoundError } from '@/src/redux/tableSlice';
-import { DeleteVersions } from '@/src/lib/fetch/dashboard/actions/gtm/versions';
-import { GTMContainerVersion, FeatureResponse } from '@/src/types/types';
+import { DeletePermissions } from '@/src/lib/fetch/dashboard/actions/gtm/permissions';
+import { GTMContainerVersion, FeatureResponse, UserPermission } from '@/src/types/types';
 import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
 
@@ -11,19 +10,23 @@ export const useDeleteHook = (selectedRows, table) => {
   const dispatch = useDispatch();
 
   const handleDelete = async () => {
-    toast('Deleting version(s)...', {
+    toast('Deleting user permission(s)...', {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
       },
     });
 
-    // Use Object.values to get the values from the selectedRows object and cast them to WorkspaceType
-    const versionsToDelete: GTMContainerVersion[] = Object.values(
-      selectedRows as Record<string, GTMContainerVersion>
+    const permissionsToDelete: UserPermission[] = Object.values(
+      selectedRows as Record<string, UserPermission>
     );
 
-    const response: FeatureResponse = await DeleteVersions(versionsToDelete);
+    const permissionNames = permissionsToDelete.map((permission) => {
+      // Extract the path from the selectedRows object
+      return selectedRows[permission.accountId]?.path || 'Unknown';
+    });
+
+    const response: FeatureResponse = await DeletePermissions(permissionsToDelete, permissionNames);
 
     if (!response.success) {
       let message = response.message || 'An error occurred.';
