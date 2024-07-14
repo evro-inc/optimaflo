@@ -54,6 +54,10 @@ export default async function BuiltInVarPage({
   );
 
   const combinedData = flatBuiltInVars.map((vars) => {
+    if (!vars.variable) {
+      return vars;
+    }
+
     const accountId = vars.accountId;
     const containerId = vars.containerId;
     const workspaceId = vars.workspaceId;

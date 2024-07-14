@@ -1,24 +1,26 @@
 import { z } from 'zod';
 
 // Enum for parameter types
-const ParameterType = z.enum([
-  'boolean',
-  'integer',
-  'list',
-  'map',
-  'tagReference',
-  'template',
-  'triggerReference',
-  'typeUnspecified',
-]);
+const ParameterType = z
+  .enum([
+    'boolean',
+    'integer',
+    'list',
+    'map',
+    'tagReference',
+    'template',
+    'triggerReference',
+    'typeUnspecified',
+  ])
+  .optional();
 
 const ParameterSchema = z.object({
   type: ParameterType,
-  key: z.string(),
-  value: z.string(),
-  list: z.array(z.lazy(() => ParameterSchema)),
-  map: z.array(z.lazy(() => ParameterSchema)),
-  isWeakReference: z.boolean(),
+  key: z.string().optional(),
+  value: z.string().optional(),
+  list: z.array(z.lazy(() => ParameterSchema)).optional(),
+  map: z.array(z.lazy(() => ParameterSchema)).optional(),
+  isWeakReference: z.boolean().optional(),
 });
 
 const FormatValueSchema = z.object({
@@ -30,7 +32,7 @@ const FormatValueSchema = z.object({
 });
 
 export const VariableSchema = z.object({
-  path: z.string(),
+  path: z.string().optional(),
   accountId: z.string(),
   containerId: z.string(),
   workspaceId: z.string(),
@@ -49,12 +51,25 @@ export const VariableSchema = z.object({
   formatValue: FormatValueSchema.optional(),
 });
 
+export const AccountContainerWorkspaceSchema = z.object({
+  accountId: z.string(),
+  containerId: z.string(),
+  workspaceId: z.string(),
+});
+
+export const FormSetSchema = z.object({
+  gtmEntity: z
+    .array(AccountContainerWorkspaceSchema)
+    .min(1, { message: 'At least one entity is required' }),
+  variables: VariableSchema,
+});
+
 export const FormCreateAmountSchema = z.object({
   amount: z.number(),
 });
 
 export const FormsSchema = z.object({
-  forms: z.array(VariableSchema),
+  forms: z.array(FormSetSchema),
 });
 
 // Export the type inferred from VariableSchema for type safety

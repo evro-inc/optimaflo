@@ -52,6 +52,10 @@ export default async function Page() {
   );
 
   const combinedData = transformedData.map((vars) => {
+    if (!vars.variable) {
+      return vars;
+    }
+
     const accountId = vars.variable.accountId;
     const containerId = vars.variable.containerId;
     const workspaceId = vars.variable.workspaceId;

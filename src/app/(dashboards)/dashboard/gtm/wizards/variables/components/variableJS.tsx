@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
 import {
   FormControl,
@@ -8,15 +8,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@/src/components/ui/form';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from '@/src/components/ui/select';
 import {
   caseConversionTypes,
   formatValueOptions,
@@ -32,14 +23,12 @@ interface Props {
   table?: any;
 }
 
-const HttpReferrer = ({ formIndex, type, table = [] }: Props) => {
-  const { control, register, watch } = useFormContext();
+const JavaScriptVariable = ({ formIndex, type, table = [] }: Props) => {
+  const { control, register } = useFormContext();
   const { fields, append } = useFieldArray({
     control,
     name: `forms.${formIndex}.parameter`,
   });
-
-  const watchedFields = watch(`forms.${formIndex}.parameter`);
 
   // Append a default field if fields are empty
   useEffect(() => {
@@ -50,8 +39,6 @@ const HttpReferrer = ({ formIndex, type, table = [] }: Props) => {
 
   return (
     <div>
-      <FormLabel>HTTP Referrer</FormLabel>
-      <FormDescription>Select a component type.</FormDescription>
       {fields.map((item, index) => (
         <div className="py-3" key={item.id}>
           <FormField
@@ -59,27 +46,14 @@ const HttpReferrer = ({ formIndex, type, table = [] }: Props) => {
             name={`forms.${formIndex}.parameter.${index}.type`}
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Component Type</FormLabel>
+                <FormLabel>JavaScript Variable</FormLabel>
                 <FormControl>
-                  <Select
+                  <Input
                     {...register(`forms.${formIndex}.parameter.${index}.type`)}
                     value={field.value}
-                    onValueChange={field.onChange}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a variable type." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectLabel>Variable Type</SelectLabel>
-                        {httpReferrerType.map((variable) => (
-                          <SelectItem key={variable.type} value={variable.type}>
-                            {variable.name}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
+                    onChange={field.onChange}
+                    placeholder="Enter a variable type"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -91,4 +65,4 @@ const HttpReferrer = ({ formIndex, type, table = [] }: Props) => {
   );
 };
 
-export default HttpReferrer;
+export default JavaScriptVariable;

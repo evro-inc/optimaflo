@@ -24,7 +24,7 @@ type schema = z.infer<typeof FormsSchema>;
 /************************************************************************************
   Function to list or get one GTM builtInVariables
 ************************************************************************************/
-export async function listVariables() {
+export async function listVariables(skipCache = false) {
   let retries = 0;
   const MAX_RETRIES = 3;
   let delay = 1000;
@@ -36,11 +36,12 @@ export async function listVariables() {
   const accessToken = token[0].token;
 
   const cacheKey = `gtm:variables:userId:${userId}`;
-  const cachedValue = await redis.get(cacheKey);
-  if (cachedValue) {
-    return JSON.parse(cachedValue);
+  if (!skipCache) {
+    const cachedValue = await redis.get(cacheKey);
+    if (cachedValue) {
+      return JSON.parse(cachedValue);
+    }
   }
-
   await fetchGtmSettings(userId);
 
   const gtmData = await prisma.user.findFirst({
@@ -413,7 +414,7 @@ export async function listVariables() {
 /************************************************************************************
   Create a single container or multiple containers
 ************************************************************************************/
-export async function CreateBuiltInVariables(formData: FormCreateSchema) {
+export async function CreateVariables(formData: FormCreateSchema) {
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);

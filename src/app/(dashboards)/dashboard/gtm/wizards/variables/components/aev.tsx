@@ -1,13 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
-import {
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/src/components/ui/form';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/src/components/ui/form';
 import {
   Select,
   SelectContent,
@@ -17,13 +10,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/src/components/ui/select';
-import {
-  caseConversionTypes,
-  formatValueOptions,
-  httpReferrerType,
-} from '../../../configurations/@variables/items';
 import { Checkbox } from '@/src/components/ui/checkbox';
 import { Input } from '@/src/components/ui/input';
+import { aevType } from '../../../configurations/@variables/items';
 import FormatValue from './formatValue';
 
 interface Props {
@@ -32,14 +21,14 @@ interface Props {
   table?: any;
 }
 
-const HttpReferrer = ({ formIndex, type, table = [] }: Props) => {
-  const { control, register, watch } = useFormContext();
+const AEV = ({ formIndex, type, table = [] }: Props) => {
+  const { control, register } = useFormContext();
   const { fields, append } = useFieldArray({
     control,
     name: `forms.${formIndex}.parameter`,
   });
 
-  const watchedFields = watch(`forms.${formIndex}.parameter`);
+  const [defaultValueChecked, setDefaultValueChecked] = useState(false);
 
   // Append a default field if fields are empty
   useEffect(() => {
@@ -50,29 +39,24 @@ const HttpReferrer = ({ formIndex, type, table = [] }: Props) => {
 
   return (
     <div>
-      <FormLabel>HTTP Referrer</FormLabel>
-      <FormDescription>Select a component type.</FormDescription>
       {fields.map((item, index) => (
         <div className="py-3" key={item.id}>
+          {/* Variable Type */}
           <FormField
             control={control}
-            name={`forms.${formIndex}.parameter.${index}.type`}
+            name={`forms.${formIndex}.parameter.${index}.value`}
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Component Type</FormLabel>
+                <FormLabel>Variable Type</FormLabel>
                 <FormControl>
-                  <Select
-                    {...register(`forms.${formIndex}.parameter.${index}.type`)}
-                    value={field.value}
-                    onValueChange={field.onChange}
-                  >
+                  <Select value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a variable type." />
+                      <SelectValue placeholder="Select a variable type" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
                         <SelectLabel>Variable Type</SelectLabel>
-                        {httpReferrerType.map((variable) => (
+                        {aevType.map((variable) => (
                           <SelectItem key={variable.type} value={variable.type}>
                             {variable.name}
                           </SelectItem>
@@ -85,10 +69,37 @@ const HttpReferrer = ({ formIndex, type, table = [] }: Props) => {
               </FormItem>
             )}
           />
+
+          {/* Set Default Value */}
+          <FormField
+            control={control}
+            name={`forms.${formIndex}.parameter.${index}`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>test</FormLabel>
+                <FormControl>
+                  <Checkbox
+                    {...register(`forms.${formIndex}.parameter.${index}`)}
+                    checked={field.value}
+                    onCheckedChange={(e) => field.onChange(e)}
+                  />
+                </FormControl>
+                {field.value && (
+                  <FormControl>
+                    <Input
+                      {...register(`forms.${formIndex}.parameter.${index}`)}
+                      placeholder={`Enter value`}
+                    />
+                  </FormControl>
+                )}
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
       ))}
     </div>
   );
 };
 
-export default HttpReferrer;
+export default AEV;

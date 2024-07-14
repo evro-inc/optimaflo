@@ -17,9 +17,9 @@ export default async function BuiltInVariablePage() {
   const subscriptionId = subscription.id;
 
   const tierLimits = await getTierLimit(subscriptionId);
-  const accountData = await listGtmAccounts();
-  const containerData = await listGtmContainers();
-  const workspaceData = await listGtmWorkspaces();
+  const accountData = await listGtmAccounts(true);
+  const containerData = await listGtmContainers(true);
+  const workspaceData = await listGtmWorkspaces(true);
   const varData = await listVariables();
 
   const [accounts, containers, workspaces, variable] = await Promise.all([
@@ -64,16 +64,15 @@ export default async function BuiltInVariablePage() {
     redirect('/dashboard/gtm/configurations'); // Replace with the actual path you want to redirect to
   }
 
+  console.log('flatWorkspaces', flatWorkspaces);
+
   return (
     <>
       <div className="container">
         <FormCreateVariable
           tierLimits={tierLimits}
           table={combinedData}
-          accounts={accounts}
-          containers={containers}
-          workspaces={workspaces}
-          properties={combinedData}
+          workspaces={flatWorkspaces}
         />
       </div>
     </>

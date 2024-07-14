@@ -25,7 +25,7 @@ type FormUpdateSchema = z.infer<typeof FormsSchema>;
 /************************************************************************************
   Function to list or get one GTM builtInVariables
 ************************************************************************************/
-export async function listGtmBuiltInVariables() {
+export async function listGtmBuiltInVariables(skipCache = false) {
   let retries = 0;
   const MAX_RETRIES = 3;
   let delay = 1000;
@@ -37,9 +37,11 @@ export async function listGtmBuiltInVariables() {
   const accessToken = token[0].token;
 
   const cacheKey = `gtm:builtInVariables:userId:${userId}`;
-  const cachedValue = await redis.get(cacheKey);
-  if (cachedValue) {
-    return JSON.parse(cachedValue);
+  if (!skipCache) {
+    const cachedValue = await redis.get(cacheKey);
+    if (cachedValue) {
+      return JSON.parse(cachedValue);
+    }
   }
 
   await fetchGtmSettings(userId);

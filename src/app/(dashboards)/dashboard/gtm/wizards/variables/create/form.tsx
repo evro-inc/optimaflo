@@ -37,18 +37,21 @@ import {
 import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { Checkbox } from '@/src/components/ui/checkbox';
 import { Separator } from '@/src/components/ui/separator';
-import {
-  BuiltInVariableGroups,
-  variableTypeArray,
-  variableTypeData,
-} from '../../../configurations/@variables/items';
+import { variableTypeArray } from '../../../configurations/@variables/items';
 import { CreateVariables, listVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variables';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/src/components/ui/tabs';
-import { BuiltInVariableType } from '@/src/types/types';
 import HttpReferrer from '../components/httpReferrer';
+import FirstPartyCookie from '../components/firstPartyCookie';
 import { Input } from '@/src/components/ui/input';
+import AEV from '../components/aev';
+import Constant from '../components/constant';
+import CustomJS from '../components/customJS';
+import DataLayerVariable from '../components/dlv';
+import DOMElement from '../components/dom';
+import JavaScriptVariable from '../components/variableJS';
+import LookupTableVariable from '../components/lookup';
+import FormatValue from '../components/formatValue';
+import EntityComponent from '../components/entity';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -66,13 +69,26 @@ const ErrorModal = dynamic(
 
 type Forms = z.infer<typeof FormsSchema>;
 
+const formDataDefaults: Variable = {
+  accountId: '',
+  containerId: '',
+  workspaceId: '',
+  variableId: '',
+  name: '',
+  type: 'k',
+  decodeCookie: '',
+  parameter: [
+    { type: 'template', key: 'name', value: '' },
+    { type: 'boolean', key: 'decodeCookie', value: 'false' },
+  ],
+  enablingTriggerId: [],
+  disablingTriggerId: [],
+};
+
 const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
   tierLimits,
-  properties = [],
   table = [],
-  accounts = [],
-  containers = [],
-  workspaces = [],
+  workspaces,
 }) => {
   const dispatch = useDispatch();
   const loading = useSelector((state: RootState) => state.form.loading);
@@ -80,11 +96,10 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
   const currentStep = useSelector((state: RootState) => state.form.currentStep);
   const count = useSelector((state: RootState) => state.form.count);
   const notFoundError = useSelector(selectTable).notFoundError;
+  const entities = useSelector((state: RootState) => state.gtmEntity.entities); // Get entities from Redux state
   const router = useRouter();
 
   const [createdVariables, setCreatedVariables] = useState<any[]>([]); // State to store created variables
-  const [selectedEntities, setSelectedEntities] = useState<Set<string>>(new Set()); // State to store selected entities
-  const [selectAll, setSelectAll] = useState(false);
 
   useEffect(() => {
     const fetchCreatedVariables = async () => {
@@ -96,34 +111,8 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
         console.error('Error fetching created variables:', error);
       }
     };
-
     fetchCreatedVariables();
   }, []);
-
-  const gtmAccountContainerWorkspacesPairs = workspaces.reduce(
-    (acc, item) => {
-      const account = accounts.find((acc) => acc.accountId === item.accountId);
-      const container = containers.find((cont) => cont.containerId === item.containerId);
-      const workspace = workspaces.find((ws) => ws.workspaceId === item.workspaceId);
-
-      const identifier = `${account.accountId}-${container.containerId}-${workspace.workspaceId}`;
-
-      if (!acc.seen.has(identifier)) {
-        acc.seen.add(identifier);
-        acc.result.push({
-          account: account.accountId,
-          accountName: account.name,
-          container: container.containerId,
-          containerName: container.name,
-          workspace: workspace.workspaceId,
-          workspaceName: workspace.name,
-        });
-      }
-
-      return acc;
-    },
-    { seen: new Set(), result: [] }
-  ).result;
 
   const foundTierLimit = tierLimits.find(
     (subscription) => subscription.Feature?.name === 'GTMVariables'
@@ -132,27 +121,6 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
   const createLimit = foundTierLimit?.createLimit;
   const createUsage = foundTierLimit?.createUsage;
   const remainingCreate = createLimit - createUsage;
-
-  /*   const formDataDefaults: {
-      type: BuiltInVariableType[];
-      entity: string[];
-    } = {
-      type: [],
-      entity: [],
-    }; */
-
-  const formDataDefaults: Variable = {
-    accountId: table[0].accountId,
-    containerId: '',
-    workspaceId: '',
-    variableId: '',
-    name: '',
-    type: 'k',
-    decodeCookie: '',
-    parameter: [{ type: 'typeUnspecified', key: '', value: '' }],
-    enablingTriggerId: [],
-    disablingTriggerId: [],
-  };
 
   const formCreateAmount = useForm({
     resolver: zodResolver(FormCreateAmountSchema),
@@ -163,7 +131,12 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
 
   const form = useForm<Forms>({
     defaultValues: {
-      forms: [formDataDefaults],
+      forms: [
+        {
+          gtmEntity: [{ accountId: '', containerId: '', workspaceId: '' }],
+          variables: formDataDefaults,
+        },
+      ],
     },
     resolver: zodResolver(FormsSchema),
   });
@@ -175,8 +148,14 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
 
   const selectedType = useWatch({
     control: form.control,
-    name: `forms.${currentStep - 2}.type`,
+    name: `forms.${currentStep - 2}.variables.type`,
   });
+
+  useEffect(() => {
+    if (!selectedType) {
+      form.setValue(`forms.${currentStep - 2}.variables.type`, 'k');
+    }
+  }, [selectedType, form, currentStep]);
 
   // Effect to update count when amount changes
   useEffect(() => {
@@ -190,8 +169,6 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
   if (error) {
     return <ErrorModal />;
   }
-
-  const includeDefaultValue = form.watch('forms');
 
   const addForm = () => {
     append(formDataDefaults as any);
@@ -212,6 +189,10 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
   const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
     dispatch(setLoading(true));
+
+    console.log('Redux state entities: ', entities);
+
+    console.log('forms: ', forms);
 
     toast('Creating Variables...', {
       action: {
@@ -239,7 +220,7 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
     }
 
     try {
-      const res = (await CreateBuiltInVariables({ forms })) as FeatureResponse;
+      const res = (await CreateVariables({ forms })) as FeatureResponse;
 
       if (res.success) {
         res.results.forEach((result) => {
@@ -331,13 +312,6 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
         `${currentFormPath}.countingMethod`,
       ];
 
-      if (includeDefaultValue[currentFormIndex]?.includeDefaultValue) {
-        fieldsToValidate.push(
-          `${currentFormPath}.defaultValue.numericValue`,
-          `${currentFormPath}.defaultValue.currencyCode`
-        );
-      }
-
       const isFormValid = await form.trigger(fieldsToValidate as any);
 
       if (isFormValid) {
@@ -348,28 +322,6 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
 
   const handlePrevious = () => {
     dispatch(decrementStep());
-  };
-
-  const handleEntitySelection = (entity, checked, index) => {
-    const newSelectedEntities = new Set(selectedEntities);
-    if (checked) {
-      newSelectedEntities.add(JSON.stringify({ ...entity, formIndex: index }));
-    } else {
-      newSelectedEntities.delete(JSON.stringify({ ...entity, formIndex: index }));
-    }
-    setSelectedEntities(newSelectedEntities);
-  };
-
-  const isVariableDisabled = (variable, entity, currentFormIndex) => {
-    const currentFormEntities = includeDefaultValue[currentFormIndex]?.entity || [];
-    return createdVariables.some(
-      (createdVar) =>
-        createdVar.accountId === entity.account &&
-        createdVar.containerId === entity.container &&
-        createdVar.workspaceId === entity.workspace &&
-        createdVar.type === variable &&
-        currentFormEntities.includes(`${entity.account}-${entity.container}-${entity.workspace}`)
-    );
   };
 
   return (
@@ -383,7 +335,7 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
               name="amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>How many key variable forms do you want to create?</FormLabel>
+                  <FormLabel>How many variable forms do you want to create?</FormLabel>
                   <Select
                     onValueChange={(value) => {
                       handleAmountChange(value); // Call the modified handler
@@ -439,14 +391,16 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
                                 <div>
                                   <FormField
                                     control={form.control}
-                                    name={`forms.${currentStep - 2}.name`}
+                                    name={`forms.${currentStep - 2}.variables.name`}
                                     render={({ field }) => (
                                       <FormItem>
                                         <FormLabel>Variable Name</FormLabel>
                                         <FormControl>
                                           <Input
                                             placeholder="Name of Variable"
-                                            {...form.register(`forms.${currentStep - 2}.name`)}
+                                            {...form.register(
+                                              `forms.${currentStep - 2}.variables.name`
+                                            )}
                                             {...field}
                                           />
                                         </FormControl>
@@ -459,7 +413,7 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
                                 <div>
                                   <FormField
                                     control={form.control}
-                                    name={`forms.${currentStep - 2}.type`}
+                                    name={`forms.${currentStep - 2}.variables.type`}
                                     render={({ field }) => (
                                       <FormItem>
                                         <FormLabel>Variable Type</FormLabel>
@@ -468,7 +422,9 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
                                         </FormDescription>
                                         <FormControl>
                                           <Select
-                                            {...form.register(`forms.${currentStep - 2}.type`)}
+                                            {...form.register(
+                                              `forms.${currentStep - 2}.variables.type`
+                                            )}
                                             {...field}
                                             onValueChange={field.onChange}
                                           >
@@ -498,164 +454,82 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
                                 </div>
 
                                 {/* Insert the switch statement below */}
-                                {(() => {
-                                  switch (selectedType) {
-                                    case 'k':
-                                      return <div>First Party Cookie</div>;
-                                    case 'aev':
-                                      return <div>Auto-Event Variable</div>;
-                                    case 'c':
-                                      return <div>Constant</div>;
-                                    case 'jsm':
-                                      return <div>Custom JS</div>;
-                                    case 'v':
-                                      return <div>Data Layer Variable</div>;
-                                    case 'd':
-                                      return <div>DOM Element</div>;
-                                    case 'f':
-                                      return <HttpReferrer formIndex={currentStep - 2} type={''} />;
-                                    case 'j':
-                                      return <div>JavaScript Variable</div>;
-                                    case 'gas':
-                                      return <div>Google Analytics Settings Variable</div>;
-                                    case 'smm':
-                                      return <div>Lookup Table</div>;
-                                    case 'remm':
-                                      return <div>Regex Lookup Table</div>;
-                                    case 'u':
-                                      return <div>URL</div>;
-                                    case 'vis':
-                                      return <div>Element Visibility</div>;
-                                    case 'e':
-                                      return <div>Custom Event</div>;
-                                    case 'ev':
-                                      return <div>Environment Name</div>;
-                                    case 'r':
-                                      return <div>Random Number</div>;
-                                    case 'uv':
-                                      return <div>Undefined Value</div>;
-                                    case 'awec':
-                                      return <div>User Provided Data</div>;
-                                    case 'cid':
-                                      return <div>Container Id</div>;
-                                    case 'dbg':
-                                      return <div>Debug</div>;
-                                    case 'gtes':
-                                      return <div>Google Tag: Event Settings</div>;
-                                    case 'gtcs':
-                                      return <div>Google Tag: Configuration Settings</div>;
-                                    case 'ctv':
-                                      return <div>Container Version Number</div>;
-                                    default:
-                                      return <div>Unknown Variable Type</div>;
-                                  }
-                                })()}
+                                {selectedType &&
+                                  (() => {
+                                    switch (selectedType) {
+                                      case 'k':
+                                        return (
+                                          <FirstPartyCookie formIndex={currentStep - 2} type={''} />
+                                        );
+                                      case 'aev':
+                                        return <AEV formIndex={currentStep - 2} type={''} />;
+                                      case 'c':
+                                        return <Constant formIndex={currentStep - 2} type={''} />;
+                                      case 'jsm':
+                                        return <CustomJS formIndex={currentStep - 2} type={''} />;
+                                      case 'v':
+                                        return (
+                                          <DataLayerVariable
+                                            formIndex={currentStep - 2}
+                                            type={''}
+                                          />
+                                        );
+                                      case 'd':
+                                        return <DOMElement formIndex={currentStep - 2} type={''} />;
+                                      case 'f':
+                                        return (
+                                          <HttpReferrer formIndex={currentStep - 2} type={''} />
+                                        );
+                                      case 'j':
+                                        return (
+                                          <JavaScriptVariable
+                                            formIndex={currentStep - 2}
+                                            type={''}
+                                          />
+                                        );
+                                      case 'gas':
+                                        return <div>Google Analytics Settings Variable</div>;
+                                      case 'smm':
+                                        return (
+                                          <LookupTableVariable
+                                            formIndex={currentStep - 2}
+                                            type={''}
+                                          />
+                                        );
+                                      case 'remm':
+                                        return <div>Regex Lookup Table</div>;
+                                      case 'u':
+                                        return <div>URL</div>;
+                                      case 'vis':
+                                        return <div>Element Visibility</div>;
+                                      case 'e':
+                                        return <div>Custom Event</div>;
+                                      case 'ev':
+                                        return <div>Environment Name</div>;
+                                      case 'r':
+                                        return <div>Random Number</div>;
+                                      case 'uv':
+                                        return <div>Undefined Value</div>;
+                                      case 'awec':
+                                        return <div>User Provided Data</div>;
+                                      case 'cid':
+                                        return <div>Container Id</div>;
+                                      case 'dbg':
+                                        return <div>Debug</div>;
+                                      case 'gtes':
+                                        return <div>Google Tag: Event Settings</div>;
+                                      case 'gtcs':
+                                        return <div>Google Tag: Configuration Settings</div>;
+                                      case 'ctv':
+                                        return <div>Container Version Number</div>;
+                                      default:
+                                        return <div>Unknown Variable Type</div>;
+                                    }
+                                  })()}
 
-                                {/*   <div className="flex flex-col md:flex-row md:space-x-4 py-10">
-                                  <div className="w-full md:basis-auto">
-                                    <FormField
-                                      control={form.control}
-                                      name={`forms.${index}.entity`}
-                                      render={() => (
-                                        <FormItem>
-                                          <div className="mb-4">
-                                            <FormLabel className="text-base">
-                                              Entity Selection
-                                            </FormLabel>
-                                            <FormDescription>
-                                              Which account, container, and workspace do you want to
-                                              create the variable(s) for?
-                                            </FormDescription>
-                                          </div>
-                                          {gtmAccountContainerWorkspacesPairs.map((item, idx) => (
-                                            <FormField
-                                              key={`${item.account}-${item.container}-${item.workspace}`}
-                                              control={form.control}
-                                              name={`forms.${index}.entity`}
-                                              render={({ field }) => {
-                                                const compositeValue = `${item.account}-${item.container}-${item.workspace}`;
-                                                const entity = {
-                                                  account: item.account,
-                                                  container: item.container,
-                                                  workspace: item.workspace,
-                                                };
-                                                return (
-                                                  <FormItem
-                                                    key={compositeValue}
-                                                    className="flex flex-row items-start space-x-3 space-y-0"
-                                                  >
-                                                    <FormControl>
-                                                      <Checkbox
-                                                        checked={
-                                                          Array.isArray(field.value) &&
-                                                          field.value.includes(compositeValue)
-                                                        }
-                                                        onCheckedChange={(checked) => {
-                                                          handleEntitySelection(
-                                                            entity,
-                                                            checked,
-                                                            index
-                                                          );
-                                                          return checked
-                                                            ? field.onChange([
-                                                              ...(Array.isArray(field.value)
-                                                                ? field.value
-                                                                : []),
-                                                              compositeValue,
-                                                            ])
-                                                            : field.onChange(
-                                                              (Array.isArray(field.value)
-                                                                ? field.value
-                                                                : []
-                                                              ).filter(
-                                                                (value) =>
-                                                                  value !== compositeValue
-                                                              )
-                                                            );
-                                                        }}
-                                                      />
-                                                    </FormControl>
-                                                    <FormLabel className="text-sm font-normal">
-                                                      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                                                        <div>
-                                                          <span className="text-gray-600 font-semibold">
-                                                            Account:
-                                                          </span>
-                                                          <span className="ml-2 text-gray-800 font-medium">
-                                                            {item.accountName}
-                                                          </span>
-                                                        </div>
-                                                        <Separator orientation="vertical" />
-                                                        <div>
-                                                          <span className="text-gray-600 font-semibold">
-                                                            Container:
-                                                          </span>
-                                                          <span className="ml-2 text-gray-800 font-medium">
-                                                            {item.containerName}
-                                                          </span>
-                                                        </div>
-                                                        <Separator orientation="vertical" />
-                                                        <div>
-                                                          <span className="text-gray-600 font-semibold">
-                                                            Workspace:
-                                                          </span>
-                                                          <span className="ml-2 text-gray-800 font-medium">
-                                                            {item.workspaceName}
-                                                          </span>
-                                                        </div>
-                                                      </div>
-                                                    </FormLabel>
-                                                  </FormItem>
-                                                );
-                                              }}
-                                            />
-                                          ))}
-                                          <FormMessage />
-                                        </FormItem>
-                                      )}
-                                    />
-                                  </div>
-                                </div> */}
+                                <FormatValue formIndex={currentStep - 2} />
+
+                                <EntityComponent formIndex={currentStep - 2} table={table} />
                               </>
                             );
                           })()}

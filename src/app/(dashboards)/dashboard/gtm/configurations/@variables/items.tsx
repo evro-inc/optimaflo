@@ -1,3 +1,7 @@
+import { listVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variables';
+import { listGtmBuiltInVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variablesBuiltIn';
+import { listGtmWorkspaces } from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
+
 export const variableTypeArray = [
   { type: 'k', name: 'First Party Cookie' },
   { type: 'aev', name: 'Auto-Event Variable' },
@@ -33,3 +37,88 @@ export const httpReferrerType = [
   { type: 'query', name: 'Query' },
   { type: 'fragment', name: 'Fragment' },
 ];
+
+export const formatValueOptions = [
+  { label: 'Convert Null To Value', name: 'convertNullToValue' },
+  { label: 'Convert Undefined To Value', name: 'convertUndefinedToValue' },
+  { label: 'Convert True To Value', name: 'convertTrueToValue' },
+  { label: 'Convert False To Value', name: 'convertFalseToValue' },
+];
+
+export const caseConversionTypes = [
+  { value: 'none', label: 'None' },
+  { value: 'lowercase', label: 'Lowercase' },
+  { value: 'uppercase', label: 'Uppercase' },
+];
+
+export const aevType = [
+  { type: 'element', name: 'Element' },
+  { type: 'elementType', name: 'Element Type' },
+  { type: 'elementAttribute', name: 'Element Attribute' },
+  { type: 'elementClasses', name: 'Element Classes' },
+  { type: 'elementId', name: 'Element ID' },
+  { type: 'elementTarget', name: 'Element Target' },
+  { type: 'elementText', name: 'Element Text' },
+  { type: 'elementUrl', name: 'Element URL' },
+  { type: 'historyNewUrlFragment', name: 'History New URL Fragment' },
+  { type: 'historyOldUrlFragment', name: 'History Old URL Fragment' },
+  { type: 'historyNewState', name: 'History New State' },
+  { type: 'historyOldState', name: 'History Old State' },
+  { type: 'historyChangeSource', name: 'History Change Source' },
+];
+
+export const caseConversionType = [
+  {
+    type: 'lowercase',
+    name: 'Lowercase',
+  },
+  {
+    type: 'uppercase',
+    name: 'Uppercase',
+  },
+];
+
+export async function fetchAllVariables() {
+  try {
+    const [builtIns, userDefs] = await Promise.all([
+      listGtmBuiltInVariables(true),
+      listVariables(true),
+    ]);
+
+    // Clean and structure the data
+    const formattedBuiltIns = builtIns.flat().map((variable) => ({
+      name: variable.name,
+      variableType: 'builtIn',
+      type: variable.type,
+    }));
+
+    const formattedUserDefs = userDefs.flat().map((variable) => ({
+      name: variable.name,
+      variableType: 'userDefined',
+      type: variable.type,
+    }));
+
+    return [...formattedBuiltIns, ...formattedUserDefs];
+  } catch (error) {
+    console.error('Error fetching variables:', error);
+    return [];
+  }
+}
+
+export async function fetchGTMIDs(data) {
+  try {
+    const formattedData = data.flat().map((d) => ({
+      accountName: d.accountName,
+      accountId: d.accountId,
+      containerName: d.containerName,
+      containerId: d.containerId,
+      workspaceName: d.workspaceName,
+      workspaceId: d.workspaceId,
+    }));
+
+    return [...formattedData];
+  } catch (error) {
+    console.error('Error fetching data:', error);
+    return [];
+  }
+}

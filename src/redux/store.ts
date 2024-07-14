@@ -10,6 +10,7 @@ import profileReducer from './profileSlice';
 import formReducer from './formSlice';
 import excludeFormReducer from './excludeFormSlice';
 import gtmUserPermission from './gtm/userPermissionSlice';
+import gtmEntity from './gtm/entitySlice';
 
 const rootReducer = combineReducers({
   user: userReducer,
@@ -22,6 +23,7 @@ const rootReducer = combineReducers({
   form: formReducer,
   excludeForm: excludeFormReducer,
   gtmUserPermission: gtmUserPermission,
+  gtmEntity: gtmEntity,
 });
 
 export const store = configureStore({
