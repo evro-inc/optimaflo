@@ -72,5 +72,10 @@ export const FormsSchema = z.object({
   forms: z.array(FormSetSchema),
 });
 
+export const TransformedFormSchema = z.object({
+  forms: z.array(VariableSchema).min(1, { message: 'At least one transformed form is required' }),
+});
+
 // Export the type inferred from VariableSchema for type safety
 export type VariableType = z.infer<typeof FormsSchema>;
+export type TransformedDataVariableType = z.infer<typeof TransformedFormSchema>;

@@ -186,13 +186,27 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
     dispatch(setCount(amount));
   };
 
+  const transformData = (data: Forms) => {
+    const transformedForms = data.forms.flatMap((form) => {
+      return form.gtmEntity.map((entity) => ({
+        ...form.variables,
+        accountId: entity.accountId,
+        containerId: entity.containerId,
+        workspaceId: entity.workspaceId,
+      }));
+    });
+    return transformedForms;
+  };
+
   const processForm: SubmitHandler<Forms> = async (data) => {
-    const { forms } = data;
     dispatch(setLoading(true));
+
+    const forms = transformData(data);
+    console.log('transformedData', forms);
 
     console.log('Redux state entities: ', entities);
 
-    console.log('forms: ', forms);
+    console.log('forms: ', data);
 
     toast('Creating Variables...', {
       action: {
@@ -201,23 +215,26 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
       },
     });
 
-    const uniqueKeyEvents = new Set<string>();
+    const uniqueVariables = new Set();
 
-    for (const form of forms) {
-      const identifier = JSON.stringify({ entity: form.entity, type: form.type });
+    data.forms.forEach((formSet) => {
+      const variable = formSet.variables;
+      formSet.gtmEntity.forEach((entity) => {
+        const identifier = `${entity.accountId}-${entity.containerId}-${entity.workspaceId}-${variable.name}-${variable.type}`;
 
-      if (uniqueKeyEvents.has(identifier)) {
-        toast.error(`Duplicate variable found for ${form.entity} - ${form.type}`, {
-          action: {
-            label: 'Close',
-            onClick: () => toast.dismiss(),
-          },
-        });
-        dispatch(setLoading(false));
-        return;
-      }
-      uniqueKeyEvents.add(identifier);
-    }
+        if (uniqueVariables.has(identifier)) {
+          toast.error(
+            `Duplicate variable found for ${entity.accountId} - ${entity.containerId} - ${entity.workspaceId} - ${variable.name}`,
+            {
+              action: { label: 'Close', onClick: () => toast.dismiss() },
+            }
+          );
+          dispatch(setLoading(false));
+          return;
+        }
+        uniqueVariables.add(identifier);
+      });
+    });
 
     try {
       const res = (await CreateVariables({ forms })) as FeatureResponse;
@@ -226,7 +243,7 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
         res.results.forEach((result) => {
           if (result.success) {
             toast.success(
-              `Built-in variable ${result.name} created successfully. The table will update shortly.`,
+              `Variable ${result.name} created successfully. The table will update shortly.`,
               {
                 action: {
                   label: 'Close',
@@ -243,7 +260,7 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
           res.results.forEach((result) => {
             if (result.notFound) {
               toast.error(
-                `Unable to create variable ${result.name}. Please check your access permissions. Any other variables created were successful.`,
+                `Unable to create variable ${result.name}. Please check your access variables. Any other variables created were successful.`,
                 {
                   action: {
                     label: 'Close',
@@ -279,13 +296,23 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
           });
         }
         form.reset({
-          forms: [formDataDefaults],
+          forms: [
+            {
+              gtmEntity: [{ accountId: '', containerId: '', workspaceId: '' }],
+              variables: formDataDefaults,
+            },
+          ],
         });
       }
 
       // Reset the forms here, regardless of success or limit reached
       form.reset({
-        forms: [formDataDefaults],
+        forms: [
+          {
+            gtmEntity: [{ accountId: '', containerId: '', workspaceId: '' }],
+            variables: formDataDefaults,
+          },
+        ],
       });
     } catch (error) {
       toast.error(`An unexpected error occurred. ${error}`, {
@@ -301,22 +328,31 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
   };
 
   const handleNext = async () => {
+    // If the current step is 1, simply increment the step
     if (currentStep === 1) {
       dispatch(incrementStep());
+      return;
+    }
+
+    // Determine the current form index and path
+    const currentFormIndex = currentStep - 2;
+    const currentFormPath = `forms.${currentFormIndex}` as const;
+
+    // Define the fields to validate for the current form
+    const fieldsToValidate = [
+      `${currentFormPath}.variables.name`,
+      `${currentFormPath}.variables.type`,
+    ] as const;
+
+    // Trigger form validation for the specified fields
+    const isFormValid = await form.trigger(fieldsToValidate);
+
+    // If the form is valid, increment the step
+    if (isFormValid) {
+      dispatch(incrementStep());
     } else {
-      const currentFormIndex = currentStep - 2;
-      const currentFormPath = `forms.${currentFormIndex}`;
-
-      const fieldsToValidate = [
-        `${currentFormPath}.eventName`,
-        `${currentFormPath}.countingMethod`,
-      ];
-
-      const isFormValid = await form.trigger(fieldsToValidate as any);
-
-      if (isFormValid) {
-        dispatch(incrementStep());
-      }
+      // If form validation fails, you can handle errors here if needed
+      console.error('Form validation failed');
     }
   };
 
