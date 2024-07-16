@@ -61,7 +61,7 @@ const LookupTableVariable = ({ formIndex, type, table = [], variables }: Props) 
       append({
         type: 'template',
         key: 'input',
-        value: '{{1st Party Cookie}}',
+        value: '',
       });
       append({
         type: 'list',
@@ -70,8 +70,8 @@ const LookupTableVariable = ({ formIndex, type, table = [], variables }: Props) 
           {
             type: 'map',
             map: [
-              { type: 'template', key: 'key', value: 'test' },
-              { type: 'template', key: 'value', value: '1' },
+              { type: 'template', key: 'key', value: '' },
+              { type: 'template', key: 'value', value: '' },
             ],
           },
         ],
@@ -84,18 +84,18 @@ const LookupTableVariable = ({ formIndex, type, table = [], variables }: Props) 
       append({
         type: 'template',
         key: 'defaultValue',
-        value: 'test',
+        value: '',
       });
     }
   }, [fields, append]);
 
   useEffect(() => {
-    if (variableType === 'smm') {
+    if (variableType === 'smm' || variableType === 'remm') {
       setValue(`forms.${formIndex}.variables.parameter`, [
         {
           type: 'template',
           key: 'input',
-          value: '{{1st Party Cookie}}',
+          value: '',
         },
         {
           type: 'list',
@@ -104,8 +104,8 @@ const LookupTableVariable = ({ formIndex, type, table = [], variables }: Props) 
             {
               type: 'map',
               map: [
-                { type: 'template', key: 'key', value: 'test' },
-                { type: 'template', key: 'value', value: '1' },
+                { type: 'template', key: 'key', value: '' },
+                { type: 'template', key: 'value', value: '' },
               ],
             },
           ],
@@ -118,15 +118,32 @@ const LookupTableVariable = ({ formIndex, type, table = [], variables }: Props) 
         {
           type: 'template',
           key: 'defaultValue',
-          value: 'test',
+          value: '',
         },
       ]);
+      if (variableType === 'remm') {
+        append({
+          type: 'boolean',
+          key: 'fullMatch',
+          value: 'false',
+        });
+        append({
+          type: 'boolean',
+          key: 'replaceAfterMatch',
+          value: 'false',
+        });
+        append({
+          type: 'boolean',
+          key: 'ignoreCase',
+          value: 'false',
+        });
+      }
     }
-  }, [variableType, setValue, formIndex]);
+  }, [variableType, setValue, formIndex, append]);
 
   useEffect(() => {
-    const setDefaultValueItem = fields.find((item) => item.key === 'setDefaultValue');
-    const defaultValueItem = fields.find((item) => item.key === 'defaultValue');
+    const setDefaultValueItem = fields.find((item: any) => item.key === 'setDefaultValue');
+    const defaultValueItem = fields.find((item: any) => item.key === 'defaultValue');
 
     if (setDefaultValueItem && setDefaultValueItem.value === 'true') {
       setDefaultValueChecked(true);
@@ -140,175 +157,232 @@ const LookupTableVariable = ({ formIndex, type, table = [], variables }: Props) 
 
   return (
     <div>
-      {fields.map((item: any, index: number) => {
-        return (
-          <div className="py-3" key={item.id}>
-            {item.key === 'input' && (
-              <div className="flex items-center space-x-2">
-                <FormField
-                  control={control}
-                  name={`forms.${formIndex}.variables.parameter.${index}.value`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Input Variable</FormLabel>
-                      <FormDescription>
-                        This is the account you want to create the property in.
-                      </FormDescription>
-                      <FormControl>
-                        <Select
-                          {...register(`forms.${formIndex}.variables.parameter.${index}.value`)}
-                          value={field.value}
-                          onValueChange={field.onChange}
-                        >
-                          <SelectTrigger id={`input-variable-${formIndex}`}>
-                            <SelectValue placeholder="Select Input Variable" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectGroup>
-                              <SelectLabel className="text-lg font-semibold">
-                                Built-In Variables
-                              </SelectLabel>
-                              {variables
-                                .filter((variable: any) => variable.variableType === 'builtIn')
-                                .map((variable: any) => (
-                                  <SelectItem key={variable.type} value={variable.type}>
-                                    {variable.name}
-                                  </SelectItem>
-                                ))}
-                              <SelectLabel className="text-lg font-semibold">
-                                User Defined Variables
-                              </SelectLabel>
-                              {variables
-                                .filter((variable: any) => variable.variableType === 'userDefined')
-                                .map((variable: any) => (
-                                  <SelectItem key={variable.type} value={variable.type}>
-                                    {variable.name}
-                                  </SelectItem>
-                                ))}
-                            </SelectGroup>
-                          </SelectContent>
-                        </Select>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            )}
-
-            {item.key === 'map' && (
-              <div className="pt-4">
-                <div className="flex items-center space-x-2">
-                  <label
-                    htmlFor={`lookup-table-input-${formIndex}`}
-                    className="text-sm font-medium leading-none mb-5"
-                  >
-                    Lookup Table
-                  </label>
-                </div>
-                <div className="space-y-4">
-                  {mapFields.map((mapItem, mapIndex) => (
-                    <div key={mapItem.id} className="grid grid-cols-3 gap-4">
-                      <FormField
-                        control={control}
-                        name={`forms.${formIndex}.variables.parameter.${index}.list.${mapIndex}.map.${0}.value`}
-                        render={({ field }) => (
-                          <FormControl>
-                            <Input
-                              {...register(
-                                `forms.${formIndex}.variables.parameter.${index}.list.${mapIndex}.map.${0}.value`
-                              )}
-                              value={field.value}
-                              onChange={field.onChange}
-                              placeholder="Input"
-                            />
-                          </FormControl>
-                        )}
-                      />
-                      <FormField
-                        control={control}
-                        name={`forms.${formIndex}.variables.parameter.${index}.list.${mapIndex}.map.${1}.value`}
-                        render={({ field }) => (
-                          <FormControl>
-                            <Input
-                              {...register(
-                                `forms.${formIndex}.variables.parameter.${index}.list.${mapIndex}.map.${1}.value`
-                              )}
-                              value={field.value}
-                              onChange={field.onChange}
-                              placeholder="Output"
-                            />
-                          </FormControl>
-                        )}
-                      />
-                      <Button type="button" onClick={() => removeMap(mapIndex)}>
-                        Remove
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-                <Button
-                  type="button"
-                  className="mt-5"
-                  onClick={() =>
-                    appendMap({
-                      type: 'map',
-                      map: [
-                        { type: 'template', key: 'key', value: '' },
-                        { type: 'template', key: 'value', value: '' },
-                      ],
-                    })
-                  }
-                >
-                  + Add Row
-                </Button>
-              </div>
-            )}
-
-            {item.key === 'setDefaultValue' && (
-              <div className="flex items-center space-x-2 pt-4">
-                <FormField
-                  control={control}
-                  name={`forms.${formIndex}.variables.parameter.${index}.value`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <Checkbox
-                          checked={defaultValueChecked}
-                          onCheckedChange={(e: boolean) => {
-                            setDefaultValueChecked(e);
-                            field.onChange(e ? 'true' : 'false');
-                          }}
-                        />
-                      </FormControl>
-                      <FormLabel>Set Default Value</FormLabel>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 gap-4">
-              {item.key === 'defaultValue' && defaultValueChecked && (
-                <FormField
-                  control={control}
-                  name={`forms.${formIndex}.variables.parameter.${index}.value`}
-                  render={({ field }) => (
-                    <Input
-                      id={`default-value-${formIndex}`}
-                      placeholder="Default Value"
-                      {...register(`forms.${formIndex}.variables.parameter.${index}.value`)}
-                      value={field.value || defaultValue}
-                      onChange={field.onChange}
-                    />
-                  )}
-                />
-              )}
+      {fields.map((item: any, index: number) => (
+        <div key={item.id}>
+          {item.key === 'input' && (
+            <div className="flex items-center space-x-2">
+              <FormField
+                control={control}
+                name={`forms.${formIndex}.variables.parameter.${index}.value`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Input Variable</FormLabel>
+                    <FormDescription>
+                      This is the account you want to create the property in.
+                    </FormDescription>
+                    <FormControl>
+                      <Select
+                        {...register(`forms.${formIndex}.variables.parameter.${index}.value`)}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger id={`input-variable-${formIndex}`}>
+                          <SelectValue placeholder="Select Input Variable" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            <SelectLabel className="text-lg font-semibold">
+                              Built-In Variables
+                            </SelectLabel>
+                            {variables
+                              .filter((variable: any) => variable.variableType === 'builtIn')
+                              .map((variable: any) => (
+                                <SelectItem key={variable.type} value={variable.type}>
+                                  {variable.name}
+                                </SelectItem>
+                              ))}
+                            <SelectLabel className="text-lg font-semibold">
+                              User Defined Variables
+                            </SelectLabel>
+                            {variables
+                              .filter((variable: any) => variable.variableType === 'userDefined')
+                              .map((variable: any) => (
+                                <SelectItem key={variable.type} value={variable.type}>
+                                  {variable.name}
+                                </SelectItem>
+                              ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
+          )}
+
+          {item.key === 'map' && (
+            <div className="pt-4">
+              <div className="flex items-center space-x-2">
+                <label
+                  htmlFor={`lookup-table-input-${formIndex}`}
+                  className="text-sm font-medium leading-none mb-5"
+                >
+                  Lookup Table
+                </label>
+              </div>
+              <div className="space-y-4">
+                {mapFields.map((mapItem, mapIndex) => (
+                  <div key={mapItem.id} className="grid grid-cols-3 gap-4">
+                    <FormField
+                      control={control}
+                      name={`forms.${formIndex}.variables.parameter.${index}.list.${mapIndex}.map.${0}.value`}
+                      render={({ field }) => (
+                        <FormControl>
+                          <Input
+                            {...register(
+                              `forms.${formIndex}.variables.parameter.${index}.list.${mapIndex}.map.${0}.value`
+                            )}
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Input"
+                          />
+                        </FormControl>
+                      )}
+                    />
+                    <FormField
+                      control={control}
+                      name={`forms.${formIndex}.variables.parameter.${index}.list.${mapIndex}.map.${1}.value`}
+                      render={({ field }) => (
+                        <FormControl>
+                          <Input
+                            {...register(
+                              `forms.${formIndex}.variables.parameter.${index}.list.${mapIndex}.map.${1}.value`
+                            )}
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Output"
+                          />
+                        </FormControl>
+                      )}
+                    />
+                    <Button type="button" onClick={() => removeMap(mapIndex)}>
+                      Remove
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <Button
+                type="button"
+                className="mt-5"
+                onClick={() =>
+                  appendMap({
+                    type: 'map',
+                    map: [
+                      { type: 'template', key: 'key', value: '' },
+                      { type: 'template', key: 'value', value: '' },
+                    ],
+                  })
+                }
+              >
+                + Add Row
+              </Button>
+            </div>
+          )}
+
+          {item.key === 'setDefaultValue' && (
+            <div className="flex items-center space-x-2 pt-4">
+              <FormField
+                control={control}
+                name={`forms.${formIndex}.variables.parameter.${index}.value`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Checkbox
+                        checked={defaultValueChecked}
+                        onCheckedChange={(e: boolean) => {
+                          setDefaultValueChecked(e);
+                          field.onChange(e ? 'true' : 'false');
+                        }}
+                      />
+                    </FormControl>
+                    <FormLabel>Set Default Value</FormLabel>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 gap-4">
+            {item.key === 'defaultValue' && defaultValueChecked && (
+              <FormField
+                control={control}
+                name={`forms.${formIndex}.variables.parameter.${index}.value`}
+                render={({ field }) => (
+                  <Input
+                    id={`default-value-${formIndex}`}
+                    placeholder="Default Value"
+                    {...register(`forms.${formIndex}.variables.parameter.${index}.value`)}
+                    value={field.value || defaultValue}
+                    onChange={field.onChange}
+                  />
+                )}
+              />
+            )}
+            {/* Additional fields for 'remm' type */}
+            {variableType === 'remm' && (
+              <>
+                {item.key === 'fullMatch' && (
+                  <FormField
+                    control={control}
+                    name={`forms.${formIndex}.variables.parameter.${index}.value`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value === 'true'}
+                            onCheckedChange={(e: boolean) => field.onChange(e ? 'true' : 'false')}
+                          />
+                        </FormControl>
+                        <FormLabel>Full Match</FormLabel>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+                {item.key === 'replaceAfterMatch' && (
+                  <FormField
+                    control={control}
+                    name={`forms.${formIndex}.variables.parameter.${index}.value`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value === 'true'}
+                            onCheckedChange={(e: boolean) => field.onChange(e ? 'true' : 'false')}
+                          />
+                        </FormControl>
+                        <FormLabel>Replace After Match</FormLabel>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+                {item.key === 'ignoreCase' && (
+                  <FormField
+                    control={control}
+                    name={`forms.${formIndex}.variables.parameter.${index}.value`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value === 'true'}
+                            onCheckedChange={(e: boolean) => field.onChange(e ? 'true' : 'false')}
+                          />
+                        </FormControl>
+                        <FormLabel>Ignore Case</FormLabel>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+              </>
+            )}
           </div>
-        );
-      })}
+        </div>
+      ))}
     </div>
   );
 };

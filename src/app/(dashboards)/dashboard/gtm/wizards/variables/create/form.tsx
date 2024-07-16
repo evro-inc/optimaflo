@@ -524,18 +524,22 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
                                             type={''}
                                           />
                                         );
-                                      case 'gas':
-                                        return <div>Google Analytics Settings Variable</div>;
                                       case 'smm':
                                         return (
                                           <LookupTableVariable
                                             formIndex={currentStep - 2}
-                                            type={''}
+                                            type={'smm'}
                                             variables={cachedVariables}
                                           />
                                         );
                                       case 'remm':
-                                        return <div>Regex Lookup Table</div>;
+                                        return (
+                                          <LookupTableVariable
+                                            formIndex={currentStep - 2}
+                                            type={'remm'}
+                                            variables={cachedVariables}
+                                          />
+                                        );
                                       case 'u':
                                         return <div>URL</div>;
                                       case 'vis':

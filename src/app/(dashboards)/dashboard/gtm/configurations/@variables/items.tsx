@@ -11,7 +11,6 @@ export const variableTypeArray = [
   { type: 'd', name: 'DOM Element' },
   { type: 'f', name: 'HTTP Referrer' },
   { type: 'j', name: 'JavaScript Variable' },
-  { type: 'gas', name: 'Google Analytics Settings Variable' },
   { type: 'smm', name: 'Lookup Table' },
   { type: 'remm', name: 'Regex Lookup Table' },
   { type: 'u', name: 'URL' },
