@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { useFieldArray, useFormContext } from 'react-hook-form';
+import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/src/components/ui/form';
-import { Textarea } from '@/src/components/ui/textarea';
-import FormatValue from './formatValue';
+import CodeEditor from '@uiw/react-textarea-code-editor';
 
 interface Props {
   formIndex: number;
@@ -11,42 +10,87 @@ interface Props {
 }
 
 const CustomJS = ({ formIndex, type, table = [] }: Props) => {
-  const { control, register } = useFormContext();
-  const { fields, append } = useFieldArray({
+  const { control, register, setValue } = useFormContext();
+  const { fields, append, remove } = useFieldArray({
     control,
-    name: `forms.${formIndex}.parameter`,
+    name: `forms.${formIndex}.variables.parameter`,
   });
 
-  // Append a default field if fields are empty
+  const variableType = useWatch({
+    control,
+    name: `forms.${formIndex}.variables.type`,
+  });
+
+  // Append default fields if fields are empty
   useEffect(() => {
     if (fields.length === 0) {
-      append({ type: 'template', key: 'javascript', value: '' });
+      append({
+        type: 'template',
+        key: 'javascript',
+        value: '',
+      });
+    } else if (fields.length > 1) {
+      remove(1); // Ensure only one field is appended
     }
-  }, [fields, append]);
+  }, [fields, append, remove]);
+
+  // Watch for changes in variable type and update parameters accordingly
+  useEffect(() => {
+    if (variableType === 'jsm') {
+      setValue(`forms.${formIndex}.variables.parameter`, [
+        {
+          type: 'template',
+          key: 'javascript',
+          value: '',
+        },
+      ]);
+    }
+  }, [variableType, setValue, formIndex]);
 
   return (
     <div>
-      {fields.map((item, index) => (
+      {fields.map((item: any, index: number) => (
         <div className="py-3" key={item.id}>
-          {/* Custom JavaScript */}
-          <FormField
-            control={control}
-            name={`forms.${formIndex}.parameter.${index}.value`}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Custom JavaScript</FormLabel>
-                <FormControl>
-                  <Textarea
-                    {...register(`forms.${formIndex}.parameter.${index}.value`)}
-                    value={field.value}
-                    onChange={field.onChange}
-                    placeholder="Type your JavaScript code here."
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {item.key === 'javascript' && (
+            <FormField
+              control={control}
+              name={`forms.${formIndex}.variables.parameter.${index}.value`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Custom JavaScript</FormLabel>
+                  <FormControl>
+                    <CodeEditor
+                      value={field.value}
+                      language="js"
+                      placeholder="Please enter your JavaScript code."
+                      onChange={(evn) =>
+                        setValue(
+                          `forms.${formIndex}.variables.parameter.${index}.value`,
+                          evn.target.value
+                        )
+                      }
+                      padding={15}
+                      style={{
+                        fontSize: '14px',
+                        backgroundColor: '#1e1e1e',
+                        color: '#d4d4d4',
+                        border: '1px solid #ccc',
+                        borderRadius: '4px',
+                        width: '100%',
+                        minHeight: '200px',
+                        fontFamily:
+                          'ui-monospace, SFMono-Regular, SF Mono, Consolas, Liberation Mono, Menlo, monospace',
+                        outline: 'none',
+                        whiteSpace: 'pre-wrap',
+                        wordWrap: 'break-word',
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
         </div>
       ))}
     </div>

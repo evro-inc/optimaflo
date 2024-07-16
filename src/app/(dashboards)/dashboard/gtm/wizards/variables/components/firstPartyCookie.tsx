@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useFieldArray, useFormContext } from 'react-hook-form';
+import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/src/components/ui/form';
 import { Checkbox } from '@/src/components/ui/checkbox';
 import { Input } from '@/src/components/ui/input';
@@ -11,10 +11,15 @@ interface Props {
 }
 
 const FirstPartyCookie = ({ formIndex, type, table = [] }: Props) => {
-  const { control, register } = useFormContext();
+  const { control, register, setValue } = useFormContext();
   const { fields, append, remove } = useFieldArray({
     control,
     name: `forms.${formIndex}.variables.parameter`,
+  });
+
+  const variableType = useWatch({
+    control,
+    name: `forms.${formIndex}.variables.type`,
   });
 
   // Append default fields if fields are empty
@@ -27,11 +32,19 @@ const FirstPartyCookie = ({ formIndex, type, table = [] }: Props) => {
     }
   }, [fields, append, remove]);
 
+  useEffect(() => {
+    if (variableType === 'k') {
+      // Update parameters for 'aev' type
+      setValue(`forms.${formIndex}.variables.parameter`, [
+        { type: 'template', key: 'name', value: 'test' },
+        { type: 'boolean', key: 'decodeCookie', value: 'false' },
+      ]);
+    }
+  }, [variableType, setValue, formIndex]);
+
   return (
     <div>
       {fields.map((item: any, index: number) => {
-        console.log('item', item);
-
         return (
           <div className="py-3" key={item.id}>
             {item.key === 'name' && (

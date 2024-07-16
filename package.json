@@ -65,6 +65,7 @@
     "@stripe/stripe-js": "^1.54.0",
     "@supabase/supabase-js": "^2.38.4",
     "@tanstack/react-table": "^8.11.7",
+    "@uiw/react-textarea-code-editor": "^3.0.2",
     "@upstash/ratelimit": "^0.4.3",
     "@upstash/redis": "^1.25.1",
     "bottleneck": "^2.19.5",

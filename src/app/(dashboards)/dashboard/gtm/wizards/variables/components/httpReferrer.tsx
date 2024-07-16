@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useFieldArray, useFormContext } from 'react-hook-form';
+import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 import {
   FormControl,
   FormDescription,
@@ -33,58 +33,80 @@ interface Props {
 }
 
 const HttpReferrer = ({ formIndex, type, table = [] }: Props) => {
-  const { control, register, watch } = useFormContext();
-  const { fields, append } = useFieldArray({
+  const { control, register, setValue } = useFormContext();
+  const { fields, append, remove } = useFieldArray({
     control,
-    name: `forms.${formIndex}.parameter`,
+    name: `forms.${formIndex}.variables.parameter`,
   });
 
-  const watchedFields = watch(`forms.${formIndex}.parameter`);
+  const variableType = useWatch({
+    control,
+    name: `forms.${formIndex}.variables.type`,
+  });
 
-  // Append a default field if fields are empty
+  // Append default fields if fields are empty
   useEffect(() => {
     if (fields.length === 0) {
-      append({ type: 'typeUnspecified', key: '', value: '' });
+      append({
+        type: 'template',
+        key: 'component',
+        value: 'URL',
+      });
     }
   }, [fields, append]);
+
+  // Watch for changes in variable type and update parameters accordingly
+  useEffect(() => {
+    if (variableType === 'f') {
+      setValue(`forms.${formIndex}.variables.parameter`, [
+        {
+          type: 'template',
+          key: 'component',
+          value: 'URL',
+        },
+      ]);
+    }
+  }, [variableType, setValue, formIndex]);
 
   return (
     <div>
       <FormLabel>HTTP Referrer</FormLabel>
       <FormDescription>Select a component type.</FormDescription>
-      {fields.map((item, index) => (
+      {fields.map((item: any, index: number) => (
         <div className="py-3" key={item.id}>
-          <FormField
-            control={control}
-            name={`forms.${formIndex}.parameter.${index}.type`}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Component Type</FormLabel>
-                <FormControl>
-                  <Select
-                    {...register(`forms.${formIndex}.parameter.${index}.type`)}
-                    value={field.value}
-                    onValueChange={field.onChange}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a variable type." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectLabel>Variable Type</SelectLabel>
-                        {httpReferrerType.map((variable) => (
-                          <SelectItem key={variable.type} value={variable.type}>
-                            {variable.name}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {item.key === 'component' && (
+            <FormField
+              control={control}
+              name={`forms.${formIndex}.parameter.${index}.type`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Component Type</FormLabel>
+                  <FormControl>
+                    <Select
+                      {...register(`forms.${formIndex}.parameter.${index}.type`)}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a variable type." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel>Variable Type</SelectLabel>
+                          {httpReferrerType.map((variable) => (
+                            <SelectItem key={variable.type} value={variable.type}>
+                              {variable.name}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
         </div>
       ))}
     </div>

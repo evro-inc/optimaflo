@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useFieldArray, useFormContext } from 'react-hook-form';
+import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 import {
   FormControl,
   FormDescription,
@@ -24,41 +24,65 @@ interface Props {
 }
 
 const JavaScriptVariable = ({ formIndex, type, table = [] }: Props) => {
-  const { control, register } = useFormContext();
-  const { fields, append } = useFieldArray({
+  const { control, register, setValue } = useFormContext();
+  const { fields, append, remove } = useFieldArray({
     control,
-    name: `forms.${formIndex}.parameter`,
+    name: `forms.${formIndex}.variables.parameter`,
   });
 
-  // Append a default field if fields are empty
+  const variableType = useWatch({
+    control,
+    name: `forms.${formIndex}.variables.type`,
+  });
+
+  // Append default fields if fields are empty
   useEffect(() => {
     if (fields.length === 0) {
-      append({ type: 'typeUnspecified', key: '', value: '' });
+      append({
+        type: 'template',
+        key: 'name',
+        value: '',
+      });
     }
   }, [fields, append]);
 
+  // Watch for changes in variable type and update parameters accordingly
+  useEffect(() => {
+    if (variableType === 'j') {
+      setValue(`forms.${formIndex}.variables.parameter`, [
+        {
+          type: 'template',
+          key: 'name',
+          value: '',
+        },
+      ]);
+    }
+  }, [variableType, setValue, formIndex]);
+
   return (
     <div>
-      {fields.map((item, index) => (
+      {fields.map((item: any, index: number) => (
         <div className="py-3" key={item.id}>
-          <FormField
-            control={control}
-            name={`forms.${formIndex}.parameter.${index}.type`}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>JavaScript Variable</FormLabel>
-                <FormControl>
-                  <Input
-                    {...register(`forms.${formIndex}.parameter.${index}.type`)}
-                    value={field.value}
-                    onChange={field.onChange}
-                    placeholder="Enter a variable type"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {item.key === 'name' && (
+            <FormField
+              control={control}
+              name={`forms.${formIndex}.parameter.${index}.type`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>JavaScript Variable</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...register(`forms.${formIndex}.parameter.${index}.type`)}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Enter a variable type"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
         </div>
       ))}
     </div>

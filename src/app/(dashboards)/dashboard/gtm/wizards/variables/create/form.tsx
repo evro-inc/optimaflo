@@ -38,7 +38,7 @@ import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { Separator } from '@/src/components/ui/separator';
-import { variableTypeArray } from '../../../configurations/@variables/items';
+import { fetchAllVariables, variableTypeArray } from '../../../configurations/@variables/items';
 import { CreateVariables, listVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variables';
 import HttpReferrer from '../components/httpReferrer';
 import FirstPartyCookie from '../components/firstPartyCookie';
@@ -99,19 +99,21 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
   const entities = useSelector((state: RootState) => state.gtmEntity.entities); // Get entities from Redux state
   const router = useRouter();
 
-  const [createdVariables, setCreatedVariables] = useState<any[]>([]); // State to store created variables
+  // Add these state variables
+  const [cachedVariables, setCachedVariables] = useState<any[]>([]); // State to store fetched variables
 
+  // Add this useEffect hook to fetch variables on page load
   useEffect(() => {
-    const fetchCreatedVariables = async () => {
+    const fetchAllVariablesData = async () => {
       try {
-        const data = await listVariables();
-
-        setCreatedVariables(data);
+        const data = await fetchAllVariables();
+        setCachedVariables(data);
       } catch (error) {
-        console.error('Error fetching created variables:', error);
+        console.error('Error fetching all variables:', error);
       }
     };
-    fetchCreatedVariables();
+
+    fetchAllVariablesData();
   }, []);
 
   const foundTierLimit = tierLimits.find(
@@ -361,51 +363,51 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
   };
 
   return (
-    <div className="flex items-center justify-center h-screen overflow-auto">
+    <div className="overflow-y-auto h-full">
       {currentStep === 1 ? (
-        <Form {...formCreateAmount}>
-          <form className="w-full md:w-2/3 space-y-6">
-            {/* Amount selection logic */}
-            <FormField
-              control={formCreateAmount.control}
-              name="amount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>How many variable forms do you want to create?</FormLabel>
-                  <Select
-                    onValueChange={(value) => {
-                      handleAmountChange(value); // Call the modified handler
-                    }}
-                    defaultValue={count.toString()}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select the amount of key events you want to create." />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {Array.from({ length: remainingCreate }, (_, i) => (
-                        <SelectItem key={i} value={`${i + 1}`}>
-                          {i + 1}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormItem>
-              )}
-            />
-            <Button type="button" onClick={handleNext}>
-              Next
-            </Button>
-          </form>
-        </Form>
+        <div className="flex items-center justify-center h-screen overflow-auto">
+          <Form {...formCreateAmount}>
+            <form className="w-full md:w-2/3 space-y-6">
+              {/* Amount selection logic */}
+              <FormField
+                control={formCreateAmount.control}
+                name="amount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>How many variable forms do you want to create?</FormLabel>
+                    <Select
+                      onValueChange={(value) => {
+                        handleAmountChange(value); // Call the modified handler
+                      }}
+                      defaultValue={count.toString()}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select the amount of key events you want to create." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {Array.from({ length: remainingCreate }, (_, i) => (
+                          <SelectItem key={i} value={`${i + 1}`}>
+                            {i + 1}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )}
+              />
+              <Button type="button" onClick={handleNext}>
+                Next
+              </Button>
+            </form>
+          </Form>
+        </div>
       ) : (
-        fields.map(
-          (field, index) =>
-            currentStep === index + 2 && (
-              <div>
-                {/* Render only the form corresponding to the current step - 1 
-              (since step 1 is for selecting the number of forms) */}
+        <div className="flex items-center justify-center">
+          {fields.map(
+            (field, index) =>
+              currentStep === index + 2 && (
                 <div
                   key={field.id}
                   className="max-w-full md:max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-1"
@@ -414,7 +416,6 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
                     <h1>Variable {index + 1}</h1>
                     <div className="mt-2 md:mt-12">
                       {/* Form */}
-
                       <Form {...form}>
                         <form
                           onSubmit={form.handleSubmit(processForm)}
@@ -530,6 +531,7 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
                                           <LookupTableVariable
                                             formIndex={currentStep - 2}
                                             type={''}
+                                            variables={cachedVariables}
                                           />
                                         );
                                       case 'remm':
@@ -589,9 +591,9 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
                     </div>
                   </div>
                 </div>
-              </div>
-            )
-        )
+              )
+          )}
+        </div>
       )}
     </div>
   );

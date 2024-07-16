@@ -98,7 +98,16 @@ export async function fetchAllVariables() {
       type: variable.type,
     }));
 
-    return [...formattedBuiltIns, ...formattedUserDefs];
+    const allVariables = [...formattedBuiltIns, ...formattedUserDefs];
+
+    // Remove duplicates by type
+    const uniqueVariables = Array.from(new Set(allVariables.map((variable) => variable.type))).map(
+      (type) => {
+        return allVariables.find((variable) => variable.type === type);
+      }
+    );
+
+    return uniqueVariables;
   } catch (error) {
     console.error('Error fetching variables:', error);
     return [];

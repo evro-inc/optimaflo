@@ -95,7 +95,6 @@ export async function listVariables(skipCache = false) {
             }
           }
         });
-        console.log('all data: ', JSON.stringify(allData, null, 2));
 
         redis.set(cacheKey, JSON.stringify(allData.flat()));
 
