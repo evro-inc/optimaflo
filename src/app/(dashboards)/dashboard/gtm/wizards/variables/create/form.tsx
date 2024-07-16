@@ -50,8 +50,10 @@ import DataLayerVariable from '../components/dlv';
 import DOMElement from '../components/dom';
 import JavaScriptVariable from '../components/variableJS';
 import LookupTableVariable from '../components/lookup';
+import URL from '../components/url';
 import FormatValue from '../components/formatValue';
 import EntityComponent from '../components/entity';
+import Vis from '../components/vis';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -541,9 +543,9 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
                                           />
                                         );
                                       case 'u':
-                                        return <div>URL</div>;
+                                        return <URL formIndex={currentStep - 2} type={''} />;
                                       case 'vis':
-                                        return <div>Element Visibility</div>;
+                                        return <Vis formIndex={currentStep - 2} type={''} />;
                                       case 'e':
                                         return <div>Custom Event</div>;
                                       case 'ev':
