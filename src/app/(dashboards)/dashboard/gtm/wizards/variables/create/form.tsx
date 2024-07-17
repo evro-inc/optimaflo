@@ -55,6 +55,7 @@ import FormatValue from '../components/formatValue';
 import EntityComponent from '../components/entity';
 import Vis from '../components/vis';
 import GoogleTagConfigSettings from '../components/googleTagConfigSettings';
+import GoogleTagEventSettings from '../components/googleTagEventSettings';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -572,7 +573,12 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
                                       case 'dbg':
                                         return <div>No configuration required for debugging</div>;
                                       case 'gtes':
-                                        return <div>Google Tag: Event Settings</div>;
+                                        return (
+                                          <GoogleTagEventSettings
+                                            formIndex={currentStep - 2}
+                                            type={''}
+                                          />
+                                        );
                                       case 'gtcs':
                                         return (
                                           <GoogleTagConfigSettings
