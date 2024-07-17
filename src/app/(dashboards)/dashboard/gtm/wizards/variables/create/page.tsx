@@ -17,9 +17,9 @@ export default async function BuiltInVariablePage() {
   const subscriptionId = subscription.id;
 
   const tierLimits = await getTierLimit(subscriptionId);
-  const accountData = await listGtmAccounts(true);
-  const containerData = await listGtmContainers(true);
-  const workspaceData = await listGtmWorkspaces(true);
+  const accountData = await listGtmAccounts();
+  const containerData = await listGtmContainers();
+  const workspaceData = await listGtmWorkspaces();
   const varData = await listVariables();
 
   const [accounts, containers, workspaces, variable] = await Promise.all([

@@ -54,6 +54,7 @@ import URL from '../components/url';
 import FormatValue from '../components/formatValue';
 import EntityComponent from '../components/entity';
 import Vis from '../components/vis';
+import GoogleTagConfigSettings from '../components/googleTagConfigSettings';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -547,25 +548,44 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
                                       case 'vis':
                                         return <Vis formIndex={currentStep - 2} type={''} />;
                                       case 'e':
-                                        return <div>Custom Event</div>;
+                                        return (
+                                          <div>No configuration required for custom event</div>
+                                        );
                                       case 'ev':
-                                        return <div>Environment Name</div>;
+                                        return (
+                                          <div>No configuration required for environment name</div>
+                                        );
                                       case 'r':
-                                        return <div>Random Number</div>;
+                                        return (
+                                          <div>No configuration required for random number</div>
+                                        );
                                       case 'uv':
-                                        return <div>Undefined Value</div>;
+                                        return (
+                                          <div>No configuration required for undefined value</div>
+                                        );
                                       case 'awec':
                                         return <div>User Provided Data</div>;
                                       case 'cid':
-                                        return <div>Container Id</div>;
+                                        return (
+                                          <div>No configuration required for container ID</div>
+                                        );
                                       case 'dbg':
-                                        return <div>Debug</div>;
+                                        return <div>No configuration required for debugging</div>;
                                       case 'gtes':
                                         return <div>Google Tag: Event Settings</div>;
                                       case 'gtcs':
-                                        return <div>Google Tag: Configuration Settings</div>;
+                                        return (
+                                          <GoogleTagConfigSettings
+                                            formIndex={currentStep - 2}
+                                            type={''}
+                                          />
+                                        );
                                       case 'ctv':
-                                        return <div>Container Version Number</div>;
+                                        return (
+                                          <div>
+                                            No configuration required for container version number
+                                          </div>
+                                        );
                                       default:
                                         return <div>Unknown Variable Type</div>;
                                     }

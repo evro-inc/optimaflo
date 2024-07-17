@@ -66,6 +66,7 @@ export default async function varPage({
 
     const isPublished = statusDataFlat.find(
       (p) =>
+        p.variable &&
         p.variable.name === vars.name &&
         p.variable.accountId === vars.accountId &&
         p.variable.containerId === vars.containerId &&

@@ -167,14 +167,10 @@ const LookupTableVariable = ({ formIndex, type, table = [], variables }: Props) 
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Input Variable</FormLabel>
-                    <FormDescription>
-                      This is the account you want to create the property in.
-                    </FormDescription>
                     <FormControl>
                       <Select
-                        {...register(`forms.${formIndex}.variables.parameter.${index}.value`)}
-                        value={field.value}
-                        onValueChange={field.onChange}
+                        value={field.value.replace(/[{}]/g, '')} // Remove the curly braces for display
+                        onValueChange={(value) => setValue(field.name, `{{${value}}}`)}
                       >
                         <SelectTrigger id={`input-variable-${formIndex}`}>
                           <SelectValue placeholder="Select Input Variable" />
@@ -187,7 +183,7 @@ const LookupTableVariable = ({ formIndex, type, table = [], variables }: Props) 
                             {variables
                               .filter((variable: any) => variable.variableType === 'builtIn')
                               .map((variable: any) => (
-                                <SelectItem key={variable.type} value={variable.type}>
+                                <SelectItem key={variable.type} value={variable.name}>
                                   {variable.name}
                                 </SelectItem>
                               ))}
@@ -197,7 +193,7 @@ const LookupTableVariable = ({ formIndex, type, table = [], variables }: Props) 
                             {variables
                               .filter((variable: any) => variable.variableType === 'userDefined')
                               .map((variable: any) => (
-                                <SelectItem key={variable.type} value={variable.type}>
+                                <SelectItem key={variable.type} value={variable.name}>
                                   {variable.name}
                                 </SelectItem>
                               ))}
@@ -225,38 +221,46 @@ const LookupTableVariable = ({ formIndex, type, table = [], variables }: Props) 
               <div className="space-y-4">
                 {mapFields.map((mapItem, mapIndex) => (
                   <div key={mapItem.id} className="grid grid-cols-3 gap-4">
-                    <FormField
-                      control={control}
-                      name={`forms.${formIndex}.variables.parameter.${index}.list.${mapIndex}.map.${0}.value`}
-                      render={({ field }) => (
-                        <FormControl>
-                          <Input
-                            {...register(
-                              `forms.${formIndex}.variables.parameter.${index}.list.${mapIndex}.map.${0}.value`
+                    {mapItem.map.map((innerItem: any, innerIndex: number) => (
+                      <React.Fragment key={innerItem.id}>
+                        {innerItem.key === 'key' && (
+                          <FormField
+                            control={control}
+                            name={`forms.${formIndex}.variables.parameter.${index}.list.${mapIndex}.map.${innerIndex}.value`}
+                            render={({ field }) => (
+                              <FormControl>
+                                <Input
+                                  {...register(
+                                    `forms.${formIndex}.variables.parameter.${index}.list.${mapIndex}.map.${innerIndex}.value`
+                                  )}
+                                  value={field.value}
+                                  onChange={field.onChange}
+                                  placeholder="Input"
+                                />
+                              </FormControl>
                             )}
-                            value={field.value}
-                            onChange={field.onChange}
-                            placeholder="Input"
                           />
-                        </FormControl>
-                      )}
-                    />
-                    <FormField
-                      control={control}
-                      name={`forms.${formIndex}.variables.parameter.${index}.list.${mapIndex}.map.${1}.value`}
-                      render={({ field }) => (
-                        <FormControl>
-                          <Input
-                            {...register(
-                              `forms.${formIndex}.variables.parameter.${index}.list.${mapIndex}.map.${1}.value`
+                        )}
+                        {innerItem.key === 'value' && (
+                          <FormField
+                            control={control}
+                            name={`forms.${formIndex}.variables.parameter.${index}.list.${mapIndex}.map.${innerIndex}.value`}
+                            render={({ field }) => (
+                              <FormControl>
+                                <Input
+                                  {...register(
+                                    `forms.${formIndex}.variables.parameter.${index}.list.${mapIndex}.map.${innerIndex}.value`
+                                  )}
+                                  value={field.value}
+                                  onChange={field.onChange}
+                                  placeholder="Output"
+                                />
+                              </FormControl>
                             )}
-                            value={field.value}
-                            onChange={field.onChange}
-                            placeholder="Output"
                           />
-                        </FormControl>
-                      )}
-                    />
+                        )}
+                      </React.Fragment>
+                    ))}
                     <Button type="button" onClick={() => removeMap(mapIndex)}>
                       Remove
                     </Button>
@@ -315,8 +319,8 @@ const LookupTableVariable = ({ formIndex, type, table = [], variables }: Props) 
                     id={`default-value-${formIndex}`}
                     placeholder="Default Value"
                     {...register(`forms.${formIndex}.variables.parameter.${index}.value`)}
-                    value={field.value || defaultValue}
-                    onChange={field.onChange}
+                    value={field.value} // Ensure value is set correctly
+                    onChange={(e) => setValue(field.name, e.target.value)} // Handle onChange for Input
                   />
                 )}
               />
