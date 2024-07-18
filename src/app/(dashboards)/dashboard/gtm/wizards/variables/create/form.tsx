@@ -56,6 +56,7 @@ import EntityComponent from '../components/entity';
 import Vis from '../components/vis';
 import GoogleTagConfigSettings from '../components/googleTagConfigSettings';
 import GoogleTagEventSettings from '../components/googleTagEventSettings';
+import UserProvidedData from '../components/userProvidedData';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -565,7 +566,13 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
                                           <div>No configuration required for undefined value</div>
                                         );
                                       case 'awec':
-                                        return <div>User Provided Data</div>;
+                                        return (
+                                          <UserProvidedData
+                                            formIndex={currentStep - 2}
+                                            type={''}
+                                            variables={cachedVariables}
+                                          />
+                                        );
                                       case 'cid':
                                         return (
                                           <div>No configuration required for container ID</div>
