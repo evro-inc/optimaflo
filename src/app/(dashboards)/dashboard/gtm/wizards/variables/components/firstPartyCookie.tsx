@@ -34,7 +34,7 @@ const FirstPartyCookie = ({ formIndex, type, table = [] }: Props) => {
 
   useEffect(() => {
     if (variableType === 'k') {
-      // Update parameters for 'aev' type
+      // Update parameters for 'k' type
       setValue(`forms.${formIndex}.variables.parameter`, [
         { type: 'template', key: 'name', value: 'test' },
         { type: 'boolean', key: 'decodeCookie', value: 'false' },
@@ -56,7 +56,7 @@ const FirstPartyCookie = ({ formIndex, type, table = [] }: Props) => {
                     <FormLabel>Cookie Name</FormLabel>
                     <FormControl>
                       <Input
-                        {...register(`forms.${formIndex}.parameter.${index}.value`)}
+                        {...register(`forms.${formIndex}.variables.parameter.${index}.value`)}
                         value={field.value}
                         onChange={field.onChange}
                         placeholder="Enter cookie name"

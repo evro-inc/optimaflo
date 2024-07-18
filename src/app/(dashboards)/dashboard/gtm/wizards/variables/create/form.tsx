@@ -604,7 +604,12 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
                                     }
                                   })()}
 
-                                <FormatValue formIndex={currentStep - 2} />
+                                {selectedType !== 'ctv' &&
+                                  selectedType !== 'r' &&
+                                  selectedType !== 'gtcs' &&
+                                  selectedType !== 'gtes' && (
+                                    <FormatValue formIndex={currentStep - 2} />
+                                  )}
 
                                 <EntityComponent formIndex={currentStep - 2} table={table} />
                               </>

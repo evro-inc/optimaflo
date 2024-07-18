@@ -52,11 +52,10 @@ const FormatValue = ({ formIndex }: Props) => {
               {field.value && (
                 <FormControl>
                   <Input
-                    {...field}
                     {...register(`forms.${formIndex}.variables.formatValue.${option.name}.value`)}
                     placeholder={`Enter ${option.label} value`}
-                    value={field.value}
-                    onChange={field.onChange}
+                    value={field.value.value} // Access the nested value property
+                    onChange={(e) => field.onChange({ ...field.value, value: e.target.value })} // Update the nested value
                   />
                 </FormControl>
               )}
