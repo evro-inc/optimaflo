@@ -126,7 +126,7 @@ export async function publishGTM(formData: ContainerVersionType) {
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
 
-  console.log('formData pub: ', formData);
+  console.log('pubish formData', formData);
 
   let retries = 0;
   const MAX_RETRIES = 3;
@@ -148,7 +148,6 @@ export async function publishGTM(formData: ContainerVersionType) {
       name: prop.name,
     }))
   );
-  console.log('toPublishVersions pub:', toPublishVersions);
 
   const tierLimitResponse: any = await tierCreateLimit(userId, 'GTMVersions');
   const limit = Number(tierLimitResponse.createLimit);
@@ -206,8 +205,6 @@ export async function publishGTM(formData: ContainerVersionType) {
         if (remaining > 0) {
           await limiter.schedule(async () => {
             const publishPromises = Array.from(toPublishVersions).map(async (identifier) => {
-              console.log('Identifier pub:', identifier);
-
               accountIdForCache = identifier.accountId;
               containerIdForCache = identifier.containerId;
               const versionData = formData.forms.find(
@@ -217,7 +214,7 @@ export async function publishGTM(formData: ContainerVersionType) {
                   prop.containerVersionId === identifier.versionId
               );
 
-              console.log('Version data pub:', versionData);
+              console.log('versionData', versionData);
 
               if (!versionData) {
                 errors.push(`Version data not found for ${identifier}`);
@@ -227,7 +224,7 @@ export async function publishGTM(formData: ContainerVersionType) {
 
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${versionData.accountId}/containers/${versionData.containerId}/versions/${versionData.containerVersionId}:publish`;
 
-              console.log('URL pub:', url);
+              console.log('url', url);
 
               const headers = {
                 Authorization: `Bearer ${token[0].token}`,
@@ -240,9 +237,11 @@ export async function publishGTM(formData: ContainerVersionType) {
                   method: 'POST',
                   headers: headers,
                 });
-                console.log('Response pub:', response);
+
+                console.log('response', response);
 
                 const parsedResponse = await response.json();
+                console.log('parsed', parsedResponse);
 
                 const workspaceName = versionData.name;
 
@@ -734,8 +733,6 @@ export async function UpdateVersions(formData: UpdateVersionSchemaType) {
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
 
-  console.log('formData up: ', formData);
-
   let retries = 0;
   const MAX_RETRIES = 3;
   let delay = 1000;
@@ -757,8 +754,6 @@ export async function UpdateVersions(formData: UpdateVersionSchemaType) {
       description: prop.description,
     }))
   );
-
-  console.log('toUpdateVersions up:', toUpdateVersions);
 
   const tierLimitResponse: any = await tierUpdateLimit(userId, 'GTMVersions');
   const limit = Number(tierLimitResponse.updateLimit);
@@ -816,8 +811,6 @@ export async function UpdateVersions(formData: UpdateVersionSchemaType) {
         if (remaining > 0) {
           await limiter.schedule(async () => {
             const updatePromises = Array.from(toUpdateVersions).map(async (identifier) => {
-              console.log('Identifier ver up:', identifier);
-
               accountIdForCache = identifier.accountId;
               containerIdForCache = identifier.containerId;
               const versionData = formData.updateVersion.find(
@@ -835,8 +828,6 @@ export async function UpdateVersions(formData: UpdateVersionSchemaType) {
                 return;
               }
 
-              console.log('Version data ver up:', versionData);
-
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${versionData.accountId}/containers/${versionData.containerId}/versions/${versionData.containerVersionId}`;
               const headers = {
                 Authorization: `Bearer ${token[0].token}`,
@@ -847,11 +838,7 @@ export async function UpdateVersions(formData: UpdateVersionSchemaType) {
               try {
                 const formDataToValidate = { updateVersion: [versionData] };
 
-                console.log('Form data ver up:', formDataToValidate);
-
                 const validationResult = UpdateVersionFormSchema.safeParse(formDataToValidate);
-
-                console.log('Validation result ver up:', validationResult);
 
                 if (!validationResult.success) {
                   let errorMessage = validationResult.error.issues
@@ -882,10 +869,7 @@ export async function UpdateVersions(formData: UpdateVersionSchemaType) {
                   body: payload,
                 });
 
-                console.log('Response ver up:', response);
-
                 const parsedResponse = await response.json();
-                console.log('Parsed response ver up:', parsedResponse);
 
                 const versionName = versionData.name;
 

@@ -34,7 +34,7 @@ export async function listGtmAccounts(skipCache = false) {
 
   const cacheKey = `gtm:accounts:userId:${userId}`;
 
-  if (!skipCache) {
+  if (skipCache == false) {
     const cachedValue = await redis.get(cacheKey);
 
     if (cachedValue) {

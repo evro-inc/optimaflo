@@ -1,16 +1,13 @@
 'use client';
 
-import {
-  DeleteBuiltInVariables,
-  RevertBuiltInVariables,
-} from '@/src/lib/fetch/dashboard/actions/gtm/variablesBuiltIn';
+import { DeleteVariables, RevertVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variables';
 import {
   clearSelectedRows,
   setErrorDetails,
   setIsLimitReached,
   setNotFoundError,
 } from '@/src/redux/tableSlice';
-import { FeatureResponse, BuiltInVariable } from '@/src/types/types';
+import { FeatureResponse, Variable } from '@/src/types/types';
 import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
 
@@ -18,7 +15,7 @@ export const useDeleteHook = (selectedRows, table) => {
   const dispatch = useDispatch();
 
   const handleDelete = async () => {
-    toast('Deleting built-in variables...', {
+    toast('Deleting variables...', {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
@@ -26,13 +23,11 @@ export const useDeleteHook = (selectedRows, table) => {
     });
 
     // Use Object.values to get the values from the selectedRows object and cast them to GA4AccountType
-    const ga4BuiltInVarToDelete = Object.values(
-      selectedRows as Record<string, BuiltInVariable>
-    ).map((prop) => {
+    const ga4VarToDelete = Object.values(selectedRows as Record<string, Variable>).map((prop) => {
       return prop;
     });
 
-    const response: FeatureResponse = await DeleteBuiltInVariables(ga4BuiltInVarToDelete);
+    const response: FeatureResponse = await DeleteVariables(ga4VarToDelete);
 
     if (!response.success) {
       let message = response.message || 'An error occurred.';
@@ -74,11 +69,11 @@ export const useDeleteHook = (selectedRows, table) => {
   return handleDelete;
 };
 
-export const useRevertHook = (selectedRows, table) => {
+export const useRevertHookVar = (selectedRows, table) => {
   const dispatch = useDispatch();
 
   const handleRevert = async () => {
-    toast('Reverting built-in variables...', {
+    toast('Reverting variables...', {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
@@ -86,30 +81,11 @@ export const useRevertHook = (selectedRows, table) => {
     });
 
     // Use Object.values to get the values from the selectedRows object and cast them to GA4AccountType
-    const ga4BuiltInVarToDelete = Object.values(
-      selectedRows as Record<string, BuiltInVariable>
-    ).map((prop) => {
+    const ga4VarToDelete = Object.values(selectedRows as Record<string, Variable>).map((prop) => {
       return prop;
     });
 
-    const toDeleteSet = new Set(
-      ga4BuiltInVarToDelete
-        .map((prop) => {
-          if (prop.accountId && prop.containerId && prop.workspaceId) {
-            return `${prop.accountId}-${prop.containerId}-${prop.workspaceId}`;
-          }
-          console.error('Invalid format for:', prop);
-          return ''; // Return an empty string for invalid entries
-        })
-        .filter(Boolean) // Filter out any empty strings
-    );
-
-    const builtInVarDisplayNames = ga4BuiltInVarToDelete.flatMap((prop) => prop.type);
-
-    const response: FeatureResponse = await RevertBuiltInVariables(
-      toDeleteSet,
-      builtInVarDisplayNames
-    );
+    const response: FeatureResponse = await RevertVariables(ga4VarToDelete);
 
     if (!response.success) {
       let message = response.message || 'An error occurred.';

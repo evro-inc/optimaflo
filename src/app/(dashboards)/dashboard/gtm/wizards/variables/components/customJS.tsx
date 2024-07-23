@@ -13,12 +13,12 @@ const CustomJS = ({ formIndex, type, table = [] }: Props) => {
   const { control, register, setValue } = useFormContext();
   const { fields, append, remove } = useFieldArray({
     control,
-    name: `forms.${formIndex}.variables.parameter`,
+    name: `forms.${formIndex}.parameter`,
   });
 
   const variableType = useWatch({
     control,
-    name: `forms.${formIndex}.variables.type`,
+    name: `forms.${formIndex}.type`,
   });
 
   // Append default fields if fields are empty
@@ -37,7 +37,7 @@ const CustomJS = ({ formIndex, type, table = [] }: Props) => {
   // Watch for changes in variable type and update parameters accordingly
   useEffect(() => {
     if (variableType === 'jsm') {
-      setValue(`forms.${formIndex}.variables.parameter`, [
+      setValue(`forms.${formIndex}.parameter`, [
         {
           type: 'template',
           key: 'javascript',
@@ -54,7 +54,7 @@ const CustomJS = ({ formIndex, type, table = [] }: Props) => {
           {item.key === 'javascript' && (
             <FormField
               control={control}
-              name={`forms.${formIndex}.variables.parameter.${index}.value`}
+              name={`forms.${formIndex}.parameter.${index}.value`}
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Custom JavaScript</FormLabel>
@@ -64,10 +64,7 @@ const CustomJS = ({ formIndex, type, table = [] }: Props) => {
                       language="js"
                       placeholder="Please enter your JavaScript code."
                       onChange={(evn) =>
-                        setValue(
-                          `forms.${formIndex}.variables.parameter.${index}.value`,
-                          evn.target.value
-                        )
+                        setValue(`forms.${formIndex}.parameter.${index}.value`, evn.target.value)
                       }
                       padding={15}
                       style={{

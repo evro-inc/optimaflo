@@ -39,20 +39,18 @@ interface Props {
 const EntityComponent = ({ formIndex, table = [] }: Props) => {
   const dispatch = useDispatch();
   const entities = useSelector((state: any) => state?.accountContainerWorkspace?.entities || []);
-  const { control, register, getValues, setValue, watch } = useFormContext();
+  const { control, register, setValue, watch } = useFormContext();
   const { fields, remove, append } = useFieldArray({
     control,
-    name: `forms.${formIndex}.gtmEntity`,
+    name: `forms.${formIndex}.entities`, // Ensure entities are part of the form structure
   });
-  console.log('table', table);
   const [maxRows, setMaxRows] = useState(0);
 
-  // Initialize form state with Redux state
   useEffect(() => {
     entities.forEach((entity, index) => {
-      setValue(`forms.${formIndex}.gtmEntity.${index}.accountId`, entity.accountId);
-      setValue(`forms.${formIndex}.gtmEntity.${index}.containerId`, entity.containerId);
-      setValue(`forms.${formIndex}.gtmEntity.${index}.workspaceId`, entity.workspaceId);
+      setValue(`forms.${formIndex}.entities.${index}.accountId`, entity.accountId);
+      setValue(`forms.${formIndex}.entities.${index}.containerId`, entity.containerId);
+      setValue(`forms.${formIndex}.entities.${index}.workspaceId`, entity.workspaceId);
     });
   }, [entities, formIndex, setValue]);
 
@@ -60,14 +58,6 @@ const EntityComponent = ({ formIndex, table = [] }: Props) => {
     append({ accountId: '', containerId: '', workspaceId: '' });
     dispatch(addEntity());
   };
-
-  const selectedGtmEntity = watch(`forms.${formIndex}.gtmEntity`) || [];
-
-  useEffect(() => {
-    selectedGtmEntity.forEach((entity: any, index: number) => {
-      dispatch(updateEntity({ entityIndex: index, data: entity }));
-    });
-  }, [selectedGtmEntity, formIndex, dispatch]);
 
   const uniqueAccounts = Array.from(new Set(table.map((data) => data.accountId))).map((accountId) =>
     table.find((data) => data.accountId === accountId)
@@ -92,7 +82,7 @@ const EntityComponent = ({ formIndex, table = [] }: Props) => {
         <FormLabel className="col-span-1">Workspace</FormLabel>
       </div>
       {fields.map((item, index) => {
-        const selectedAccountId = watch(`forms.${formIndex}.gtmEntity.${index}.accountId`);
+        const selectedAccountId = watch(`forms.${formIndex}.entities.${index}.accountId`);
         const filteredContainers = table.filter(
           (data: any) => data.accountId === selectedAccountId
         );
@@ -100,7 +90,7 @@ const EntityComponent = ({ formIndex, table = [] }: Props) => {
           new Set(filteredContainers.map((data: any) => data.containerId))
         ).map((id) => filteredContainers.find((data: any) => data.containerId === id));
 
-        const selectedContainerId = watch(`forms.${formIndex}.gtmEntity.${index}.containerId`);
+        const selectedContainerId = watch(`forms.${formIndex}.entities.${index}.containerId`);
         const filteredWorkspaces = table.filter(
           (data: any) => data.containerId === selectedContainerId
         );
@@ -114,12 +104,12 @@ const EntityComponent = ({ formIndex, table = [] }: Props) => {
               <FormField
                 key={item.id}
                 control={control}
-                name={`forms.${formIndex}.gtmEntity.${index}.accountId`}
+                name={`forms.${formIndex}.entities.${index}.accountId`}
                 render={({ field }) => (
                   <FormItem>
                     <FormControl>
                       <Select
-                        {...register(`forms.${formIndex}.gtmEntity.${index}.accountId`)}
+                        {...register(`forms.${formIndex}.entities.${index}.accountId`)}
                         {...field}
                         onValueChange={(value) => {
                           field.onChange(value);
@@ -152,12 +142,12 @@ const EntityComponent = ({ formIndex, table = [] }: Props) => {
               <FormField
                 key={item.id}
                 control={control}
-                name={`forms.${formIndex}.gtmEntity.${index}.containerId`}
+                name={`forms.${formIndex}.entities.${index}.containerId`}
                 render={({ field }) => (
                   <FormItem>
                     <FormControl>
                       <Select
-                        {...register(`forms.${formIndex}.gtmEntity.${index}.containerId`)}
+                        {...register(`forms.${formIndex}.entities.${index}.containerId`)}
                         {...field}
                         onValueChange={(value) => {
                           field.onChange(value);
@@ -191,12 +181,12 @@ const EntityComponent = ({ formIndex, table = [] }: Props) => {
               <FormField
                 key={item.id}
                 control={control}
-                name={`forms.${formIndex}.gtmEntity.${index}.workspaceId`}
+                name={`forms.${formIndex}.entities.${index}.workspaceId`}
                 render={({ field }) => (
                   <FormItem>
                     <FormControl>
                       <Select
-                        {...register(`forms.${formIndex}.gtmEntity.${index}.workspaceId`)}
+                        {...register(`forms.${formIndex}.entities.${index}.workspaceId`)}
                         {...field}
                         onValueChange={(value) => {
                           field.onChange(value);

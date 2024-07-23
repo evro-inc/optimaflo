@@ -41,7 +41,7 @@ export async function listGtmPermissions(skipCache = false) {
 
   const cacheKey = `gtm:permissions:userId:${userId}`;
 
-  if (!skipCache) {
+  if (skipCache == false) {
     const cachedValue = await redis.get(cacheKey);
     if (cachedValue) {
       return JSON.parse(cachedValue);
@@ -67,7 +67,6 @@ export async function listGtmPermissions(skipCache = false) {
 
         await limiter.schedule(async () => {
           const uniquePairs = new Set(gtmData.gtm.map((data) => `${data.accountId}`));
-          console.log('uniquePairs: ', uniquePairs);
 
           const urls = Array.from(uniquePairs).map((pair: any) => {
             const [accountId] = pair.split('-');
@@ -87,7 +86,6 @@ export async function listGtmPermissions(skipCache = false) {
                 throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
               }
               responseBody = await response.json();
-              console.log('responseBody: ', responseBody);
 
               allData.push(responseBody.userPermission || []);
             } catch (error: any) {
@@ -96,8 +94,6 @@ export async function listGtmPermissions(skipCache = false) {
           }
         });
         redis.set(cacheKey, JSON.stringify(allData.flat()));
-
-        console.log('allData: ', allData.flat());
 
         return allData;
       }
@@ -123,8 +119,6 @@ export async function CreatePermissions(formData: FormValuesType) {
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
 
-  console.log('formData: ', formData);
-
   const MAX_RETRIES = 3;
   let delay = 1000;
   const errors: string[] = [];
@@ -135,8 +129,6 @@ export async function CreatePermissions(formData: FormValuesType) {
   let containerIdForCache: string | undefined;
 
   const toCreatePermissions = new Set(formData.forms);
-
-  console.log('toCreatePermissions: ', toCreatePermissions);
 
   const tierLimitResponse: any = await tierCreateLimit(userId, 'GTMPermissions');
   const limit = Number(tierLimitResponse.createLimit);
@@ -199,8 +191,6 @@ export async function CreatePermissions(formData: FormValuesType) {
         if (remaining > 0) {
           await limiter.schedule(async () => {
             const createPromises = Array.from(toCreatePermissions).map(async (identifier: any) => {
-              console.log('identifier: ', identifier);
-
               const { accountId, emailAddress, accountAccess, containerAccess } = identifier;
               accountIdForCache = accountId;
               containerIdForCache = identifier.containerAccess[0].containerId;
@@ -231,11 +221,7 @@ export async function CreatePermissions(formData: FormValuesType) {
                   forms: [permissionData],
                 };
 
-                console.log('formDataToValidate', formDataToValidate);
-
                 const validationResult = TransformedFormSchema.safeParse(formDataToValidate);
-
-                console.log('validationResult: ', validationResult);
 
                 if (!validationResult.success) {
                   let errorMessage = validationResult.error.issues
@@ -253,8 +239,6 @@ export async function CreatePermissions(formData: FormValuesType) {
                 // Accessing the validated permission data
                 validatedPermissionData = validationResult.data.forms[0];
 
-                console.log('validatedPermissionData: ', validatedPermissionData);
-
                 const response = await fetch(url, {
                   method: 'POST',
                   headers: headers,
@@ -266,11 +250,7 @@ export async function CreatePermissions(formData: FormValuesType) {
                   }),
                 });
 
-                console.log('response: ', response);
-
                 const parsedResponse = await response.json();
-
-                console.log('parsedResponse: ', parsedResponse);
 
                 if (response.ok) {
                   successfulCreations.push(validatedPermissionData.emailAddress);
@@ -463,8 +443,6 @@ export async function UpdatePermissions(formData: FormValuesType) {
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
 
-  console.log('formData: ', formData);
-
   const MAX_RETRIES = 3;
   let delay = 1000;
   const errors: string[] = [];
@@ -475,8 +453,6 @@ export async function UpdatePermissions(formData: FormValuesType) {
   let containerIdForCache: string | undefined;
 
   const toUpdatePermissions = new Set(formData.forms);
-
-  console.log('toUpdatePermissions: ', toUpdatePermissions);
 
   const tierLimitResponse: any = await tierUpdateLimit(userId, 'GTMPermissions');
   const limit = Number(tierLimitResponse.updateLimit);
@@ -530,8 +506,6 @@ export async function UpdatePermissions(formData: FormValuesType) {
     form.permissions ? form.permissions.map((permission) => permission.accountId) : []
   );
 
-  console.log('permissionNames', permissionNames);
-
   // need id permission
   if (toUpdatePermissions.size <= availableUpdateUsage) {
     // Initialize retries variable to ensure proper loop execution
@@ -542,8 +516,6 @@ export async function UpdatePermissions(formData: FormValuesType) {
         if (remaining > 0) {
           await limiter.schedule(async () => {
             const updatePromises = Array.from(toUpdatePermissions).map(async (identifier: any) => {
-              console.log('identifier: ', identifier);
-
               const { accountId, emailAddress, accountAccess, containerAccess, paths } = identifier;
               accountIdForCache = accountId;
               containerIdForCache = identifier.containerAccess[0].containerId;
@@ -556,8 +528,6 @@ export async function UpdatePermissions(formData: FormValuesType) {
                 paths: paths,
               };
 
-              console.log('permissionData', permissionData);
-
               if (!permissionData) {
                 errors.push(`Container data not found for ${identifier}`);
                 toUpdatePermissions.delete(identifier);
@@ -565,8 +535,6 @@ export async function UpdatePermissions(formData: FormValuesType) {
               }
 
               const url = `https://www.googleapis.com/tagmanager/v2/${permissionData.paths}`;
-
-              console.log('url', url);
 
               const headers = {
                 Authorization: `Bearer ${token[0].token}`,
@@ -581,11 +549,7 @@ export async function UpdatePermissions(formData: FormValuesType) {
                   forms: [permissionData],
                 };
 
-                console.log('formDataToValidate', formDataToValidate);
-
                 const validationResult = TransformedFormSchema.safeParse(formDataToValidate);
-
-                console.log('validationResult: ', validationResult);
 
                 if (!validationResult.success) {
                   let errorMessage = validationResult.error.issues
@@ -603,8 +567,6 @@ export async function UpdatePermissions(formData: FormValuesType) {
                 // Accessing the validated permission data
                 validatedPermissionData = validationResult.data.forms[0];
 
-                console.log('validatedPermissionData: ', validatedPermissionData);
-
                 const response = await fetch(url, {
                   method: 'PUT',
                   headers: headers,
@@ -616,11 +578,7 @@ export async function UpdatePermissions(formData: FormValuesType) {
                   }),
                 });
 
-                console.log('response: ', response);
-
                 const parsedResponse = await response.json();
-
-                console.log('parsedResponse: ', parsedResponse);
 
                 if (response.ok) {
                   successfulCreations.push(validatedPermissionData.emailAddress);
@@ -826,8 +784,6 @@ export async function DeletePermissions(
   const MAX_RETRIES = 3;
   let delay = 1000;
 
-  console.log('selectedPermissions', selectedPermissions);
-
   // Arrays to track various outcomes
   const errors: string[] = [];
   const successfulDeletions: Array<{
@@ -899,13 +855,10 @@ export async function DeletePermissions(
           await limiter.schedule(async () => {
             // Creating promises for each container deletion
             const deletePromises = Array.from(toDeletePermissions).map(async (props) => {
-              console.log('props', props);
-
               const { accountId, emailAddress, path } = props;
               accountIdForCache = accountId;
 
               const url = `https://www.googleapis.com/tagmanager/v2/${path}`;
-              console.log('url', url);
 
               const headers = {
                 Authorization: `Bearer ${token[0].token}`,
@@ -920,8 +873,6 @@ export async function DeletePermissions(
                 });
 
                 const parsedResponse = await response.json();
-
-                console.log('parsed res', parsedResponse);
 
                 if (response.ok) {
                   permissionIdsProcessed.add(path);

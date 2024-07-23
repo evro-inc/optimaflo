@@ -36,7 +36,10 @@ import { FeatureResponse } from '@/src/types/types';
 import { useRouter } from 'next/navigation';
 import { setErrorDetails, setIsLimitReached, setNotFoundError } from '@/src/redux/tableSlice';
 import { RootState } from '@/src/redux/store';
-import { createGTMVersion } from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
+import {
+  createGTMVersion,
+  getStatusGtmWorkspaces,
+} from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
 import { UpdateEnvs } from '@/src/lib/fetch/dashboard/actions/gtm/envs';
 import { Checkbox } from '@/src/components/ui/checkbox';
 import { revalidate } from '@/src/utils/server';
@@ -44,10 +47,10 @@ import { useUser } from '@clerk/nextjs';
 
 type Forms = z.infer<typeof FormSchema>;
 
-function getUniqueAccountAndContainerInfo(changes) {
+function getUniqueAccountAndContainerInfo(dataChanges) {
   const accountContainerSet = new Set();
 
-  changes.forEach((change) => {
+  dataChanges.forEach((change) => {
     if (
       change.accountId &&
       change.containerId &&
@@ -66,8 +69,9 @@ function getUniqueAccountAndContainerInfo(changes) {
     }
   });
 
-  return Array.from(accountContainerSet).map((info) => JSON.parse(info));
+  return Array.from(accountContainerSet).map((info: any) => JSON.parse(info));
 }
+
 function mergeUniqueInfo(accountContainerInfo, envs) {
   return accountContainerInfo.map((info) => {
     const relatedEnvs = envs
@@ -95,10 +99,6 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
   const [snap, setSnap] = useState<number | string | null>('250px');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('publish');
-
-  console.log('envs', envs);
-  console.log('changes', changes);
-
   /************ Tier Limits Workspaces ************/
   const tierLimitGTMWorkspaces = tierLimits.find(
     (subscription) => subscription.Feature?.name === 'GTMWorkspaces'
@@ -122,11 +122,6 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
   const createLimitGTMEnvs = tierLimitGTMEnvs?.updateLimit;
   const createUsageGTMEnvs = tierLimitGTMEnvs?.updateUsage;
   const remainingCreateGTMEnvs = createLimitGTMEnvs - createUsageGTMEnvs;
-
-  console.log('A changes', changes);
-  console.log('remainingCreateGTMWorkspaces', remainingCreateGTMWorkspaces);
-  console.log('remainingCreateGTMVersions', remainingCreateGTMVersions);
-  console.log('remainingCreateGTMEnvs', remainingCreateGTMEnvs);
 
   const uniqueEnvs: {
     type: string;
@@ -340,6 +335,7 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
       `gtm:containers:userId:${userId}`,
       `gtm:workspaces:userId:${userId}`,
       `gtm:builtInVariables:userId:${userId}`,
+      `gtm:variables:userId:${userId}`,
     ];
     await revalidate(keys, '/dashboard/gtm/configurations', userId);
 
@@ -399,7 +395,6 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
     const { forms } = data;
 
     dispatch(setLoading(true)); // Set loading to true using Redux action
-    console.log('forms process: ', forms);
 
     const uniqueCreateVersions = new Set(forms.flatMap((form) => form?.environmentId?.split(',')))
       .size;
@@ -410,6 +405,10 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
         form?.environmentId?.split(',').filter((env) => !env.toLowerCase().includes('live'))
       )
     ).size;
+
+    const workspaceStatus = await getStatusGtmWorkspaces();
+
+    console.log('workspaceStatus', workspaceStatus);
 
     if (activeTab === 'publish') {
       try {
@@ -433,6 +432,8 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
 
         const createVersionData = extractCreateVersionData(forms);
 
+        console.log('createVersionData', createVersionData);
+
         const resCreateVersion = (await createGTMVersion({
           forms: createVersionData,
         })) as FeatureResponse;
@@ -452,20 +453,28 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
           resCreateVersion.results.map((result) => result.response.containerVersion.path) || '';
         const environments = forms.flatMap((form) => form?.environmentId?.split(','));
 
+        console.log('versionPath', versionPath);
+
         // Separate live and non-live environments
         const liveEnvironments = environments.filter(
           (env) => env && env.split('-')[1].toLowerCase() === 'live'
         );
+        console.log('liveEnvironments', liveEnvironments);
+
         const nonLiveEnvironments = environments.filter(
           (env) => env && env.split('-')[1].toLowerCase() !== 'live'
         );
 
+        console.log('nonLiveEnvironments', nonLiveEnvironments);
+
         if (liveEnvironments.length > 0) {
           const publishData = extractPublishData(forms, versionPath);
+
           console.log('publishData', publishData);
 
           const res = (await publishGTM({ forms: publishData })) as FeatureResponse;
-          console.log('res', res);
+
+          console.log('res pub', res);
 
           if (res.success && resCreateVersion.success) {
             await handleResponseSuccess(res, userId, setIsDrawerOpen);
@@ -477,9 +486,13 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
         if (nonLiveEnvironments.length > 0) {
           const envUpdateData = extractEnvUpdateData(forms, versionPath);
 
+          console.log('envUpdateData', envUpdateData);
+
           const resUpdateEnv = (await UpdateEnvs({
             forms: envUpdateData, // Filter out live environments
           })) as FeatureResponse;
+
+          console.log('resUpdateEnv', resUpdateEnv);
 
           if (resUpdateEnv.success) {
             await handleResponseSuccess(resUpdateEnv, userId, setIsDrawerOpen);
@@ -563,8 +576,6 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
     form.setValue(`forms.${index}.createVersion.entityId`, newEntityId);
     form.setValue(`forms.${index}.environmentId`, newEnvValue.join(','));
   };
-
-  console.log('form errors', form.formState.errors);
 
   return (
     <Drawer

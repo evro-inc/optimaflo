@@ -26,12 +26,12 @@ const UserProvidedData = ({ formIndex, type, table = [], variables }: Props) => 
   const { control, setValue } = useFormContext();
   const { fields, append, remove } = useFieldArray({
     control,
-    name: `forms.${formIndex}.variables.parameter`,
+    name: `forms.${formIndex}.parameter`,
   });
 
   const variableType = useWatch({
     control,
-    name: `forms.${formIndex}.variables.type`,
+    name: `forms.${formIndex}.type`,
   });
 
   const {
@@ -40,7 +40,7 @@ const UserProvidedData = ({ formIndex, type, table = [], variables }: Props) => 
     remove: removeDisabledElement,
   } = useFieldArray({
     control,
-    name: `forms.${formIndex}.variables.parameter.${fields.findIndex(
+    name: `forms.${formIndex}.parameter.${fields.findIndex(
       (field: any) => field.key === 'disabledElements'
     )}.list`,
   });
@@ -56,9 +56,7 @@ const UserProvidedData = ({ formIndex, type, table = [], variables }: Props) => 
 
   useEffect(() => {
     if (variableType === 'awec') {
-      setValue(`forms.${formIndex}.variables.parameter`, [
-        { type: 'template', key: 'mode', value: '' },
-      ]);
+      setValue(`forms.${formIndex}.parameter`, [{ type: 'template', key: 'mode', value: '' }]);
     }
   }, [variableType, setValue, formIndex]);
 
@@ -87,7 +85,7 @@ const UserProvidedData = ({ formIndex, type, table = [], variables }: Props) => 
         { type: 'list', key: 'disabledElements', list: [] },
       ];
     }
-    setValue(`forms.${formIndex}.variables.parameter`, newFields);
+    setValue(`forms.${formIndex}.parameter`, newFields);
   };
 
   useEffect(() => {
@@ -110,7 +108,7 @@ const UserProvidedData = ({ formIndex, type, table = [], variables }: Props) => 
     removeDisabledElement(index);
   };
 
-  if (!variables.length) return <div>Loading...</div>;
+  if (!length) return <div>Loading...</div>;
 
   return (
     <div>
@@ -119,7 +117,7 @@ const UserProvidedData = ({ formIndex, type, table = [], variables }: Props) => 
           {item.key === 'mode' && (
             <FormField
               control={control}
-              name={`forms.${formIndex}.variables.parameter.${index}.value`}
+              name={`forms.${formIndex}.parameter.${index}.value`}
               render={({ field }) => (
                 <FormItem className="space-y-3">
                   <FormLabel>
@@ -175,7 +173,7 @@ const UserProvidedData = ({ formIndex, type, table = [], variables }: Props) => 
             ].includes(item.key) && (
               <FormField
                 control={control}
-                name={`forms.${formIndex}.variables.parameter.${index}.value`}
+                name={`forms.${formIndex}.parameter.${index}.value`}
                 render={({ field }) => (
                   <FormItem className="space-y-2">
                     <FormLabel>{item.key.replace('_', ' ').toUpperCase()}</FormLabel>
@@ -187,7 +185,7 @@ const UserProvidedData = ({ formIndex, type, table = [], variables }: Props) => 
                         <SelectValue placeholder="Not set" />
                       </SelectTrigger>
                       <SelectContent position="popper">
-                        <SelectItem value="not-set">Not set</SelectItem>
+                        <SelectItem value="{{not-set}}">Not set</SelectItem>
                         <SelectGroup>
                           <SelectLabel className="text-lg font-semibold">
                             Built-In Variables
@@ -221,7 +219,7 @@ const UserProvidedData = ({ formIndex, type, table = [], variables }: Props) => 
           {configType === 'CODE' && item.key === 'dataSource' && (
             <FormField
               control={control}
-              name={`forms.${formIndex}.variables.parameter.${index}.value`}
+              name={`forms.${formIndex}.parameter.${index}.value`}
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Data Source</FormLabel>
@@ -234,7 +232,7 @@ const UserProvidedData = ({ formIndex, type, table = [], variables }: Props) => 
                         <SelectValue placeholder="Select Data Source" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="not-set">Not set</SelectItem>
+                        <SelectItem value="{{not-set}}">Not set</SelectItem>
                         <SelectGroup>
                           <SelectLabel className="text-lg font-semibold">
                             Built-In Variables
@@ -269,7 +267,7 @@ const UserProvidedData = ({ formIndex, type, table = [], variables }: Props) => 
           {configType === 'AUTO' && item.key === 'enableElementBlocking' && (
             <FormField
               control={control}
-              name={`forms.${formIndex}.variables.parameter.${index}.value`}
+              name={`forms.${formIndex}.parameter.${index}.value`}
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Exclude selected elements</FormLabel>
@@ -306,7 +304,7 @@ const UserProvidedData = ({ formIndex, type, table = [], variables }: Props) => 
                         {innerItem.key === 'column1' && (
                           <FormField
                             control={control}
-                            name={`forms.${formIndex}.variables.parameter.${index}.list.${mapIndex}.map.${innerIndex}.value`}
+                            name={`forms.${formIndex}.parameter.${index}.list.${mapIndex}.map.${innerIndex}.value`}
                             render={({ field }) => (
                               <FormControl>
                                 <Input

@@ -14,18 +14,16 @@ const GoogleTagEventSettings = ({ formIndex, type, table = [] }: Props) => {
   const { control, register, setValue } = useFormContext();
   const { fields, append, replace } = useFieldArray({
     control,
-    name: `forms.${formIndex}.variables.parameter`,
+    name: `forms.${formIndex}.parameter`,
   });
 
   const variableType = useWatch({
     control,
-    name: `forms.${formIndex}.variables.type`,
+    name: `forms.${formIndex}.type`,
   });
 
   useEffect(() => {
     if (variableType === 'gtes') {
-      console.log('test', variableType);
-
       replace([
         {
           type: 'list',
@@ -63,7 +61,7 @@ const GoogleTagEventSettings = ({ formIndex, type, table = [] }: Props) => {
     remove: eventSettingsRemoveMap,
   } = useFieldArray({
     control,
-    name: `forms.${formIndex}.variables.parameter.${fields.findIndex(
+    name: `forms.${formIndex}.parameter.${fields.findIndex(
       (field: any) => field.key === 'eventSettingsTable'
     )}.list`,
   });
@@ -74,7 +72,7 @@ const GoogleTagEventSettings = ({ formIndex, type, table = [] }: Props) => {
     remove: userPropertiesRemoveMap,
   } = useFieldArray({
     control,
-    name: `forms.${formIndex}.variables.parameter.${fields.findIndex(
+    name: `forms.${formIndex}.parameter.${fields.findIndex(
       (field: any) => field.key === 'userProperties'
     )}.list`,
   });
@@ -87,7 +85,6 @@ const GoogleTagEventSettings = ({ formIndex, type, table = [] }: Props) => {
         { type: 'template', key: 'parameterValue', value: '' },
       ],
     });
-    console.log('Added new event settings row:', eventSettingsMapFields);
   };
 
   const handleAddUserPropertiesRow = () => {
@@ -98,7 +95,6 @@ const GoogleTagEventSettings = ({ formIndex, type, table = [] }: Props) => {
         { type: 'template', key: 'value', value: '' },
       ],
     });
-    console.log('Added new user properties row:', userPropertiesMapFields);
   };
 
   return (
@@ -124,12 +120,12 @@ const GoogleTagEventSettings = ({ formIndex, type, table = [] }: Props) => {
                           {subItem.key === 'parameter' && (
                             <FormField
                               control={control}
-                              name={`forms.${formIndex}.variables.parameter.${index}.list.${mapIndex}.map.${subIndex}.value`}
+                              name={`forms.${formIndex}.parameter.${index}.list.${mapIndex}.map.${subIndex}.value`}
                               render={({ field }) => (
                                 <FormControl>
                                   <Input
                                     {...register(
-                                      `forms.${formIndex}.variables.parameter.${index}.list.${mapIndex}.map.${subIndex}.value`
+                                      `forms.${formIndex}.parameter.${index}.list.${mapIndex}.map.${subIndex}.value`
                                     )}
                                     value={field.value}
                                     onChange={field.onChange}
@@ -142,12 +138,12 @@ const GoogleTagEventSettings = ({ formIndex, type, table = [] }: Props) => {
                           {subItem.key === 'parameterValue' && (
                             <FormField
                               control={control}
-                              name={`forms.${formIndex}.variables.parameter.${index}.list.${mapIndex}.map.${subIndex}.value`}
+                              name={`forms.${formIndex}.parameter.${index}.list.${mapIndex}.map.${subIndex}.value`}
                               render={({ field }) => (
                                 <FormControl>
                                   <Input
                                     {...register(
-                                      `forms.${formIndex}.variables.parameter.${index}.list.${mapIndex}.map.${subIndex}.value`
+                                      `forms.${formIndex}.parameter.${index}.list.${mapIndex}.map.${subIndex}.value`
                                     )}
                                     value={field.value}
                                     onChange={field.onChange}
@@ -190,12 +186,12 @@ const GoogleTagEventSettings = ({ formIndex, type, table = [] }: Props) => {
                           {subItem.key === 'name' && (
                             <FormField
                               control={control}
-                              name={`forms.${formIndex}.variables.parameter.${index}.list.${mapIndex}.map.${subIndex}.value`}
+                              name={`forms.${formIndex}.parameter.${index}.list.${mapIndex}.map.${subIndex}.value`}
                               render={({ field }) => (
                                 <FormControl>
                                   <Input
                                     {...register(
-                                      `forms.${formIndex}.variables.parameter.${index}.list.${mapIndex}.map.${subIndex}.value`
+                                      `forms.${formIndex}.parameter.${index}.list.${mapIndex}.map.${subIndex}.value`
                                     )}
                                     value={field.value}
                                     onChange={field.onChange}
@@ -208,12 +204,12 @@ const GoogleTagEventSettings = ({ formIndex, type, table = [] }: Props) => {
                           {subItem.key === 'value' && (
                             <FormField
                               control={control}
-                              name={`forms.${formIndex}.variables.parameter.${index}.list.${mapIndex}.map.${subIndex}.value`}
+                              name={`forms.${formIndex}.parameter.${index}.list.${mapIndex}.map.${subIndex}.value`}
                               render={({ field }) => (
                                 <FormControl>
                                   <Input
                                     {...register(
-                                      `forms.${formIndex}.variables.parameter.${index}.list.${mapIndex}.map.${subIndex}.value`
+                                      `forms.${formIndex}.parameter.${index}.list.${mapIndex}.map.${subIndex}.value`
                                     )}
                                     value={field.value}
                                     onChange={field.onChange}

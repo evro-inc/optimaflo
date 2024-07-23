@@ -1,5 +1,6 @@
 //API HELPERS
 import prisma from '@/src/lib/prisma';
+import { fetchWithRetry } from '@/src/utils/server';
 import { clerkClient } from '@clerk/nextjs';
 
 export function isErrorWithStatus(error: unknown): error is { status: number } {
@@ -43,11 +44,9 @@ export async function grantProductAccess(customerId: string) {
 }
 
 export async function fetchGtmSettings(userId: string) {
-  // Check if the User record exists
   const existingUser = await prisma.User.findFirst({ where: { id: userId } });
 
   if (!existingUser) {
-    // Create the User record if it doesn't exist
     await prisma.User.create({ data: { id: userId } });
   }
 
@@ -60,114 +59,90 @@ export async function fetchGtmSettings(userId: string) {
     existingRecords.map((rec) => `${rec.accountId}-${rec.containerId}-${rec.workspaceId}`)
   );
 
-  let retries = 0;
-  const MAX_RETRIES = 3;
-  let success = false;
-
   const fetchedCompositeKeySet = new Set();
 
-  while (retries < MAX_RETRIES && !success) {
-    try {
-      // Fetch the list of accounts
-      const accountsResponse = await fetch(
-        'https://tagmanager.googleapis.com/tagmanager/v2/accounts',
-        { headers }
+  try {
+    const accountsData = await fetchWithRetry(
+      'https://tagmanager.googleapis.com/tagmanager/v2/accounts',
+      headers
+    );
+    const accountIds = accountsData.account?.map((account) => account.accountId) || [];
+
+    for (const accountId of accountIds) {
+      const containersData = await fetchWithRetry(
+        `https://tagmanager.googleapis.com/tagmanager/v2/accounts/${accountId}/containers`,
+        headers
       );
-      const accountsData = await accountsResponse.json();
-      const accountIds = accountsData.account?.map((account) => account.accountId) || [];
+      const containerIds =
+        containersData.container?.map((container) => container.containerId) || [];
 
-      for (const accountId of accountIds) {
-        // Fetch containers for each account
-        const containersResponse = await fetch(
-          `https://tagmanager.googleapis.com/tagmanager/v2/accounts/${accountId}/containers`,
-          { headers }
+      for (const containerId of containerIds) {
+        const workspacesData = await fetchWithRetry(
+          `https://tagmanager.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces`,
+          headers
         );
-        const containersData = await containersResponse.json();
-        const containerIds =
-          containersData.container?.map((container) => container.containerId) || [];
+        const workspaceIds =
+          workspacesData.workspace?.map((workspace) => workspace.workspaceId) || [];
 
-        for (const containerId of containerIds) {
-          // Fetch workspaces for each container
-          const workspacesResponse = await fetch(
-            `https://tagmanager.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces`,
-            { headers }
-          );
-          const workspacesData = await workspacesResponse.json();
-          const workspaceIds =
-            workspacesData.workspace?.map((workspace) => workspace.workspaceId) || [];
+        for (const workspaceId of workspaceIds) {
+          const compositeKey = `${accountId}-${containerId}-${workspaceId}`;
+          fetchedCompositeKeySet.add(compositeKey);
 
-          // Inside the loop for workspaceIds
-          for (const workspaceId of workspaceIds) {
-            const compositeKey = `${accountId}-${containerId}-${workspaceId}`;
-            fetchedCompositeKeySet.add(compositeKey);
-
-            if (!existingCompositeKeySet.has(compositeKey)) {
-              await prisma.gtm.upsert({
-                where: {
-                  userId_accountId_containerId_workspaceId: {
-                    userId,
-                    accountId,
-                    containerId,
-                    workspaceId,
-                  },
-                },
-                update: {
+          if (!existingCompositeKeySet.has(compositeKey)) {
+            await prisma.gtm.upsert({
+              where: {
+                userId_accountId_containerId_workspaceId: {
+                  userId,
                   accountId,
                   containerId,
                   workspaceId,
-                  User: { connect: { id: userId } },
                 },
-                create: {
-                  accountId,
-                  containerId,
-                  workspaceId,
-                  User: { connect: { id: userId } },
-                },
-              });
-            }
+              },
+              update: {
+                accountId,
+                containerId,
+                workspaceId,
+                User: { connect: { id: userId } },
+              },
+              create: {
+                accountId,
+                containerId,
+                workspaceId,
+                User: { connect: { id: userId } },
+              },
+            });
           }
         }
       }
-
-      // Delete records that are no longer present in the fetched data
-      const recordsToDelete = existingRecords.filter(
-        (rec) =>
-          !fetchedCompositeKeySet.has(`${rec.accountId}-${rec.containerId}-${rec.workspaceId}`)
-      );
-
-      for (const record of recordsToDelete) {
-        await prisma.gtm.delete({
-          where: {
-            userId_accountId_containerId_workspaceId: {
-              userId: record.userId,
-              accountId: record.accountId,
-              containerId: record.containerId,
-              workspaceId: record.workspaceId,
-            },
-          },
-        });
-      }
-
-      success = true;
-    } catch (error: any) {
-      if (error.message.includes('Quota exceeded')) {
-        await new Promise((resolve) => setTimeout(resolve, Math.pow(2, retries) * 1000));
-        retries++;
-      } else {
-        throw error;
-      }
     }
+
+    const recordsToDelete = existingRecords.filter(
+      (rec) => !fetchedCompositeKeySet.has(`${rec.accountId}-${rec.containerId}-${rec.workspaceId}`)
+    );
+
+    for (const record of recordsToDelete) {
+      await prisma.gtm.delete({
+        where: {
+          userId_accountId_containerId_workspaceId: {
+            userId: record.userId,
+            accountId: record.accountId,
+            containerId: record.containerId,
+            workspaceId: record.workspaceId,
+          },
+        },
+      });
+    }
+  } catch (error: any) {
+    throw new Error(`Failed to fetch GTM settings: ${error.message}`);
   }
 }
 
 /* GA UTILS */
 
 export async function fetchGASettings(userId: string) {
-  // Check if the User record exists
   const existingUser = await prisma.User.findFirst({ where: { id: userId } });
 
   if (!existingUser) {
-    // Create the User record if it doesn't exist
     await prisma.User.create({ data: { id: userId } });
   }
 
@@ -181,36 +156,28 @@ export async function fetchGASettings(userId: string) {
   );
 
   let retries = 0;
-  const MAX_RETRIES = 3;
+  const MAX_RETRIES = 5;
   let success = false;
 
   while (retries < MAX_RETRIES && !success) {
     try {
-      // Fetch the list of accounts
-      const accountsResponse = await fetch(
+      const accountsData = await fetchWithRetry(
         'https://analyticsadmin.googleapis.com/v1beta/accounts?fields=accounts(name,displayName,regionCode)',
-        { headers }
+        headers
       );
-      const accountsData = await accountsResponse.json();
 
       const accountNames = accountsData.accounts?.map((account) => account.name) || [];
 
       for (const accountId of accountNames) {
         const uniqueAccountId = accountId.split('/')[1];
 
-        // Fetch containers for each account
-        const propertyResponse = await fetch(
+        const propertyData = await fetchWithRetry(
           `https://analyticsadmin.googleapis.com/v1beta/properties?filter=parent:accounts/${uniqueAccountId}`,
-          { headers }
+          headers
         );
 
-        const propertyData = await propertyResponse.json();
-
         const propertyIds =
-          propertyData.properties?.map((property) => {
-            // Split the property.name at '/' and take the second part ([1]), which is the ID
-            return property.name.split('/')[1];
-          }) || [];
+          propertyData.properties?.map((property) => property.name.split('/')[1]) || [];
 
         for (const propertyId of propertyIds) {
           if (!existingCompositeKeySet.has(`${accountId}-${propertyId}`)) {
@@ -239,7 +206,9 @@ export async function fetchGASettings(userId: string) {
       success = true;
     } catch (error: any) {
       if (error.message.includes('Quota exceeded')) {
-        await new Promise((resolve) => setTimeout(resolve, Math.pow(2, retries) * 1000));
+        await new Promise((resolve) =>
+          setTimeout(resolve, Math.pow(2, retries) * 1000 + Math.random() * 1000)
+        );
         retries++;
       } else {
         throw error;

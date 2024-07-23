@@ -54,10 +54,6 @@ export default async function BuiltInVarPage({
   );
 
   const combinedData = flatBuiltInVars.map((vars) => {
-    if (!vars.variable) {
-      return vars;
-    }
-
     const accountId = vars.accountId;
     const containerId = vars.containerId;
     const workspaceId = vars.workspaceId;
@@ -70,6 +66,7 @@ export default async function BuiltInVarPage({
 
     const isPublished = statusDataFlat.find(
       (p) =>
+        p.variable &&
         p.variable.name === vars.name &&
         p.variable.accountId === vars.accountId &&
         p.variable.containerId === vars.containerId &&

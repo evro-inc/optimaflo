@@ -34,12 +34,12 @@ const LookupTableVariable = ({ formIndex, type, table = [], variables }: Props) 
   const { control, register, setValue } = useFormContext();
   const { fields, append, remove } = useFieldArray({
     control,
-    name: `forms.${formIndex}.variables.parameter`,
+    name: `forms.${formIndex}.parameter`,
   });
 
   const variableType = useWatch({
     control,
-    name: `forms.${formIndex}.variables.type`,
+    name: `forms.${formIndex}.type`,
   });
 
   const {
@@ -48,7 +48,7 @@ const LookupTableVariable = ({ formIndex, type, table = [], variables }: Props) 
     remove: removeMap,
   } = useFieldArray({
     control,
-    name: `forms.${formIndex}.variables.parameter.${fields.findIndex(
+    name: `forms.${formIndex}.parameter.${fields.findIndex(
       (field: any) => field.key === 'map'
     )}.list`,
   });
@@ -91,7 +91,7 @@ const LookupTableVariable = ({ formIndex, type, table = [], variables }: Props) 
 
   useEffect(() => {
     if (variableType === 'smm' || variableType === 'remm') {
-      setValue(`forms.${formIndex}.variables.parameter`, [
+      setValue(`forms.${formIndex}.parameter`, [
         {
           type: 'template',
           key: 'input',
@@ -153,7 +153,7 @@ const LookupTableVariable = ({ formIndex, type, table = [], variables }: Props) 
     }
   }, [fields]);
 
-  if (!variables.length) return <div>Loading...</div>;
+  if (!length) return <div>Loading...</div>;
 
   return (
     <div>
@@ -163,7 +163,7 @@ const LookupTableVariable = ({ formIndex, type, table = [], variables }: Props) 
             <div className="flex items-center space-x-2">
               <FormField
                 control={control}
-                name={`forms.${formIndex}.variables.parameter.${index}.value`}
+                name={`forms.${formIndex}.parameter.${index}.value`}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Input Variable</FormLabel>
@@ -226,12 +226,12 @@ const LookupTableVariable = ({ formIndex, type, table = [], variables }: Props) 
                         {innerItem.key === 'key' && (
                           <FormField
                             control={control}
-                            name={`forms.${formIndex}.variables.parameter.${index}.list.${mapIndex}.map.${innerIndex}.value`}
+                            name={`forms.${formIndex}.parameter.${index}.list.${mapIndex}.map.${innerIndex}.value`}
                             render={({ field }) => (
                               <FormControl>
                                 <Input
                                   {...register(
-                                    `forms.${formIndex}.variables.parameter.${index}.list.${mapIndex}.map.${innerIndex}.value`
+                                    `forms.${formIndex}.parameter.${index}.list.${mapIndex}.map.${innerIndex}.value`
                                   )}
                                   value={field.value}
                                   onChange={field.onChange}
@@ -244,12 +244,12 @@ const LookupTableVariable = ({ formIndex, type, table = [], variables }: Props) 
                         {innerItem.key === 'value' && (
                           <FormField
                             control={control}
-                            name={`forms.${formIndex}.variables.parameter.${index}.list.${mapIndex}.map.${innerIndex}.value`}
+                            name={`forms.${formIndex}.parameter.${index}.list.${mapIndex}.map.${innerIndex}.value`}
                             render={({ field }) => (
                               <FormControl>
                                 <Input
                                   {...register(
-                                    `forms.${formIndex}.variables.parameter.${index}.list.${mapIndex}.map.${innerIndex}.value`
+                                    `forms.${formIndex}.parameter.${index}.list.${mapIndex}.map.${innerIndex}.value`
                                   )}
                                   value={field.value}
                                   onChange={field.onChange}
@@ -289,7 +289,7 @@ const LookupTableVariable = ({ formIndex, type, table = [], variables }: Props) 
             <div className="flex items-center space-x-2 pt-4">
               <FormField
                 control={control}
-                name={`forms.${formIndex}.variables.parameter.${index}.value`}
+                name={`forms.${formIndex}.parameter.${index}.value`}
                 render={({ field }) => (
                   <FormItem>
                     <FormControl>
@@ -313,12 +313,12 @@ const LookupTableVariable = ({ formIndex, type, table = [], variables }: Props) 
             {item.key === 'defaultValue' && defaultValueChecked && (
               <FormField
                 control={control}
-                name={`forms.${formIndex}.variables.parameter.${index}.value`}
+                name={`forms.${formIndex}.parameter.${index}.value`}
                 render={({ field }) => (
                   <Input
                     id={`default-value-${formIndex}`}
                     placeholder="Default Value"
-                    {...register(`forms.${formIndex}.variables.parameter.${index}.value`)}
+                    {...register(`forms.${formIndex}.parameter.${index}.value`)}
                     value={field.value} // Ensure value is set correctly
                     onChange={(e) => setValue(field.name, e.target.value)} // Handle onChange for Input
                   />
@@ -331,7 +331,7 @@ const LookupTableVariable = ({ formIndex, type, table = [], variables }: Props) 
                 {item.key === 'fullMatch' && (
                   <FormField
                     control={control}
-                    name={`forms.${formIndex}.variables.parameter.${index}.value`}
+                    name={`forms.${formIndex}.parameter.${index}.value`}
                     render={({ field }) => (
                       <FormItem>
                         <FormControl>
@@ -349,7 +349,7 @@ const LookupTableVariable = ({ formIndex, type, table = [], variables }: Props) 
                 {item.key === 'replaceAfterMatch' && (
                   <FormField
                     control={control}
-                    name={`forms.${formIndex}.variables.parameter.${index}.value`}
+                    name={`forms.${formIndex}.parameter.${index}.value`}
                     render={({ field }) => (
                       <FormItem>
                         <FormControl>
@@ -367,7 +367,7 @@ const LookupTableVariable = ({ formIndex, type, table = [], variables }: Props) 
                 {item.key === 'ignoreCase' && (
                   <FormField
                     control={control}
-                    name={`forms.${formIndex}.variables.parameter.${index}.value`}
+                    name={`forms.${formIndex}.parameter.${index}.value`}
                     render={({ field }) => (
                       <FormItem>
                         <FormControl>

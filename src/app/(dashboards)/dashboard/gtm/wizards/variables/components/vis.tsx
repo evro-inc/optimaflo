@@ -21,12 +21,12 @@ const Vis = ({ formIndex, type, table = [] }: Props) => {
   const { control, register, setValue } = useFormContext();
   const { fields, append } = useFieldArray({
     control,
-    name: `forms.${formIndex}.variables.parameter`,
+    name: `forms.${formIndex}.parameter`,
   });
 
   const variableType = useWatch({
     control,
-    name: `forms.${formIndex}.variables.type`,
+    name: `forms.${formIndex}.type`,
   });
 
   // Append default fields if fields are empty
@@ -58,7 +58,7 @@ const Vis = ({ formIndex, type, table = [] }: Props) => {
   // Watch for changes in variable type and update parameters accordingly
   useEffect(() => {
     if (variableType === 'vis') {
-      setValue(`forms.${formIndex}.variables.parameter`, [
+      setValue(`forms.${formIndex}.parameter`, [
         {
           type: 'template',
           key: 'selectorType',
@@ -85,7 +85,7 @@ const Vis = ({ formIndex, type, table = [] }: Props) => {
 
   const outputMethod = useWatch({
     control,
-    name: `forms.${formIndex}.variables.parameter.${fields.findIndex(
+    name: `forms.${formIndex}.parameter.${fields.findIndex(
       (field: any) => field.key === 'outputMethod'
     )}.value`,
   });
@@ -98,7 +98,7 @@ const Vis = ({ formIndex, type, table = [] }: Props) => {
           {item.key === 'selectorType' && (
             <FormField
               control={control}
-              name={`forms.${formIndex}.variables.parameter.${index}.value`}
+              name={`forms.${formIndex}.parameter.${index}.value`}
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Selection Method</FormLabel>
@@ -124,13 +124,13 @@ const Vis = ({ formIndex, type, table = [] }: Props) => {
           {item.key === 'elementId' && (
             <FormField
               control={control}
-              name={`forms.${formIndex}.variables.parameter.${index}.value`}
+              name={`forms.${formIndex}.parameter.${index}.value`}
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Element ID</FormLabel>
                   <FormControl>
                     <Input
-                      {...register(`forms.${formIndex}.variables.parameter.${index}.value`)}
+                      {...register(`forms.${formIndex}.parameter.${index}.value`)}
                       value={field.value}
                       onChange={field.onChange}
                       placeholder="Enter Element ID"
@@ -145,7 +145,7 @@ const Vis = ({ formIndex, type, table = [] }: Props) => {
           {item.key === 'outputMethod' && (
             <FormField
               control={control}
-              name={`forms.${formIndex}.variables.parameter.${index}.value`}
+              name={`forms.${formIndex}.parameter.${index}.value`}
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Output Type</FormLabel>
@@ -171,13 +171,13 @@ const Vis = ({ formIndex, type, table = [] }: Props) => {
           {outputMethod === 'BOOLEAN' && item.key === 'onScreenRatio' && (
             <FormField
               control={control}
-              name={`forms.${formIndex}.variables.parameter.${index}.value`}
+              name={`forms.${formIndex}.parameter.${index}.value`}
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Minimum Percent Visible</FormLabel>
                   <FormControl>
                     <Input
-                      {...register(`forms.${formIndex}.variables.parameter.${index}.value`)}
+                      {...register(`forms.${formIndex}.parameter.${index}.value`)}
                       value={field.value}
                       onChange={field.onChange}
                     />

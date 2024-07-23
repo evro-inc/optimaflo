@@ -1339,3 +1339,5 @@ export interface UserPermission {
 export interface FormValues {
   permissions: UserPermission[];
 }
+
+export type FeatureUnion = BuiltInVariable | Variable | WorkspaceType /* other types as needed */;

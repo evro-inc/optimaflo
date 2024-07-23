@@ -148,8 +148,6 @@ export async function getGtmEnv(formData: GoogleTagEnvironmentType) {
 
         await limiter.schedule(async () => {
           const getPromises = Array.from(toGetEnv).map(async (env) => {
-            console.log('env g', env);
-
             const fetchEnvPromises = env.envIds.map(async (envIdString) => {
               if (typeof envIdString === 'string') {
                 const [accountId, containerId, , envId] = envIdString.split('-');
@@ -174,7 +172,6 @@ export async function getGtmEnv(formData: GoogleTagEnvironmentType) {
                   }
 
                   const responseBody = await response.json();
-                  console.log('responseBody', responseBody);
 
                   allData.push(responseBody.environment || []);
                   successfulFetches.push({
@@ -287,11 +284,7 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
 
-  console.log('formData update', formData);
-
   const containerVersionId = formData.forms.map((env) => env.containerVersionId);
-
-  console.log('containerVersionId update', containerVersionId);
 
   let retries = 0;
   let delay = INITIAL_DELAY;
@@ -313,8 +306,6 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
       containerVersionId: env.containerVersionId,
     }))
   );
-
-  console.log('toUpdateEnvs update', toUpdateEnvs);
 
   const tierLimitResponse: any = await tierUpdateLimit(userId, 'GTMEnvs');
   const limit = Number(tierLimitResponse.updateLimit);
@@ -372,8 +363,6 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
         if (remaining > 0) {
           await limiter.schedule(async () => {
             const updatePromises = Array.from(toUpdateEnvs).map(async (identifier) => {
-              console.log('identifier update', identifier);
-
               accountIdForCache = identifier.accountId;
               containerIdForCache = identifier.containerId;
 
@@ -386,8 +375,6 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
                   env.containerVersionId === identifier.containerVersionId
               );
 
-              console.log('envData update', envData);
-
               if (!envData) {
                 errors.push(`Container data not found for ${identifier}`);
                 toUpdateEnvs.delete(identifier);
@@ -398,8 +385,6 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
 
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${envData.accountId}/containers/${envData.containerId}/environments/${envNumber}`;
 
-              console.log('url update', url);
-
               const headers = {
                 Authorization: `Bearer ${token[0].token}`,
                 'Content-Type': 'application/json',
@@ -408,11 +393,8 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
 
               try {
                 const formDataToValidate = { forms: [envData] };
-                console.log('formDataToValidate update', formDataToValidate);
 
                 const validationResult = FormSchema.safeParse(formDataToValidate);
-
-                console.log('validationResult update', validationResult);
 
                 if (!validationResult.success) {
                   let errorMessage = validationResult.error.issues
@@ -430,8 +412,6 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
                 // Accessing the validated env data
                 const validatedenvData = validationResult.data.forms[0];
 
-                console.log('validatedenvData update', validatedenvData);
-
                 const payload = JSON.stringify({
                   accountId: validatedenvData.accountId,
                   name: validatedenvData.name,
@@ -440,19 +420,13 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
                   containerVersionId: validatedenvData.containerVersionId,
                 });
 
-                console.log('payload update', payload);
-
                 const response = await fetch(url, {
                   method: 'PUT',
                   headers: headers,
                   body: payload,
                 });
 
-                console.log('response update', response);
-
                 const parsedResponse = await response.json();
-
-                console.log('parsedResponse update', parsedResponse);
 
                 const envName = envData.name;
 

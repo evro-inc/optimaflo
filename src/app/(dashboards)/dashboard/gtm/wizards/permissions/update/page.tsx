@@ -44,7 +44,6 @@ export default async function PermissionsFormPage() {
 
   const combinedData = flatPermissions.flatMap((prop) => {
     const account = accounts.find((a) => a.accountId === prop.accountId);
-    console.log('prop', prop);
 
     return prop.containerAccess.map((containerAccess) => {
       const container = flatContainers.find((c) => c.containerId === containerAccess.containerId);
@@ -57,8 +56,6 @@ export default async function PermissionsFormPage() {
       };
     });
   });
-
-  console.log('combinedData', combinedData);
 
   const accountIdsWithContainers = new Set(combinedData.map((permission) => permission.accountId));
 

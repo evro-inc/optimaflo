@@ -91,7 +91,7 @@ export const useDeleteHook = (selectedRows, table) => {
   return handleDelete;
 };
 
-export const useRevertHook = (selectedRows, table) => {
+export const useRevertHookBuiltInVar = (selectedRows, table) => {
   const dispatch = useDispatch();
 
   const handleRevert = async () => {
@@ -102,12 +102,10 @@ export const useRevertHook = (selectedRows, table) => {
       },
     });
 
-    // Use Object.values to get the values from the selectedRows object and cast them to GA4AccountType
-    const ga4BuiltInVarToRevert = Object.values(
-      selectedRows as Record<string, BuiltInVariable>
-    ).map((prop) => {
-      return prop;
-    });
+    // Convert the array to a Set<BuiltInVariable>
+    const ga4BuiltInVarToRevert = new Set(
+      Object.values(selectedRows).map((prop) => prop as BuiltInVariable)
+    );
 
     const response: FeatureResponse = await RevertBuiltInVariables(ga4BuiltInVarToRevert);
 

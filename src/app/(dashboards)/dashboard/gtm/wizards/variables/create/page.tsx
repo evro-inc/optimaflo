@@ -9,7 +9,7 @@ import { listGtmWorkspaces } from '@/src/lib/fetch/dashboard/actions/gtm/workspa
 import FormCreateVariable from './form';
 import { listVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variables';
 
-export default async function BuiltInVariablePage() {
+export default async function CreateVariablePage() {
   const user = await currentUser();
   if (!user) return notFound();
 
@@ -63,8 +63,6 @@ export default async function BuiltInVariablePage() {
   if (remainingCreate <= 0) {
     redirect('/dashboard/gtm/configurations'); // Replace with the actual path you want to redirect to
   }
-
-  console.log('flatWorkspaces', flatWorkspaces);
 
   return (
     <>

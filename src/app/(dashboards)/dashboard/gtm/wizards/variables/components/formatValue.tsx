@@ -27,7 +27,7 @@ const FormatValue = ({ formIndex }: Props) => {
         <FormField
           key={option.name}
           control={control}
-          name={`forms.${formIndex}.variables.formatValue.${option.name}`}
+          name={`forms.${formIndex}.formatValue.${option.name}`}
           render={({ field }) => (
             <FormItem>
               <FormControl>
@@ -35,15 +35,12 @@ const FormatValue = ({ formIndex }: Props) => {
                   checked={!!field.value}
                   onCheckedChange={(checked) => {
                     if (checked) {
-                      setValue(`forms.${formIndex}.variables.formatValue.${option.name}`, {
+                      setValue(`forms.${formIndex}.formatValue.${option.name}`, {
                         type: 'template',
                         value: '',
                       });
                     } else {
-                      setValue(
-                        `forms.${formIndex}.variables.formatValue.${option.name}`,
-                        undefined
-                      );
+                      setValue(`forms.${formIndex}.formatValue.${option.name}`, undefined);
                     }
                   }}
                 />
@@ -52,7 +49,7 @@ const FormatValue = ({ formIndex }: Props) => {
               {field.value && (
                 <FormControl>
                   <Input
-                    {...register(`forms.${formIndex}.variables.formatValue.${option.name}.value`)}
+                    {...register(`forms.${formIndex}.formatValue.${option.name}.value`)}
                     placeholder={`Enter ${option.label} value`}
                     value={field.value.value} // Access the nested value property
                     onChange={(e) => field.onChange({ ...field.value, value: e.target.value })} // Update the nested value
@@ -67,7 +64,7 @@ const FormatValue = ({ formIndex }: Props) => {
 
       <FormField
         control={control}
-        name={`forms.${formIndex}.variables.formatValue.caseConversionType`}
+        name={`forms.${formIndex}.formatValue.caseConversionType`}
         render={({ field }) => (
           <FormItem>
             <FormLabel>Case Conversion Type</FormLabel>

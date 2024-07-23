@@ -51,31 +51,12 @@ export const VariableSchema = z.object({
   formatValue: FormatValueSchema.optional(),
 });
 
-export const AccountContainerWorkspaceSchema = z.object({
-  accountId: z.string(),
-  containerId: z.string(),
-  workspaceId: z.string(),
-});
-
-export const FormSetSchema = z.object({
-  gtmEntity: z
-    .array(AccountContainerWorkspaceSchema)
-    .min(1, { message: 'At least one entity is required' }),
-  variables: VariableSchema,
-});
-
 export const FormCreateAmountSchema = z.object({
   amount: z.number(),
 });
 
 export const FormsSchema = z.object({
-  forms: z.array(FormSetSchema),
+  forms: z.array(VariableSchema),
 });
 
-export const TransformedFormSchema = z.object({
-  forms: z.array(VariableSchema).min(1, { message: 'At least one transformed form is required' }),
-});
-
-// Export the type inferred from VariableSchema for type safety
-export type VariableType = z.infer<typeof FormsSchema>;
-export type TransformedDataVariableType = z.infer<typeof TransformedFormSchema>;
+export type VariableSchemaType = z.infer<typeof FormsSchema>;

@@ -16,12 +16,12 @@ const GoogleTagConfigSettings = ({ formIndex, type, table = [] }: Props) => {
   const { control, register, setValue } = useFormContext();
   const { fields, append } = useFieldArray({
     control,
-    name: `forms.${formIndex}.variables.parameter`,
+    name: `forms.${formIndex}.parameter`,
   });
 
   const variableType = useWatch({
     control,
-    name: `forms.${formIndex}.variables.type`,
+    name: `forms.${formIndex}.type`,
   });
 
   const {
@@ -30,7 +30,7 @@ const GoogleTagConfigSettings = ({ formIndex, type, table = [] }: Props) => {
     remove: removeMap,
   } = useFieldArray({
     control,
-    name: `forms.${formIndex}.variables.parameter.${fields.findIndex(
+    name: `forms.${formIndex}.parameter.${fields.findIndex(
       (field: any) => field.key === 'configSettingsTable'
     )}.list`,
   });
@@ -55,7 +55,7 @@ const GoogleTagConfigSettings = ({ formIndex, type, table = [] }: Props) => {
 
   useEffect(() => {
     if (variableType === 'gtcs') {
-      setValue(`forms.${formIndex}.variables.parameter`, [
+      setValue(`forms.${formIndex}.parameter`, [
         {
           type: 'list',
           key: 'configSettingsTable',
@@ -95,12 +95,12 @@ const GoogleTagConfigSettings = ({ formIndex, type, table = [] }: Props) => {
                         {subItem.key === 'parameter' && (
                           <FormField
                             control={control}
-                            name={`forms.${formIndex}.variables.parameter.${index}.list.${mapIndex}.map.${subIndex}.value`}
+                            name={`forms.${formIndex}.parameter.${index}.list.${mapIndex}.map.${subIndex}.value`}
                             render={({ field }) => (
                               <FormControl>
                                 <Input
                                   {...register(
-                                    `forms.${formIndex}.variables.parameter.${index}.list.${mapIndex}.map.${subIndex}.value`
+                                    `forms.${formIndex}.parameter.${index}.list.${mapIndex}.map.${subIndex}.value`
                                   )}
                                   value={field.value}
                                   onChange={field.onChange}
@@ -113,12 +113,12 @@ const GoogleTagConfigSettings = ({ formIndex, type, table = [] }: Props) => {
                         {subItem.key === 'parameterValue' && (
                           <FormField
                             control={control}
-                            name={`forms.${formIndex}.variables.parameter.${index}.list.${mapIndex}.map.${subIndex}.value`}
+                            name={`forms.${formIndex}.parameter.${index}.list.${mapIndex}.map.${subIndex}.value`}
                             render={({ field }) => (
                               <FormControl>
                                 <Input
                                   {...register(
-                                    `forms.${formIndex}.variables.parameter.${index}.list.${mapIndex}.map.${subIndex}.value`
+                                    `forms.${formIndex}.parameter.${index}.list.${mapIndex}.map.${subIndex}.value`
                                   )}
                                   value={field.value}
                                   onChange={field.onChange}

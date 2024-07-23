@@ -57,8 +57,6 @@ const FormUpdateVersion = () => {
   const selectedRowData = useSelector((state: RootState) => state.table.selectedRows);
   const currentFormIndex = currentStep - 1; // Adjust for 0-based index
 
-  console.log('selectedRowData: ', selectedRowData);
-
   const formDataDefaults: Partial<GTMContainerVersion>[] = Object.values(selectedRowData).map(
     (rowData) => ({
       accountId: rowData.accountId,
@@ -70,7 +68,7 @@ const FormUpdateVersion = () => {
   );
 
   if (notFoundError) {
-    return <NotFoundErrorModal />;
+    return <NotFoundErrorModal onClose={undefined} />;
   }
   if (error) {
     return <ErrorModal />;
@@ -109,8 +107,6 @@ const FormUpdateVersion = () => {
   const processForm: SubmitHandler<UpdateVersionSchemaType> = async (data) => {
     const { updateVersion } = data;
 
-    console.log('forms: ', updateVersion);
-
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
     toast('Updating versions...', {
@@ -123,8 +119,6 @@ const FormUpdateVersion = () => {
     const uniqueVersions = new Set<string>();
 
     for (const form of updateVersion) {
-      console.log('form f: ', form);
-
       const identifier = `${form.accountId}-${form.containerId}-${form.containerVersionId}`;
       if (uniqueVersions.has(identifier)) {
         toast.error(`Duplicate version found for ${form.name}`, {
@@ -227,8 +221,6 @@ const FormUpdateVersion = () => {
       dispatch(setLoading(false)); // Set loading to false
     }
   };
-
-  console.log('form errors: ', form.formState.errors);
 
   return (
     <div className="flex items-center justify-center h-screen">

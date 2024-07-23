@@ -43,8 +43,6 @@ const EmailForm = ({ formIndex, type, table = [] }: Props) => {
     name: `forms.${formIndex}.emailAddresses`,
   });
 
-  console.log('table', table);
-
   const emailButtonClick = () => {
     append({ emailAddress: '' });
   };

@@ -32,7 +32,8 @@ import {
 } from '@/src/components/ui/dropdown-menu';
 import { LimitReached } from '@/src/components/client/modals/limitReached';
 import { ButtonDelete } from '../../../Button/Button';
-import { useRevertHook } from './delete';
+import { useRevertHookBuiltInVar } from './delete';
+import { useRevertHookVar } from '@/src/app/(dashboards)/dashboard/gtm/configurations/@variables/delete';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -71,9 +72,22 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
   }, {});
 
   const selectedRowArray = Object.values(selectedRowData);
-  const builtInVariables = selectedRowArray.map((row: any) => row.builtInVariable);
 
-  const handleRevert = useRevertHook(builtInVariables, table);
+  const builtInVariables = selectedRowArray.filter((row: any) => row.builtInVariable);
+  const variables = selectedRowArray.filter((row: any) => row.variable);
+
+  const handleRevertBuiltInVar = useRevertHookBuiltInVar(builtInVariables, table);
+  const handleRevertVar = useRevertHookVar(variables, table);
+
+  const handleRevert = () => {
+    if (builtInVariables.length > 0) {
+      handleRevertBuiltInVar();
+    }
+
+    if (variables.length > 0) {
+      handleRevertVar();
+    }
+  };
 
   return (
     <div>

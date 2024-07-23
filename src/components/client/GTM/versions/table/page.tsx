@@ -7,12 +7,10 @@ import { DataTable } from './table';
 import { listGtmBuiltInVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variablesBuiltIn';
 import { listGtmAccounts } from '@/src/lib/fetch/dashboard/actions/gtm/accounts';
 import { listGtmContainers } from '@/src/lib/fetch/dashboard/actions/gtm/containers';
-import {
-  getStatusGtmWorkspaces,
-  listGtmWorkspaces,
-} from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
+import { listGtmWorkspaces } from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
+import { listVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variables';
 
-export default async function KeyEventsPage({
+export default async function ChangesPage({
   searchParams,
 }: {
   searchParams?: {
@@ -25,42 +23,51 @@ export default async function KeyEventsPage({
   const { userId } = auth();
   if (!userId) return notFound();
 
-  const accountData = await listGtmAccounts();
-  const containerData = await listGtmContainers();
-  const workspaceData = await listGtmWorkspaces();
-  const builtInVarData = await listGtmBuiltInVariables();
-  const wsChanges = await getStatusGtmWorkspaces();
+  const accountData = await listGtmAccounts(true);
+  const containerData = await listGtmContainers(true);
+  const workspaceData = await listGtmWorkspaces(true);
+  const builtInVarData = await listGtmBuiltInVariables(true);
+  const varData = await listVariables(true);
 
-  const [accounts, containers, workspaces, builtInVar] = await Promise.all([
+  const [accounts, containers, workspaces, builtInVar, variable] = await Promise.all([
     accountData,
     containerData,
     workspaceData,
     builtInVarData,
+    varData,
   ]);
 
   const flatAccounts = accounts.flat();
   const flatContainers = containers.flat();
   const flatWorkspaces = workspaces.flat();
   const flatBuiltInVars = builtInVar.flat();
+  const flatVars = variable.flat();
 
-  const combinedData = flatBuiltInVars.map((vars) => {
-    const accountId = vars.accountId;
-    const containerId = vars.containerId;
-    const workspaceId = vars.workspaceId;
-    const accounts = flatAccounts.find((p) => p.accountId === accountId);
-    const containers = flatContainers.find((p) => p.containerId === containerId);
-    const workspaces = flatWorkspaces.find((p) => p.workspaceId === workspaceId);
-    const accountName = accounts ? accounts.name : 'Account Name Unknown';
-    const containerName = containers ? containers.name : 'Container Name Unknown';
-    const workspaceName = workspaces ? workspaces.name : 'Workspace Name Unknown';
+  const mapVarsToCombinedData = (varsArray: any[]) => {
+    return varsArray.map((vars) => {
+      const accountId = vars.accountId;
+      const containerId = vars.containerId;
+      const workspaceId = vars.workspaceId;
+      const account = flatAccounts.find((p) => p.accountId === accountId);
+      const container = flatContainers.find((p) => p.containerId === containerId);
+      const workspace = flatWorkspaces.find((p) => p.workspaceId === workspaceId);
+      const accountName = account ? account.name : 'Account Name Unknown';
+      const containerName = container ? container.name : 'Container Name Unknown';
+      const workspaceName = workspace ? workspace.name : 'Workspace Name Unknown';
 
-    return {
-      ...vars,
-      accountName,
-      containerName,
-      workspaceName,
-    };
-  });
+      return {
+        ...vars,
+        accountName,
+        containerName,
+        workspaceName,
+      };
+    });
+  };
+
+  const combinedData = [
+    ...mapVarsToCombinedData(flatBuiltInVars),
+    ...mapVarsToCombinedData(flatVars),
+  ];
 
   return (
     <>

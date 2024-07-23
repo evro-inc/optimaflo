@@ -39,7 +39,7 @@ export async function listGtmContainers(skipCache = false) {
 
   const cacheKey = `gtm:containers:userId:${userId}`;
 
-  if (!skipCache) {
+  if (skipCache == false) {
     const cacheData = await redis.get(cacheKey);
     if (cacheData) {
       return JSON.parse(cacheData);

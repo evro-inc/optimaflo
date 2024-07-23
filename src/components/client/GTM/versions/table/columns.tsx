@@ -2,11 +2,11 @@
 
 import { Button } from '@/src/components/ui/button';
 import { Checkbox } from '@/src/components/ui/checkbox';
-import { BuiltInVariable } from '@/src/types/types';
+import { FeatureUnion } from '@/src/types/types';
 import { ColumnDef } from '@tanstack/react-table';
 import { ArrowUpDown } from 'lucide-react';
 
-export const columns: ColumnDef<BuiltInVariable>[] = [
+export const columns: ColumnDef<FeatureUnion>[] = [
   {
     id: 'select',
     header: ({ table }) => (
@@ -30,7 +30,16 @@ export const columns: ColumnDef<BuiltInVariable>[] = [
   },
   {
     id: 'name',
-    accessorKey: 'builtInVariable.name',
+    accessorFn: (row: any) => {
+      // You would need to implement logic to handle different types within FeatureUnion
+      if ('builtInVariable' in row) {
+        return row.builtInVariable.name;
+      } else if ('variable' in row) {
+        // Assuming 'variable' type has a 'name' property
+        return row.variable.name;
+      }
+      // Handle other types as needed
+    },
     header: ({ column }) => {
       return (
         <Button
@@ -38,21 +47,6 @@ export const columns: ColumnDef<BuiltInVariable>[] = [
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
           Name
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-  },
-  {
-    id: 'type',
-    accessorKey: 'builtInVariable.type',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Type
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
@@ -72,6 +66,7 @@ export const columns: ColumnDef<BuiltInVariable>[] = [
       );
     },
   },
+
   {
     accessorKey: 'accountName',
     header: ({ column }) => {
@@ -80,7 +75,7 @@ export const columns: ColumnDef<BuiltInVariable>[] = [
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Account Id
+          Account Name
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
@@ -94,7 +89,7 @@ export const columns: ColumnDef<BuiltInVariable>[] = [
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Container Id
+          Container Name
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
@@ -108,7 +103,7 @@ export const columns: ColumnDef<BuiltInVariable>[] = [
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Workspace Id
+          Workspace Name
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );

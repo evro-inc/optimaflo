@@ -24,12 +24,12 @@ const AEV = ({ formIndex, type, table = [] }: Props) => {
   const { control, register, setValue } = useFormContext();
   const { fields, append, remove } = useFieldArray({
     control,
-    name: `forms.${formIndex}.variables.parameter`,
+    name: `forms.${formIndex}.parameter`,
   });
 
   const variableType = useWatch({
     control,
-    name: `forms.${formIndex}.variables.type`,
+    name: `forms.${formIndex}.type`,
   });
 
   // Append default fields if fields are empty
@@ -46,7 +46,7 @@ const AEV = ({ formIndex, type, table = [] }: Props) => {
   useEffect(() => {
     if (variableType === 'aev') {
       // Update parameters for 'aev' type
-      setValue(`forms.${formIndex}.variables.parameter`, [
+      setValue(`forms.${formIndex}.parameter`, [
         { type: 'boolean', key: 'setDefaultValue', value: 'false' },
         { type: 'template', key: 'varType', value: 'ELEMENT' },
       ]);
@@ -56,7 +56,7 @@ const AEV = ({ formIndex, type, table = [] }: Props) => {
   const defaultValueChecked =
     useWatch({
       control,
-      name: `forms.${formIndex}.variables.parameter`,
+      name: `forms.${formIndex}.parameter`,
     })?.find((param) => param.key === 'setDefaultValue')?.value === 'true';
 
   return (
@@ -66,7 +66,7 @@ const AEV = ({ formIndex, type, table = [] }: Props) => {
           {item.key === 'varType' && (
             <FormField
               control={control}
-              name={`forms.${formIndex}.variables.parameter.${index}.value`}
+              name={`forms.${formIndex}.parameter.${index}.value`}
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Variable Type</FormLabel>
@@ -96,7 +96,7 @@ const AEV = ({ formIndex, type, table = [] }: Props) => {
           {item.key === 'setDefaultValue' && (
             <FormField
               control={control}
-              name={`forms.${formIndex}.variables.parameter.${index}.value`}
+              name={`forms.${formIndex}.parameter.${index}.value`}
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Set Default Value</FormLabel>
@@ -106,7 +106,7 @@ const AEV = ({ formIndex, type, table = [] }: Props) => {
                       checked={field.value === 'true'}
                       onCheckedChange={(checked) => {
                         setValue(
-                          `forms.${formIndex}.variables.parameter.${index}.value`,
+                          `forms.${formIndex}.parameter.${index}.value`,
                           checked ? 'true' : 'false'
                         );
                       }}
@@ -115,9 +115,7 @@ const AEV = ({ formIndex, type, table = [] }: Props) => {
                   {defaultValueChecked && (
                     <FormControl>
                       <Input
-                        {...register(
-                          `forms.${formIndex}.variables.parameter.${index}.defaultValue`
-                        )}
+                        {...register(`forms.${formIndex}.parameter.${index}.defaultValue`)}
                         placeholder="Enter value"
                       />
                     </FormControl>

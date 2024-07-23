@@ -14,12 +14,12 @@ const FirstPartyCookie = ({ formIndex, type, table = [] }: Props) => {
   const { control, register, setValue } = useFormContext();
   const { fields, append, remove } = useFieldArray({
     control,
-    name: `forms.${formIndex}.variables.parameter`,
+    name: `forms.${formIndex}.parameter`,
   });
 
   const variableType = useWatch({
     control,
-    name: `forms.${formIndex}.variables.type`,
+    name: `forms.${formIndex}.type`,
   });
 
   // Append default fields if fields are empty
@@ -35,7 +35,7 @@ const FirstPartyCookie = ({ formIndex, type, table = [] }: Props) => {
   useEffect(() => {
     if (variableType === 'k') {
       // Update parameters for 'k' type
-      setValue(`forms.${formIndex}.variables.parameter`, [
+      setValue(`forms.${formIndex}.parameter`, [
         { type: 'template', key: 'name', value: 'test' },
         { type: 'boolean', key: 'decodeCookie', value: 'false' },
       ]);
@@ -50,13 +50,13 @@ const FirstPartyCookie = ({ formIndex, type, table = [] }: Props) => {
             {item.key === 'name' && (
               <FormField
                 control={control}
-                name={`forms.${formIndex}.variables.parameter.${index}.value`}
+                name={`forms.${formIndex}.parameter.${index}.value`}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Cookie Name</FormLabel>
                     <FormControl>
                       <Input
-                        {...register(`forms.${formIndex}.variables.parameter.${index}.value`)}
+                        {...register(`forms.${formIndex}.parameter.${index}.value`)}
                         value={field.value}
                         onChange={field.onChange}
                         placeholder="Enter cookie name"
@@ -70,12 +70,12 @@ const FirstPartyCookie = ({ formIndex, type, table = [] }: Props) => {
             {item.key === 'decodeCookie' && (
               <FormField
                 control={control}
-                name={`forms.${formIndex}.variables.parameter.${index}.value`}
+                name={`forms.${formIndex}.parameter.${index}.value`}
                 render={({ field }) => (
                   <FormItem>
                     <FormControl>
                       <Checkbox
-                        {...register(`forms.${formIndex}.variables.parameter.${index}.value`)}
+                        {...register(`forms.${formIndex}.parameter.${index}.value`)}
                         checked={field.value === 'true'}
                         onCheckedChange={(checked) => field.onChange(checked ? 'true' : 'false')}
                       />

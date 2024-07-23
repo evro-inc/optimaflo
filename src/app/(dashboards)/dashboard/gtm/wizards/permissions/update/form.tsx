@@ -229,16 +229,11 @@ const FormUpdatePermissions: React.FC<FormCreateProps> = ({
   const processForm: SubmitHandler<FormValuesType> = async (data) => {
     dispatch(setLoading(true));
 
-    console.log('data', data);
-    console.log('table data', table);
-
     // build new array by matching data and table data. The final return should include the path with the rest of data in the format of the schema.
 
     const transformedData = transformData(data);
-    console.log('transformedData', transformedData);
 
     const permissionsWithPaths = findPaths(transformedData, table);
-    console.log('permissionsWithPaths', permissionsWithPaths);
 
     if (permissionsWithPaths.forms.length === 0) {
       toast.error('No valid permissions found after processing.', {
@@ -412,8 +407,6 @@ const FormUpdatePermissions: React.FC<FormCreateProps> = ({
   const handlePrevious = () => {
     dispatch(decrementStep());
   };
-
-  console.log('form errors:', form.formState.errors);
 
   return (
     <div className="flex items-center justify-center h-screen">

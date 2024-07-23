@@ -21,12 +21,12 @@ const DOMElement = ({ formIndex, type, table = [] }: Props) => {
   const { control, register, setValue } = useFormContext();
   const { fields, append, remove } = useFieldArray({
     control,
-    name: `forms.${formIndex}.variables.parameter`,
+    name: `forms.${formIndex}.parameter`,
   });
 
   const variableType = useWatch({
     control,
-    name: `forms.${formIndex}.variables.type`,
+    name: `forms.${formIndex}.type`,
   });
 
   // Append default fields if fields are empty
@@ -53,7 +53,7 @@ const DOMElement = ({ formIndex, type, table = [] }: Props) => {
   // Watch for changes in variable type and update parameters accordingly
   useEffect(() => {
     if (variableType === 'd') {
-      setValue(`forms.${formIndex}.variables.parameter`, [
+      setValue(`forms.${formIndex}.parameter`, [
         {
           type: 'template',
           key: 'elementId',

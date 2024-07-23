@@ -53,6 +53,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const dispatch = useDispatch();
   const [isCreatePending, startCreateTransition] = useTransition();
+  const [isUpdatePending, startUpdateTransition] = useTransition();
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
 
@@ -81,6 +82,8 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     return acc;
   }, {});
 
+  const rowSelectedCount = Object.keys(selectedRowData).length;
+
   const handleCreateClick = useCreateHookForm(
     userId,
     'GTMVariables',
@@ -90,6 +93,21 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
   const onCreateButtonClick = () => {
     startCreateTransition(() => {
       handleCreateClick().catch((error) => {
+        throw new Error(error);
+      });
+    });
+  };
+
+  const handleUpdateClick = useUpdateHookForm(
+    userId,
+    'GTMVariables',
+    '/dashboard/gtm/wizards/variables/update',
+    rowSelectedCount
+  );
+
+  const onUpdateButtonClick = () => {
+    startUpdateTransition(() => {
+      handleUpdateClick().catch((error) => {
         throw new Error(error);
       });
     });
@@ -135,12 +153,12 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
             {isCreatePending ? 'Loading...' : 'Create'}
           </Button>
 
-          {/*  <Button
+          <Button
             disabled={Object.keys(table.getState().rowSelection).length === 0 || isUpdatePending}
             onClick={onUpdateButtonClick}
           >
             {isUpdatePending ? 'Loading...' : 'Update'}
-          </Button> */}
+          </Button>
 
           <ButtonDelete
             disabled={Object.keys(table.getState().rowSelection).length === 0}

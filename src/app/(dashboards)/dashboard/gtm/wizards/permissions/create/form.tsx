@@ -181,10 +181,6 @@ const FormCreatePermission: React.FC<FormCreateProps> = ({
     }
   };
 
-  useEffect(() => {
-    console.log('emailAddresses', emailAddresses);
-  }, [emailAddresses]);
-
   const transformData = (data: FormValuesType) => {
     const transformedForms = data.forms.flatMap((form) => {
       return form.emailAddresses.flatMap((emailObj) => {
@@ -201,7 +197,6 @@ const FormCreatePermission: React.FC<FormCreateProps> = ({
     dispatch(setLoading(true));
 
     const transformedData = transformData(data);
-    console.log('transformedData', transformedData);
 
     const validation = TransformedFormSchema.safeParse(transformedData);
     if (!validation.success) {
@@ -370,8 +365,6 @@ const FormCreatePermission: React.FC<FormCreateProps> = ({
   const handlePrevious = () => {
     dispatch(decrementStep());
   };
-
-  console.log('form errors:', form.formState.errors);
 
   return (
     <div className="flex items-center justify-center h-screen">

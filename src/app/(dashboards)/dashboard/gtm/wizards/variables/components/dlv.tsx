@@ -22,12 +22,12 @@ const DataLayerVariable = ({ formIndex, type, table = [] }: Props) => {
   const { control, register, setValue } = useFormContext();
   const { fields, append, remove } = useFieldArray({
     control,
-    name: `forms.${formIndex}.variables.parameter`,
+    name: `forms.${formIndex}.parameter`,
   });
 
   const variableType = useWatch({
     control,
-    name: `forms.${formIndex}.variables.type`,
+    name: `forms.${formIndex}.type`,
   });
 
   // Append default fields if fields are empty
@@ -54,7 +54,7 @@ const DataLayerVariable = ({ formIndex, type, table = [] }: Props) => {
   // Watch for changes in variable type and update parameters accordingly
   useEffect(() => {
     if (variableType === 'v') {
-      setValue(`forms.${formIndex}.variables.parameter`, [
+      setValue(`forms.${formIndex}.parameter`, [
         {
           type: 'template',
           key: 'name',
@@ -77,14 +77,12 @@ const DataLayerVariable = ({ formIndex, type, table = [] }: Props) => {
   return (
     <div>
       {fields.map((item: any, index: number) => {
-        console.log('item: ', item);
-
         return (
           <div className="py-3" key={item.id}>
             {item.key === 'name' && (
               <FormField
                 control={control}
-                name={`forms.${formIndex}.variables.parameter.${index}.value`}
+                name={`forms.${formIndex}.parameter.${index}.value`}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Data Layer Variable Name</FormLabel>
@@ -100,7 +98,7 @@ const DataLayerVariable = ({ formIndex, type, table = [] }: Props) => {
             {item.key === 'dataLayerVersion' && (
               <FormField
                 control={control}
-                name={`forms.${formIndex}.variables.parameter.${index}.value`}
+                name={`forms.${formIndex}.parameter.${index}.value`}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Data Layer Version</FormLabel>
@@ -126,7 +124,7 @@ const DataLayerVariable = ({ formIndex, type, table = [] }: Props) => {
             {item.key === 'setDefaultValue' && (
               <FormField
                 control={control}
-                name={`forms.${formIndex}.variables.parameter.${index}.value`}
+                name={`forms.${formIndex}.parameter.${index}.value`}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Set Default Value</FormLabel>

@@ -11,6 +11,7 @@ import { currentUserOauthAccessToken } from '../../../../clerk';
 import prisma from '@/src/lib/prisma';
 import { FeatureResponse, FeatureResult } from '@/src/types/types';
 import {
+  fetchWithRetry,
   handleApiResponseError,
   tierCreateLimit,
   tierDeleteLimit,
@@ -30,9 +31,7 @@ export async function listGtmWorkspaces(skipCache = false) {
   const MAX_RETRIES = 3;
   let delay = 1000;
 
-  // Authenticating the user and getting the user ID
   const { userId } = await auth();
-  // If user ID is not found, return a 'not found' error
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
@@ -47,6 +46,7 @@ export async function listGtmWorkspaces(skipCache = false) {
       return JSON.parse(cachedValue);
     }
   }
+
   await fetchGtmSettings(userId);
 
   const gtmData = await prisma.user.findFirst({
@@ -83,33 +83,31 @@ export async function listGtmWorkspaces(skipCache = false) {
 
           for (const url of urls) {
             try {
-              const response = await fetch(url, { headers });
-              if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
-              }
-              responseBody = await response.json();
+              responseBody = await fetchWithRetry(url, headers, 20);
               allData.push(responseBody.workspace || []);
             } catch (error: any) {
+              console.error(`Error fetching data from ${url}: ${error.message}`);
               throw new Error(`Error fetching data: ${error.message}`);
             }
           }
         });
-        redis.set(cacheKey, JSON.stringify(allData.flat()));
+
+        await redis.set(cacheKey, JSON.stringify(allData.flat()));
 
         return allData;
       }
     } catch (error: any) {
-      if (error.code === 429 || error.status === 429) {
+      if (error.message.includes('429 Too Many Requests')) {
         const jitter = Math.random() * 200;
         await new Promise((resolve) => setTimeout(resolve, delay + jitter));
         delay *= 2;
         retries++;
       } else {
-        throw error;
+        console.error(`Error fetching GTM workspaces: ${error.message}`);
+        throw new Error('Maximum retries reached without a successful response.');
       }
     }
   }
-  throw new Error('Maximum retries reached without a successful response.');
 }
 
 /************************************************************************************
@@ -1169,6 +1167,8 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
         if (remaining > 0) {
           await limiter.schedule(async () => {
             const createPromises = Array.from(toCreateVersions).map(async (identifier) => {
+              console.log('identifier', identifier);
+
               accountIdForCache = identifier.accountId;
               containerIdForCache = identifier.containerId;
               const workspaceData = uniqueForms.find(
@@ -1186,6 +1186,8 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
 
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${workspaceData.accountId}/containers/${workspaceData.containerId}/workspaces/${workspaceData.workspaceId}:create_version`;
 
+              console.log('url', url);
+
               const headers = {
                 Authorization: `Bearer ${accessToken}`,
                 'Content-Type': 'application/json',
@@ -1196,6 +1198,7 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
                 const formDataToValidate = { forms: [workspaceData] };
 
                 const validationResult = FormSchema.safeParse(formDataToValidate);
+                console.log('validationResult', validationResult);
 
                 if (!validationResult.success) {
                   let errorMessage = validationResult.error.issues
@@ -1216,6 +1219,7 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
                   name: validatedWorkspaceData.name,
                   notes: validatedWorkspaceData.description,
                 });
+                console.log('payload', payload);
 
                 const response = await fetch(url, {
                   method: 'POST',
@@ -1223,7 +1227,10 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
                   body: payload,
                 });
 
+                console.log('response', response);
+
                 const parsedResponse = await response.json();
+                console.log('parsedResponse', parsedResponse);
 
                 const workspaceName = workspaceData.name;
 
@@ -1447,7 +1454,7 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
   Function to list or get one GTM workspaces - Error: Error fetching data: HTTP error! status: 429. Too Many Requests
 ************************************************************************************/
 export async function getStatusGtmWorkspaces() {
-  const MAX_RETRIES = 5; // Increase retries to ensure we handle temporary rate limits
+  const MAX_RETRIES = 20;
   const INITIAL_DELAY = 1000;
   let delay = INITIAL_DELAY;
 
@@ -1457,7 +1464,6 @@ export async function getStatusGtmWorkspaces() {
 
   const token = await currentUserOauthAccessToken(userId);
   const accessToken = token[0].token;
-  let responseBody: any;
 
   await fetchGtmSettings(userId);
 
@@ -1485,50 +1491,17 @@ export async function getStatusGtmWorkspaces() {
     'Accept-Encoding': 'gzip',
   };
 
-  for (let retries = 0; retries < MAX_RETRIES; retries++) {
+  let allData: any[] = [];
+  for (const url of urls) {
     try {
-      const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
-      if (remaining > 0) {
-        let allData: any[] = [];
-        await limiter.schedule(async () => {
-          for (const url of urls) {
-            try {
-              const response = await fetch(url, { headers });
-              if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
-              }
-              responseBody = await response.json();
-              allData.push(responseBody || []);
-            } catch (error: any) {
-              if (error.code === 429 || error.status === 429) {
-                const jitter = Math.random() * 200;
-                await new Promise((resolve) => setTimeout(resolve, delay + jitter));
-                delay = Math.min(delay * 2, 16000); // Cap delay at 16 seconds
-                throw error;
-              } else {
-                throw new Error(`Error fetching data: ${error.message}`);
-              }
-            }
-          }
-        });
-
-        const flattenedData = allData.flat();
-        return flattenedData;
-      }
+      const data = await fetchWithRetry(url, headers);
+      allData.push(data);
     } catch (error: any) {
-      if (error.code !== 429 && error.status !== 429) {
-        throw error;
-      }
-
-      if (retries === MAX_RETRIES - 1) {
-        throw new Error('Maximum retries reached without a successful response.');
-      }
-
-      const jitter = Math.random() * 200;
-      await new Promise((resolve) => setTimeout(resolve, delay + jitter));
-      delay = Math.min(delay * 2, 16000); // Cap delay at 16 seconds
+      console.error(`Failed to fetch URL: ${url}, error: ${error.message}`);
+      // Here, we decide whether to continue or break out. For this example, let's continue.
+      // To break out and stop further requests, use: throw new Error(error.message);
     }
   }
 
-  throw new Error('Maximum retries reached without a successful response.');
+  return allData.flat();
 }

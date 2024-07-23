@@ -13,12 +13,12 @@ const Constant = ({ formIndex, type, table = [] }: Props) => {
   const { control, register, setValue } = useFormContext();
   const { fields, append, remove } = useFieldArray({
     control,
-    name: `forms.${formIndex}.variables.parameter`,
+    name: `forms.${formIndex}.parameter`,
   });
 
   const variableType = useWatch({
     control,
-    name: `forms.${formIndex}.variables.type`,
+    name: `forms.${formIndex}.type`,
   });
 
   // Append default fields if fields are empty
@@ -34,9 +34,7 @@ const Constant = ({ formIndex, type, table = [] }: Props) => {
   useEffect(() => {
     if (variableType === 'c') {
       // Update parameters for 'c' type
-      setValue(`forms.${formIndex}.variables.parameter`, [
-        { type: 'template', key: 'value', value: '' },
-      ]);
+      setValue(`forms.${formIndex}.parameter`, [{ type: 'template', key: 'value', value: '' }]);
     }
   }, [variableType, setValue, formIndex]);
 
@@ -47,13 +45,13 @@ const Constant = ({ formIndex, type, table = [] }: Props) => {
           {item.key === 'value' && (
             <FormField
               control={control}
-              name={`forms.${formIndex}.variables.parameter.${index}.value`}
+              name={`forms.${formIndex}.parameter.${index}.value`}
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Value</FormLabel>
                   <FormControl>
                     <Input
-                      {...register(`forms.${formIndex}.variables.parameter.${index}.value`)}
+                      {...register(`forms.${formIndex}.parameter.${index}.value`)}
                       value={field.value}
                       onChange={field.onChange}
                       placeholder="Enter value"

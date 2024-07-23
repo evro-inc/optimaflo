@@ -13,6 +13,8 @@ import { listGtmEnvs } from '@/src/lib/fetch/dashboard/actions/gtm/envs';
 import { getSubscription } from '@/src/lib/fetch/subscriptions';
 import { getTierLimit } from '@/src/lib/fetch/tierLimit';
 
+export const revalidate = 10;
+
 export default async function Page() {
   const { userId } = auth();
   if (!userId) return notFound();
@@ -52,21 +54,31 @@ export default async function Page() {
   );
 
   const combinedData = transformedData.map((vars) => {
-    if (!vars.variable) {
-      return vars;
+    let accountId, containerId, workspaceId, name, type;
+
+    if (vars.variable) {
+      accountId = vars.variable.accountId;
+      containerId = vars.variable.containerId;
+      workspaceId = vars.variable.workspaceId;
+      name = vars.variable.name;
+      type = vars.variable.type;
+    } else if (vars.builtInVariable) {
+      accountId = vars.builtInVariable.accountId;
+      containerId = vars.builtInVariable.containerId;
+      workspaceId = vars.builtInVariable.workspaceId;
+      name = vars.builtInVariable.name;
+      type = vars.builtInVariable.type;
+    } else {
+      return vars; // No variable or builtInVariable
     }
 
-    const accountId = vars.variable.accountId;
-    const containerId = vars.variable.containerId;
-    const workspaceId = vars.variable.workspaceId;
+    const account = flatAccounts.find((p) => p.accountId === accountId);
+    const container = flatContainers.find((p) => p.containerId === containerId);
+    const workspace = flatWorkspaces.find((p) => p.workspaceId === workspaceId);
 
-    const accounts = flatAccounts.find((p) => p.accountId === accountId);
-    const containers = flatContainers.find((p) => p.containerId === containerId);
-    const workspaces = flatWorkspaces.find((p) => p.workspaceId === workspaceId);
-
-    const accountName = accounts ? accounts.name : 'Account Name Unknown';
-    const containerName = containers ? containers.name : 'Container Name Unknown';
-    const workspaceName = workspaces ? workspaces.name : 'Workspace Name Unknown';
+    const accountName = account ? account.name : 'Account Name Unknown';
+    const containerName = container ? container.name : 'Container Name Unknown';
+    const workspaceName = workspace ? workspace.name : 'Workspace Name Unknown';
 
     return {
       ...vars,
@@ -76,6 +88,8 @@ export default async function Page() {
       containerId,
       workspaceName,
       workspaceId,
+      name,
+      type,
     };
   });
 

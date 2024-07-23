@@ -54,9 +54,6 @@ export default ({
   const { setValue, getValues, control, register } = useFormContext();
 
   const forms = useSelector((state: RootState) => state.gtmUserPermission.forms);
-  console.log('forms state', forms);
-
-  console.log('accountsWithContainers', accountsWithContainers);
 
   const { fields, append, remove } = useFieldArray({
     control: control,
@@ -109,8 +106,6 @@ export default ({
       return accountsWithContainers;
     }
   }, [selectedEmailAddresses, table, accountsWithContainers, selectedAccountIds, type]);
-
-  console.log('avaliableAccounts', availableAccounts);
 
   return (
     <>
