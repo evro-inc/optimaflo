@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+'use client';
+import React, { useEffect } from 'react';
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/src/components/ui/form';
 import {
@@ -27,6 +28,11 @@ const AEV = ({ formIndex, type, table = [] }: Props) => {
     name: `forms.${formIndex}.parameter`,
   });
 
+  const parameterFields = useWatch({
+    control,
+    name: `forms.${formIndex}.parameter`,
+  });
+
   const variableType = useWatch({
     control,
     name: `forms.${formIndex}.type`,
@@ -37,100 +43,135 @@ const AEV = ({ formIndex, type, table = [] }: Props) => {
     if (fields.length === 0) {
       append({ type: 'template', key: 'varType', value: 'ELEMENT' });
       append({ type: 'boolean', key: 'setDefaultValue', value: 'false' });
-    } else if (fields.length > 2) {
-      remove(2); // Ensure only two fields are appended
     }
-  }, [fields, append, remove]);
+  }, [fields.length, append]);
 
   // Watch for changes in variable type and update parameters accordingly
   useEffect(() => {
     if (variableType === 'aev') {
-      // Update parameters for 'aev' type
-      setValue(`forms.${formIndex}.parameter`, [
-        { type: 'template', key: 'varType', value: 'ELEMENT' },
-        { type: 'boolean', key: 'setDefaultValue', value: 'false' },
-      ]);
-    }
-  }, [variableType, setValue, formIndex]);
+      const hasVarType = parameterFields.some((param) => param.key === 'varType');
+      const hasSetDefaultValue = parameterFields.some((param) => param.key === 'setDefaultValue');
 
-  const defaultValueChecked =
-    useWatch({
-      control,
-      name: `forms.${formIndex}.parameter`,
-    })?.find((param) => param.key === 'setDefaultValue')?.value === 'true';
+      if (!hasVarType || !hasSetDefaultValue) {
+        setValue(`forms.${formIndex}.parameter`, [
+          { type: 'template', key: 'varType', value: 'ELEMENT' },
+          { type: 'boolean', key: 'setDefaultValue', value: 'false' },
+        ]);
+      }
+    }
+  }, [variableType, parameterFields, setValue, formIndex]);
+
+  // Append attribute field if varTypeValue is 'ATTRIBUTE'
+  useEffect(() => {
+    const varTypeValue = parameterFields?.find((param) => param.key === 'varType')?.value;
+    const hasAttributeField = parameterFields.some((param) => param.key === 'attribute');
+
+    if (varTypeValue === 'ATTRIBUTE' && !hasAttributeField) {
+      append({ type: 'template', key: 'attribute', value: '' });
+    }
+  }, [parameterFields, append]);
+
+  useEffect(() => {
+    const varTypeValue = parameterFields?.find((param) => param.key === 'setDefaultValue')?.value;
+    const hasAttributeField = parameterFields.some((param) => param.key === 'defaultValue');
+
+    if (varTypeValue === 'true' && !hasAttributeField) {
+      append({ type: 'template', key: 'defaultValue', value: '' });
+    }
+  }, [parameterFields, append]);
 
   return (
     <div>
-      {fields.map((item: any, index: number) => {
-        console.log('item', item);
+      {fields.map((item: any, index: number) => (
+        <div className="py-3" key={item.id}>
+          {item.key === 'varType' && (
+            <FormField
+              control={control}
+              name={`forms.${formIndex}.parameter.${index}.value`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Variable Type</FormLabel>
+                  <FormControl>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a variable type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel>Variable Type</SelectLabel>
+                          {aevType.map((variable) => (
+                            <SelectItem key={variable.type} value={variable.type}>
+                              {variable.name}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
 
-        return (
-          <div className="py-3" key={item.id}>
-            {item.key === 'varType' && (
-              <FormField
-                control={control}
-                name={`forms.${formIndex}.parameter.${index}.value`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Variable Type</FormLabel>
-                    <FormControl>
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a variable type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectGroup>
-                            <SelectLabel>Variable Type</SelectLabel>
-                            {aevType.map((variable) => (
-                              <SelectItem key={variable.type} value={variable.type}>
-                                {variable.name}
-                              </SelectItem>
-                            ))}
-                          </SelectGroup>
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
+          {item.key === 'attribute' && (
+            <FormField
+              control={control}
+              name={`forms.${formIndex}.parameter.${index}.value`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Attribute Name</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Enter attribute name" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
 
-            {item.key === 'setDefaultValue' && (
-              <FormField
-                control={control}
-                name={`forms.${formIndex}.parameter.${index}.value`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Set Default Value</FormLabel>
-                    <FormControl>
-                      <Checkbox
-                        {...field}
-                        checked={field.value === 'true'}
-                        onCheckedChange={(checked) => {
-                          setValue(
-                            `forms.${formIndex}.parameter.${index}.value`,
-                            checked ? 'true' : 'false'
-                          );
-                        }}
-                      />
-                    </FormControl>
-                    {defaultValueChecked && (
-                      <FormControl>
-                        <Input
-                          {...register(`forms.${formIndex}.parameter.${index}.defaultValue`)}
-                          placeholder="Enter value"
-                        />
-                      </FormControl>
-                    )}
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-          </div>
-        );
-      })}
+          {item.key === 'setDefaultValue' && (
+            <FormField
+              control={control}
+              name={`forms.${formIndex}.parameter.${index}.value`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Set Default Value</FormLabel>
+                  <FormControl>
+                    <Checkbox
+                      {...field}
+                      checked={field.value === 'true'}
+                      onCheckedChange={(checked) => {
+                        setValue(
+                          `forms.${formIndex}.parameter.${index}.value`,
+                          checked ? 'true' : 'false'
+                        );
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+
+          {item.key === 'defaultValue' && (
+            <FormField
+              control={control}
+              name={`forms.${formIndex}.parameter.${index}.value`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Default Value</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Enter default value" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+        </div>
+      ))}
     </div>
   );
 };

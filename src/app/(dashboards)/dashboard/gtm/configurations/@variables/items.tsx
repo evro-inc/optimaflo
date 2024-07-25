@@ -51,19 +51,19 @@ export const caseConversionTypes = [
 ];
 
 export const aevType = [
-  { type: 'element', name: 'Element' },
-  { type: 'elementType', name: 'Element Type' },
-  { type: 'elementAttribute', name: 'Element Attribute' },
-  { type: 'elementClasses', name: 'Element Classes' },
-  { type: 'elementId', name: 'Element ID' },
-  { type: 'elementTarget', name: 'Element Target' },
-  { type: 'elementText', name: 'Element Text' },
-  { type: 'elementUrl', name: 'Element URL' },
-  { type: 'historyNewUrlFragment', name: 'History New URL Fragment' },
-  { type: 'historyOldUrlFragment', name: 'History Old URL Fragment' },
-  { type: 'historyNewState', name: 'History New State' },
-  { type: 'historyOldState', name: 'History Old State' },
-  { type: 'historyChangeSource', name: 'History Change Source' },
+  { type: 'ELEMENT', name: 'Element' },
+  { type: 'TAG_NAME', name: 'Element Type' },
+  { type: 'ATTRIBUTE', name: 'Element Attribute' },
+  { type: 'CLASSES', name: 'Element Classes' },
+  { type: 'ID', name: 'Element ID' },
+  { type: 'TARGET', name: 'Element Target' },
+  { type: 'TEXT', name: 'Element Text' },
+  { type: 'URL', name: 'Element URL' },
+  { type: 'HISTORY_NEW_URL_FRAGMENT', name: 'History New URL Fragment' },
+  { type: 'HISTORY_OLD_URL_FRAGMENT', name: 'History Old URL Fragment' },
+  { type: 'HISTORY_NEW_STATE', name: 'History New State' },
+  { type: 'HISTORY_OLD_STATE', name: 'History Old State' },
+  { type: 'HISTORY_CHANGE_SOURCE', name: 'History Change Source' },
 ];
 
 export const caseConversionType = [
