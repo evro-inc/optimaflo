@@ -92,11 +92,7 @@ const formDataDefaults: Variable = {
   disablingTriggerId: [],
 };
 
-const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
-  tierLimits,
-  table = [],
-  workspaces,
-}) => {
+const FormCreateVariable: React.FC<FormCreateGTMProps> = ({ tierLimits, table = [], data }) => {
   const dispatch = useDispatch();
   const loading = useSelector((state: RootState) => state.form.loading);
   const error = useSelector((state: RootState) => state.form.error);
@@ -105,6 +101,8 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
   const notFoundError = useSelector(selectTable).notFoundError;
   const entities = useSelector((state: RootState) => state.gtmEntity.entities);
   const router = useRouter();
+
+  console.log('data', data);
 
   const [cachedVariables, setCachedVariables] = useState<any[]>([]);
 
@@ -536,7 +534,7 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
                                 <FormatValue formIndex={currentStep - 2} />
                               )}
 
-                            <EntityComponent formIndex={currentStep - 2} table={table} />
+                            <EntityComponent formIndex={currentStep - 2} entityData={data} />
                           </>
                           <div className="flex justify-between">
                             <Button type="button" onClick={handlePrevious}>

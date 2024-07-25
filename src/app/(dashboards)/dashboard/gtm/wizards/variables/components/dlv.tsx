@@ -30,19 +30,21 @@ const DataLayerVariable = ({ formIndex, type, table = [] }: Props) => {
     name: `forms.${formIndex}.type`,
   });
 
-  // Append default fields if fields are empty
+  const [defaultValueChecked, setDefaultValueChecked] = useState(false);
+
   useEffect(() => {
     if (fields.length === 0) {
       append({
         type: 'template',
         key: 'name',
-        value: 'testGTM',
+        value: '',
       });
       append({
         type: 'boolean',
         key: 'setDefaultValue',
         value: 'false',
       });
+      append({ type: 'template', key: 'defaultValue', value: '' });
       append({
         type: 'integer',
         key: 'dataLayerVersion',
@@ -51,20 +53,20 @@ const DataLayerVariable = ({ formIndex, type, table = [] }: Props) => {
     }
   }, [fields, append]);
 
-  // Watch for changes in variable type and update parameters accordingly
   useEffect(() => {
     if (variableType === 'v') {
       setValue(`forms.${formIndex}.parameter`, [
         {
           type: 'template',
           key: 'name',
-          value: 'testGTM',
+          value: '',
         },
         {
           type: 'boolean',
           key: 'setDefaultValue',
           value: 'false',
         },
+        { type: 'template', key: 'defaultValue', value: '' },
         {
           type: 'integer',
           key: 'dataLayerVersion',
@@ -73,6 +75,13 @@ const DataLayerVariable = ({ formIndex, type, table = [] }: Props) => {
       ]);
     }
   }, [variableType, setValue, formIndex]);
+
+  useEffect(() => {
+    const setDefaultValueItem = fields.find((item: any) => item.key === 'setDefaultValue');
+    if (setDefaultValueItem && setDefaultValueItem.value === 'true') {
+      setDefaultValueChecked(true);
+    }
+  }, [fields]);
 
   return (
     <div>
@@ -91,6 +100,46 @@ const DataLayerVariable = ({ formIndex, type, table = [] }: Props) => {
                     </FormControl>
                     <FormMessage />
                   </FormItem>
+                )}
+              />
+            )}
+
+            {item.key === 'setDefaultValue' && (
+              <div className="flex items-center space-x-2 pt-4">
+                <FormField
+                  control={control}
+                  name={`forms.${formIndex}.parameter.${index}.value`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Checkbox
+                          checked={defaultValueChecked}
+                          onCheckedChange={(e: boolean) => {
+                            setDefaultValueChecked(e);
+                            field.onChange(e ? 'true' : 'false');
+                          }}
+                        />
+                      </FormControl>
+                      <FormLabel>Set Default Value</FormLabel>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
+
+            {item.key === 'defaultValue' && defaultValueChecked && (
+              <FormField
+                control={control}
+                name={`forms.${formIndex}.parameter.${index}.value`}
+                render={({ field }) => (
+                  <Input
+                    id={`default-value-${formIndex}`}
+                    placeholder="Default Value"
+                    {...register(`forms.${formIndex}.parameter.${index}.value`)}
+                    value={field.value} // Ensure value is set correctly
+                    onChange={(e) => setValue(field.name, e.target.value)} // Handle onChange for Input
+                  />
                 )}
               />
             )}
@@ -114,25 +163,6 @@ const DataLayerVariable = ({ formIndex, type, table = [] }: Props) => {
                           </SelectGroup>
                         </SelectContent>
                       </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-
-            {item.key === 'setDefaultValue' && (
-              <FormField
-                control={control}
-                name={`forms.${formIndex}.parameter.${index}.value`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Set Default Value</FormLabel>
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value === 'true'}
-                        onCheckedChange={(e) => field.onChange(e ? 'true' : 'false')}
-                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

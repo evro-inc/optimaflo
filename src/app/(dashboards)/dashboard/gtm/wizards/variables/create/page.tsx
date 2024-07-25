@@ -3,10 +3,10 @@ import { notFound, redirect } from 'next/navigation';
 import { currentUser } from '@clerk/nextjs';
 import { getTierLimit } from '@/src/lib/fetch/tierLimit';
 import { getSubscription } from '@/src/lib/fetch/subscriptions';
+import FormCreateVariable from './form';
 import { listGtmAccounts } from '@/src/lib/fetch/dashboard/actions/gtm/accounts';
 import { listGtmContainers } from '@/src/lib/fetch/dashboard/actions/gtm/containers';
 import { listGtmWorkspaces } from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
-import FormCreateVariable from './form';
 import { listVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variables';
 
 export default async function CreateVariablePage() {
@@ -17,22 +17,47 @@ export default async function CreateVariablePage() {
   const subscriptionId = subscription.id;
 
   const tierLimits = await getTierLimit(subscriptionId);
-  const accountData = await listGtmAccounts();
-  const containerData = await listGtmContainers();
-  const workspaceData = await listGtmWorkspaces();
+
+  const { accountData, containerData, workspaceData, varData } = await fetchGtmData();
+  const combinedData = processGtmData(accountData, containerData, workspaceData, varData);
+  const entityData = processEntityData(accountData, containerData, workspaceData);
+
+  const foundTierLimit = tierLimits.find(
+    (subscription) => subscription.Feature?.name === 'GTMVariables'
+  );
+  const createLimit = foundTierLimit?.createLimit || 0;
+  const createUsage = foundTierLimit?.createUsage || 0;
+  const remainingCreate = createLimit - createUsage;
+
+  if (remainingCreate <= 0) {
+    redirect('/dashboard/gtm/configurations');
+  }
+
+  return (
+    <>
+      <div className="container">
+        <FormCreateVariable tierLimits={tierLimits} table={combinedData} data={entityData} />
+      </div>
+    </>
+  );
+}
+
+/* Fetch Data */
+export async function fetchGtmData() {
+  const accountData = await listGtmAccounts(true);
+  const containerData = await listGtmContainers(true);
+  const workspaceData = await listGtmWorkspaces(true);
   const varData = await listVariables();
 
-  const [accounts, containers, workspaces, variable] = await Promise.all([
-    accountData,
-    containerData,
-    workspaceData,
-    varData,
-  ]);
+  return { accountData, containerData, workspaceData, varData };
+}
 
-  const flatAccounts = accounts.flat();
-  const flatContainers = containers.flat();
-  const flatWorkspaces = workspaces.flat();
-  const flatVars = variable.flat();
+/* Process Data */
+export function processGtmData(accountData, containerData, workspaceData, varData) {
+  const flatAccounts = accountData.flat();
+  const flatContainers = containerData.flat();
+  const flatWorkspaces = workspaceData.flat();
+  const flatVars = varData.flat();
 
   const combinedData = flatVars.map((vars) => {
     const accountId = vars.accountId;
@@ -53,26 +78,29 @@ export default async function CreateVariablePage() {
     };
   });
 
-  const foundTierLimit = tierLimits.find(
-    (subscription) => subscription.Feature?.name === 'GTMVariables'
-  );
-  const createLimit = foundTierLimit?.createLimit || 0;
-  const createUsage = foundTierLimit?.createUsage || 0;
-  const remainingCreate = createLimit - createUsage;
+  return combinedData;
+}
 
-  if (remainingCreate <= 0) {
-    redirect('/dashboard/gtm/configurations'); // Replace with the actual path you want to redirect to
-  }
+/* Process Entity Data */
+export function processEntityData(accountData, containerData, workspaceData) {
+  const flatAccounts = accountData.flat();
+  const flatContainers = containerData.flat();
+  const flatWorkspaces = workspaceData.flat();
 
-  return (
-    <>
-      <div className="container">
-        <FormCreateVariable
-          tierLimits={tierLimits}
-          table={combinedData}
-          workspaces={flatWorkspaces}
-        />
-      </div>
-    </>
-  );
+  const combinedData = flatWorkspaces.map((ws) => {
+    const accountId = ws.accountId;
+    const containerId = ws.containerId;
+    const accounts = flatAccounts.find((p) => p.accountId === accountId);
+    const containers = flatContainers.find((p) => p.containerId === containerId);
+    const accountName = accounts ? accounts.name : 'Account Name Unknown';
+    const containerName = containers ? containers.name : 'Container Name Unknown';
+
+    return {
+      ...ws,
+      accountName,
+      containerName,
+    };
+  });
+
+  return combinedData;
 }

@@ -1,6 +1,6 @@
 'use server';
 import { revalidatePath } from 'next/cache';
-import { FormsSchema } from '@/src/lib/schemas/gtm/variables';
+import { FormsSchema, VariableSchemaType } from '@/src/lib/schemas/gtm/variables';
 import z from 'zod';
 import { auth } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
@@ -97,6 +97,14 @@ export async function listVariables(skipCache = false) {
         });
 
         redis.set(cacheKey, JSON.stringify(allData.flat()));
+
+        // Logging each variable and its parameters
+        allData.flat().forEach((variable) => {
+          console.log('Variable:', variable);
+          if (variable.parameter) {
+            console.log('Parameters:', variable.parameter);
+          }
+        });
 
         return allData;
       }
@@ -417,7 +425,7 @@ export async function DeleteVariables(ga4VarToDelete: Variable[]): Promise<Featu
 /************************************************************************************
   Create a single container or multiple containers
 ************************************************************************************/
-export async function CreateVariables(formData: VariableType) {
+export async function CreateVariables(formData: VariableSchemaType) {
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
@@ -1027,7 +1035,7 @@ export async function RevertVariables(ga4VarToDelete: any[]): Promise<FeatureRes
 /************************************************************************************
   Update a single container or multiple variables
 ************************************************************************************/
-export async function UpdateVariables(formData: VariableType) {
+export async function UpdateVariables(formData: VariableSchemaType) {
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);

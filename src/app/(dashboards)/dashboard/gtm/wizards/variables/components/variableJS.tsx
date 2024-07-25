@@ -66,13 +66,13 @@ const JavaScriptVariable = ({ formIndex, type, table = [] }: Props) => {
           {item.key === 'name' && (
             <FormField
               control={control}
-              name={`forms.${formIndex}.parameter.${index}.type`}
+              name={`forms.${formIndex}.parameter.${index}.value`}
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>JavaScript Variable</FormLabel>
                   <FormControl>
                     <Input
-                      {...register(`forms.${formIndex}.parameter.${index}.type`)}
+                      {...register(`forms.${formIndex}.parameter.${index}.value`)}
                       value={field.value}
                       onChange={field.onChange}
                       placeholder="Enter a variable type"

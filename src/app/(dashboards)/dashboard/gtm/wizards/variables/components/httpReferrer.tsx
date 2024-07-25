@@ -77,13 +77,13 @@ const HttpReferrer = ({ formIndex, type, table = [] }: Props) => {
           {item.key === 'component' && (
             <FormField
               control={control}
-              name={`forms.${formIndex}.parameter.${index}.type`}
+              name={`forms.${formIndex}.parameter.${index}.value`}
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Component Type</FormLabel>
                   <FormControl>
                     <Select
-                      {...register(`forms.${formIndex}.parameter.${index}.type`)}
+                      {...register(`forms.${formIndex}.parameter.${index}.value`)}
                       value={field.value}
                       onValueChange={field.onChange}
                     >

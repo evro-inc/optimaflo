@@ -35,8 +35,8 @@ const AEV = ({ formIndex, type, table = [] }: Props) => {
   // Append default fields if fields are empty
   useEffect(() => {
     if (fields.length === 0) {
-      append({ type: 'boolean', key: 'setDefaultValue', value: 'false' });
       append({ type: 'template', key: 'varType', value: 'ELEMENT' });
+      append({ type: 'boolean', key: 'setDefaultValue', value: 'false' });
     } else if (fields.length > 2) {
       remove(2); // Ensure only two fields are appended
     }
@@ -47,8 +47,8 @@ const AEV = ({ formIndex, type, table = [] }: Props) => {
     if (variableType === 'aev') {
       // Update parameters for 'aev' type
       setValue(`forms.${formIndex}.parameter`, [
-        { type: 'boolean', key: 'setDefaultValue', value: 'false' },
         { type: 'template', key: 'varType', value: 'ELEMENT' },
+        { type: 'boolean', key: 'setDefaultValue', value: 'false' },
       ]);
     }
   }, [variableType, setValue, formIndex]);
@@ -61,72 +61,76 @@ const AEV = ({ formIndex, type, table = [] }: Props) => {
 
   return (
     <div>
-      {fields.map((item: any, index: number) => (
-        <div className="py-3" key={item.id}>
-          {item.key === 'varType' && (
-            <FormField
-              control={control}
-              name={`forms.${formIndex}.parameter.${index}.value`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Variable Type</FormLabel>
-                  <FormControl>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a variable type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          <SelectLabel>Variable Type</SelectLabel>
-                          {aevType.map((variable) => (
-                            <SelectItem key={variable.type} value={variable.type}>
-                              {variable.name}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
+      {fields.map((item: any, index: number) => {
+        console.log('item', item);
 
-          {item.key === 'setDefaultValue' && (
-            <FormField
-              control={control}
-              name={`forms.${formIndex}.parameter.${index}.value`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Set Default Value</FormLabel>
-                  <FormControl>
-                    <Checkbox
-                      {...field}
-                      checked={field.value === 'true'}
-                      onCheckedChange={(checked) => {
-                        setValue(
-                          `forms.${formIndex}.parameter.${index}.value`,
-                          checked ? 'true' : 'false'
-                        );
-                      }}
-                    />
-                  </FormControl>
-                  {defaultValueChecked && (
+        return (
+          <div className="py-3" key={item.id}>
+            {item.key === 'varType' && (
+              <FormField
+                control={control}
+                name={`forms.${formIndex}.parameter.${index}.value`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Variable Type</FormLabel>
                     <FormControl>
-                      <Input
-                        {...register(`forms.${formIndex}.parameter.${index}.defaultValue`)}
-                        placeholder="Enter value"
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a variable type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            <SelectLabel>Variable Type</SelectLabel>
+                            {aevType.map((variable) => (
+                              <SelectItem key={variable.type} value={variable.type}>
+                                {variable.name}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {item.key === 'setDefaultValue' && (
+              <FormField
+                control={control}
+                name={`forms.${formIndex}.parameter.${index}.value`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Set Default Value</FormLabel>
+                    <FormControl>
+                      <Checkbox
+                        {...field}
+                        checked={field.value === 'true'}
+                        onCheckedChange={(checked) => {
+                          setValue(
+                            `forms.${formIndex}.parameter.${index}.value`,
+                            checked ? 'true' : 'false'
+                          );
+                        }}
                       />
                     </FormControl>
-                  )}
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
-        </div>
-      ))}
+                    {defaultValueChecked && (
+                      <FormControl>
+                        <Input
+                          {...register(`forms.${formIndex}.parameter.${index}.defaultValue`)}
+                          placeholder="Enter value"
+                        />
+                      </FormControl>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 };

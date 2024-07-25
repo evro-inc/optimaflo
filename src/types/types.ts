@@ -708,6 +708,7 @@ export type FormCreateGTMProps = {
   properties?: any;
   containers?: any;
   workspaces?: any;
+  data?: any;
 };
 
 type ParameterType =

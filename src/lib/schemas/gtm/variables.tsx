@@ -51,6 +51,12 @@ export const VariableSchema = z.object({
   formatValue: FormatValueSchema.optional(),
 });
 
+export const AccountContainerWorkspaceSchema = z.object({
+  accountId: z.string(),
+  containerId: z.string(),
+  workspaceId: z.string(),
+});
+
 export const FormCreateAmountSchema = z.object({
   amount: z.number(),
 });
@@ -59,4 +65,5 @@ export const FormsSchema = z.object({
   forms: z.array(VariableSchema),
 });
 
+// Export the type inferred from VariableSchema for type safety
 export type VariableSchemaType = z.infer<typeof FormsSchema>;

@@ -33,45 +33,31 @@ interface TableItem {
 
 interface Props {
   formIndex: number;
-  table?: TableItem[];
+  entityData?: TableItem[];
 }
 
-const EntityComponent = ({ formIndex, table = [] }: Props) => {
+const EntityComponent = ({ formIndex, entityData = [] }: Props) => {
   const dispatch = useDispatch();
   const entities = useSelector((state: any) => state?.accountContainerWorkspace?.entities || []);
   const { control, register, setValue, watch } = useFormContext();
   const { fields, remove, append } = useFieldArray({
     control,
-    name: `forms.${formIndex}.entities`, // Ensure entities are part of the form structure
+    name: `forms`, // Ensure entities are part of the form structure
   });
   const [maxRows, setMaxRows] = useState(0);
-
-  useEffect(() => {
-    entities.forEach((entity, index) => {
-      setValue(`forms.${formIndex}.entities.${index}.accountId`, entity.accountId);
-      setValue(`forms.${formIndex}.entities.${index}.containerId`, entity.containerId);
-      setValue(`forms.${formIndex}.entities.${index}.workspaceId`, entity.workspaceId);
-    });
-  }, [entities, formIndex, setValue]);
 
   const entityButtonClick = () => {
     append({ accountId: '', containerId: '', workspaceId: '' });
     dispatch(addEntity());
   };
 
-  const uniqueAccounts = Array.from(new Set(table.map((data) => data.accountId))).map((accountId) =>
-    table.find((data) => data.accountId === accountId)
+  console.log("entityData", entityData);
+
+  const uniqueAccounts = Array.from(new Set(entityData.map((data) => data.accountId))).map((accountId) =>
+    entityData.find((data) => data.accountId === accountId)
   );
 
-  useEffect(() => {
-    const uniqueEntities = new Set();
-    table.forEach((item) => {
-      if (item.accountId && item.containerId && item.workspaceId) {
-        uniqueEntities.add(`${item.accountId}-${item.containerId}-${item.workspaceId}`);
-      }
-    });
-    setMaxRows(uniqueEntities.size);
-  }, [table]);
+  console.log('un', uniqueAccounts);
 
   return (
     <div>
@@ -82,18 +68,24 @@ const EntityComponent = ({ formIndex, table = [] }: Props) => {
         <FormLabel className="col-span-1">Workspace</FormLabel>
       </div>
       {fields.map((item, index) => {
-        const selectedAccountId = watch(`forms.${formIndex}.entities.${index}.accountId`);
-        const filteredContainers = table.filter(
+        const selectedAccountId = watch(`forms.${formIndex}.accountId`);
+        const filteredContainers = entityData.filter(
           (data: any) => data.accountId === selectedAccountId
         );
         const uniqueFilteredContainers = Array.from(
           new Set(filteredContainers.map((data: any) => data.containerId))
         ).map((id) => filteredContainers.find((data: any) => data.containerId === id));
 
-        const selectedContainerId = watch(`forms.${formIndex}.entities.${index}.containerId`);
-        const filteredWorkspaces = table.filter(
+        const selectedContainerId = watch(`forms.${formIndex}.containerId`);
+        const filteredWorkspaces = entityData.filter(
           (data: any) => data.containerId === selectedContainerId
         );
+        console.log("selectedContainerId", selectedContainerId);
+        console.log("filteredWorkspaces", filteredWorkspaces);
+
+
+
+
         const uniqueFilteredWorkspaces = Array.from(
           new Set(filteredWorkspaces.map((data: any) => data.workspaceId))
         ).map((id) => filteredWorkspaces.find((data: any) => data.workspaceId === id));
@@ -104,12 +96,12 @@ const EntityComponent = ({ formIndex, table = [] }: Props) => {
               <FormField
                 key={item.id}
                 control={control}
-                name={`forms.${formIndex}.entities.${index}.accountId`}
+                name={`forms.${formIndex}.accountId`}
                 render={({ field }) => (
                   <FormItem>
                     <FormControl>
                       <Select
-                        {...register(`forms.${formIndex}.entities.${index}.accountId`)}
+                        {...register(`forms.${formIndex}.accountId`)}
                         {...field}
                         onValueChange={(value) => {
                           field.onChange(value);
@@ -142,12 +134,12 @@ const EntityComponent = ({ formIndex, table = [] }: Props) => {
               <FormField
                 key={item.id}
                 control={control}
-                name={`forms.${formIndex}.entities.${index}.containerId`}
+                name={`forms.${formIndex}.containerId`}
                 render={({ field }) => (
                   <FormItem>
                     <FormControl>
                       <Select
-                        {...register(`forms.${formIndex}.entities.${index}.containerId`)}
+                        {...register(`forms.${formIndex}.containerId`)}
                         {...field}
                         onValueChange={(value) => {
                           field.onChange(value);
@@ -181,12 +173,12 @@ const EntityComponent = ({ formIndex, table = [] }: Props) => {
               <FormField
                 key={item.id}
                 control={control}
-                name={`forms.${formIndex}.entities.${index}.workspaceId`}
+                name={`forms.${formIndex}.workspaceId`}
                 render={({ field }) => (
                   <FormItem>
                     <FormControl>
                       <Select
-                        {...register(`forms.${formIndex}.entities.${index}.workspaceId`)}
+                        {...register(`forms.${formIndex}.workspaceId`)}
                         {...field}
                         onValueChange={(value) => {
                           field.onChange(value);
@@ -203,7 +195,7 @@ const EntityComponent = ({ formIndex, table = [] }: Props) => {
                           <SelectGroup>
                             {uniqueFilteredWorkspaces.map((data: any) => (
                               <SelectItem key={data.workspaceId} value={data.workspaceId}>
-                                {data.workspaceName}
+                                {data.name}
                               </SelectItem>
                             ))}
                           </SelectGroup>
