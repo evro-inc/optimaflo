@@ -8,11 +8,15 @@ import {
   setNotFoundError,
 } from '@/src/redux/tableSlice';
 import { FeatureResponse, Variable } from '@/src/types/types';
+import { revalidate } from '@/src/utils/server';
+import { useUser } from '@clerk/nextjs';
 import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
 
 export const useDeleteHook = (selectedRows, table) => {
   const dispatch = useDispatch();
+  const { user } = useUser();
+  const userId = user?.id as string;
 
   const handleDelete = async () => {
     toast('Deleting variables...', {
@@ -64,6 +68,15 @@ export const useDeleteHook = (selectedRows, table) => {
 
     dispatch(clearSelectedRows());
     table.resetRowSelection({});
+
+    const keys = [
+      `gtm:accounts:userId:${userId}`,
+      `gtm:containers:userId:${userId}`,
+      `gtm:workspaces:userId:${userId}`,
+      `gtm:variables:userId:${userId}`,
+    ];
+
+    await revalidate(keys, '/dashboard/gtm/configurations', userId);
   };
 
   return handleDelete;
