@@ -42,22 +42,30 @@ const EntityComponent = ({ formIndex, entityData = [] }: Props) => {
   const { control, register, setValue, watch } = useFormContext();
   const { fields, remove, append } = useFieldArray({
     control,
-    name: `forms`, // Ensure entities are part of the form structure
+    name: `forms.${formIndex}.entities`, // Ensure entities are part of the form structure
   });
-  const [maxRows, setMaxRows] = useState(0);
+
+  const maxUniqueEntities = new Set(
+    entityData.map((data) => `${data.accountId}-${data.containerId}-${data.workspaceId}`)
+  ).size;
+
+  const currentUniqueEntities = new Set(
+    fields.map(
+      (field, index) =>
+        `${watch(`forms.${formIndex}.entities.${index}.accountId`)}-${watch(
+          `forms.${formIndex}.entities.${index}.containerId`
+        )}-${watch(`forms.${formIndex}.entities.${index}.workspaceId`)}`
+    )
+  ).size;
 
   const entityButtonClick = () => {
-    append({ accountId: '', containerId: '', workspaceId: '' });
+    append({ accountId: '', containerId: '', workspaceId: '' }); // Append empty values
     dispatch(addEntity());
   };
 
-  console.log("entityData", entityData);
-
-  const uniqueAccounts = Array.from(new Set(entityData.map((data) => data.accountId))).map((accountId) =>
-    entityData.find((data) => data.accountId === accountId)
+  const uniqueAccounts = Array.from(new Set(entityData.map((data) => data.accountId))).map(
+    (accountId) => entityData.find((data) => data.accountId === accountId)
   );
-
-  console.log('un', uniqueAccounts);
 
   return (
     <div>
@@ -68,7 +76,7 @@ const EntityComponent = ({ formIndex, entityData = [] }: Props) => {
         <FormLabel className="col-span-1">Workspace</FormLabel>
       </div>
       {fields.map((item, index) => {
-        const selectedAccountId = watch(`forms.${formIndex}.accountId`);
+        const selectedAccountId = watch(`forms.${formIndex}.entities.${index}.accountId`);
         const filteredContainers = entityData.filter(
           (data: any) => data.accountId === selectedAccountId
         );
@@ -76,15 +84,12 @@ const EntityComponent = ({ formIndex, entityData = [] }: Props) => {
           new Set(filteredContainers.map((data: any) => data.containerId))
         ).map((id) => filteredContainers.find((data: any) => data.containerId === id));
 
-        const selectedContainerId = watch(`forms.${formIndex}.containerId`);
+        const selectedContainerId = watch(`forms.${formIndex}.entities.${index}.containerId`);
         const filteredWorkspaces = entityData.filter(
           (data: any) => data.containerId === selectedContainerId
         );
-        console.log("selectedContainerId", selectedContainerId);
-        console.log("filteredWorkspaces", filteredWorkspaces);
-
-
-
+        console.log('selectedContainerId', selectedContainerId);
+        console.log('filteredWorkspaces', filteredWorkspaces);
 
         const uniqueFilteredWorkspaces = Array.from(
           new Set(filteredWorkspaces.map((data: any) => data.workspaceId))
@@ -96,12 +101,12 @@ const EntityComponent = ({ formIndex, entityData = [] }: Props) => {
               <FormField
                 key={item.id}
                 control={control}
-                name={`forms.${formIndex}.accountId`}
+                name={`forms.${formIndex}.entities.${index}.accountId`}
                 render={({ field }) => (
                   <FormItem>
                     <FormControl>
                       <Select
-                        {...register(`forms.${formIndex}.accountId`)}
+                        {...register(`forms.${formIndex}.entities.${index}.accountId`)}
                         {...field}
                         onValueChange={(value) => {
                           field.onChange(value);
@@ -134,12 +139,12 @@ const EntityComponent = ({ formIndex, entityData = [] }: Props) => {
               <FormField
                 key={item.id}
                 control={control}
-                name={`forms.${formIndex}.containerId`}
+                name={`forms.${formIndex}.entities.${index}.containerId`}
                 render={({ field }) => (
                   <FormItem>
                     <FormControl>
                       <Select
-                        {...register(`forms.${formIndex}.containerId`)}
+                        {...register(`forms.${formIndex}.entities.${index}.containerId`)}
                         {...field}
                         onValueChange={(value) => {
                           field.onChange(value);
@@ -173,12 +178,12 @@ const EntityComponent = ({ formIndex, entityData = [] }: Props) => {
               <FormField
                 key={item.id}
                 control={control}
-                name={`forms.${formIndex}.workspaceId`}
+                name={`forms.${formIndex}.entities.${index}.workspaceId`}
                 render={({ field }) => (
                   <FormItem>
                     <FormControl>
                       <Select
-                        {...register(`forms.${formIndex}.workspaceId`)}
+                        {...register(`forms.${formIndex}.entities.${index}.workspaceId`)}
                         {...field}
                         onValueChange={(value) => {
                           field.onChange(value);
@@ -227,7 +232,7 @@ const EntityComponent = ({ formIndex, entityData = [] }: Props) => {
         className="mt-4"
         type="button"
         onClick={entityButtonClick}
-        disabled={fields.length >= maxRows}
+        disabled={fields.length >= maxUniqueEntities || currentUniqueEntities >= maxUniqueEntities}
       >
         <PlusIcon /> Add Entity
       </Button>
