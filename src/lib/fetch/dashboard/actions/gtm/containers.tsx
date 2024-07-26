@@ -88,7 +88,7 @@ export async function listGtmContainers(skipCache = false) {
               allData.push(responseBody.container || []);
             } catch (error: any) {
               if (error.code === 429 || error.status === 429) {
-                const jitter = Math.random() * 200;
+                const jitter = Math.random() * 300;
                 await new Promise((resolve) => setTimeout(resolve, delay + jitter));
                 delay *= 2;
                 retries++;

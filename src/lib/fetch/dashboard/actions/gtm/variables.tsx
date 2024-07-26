@@ -103,6 +103,10 @@ export async function listVariables(skipCache = false) {
           console.log('Variable:', variable);
           if (variable.parameter) {
             console.log('Parameters:', variable.parameter);
+            const defaultPagesParameter = variable.parameter.find(
+              (param) => param.key === 'defaultPages'
+            );
+            console.log('defaultPages list:', defaultPagesParameter);
           }
         });
 

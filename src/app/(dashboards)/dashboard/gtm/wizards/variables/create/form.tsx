@@ -477,7 +477,12 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({ tierLimits, table = 
                                       />
                                     );
                                   case 'u':
-                                    return <URL formIndex={currentStep - 2} type={''} />;
+                                    return (
+                                      <URL
+                                        formIndex={currentStep - 2}
+                                        variables={cachedVariables}
+                                      />
+                                    );
                                   case 'vis':
                                     return <Vis formIndex={currentStep - 2} type={''} />;
                                   case 'e':
@@ -530,9 +535,8 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({ tierLimits, table = 
                             {selectedType !== 'ctv' &&
                               selectedType !== 'r' &&
                               selectedType !== 'gtcs' &&
-                              selectedType !== 'gtes' && (
-                                <FormatValue formIndex={currentStep - 2} />
-                              )}
+                              selectedType !== 'gtes' &&
+                              selectedType !== 'aev' && <FormatValue formIndex={currentStep - 2} />}
 
                             <EntityComponent formIndex={currentStep - 2} entityData={data} />
                           </>

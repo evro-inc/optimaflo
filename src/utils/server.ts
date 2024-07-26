@@ -302,7 +302,7 @@ export async function revalidate(keys, path, userId) {
 
 export const fetchWithRetry = async (url: string, headers: any, retries = 0): Promise<any> => {
   const MAX_RETRIES = 20;
-  const INITIAL_DELAY = 1000;
+  const INITIAL_DELAY = 1500;
   let delay = INITIAL_DELAY;
 
   try {
@@ -310,7 +310,7 @@ export const fetchWithRetry = async (url: string, headers: any, retries = 0): Pr
     if (response.status === 429 && retries < MAX_RETRIES) {
       const jitter = Math.random() * 200;
       await new Promise((resolve) => setTimeout(resolve, delay + jitter));
-      delay = Math.min(delay * 2, 16000); // Cap delay at 16 seconds
+      delay = Math.min(delay * 2, 30000); // Cap delay at 16 seconds
       return fetchWithRetry(url, retries + 1);
     } else if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
@@ -320,7 +320,7 @@ export const fetchWithRetry = async (url: string, headers: any, retries = 0): Pr
     if (retries < MAX_RETRIES) {
       const jitter = Math.random() * 200;
       await new Promise((resolve) => setTimeout(resolve, delay + jitter));
-      delay = Math.min(delay * 2, 16000); // Cap delay at 16 seconds
+      delay = Math.min(delay * 2, 30000); // Cap delay at 16 seconds
       return fetchWithRetry(url, retries + 1);
     } else {
       throw error;

@@ -28,13 +28,13 @@ export const variableTypeArray = [
 ];
 
 export const httpReferrerType = [
-  { type: 'fullReferrer', name: 'Full Referrer' },
-  { type: 'protocol', name: 'Protocol' },
-  { type: 'hostName', name: 'Host Name' },
-  { type: 'port', name: 'Port' },
-  { type: 'path', name: 'Path' },
-  { type: 'query', name: 'Query' },
-  { type: 'fragment', name: 'Fragment' },
+  { type: 'URL', name: 'Full Referrer' },
+  { type: 'PROTOCOL', name: 'Protocol' },
+  { type: 'HOST', name: 'Host Name' },
+  { type: 'PORT', name: 'Port' },
+  { type: 'PATH', name: 'Path' },
+  { type: 'QUERY', name: 'Query' },
+  { type: 'FRAGMENT', name: 'Fragment' },
 ];
 
 export const formatValueOptions = [
