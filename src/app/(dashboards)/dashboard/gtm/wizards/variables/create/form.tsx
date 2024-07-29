@@ -455,7 +455,7 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({ tierLimits, table = 
                                   case 'd':
                                     return <DOMElement formIndex={currentStep - 2} type={''} />;
                                   case 'f':
-                                    return <HttpReferrer formIndex={currentStep - 2} type={''} />;
+                                    return <HttpReferrer formIndex={currentStep - 2} variables={cachedVariables} />;
                                   case 'j':
                                     return (
                                       <JavaScriptVariable formIndex={currentStep - 2} type={''} />

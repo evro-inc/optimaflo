@@ -48,6 +48,15 @@ export const useDeleteHook = (selectedRows, table) => {
         },
       });
     } else {
+      const keys = [
+        `gtm:accounts:userId:${userId}`,
+        `gtm:containers:userId:${userId}`,
+        `gtm:workspaces:userId:${userId}`,
+        `gtm:variables:userId:${userId}`,
+      ];
+
+      await revalidate(keys, '/dashboard/gtm/configurations', userId);
+
       toast.success(response.message + ' The table will update shortly.', {
         action: {
           label: 'Close',
@@ -68,15 +77,6 @@ export const useDeleteHook = (selectedRows, table) => {
 
     dispatch(clearSelectedRows());
     table.resetRowSelection({});
-
-    const keys = [
-      `gtm:accounts:userId:${userId}`,
-      `gtm:containers:userId:${userId}`,
-      `gtm:workspaces:userId:${userId}`,
-      `gtm:variables:userId:${userId}`,
-    ];
-
-    await revalidate(keys, '/dashboard/gtm/configurations', userId);
   };
 
   return handleDelete;

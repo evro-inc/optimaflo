@@ -28,8 +28,8 @@ type FormUpdateSchema = z.infer<typeof FormSchema>;
 ************************************************************************************/
 export async function listGtmWorkspaces(skipCache = false) {
   let retries = 0;
-  const MAX_RETRIES = 3;
-  let delay = 1000;
+  const MAX_RETRIES = 20;
+  let delay = 2000;
 
   const { userId } = await auth();
   if (!userId) return notFound();

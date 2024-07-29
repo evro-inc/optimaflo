@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setLoading, incrementStep, decrementStep } from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -30,7 +30,7 @@ import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { UpdateVersions } from '@/src/lib/fetch/dashboard/actions/gtm/versions';
-import { TransformedFormSchema } from '@/src/lib/schemas/gtm/variables';
+import { FormsSchema } from '@/src/lib/schemas/gtm/variables';
 import HttpReferrer from '../components/httpReferrer';
 import FirstPartyCookie from '../components/firstPartyCookie';
 import AEV from '../components/aev';
@@ -42,7 +42,6 @@ import JavaScriptVariable from '../components/variableJS';
 import LookupTableVariable from '../components/lookup';
 import URL from '../components/url';
 import FormatValue from '../components/formatValue';
-import EntityComponent from '../components/entity';
 import Vis from '../components/vis';
 import GoogleTagConfigSettings from '../components/googleTagConfigSettings';
 import GoogleTagEventSettings from '../components/googleTagEventSettings';
@@ -56,7 +55,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/src/components/ui/select';
-import { variableTypeArray } from '../../../configurations/@variables/items';
+import { fetchAllVariables, variableTypeArray } from '../../../configurations/@variables/items';
+import { UpdateVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variables';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -72,9 +72,9 @@ const ErrorModal = dynamic(
   { ssr: false }
 );
 
-type Forms = z.infer<typeof TransformedFormSchema>;
+type Forms = z.infer<typeof FormsSchema>;
 
-const FormUpdateVariables = () => {
+const FormUpdateVariables = (data) => {
   const dispatch = useDispatch();
   const loading = useSelector((state: RootState) => state.form.loading);
   const error = useSelector((state: RootState) => state.form.error);
@@ -86,6 +86,25 @@ const FormUpdateVariables = () => {
   const selectedRowData = useSelector((state: RootState) => state.table.selectedRows);
   const currentFormIndex = currentStep - 1; // Adjust for 0-based index
   const [cachedVariables, setCachedVariables] = useState<any[]>([]); // State to store fetched variables
+
+  if (Object.keys(selectedRowData).length === 0) {
+    router.push('/dashboard/gtm/configurations');
+  }
+
+  useEffect(() => {
+    const fetchAllVariablesData = async () => {
+      try {
+        const data = await fetchAllVariables();
+        setCachedVariables(data);
+      } catch (error) {
+        console.error('Error fetching all variables:', error);
+      }
+    };
+
+    fetchAllVariablesData();
+  }, []);
+
+
 
   console.log('selectedRowData', selectedRowData);
 
@@ -100,10 +119,12 @@ const FormUpdateVariables = () => {
     variableId: rowData.variableId,
     name: rowData.name,
     type: rowData.type,
-    decodeCookie: rowData.decodeCookie || '',
     parameter: rowData.parameter || [],
-    formatValue: rowData.formatValue || { caseConversionType: 'none' },
+    formatValue: { caseConversionType: 'none' },
   }));
+
+  console.log("formDataDefaults", formDataDefaults);
+
 
   if (notFoundError) {
     return <NotFoundErrorModal onClose={undefined} />;
@@ -116,8 +137,9 @@ const FormUpdateVariables = () => {
     defaultValues: {
       forms: formDataDefaults,
     },
-    resolver: zodResolver(TransformedFormSchema),
+    resolver: zodResolver(FormsSchema),
   });
+
   const { fields, append } = useFieldArray({
     control: form.control,
     name: 'forms',
@@ -127,17 +149,34 @@ const FormUpdateVariables = () => {
 
   const selectedType = useWatch({
     control: form.control,
-    name: `forms.${currentStep}.type`,
+    name: `forms.${currentFormIndex}.type`,
   });
 
+  useEffect(() => {
+    formDataDefaults.forEach((data, index) => {
+      form.setValue(`forms.${index}.accountId`, data.accountId);
+      form.setValue(`forms.${index}.containerId`, data.containerId);
+      form.setValue(`forms.${index}.workspaceId`, data.workspaceId);
+      form.setValue(`forms.${index}.variableId`, data.variableId);
+    });
+
+    // Log the form data to the console
+    console.log('Form data:', form.getValues());
+  }, [form, formDataDefaults]);
+
   const handleNext = async () => {
-    const currentFormIndex = currentStep - 2; // Adjusting for the array index and step count
     const currentFormPath = `forms.${currentFormIndex}`;
 
     // Start with the common fields that are always present
-    const fieldsToValidate = [`${currentFormPath}.name`, `${currentFormPath}.description`];
+    const fieldsToValidate = [
+      `${currentFormPath}.accountId`,
+      `${currentFormPath}.containerId`,
+      `${currentFormPath}.workspaceId`,
+      `${currentFormPath}.variableId`,
+      `${currentFormPath}.name`,
+      `${currentFormPath}.description`,
+    ];
 
-    // Now, trigger validation for these fields
     const isFormValid = await form.trigger(fieldsToValidate as any);
 
     if (isFormValid) {
@@ -145,16 +184,17 @@ const FormUpdateVariables = () => {
     }
   };
 
+
   const handlePrevious = () => {
     dispatch(decrementStep());
   };
 
   const processForm: SubmitHandler<Forms> = async (data) => {
-    const { updateVersion } = data;
+    const { forms } = data;
 
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
-    toast('Updating versions...', {
+    toast('Updating variables...', {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
@@ -163,10 +203,10 @@ const FormUpdateVariables = () => {
 
     const uniqueVersions = new Set<string>();
 
-    for (const form of updateVersion) {
-      const identifier = `${form.accountId}-${form.containerId}-${form.containerVersionId}`;
+    for (const form of forms) {
+      const identifier = `${form.accountId}-${form.containerId}-${form.workspaceId}-${form.variableId}`;
       if (uniqueVersions.has(identifier)) {
-        toast.error(`Duplicate version found for ${form.name}`, {
+        toast.error(`Duplicate variable found for ${form.name}`, {
           action: {
             label: 'Close',
             onClick: () => toast.dismiss(),
@@ -179,7 +219,7 @@ const FormUpdateVariables = () => {
     }
 
     try {
-      const res = (await UpdateVersions({ updateVersion })) as FeatureResponse;
+      const res = (await UpdateVariables({ forms })) as FeatureResponse;
 
       if (res.success) {
         res.results.forEach((result) => {
@@ -246,13 +286,13 @@ const FormUpdateVariables = () => {
         }
 
         form.reset({
-          updateVersion: formDataDefaults,
+          forms: formDataDefaults,
         });
       }
 
       // Reset the forms here, regardless of success or limit reached
       form.reset({
-        updateVersion: formDataDefaults,
+        forms: formDataDefaults,
       });
     } catch (error) {
       toast.error('An unexpected error occurred.', {
@@ -267,6 +307,9 @@ const FormUpdateVariables = () => {
     }
   };
 
+  console.log('forms errors', form.formState.errors);
+
+
   return (
     <div className="flex items-center justify-center h-screen">
       {/* Conditional rendering based on the currentStep */}
@@ -275,7 +318,7 @@ const FormUpdateVariables = () => {
         <div className="w-full">
           {fields.length > 0 && fields.length >= currentStep && (
             <div
-              key={fields[currentStep - 1].id}
+              key={fields[currentFormIndex].id}
               className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
             >
               <div className="max-w-xl mx-auto">
@@ -295,7 +338,7 @@ const FormUpdateVariables = () => {
                             <div>
                               <FormField
                                 control={form.control}
-                                name={`forms.${currentStep}.name`}
+                                name={`forms.${currentFormIndex}.name`}
                                 render={({ field }) => (
                                   <FormItem>
                                     <FormLabel>
@@ -304,7 +347,7 @@ const FormUpdateVariables = () => {
                                     <FormControl>
                                       <Input
                                         placeholder={fields[currentFormIndex]?.name}
-                                        {...form.register(`forms.${currentStep}.name`)}
+                                        {...form.register(`forms.${currentFormIndex}.name`)}
                                         {...field}
                                       />
                                     </FormControl>
@@ -317,7 +360,7 @@ const FormUpdateVariables = () => {
                             <div>
                               <FormField
                                 control={form.control}
-                                name={`forms.${currentStep}.type`}
+                                name={`forms.${currentFormIndex}.type`}
                                 render={({ field }) => (
                                   <FormItem>
                                     <FormLabel>Variable Type</FormLabel>
@@ -326,7 +369,7 @@ const FormUpdateVariables = () => {
                                     </FormDescription>
                                     <FormControl>
                                       <Select
-                                        {...form.register(`forms.${currentStep}.type`)}
+                                        {...form.register(`forms.${currentFormIndex}.type`)}
                                         {...field}
                                         onValueChange={field.onChange}
                                       >
@@ -357,41 +400,41 @@ const FormUpdateVariables = () => {
                               (() => {
                                 switch (selectedType) {
                                   case 'k':
-                                    return <FirstPartyCookie formIndex={currentStep} type={''} />;
+                                    return <FirstPartyCookie formIndex={currentFormIndex} type={''} />;
                                   case 'aev':
-                                    return <AEV formIndex={currentStep} type={''} />;
+                                    return <AEV formIndex={currentFormIndex} type={''} />;
                                   case 'c':
-                                    return <Constant formIndex={currentStep} type={''} />;
+                                    return <Constant formIndex={currentFormIndex} type={''} />;
                                   case 'jsm':
-                                    return <CustomJS formIndex={currentStep} type={''} />;
+                                    return <CustomJS formIndex={currentFormIndex} type={''} />;
                                   case 'v':
-                                    return <DataLayerVariable formIndex={currentStep} type={''} />;
+                                    return <DataLayerVariable formIndex={currentFormIndex} type={''} />;
                                   case 'd':
-                                    return <DOMElement formIndex={currentStep} type={''} />;
+                                    return <DOMElement formIndex={currentFormIndex} type={''} />;
                                   case 'f':
-                                    return <HttpReferrer formIndex={currentStep} type={''} />;
+                                    return <HttpReferrer formIndex={currentFormIndex} variables={cachedVariables} />;
                                   case 'j':
-                                    return <JavaScriptVariable formIndex={currentStep} type={''} />;
+                                    return <JavaScriptVariable formIndex={currentFormIndex} type={''} />;
                                   case 'smm':
                                     return (
                                       <LookupTableVariable
-                                        formIndex={currentStep}
-                                        type={'smm'}
+                                        formIndex={currentFormIndex}
                                         variables={cachedVariables}
+                                        selectedRows={selectedRowData}
                                       />
                                     );
                                   case 'remm':
                                     return (
                                       <LookupTableVariable
-                                        formIndex={currentStep}
+                                        formIndex={currentFormIndex}
                                         type={'remm'}
                                         variables={cachedVariables}
                                       />
                                     );
                                   case 'u':
-                                    return <URL formIndex={currentStep} type={''} />;
+                                    return <URL formIndex={currentFormIndex} type={''} />;
                                   case 'vis':
-                                    return <Vis formIndex={currentStep} type={''} />;
+                                    return <Vis formIndex={currentFormIndex} type={''} />;
                                   case 'e':
                                     return <div>No configuration required for custom event</div>;
                                   case 'ev':
@@ -405,7 +448,7 @@ const FormUpdateVariables = () => {
                                   case 'awec':
                                     return (
                                       <UserProvidedData
-                                        formIndex={currentStep}
+                                        formIndex={currentFormIndex}
                                         type={''}
                                         variables={cachedVariables}
                                       />
@@ -416,11 +459,11 @@ const FormUpdateVariables = () => {
                                     return <div>No configuration required for debugging</div>;
                                   case 'gtes':
                                     return (
-                                      <GoogleTagEventSettings formIndex={currentStep} type={''} />
+                                      <GoogleTagEventSettings formIndex={currentFormIndex} type={''} />
                                     );
                                   case 'gtcs':
                                     return (
-                                      <GoogleTagConfigSettings formIndex={currentStep} type={''} />
+                                      <GoogleTagConfigSettings formIndex={currentFormIndex} type={''} />
                                     );
                                   case 'ctv':
                                     return (
@@ -436,9 +479,8 @@ const FormUpdateVariables = () => {
                             {selectedType !== 'ctv' &&
                               selectedType !== 'r' &&
                               selectedType !== 'gtcs' &&
-                              selectedType !== 'gtes' && <FormatValue formIndex={currentStep} />}
+                              selectedType !== 'gtes' && <FormatValue formIndex={currentFormIndex} />}
 
-                            <EntityComponent formIndex={currentStep} table={tableData} />
                           </>
                         );
                       })()}
@@ -447,7 +489,7 @@ const FormUpdateVariables = () => {
                           Previous
                         </Button>
 
-                        {currentStep - 1 < count ? (
+                        {currentStep < fields.length ? (
                           <Button type="button" onClick={handleNext}>
                             Next
                           </Button>

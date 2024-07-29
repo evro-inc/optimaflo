@@ -25,12 +25,11 @@ import { Button } from '@/src/components/ui/button';
 
 interface Props {
   formIndex: number;
-  type: string;
-  table?: any;
   variables: any[];
+  selectedRows: any;
 }
 
-const LookupTableVariable = ({ formIndex, type, table = [], variables }: Props) => {
+const LookupTableVariable = ({ formIndex, variables, selectedRows }: Props) => {
   const { control, register, setValue } = useFormContext();
   const { fields, append, remove } = useFieldArray({
     control,
@@ -41,6 +40,9 @@ const LookupTableVariable = ({ formIndex, type, table = [], variables }: Props) 
     control,
     name: `forms.${formIndex}.type`,
   });
+
+  console.log('selectedRows', selectedRows);
+
 
   const {
     fields: mapFields,
@@ -142,18 +144,55 @@ const LookupTableVariable = ({ formIndex, type, table = [], variables }: Props) 
   }, [variableType, setValue, formIndex, append]);
 
   useEffect(() => {
-    const setDefaultValueItem = fields.find((item: any) => item.key === 'setDefaultValue');
-    const defaultValueItem = fields.find((item: any) => item.key === 'defaultValue');
+    if (selectedRows[formIndex]?.parameter) {
+      const initialParameters = selectedRows[formIndex].parameter;
 
-    if (setDefaultValueItem && setDefaultValueItem.value === 'true') {
-      setDefaultValueChecked(true);
-      if (defaultValueItem) {
-        setDefaultValue(defaultValueItem.value);
-      }
+      // Reset the parameter fields to ensure a clean state
+      setValue(`forms.${formIndex}.parameter`, []);
+
+      // Define the order of keys
+      const orderedKeys = ['input', 'map', 'setDefaultValue', 'defaultValue'];
+
+      // Append parameters in the defined order
+      orderedKeys.forEach((key) => {
+        const param = initialParameters.find((item: any) => item.key === key);
+        if (param) {
+          if (param.key === 'map') {
+            // Append the main map parameter
+            append({
+              type: param.type,
+              key: param.key,
+              list: [], // Start with an empty list
+            });
+
+            // Append map list items
+            param.list.forEach((listItem: any) => {
+              appendMap({ ...listItem });
+            });
+          } else {
+            append({
+              type: param.type,
+              key: param.key,
+              value: param.value,
+            });
+
+            if (param.key === 'setDefaultValue' && param.value === 'true') {
+              setDefaultValueChecked(true);
+            }
+
+            if (param.key === 'defaultValue') {
+              setDefaultValue(param.value);
+            }
+          }
+        }
+      });
     }
-  }, [fields]);
+  }, [selectedRows, formIndex, setValue, append, appendMap]);
 
-  if (!length) return <div>Loading...</div>;
+
+
+
+  if (fields.length === 0) return <div>Loading...</div>;
 
   return (
     <div>
@@ -233,6 +272,7 @@ const LookupTableVariable = ({ formIndex, type, table = [], variables }: Props) 
                                   {...register(
                                     `forms.${formIndex}.parameter.${index}.list.${mapIndex}.map.${innerIndex}.value`
                                   )}
+                                  defaultValue={innerItem.value}
                                   value={field.value}
                                   onChange={field.onChange}
                                   placeholder="Input"
@@ -251,6 +291,7 @@ const LookupTableVariable = ({ formIndex, type, table = [], variables }: Props) 
                                   {...register(
                                     `forms.${formIndex}.parameter.${index}.list.${mapIndex}.map.${innerIndex}.value`
                                   )}
+                                  defaultValue={innerItem.value}
                                   value={field.value}
                                   onChange={field.onChange}
                                   placeholder="Output"
@@ -320,6 +361,7 @@ const LookupTableVariable = ({ formIndex, type, table = [], variables }: Props) 
                     placeholder="Default Value"
                     {...register(`forms.${formIndex}.parameter.${index}.value`)}
                     value={field.value} // Ensure value is set correctly
+                    defaultValue={defaultValue}
                     onChange={(e) => setValue(field.name, e.target.value)} // Handle onChange for Input
                   />
                 )}

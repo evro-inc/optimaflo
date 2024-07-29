@@ -276,28 +276,29 @@ export async function fetchPages<T>(
   return totalPages;
 }
 
-export async function revalidate(keys, path, userId) {
-  const pipeline = redis.pipeline();
+export async function revalidate(keys: string[], path: string, userId: string) {
+  try {
+    const pipeline = redis.pipeline();
 
-  const user = await prisma.user.findFirst({
-    where: {
-      id: userId,
-    },
-  });
+    const user = await prisma.user.findFirst({
+      where: { id: userId },
+    });
 
-  if (!user) {
-    notFound();
+    if (!user) {
+      notFound();
+    }
+
+    await fetchGtmSettings(userId);
+    await fetchGASettings(userId);
+
+    keys.forEach(key => pipeline.del(key));
+
+    await pipeline.exec(); // Execute all queued commands in a batch
+    await revalidatePath(path);
+  } catch (error) {
+    console.error('Error during revalidation:', error);
+    throw new Error('Revalidation failed');
   }
-
-  await fetchGtmSettings(userId);
-  await fetchGASettings(userId);
-
-  for (const key of keys) {
-    pipeline.del(key);
-  }
-
-  await pipeline.exec(); // Execute all queued commands in a batch
-  await revalidatePath(path);
 }
 
 export const fetchWithRetry = async (url: string, headers: any, retries = 0): Promise<any> => {

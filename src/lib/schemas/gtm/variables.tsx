@@ -32,7 +32,6 @@ const FormatValueSchema = z.object({
 });
 
 export const VariableSchema = z.object({
-  path: z.string().optional(),
   accountId: z.string(),
   containerId: z.string(),
   workspaceId: z.string(),

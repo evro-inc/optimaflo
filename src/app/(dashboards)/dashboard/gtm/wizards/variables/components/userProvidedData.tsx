@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useEffect, useState } from 'react';
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/src/components/ui/form';
@@ -108,7 +110,7 @@ const UserProvidedData = ({ formIndex, type, table = [], variables }: Props) => 
     removeDisabledElement(index);
   };
 
-  if (!length) return <div>Loading...</div>;
+  if (fields.length === 0) return <div>Loading...</div>;
 
   return (
     <div>
@@ -185,11 +187,11 @@ const UserProvidedData = ({ formIndex, type, table = [], variables }: Props) => 
                         <SelectValue placeholder="Not set" />
                       </SelectTrigger>
                       <SelectContent position="popper">
-                        <SelectItem value="{{not-set}}">Not set</SelectItem>
                         <SelectGroup>
                           <SelectLabel className="text-lg font-semibold">
                             Built-In Variables
                           </SelectLabel>
+                          <SelectItem value="{{not-set}}">Not set</SelectItem>
                           {variables
                             .filter((variable: any) => variable.variableType === 'builtIn')
                             .map((variable: any) => (

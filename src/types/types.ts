@@ -52,7 +52,7 @@ export interface Price {
   products?: Product;
 }
 
-export interface PriceWithProduct extends Price {}
+export interface PriceWithProduct extends Price { }
 
 export interface Subscription {
   id: string /* primary key */;
@@ -1106,7 +1106,7 @@ export interface Variable {
   name: string;
   type: VariableType;
   notes?: string;
-  decodeCookie: string;
+  decodeCookie?: string;
   scheduleStartMs?: number;
   scheduleEndMs?: number;
   parameter?: Parameter[];

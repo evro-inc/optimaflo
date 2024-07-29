@@ -116,6 +116,9 @@ const FormUpdateContainer = () => {
   const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
 
+    console.log('forms', forms);
+
+
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
     toast('Creating containers...', {

@@ -11,6 +11,7 @@ import {
   listGtmWorkspaces,
 } from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
 import { listVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variables';
+import { variableTypeArray } from './items';
 
 export default async function varPage({
   searchParams,
@@ -53,6 +54,12 @@ export default async function varPage({
     }))
   );
 
+  const getVariableTypeName = (type: string) => {
+    const variableType = variableTypeArray.find(item => item.type === type);
+    return variableType ? variableType.name : 'Unknown Type';
+  };
+
+
   const combinedData = flatVars.map((vars) => {
     const accountId = vars.accountId;
     const containerId = vars.containerId;
@@ -77,6 +84,7 @@ export default async function varPage({
 
     return {
       ...vars,
+      typeName: getVariableTypeName(vars.type),
       accountName,
       containerName,
       workspaceName,
