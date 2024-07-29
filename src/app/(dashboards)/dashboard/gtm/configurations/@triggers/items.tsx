@@ -1,0 +1,18 @@
+export const triggerTypeArray = [
+  { type: 'consentInit', name: 'Consent Initialization' },
+  { type: 'init', name: 'Initialization' },
+  { type: 'pageview', name: 'Page View' },
+  { type: 'domReady', name: 'DOM Ready' },
+  { type: 'windowLoaded', name: 'Window Loaded' },
+  { type: 'click', name: 'Click' },
+  { type: 'linkClick', name: 'Link Click' },
+  { type: 'elementVisibility', name: 'Element Visibility' },
+  { type: 'formSubmission', name: 'Form Submission' },
+  { type: 'scrollDepth', name: 'Scroll Depth' },
+  { type: 'youTubeVideo', name: 'YouTube Video' },
+  { type: 'customEvent', name: 'custom Event' },
+  { type: 'historyChange', name: 'History Change' },
+  { type: 'jsError', name: 'JavaScript Error' },
+  { type: 'timer', name: 'Timer' },
+  { type: 'triggerGroup', name: 'Trigger Group' },
+];

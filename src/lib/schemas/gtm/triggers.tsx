@@ -40,7 +40,6 @@ const ConditionSchema = z.object({
 });
 
 const TriggerSchema = z.object({
-  path: z.string(),
   accountId: z.string(),
   containerId: z.string(),
   workspaceId: z.string(),
@@ -93,7 +92,6 @@ const TriggerSchema = z.object({
   eventName: ParameterSchema.optional(),
   interval: ParameterSchema.optional(),
   limit: ParameterSchema.optional(),
-  fingerprint: z.string().optional(),
   parentFolderId: z.string().optional(),
   selector: ParameterSchema.optional(),
   intervalSeconds: ParameterSchema.optional(),
@@ -110,5 +108,13 @@ const TriggerSchema = z.object({
   parameter: z.array(ParameterSchema).optional(),
 });
 
+export const FormCreateAmountSchema = z.object({
+  amount: z.number(),
+});
+
+export const FormsSchema = z.object({
+  forms: z.array(TriggerSchema),
+});
+
 // Export the type inferred from TriggerSchema for type safety
-export type TriggerType = z.infer<typeof TriggerSchema>;
+export type TriggerType = z.infer<typeof FormsSchema>;
