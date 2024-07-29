@@ -55,10 +55,9 @@ export default async function varPage({
   );
 
   const getVariableTypeName = (type: string) => {
-    const variableType = variableTypeArray.find(item => item.type === type);
+    const variableType = variableTypeArray.find((item) => item.type === type);
     return variableType ? variableType.name : 'Unknown Type';
   };
-
 
   const combinedData = flatVars.map((vars) => {
     const accountId = vars.accountId;

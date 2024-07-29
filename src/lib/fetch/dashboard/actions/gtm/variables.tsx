@@ -311,8 +311,8 @@ export async function DeleteVariables(ga4VarToDelete: Variable[]): Promise<Featu
               notFoundError: true, // Set the notFoundError flag
               message: `Could not delete variable. Please check your permissions. Container Name: 
               ${notFoundLimit
-                  .map(({ name }) => name)
-                  .join(', ')}. All other variables were successfully deleted.`,
+                .map(({ name }) => name)
+                .join(', ')}. All other variables were successfully deleted.`,
               results: notFoundLimit.map(({ combinedId, name }) => {
                 const [accountId, containerId, workspaceId] = combinedId.split('-');
                 return {
@@ -921,8 +921,8 @@ export async function RevertVariables(ga4VarToDelete: any[]): Promise<FeatureRes
               notFoundError: true, // Set the notFoundError flag
               message: `Could not revert variable. Please check your permissions. Container Name: 
               ${notFoundLimit
-                  .map(({ name }) => name)
-                  .join(', ')}. All other variables were successfully reverted.`,
+                .map(({ name }) => name)
+                .join(', ')}. All other variables were successfully reverted.`,
               results: notFoundLimit.map(({ combinedId, name }) => {
                 const [accountId, containerId, workspaceId] = combinedId.split('-');
                 return {
@@ -1044,8 +1044,7 @@ export async function UpdateVariables(formData: VariableSchemaType) {
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
 
-  console.log("formData", formData);
-
+  console.log('formData', formData);
 
   const MAX_RETRIES = 3;
   let delay = 1000;

@@ -2,14 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useFormContext, useFieldArray, useWatch } from 'react-hook-form';
-import {
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/src/components/ui/form';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/src/components/ui/form';
 import {
   Select,
   SelectTrigger,
@@ -30,7 +23,7 @@ interface Props {
 }
 
 const LookupTableVariable = ({ formIndex, variables, selectedRows }: Props) => {
-  const { control, register, setValue } = useFormContext();
+  const { control, register, setValue, getValues } = useFormContext();
   const { fields, append, remove } = useFieldArray({
     control,
     name: `forms.${formIndex}.parameter`,
@@ -40,9 +33,6 @@ const LookupTableVariable = ({ formIndex, variables, selectedRows }: Props) => {
     control,
     name: `forms.${formIndex}.type`,
   });
-
-  console.log('selectedRows', selectedRows);
-
 
   const {
     fields: mapFields,
@@ -144,7 +134,7 @@ const LookupTableVariable = ({ formIndex, variables, selectedRows }: Props) => {
   }, [variableType, setValue, formIndex, append]);
 
   useEffect(() => {
-    if (selectedRows[formIndex]?.parameter) {
+    if (selectedRows && selectedRows[formIndex] && selectedRows[formIndex]?.parameter) {
       const initialParameters = selectedRows[formIndex].parameter;
 
       // Reset the parameter fields to ensure a clean state
@@ -166,9 +156,11 @@ const LookupTableVariable = ({ formIndex, variables, selectedRows }: Props) => {
             });
 
             // Append map list items
-            param.list.forEach((listItem: any) => {
-              appendMap({ ...listItem });
-            });
+            if (param.list) {
+              param.list.forEach((listItem: any) => {
+                appendMap({ ...listItem });
+              });
+            }
           } else {
             append({
               type: param.type,
@@ -188,9 +180,6 @@ const LookupTableVariable = ({ formIndex, variables, selectedRows }: Props) => {
       });
     }
   }, [selectedRows, formIndex, setValue, append, appendMap]);
-
-
-
 
   if (fields.length === 0) return <div>Loading...</div>;
 

@@ -104,8 +104,6 @@ const FormUpdateVariables = (data) => {
     fetchAllVariablesData();
   }, []);
 
-
-
   console.log('selectedRowData', selectedRowData);
 
   const tableData = Array.isArray(selectedRowData) ? selectedRowData : [selectedRowData];
@@ -123,8 +121,7 @@ const FormUpdateVariables = (data) => {
     formatValue: { caseConversionType: 'none' },
   }));
 
-  console.log("formDataDefaults", formDataDefaults);
-
+  console.log('formDataDefaults', formDataDefaults);
 
   if (notFoundError) {
     return <NotFoundErrorModal onClose={undefined} />;
@@ -183,7 +180,6 @@ const FormUpdateVariables = (data) => {
       dispatch(incrementStep());
     }
   };
-
 
   const handlePrevious = () => {
     dispatch(decrementStep());
@@ -309,7 +305,6 @@ const FormUpdateVariables = (data) => {
 
   console.log('forms errors', form.formState.errors);
 
-
   return (
     <div className="flex items-center justify-center h-screen">
       {/* Conditional rendering based on the currentStep */}
@@ -400,7 +395,9 @@ const FormUpdateVariables = (data) => {
                               (() => {
                                 switch (selectedType) {
                                   case 'k':
-                                    return <FirstPartyCookie formIndex={currentFormIndex} type={''} />;
+                                    return (
+                                      <FirstPartyCookie formIndex={currentFormIndex} type={''} />
+                                    );
                                   case 'aev':
                                     return <AEV formIndex={currentFormIndex} type={''} />;
                                   case 'c':
@@ -408,13 +405,22 @@ const FormUpdateVariables = (data) => {
                                   case 'jsm':
                                     return <CustomJS formIndex={currentFormIndex} type={''} />;
                                   case 'v':
-                                    return <DataLayerVariable formIndex={currentFormIndex} type={''} />;
+                                    return (
+                                      <DataLayerVariable formIndex={currentFormIndex} type={''} />
+                                    );
                                   case 'd':
                                     return <DOMElement formIndex={currentFormIndex} type={''} />;
                                   case 'f':
-                                    return <HttpReferrer formIndex={currentFormIndex} variables={cachedVariables} />;
+                                    return (
+                                      <HttpReferrer
+                                        formIndex={currentFormIndex}
+                                        variables={cachedVariables}
+                                      />
+                                    );
                                   case 'j':
-                                    return <JavaScriptVariable formIndex={currentFormIndex} type={''} />;
+                                    return (
+                                      <JavaScriptVariable formIndex={currentFormIndex} type={''} />
+                                    );
                                   case 'smm':
                                     return (
                                       <LookupTableVariable
@@ -427,12 +433,17 @@ const FormUpdateVariables = (data) => {
                                     return (
                                       <LookupTableVariable
                                         formIndex={currentFormIndex}
-                                        type={'remm'}
                                         variables={cachedVariables}
+                                        selectedRows={selectedRowData}
                                       />
                                     );
                                   case 'u':
-                                    return <URL formIndex={currentFormIndex} type={''} />;
+                                    return (
+                                      <URL
+                                        formIndex={currentFormIndex}
+                                        variables={cachedVariables}
+                                      />
+                                    );
                                   case 'vis':
                                     return <Vis formIndex={currentFormIndex} type={''} />;
                                   case 'e':
@@ -459,11 +470,17 @@ const FormUpdateVariables = (data) => {
                                     return <div>No configuration required for debugging</div>;
                                   case 'gtes':
                                     return (
-                                      <GoogleTagEventSettings formIndex={currentFormIndex} type={''} />
+                                      <GoogleTagEventSettings
+                                        formIndex={currentFormIndex}
+                                        type={''}
+                                      />
                                     );
                                   case 'gtcs':
                                     return (
-                                      <GoogleTagConfigSettings formIndex={currentFormIndex} type={''} />
+                                      <GoogleTagConfigSettings
+                                        formIndex={currentFormIndex}
+                                        type={''}
+                                      />
                                     );
                                   case 'ctv':
                                     return (
@@ -479,8 +496,9 @@ const FormUpdateVariables = (data) => {
                             {selectedType !== 'ctv' &&
                               selectedType !== 'r' &&
                               selectedType !== 'gtcs' &&
-                              selectedType !== 'gtes' && <FormatValue formIndex={currentFormIndex} />}
-
+                              selectedType !== 'gtes' && (
+                                <FormatValue formIndex={currentFormIndex} />
+                              )}
                           </>
                         );
                       })()}

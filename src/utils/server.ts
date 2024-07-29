@@ -291,7 +291,7 @@ export async function revalidate(keys: string[], path: string, userId: string) {
     await fetchGtmSettings(userId);
     await fetchGASettings(userId);
 
-    keys.forEach(key => pipeline.del(key));
+    keys.forEach((key) => pipeline.del(key));
 
     await pipeline.exec(); // Execute all queued commands in a batch
     await revalidatePath(path);

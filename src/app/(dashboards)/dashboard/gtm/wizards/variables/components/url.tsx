@@ -34,8 +34,6 @@ const URL = ({ formIndex, variables }: Props) => {
     name: `forms.${formIndex}.parameter`,
   });
 
-  console.log('vari', variables);
-
   const variableType = useWatch({
     control,
     name: `forms.${formIndex}.type`,
@@ -214,23 +212,25 @@ const URL = ({ formIndex, variables }: Props) => {
                           <SelectLabel className="text-lg font-semibold">
                             Built-In Variables
                           </SelectLabel>
-                          {variables
-                            .filter((variable: any) => variable.variableType === 'builtIn')
-                            .map((variable: any) => (
-                              <SelectItem key={variable.type} value={variable.name}>
-                                {variable.name}
-                              </SelectItem>
-                            ))}
+                          {Array.isArray(variables) &&
+                            variables
+                              .filter((variable: any) => variable.variableType === 'builtIn')
+                              .map((variable: any) => (
+                                <SelectItem key={variable.type} value={variable.name}>
+                                  {variable.name}
+                                </SelectItem>
+                              ))}
                           <SelectLabel className="text-lg font-semibold">
                             User Defined Variables
                           </SelectLabel>
-                          {variables
-                            .filter((variable: any) => variable.variableType === 'userDefined')
-                            .map((variable: any) => (
-                              <SelectItem key={variable.type} value={variable.name}>
-                                {variable.name}
-                              </SelectItem>
-                            ))}
+                          {Array.isArray(variables) &&
+                            variables
+                              .filter((variable: any) => variable.variableType === 'userDefined')
+                              .map((variable: any) => (
+                                <SelectItem key={variable.type} value={variable.name}>
+                                  {variable.name}
+                                </SelectItem>
+                              ))}
                         </SelectGroup>
                       </SelectContent>
                     </Select>
