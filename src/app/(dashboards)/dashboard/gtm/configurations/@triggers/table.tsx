@@ -87,7 +87,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
 
   const handleCreateClick = useCreateHookForm(
     userId,
-    'GTMVariables',
+    'GTMTriggers',
     '/dashboard/gtm/wizards/triggers/create'
   );
 
@@ -101,7 +101,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
 
   const handleUpdateClick = useUpdateHookForm(
     userId,
-    'GTMVariables',
+    'GTMTriggers',
     '/dashboard/gtm/wizards/triggers/update',
     rowSelectedCount
   );

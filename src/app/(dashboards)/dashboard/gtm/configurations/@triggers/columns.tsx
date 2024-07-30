@@ -52,7 +52,7 @@ export const columns: ColumnDef<BuiltInVariable>[] = [
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Variable Type
+          Trigger Type
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );

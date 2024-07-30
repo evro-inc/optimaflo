@@ -1,13 +1,14 @@
 'use client';
 
-import { DeleteVariables, RevertVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variables';
+import { DeleteTriggers } from '@/src/lib/fetch/dashboard/actions/gtm/triggers';
+import { RevertVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variables';
 import {
   clearSelectedRows,
   setErrorDetails,
   setIsLimitReached,
   setNotFoundError,
 } from '@/src/redux/tableSlice';
-import { FeatureResponse, Variable } from '@/src/types/types';
+import { FeatureResponse, Trigger, Variable } from '@/src/types/types';
 import { revalidate } from '@/src/utils/server';
 import { useUser } from '@clerk/nextjs';
 import { useDispatch } from 'react-redux';
@@ -19,7 +20,7 @@ export const useDeleteHook = (selectedRows, table) => {
   const userId = user?.id as string;
 
   const handleDelete = async () => {
-    toast('Deleting variables...', {
+    toast('Deleting triggers...', {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
@@ -27,11 +28,11 @@ export const useDeleteHook = (selectedRows, table) => {
     });
 
     // Use Object.values to get the values from the selectedRows object and cast them to GA4AccountType
-    const ga4VarToDelete = Object.values(selectedRows as Record<string, Variable>).map((prop) => {
+    const ga4TriggerToDelete = Object.values(selectedRows as Record<string, Trigger>).map((prop) => {
       return prop;
     });
 
-    const response: FeatureResponse = await DeleteVariables(ga4VarToDelete);
+    const response: FeatureResponse = await DeleteTriggers(ga4TriggerToDelete);
 
     if (!response.success) {
       let message = response.message || 'An error occurred.';
@@ -49,10 +50,10 @@ export const useDeleteHook = (selectedRows, table) => {
       });
     } else {
       const keys = [
-        `gtm:accounts:userId:${userId}`,
+        /* `gtm:accounts:userId:${userId}`,
         `gtm:containers:userId:${userId}`,
-        `gtm:workspaces:userId:${userId}`,
-        `gtm:variables:userId:${userId}`,
+        `gtm:workspaces:userId:${userId}`, */
+        `gtm:triggers:userId:${userId}`,
       ];
 
       await revalidate(keys, '/dashboard/gtm/configurations', userId);
@@ -94,11 +95,11 @@ export const useRevertHookVar = (selectedRows, table) => {
     });
 
     // Use Object.values to get the values from the selectedRows object and cast them to GA4AccountType
-    const ga4VarToDelete = Object.values(selectedRows as Record<string, Variable>).map((prop) => {
+    const ga4TriggerToDelete = Object.values(selectedRows as Record<string, Variable>).map((prop) => {
       return prop;
     });
 
-    const response: FeatureResponse = await RevertVariables(ga4VarToDelete);
+    const response: FeatureResponse = await RevertVariables(ga4TriggerToDelete);
 
     if (!response.success) {
       let message = response.message || 'An error occurred.';

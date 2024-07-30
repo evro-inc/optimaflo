@@ -59,7 +59,6 @@ export default async function triggerPage({
     return triggerType ? triggerType.name : 'Unknown Type';
   };
 
-  console.log('triggerData', triggerData);
 
   const combinedData = flatTriggers.map((triggers) => {
     const accountId = triggers.accountId;

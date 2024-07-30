@@ -14,11 +14,11 @@ const ParameterType = z.enum([
 
 const ParameterSchema = z.object({
   type: ParameterType,
-  key: z.string(),
-  value: z.string(),
-  list: z.array(z.lazy(() => ParameterSchema)),
-  map: z.array(z.lazy(() => ParameterSchema)),
-  isWeakReference: z.boolean(),
+  key: z.string().optional(),
+  value: z.string().optional(),
+  list: z.array(z.lazy(() => ParameterSchema)).optional(),
+  map: z.array(z.lazy(() => ParameterSchema)).optional(),
+  isWeakReference: z.boolean().optional(),
 });
 
 const ConditionSchema = z.object({
