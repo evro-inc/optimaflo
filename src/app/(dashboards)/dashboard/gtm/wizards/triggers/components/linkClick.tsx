@@ -59,7 +59,7 @@ const LinkClickTrigger = ({ formIndex, table = [] }: Props) => {
   }, [fields, append, remove]);
 
   useEffect(() => {
-    if (triggerType === 'linkClick') {
+    if (triggerType === 'linkClick' || triggerType === 'formSubmission') {
       setValue(`forms.${formIndex}.autoEventFilter`, [
         {
           type: "contains",

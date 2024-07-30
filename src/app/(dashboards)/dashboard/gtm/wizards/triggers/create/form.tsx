@@ -48,6 +48,7 @@ import { CreateTriggers } from '@/src/lib/fetch/dashboard/actions/gtm/triggers';
 import FiringOnTrigger from '../components/firesOnTrigger';
 import LinkClickTrigger from '../components/linkClick';
 import VisTrigger from '../components/vis';
+import ScrollDepthTrigger from '../components/scroll';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -433,9 +434,13 @@ const FormCreateTrigger: React.FC<FormCreateGTMProps> = ({ tierLimits, table = [
                                       <VisTrigger formIndex={currentStep - 2} />
                                     );
                                   case 'formSubmission':
-                                    return null;
+                                    return <LinkClickTrigger
+                                      formIndex={currentStep - 2}
+                                    />;
                                   case 'scrollDepth':
-                                    return null;
+                                    return <ScrollDepthTrigger
+                                      formIndex={currentStep - 2}
+                                    />;
                                   case 'youTubeVideo':
                                     return null;
                                   case 'customEvent':
