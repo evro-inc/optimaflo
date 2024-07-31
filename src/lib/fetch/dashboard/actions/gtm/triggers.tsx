@@ -102,8 +102,6 @@ export async function listTriggers(skipCache = false) {
 
         redis.set(cacheKey, JSON.stringify(allData.flat()));
 
-        console.log('allData', allData);
-
         return allData;
       }
     } catch (error: any) {
@@ -529,9 +527,11 @@ export async function CreateTriggers(formData: Trigger) {
 
               try {
                 const formDataToValidate = { forms: [identifier] };
+                console.log('formDataToValidate', formDataToValidate);
+
                 const validationResult = FormsSchema.safeParse(formDataToValidate);
 
-                console.log('formDataToValidate', formDataToValidate);
+                console.log('formDataToValidate', JSON.stringify(formDataToValidate, null, 2));
 
                 console.log('validationResult', validationResult);
 
@@ -549,6 +549,7 @@ export async function CreateTriggers(formData: Trigger) {
                 }
 
                 const validatedData = validationResult.data.forms[0];
+                console.log('validatedData', validatedData);
 
                 const response = await fetch(url.toString(), {
                   method: 'POST',
@@ -556,11 +557,7 @@ export async function CreateTriggers(formData: Trigger) {
                   body: JSON.stringify(validatedData),
                 });
 
-                console.log('response', response);
-
                 const parsedResponse = await response.json();
-
-                console.log('parsedResponse', parsedResponse);
 
                 if (response.ok) {
                   await prisma.tierLimit.update({

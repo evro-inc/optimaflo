@@ -1,20 +1,22 @@
 import { listGtmAccounts } from '@/src/lib/fetch/dashboard/actions/gtm/accounts';
 import { listGtmContainers } from '@/src/lib/fetch/dashboard/actions/gtm/containers';
+import { listTriggers } from '@/src/lib/fetch/dashboard/actions/gtm/triggers';
 import { listVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variables';
 import { listGtmWorkspaces } from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
 
 /* Fetch Data */
 export async function fetchGtmData() {
-  const accountData = await listGtmAccounts(true);
-  const containerData = await listGtmContainers(true);
-  const workspaceData = await listGtmWorkspaces(true);
+  const accountData = await listGtmAccounts();
+  const containerData = await listGtmContainers();
+  const workspaceData = await listGtmWorkspaces();
   const varData = await listVariables();
+  const triggerData = await listTriggers();
 
-  return { accountData, containerData, workspaceData, varData };
+  return { accountData, containerData, workspaceData, varData, triggerData };
 }
 
 /* Process Data */
-export function processGtmData(accountData, containerData, workspaceData, varData) {
+export function processGtmVarData(accountData, containerData, workspaceData, varData) {
   const flatAccounts = accountData.flat();
   const flatContainers = containerData.flat();
   const flatWorkspaces = workspaceData.flat();
@@ -33,6 +35,34 @@ export function processGtmData(accountData, containerData, workspaceData, varDat
 
     return {
       ...vars,
+      accountName,
+      containerName,
+      workspaceName,
+    };
+  });
+
+  return combinedData;
+}
+
+export function processGtmTriggerData(accountData, containerData, workspaceData, triggerData) {
+  const flatAccounts = accountData.flat();
+  const flatContainers = containerData.flat();
+  const flatWorkspaces = workspaceData.flat();
+  const flatTriggers = triggerData.flat();
+
+  const combinedData = flatTriggers.map((t) => {
+    const accountId = t.accountId;
+    const containerId = t.containerId;
+    const workspaceId = t.workspaceId;
+    const accounts = flatAccounts.find((p) => p.accountId === accountId);
+    const containers = flatContainers.find((p) => p.containerId === containerId);
+    const workspaces = flatWorkspaces.find((p) => p.workspaceId === workspaceId);
+    const accountName = accounts ? accounts.name : 'Account Name Unknown';
+    const containerName = containers ? containers.name : 'Container Name Unknown';
+    const workspaceName = workspaces ? workspaces.name : 'Workspace Name Unknown';
+
+    return {
+      ...t,
       accountName,
       containerName,
       workspaceName,

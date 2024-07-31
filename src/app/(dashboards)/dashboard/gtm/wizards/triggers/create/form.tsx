@@ -48,6 +48,7 @@ import ScrollDepthTrigger from '../components/scroll';
 import YouTubeTrigger from '../components/youTube';
 import CustomEventTrigger from '../components/customEvent';
 import TimerTrigger from '../components/timer';
+import TriggerGroup from '../components/triggerGroup';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -82,7 +83,7 @@ const FormCreateTrigger: React.FC<FormCreateGTMProps> = ({ tierLimits, table = [
   const entities = useSelector((state: RootState) => state.gtmEntity.entities);
   const router = useRouter();
 
-  console.log('data', data);
+  console.log('table', table);
 
   const [cachedTriggers, setCachedTriggers] = useState<any[]>([]);
 
@@ -438,7 +439,9 @@ const FormCreateTrigger: React.FC<FormCreateGTMProps> = ({ tierLimits, table = [
                                   case 'timer':
                                     return <TimerTrigger formIndex={currentStep - 2} />;
                                   case 'triggerGroup':
-                                    return <div>No configuration required for undefined value</div>;
+                                    return (
+                                      <TriggerGroup formIndex={currentStep - 2} table={table} />
+                                    );
                                   default:
                                     return <div>Unknown Trigger Type</div>;
                                 }

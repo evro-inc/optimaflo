@@ -1,3 +1,5 @@
+import { listTriggers } from '@/src/lib/fetch/dashboard/actions/gtm/triggers';
+
 export const triggerTypeArray = [
   { type: 'consentInit', name: 'Consent Initialization' },
   { type: 'init', name: 'Initialization' },
@@ -37,3 +39,32 @@ export const filterType = [
   { type: 'greater', name: 'greater than' },
   { type: 'greaterOrEquals', name: 'greater than or equal to' },
 ];
+
+export async function fetchAllTriggers() {
+  try {
+    const [triggers] = await Promise.all([listTriggers()]);
+
+    // Clean and structure the data
+    const formattedTriggers = triggers.flat().map((data) => ({
+      name: data.name,
+      type: data.type,
+      id: data.triggerId,
+    }));
+
+    const allTriggers = [...formattedTriggers];
+
+    // Remove duplicates by type
+    const uniqueTriggers = Array.from(new Set(allTriggers.map((variable) => variable.id))).map(
+      (id) => {
+        return allTriggers.find((t) => t.id === id);
+      }
+    );
+
+    console.log('uniqueTriggers', uniqueTriggers);
+
+    return uniqueTriggers;
+  } catch (error) {
+    console.error('Error fetching variables:', error);
+    return [];
+  }
+}

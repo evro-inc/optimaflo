@@ -4,7 +4,7 @@ import { currentUser } from '@clerk/nextjs';
 import { getTierLimit } from '@/src/lib/fetch/tierLimit';
 import { getSubscription } from '@/src/lib/fetch/subscriptions';
 import FormCreateTrigger from './form';
-import { fetchGtmData, processEntityData, processGtmData } from '../components/utils';
+import { fetchGtmData, processEntityData, processGtmTriggerData } from '../components/utils';
 
 export default async function CreateTriggerPage() {
   const user = await currentUser();
@@ -26,8 +26,13 @@ export default async function CreateTriggerPage() {
     redirect('/dashboard/gtm/configurations');
   }
 
-  const { accountData, containerData, workspaceData, varData } = await fetchGtmData();
-  const combinedData = processGtmData(accountData, containerData, workspaceData, varData);
+  const { accountData, containerData, workspaceData, triggerData } = await fetchGtmData();
+  const combinedData = processGtmTriggerData(
+    accountData,
+    containerData,
+    workspaceData,
+    triggerData
+  );
   const entityData = processEntityData(accountData, containerData, workspaceData);
 
   return (
