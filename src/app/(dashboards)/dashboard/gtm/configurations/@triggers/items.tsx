@@ -10,7 +10,7 @@ export const triggerTypeArray = [
   { type: 'formSubmission', name: 'Form Submission' },
   { type: 'scrollDepth', name: 'Scroll Depth' },
   { type: 'youTubeVideo', name: 'YouTube Video' },
-  { type: 'customEvent', name: 'custom Event' },
+  { type: 'customEvent', name: 'Custom Event' },
   { type: 'historyChange', name: 'History Change' },
   { type: 'jsError', name: 'JavaScript Error' },
   { type: 'timer', name: 'Timer' },

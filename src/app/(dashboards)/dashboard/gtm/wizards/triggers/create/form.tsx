@@ -46,6 +46,7 @@ import LinkClickTrigger from '../components/linkClick';
 import VisTrigger from '../components/vis';
 import ScrollDepthTrigger from '../components/scroll';
 import YouTubeTrigger from '../components/youTube';
+import CustomEventTrigger from '../components/customEvent';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -428,13 +429,11 @@ const FormCreateTrigger: React.FC<FormCreateGTMProps> = ({ tierLimits, table = [
                                   case 'youTubeVideo':
                                     return <YouTubeTrigger formIndex={currentStep - 2} />;
                                   case 'customEvent':
-                                    return null;
+                                    return <CustomEventTrigger formIndex={currentStep - 2} />;
                                   case 'historyChange':
-                                    return <div>No configuration required for custom event</div>;
+                                    return null;
                                   case 'jsError':
-                                    return (
-                                      <div>No configuration required for environment name</div>
-                                    );
+                                    return null;
                                   case 'timer':
                                     return <div>No configuration required for random number</div>;
                                   case 'triggerGroup':
