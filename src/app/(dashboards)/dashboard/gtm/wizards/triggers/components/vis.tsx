@@ -1,7 +1,14 @@
 import React, { useEffect } from 'react';
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/src/components/ui/form';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/src/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/src/components/ui/select';
 import { Input } from '@/src/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/src/components/ui/radio-group';
 import { Checkbox } from '@/src/components/ui/checkbox';
@@ -30,33 +37,33 @@ const VisTrigger = ({ formIndex, table = [] }: Props) => {
 
   useEffect(() => {
     if (fields.length === 0) {
-      append({ key: "selectorType", value: "" });
-      append({ key: "elementId", value: "" });
-      append({ type: "template", key: "firingFrequency", value: "ONCE" });
-      append({ key: "useOnScreenDuration", value: "false" });
-      append({ key: "onScreenDuration", value: "2000" });
-      append({ key: "useDomChangeListener", value: "false" });
-      append({ key: "onScreenRatio", value: "50" });
+      append({ key: 'selectorType', value: '' });
+      append({ key: 'elementId', value: '' });
+      append({ type: 'template', key: 'firingFrequency', value: 'ONCE' });
+      append({ key: 'useOnScreenDuration', value: 'false' });
+      append({ key: 'onScreenDuration', value: '2000' });
+      append({ key: 'useDomChangeListener', value: 'false' });
+      append({ key: 'onScreenRatio', value: '50' });
     }
   }, [fields, append, remove]);
 
   useEffect(() => {
     if (triggerType === 'elementVisibility') {
       setValue(`forms.${formIndex}.parameter`, [
-        { type: "template", key: "selectorType", value: "ID" },
-        { type: "template", key: "elementId", value: "" },
-        { type: "template", key: "firingFrequency", value: "ONCE" },
-        { type: "template", key: "onScreenRatio", value: "50" },
-        { type: "boolean", key: "useOnScreenDuration", value: "false" },
-        { type: "template", key: "onScreenDuration", value: "2000" },
-        { type: "boolean", key: "useDomChangeListener", value: "false" },
+        { type: 'template', key: 'selectorType', value: 'ID' },
+        { type: 'template', key: 'elementId', value: '' },
+        { type: 'template', key: 'firingFrequency', value: 'ONCE' },
+        { type: 'template', key: 'onScreenRatio', value: '50' },
+        { type: 'boolean', key: 'useOnScreenDuration', value: 'false' },
+        { type: 'template', key: 'onScreenDuration', value: '2000' },
+        { type: 'boolean', key: 'useDomChangeListener', value: 'false' },
       ]);
     }
   }, [triggerType, setValue, formIndex]);
 
   useEffect(() => {
-    console.log("Fields:", fields); // Debug log
-    console.log("useOnScreenDurationValue", useOnScreenDurationValue); // Debug log
+    console.log('Fields:', fields); // Debug log
+    console.log('useOnScreenDurationValue', useOnScreenDurationValue); // Debug log
   }, [fields, useOnScreenDurationValue]);
 
   return (
@@ -126,23 +133,21 @@ const VisTrigger = ({ formIndex, table = [] }: Props) => {
                         <FormControl>
                           <RadioGroupItem value="ONCE" />
                         </FormControl>
-                        <FormLabel className="font-normal">
-                          Once per page
-                        </FormLabel>
+                        <FormLabel className="font-normal">Once per page</FormLabel>
                       </FormItem>
                       <FormItem className="flex items-center space-x-3 space-y-0">
                         <FormControl>
                           <RadioGroupItem value="ONCE_PER_ELEMENT" />
                         </FormControl>
-                        <FormLabel className="font-normal">
-                          Once per element
-                        </FormLabel>
+                        <FormLabel className="font-normal">Once per element</FormLabel>
                       </FormItem>
                       <FormItem className="flex items-center space-x-3 space-y-0">
                         <FormControl>
                           <RadioGroupItem value="MANY_PER_ELEMENT" />
                         </FormControl>
-                        <FormLabel className="font-normal">Every time an element appears on screen</FormLabel>
+                        <FormLabel className="font-normal">
+                          Every time an element appears on screen
+                        </FormLabel>
                       </FormItem>
                     </RadioGroup>
                   </FormControl>
@@ -212,7 +217,6 @@ const VisTrigger = ({ formIndex, table = [] }: Props) => {
               )}
             />
           )}
-
 
           {item.key === 'useDomChangeListener' && (
             <FormField

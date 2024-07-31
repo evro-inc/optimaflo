@@ -25,7 +25,12 @@ import { filterType } from '../../../configurations/@triggers/items';
 import { Input } from '@/src/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/src/components/ui/radio-group';
 import { Label } from '@/src/components/ui/label';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/src/components/ui/tooltip';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/src/components/ui/tooltip';
 
 const FiringOnTrigger = ({ formIndex }) => {
   const dispatch = useDispatch();
@@ -47,7 +52,7 @@ const FiringOnTrigger = ({ formIndex }) => {
         const data = await fetchAllVariables();
         console.log('Fetched Variables:', data); // Debugging log
         // Wrap each variable name in double curly braces
-        const wrappedData = data.map(variable => ({
+        const wrappedData = data.map((variable) => ({
           ...variable,
           name: `{{${variable.name}}}`,
         }));
@@ -77,7 +82,6 @@ const FiringOnTrigger = ({ formIndex }) => {
       ],
     });
   };
-
 
   const wrapValueWithBraces = (value) => {
     if (!value.startsWith('{{') && !value.endsWith('}}')) {
@@ -125,18 +129,21 @@ const FiringOnTrigger = ({ formIndex }) => {
             Fire this trigger when an Event occurs and all of these conditions are true:
           </FormLabel>
           <div className="grid grid-cols-4 gap-4 pt-2">
-
             <FormLabel className="col-span-1">
               Variable
               <TooltipProvider>
                 <Tooltip>
-                  <TooltipTrigger><QuestionMarkCircledIcon /></TooltipTrigger>
+                  <TooltipTrigger>
+                    <QuestionMarkCircledIcon />
+                  </TooltipTrigger>
                   <TooltipContent>
-                    <p>The variable type must be a valid and recognized type within the entity where you are attempting to create the variable.</p>
+                    <p>
+                      The variable type must be a valid and recognized type within the entity where
+                      you are attempting to create the variable.
+                    </p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-
             </FormLabel>
             <FormLabel className="col-span-1">Condition</FormLabel>
             <FormLabel className="col-span-1">Value</FormLabel>
@@ -145,7 +152,6 @@ const FiringOnTrigger = ({ formIndex }) => {
           {fields.map((item, index) => {
             return (
               <div className="grid grid-cols-4 gap-4 items-center mb-3" key={item.id}>
-
                 <div className="col-span-1">
                   <FormField
                     key={item.id}
@@ -167,9 +173,6 @@ const FiringOnTrigger = ({ formIndex }) => {
                     )}
                   />
                 </div>
-
-
-
 
                 <div className="col-span-1">
                   <FormField

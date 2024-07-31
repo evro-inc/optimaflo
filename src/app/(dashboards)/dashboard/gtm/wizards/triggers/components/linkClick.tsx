@@ -3,7 +3,14 @@ import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/src/components/ui/form';
 import { Checkbox } from '@/src/components/ui/checkbox';
 import { Input } from '@/src/components/ui/input';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/src/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/src/components/ui/select';
 import { filterType } from '../../../configurations/@triggers/items';
 import { Button } from '@/src/components/ui/button';
 import { MinusIcon, PlusIcon } from '@radix-ui/react-icons';
@@ -39,19 +46,19 @@ const LinkClickTrigger = ({ formIndex, table = [] }: Props) => {
   useEffect(() => {
     if (fields.length === 0) {
       append({
-        type: "contains",
+        type: 'contains',
         parameter: [
           {
-            type: "template",
-            key: "arg0",
-            value: ""
+            type: 'template',
+            key: 'arg0',
+            value: '',
           },
           {
-            type: "template",
-            key: "arg1",
-            value: ""
-          }
-        ]
+            type: 'template',
+            key: 'arg1',
+            value: '',
+          },
+        ],
       });
     } else if (fields.length > 4) {
       remove(fields.length - 1);
@@ -62,35 +69,35 @@ const LinkClickTrigger = ({ formIndex, table = [] }: Props) => {
     if (triggerType === 'linkClick' || triggerType === 'formSubmission') {
       setValue(`forms.${formIndex}.autoEventFilter`, [
         {
-          type: "contains",
+          type: 'contains',
           parameter: [
             {
-              type: "template",
-              key: "arg0",
-              value: ""
+              type: 'template',
+              key: 'arg0',
+              value: '',
             },
             {
-              type: "template",
-              key: "arg1",
-              value: ""
-            }
-          ]
-        }
+              type: 'template',
+              key: 'arg1',
+              value: '',
+            },
+          ],
+        },
       ]);
 
       setValue(`forms.${formIndex}.waitForTags`, {
-        type: "boolean",
-        value: "false"
+        type: 'boolean',
+        value: 'false',
       });
 
       setValue(`forms.${formIndex}.checkValidation`, {
-        type: "boolean",
-        value: "false"
+        type: 'boolean',
+        value: 'false',
       });
 
       setValue(`forms.${formIndex}.waitForTagsTimeout`, {
-        type: "template",
-        value: ""
+        type: 'template',
+        value: '',
       });
     }
   }, [triggerType, setValue, formIndex]);
@@ -104,19 +111,19 @@ const LinkClickTrigger = ({ formIndex, table = [] }: Props) => {
 
   const addRow = () => {
     append({
-      type: "contains",
+      type: 'contains',
       parameter: [
         {
-          type: "template",
-          key: "arg0",
-          value: ""
+          type: 'template',
+          key: 'arg0',
+          value: '',
         },
         {
-          type: "template",
-          key: "arg1",
-          value: ""
-        }
-      ]
+          type: 'template',
+          key: 'arg1',
+          value: '',
+        },
+      ],
     });
   };
 
@@ -133,10 +140,7 @@ const LinkClickTrigger = ({ formIndex, table = [] }: Props) => {
                 {...field}
                 checked={field.value === 'true'}
                 onCheckedChange={(checked) =>
-                  setValue(
-                    `forms.${formIndex}.waitForTags.value`,
-                    checked ? 'true' : 'false'
-                  )
+                  setValue(`forms.${formIndex}.waitForTags.value`, checked ? 'true' : 'false')
                 }
               />
             </FormControl>
@@ -176,10 +180,7 @@ const LinkClickTrigger = ({ formIndex, table = [] }: Props) => {
                 {...field}
                 checked={field.value === 'true'}
                 onCheckedChange={(checked) =>
-                  setValue(
-                    `forms.${formIndex}.checkValidation.value`,
-                    checked ? 'true' : 'false'
-                  )
+                  setValue(`forms.${formIndex}.checkValidation.value`, checked ? 'true' : 'false')
                 }
               />
             </FormControl>
@@ -202,7 +203,9 @@ const LinkClickTrigger = ({ formIndex, table = [] }: Props) => {
                       <FormControl>
                         <Input
                           placeholder="value"
-                          {...register(`forms.${formIndex}.autoEventFilter.${index}.parameter.0.value`)}
+                          {...register(
+                            `forms.${formIndex}.autoEventFilter.${index}.parameter.0.value`
+                          )}
                           {...field}
                           value={wrapValueWithBraces(field.value || '')}
                           onChange={(e) => field.onChange(wrapValueWithBraces(e.target.value))}
@@ -258,7 +261,9 @@ const LinkClickTrigger = ({ formIndex, table = [] }: Props) => {
                       <FormControl>
                         <Input
                           placeholder="value"
-                          {...register(`forms.${formIndex}.autoEventFilter.${index}.parameter.1.value`)}
+                          {...register(
+                            `forms.${formIndex}.autoEventFilter.${index}.parameter.1.value`
+                          )}
                           {...field}
                         />
                       </FormControl>

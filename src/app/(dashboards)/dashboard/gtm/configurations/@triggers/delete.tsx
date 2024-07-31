@@ -28,9 +28,11 @@ export const useDeleteHook = (selectedRows, table) => {
     });
 
     // Use Object.values to get the values from the selectedRows object and cast them to GA4AccountType
-    const ga4TriggerToDelete = Object.values(selectedRows as Record<string, Trigger>).map((prop) => {
-      return prop;
-    });
+    const ga4TriggerToDelete = Object.values(selectedRows as Record<string, Trigger>).map(
+      (prop) => {
+        return prop;
+      }
+    );
 
     const response: FeatureResponse = await DeleteTriggers(ga4TriggerToDelete);
 
@@ -95,9 +97,11 @@ export const useRevertHookVar = (selectedRows, table) => {
     });
 
     // Use Object.values to get the values from the selectedRows object and cast them to GA4AccountType
-    const ga4TriggerToDelete = Object.values(selectedRows as Record<string, Variable>).map((prop) => {
-      return prop;
-    });
+    const ga4TriggerToDelete = Object.values(selectedRows as Record<string, Variable>).map(
+      (prop) => {
+        return prop;
+      }
+    );
 
     const response: FeatureResponse = await RevertVariables(ga4TriggerToDelete);
 

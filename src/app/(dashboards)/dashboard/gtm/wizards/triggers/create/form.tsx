@@ -6,11 +6,7 @@ import { setLoading, incrementStep, decrementStep, setCount } from '@/redux/form
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
-import {
-  FormCreateAmountSchema,
-  TriggerType,
-  FormsSchema,
-} from '@/src/lib/schemas/gtm/triggers';
+import { FormCreateAmountSchema, TriggerType, FormsSchema } from '@/src/lib/schemas/gtm/triggers';
 import { Button } from '@/src/components/ui/button';
 import {
   Form,
@@ -49,6 +45,7 @@ import FiringOnTrigger from '../components/firesOnTrigger';
 import LinkClickTrigger from '../components/linkClick';
 import VisTrigger from '../components/vis';
 import ScrollDepthTrigger from '../components/scroll';
+import YouTubeTrigger from '../components/youTube';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -70,7 +67,7 @@ const formDataDefaults: Trigger = {
   workspaceId: '',
   triggerId: '',
   name: '',
-  type: 'pageview'
+  type: 'pageview',
 };
 
 const FormCreateTrigger: React.FC<FormCreateGTMProps> = ({ tierLimits, table = [], data }) => {
@@ -86,8 +83,6 @@ const FormCreateTrigger: React.FC<FormCreateGTMProps> = ({ tierLimits, table = [
   console.log('data', data);
 
   const [cachedTriggers, setCachedTriggers] = useState<any[]>([]);
-
-
 
   const foundTierLimit = tierLimits.find(
     (subscription) => subscription.Feature?.name === 'GTMTriggers'
@@ -292,7 +287,6 @@ const FormCreateTrigger: React.FC<FormCreateGTMProps> = ({ tierLimits, table = [
 
   console.log('form errors', form.formState.errors);
 
-
   return (
     <div className="overflow-y-auto h-full">
       {currentStep === 1 ? (
@@ -424,25 +418,15 @@ const FormCreateTrigger: React.FC<FormCreateGTMProps> = ({ tierLimits, table = [
                                   case 'click':
                                     return null;
                                   case 'linkClick':
-                                    return (
-                                      <LinkClickTrigger
-                                        formIndex={currentStep - 2}
-                                      />
-                                    );
+                                    return <LinkClickTrigger formIndex={currentStep - 2} />;
                                   case 'elementVisibility':
-                                    return (
-                                      <VisTrigger formIndex={currentStep - 2} />
-                                    );
+                                    return <VisTrigger formIndex={currentStep - 2} />;
                                   case 'formSubmission':
-                                    return <LinkClickTrigger
-                                      formIndex={currentStep - 2}
-                                    />;
+                                    return <LinkClickTrigger formIndex={currentStep - 2} />;
                                   case 'scrollDepth':
-                                    return <ScrollDepthTrigger
-                                      formIndex={currentStep - 2}
-                                    />;
+                                    return <ScrollDepthTrigger formIndex={currentStep - 2} />;
                                   case 'youTubeVideo':
-                                    return null;
+                                    return <YouTubeTrigger formIndex={currentStep - 2} />;
                                   case 'customEvent':
                                     return null;
                                   case 'historyChange':

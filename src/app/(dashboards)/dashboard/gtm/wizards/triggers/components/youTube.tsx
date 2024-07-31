@@ -18,9 +18,9 @@ interface Props {
   table?: any;
 }
 
-const ScrollDepthTrigger = ({ formIndex, table = [] }: Props) => {
+const YouTubeTrigger = ({ formIndex, table = [] }: Props) => {
   const { control, register, setValue } = useFormContext();
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append } = useFieldArray({
     control,
     name: `forms.${formIndex}.parameter`,
   });
@@ -30,51 +30,49 @@ const ScrollDepthTrigger = ({ formIndex, table = [] }: Props) => {
     name: `forms.${formIndex}.type`,
   });
 
-  const verticalThresholdOn = useWatch({
+  const parameters =
+    useWatch({
+      control,
+      name: `forms.${formIndex}.parameter`,
+      exact: true,
+    }) || [];
+
+  const captureProgressValue = useWatch({
     control,
     name: `forms.${formIndex}.parameter`,
-  })?.find((field: any) => field.key === 'verticalThresholdOn')?.value;
+  })?.find((field: any) => field.key === 'captureProgress')?.value;
 
-  const verticalThresholdUnits = useWatch({
+  const radioButtonGroupValue = useWatch({
     control,
     name: `forms.${formIndex}.parameter`,
-  })?.find((field: any) => field.key === 'verticalThresholdUnits')?.value;
+  })?.find((field: any) => field.key === 'radioButtonGroup1')?.value;
 
-  const horizontalThresholdOn = useWatch({
-    control,
-    name: `forms.${formIndex}.parameter`,
-  })?.find((field: any) => field.key === 'horizontalThresholdOn')?.value;
-
-  const horizontalThresholdUnits = useWatch({
-    control,
-    name: `forms.${formIndex}.parameter`,
-  })?.find((field: any) => field.key === 'horizontalThresholdUnits')?.value;
-
+  // correct order
   useEffect(() => {
     if (fields.length === 0) {
-      append({ type: 'boolean', key: 'verticalThresholdOn', value: 'false' });
-      append({ type: 'template', key: 'verticalThresholdUnits', value: 'PERCENT' });
-      append({ type: 'template', key: 'verticalThresholdsPercent', value: '' });
-      append({ type: 'template', key: 'verticalThresholdsPixels', value: '' });
-      append({ type: 'boolean', key: 'horizontalThresholdOn', value: 'false' });
-      append({ type: 'template', key: 'horizontalThresholdUnits', value: 'PERCENT' });
-      append({ type: 'template', key: 'horizontalThresholdsPercent', value: '' });
-      append({ type: 'template', key: 'horizontalThresholdsPixels', value: '' });
+      append({ type: 'boolean', key: 'captureStart', value: 'false' });
+      append({ type: 'boolean', key: 'captureComplete', value: 'false' });
+      append({ type: 'boolean', key: 'capturePause', value: 'false' });
+      append({ type: 'boolean', key: 'captureProgress', value: 'false' });
+      append({ type: 'template', key: 'radioButtonGroup1', value: 'PERCENTAGE' });
+      append({ type: 'template', key: 'progressThresholdsPercent', value: '' });
+      append({ type: 'template', key: 'progressThresholdsTimeInSeconds', value: '' }); //Time
+      append({ type: 'boolean', key: 'fixMissingApi', value: 'false' });
       append({ type: 'template', key: 'triggerStartOption', value: 'DOM_READY' });
     }
-  }, [fields, append, remove]);
+  }, [fields, append]);
 
   useEffect(() => {
-    if (triggerType === 'scrollDepth') {
+    if (triggerType === 'youTubeVideo') {
       setValue(`forms.${formIndex}.parameter`, [
-        { type: 'boolean', key: 'verticalThresholdOn', value: 'false' },
-        { type: 'template', key: 'verticalThresholdUnits', value: 'PERCENT' },
-        { type: 'template', key: 'verticalThresholdsPercent', value: '' },
-        { type: 'template', key: 'verticalThresholdsPixels', value: '' },
-        { type: 'boolean', key: 'horizontalThresholdOn', value: 'false' },
-        { type: 'template', key: 'horizontalThresholdUnits', value: 'PERCENT' },
-        { type: 'template', key: 'horizontalThresholdsPercent', value: '' },
-        { type: 'template', key: 'horizontalThresholdsPixels', value: '' },
+        { type: 'boolean', key: 'captureStart', value: 'false' },
+        { type: 'boolean', key: 'captureComplete', value: 'false' },
+        { type: 'boolean', key: 'capturePause', value: 'false' },
+        { type: 'boolean', key: 'captureProgress', value: 'false' },
+        { type: 'template', key: 'radioButtonGroup1', value: 'PERCENTAGE' },
+        { type: 'template', key: 'progressThresholdsPercent', value: '' },
+        { type: 'template', key: 'progressThresholdsTimeInSeconds', value: '' }, // time
+        { type: 'boolean', key: 'fixMissingApi', value: 'false' },
         { type: 'template', key: 'triggerStartOption', value: 'DOM_READY' },
       ]);
     }
@@ -84,8 +82,7 @@ const ScrollDepthTrigger = ({ formIndex, table = [] }: Props) => {
     <div>
       {fields.map((item: any, index: number) => (
         <div className="items-center mb-3 w-full" key={item.id}>
-          {/* Vertical Scroll Depth Fields */}
-          {item.key === 'verticalThresholdOn' && (
+          {item.key === 'captureStart' && (
             <FormField
               control={control}
               name={`forms.${formIndex}.parameter.${index}.value`}
@@ -99,20 +96,104 @@ const ScrollDepthTrigger = ({ formIndex, table = [] }: Props) => {
                       }}
                     />
                   </FormControl>
-                  <FormLabel>Vertical Scroll Depth</FormLabel>
+                  <FormLabel>Capture Start</FormLabel>
                   <FormMessage />
                 </FormItem>
               )}
             />
           )}
 
-          {item.key === 'verticalThresholdUnits' && verticalThresholdOn === 'true' && (
+          {item.key === 'captureComplete' && (
             <FormField
               control={control}
               name={`forms.${formIndex}.parameter.${index}.value`}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Units</FormLabel>
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value === 'true'}
+                      onCheckedChange={(checked) => {
+                        field.onChange(checked ? 'true' : 'false');
+                      }}
+                    />
+                  </FormControl>
+                  <FormLabel>Capture Complete</FormLabel>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+
+          {item.key === 'fixMissingApi' && (
+            <FormField
+              control={control}
+              name={`forms.${formIndex}.parameter.${index}.value`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value === 'true'}
+                      onCheckedChange={(checked) => {
+                        field.onChange(checked ? 'true' : 'false');
+                      }}
+                    />
+                  </FormControl>
+                  <FormLabel>Fix Missing API</FormLabel>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+
+          {item.key === 'capturePause' && (
+            <FormField
+              control={control}
+              name={`forms.${formIndex}.parameter.${index}.value`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value === 'true'}
+                      onCheckedChange={(checked) => {
+                        field.onChange(checked ? 'true' : 'false');
+                      }}
+                    />
+                  </FormControl>
+                  <FormLabel>Capture Pause</FormLabel>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+
+          {item.key === 'captureProgress' && (
+            <FormField
+              control={control}
+              name={`forms.${formIndex}.parameter.${index}.value`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value === 'true'}
+                      onCheckedChange={(checked) => {
+                        field.onChange(checked ? 'true' : 'false');
+                      }}
+                    />
+                  </FormControl>
+                  <FormLabel>Capture Progress</FormLabel>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+
+          {item.key === 'radioButtonGroup1' && captureProgressValue === 'true' && (
+            <FormField
+              control={control}
+              name={`forms.${formIndex}.parameter.${index}.value`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Progress Measurement</FormLabel>
                   <FormControl>
                     <RadioGroup
                       onValueChange={field.onChange}
@@ -121,15 +202,15 @@ const ScrollDepthTrigger = ({ formIndex, table = [] }: Props) => {
                     >
                       <FormItem className="flex items-center space-x-3 space-y-0">
                         <FormControl>
-                          <RadioGroupItem value="PERCENT" />
+                          <RadioGroupItem value="PERCENTAGE" />
                         </FormControl>
-                        <FormLabel className="font-normal">Percentages</FormLabel>
+                        <FormLabel className="font-normal">Percentage</FormLabel>
                       </FormItem>
                       <FormItem className="flex items-center space-x-3 space-y-0">
                         <FormControl>
-                          <RadioGroupItem value="PIXELS" />
+                          <RadioGroupItem value="TIME" />
                         </FormControl>
-                        <FormLabel className="font-normal">Pixels</FormLabel>
+                        <FormLabel className="font-normal">Time</FormLabel>
                       </FormItem>
                     </RadioGroup>
                   </FormControl>
@@ -139,9 +220,9 @@ const ScrollDepthTrigger = ({ formIndex, table = [] }: Props) => {
             />
           )}
 
-          {item.key === 'verticalThresholdsPercent' &&
-            verticalThresholdOn === 'true' &&
-            verticalThresholdUnits === 'PERCENT' && (
+          {item.key === 'progressThresholdsPercent' &&
+            captureProgressValue === 'true' &&
+            radioButtonGroupValue === 'PERCENTAGE' && (
               <FormField
                 control={control}
                 name={`forms.${formIndex}.parameter.${index}.value`}
@@ -161,117 +242,18 @@ const ScrollDepthTrigger = ({ formIndex, table = [] }: Props) => {
               />
             )}
 
-          {item.key === 'verticalThresholdsPixels' &&
-            verticalThresholdOn === 'true' &&
-            verticalThresholdUnits === 'PIXELS' && (
+          {item.key === 'progressThresholdsTimeInSeconds' &&
+            captureProgressValue === 'true' &&
+            radioButtonGroupValue === 'TIME' && (
               <FormField
                 control={control}
                 name={`forms.${formIndex}.parameter.${index}.value`}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Pixels Value</FormLabel>
+                    <FormLabel>Time Value</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Pixels value"
-                        {...register(`forms.${formIndex}.parameter.${index}.value`)}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-
-          {/* Horizontal Scroll Depth Fields */}
-          {item.key === 'horizontalThresholdOn' && (
-            <FormField
-              control={control}
-              name={`forms.${formIndex}.parameter.${index}.value`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value === 'true'}
-                      onCheckedChange={(checked) => {
-                        field.onChange(checked ? 'true' : 'false');
-                      }}
-                    />
-                  </FormControl>
-                  <FormLabel>Horizontal Scroll Depth</FormLabel>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
-
-          {item.key === 'horizontalThresholdUnits' && horizontalThresholdOn === 'true' && (
-            <FormField
-              control={control}
-              name={`forms.${formIndex}.parameter.${index}.value`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Units</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      className="flex flex-col space-y-1"
-                    >
-                      <FormItem className="flex items-center space-x-3 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="PERCENT" />
-                        </FormControl>
-                        <FormLabel className="font-normal">Percentages</FormLabel>
-                      </FormItem>
-                      <FormItem className="flex items-center space-x-3 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="PIXELS" />
-                        </FormControl>
-                        <FormLabel className="font-normal">Pixels</FormLabel>
-                      </FormItem>
-                    </RadioGroup>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
-
-          {item.key === 'horizontalThresholdsPercent' &&
-            horizontalThresholdOn === 'true' &&
-            horizontalThresholdUnits === 'PERCENT' && (
-              <FormField
-                control={control}
-                name={`forms.${formIndex}.parameter.${index}.value`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Percentage Value</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Percentage value"
-                        {...register(`forms.${formIndex}.parameter.${index}.value`)}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-
-          {item.key === 'horizontalThresholdsPixels' &&
-            horizontalThresholdOn === 'true' &&
-            horizontalThresholdUnits === 'PIXELS' && (
-              <FormField
-                control={control}
-                name={`forms.${formIndex}.parameter.${index}.value`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Pixels Value</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Pixels value"
+                        placeholder="Time value"
                         {...register(`forms.${formIndex}.parameter.${index}.value`)}
                         {...field}
                       />
@@ -314,4 +296,4 @@ const ScrollDepthTrigger = ({ formIndex, table = [] }: Props) => {
   );
 };
 
-export default ScrollDepthTrigger;
+export default YouTubeTrigger;
