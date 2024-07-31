@@ -19,8 +19,6 @@ export default async function UpdateVariablePage() {
     (subscription) => subscription.Feature?.name === 'GTMVariables'
   );
 
-  console.log('foundTierLimit', foundTierLimit);
-
   const updateLimit = foundTierLimit?.updateLimit || 0;
   const updateUsage = foundTierLimit?.updateUsage || 0;
   const remainingCreate = updateLimit - updateUsage;

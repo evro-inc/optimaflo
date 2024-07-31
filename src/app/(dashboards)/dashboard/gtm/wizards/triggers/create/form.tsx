@@ -83,8 +83,6 @@ const FormCreateTrigger: React.FC<FormCreateGTMProps> = ({ tierLimits, table = [
   const entities = useSelector((state: RootState) => state.gtmEntity.entities);
   const router = useRouter();
 
-  console.log('table', table);
-
   const [cachedTriggers, setCachedTriggers] = useState<any[]>([]);
 
   const foundTierLimit = tierLimits.find(
@@ -155,8 +153,6 @@ const FormCreateTrigger: React.FC<FormCreateGTMProps> = ({ tierLimits, table = [
   const processForm: SubmitHandler<TriggerType> = async (data) => {
     dispatch(setLoading(true));
 
-    console.log('data', data);
-
     toast('Creating Triggers...', {
       action: {
         label: 'Close',
@@ -175,8 +171,6 @@ const FormCreateTrigger: React.FC<FormCreateGTMProps> = ({ tierLimits, table = [
           }))
           .filter((entity) => entity.accountId && entity.containerId && entity.workspaceId) // Filter out empty entities
     );
-
-    console.log('formsWithEntities', formsWithEntities);
 
     const uniqueTriggers = new Set();
 
@@ -287,8 +281,6 @@ const FormCreateTrigger: React.FC<FormCreateGTMProps> = ({ tierLimits, table = [
   const handlePrevious = () => {
     dispatch(decrementStep());
   };
-
-  console.log('form errors', form.formState.errors);
 
   return (
     <div className="overflow-y-auto h-full">

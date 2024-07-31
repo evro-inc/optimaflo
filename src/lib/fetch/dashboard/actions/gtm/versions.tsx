@@ -126,8 +126,6 @@ export async function publishGTM(formData: ContainerVersionType) {
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
 
-  console.log('pubish formData', formData);
-
   let retries = 0;
   const MAX_RETRIES = 3;
   let delay = 1000;
@@ -214,8 +212,6 @@ export async function publishGTM(formData: ContainerVersionType) {
                   prop.containerVersionId === identifier.versionId
               );
 
-              console.log('versionData', versionData);
-
               if (!versionData) {
                 errors.push(`Version data not found for ${identifier}`);
                 toPublishVersions.delete(identifier);
@@ -223,8 +219,6 @@ export async function publishGTM(formData: ContainerVersionType) {
               }
 
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${versionData.accountId}/containers/${versionData.containerId}/versions/${versionData.containerVersionId}:publish`;
-
-              console.log('url', url);
 
               const headers = {
                 Authorization: `Bearer ${token[0].token}`,
@@ -238,10 +232,7 @@ export async function publishGTM(formData: ContainerVersionType) {
                   headers: headers,
                 });
 
-                console.log('response', response);
-
                 const parsedResponse = await response.json();
-                console.log('parsed', parsedResponse);
 
                 const workspaceName = versionData.name;
 

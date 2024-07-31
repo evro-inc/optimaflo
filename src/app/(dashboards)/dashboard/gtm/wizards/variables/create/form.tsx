@@ -102,8 +102,6 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({ tierLimits, table = 
   const entities = useSelector((state: RootState) => state.gtmEntity.entities);
   const router = useRouter();
 
-  console.log('data', data);
-
   const [cachedVariables, setCachedVariables] = useState<any[]>([]);
 
   useEffect(() => {
@@ -187,8 +185,6 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({ tierLimits, table = 
   const processForm: SubmitHandler<VariableSchemaType> = async (data) => {
     dispatch(setLoading(true));
 
-    console.log('data', data);
-
     toast('Creating Variables...', {
       action: {
         label: 'Close',
@@ -207,8 +203,6 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({ tierLimits, table = 
           }))
           .filter((entity) => entity.accountId && entity.containerId && entity.workspaceId) // Filter out empty entities
     );
-
-    console.log('formsWithEntities', formsWithEntities);
 
     const uniqueVariables = new Set();
 

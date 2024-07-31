@@ -129,7 +129,6 @@ export async function DeleteBuiltInVariables(
   const notFoundLimit: Array<{ combinedId: string; name: string }> = [];
 
   // Logging the variables to delete
-  console.log('ga4BuiltInVarToDelete', ga4BuiltInVarToDelete);
 
   // Grouping variables by their combinedId (accountId, containerId, workspaceId)
   const groupedVars = new Map<string, BuiltInVariable[]>();
@@ -730,13 +729,10 @@ export async function RevertBuiltInVariables(
       if (remaining > 0) {
         await limiter.schedule(async () => {
           const deletePromises = Array.from(toDeleteGroupedVariables).flatMap((data) => {
-            console.log('data: ', data);
-
             return data.type.map(async (type) => {
               accountIdForCache = data.accountId;
 
               const url = `https://www.googleapis.com/tagmanager/v2/${data.path}:revert?type=${type}`;
-              console.log('url', url);
 
               const headers = {
                 Authorization: `Bearer ${token[0].token}`,
@@ -750,11 +746,7 @@ export async function RevertBuiltInVariables(
                   headers: headers,
                 });
 
-                console.log('response', response);
-
                 const parsedResponse = await response.json();
-
-                console.log('parsed', parsedResponse);
 
                 const combinedId = `${data.accountId}-${data.containerId}-${data.workspaceId}`;
 

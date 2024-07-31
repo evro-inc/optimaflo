@@ -62,8 +62,8 @@ const VisTrigger = ({ formIndex, table = [] }: Props) => {
   }, [triggerType, setValue, formIndex]);
 
   useEffect(() => {
-    console.log('Fields:', fields); // Debug log
-    console.log('useOnScreenDurationValue', useOnScreenDurationValue); // Debug log
+    // Debug log
+    // Debug log
   }, [fields, useOnScreenDurationValue]);
 
   return (

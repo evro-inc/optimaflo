@@ -50,7 +50,7 @@ const FiringOnTrigger = ({ formIndex }) => {
     const fetchAllVariablesData = async () => {
       try {
         const data = await fetchAllVariables();
-        console.log('Fetched Variables:', data); // Debugging log
+        // Debugging log
         // Wrap each variable name in double curly braces
         const wrappedData = data.map((variable) => ({
           ...variable,

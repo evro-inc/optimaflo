@@ -100,13 +100,10 @@ export async function listVariables(skipCache = false) {
 
         // Logging each variable and its parameters
         allData.flat().forEach((variable) => {
-          console.log('Variable:', variable);
           if (variable.parameter) {
-            console.log('Parameters:', variable.parameter);
             const defaultPagesParameter = variable.parameter.find(
               (param) => param.key === 'defaultPages'
             );
-            console.log('defaultPages list:', defaultPagesParameter);
           }
         });
 
@@ -156,8 +153,6 @@ export async function DeleteVariables(ga4VarToDelete: Variable[]): Promise<Featu
     )
   );
   let accountIdForCache: string | undefined;
-
-  console.log('toDeleteVariables', toDeleteVariables);
 
   // Authenticating user and getting user ID
   const { userId } = await auth();
@@ -209,14 +204,10 @@ export async function DeleteVariables(ga4VarToDelete: Variable[]): Promise<Featu
           await limiter.schedule(async () => {
             // Creating promises for each container deletion
             const deletePromises = Array.from(ga4VarToDelete).map(async (prop) => {
-              console.log('prop', prop);
-
               const { accountId, containerId, workspaceId, variableId, type } = prop;
               accountIdForCache = accountId;
 
               let url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/variables/${variableId}`;
-
-              console.log('url', url);
 
               const headers = {
                 Authorization: `Bearer ${token[0].token}`,
@@ -230,10 +221,7 @@ export async function DeleteVariables(ga4VarToDelete: Variable[]): Promise<Featu
                   headers: headers,
                 });
 
-                console.log('res', response);
-
                 const parsedResponse = await response.json();
-                console.log('parsedResponse', parsedResponse);
 
                 if (response.ok) {
                   varIdsProcessed.add(containerId);
@@ -446,8 +434,6 @@ export async function CreateVariables(formData: VariableSchemaType) {
   // Refactor: Use string identifiers in the set
   const toCreateVariables = new Set(formData.forms.map((variable) => variable));
 
-  console.log('create formData', formData);
-
   const tierLimitResponse: any = await tierCreateLimit(userId, 'GTMVariables');
   const limit = Number(tierLimitResponse.createLimit);
   const createUsage = Number(tierLimitResponse.createUsage);
@@ -508,8 +494,6 @@ export async function CreateVariables(formData: VariableSchemaType) {
         if (remaining > 0) {
           await limiter.schedule(async () => {
             const createPromises = Array.from(toCreateVariables).map(async (identifier: any) => {
-              console.log('identifier', identifier);
-
               if (!identifier) {
                 errors.push(`Variable data not found for ${identifier}`);
                 toCreateVariables.delete(identifier);
@@ -520,7 +504,6 @@ export async function CreateVariables(formData: VariableSchemaType) {
               containerIdForCache = identifier.containerId;
 
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${identifier.accountId}/containers/${identifier.containerId}/workspaces/${identifier.workspaceId}/variables`;
-              console.log('url', url);
 
               const headers = {
                 Authorization: `Bearer ${token[0].token}`,
@@ -531,10 +514,6 @@ export async function CreateVariables(formData: VariableSchemaType) {
               try {
                 const formDataToValidate = { forms: [identifier] };
                 const validationResult = FormsSchema.safeParse(formDataToValidate);
-
-                console.log('formDataToValidate', formDataToValidate);
-
-                console.log('validationResult', validationResult);
 
                 if (!validationResult.success) {
                   let errorMessage = validationResult.error.issues
@@ -557,11 +536,7 @@ export async function CreateVariables(formData: VariableSchemaType) {
                   body: JSON.stringify(validatedData),
                 });
 
-                console.log('response', response);
-
                 const parsedResponse = await response.json();
-
-                console.log('parsedResponse', parsedResponse);
 
                 if (response.ok) {
                   await prisma.tierLimit.update({
@@ -1043,8 +1018,6 @@ export async function UpdateVariables(formData: VariableSchemaType) {
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
-
-  console.log('formData', formData);
 
   const MAX_RETRIES = 3;
   let delay = 1000;

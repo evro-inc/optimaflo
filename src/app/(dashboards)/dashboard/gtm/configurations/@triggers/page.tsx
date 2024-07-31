@@ -91,8 +91,6 @@ export default async function triggerPage({
     };
   });
 
-  console.log('combinedData triggers', combinedData);
-
   return (
     <>
       <Suspense

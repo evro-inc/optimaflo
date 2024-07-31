@@ -60,8 +60,6 @@ export async function fetchAllTriggers() {
       }
     );
 
-    console.log('uniqueTriggers', uniqueTriggers);
-
     return uniqueTriggers;
   } catch (error) {
     console.error('Error fetching variables:', error);

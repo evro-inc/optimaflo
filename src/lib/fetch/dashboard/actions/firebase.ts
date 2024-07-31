@@ -66,10 +66,6 @@ export async function listGCPProjects() {
 
             for (let i in projects) {
               const project = projects[i];
-              console.log('Project ' + i);
-              console.log('ID: ' + project['project']);
-              console.log('Display Name: ' + project['displayName']);
-              console.log('');
             }
 
             /* redis.set(cacheKey, JSON.stringify(projects), 'EX', 3600);

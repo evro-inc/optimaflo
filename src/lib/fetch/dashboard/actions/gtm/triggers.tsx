@@ -84,14 +84,10 @@ export async function listTriggers(skipCache = false) {
             try {
               const response = await fetch(url, { headers });
 
-              console.log('response trigger', response);
-
               if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
               }
               const responseBody = await response.json();
-
-              console.log('responseBody', responseBody);
 
               allData.push(responseBody.trigger || []);
             } catch (error: any) {
@@ -149,8 +145,6 @@ export async function DeleteTriggers(ga4TriggerToDelete: Trigger[]): Promise<Fea
   );
   let accountIdForCache: string | undefined;
 
-  console.log('toDeleteTriggers', toDeleteTriggers);
-
   // Authenticating user and getting user ID
   const { userId } = await auth();
   // If user ID is not found, return a 'not found' error
@@ -201,14 +195,10 @@ export async function DeleteTriggers(ga4TriggerToDelete: Trigger[]): Promise<Fea
           await limiter.schedule(async () => {
             // Creating promises for each container deletion
             const deletePromises = Array.from(ga4TriggerToDelete).map(async (prop) => {
-              console.log('prop', prop);
-
               const { accountId, containerId, workspaceId, triggerId, type } = prop;
               accountIdForCache = accountId;
 
               let url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/triggers/${triggerId}`;
-
-              console.log('url', url);
 
               const headers = {
                 Authorization: `Bearer ${token[0].token}`,
@@ -222,10 +212,7 @@ export async function DeleteTriggers(ga4TriggerToDelete: Trigger[]): Promise<Fea
                   headers: headers,
                 });
 
-                console.log('res', response);
-
                 const parsedResponse = await response.json();
-                console.log('parsedResponse', parsedResponse);
 
                 if (response.ok) {
                   triggerIdsProcessed.add(containerId);
@@ -426,8 +413,6 @@ export async function CreateTriggers(formData: Trigger) {
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
 
-  console.log('formData', formData);
-
   const MAX_RETRIES = 3;
   let delay = 1000;
   const errors: string[] = [];
@@ -439,8 +424,6 @@ export async function CreateTriggers(formData: Trigger) {
 
   // Refactor: Use string identifiers in the set
   const toCreateTriggers = new Set(formData.forms.map((trigger) => trigger));
-
-  console.log('create formData', formData);
 
   const tierLimitResponse: any = await tierCreateLimit(userId, 'GTMTriggers');
   const limit = Number(tierLimitResponse.createLimit);
@@ -467,8 +450,6 @@ export async function CreateTriggers(formData: Trigger) {
   if (toCreateTriggers.size > availableCreateUsage) {
     const attemptedCreations = Array.from(toCreateTriggers).map((identifier: any) => {
       const { name: triggerName, filter } = identifier;
-
-      console.log('filter 1', filter);
 
       return {
         id: [], // No trigger ID since creation did not happen
@@ -505,8 +486,6 @@ export async function CreateTriggers(formData: Trigger) {
         if (remaining > 0) {
           await limiter.schedule(async () => {
             const createPromises = Array.from(toCreateTriggers).map(async (identifier: any) => {
-              console.log('identifier', identifier);
-
               if (!identifier) {
                 errors.push(`Trigger data not found for ${identifier}`);
                 toCreateTriggers.delete(identifier);
@@ -517,7 +496,6 @@ export async function CreateTriggers(formData: Trigger) {
               containerIdForCache = identifier.containerId;
 
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${identifier.accountId}/containers/${identifier.containerId}/workspaces/${identifier.workspaceId}/triggers`;
-              console.log('url', url);
 
               const headers = {
                 Authorization: `Bearer ${token[0].token}`,
@@ -527,13 +505,10 @@ export async function CreateTriggers(formData: Trigger) {
 
               try {
                 const formDataToValidate = { forms: [identifier] };
-                console.log('formDataToValidate', formDataToValidate);
 
                 const validationResult = FormsSchema.safeParse(formDataToValidate);
 
                 console.log('formDataToValidate', JSON.stringify(formDataToValidate, null, 2));
-
-                console.log('validationResult', validationResult);
 
                 if (!validationResult.success) {
                   let errorMessage = validationResult.error.issues
@@ -549,7 +524,6 @@ export async function CreateTriggers(formData: Trigger) {
                 }
 
                 const validatedData = validationResult.data.forms[0];
-                console.log('validatedData', validatedData);
 
                 const response = await fetch(url.toString(), {
                   method: 'POST',

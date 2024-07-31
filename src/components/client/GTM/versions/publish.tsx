@@ -408,8 +408,6 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
 
     const workspaceStatus = await getStatusGtmWorkspaces();
 
-    console.log('workspaceStatus', workspaceStatus);
-
     if (activeTab === 'publish') {
       try {
         // Check tier limits
@@ -432,13 +430,9 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
 
         const createVersionData = extractCreateVersionData(forms);
 
-        console.log('createVersionData', createVersionData);
-
         const resCreateVersion = (await createGTMVersion({
           forms: createVersionData,
         })) as FeatureResponse;
-
-        console.log('resCreateVersion', resCreateVersion);
 
         if (!resCreateVersion.success) {
           toast.error(`${resCreateVersion.message}`, {
@@ -453,28 +447,19 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
           resCreateVersion.results.map((result) => result.response.containerVersion.path) || '';
         const environments = forms.flatMap((form) => form?.environmentId?.split(','));
 
-        console.log('versionPath', versionPath);
-
         // Separate live and non-live environments
         const liveEnvironments = environments.filter(
           (env) => env && env.split('-')[1].toLowerCase() === 'live'
         );
-        console.log('liveEnvironments', liveEnvironments);
 
         const nonLiveEnvironments = environments.filter(
           (env) => env && env.split('-')[1].toLowerCase() !== 'live'
         );
 
-        console.log('nonLiveEnvironments', nonLiveEnvironments);
-
         if (liveEnvironments.length > 0) {
           const publishData = extractPublishData(forms, versionPath);
 
-          console.log('publishData', publishData);
-
           const res = (await publishGTM({ forms: publishData })) as FeatureResponse;
-
-          console.log('res pub', res);
 
           if (res.success && resCreateVersion.success) {
             await handleResponseSuccess(res, userId, setIsDrawerOpen);
@@ -486,13 +471,9 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
         if (nonLiveEnvironments.length > 0) {
           const envUpdateData = extractEnvUpdateData(forms, versionPath);
 
-          console.log('envUpdateData', envUpdateData);
-
           const resUpdateEnv = (await UpdateEnvs({
             forms: envUpdateData, // Filter out live environments
           })) as FeatureResponse;
-
-          console.log('resUpdateEnv', resUpdateEnv);
 
           if (resUpdateEnv.success) {
             await handleResponseSuccess(resUpdateEnv, userId, setIsDrawerOpen);

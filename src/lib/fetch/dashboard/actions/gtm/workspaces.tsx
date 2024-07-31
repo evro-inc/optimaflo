@@ -1167,8 +1167,6 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
         if (remaining > 0) {
           await limiter.schedule(async () => {
             const createPromises = Array.from(toCreateVersions).map(async (identifier) => {
-              console.log('identifier', identifier);
-
               accountIdForCache = identifier.accountId;
               containerIdForCache = identifier.containerId;
               const workspaceData = uniqueForms.find(
@@ -1186,8 +1184,6 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
 
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${workspaceData.accountId}/containers/${workspaceData.containerId}/workspaces/${workspaceData.workspaceId}:create_version`;
 
-              console.log('url', url);
-
               const headers = {
                 Authorization: `Bearer ${accessToken}`,
                 'Content-Type': 'application/json',
@@ -1198,7 +1194,6 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
                 const formDataToValidate = { forms: [workspaceData] };
 
                 const validationResult = FormSchema.safeParse(formDataToValidate);
-                console.log('validationResult', validationResult);
 
                 if (!validationResult.success) {
                   let errorMessage = validationResult.error.issues
@@ -1219,7 +1214,6 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
                   name: validatedWorkspaceData.name,
                   notes: validatedWorkspaceData.description,
                 });
-                console.log('payload', payload);
 
                 const response = await fetch(url, {
                   method: 'POST',
@@ -1227,10 +1221,7 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
                   body: payload,
                 });
 
-                console.log('response', response);
-
                 const parsedResponse = await response.json();
-                console.log('parsedResponse', parsedResponse);
 
                 const workspaceName = workspaceData.name;
 

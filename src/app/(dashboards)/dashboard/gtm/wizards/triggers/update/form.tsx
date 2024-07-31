@@ -104,11 +104,7 @@ const FormUpdateVariables = (data) => {
     fetchAllVariablesData();
   }, []);
 
-  console.log('selectedRowData', selectedRowData);
-
   const tableData = Array.isArray(selectedRowData) ? selectedRowData : [selectedRowData];
-
-  console.log('tableData', tableData);
 
   const formDataDefaults: Variable[] = Object.values(selectedRowData).map((rowData) => ({
     accountId: rowData.accountId,
@@ -120,8 +116,6 @@ const FormUpdateVariables = (data) => {
     parameter: rowData.parameter || [],
     formatValue: { caseConversionType: 'none' },
   }));
-
-  console.log('formDataDefaults', formDataDefaults);
 
   if (notFoundError) {
     return <NotFoundErrorModal onClose={undefined} />;
@@ -141,8 +135,6 @@ const FormUpdateVariables = (data) => {
     control: form.control,
     name: 'forms',
   });
-
-  console.log('fields', fields);
 
   const selectedType = useWatch({
     control: form.control,
@@ -302,8 +294,6 @@ const FormUpdateVariables = (data) => {
       dispatch(setLoading(false)); // Set loading to false
     }
   };
-
-  console.log('forms errors', form.formState.errors);
 
   return (
     <div className="flex items-center justify-center h-screen">

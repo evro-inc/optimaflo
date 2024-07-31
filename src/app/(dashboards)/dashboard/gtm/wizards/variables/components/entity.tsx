@@ -88,8 +88,6 @@ const EntityComponent = ({ formIndex, entityData = [] }: Props) => {
         const filteredWorkspaces = entityData.filter(
           (data: any) => data.containerId === selectedContainerId
         );
-        console.log('selectedContainerId', selectedContainerId);
-        console.log('filteredWorkspaces', filteredWorkspaces);
 
         const uniqueFilteredWorkspaces = Array.from(
           new Set(filteredWorkspaces.map((data: any) => data.workspaceId))

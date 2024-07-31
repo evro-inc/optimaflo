@@ -34,8 +34,6 @@ const HttpReferrer = ({ formIndex, variables }: Props) => {
     name: `forms.${formIndex}.parameter`,
   });
 
-  console.log('vari', variables);
-
   const variableType = useWatch({
     control,
     name: `forms.${formIndex}.type`,
