@@ -47,6 +47,7 @@ import VisTrigger from '../components/vis';
 import ScrollDepthTrigger from '../components/scroll';
 import YouTubeTrigger from '../components/youTube';
 import CustomEventTrigger from '../components/customEvent';
+import TimerTrigger from '../components/timer';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -435,7 +436,7 @@ const FormCreateTrigger: React.FC<FormCreateGTMProps> = ({ tierLimits, table = [
                                   case 'jsError':
                                     return null;
                                   case 'timer':
-                                    return <div>No configuration required for random number</div>;
+                                    return <TimerTrigger formIndex={currentStep - 2} />;
                                   case 'triggerGroup':
                                     return <div>No configuration required for undefined value</div>;
                                   default:
