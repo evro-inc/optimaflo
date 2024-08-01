@@ -13,11 +13,13 @@ export default async function EntityLayout({
   builtInVariables,
   variables,
   triggers,
+  tags,
 }: {
   children: React.ReactNode;
   builtInVariables: React.ReactNode;
   variables: React.ReactNode;
   triggers: React.ReactNode;
+  tags: React.ReactNode;
 }) {
   const user = await currentUser();
   if (!user) return notFound();
@@ -35,6 +37,7 @@ export default async function EntityLayout({
         {builtInVariables}
         {variables}
         {triggers}
+        {tags}
       </div>
     </>
   );

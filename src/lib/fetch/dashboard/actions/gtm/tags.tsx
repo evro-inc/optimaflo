@@ -1,6 +1,6 @@
 'use server';
 import { revalidatePath } from 'next/cache';
-import { FormsSchema, TriggerType } from '@/src/lib/schemas/gtm/triggers';
+import { FormsSchema, TagType } from '@/src/lib/schemas/gtm/tags';
 import z from 'zod';
 import { auth } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
@@ -9,7 +9,7 @@ import { gtmRateLimit } from '../../../../redis/rateLimits';
 import { redis } from '../../../../redis/cache';
 import { currentUserOauthAccessToken } from '../../../../clerk';
 import prisma from '@/src/lib/prisma';
-import { FeatureResponse, FeatureResult, Trigger } from '@/src/types/types';
+import { FeatureResponse, FeatureResult, Tag } from '@/src/types/types';
 import {
   handleApiResponseError,
   tierCreateLimit,
@@ -22,9 +22,9 @@ import { fetchGtmSettings } from '../..';
 type schema = z.infer<typeof FormsSchema>;
 
 /************************************************************************************
-  Function to list or get one GTM triggers
+  Function to list or get one GTM tags
 ************************************************************************************/
-export async function listTriggers(skipCache = false) {
+export async function listTags(skipCache = false) {
   let retries = 0;
   const MAX_RETRIES = 20;
   let delay = 2000;
@@ -35,7 +35,7 @@ export async function listTriggers(skipCache = false) {
   const token = await currentUserOauthAccessToken(userId);
   const accessToken = token[0].token;
 
-  const cacheKey = `gtm:triggers:userId:${userId}`;
+  const cacheKey = `gtm:tags:userId:${userId}`;
   if (skipCache == false) {
     const cachedValue = await redis.get(cacheKey);
     if (cachedValue) {
@@ -71,7 +71,7 @@ export async function listTriggers(skipCache = false) {
 
           const urls = Array.from(uniquePairs).map((props: any) => {
             const { accountId, containerId, workspaceId } = props;
-            return `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/triggers`;
+            return `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/tags`;
           });
 
           const headers = {
@@ -89,7 +89,7 @@ export async function listTriggers(skipCache = false) {
               }
               const responseBody = await response.json();
 
-              allData.push(responseBody.trigger || []);
+              allData.push(responseBody.tag || []);
             } catch (error: any) {
               throw new Error(`Error fetching data: ${error.message}`);
             }
@@ -115,15 +115,15 @@ export async function listTriggers(skipCache = false) {
 }
 
 /************************************************************************************
-  Delete a single or multiple triggers
+  Delete a single or multiple tags
 ************************************************************************************/
-export async function DeleteTriggers(ga4TriggerToDelete: Trigger[]): Promise<FeatureResponse> {
+export async function DeleteTags(ga4TagToDelete: Tag[]): Promise<FeatureResponse> {
   // Initialization of retry mechanism
   let retries = 0;
   const MAX_RETRIES = 3;
   let delay = 1000;
 
-  // Arrays to track triggerious outcomes
+  // Arrays to track tagious outcomes
   const errors: string[] = [];
   const successfulDeletions: Array<{
     combinedId: string;
@@ -138,8 +138,8 @@ export async function DeleteTriggers(ga4TriggerToDelete: Trigger[]): Promise<Fea
     name: string;
   }> = [];
 
-  const toDeleteTriggers = new Set(
-    ga4TriggerToDelete.map(
+  const toDeleteTags = new Set(
+    ga4TagToDelete.map(
       (prop) => `${prop.accountId}-${prop.containerId}-${prop.workspaceId}-${prop.type}`
     )
   );
@@ -152,11 +152,11 @@ export async function DeleteTriggers(ga4TriggerToDelete: Trigger[]): Promise<Fea
   const token = await currentUserOauthAccessToken(userId);
 
   // Check for feature limit using Prisma ORM
-  const tierLimitResponse: any = await tierDeleteLimit(userId, 'GTMTriggers');
+  const tierLimitResponse: any = await tierDeleteLimit(userId, 'GTMTags');
   const limit = Number(tierLimitResponse.deleteLimit);
   const deleteUsage = Number(tierLimitResponse.deleteUsage);
   const availableDeleteUsage = limit - deleteUsage;
-  const triggerIdsProcessed = new Set<string>();
+  const tagIdsProcessed = new Set<string>();
 
   // Handling feature limit
   if (tierLimitResponse && tierLimitResponse.limitReached) {
@@ -164,29 +164,29 @@ export async function DeleteTriggers(ga4TriggerToDelete: Trigger[]): Promise<Fea
       success: false,
       limitReached: true,
       errors: [],
-      message: 'Feature limit reached for Deleting Triggers',
+      message: 'Feature limit reached for Deleting Tags',
       results: [],
     };
   }
 
-  if (toDeleteTriggers.size > availableDeleteUsage) {
+  if (toDeleteTags.size > availableDeleteUsage) {
     // If the deletion request exceeds the available limit
     return {
       success: false,
       features: [],
       errors: [
-        `Cannot delete ${toDeleteTriggers.size} triggers as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
+        `Cannot delete ${toDeleteTags.size} tags as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
       ],
       results: [],
       limitReached: true,
-      message: `Cannot delete ${toDeleteTriggers.size} triggers as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
+      message: `Cannot delete ${toDeleteTags.size} tags as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
     };
   }
   let permissionDenied = false;
 
-  if (toDeleteTriggers.size <= availableDeleteUsage) {
+  if (toDeleteTags.size <= availableDeleteUsage) {
     // Retry loop for deletion requests
-    while (retries < MAX_RETRIES && toDeleteTriggers.size > 0 && !permissionDenied) {
+    while (retries < MAX_RETRIES && toDeleteTags.size > 0 && !permissionDenied) {
       try {
         // Enforcing rate limit
         const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
@@ -194,11 +194,11 @@ export async function DeleteTriggers(ga4TriggerToDelete: Trigger[]): Promise<Fea
         if (remaining > 0) {
           await limiter.schedule(async () => {
             // Creating promises for each container deletion
-            const deletePromises = Array.from(ga4TriggerToDelete).map(async (prop) => {
-              const { accountId, containerId, workspaceId, triggerId, type } = prop;
+            const deletePromises = Array.from(ga4TagToDelete).map(async (prop) => {
+              const { accountId, containerId, workspaceId, tagId, type } = prop;
               accountIdForCache = accountId;
 
-              let url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/triggers/${triggerId}`;
+              let url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/tags/${tagId}`;
 
               const headers = {
                 Authorization: `Bearer ${token[0].token}`,
@@ -215,9 +215,9 @@ export async function DeleteTriggers(ga4TriggerToDelete: Trigger[]): Promise<Fea
                 const parsedResponse = await response.json();
 
                 if (response.ok) {
-                  triggerIdsProcessed.add(containerId);
+                  tagIdsProcessed.add(containerId);
                   successfulDeletions.push({
-                    combinedId: `${accountId}-${containerId}-${workspaceId}-${triggerId}`,
+                    combinedId: `${accountId}-${containerId}-${workspaceId}-${tagId}`,
                     name: type,
                   });
 
@@ -226,20 +226,20 @@ export async function DeleteTriggers(ga4TriggerToDelete: Trigger[]): Promise<Fea
                     data: { deleteUsage: { increment: 1 } },
                   });
 
-                  toDeleteTriggers.delete(
-                    `${accountId}-${containerId}-${workspaceId}-${triggerId}-${type}`
+                  toDeleteTags.delete(
+                    `${accountId}-${containerId}-${workspaceId}-${tagId}-${type}`
                   );
                   fetchGtmSettings(userId);
 
                   return {
-                    combinedId: `${accountId}-${containerId}-${workspaceId}-${triggerId}-${type}`,
+                    combinedId: `${accountId}-${containerId}-${workspaceId}-${tagId}-${type}`,
                     success: true,
                   };
                 } else {
                   const errorResult = await handleApiResponseError(
                     response,
                     parsedResponse,
-                    'trigger',
+                    'tag',
                     [type]
                   );
 
@@ -250,32 +250,30 @@ export async function DeleteTriggers(ga4TriggerToDelete: Trigger[]): Promise<Fea
                       parsedResponse.message === 'Feature limit reached'
                     ) {
                       featureLimitReached.push({
-                        combinedId: `${accountId}-${containerId}-${workspaceId}-${triggerId}`,
+                        combinedId: `${accountId}-${containerId}-${workspaceId}-${tagId}`,
                         name: type,
                       });
                     } else if (errorResult.errorCode === 404) {
                       notFoundLimit.push({
-                        combinedId: `${accountId}-${containerId}-${workspaceId}-${triggerId}`,
+                        combinedId: `${accountId}-${containerId}-${workspaceId}-${tagId}`,
                         name: type,
                       });
                     }
                   } else {
-                    errors.push(`An unknown error occurred for  trigger ${type}.`);
+                    errors.push(`An unknown error occurred for  tag ${type}.`);
                   }
 
-                  toDeleteTriggers.delete(
-                    `${accountId}-${containerId}-${workspaceId}-${triggerId}`
-                  );
+                  toDeleteTags.delete(`${accountId}-${containerId}-${workspaceId}-${tagId}`);
                   permissionDenied = errorResult ? true : permissionDenied;
                 }
               } catch (error: any) {
                 // Handling exceptions during fetch
                 errors.push(
-                  `Error deleting  trigger ${accountId}-${containerId}-${workspaceId}-${triggerId}: ${error.message}`
+                  `Error deleting  tag ${accountId}-${containerId}-${workspaceId}-${tagId}: ${error.message}`
                 );
               }
-              triggerIdsProcessed.add(containerId);
-              toDeleteTriggers.delete(`${accountId}-${containerId}-${workspaceId}-${triggerId}`);
+              tagIdsProcessed.add(containerId);
+              toDeleteTags.delete(`${accountId}-${containerId}-${workspaceId}-${tagId}`);
               return { containerId, success: false };
             });
 
@@ -288,15 +286,15 @@ export async function DeleteTriggers(ga4TriggerToDelete: Trigger[]): Promise<Fea
               success: false,
               limitReached: false,
               notFoundError: true, // Set the notFoundError flag
-              message: `Could not delete trigger. Please check your permissions. Container Name: 
+              message: `Could not delete tag. Please check your permissions. Container Name: 
               ${notFoundLimit
                 .map(({ name }) => name)
-                .join(', ')}. All other triggers were successfully deleted.`,
+                .join(', ')}. All other tags were successfully deleted.`,
               results: notFoundLimit.map(({ combinedId, name }) => {
                 const [accountId, containerId, workspaceId] = combinedId.split('-');
                 return {
                   id: [accountId, containerId, workspaceId], // Ensure id is an array
-                  name: [name], // Ensure name is an array, match by triggerId or default to 'Unknown'
+                  name: [name], // Ensure name is an array, match by tagId or default to 'Unknown'
                   success: false,
                   notFound: true,
                 };
@@ -308,7 +306,7 @@ export async function DeleteTriggers(ga4TriggerToDelete: Trigger[]): Promise<Fea
               success: false,
               limitReached: true,
               notFoundError: false,
-              message: `Feature limit reached for triggers: ${featureLimitReached
+              message: `Feature limit reached for tags: ${featureLimitReached
                 .map(({ combinedId }) => combinedId)
                 .join(', ')}`,
               results: featureLimitReached.map(({ combinedId, name }) => {
@@ -323,7 +321,7 @@ export async function DeleteTriggers(ga4TriggerToDelete: Trigger[]): Promise<Fea
             };
           }
           // Update tier limit usage as before (not shown in code snippet)
-          if (successfulDeletions.length === ga4TriggerToDelete.length) {
+          if (successfulDeletions.length === ga4TagToDelete.length) {
             break; // Exit loop if all containers are processed successfully
           }
           if (permissionDenied) {
@@ -343,7 +341,7 @@ export async function DeleteTriggers(ga4TriggerToDelete: Trigger[]): Promise<Fea
           break;
         }
       } finally {
-        const cacheKey = `gtm:triggers:userId:${userId}`;
+        const cacheKey = `gtm:tags:userId:${userId}`;
         await redis.del(cacheKey);
 
         await revalidatePath(`/dashboard/gtm/configurations`);
@@ -378,19 +376,19 @@ export async function DeleteTriggers(ga4TriggerToDelete: Trigger[]): Promise<Fea
   }
   // If there are successful deletions, update the deleteUsage
   if (successfulDeletions.length > 0) {
-    const specificCacheKey = `gtm:triggers:userId:${userId}`;
+    const specificCacheKey = `gtm:tags:userId:${userId}`;
     await redis.del(specificCacheKey);
 
     // Revalidate paths if needed
     revalidatePath(`/dashboard/gtm/configurations`);
   }
 
-  const totalDeletedTriggers = successfulDeletions.length;
+  const totalDeletedTags = successfulDeletions.length;
 
   // Returning the result of the deletion process
   return {
     success: errors.length === 0,
-    message: `Successfully deleted ${totalDeletedTriggers} trigger(s)`,
+    message: `Successfully deleted ${totalDeletedTags} tag(s)`,
     features: successfulDeletions.map(({ combinedId }) => combinedId),
     errors: errors,
     notFoundError: notFoundLimit.length > 0,
@@ -408,7 +406,7 @@ export async function DeleteTriggers(ga4TriggerToDelete: Trigger[]): Promise<Fea
 /************************************************************************************
   Create a single container or multiple containers
 ************************************************************************************/
-export async function CreateTriggers(formData: TriggerType) {
+export async function CreateTags(formData: TagType) {
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
@@ -423,15 +421,15 @@ export async function CreateTriggers(formData: TriggerType) {
   let containerIdForCache: string | undefined;
 
   // Refactor: Use string identifiers in the set
-  const toCreateTriggers = new Set(formData.forms.map((trigger) => trigger));
+  const toCreateTags = new Set(formData.forms.map((tag) => tag));
 
-  const tierLimitResponse: any = await tierCreateLimit(userId, 'GTMTriggers');
+  const tierLimitResponse: any = await tierCreateLimit(userId, 'GTMTags');
   const limit = Number(tierLimitResponse.createLimit);
   const createUsage = Number(tierLimitResponse.createUsage);
   const availableCreateUsage = limit - createUsage;
 
   const creationResults: {
-    triggerName: string;
+    tagName: string;
     success: boolean;
     message?: string;
   }[] = [];
@@ -441,21 +439,21 @@ export async function CreateTriggers(formData: TriggerType) {
     return {
       success: false,
       limitReached: true,
-      message: 'Feature limit reached for Creating Triggers',
+      message: 'Feature limit reached for Creating Tags',
       results: [],
     };
   }
 
   // refactor and verify
-  if (toCreateTriggers.size > availableCreateUsage) {
-    const attemptedCreations = Array.from(toCreateTriggers).map((identifier: any) => {
-      const { name: triggerName, filter } = identifier;
+  if (toCreateTags.size > availableCreateUsage) {
+    const attemptedCreations = Array.from(toCreateTags).map((identifier: any) => {
+      const { name: tagName, filter } = identifier;
 
       return {
-        id: [], // No trigger ID since creation did not happen
-        name: triggerName, // Include the trigger name from the identifier
+        id: [], // No tag ID since creation did not happen
+        name: tagName, // Include the tag name from the identifier
         success: false,
-        message: `Creation limit reached. Cannot create trigger "${triggerName}".`,
+        message: `Creation limit reached. Cannot create tag "${tagName}".`,
         // remaining creation limit
         remaining: availableCreateUsage,
         limitReached: true,
@@ -464,9 +462,9 @@ export async function CreateTriggers(formData: TriggerType) {
     return {
       success: false,
       features: [],
-      message: `Cannot create ${toCreateTriggers.size} triggers as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
+      message: `Cannot create ${toCreateTags.size} tags as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
       errors: [
-        `Cannot create ${toCreateTriggers.size} triggers as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
+        `Cannot create ${toCreateTags.size} tags as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
       ],
       results: attemptedCreations,
       limitReached: true,
@@ -475,27 +473,27 @@ export async function CreateTriggers(formData: TriggerType) {
 
   let permissionDenied = false;
   // Corrected property name to 'name' based on the lint context provided
-  const triggerNames = formData.forms.map((cd) => cd.type);
+  const tagNames = formData.forms.map((cd) => cd.type);
 
-  if (toCreateTriggers.size <= availableCreateUsage) {
-    // Initialize retries trigger to ensure proper loop execution
+  if (toCreateTags.size <= availableCreateUsage) {
+    // Initialize retries tag to ensure proper loop execution
     let retries = 0;
-    while (retries < MAX_RETRIES && toCreateTriggers.size > 0 && !permissionDenied) {
+    while (retries < MAX_RETRIES && toCreateTags.size > 0 && !permissionDenied) {
       try {
         const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
         if (remaining > 0) {
           await limiter.schedule(async () => {
-            const createPromises = Array.from(toCreateTriggers).map(async (identifier: any) => {
+            const createPromises = Array.from(toCreateTags).map(async (identifier: any) => {
               if (!identifier) {
-                errors.push(`Trigger data not found for ${identifier}`);
-                toCreateTriggers.delete(identifier);
+                errors.push(`Tag data not found for ${identifier}`);
+                toCreateTags.delete(identifier);
                 return;
               }
 
               accountIdForCache = identifier.accountId;
               containerIdForCache = identifier.containerId;
 
-              const url = `https://www.googleapis.com/tagmanager/v2/accounts/${identifier.accountId}/containers/${identifier.containerId}/workspaces/${identifier.workspaceId}/triggers`;
+              const url = `https://www.googleapis.com/tagmanager/v2/accounts/${identifier.accountId}/containers/${identifier.containerId}/workspaces/${identifier.workspaceId}/tags`;
 
               const headers = {
                 Authorization: `Bearer ${token[0].token}`,
@@ -515,7 +513,7 @@ export async function CreateTriggers(formData: TriggerType) {
                     .map((issue) => `${issue.path[0]}: ${issue.message}`)
                     .join('. ');
                   errors.push(errorMessage);
-                  toCreateTriggers.delete(identifier);
+                  toCreateTags.delete(identifier);
                   return {
                     identifier,
                     success: false,
@@ -536,25 +534,25 @@ export async function CreateTriggers(formData: TriggerType) {
                 if (response.ok) {
                   await prisma.tierLimit.update({
                     where: { id: tierLimitResponse.id },
-                    data: { createUsage: { increment: 1 } }, // Increment by the number of created triggers
+                    data: { createUsage: { increment: 1 } }, // Increment by the number of created tags
                   });
 
                   successfulCreations.push(
                     `${validatedData.accountId}-${validatedData.containerId}-${validatedData.workspaceId}`
                   ); // Update with a proper identifier
-                  toCreateTriggers.delete(identifier);
+                  toCreateTags.delete(identifier);
                   fetchGtmSettings(userId);
 
                   creationResults.push({
                     success: true,
-                    message: `Successfully created trigger ${validatedData}`,
-                    triggerName: '',
+                    message: `Successfully created tag ${validatedData}`,
+                    tagName: '',
                   });
                 } else {
                   const errorResult = await handleApiResponseError(
                     response,
                     parsedResponse,
-                    'trigger',
+                    'tag',
                     [JSON.stringify(validatedData)]
                   );
 
@@ -566,30 +564,30 @@ export async function CreateTriggers(formData: TriggerType) {
                     ) {
                       featureLimitReached.push(identifier);
                     } else if (errorResult.errorCode === 404) {
-                      const triggerName =
-                        triggerNames.find((name) => name.includes(identifier.name)) || 'Unknown';
+                      const tagName =
+                        tagNames.find((name) => name.includes(identifier.name)) || 'Unknown';
                       notFoundLimit.push({
                         id: identifier.containerId,
-                        name: Array.isArray(triggerName) ? triggerName.join(', ') : triggerName,
+                        name: Array.isArray(tagName) ? tagName.join(', ') : tagName,
                       });
                     }
                   } else {
-                    errors.push(`An unknown error occurred for trigger.`);
+                    errors.push(`An unknown error occurred for tag.`);
                   }
 
-                  toCreateTriggers.delete(identifier);
+                  toCreateTags.delete(identifier);
                   permissionDenied = errorResult ? true : permissionDenied;
                   creationResults.push({
-                    triggerName: identifier.name,
+                    tagName: identifier.name,
                     success: false,
                     message: errorResult?.message,
                   });
                 }
               } catch (error: any) {
-                errors.push(`Exception creating trigger: ${error.message}`);
-                toCreateTriggers.delete(identifier);
+                errors.push(`Exception creating tag: ${error.message}`);
+                toCreateTags.delete(identifier);
                 creationResults.push({
-                  triggerName: identifier.name,
+                  tagName: identifier.name,
                   success: false,
                   message: error.message,
                 });
@@ -619,12 +617,12 @@ export async function CreateTriggers(formData: TriggerType) {
               success: false,
               limitReached: true,
               notFoundError: false,
-              message: `Feature limit reached for triggers: ${featureLimitReached.join(', ')}`,
-              results: featureLimitReached.map((triggerId) => {
-                // Find the name associated with the triggerId
+              message: `Feature limit reached for tags: ${featureLimitReached.join(', ')}`,
+              results: featureLimitReached.map((tagId) => {
+                // Find the name associated with the tagId
                 return {
-                  id: [triggerId], // Ensure id is an array
-                  name: [triggerNames], // Ensure name is an array, match by triggerId or default to 'Unknown'
+                  id: [tagId], // Ensure id is an array
+                  name: [tagNames], // Ensure name is an array, match by tagId or default to 'Unknown'
                   success: false,
                   featureLimitReached: true,
                 };
@@ -636,7 +634,7 @@ export async function CreateTriggers(formData: TriggerType) {
             break;
           }
 
-          if (toCreateTriggers.size === 0) {
+          if (toCreateTags.size === 0) {
             break;
           }
         } else {
@@ -653,7 +651,7 @@ export async function CreateTriggers(formData: TriggerType) {
       } finally {
         // This block will run regardless of the outcome of the try...catch
         if (accountIdForCache && containerIdForCache && userId) {
-          const cacheKey = `gtm:triggers:userId:${userId}`;
+          const cacheKey = `gtm:tags:userId:${userId}`;
           await redis.del(cacheKey);
           await revalidatePath(`/dashboard/gtm/configurations`);
         }
@@ -675,8 +673,8 @@ export async function CreateTriggers(formData: TriggerType) {
       success: false,
       features: successfulCreations,
       errors: errors,
-      results: successfulCreations.map((triggerName) => ({
-        triggerName,
+      results: successfulCreations.map((tagName) => ({
+        tagName,
         success: true,
       })),
       message: errors.join(', '),
@@ -684,7 +682,7 @@ export async function CreateTriggers(formData: TriggerType) {
   }
 
   if (successfulCreations.length > 0 && accountIdForCache && containerIdForCache) {
-    const cacheKey = `gtm:triggers:userId:${userId}`;
+    const cacheKey = `gtm:tags:userId:${userId}`;
     await redis.del(cacheKey);
     revalidatePath(`/dashboard/gtm/configurations`);
   }
@@ -694,7 +692,7 @@ export async function CreateTriggers(formData: TriggerType) {
     (form) =>
       form.gtmEntity?.map((entity) => ({
         id: [`${entity.accountId}-${entity.containerId}-${entity.workspaceId}`], // Wrap the unique identifier in an array
-        name: [form.triggers.name], // Ensure name is an array with a single string
+        name: [form.tags.name], // Ensure name is an array with a single string
         success: true, // or false, depending on the actual result
         notFound: false, // Set this to the appropriate value based on your logic
       })) || []
@@ -703,313 +701,10 @@ export async function CreateTriggers(formData: TriggerType) {
   // Return the response with the correctly typed results
   return {
     success: true, // or false, depending on the actual results
-    features: [], // Populate with actual trigger IDs if applicable
+    features: [], // Populate with actual tag IDs if applicable
     errors: [], // Populate with actual error messages if applicable
     limitReached: false, // Set based on actual limit status
     message: 'Containers created successfully', // Customize the message as needed
-    results: results, // Use the correctly typed results
-    notFoundError: false, // Set based on actual not found status
-  };
-}
-
-/************************************************************************************
-  Update a single container or multiple triggers
-************************************************************************************/
-export async function UpdateTriggers(formData: TriggerType) {
-  const { userId } = await auth();
-  if (!userId) return notFound();
-  const token = await currentUserOauthAccessToken(userId);
-
-  const MAX_RETRIES = 3;
-  let delay = 1000;
-  const errors: string[] = [];
-  const successfulCreations: string[] = [];
-  const featureLimitReached: string[] = [];
-  const notFoundLimit: { id: string; name: string }[] = [];
-  let accountIdForCache: string | undefined;
-  let containerIdForCache: string | undefined;
-
-  // Refactor: Use string identifiers in the set
-  const toUpdateTriggers = new Set(formData.forms.map((trigger) => trigger));
-
-  const tierLimitResponse: any = await tierUpdateLimit(userId, 'GTMTriggers');
-  const limit = Number(tierLimitResponse.updateLimit);
-  const updateUsage = Number(tierLimitResponse.updateUsage);
-  const availableUpdateUsage = limit - updateUsage;
-
-  const updateResults: {
-    triggerName: string;
-    success: boolean;
-    message?: string;
-  }[] = [];
-
-  // Handling feature limit
-  if (tierLimitResponse && tierLimitResponse.limitReached) {
-    return {
-      success: false,
-      limitReached: true,
-      message: 'Feature limit reached for updating triggers',
-      results: [],
-    };
-  }
-
-  // refactor and verify
-  if (toUpdateTriggers.size > availableUpdateUsage) {
-    const attemptedCreations = Array.from(toUpdateTriggers).map((identifier: any) => {
-      const { name: triggerName } = identifier;
-      return {
-        id: [], // No trigger ID since creation did not happen
-        name: triggerName, // Include the trigger name from the identifier
-        success: false,
-        message: `Creation limit reached. Cannot update trigger "${triggerName}".`,
-        // remaining creation limit
-        remaining: availableUpdateUsage,
-        limitReached: true,
-      };
-    });
-    return {
-      success: false,
-      features: [],
-      message: `Cannot update ${toUpdateTriggers.size} triggers as it exceeds the available limit. You have ${availableUpdateUsage} more creation(s) available.`,
-      errors: [
-        `Cannot update ${toUpdateTriggers.size} triggers as it exceeds the available limit. You have ${availableUpdateUsage} more creation(s) available.`,
-      ],
-      results: attemptedCreations,
-      limitReached: true,
-    };
-  }
-
-  let permissionDenied = false;
-  // Corrected property name to 'name' based on the lint context provided
-  const triggerNames = formData.forms.map((cd) => cd.type);
-
-  if (toUpdateTriggers.size <= availableUpdateUsage) {
-    // Initialize retries trigger to ensure proper loop execution
-    let retries = 0;
-    while (retries < MAX_RETRIES && toUpdateTriggers.size > 0 && !permissionDenied) {
-      try {
-        const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
-        if (remaining > 0) {
-          await limiter.schedule(async () => {
-            const updatePromises = Array.from(toUpdateTriggers).map(async (identifier: any) => {
-              if (!identifier) {
-                errors.push(`Trigger data not found for ${identifier}`);
-                toUpdateTriggers.delete(identifier);
-                return;
-              }
-
-              accountIdForCache = identifier.accountId;
-              containerIdForCache = identifier.containerId;
-
-              const url = `https://www.googleapis.com/tagmanager/v2/accounts/${identifier.accountId}/containers/${identifier.containerId}/workspaces/${identifier.workspaceId}/triggers/${identifier.triggerId}`;
-
-              const headers = {
-                Authorization: `Bearer ${token[0].token}`,
-                'Content-Type': 'application/json',
-                'Accept-Encoding': 'gzip',
-              };
-
-              try {
-                const formDataToValidate = { forms: [identifier] };
-                const validationResult = FormsSchema.safeParse(formDataToValidate);
-
-                if (!validationResult.success) {
-                  let errorMessage = validationResult.error.issues
-                    .map((issue) => `${issue.path[0]}: ${issue.message}`)
-                    .join('. ');
-                  errors.push(errorMessage);
-                  toUpdateTriggers.delete(identifier);
-                  return {
-                    identifier,
-                    success: false,
-                    error: errorMessage,
-                  };
-                }
-
-                const validatedData = validationResult.data.forms[0];
-
-                const response = await fetch(url.toString(), {
-                  method: 'PUT',
-                  headers: headers,
-                  body: JSON.stringify(validatedData),
-                });
-
-                const parsedResponse = await response.json();
-
-                if (response.ok) {
-                  await prisma.tierLimit.update({
-                    where: { id: tierLimitResponse.id },
-                    data: { updateUsage: { increment: 1 } }, // Increment by the number of updated triggers
-                  });
-
-                  successfulCreations.push(
-                    `${validatedData.accountId}-${validatedData.containerId}-${validatedData.workspaceId}`
-                  ); // Update with a proper identifier
-                  toUpdateTriggers.delete(identifier);
-                  fetchGtmSettings(userId);
-
-                  updateResults.push({
-                    success: true,
-                    message: `Successfully updated trigger ${validatedData}`,
-                    triggerName: '',
-                  });
-                } else {
-                  const errorResult = await handleApiResponseError(
-                    response,
-                    parsedResponse,
-                    'trigger',
-                    [JSON.stringify(validatedData)]
-                  );
-
-                  if (errorResult) {
-                    errors.push(`${errorResult.message}`);
-                    if (
-                      errorResult.errorCode === 403 &&
-                      parsedResponse.message === 'Feature limit reached'
-                    ) {
-                      featureLimitReached.push(identifier);
-                    } else if (errorResult.errorCode === 404) {
-                      const triggerName =
-                        triggerNames.find((name) => name.includes(identifier.name)) || 'Unknown';
-                      notFoundLimit.push({
-                        id: identifier.containerId,
-                        name: Array.isArray(triggerName) ? triggerName.join(', ') : triggerName,
-                      });
-                    }
-                  } else {
-                    errors.push(`An unknown error occurred for trigger.`);
-                  }
-
-                  toUpdateTriggers.delete(identifier);
-                  permissionDenied = errorResult ? true : permissionDenied;
-                  updateResults.push({
-                    triggerName: identifier.name,
-                    success: false,
-                    message: errorResult?.message,
-                  });
-                }
-              } catch (error: any) {
-                errors.push(`Exception creating trigger: ${error.message}`);
-                toUpdateTriggers.delete(identifier);
-                updateResults.push({
-                  triggerName: identifier.name,
-                  success: false,
-                  message: error.message,
-                });
-              }
-            });
-
-            await Promise.all(updatePromises);
-          });
-
-          if (notFoundLimit.length > 0) {
-            return {
-              success: false,
-              limitReached: false,
-              notFoundError: true, // Set the notFoundError flag
-              features: [],
-              results: notFoundLimit.map((item) => ({
-                id: item.id,
-                name: item.name,
-                success: false,
-                notFound: true,
-              })),
-            };
-          }
-
-          if (featureLimitReached.length > 0) {
-            return {
-              success: false,
-              limitReached: true,
-              notFoundError: false,
-              message: `Feature limit reached for triggers: ${featureLimitReached.join(', ')}`,
-              results: featureLimitReached.map((triggerId) => {
-                // Find the name associated with the triggerId
-                return {
-                  id: [triggerId], // Ensure id is an array
-                  name: [triggerNames], // Ensure name is an array, match by triggerId or default to 'Unknown'
-                  success: false,
-                  featureLimitReached: true,
-                };
-              }),
-            };
-          }
-
-          if (successfulCreations.length === formData.forms.length) {
-            break;
-          }
-
-          if (toUpdateTriggers.size === 0) {
-            break;
-          }
-        } else {
-          throw new Error('Rate limit exceeded');
-        }
-      } catch (error: any) {
-        if (error.code === 429 || error.status === 429) {
-          await new Promise((resolve) => setTimeout(resolve, delay + Math.random() * 200));
-          delay *= 2;
-          retries++;
-        } else {
-          break;
-        }
-      } finally {
-        // This block will run regardless of the outcome of the try...catch
-        if (accountIdForCache && containerIdForCache && userId) {
-          const cacheKey = `gtm:triggers:userId:${userId}`;
-          await redis.del(cacheKey);
-          await revalidatePath(`/dashboard/gtm/configurations`);
-        }
-      }
-    }
-  }
-
-  if (permissionDenied) {
-    return {
-      success: false,
-      errors: errors,
-      results: [],
-      message: errors.join(', '),
-    };
-  }
-
-  if (errors.length > 0) {
-    return {
-      success: false,
-      features: successfulCreations,
-      errors: errors,
-      results: successfulCreations.map((triggerName) => ({
-        triggerName,
-        success: true,
-      })),
-      message: errors.join(', '),
-    };
-  }
-
-  if (successfulCreations.length > 0 && accountIdForCache && containerIdForCache) {
-    const cacheKey = `gtm:triggers:userId:${userId}`;
-    await redis.del(cacheKey);
-    revalidatePath(`/dashboard/gtm/configurations`);
-  }
-
-  // Map over formData.forms to update the results array
-  const results: FeatureResult[] = formData.forms.flatMap(
-    (form) =>
-      form.gtmEntity?.map((entity) => ({
-        id: [`${entity.accountId}-${entity.containerId}-${entity.workspaceId}`], // Wrap the unique identifier in an array
-        name: [form.triggers.name], // Ensure name is an array with a single string
-        success: true, // or false, depending on the actual result
-        notFound: false, // Set this to the appropriate value based on your logic
-      })) || []
-  );
-
-  // Return the response with the correctly typed results
-  return {
-    success: true, // or false, depending on the actual results
-    features: [], // Populate with actual trigger IDs if applicable
-    errors: [], // Populate with actual error messages if applicable
-    limitReached: false, // Set based on actual limit status
-    message: 'Containers updated successfully', // Customize the message as needed
     results: results, // Use the correctly typed results
     notFoundError: false, // Set based on actual not found status
   };

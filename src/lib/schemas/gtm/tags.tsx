@@ -95,5 +95,13 @@ const TagSchema = z.object({
   consentSettings: ConsentSettingsSchema.optional(),
 });
 
-// Export the type inferred from TagSchema for type safety
-export type TagType = z.infer<typeof TagSchema>;
+export const FormCreateAmountSchema = z.object({
+  amount: z.number(),
+});
+
+export const FormsSchema = z.object({
+  forms: z.array(TagSchema),
+});
+
+// Export the type inferred from TriggerSchema for type safety
+export type TagType = z.infer<typeof FormsSchema>;

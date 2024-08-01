@@ -942,7 +942,7 @@ interface ConsentSettings {
   };
 }
 
-interface Tag {
+export interface Tag {
   path: string;
   accountId: string;
   containerId: string;
