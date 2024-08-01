@@ -153,7 +153,7 @@ const FormCreateTrigger: React.FC<FormCreateGTMProps> = ({ tierLimits, table = [
   const processForm: SubmitHandler<TriggerType> = async (data) => {
     dispatch(setLoading(true));
 
-    toast('Creating Triggers...', {
+    toast('Creating triggers...', {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
@@ -172,7 +172,9 @@ const FormCreateTrigger: React.FC<FormCreateGTMProps> = ({ tierLimits, table = [
           .filter((entity) => entity.accountId && entity.containerId && entity.workspaceId) // Filter out empty entities
     );
 
-    const uniqueTriggers = new Set();
+    const uniqueTriggers = new Set<string>();
+
+    // Find dup names and show toast
 
     try {
       const res = (await CreateTriggers({ forms: formsWithEntities })) as FeatureResponse;

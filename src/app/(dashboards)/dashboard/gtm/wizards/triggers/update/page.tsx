@@ -4,7 +4,7 @@ import { currentUser } from '@clerk/nextjs';
 import FormUpdateVariables from './form';
 import { getSubscription } from '@/src/lib/fetch/subscriptions';
 import { getTierLimit } from '@/src/lib/fetch/tierLimit';
-import { fetchGtmData, processEntityData, processGtmData } from '../components/utils';
+import { fetchGtmData, processEntityData, processGtmTriggerData } from '../components/utils';
 
 export default async function UpdateVariablePage() {
   const user = await currentUser();
@@ -16,7 +16,7 @@ export default async function UpdateVariablePage() {
   const tierLimits = await getTierLimit(subscriptionId);
 
   const foundTierLimit = tierLimits.find(
-    (subscription) => subscription.Feature?.name === 'GTMVariables'
+    (subscription) => subscription.Feature?.name === 'GTMTriggers'
   );
 
   const updateLimit = foundTierLimit?.updateLimit || 0;
@@ -27,8 +27,13 @@ export default async function UpdateVariablePage() {
     redirect('/dashboard/gtm/configurations'); // Replace with the actual path you want to redirect to
   }
 
-  const { accountData, containerData, workspaceData, varData } = await fetchGtmData();
-  const combinedData = processGtmData(accountData, containerData, workspaceData, varData);
+  const { accountData, containerData, workspaceData, triggerData } = await fetchGtmData();
+  const combinedData = processGtmTriggerData(
+    accountData,
+    containerData,
+    workspaceData,
+    triggerData
+  );
   const entityData = processEntityData(accountData, containerData, workspaceData);
 
   return (

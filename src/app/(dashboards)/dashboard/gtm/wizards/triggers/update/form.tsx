@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setLoading, incrementStep, decrementStep } from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -18,7 +18,7 @@ import {
 } from '@/src/components/ui/form';
 
 import { Input } from '@/src/components/ui/input';
-import { FeatureResponse, GTMContainerVersion, Variable } from '@/src/types/types';
+import { FeatureResponse, Trigger } from '@/src/types/types';
 import { toast } from 'sonner';
 import {
   selectTable,
@@ -29,23 +29,7 @@ import {
 import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { UpdateVersions } from '@/src/lib/fetch/dashboard/actions/gtm/versions';
-import { FormsSchema } from '@/src/lib/schemas/gtm/variables';
-import HttpReferrer from '../components/httpReferrer';
-import FirstPartyCookie from '../components/firstPartyCookie';
-import AEV from '../components/aev';
-import Constant from '../components/constant';
-import CustomJS from '../components/customJS';
-import DataLayerVariable from '../components/dlv';
-import DOMElement from '../components/dom';
-import JavaScriptVariable from '../components/variableJS';
-import LookupTableVariable from '../components/lookup';
-import URL from '../components/url';
-import FormatValue from '../components/formatValue';
-import Vis from '../components/vis';
-import GoogleTagConfigSettings from '../components/googleTagConfigSettings';
-import GoogleTagEventSettings from '../components/googleTagEventSettings';
-import UserProvidedData from '../components/userProvidedData';
+import { FormsSchema } from '@/src/lib/schemas/gtm/triggers';
 import {
   Select,
   SelectContent,
@@ -55,8 +39,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/src/components/ui/select';
-import { fetchAllVariables, variableTypeArray } from '../../../configurations/@variables/items';
-import { UpdateVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variables';
+import { UpdateTriggers } from '@/src/lib/fetch/dashboard/actions/gtm/triggers';
+import LinkClickTrigger from '../components/linkClick';
+import VisTrigger from '../components/vis';
+import ScrollDepthTrigger from '../components/scroll';
+import YouTubeTrigger from '../components/youTube';
+import CustomEventTrigger from '../components/customEvent';
+import TimerTrigger from '../components/timer';
+import TriggerGroup from '../components/triggerGroup';
+import FiringOnTrigger from '../components/firesOnTrigger';
+import EntityComponent from '../components/entity';
+import { triggerTypeArray } from '../../../configurations/@triggers/items';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -74,43 +67,26 @@ const ErrorModal = dynamic(
 
 type Forms = z.infer<typeof FormsSchema>;
 
-const FormUpdateVariables = (data) => {
+const FormUpdateTriggers = ({ data }) => {
   const dispatch = useDispatch();
   const loading = useSelector((state: RootState) => state.form.loading);
   const error = useSelector((state: RootState) => state.form.error);
   const currentStep = useSelector((state: RootState) => state.form.currentStep);
-  const count = useSelector((state: RootState) => state.form.count);
   const notFoundError = useSelector(selectTable).notFoundError;
   const router = useRouter();
 
   const selectedRowData = useSelector((state: RootState) => state.table.selectedRows);
   const currentFormIndex = currentStep - 1; // Adjust for 0-based index
-  const [cachedVariables, setCachedVariables] = useState<any[]>([]); // State to store fetched variables
 
   if (Object.keys(selectedRowData).length === 0) {
     router.push('/dashboard/gtm/configurations');
   }
 
-  useEffect(() => {
-    const fetchAllVariablesData = async () => {
-      try {
-        const data = await fetchAllVariables();
-        setCachedVariables(data);
-      } catch (error) {
-        console.error('Error fetching all variables:', error);
-      }
-    };
-
-    fetchAllVariablesData();
-  }, []);
-
-  const tableData = Array.isArray(selectedRowData) ? selectedRowData : [selectedRowData];
-
-  const formDataDefaults: Variable[] = Object.values(selectedRowData).map((rowData) => ({
+  const formDataDefaults: Trigger[] = Object.values(selectedRowData).map((rowData) => ({
     accountId: rowData.accountId,
     containerId: rowData.containerId,
     workspaceId: rowData.workspaceId,
-    variableId: rowData.variableId,
+    triggerId: rowData.triggerId,
     name: rowData.name,
     type: rowData.type,
     parameter: rowData.parameter || [],
@@ -146,7 +122,7 @@ const FormUpdateVariables = (data) => {
       form.setValue(`forms.${index}.accountId`, data.accountId);
       form.setValue(`forms.${index}.containerId`, data.containerId);
       form.setValue(`forms.${index}.workspaceId`, data.workspaceId);
-      form.setValue(`forms.${index}.variableId`, data.variableId);
+      form.setValue(`forms.${index}.triggerId`, data.triggerId);
     });
 
     // Log the form data to the console
@@ -161,9 +137,7 @@ const FormUpdateVariables = (data) => {
       `${currentFormPath}.accountId`,
       `${currentFormPath}.containerId`,
       `${currentFormPath}.workspaceId`,
-      `${currentFormPath}.variableId`,
-      `${currentFormPath}.name`,
-      `${currentFormPath}.description`,
+      `${currentFormPath}.triggerId`,
     ];
 
     const isFormValid = await form.trigger(fieldsToValidate as any);
@@ -182,19 +156,19 @@ const FormUpdateVariables = (data) => {
 
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
-    toast('Updating variables...', {
+    toast('Updating triggers...', {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
       },
     });
 
-    const uniqueVersions = new Set<string>();
+    const uniqueTriggers = new Set<string>();
 
     for (const form of forms) {
-      const identifier = `${form.accountId}-${form.containerId}-${form.workspaceId}-${form.variableId}`;
-      if (uniqueVersions.has(identifier)) {
-        toast.error(`Duplicate variable found for ${form.name}`, {
+      const identifier = `${form.accountId}-${form.containerId}-${form.workspaceId}-${form.triggerId}`;
+      if (uniqueTriggers.has(identifier)) {
+        toast.error(`Duplicate trigger found for ${form.name}`, {
           action: {
             label: 'Close',
             onClick: () => toast.dismiss(),
@@ -203,17 +177,17 @@ const FormUpdateVariables = (data) => {
         dispatch(setLoading(false));
         return;
       }
-      uniqueVersions.add(identifier);
+      uniqueTriggers.add(identifier);
     }
 
     try {
-      const res = (await UpdateVariables({ forms })) as FeatureResponse;
+      const res = (await UpdateTriggers({ forms })) as FeatureResponse;
 
       if (res.success) {
         res.results.forEach((result) => {
           if (result.success) {
             toast.success(
-              `Workspace ${result.name} updated successfully. The table will update shortly.`,
+              `Trigger ${result.name} updated successfully. The table will update shortly.`,
               {
                 action: {
                   label: 'Close',
@@ -317,181 +291,103 @@ const FormUpdateVariables = (data) => {
                       id={`createVar-${currentFormIndex}`}
                       className="space-y-6"
                     >
-                      {(() => {
-                        return (
-                          <>
-                            <div>
-                              <FormField
-                                control={form.control}
-                                name={`forms.${currentFormIndex}.name`}
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>
-                                      Variable Name: {fields[currentFormIndex]?.name}
-                                    </FormLabel>
-                                    <FormControl>
-                                      <Input
-                                        placeholder={fields[currentFormIndex]?.name}
-                                        {...form.register(`forms.${currentFormIndex}.name`)}
-                                        {...field}
-                                      />
-                                    </FormControl>
+                      <div>
+                        <FormField
+                          control={form.control}
+                          name={`forms.${currentFormIndex}.name`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Trigger Name</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="Name of Trigger"
+                                  {...form.register(`forms.${currentFormIndex}.name`)}
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <div>
+                        <FormField
+                          control={form.control}
+                          name={`forms.${currentFormIndex}.type`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Trigger Type</FormLabel>
+                              <FormDescription>
+                                This is the trigger type you want to create.
+                              </FormDescription>
+                              <FormControl>
+                                <Select
+                                  {...form.register(`forms.${currentFormIndex}.type`)}
+                                  {...field}
+                                  onValueChange={field.onChange}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select a trigger type." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectGroup>
+                                      <SelectLabel>Trigger Type</SelectLabel>
+                                      {triggerTypeArray.map((trigger) => (
+                                        <SelectItem key={trigger.type} value={trigger.type}>
+                                          {trigger.name}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectGroup>
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      {selectedType &&
+                        (() => {
+                          switch (selectedType) {
+                            case 'consentInit':
+                              return null;
+                            case 'init':
+                              return null;
+                            case 'pageview':
+                              return null;
+                            case 'domReady':
+                              return null;
+                            case 'windowLoaded':
+                              return null;
+                            case 'click':
+                              return null;
+                            case 'linkClick':
+                              return <LinkClickTrigger formIndex={currentFormIndex} />;
+                            case 'elementVisibility':
+                              return <VisTrigger formIndex={currentFormIndex} />;
+                            case 'formSubmission':
+                              return <LinkClickTrigger formIndex={currentFormIndex} />;
+                            case 'scrollDepth':
+                              return <ScrollDepthTrigger formIndex={currentFormIndex} />;
+                            case 'youTubeVideo':
+                              return <YouTubeTrigger formIndex={currentFormIndex} />;
+                            case 'customEvent':
+                              return <CustomEventTrigger formIndex={currentFormIndex} />;
+                            case 'historyChange':
+                              return null;
+                            case 'jsError':
+                              return null;
+                            case 'timer':
+                              return <TimerTrigger formIndex={currentFormIndex} />;
+                            case 'triggerGroup':
+                              return <TriggerGroup formIndex={currentFormIndex} table={data} />;
+                            default:
+                              return <div>Unknown Trigger Type</div>;
+                          }
+                        })()}
 
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                            </div>
-                            <div>
-                              <FormField
-                                control={form.control}
-                                name={`forms.${currentFormIndex}.type`}
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>Variable Type</FormLabel>
-                                    <FormDescription>
-                                      This is the variable type you want to create.
-                                    </FormDescription>
-                                    <FormControl>
-                                      <Select
-                                        {...form.register(`forms.${currentFormIndex}.type`)}
-                                        {...field}
-                                        onValueChange={field.onChange}
-                                      >
-                                        <SelectTrigger>
-                                          <SelectValue placeholder="Select a variable type." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectGroup>
-                                            <SelectLabel>Variable Type</SelectLabel>
-                                            {variableTypeArray.map((variable) => (
-                                              <SelectItem key={variable.type} value={variable.type}>
-                                                {variable.name}
-                                              </SelectItem>
-                                            ))}
-                                          </SelectGroup>
-                                        </SelectContent>
-                                      </Select>
-                                    </FormControl>
+                      <FiringOnTrigger formIndex={currentFormIndex} />
 
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                            </div>
-
-                            {/* Insert the switch statement below */}
-                            {selectedType &&
-                              (() => {
-                                switch (selectedType) {
-                                  case 'k':
-                                    return (
-                                      <FirstPartyCookie formIndex={currentFormIndex} type={''} />
-                                    );
-                                  case 'aev':
-                                    return <AEV formIndex={currentFormIndex} type={''} />;
-                                  case 'c':
-                                    return <Constant formIndex={currentFormIndex} type={''} />;
-                                  case 'jsm':
-                                    return <CustomJS formIndex={currentFormIndex} type={''} />;
-                                  case 'v':
-                                    return (
-                                      <DataLayerVariable formIndex={currentFormIndex} type={''} />
-                                    );
-                                  case 'd':
-                                    return <DOMElement formIndex={currentFormIndex} type={''} />;
-                                  case 'f':
-                                    return (
-                                      <HttpReferrer
-                                        formIndex={currentFormIndex}
-                                        variables={cachedVariables}
-                                      />
-                                    );
-                                  case 'j':
-                                    return (
-                                      <JavaScriptVariable formIndex={currentFormIndex} type={''} />
-                                    );
-                                  case 'smm':
-                                    return (
-                                      <LookupTableVariable
-                                        formIndex={currentFormIndex}
-                                        variables={cachedVariables}
-                                        selectedRows={selectedRowData}
-                                      />
-                                    );
-                                  case 'remm':
-                                    return (
-                                      <LookupTableVariable
-                                        formIndex={currentFormIndex}
-                                        variables={cachedVariables}
-                                        selectedRows={selectedRowData}
-                                      />
-                                    );
-                                  case 'u':
-                                    return (
-                                      <URL
-                                        formIndex={currentFormIndex}
-                                        variables={cachedVariables}
-                                      />
-                                    );
-                                  case 'vis':
-                                    return <Vis formIndex={currentFormIndex} type={''} />;
-                                  case 'e':
-                                    return <div>No configuration required for custom event</div>;
-                                  case 'ev':
-                                    return (
-                                      <div>No configuration required for environment name</div>
-                                    );
-                                  case 'r':
-                                    return <div>No configuration required for random number</div>;
-                                  case 'uv':
-                                    return <div>No configuration required for undefined value</div>;
-                                  case 'awec':
-                                    return (
-                                      <UserProvidedData
-                                        formIndex={currentFormIndex}
-                                        type={''}
-                                        variables={cachedVariables}
-                                      />
-                                    );
-                                  case 'cid':
-                                    return <div>No configuration required for container ID</div>;
-                                  case 'dbg':
-                                    return <div>No configuration required for debugging</div>;
-                                  case 'gtes':
-                                    return (
-                                      <GoogleTagEventSettings
-                                        formIndex={currentFormIndex}
-                                        type={''}
-                                      />
-                                    );
-                                  case 'gtcs':
-                                    return (
-                                      <GoogleTagConfigSettings
-                                        formIndex={currentFormIndex}
-                                        type={''}
-                                      />
-                                    );
-                                  case 'ctv':
-                                    return (
-                                      <div>
-                                        No configuration required for container version number
-                                      </div>
-                                    );
-                                  default:
-                                    return <div>Unknown Variable Type</div>;
-                                }
-                              })()}
-
-                            {selectedType !== 'ctv' &&
-                              selectedType !== 'r' &&
-                              selectedType !== 'gtcs' &&
-                              selectedType !== 'gtes' && (
-                                <FormatValue formIndex={currentFormIndex} />
-                              )}
-                          </>
-                        );
-                      })()}
                       <div className="flex justify-between">
                         <Button type="button" onClick={handlePrevious}>
                           Previous
@@ -519,4 +415,4 @@ const FormUpdateVariables = (data) => {
   );
 };
 
-export default FormUpdateVariables;
+export default FormUpdateTriggers;
