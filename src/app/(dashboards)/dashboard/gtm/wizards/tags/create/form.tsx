@@ -86,6 +86,14 @@ const formDataDefaults: Tag = {
   },
   consentSettings: {
     consentStatus: 'notSet',
+    consentType: {
+      type: 'list',
+      key: '',
+      value: '',
+      list: [],
+      map: [],
+      isWeakReference: false,
+    },
   },
   path: '',
   firingRuleId: [],
@@ -94,7 +102,7 @@ const formDataDefaults: Tag = {
   priority: {
     type: 'integer',
     value: '0',
-    key: ''
+    key: '',
   },
   notes: '',
   scheduleStartMs: 0,
@@ -106,7 +114,6 @@ const formDataDefaults: Tag = {
   paused: false,
   monitoringMetadataTagNameKey: '',
 };
-
 
 const FormCreateTag: React.FC<FormCreateGTMProps> = ({ tierLimits, table = [], data }) => {
   const dispatch = useDispatch();
@@ -321,7 +328,6 @@ const FormCreateTag: React.FC<FormCreateGTMProps> = ({ tierLimits, table = [], d
 
   console.log('forms', form.formState.errors);
 
-
   return (
     <div className="overflow-y-auto h-full">
       {currentStep === 1 ? (
@@ -367,10 +373,7 @@ const FormCreateTag: React.FC<FormCreateGTMProps> = ({ tierLimits, table = [], d
           {fields.map(
             (field, index) =>
               currentStep === index + 2 && (
-                <div
-                  key={field.id}
-                  className="max-w-full px-4 py-10 sm:px-6 lg:px-8 lg:py-1"
-                >
+                <div key={field.id} className="max-w-full px-4 py-10 sm:px-6 lg:px-8 lg:py-1">
                   <div className="max-w-full mx-auto">
                     <h1>Tag {index + 1}</h1>
                     <div className="mt-2 md:mt-12">

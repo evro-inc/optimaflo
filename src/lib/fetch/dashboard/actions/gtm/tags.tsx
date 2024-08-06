@@ -288,8 +288,8 @@ export async function DeleteTags(ga4TagToDelete: Tag[]): Promise<FeatureResponse
               notFoundError: true, // Set the notFoundError flag
               message: `Could not delete tag. Please check your permissions. Container Name: 
               ${notFoundLimit
-                  .map(({ name }) => name)
-                  .join(', ')}. All other tags were successfully deleted.`,
+                .map(({ name }) => name)
+                .join(', ')}. All other tags were successfully deleted.`,
               results: notFoundLimit.map(({ combinedId, name }) => {
                 const [accountId, containerId, workspaceId] = combinedId.split('-');
                 return {
@@ -423,8 +423,7 @@ export async function CreateTags(formData: TagType) {
   // Refactor: Use string identifiers in the set
   const toCreateTags = new Set(formData.forms.map((tag) => tag));
 
-  console.log("toCreateTags", toCreateTags);
-
+  console.log('toCreateTags', toCreateTags);
 
   const tierLimitResponse: any = await tierCreateLimit(userId, 'GTMTags');
   const limit = Number(tierLimitResponse.createLimit);
@@ -510,7 +509,6 @@ export async function CreateTags(formData: TagType) {
                 const validationResult = FormsSchema.safeParse(formDataToValidate);
                 console.log('validationResult', validationResult);
 
-
                 console.log('formDataToValidate', JSON.stringify(formDataToValidate, null, 2));
 
                 if (!validationResult.success) {
@@ -536,10 +534,8 @@ export async function CreateTags(formData: TagType) {
 
                 console.log('res', response);
 
-
                 const parsedResponse = await response.json();
-                console.log("parsedResponse", parsedResponse);
-
+                console.log('parsedResponse', parsedResponse);
 
                 if (response.ok) {
                   await prisma.tierLimit.update({

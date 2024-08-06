@@ -1,7 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/src/components/ui/form';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/src/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/src/components/ui/select';
 import { Button } from '@/src/components/ui/button';
 import { fetchAllTriggers } from '../../../configurations/@triggers/items';
 
@@ -13,12 +20,20 @@ interface Props {
 const FiringTriggerComponent = ({ formIndex, table = [] }: Props) => {
   const [cachedTriggers, setCachedTriggers] = useState<any[]>([]);
   const { control, setValue } = useFormContext();
-  const { fields: firingField, append: firingAppend, remove: firingRemove } = useFieldArray({
+  const {
+    fields: firingField,
+    append: firingAppend,
+    remove: firingRemove,
+  } = useFieldArray({
     control,
     name: `forms.${formIndex}.firingTriggerId`,
   });
 
-  const { fields: blockingField, append: blockingAppend, remove: blockingRemove } = useFieldArray({
+  const {
+    fields: blockingField,
+    append: blockingAppend,
+    remove: blockingRemove,
+  } = useFieldArray({
     control,
     name: `forms.${formIndex}.blockingTriggerId`,
   });
@@ -56,7 +71,10 @@ const FiringTriggerComponent = ({ formIndex, table = [] }: Props) => {
               <FormItem className="flex items-center space-x-2">
                 <FormLabel>Firing Trigger</FormLabel>
                 <FormControl>
-                  <Select value={field.value} onValueChange={(value) => handleSelectChange(field, value)}>
+                  <Select
+                    value={field.value}
+                    onValueChange={(value) => handleSelectChange(field, value)}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select Trigger" />
                     </SelectTrigger>
@@ -81,11 +99,7 @@ const FiringTriggerComponent = ({ formIndex, table = [] }: Props) => {
           </Button>
         </div>
       ))}
-      <Button
-        type="button"
-        className="mt-5"
-        onClick={() => firingAppend({})}
-      >
+      <Button type="button" className="mt-5" onClick={() => firingAppend({})}>
         Add Firing Trigger
       </Button>
 
@@ -98,7 +112,10 @@ const FiringTriggerComponent = ({ formIndex, table = [] }: Props) => {
               <FormItem className="flex items-center space-x-2">
                 <FormLabel>Blocking Trigger</FormLabel>
                 <FormControl>
-                  <Select value={field.value} onValueChange={(value) => handleSelectChange(field, value)}>
+                  <Select
+                    value={field.value}
+                    onValueChange={(value) => handleSelectChange(field, value)}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select Trigger" />
                     </SelectTrigger>
@@ -123,11 +140,7 @@ const FiringTriggerComponent = ({ formIndex, table = [] }: Props) => {
           </Button>
         </div>
       ))}
-      <Button
-        type="button"
-        className="mt-5"
-        onClick={() => blockingAppend({})}
-      >
+      <Button type="button" className="mt-5" onClick={() => blockingAppend({})}>
         Add Blocking Trigger
       </Button>
     </form>

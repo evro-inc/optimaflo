@@ -1,4 +1,4 @@
-import { listTags } from "@/src/lib/fetch/dashboard/actions/gtm/tags";
+import { listTags } from '@/src/lib/fetch/dashboard/actions/gtm/tags';
 
 export const tagTypeArray = [
   { type: 'googtag', name: 'Google Tag' },
@@ -28,13 +28,11 @@ export const filterType = [
   { type: 'greaterOrEquals', name: 'greater than or equal to' },
 ];
 
-
 export const tagOptions = [
   { type: 'oncePerEvent', name: 'Once per event' },
   { type: 'oncePerLoad', name: 'Once per page' },
   { type: 'unlimited', name: 'Unlimited' },
 ];
-
 
 export async function fetchAllTags() {
   try {
@@ -50,11 +48,9 @@ export async function fetchAllTags() {
     const allTags = [...formattedTags];
 
     // Remove duplicates by type
-    const uniqueTags = Array.from(new Set(allTags.map((variable) => variable.id))).map(
-      (id) => {
-        return allTags.find((t) => t.id === id);
-      }
-    );
+    const uniqueTags = Array.from(new Set(allTags.map((variable) => variable.id))).map((id) => {
+      return allTags.find((t) => t.id === id);
+    });
 
     return uniqueTags;
   } catch (error) {

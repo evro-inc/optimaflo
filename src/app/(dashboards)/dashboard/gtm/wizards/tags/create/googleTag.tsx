@@ -1,9 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/src/components/ui/form';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/src/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/src/components/ui/select';
 import { Input } from '@/src/components/ui/input';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/src/components/ui/accordion';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/src/components/ui/accordion';
 import { fetchAllVariables } from '../../../configurations/@variables/items';
 import { Button } from '@/src/components/ui/button';
 import { Checkbox } from '@/src/components/ui/checkbox';
@@ -21,31 +33,31 @@ interface Props {
 }
 
 const timeZoneOptions = [
-  { label: "GMT-12", value: -12 },
-  { label: "GMT-11", value: -11 },
-  { label: "GMT-10", value: -10 },
-  { label: "GMT-9", value: -9 },
-  { label: "GMT-8", value: -8 },
-  { label: "GMT-7", value: -7 },
-  { label: "GMT-6", value: -6 },
-  { label: "GMT-5", value: -5 },
-  { label: "GMT-4", value: -4 },
-  { label: "GMT-3", value: -3 },
-  { label: "GMT-2", value: -2 },
-  { label: "GMT-1", value: -1 },
-  { label: "GMT", value: 0 },
-  { label: "GMT+1", value: 1 },
-  { label: "GMT+2", value: 2 },
-  { label: "GMT+3", value: 3 },
-  { label: "GMT+4", value: 4 },
-  { label: "GMT+5", value: 5 },
-  { label: "GMT+6", value: 6 },
-  { label: "GMT+7", value: 7 },
-  { label: "GMT+8", value: 8 },
-  { label: "GMT+9", value: 9 },
-  { label: "GMT+10", value: 10 },
-  { label: "GMT+11", value: 11 },
-  { label: "GMT+12", value: 12 },
+  { label: 'GMT-12', value: -12 },
+  { label: 'GMT-11', value: -11 },
+  { label: 'GMT-10', value: -10 },
+  { label: 'GMT-9', value: -9 },
+  { label: 'GMT-8', value: -8 },
+  { label: 'GMT-7', value: -7 },
+  { label: 'GMT-6', value: -6 },
+  { label: 'GMT-5', value: -5 },
+  { label: 'GMT-4', value: -4 },
+  { label: 'GMT-3', value: -3 },
+  { label: 'GMT-2', value: -2 },
+  { label: 'GMT-1', value: -1 },
+  { label: 'GMT', value: 0 },
+  { label: 'GMT+1', value: 1 },
+  { label: 'GMT+2', value: 2 },
+  { label: 'GMT+3', value: 3 },
+  { label: 'GMT+4', value: 4 },
+  { label: 'GMT+5', value: 5 },
+  { label: 'GMT+6', value: 6 },
+  { label: 'GMT+7', value: 7 },
+  { label: 'GMT+8', value: 8 },
+  { label: 'GMT+9', value: 9 },
+  { label: 'GMT+10', value: 10 },
+  { label: 'GMT+11', value: 11 },
+  { label: 'GMT+12', value: 12 },
 ];
 
 const GoogleTag = ({ formIndex, table = [] }: Props) => {
@@ -55,15 +67,14 @@ const GoogleTag = ({ formIndex, table = [] }: Props) => {
   const [isChecked, setIsChecked] = useState(false);
   const [isMetaDataChecked, setIsMetaDataChecked] = useState(false);
   const [selectedStartDate, setSelectedStartDate] = useState<Date | null>(null);
-  const [startTime, setStartTime] = useState<string>("");
+  const [startTime, setStartTime] = useState<string>('');
   const [selectedEndDate, setSelectedEndDate] = useState<Date | null>(null);
-  const [endTime, setEndTime] = useState<string>("");
+  const [endTime, setEndTime] = useState<string>('');
   const [timeZone, setTimeZone] = useState<number>(0);
   const [includeSetupTag, setIncludeSetupTag] = useState(false);
   const [includeTeardownTag, setIncludeTeardownTag] = useState(false);
 
-  console.log("cachedTag", cachedTag);
-
+  console.log('cachedTag', cachedTag);
 
   const { control, register, setValue } = useFormContext();
   const { fields, append, remove } = useFieldArray({
@@ -71,26 +82,45 @@ const GoogleTag = ({ formIndex, table = [] }: Props) => {
     name: `forms.${formIndex}.parameter`,
   });
 
-  const { fields: monitoringMetadataFields, append: monitoringMetadataAppend, remove: monitoringMetadataRemove } = useFieldArray({
+  const {
+    fields: monitoringMetadataFields,
+    append: monitoringMetadataAppend,
+    remove: monitoringMetadataRemove,
+  } = useFieldArray({
     control,
     name: `forms.${formIndex}.monitoringMetadata.map`,
   });
 
-  const { fields: consentTypeFields, append: consentTypeAppend, remove: consentTypeRemove } = useFieldArray({
+  const {
+    fields: consentTypeFields,
+    append: consentTypeAppend,
+    remove: consentTypeRemove,
+  } = useFieldArray({
     control,
     name: `forms.${formIndex}.consentSettings.consentType.list`,
   });
 
-  const { fields: configSettingsTableFields, append: appendConfigSettingsTable, remove: removeConfigSettingsTable } = useFieldArray({
+  const {
+    fields: configSettingsTableFields,
+    append: appendConfigSettingsTable,
+    remove: removeConfigSettingsTable,
+  } = useFieldArray({
     control,
-    name: `forms.${formIndex}.parameter.${fields.findIndex((field: any) => field.key === 'configSettingsTable')}.list`,
+    name: `forms.${formIndex}.parameter.${fields.findIndex(
+      (field: any) => field.key === 'configSettingsTable'
+    )}.list`,
   });
 
-  const { fields: eventSettingsTableFields, append: appendEventSettingsTable, remove: removeEventSettingsTable } = useFieldArray({
+  const {
+    fields: eventSettingsTableFields,
+    append: appendEventSettingsTable,
+    remove: removeEventSettingsTable,
+  } = useFieldArray({
     control,
-    name: `forms.${formIndex}.parameter.${fields.findIndex((field: any) => field.key === 'eventSettingsTable')}.list`,
+    name: `forms.${formIndex}.parameter.${fields.findIndex(
+      (field: any) => field.key === 'eventSettingsTable'
+    )}.list`,
   });
-
 
   const { fields: setupTagFields, append: appendSetupTag } = useFieldArray({
     control,
@@ -101,8 +131,6 @@ const GoogleTag = ({ formIndex, table = [] }: Props) => {
     control,
     name: `forms.${formIndex}.teardownTag`,
   });
-
-
 
   const triggerType = useWatch({
     control,
@@ -138,13 +166,8 @@ const GoogleTag = ({ formIndex, table = [] }: Props) => {
       }
     };
 
-
-
     fetchAllVariableData();
   }, []);
-
-
-
 
   useEffect(() => {
     // Fetch data and set cached tags
@@ -163,7 +186,6 @@ const GoogleTag = ({ formIndex, table = [] }: Props) => {
     };
 
     fetchAllTagData();
-
   }, []);
 
   useEffect(() => {
@@ -215,9 +237,9 @@ const GoogleTag = ({ formIndex, table = [] }: Props) => {
           list: [],
         },
         {
-          type: "template",
-          key: "eventSettingsVariable",
-          value: ""
+          type: 'template',
+          key: 'eventSettingsVariable',
+          value: '',
         },
         {
           type: 'list',
@@ -239,8 +261,6 @@ const GoogleTag = ({ formIndex, table = [] }: Props) => {
       appendTeardownTag({ tagName: '', stopOnSetupFailure: false });
     }
   }, [includeTeardownTag]);
-
-
 
   const handleStartDateChange = (date: Date | undefined) => {
     setSelectedStartDate(date || null);
@@ -324,7 +344,10 @@ const GoogleTag = ({ formIndex, table = [] }: Props) => {
                       <FormItem className="flex items-center space-x-2">
                         <FormLabel>Configuration Settings Variable</FormLabel>
                         <FormControl>
-                          <Select value={field.value} onValueChange={(value) => handleSelectChange(field, value)}>
+                          <Select
+                            value={field.value}
+                            onValueChange={(value) => handleSelectChange(field, value)}
+                          >
                             <SelectTrigger>
                               <SelectValue placeholder="Select Selection Method" />
                             </SelectTrigger>
@@ -349,7 +372,9 @@ const GoogleTag = ({ formIndex, table = [] }: Props) => {
                 {item.key === 'configSettingsTable' && (
                   <div className="pt-4">
                     <div className="flex items-center space-x-2">
-                      <FormLabel htmlFor={`config-settings-table-${formIndex}`}>Config Parameter</FormLabel>
+                      <FormLabel htmlFor={`config-settings-table-${formIndex}`}>
+                        Config Parameter
+                      </FormLabel>
                     </div>
                     <div className="space-y-4">
                       {configSettingsTableFields.map((configItem, configIndex) => (
@@ -359,11 +384,17 @@ const GoogleTag = ({ formIndex, table = [] }: Props) => {
                               {subItem.key === 'parameter' && (
                                 <FormField
                                   control={control}
-                                  name={`forms.${formIndex}.parameter.${fields.findIndex(field => field.key === 'configSettingsTable')}.list.${configIndex}.map.${subIndex}.value`}
+                                  name={`forms.${formIndex}.parameter.${fields.findIndex(
+                                    (field) => field.key === 'configSettingsTable'
+                                  )}.list.${configIndex}.map.${subIndex}.value`}
                                   render={({ field }) => (
                                     <FormControl>
                                       <Input
-                                        {...register(`forms.${formIndex}.parameter.${fields.findIndex(field => field.key === 'configSettingsTable')}.list.${configIndex}.map.${subIndex}.value`)}
+                                        {...register(
+                                          `forms.${formIndex}.parameter.${fields.findIndex(
+                                            (field) => field.key === 'configSettingsTable'
+                                          )}.list.${configIndex}.map.${subIndex}.value`
+                                        )}
                                         value={field.value}
                                         onChange={field.onChange}
                                         placeholder="Input"
@@ -375,11 +406,17 @@ const GoogleTag = ({ formIndex, table = [] }: Props) => {
                               {subItem.key === 'parameterValue' && (
                                 <FormField
                                   control={control}
-                                  name={`forms.${formIndex}.parameter.${fields.findIndex(field => field.key === 'configSettingsTable')}.list.${configIndex}.map.${subIndex}.value`}
+                                  name={`forms.${formIndex}.parameter.${fields.findIndex(
+                                    (field) => field.key === 'configSettingsTable'
+                                  )}.list.${configIndex}.map.${subIndex}.value`}
                                   render={({ field }) => (
                                     <FormControl>
                                       <Input
-                                        {...register(`forms.${formIndex}.parameter.${fields.findIndex(field => field.key === 'configSettingsTable')}.list.${configIndex}.map.${subIndex}.value`)}
+                                        {...register(
+                                          `forms.${formIndex}.parameter.${fields.findIndex(
+                                            (field) => field.key === 'configSettingsTable'
+                                          )}.list.${configIndex}.map.${subIndex}.value`
+                                        )}
                                         value={field.value}
                                         onChange={field.onChange}
                                         placeholder="Output"
@@ -390,7 +427,10 @@ const GoogleTag = ({ formIndex, table = [] }: Props) => {
                               )}
                             </React.Fragment>
                           ))}
-                          <Button type="button" onClick={() => removeConfigSettingsTable(configIndex)}>
+                          <Button
+                            type="button"
+                            onClick={() => removeConfigSettingsTable(configIndex)}
+                          >
                             Remove
                           </Button>
                         </div>
@@ -431,7 +471,10 @@ const GoogleTag = ({ formIndex, table = [] }: Props) => {
                       <FormItem className="flex items-center space-x-2">
                         <FormLabel>Event Settings Variable</FormLabel>
                         <FormControl>
-                          <Select value={field.value} onValueChange={(value) => handleSelectChange(field, value)}>
+                          <Select
+                            value={field.value}
+                            onValueChange={(value) => handleSelectChange(field, value)}
+                          >
                             <SelectTrigger>
                               <SelectValue placeholder="Select Selection Method" />
                             </SelectTrigger>
@@ -456,7 +499,9 @@ const GoogleTag = ({ formIndex, table = [] }: Props) => {
                 {item.key === 'eventSettingsTable' && (
                   <div className="pt-4">
                     <div className="flex items-center space-x-2">
-                      <FormLabel htmlFor={`event-settings-table-${formIndex}`}>Event Parameter</FormLabel>
+                      <FormLabel htmlFor={`event-settings-table-${formIndex}`}>
+                        Event Parameter
+                      </FormLabel>
                     </div>
                     <div className="space-y-4">
                       {eventSettingsTableFields.map((eventItem, eventIndex) => (
@@ -466,11 +511,17 @@ const GoogleTag = ({ formIndex, table = [] }: Props) => {
                               {subItem.key === 'parameter' && (
                                 <FormField
                                   control={control}
-                                  name={`forms.${formIndex}.parameter.${fields.findIndex(field => field.key === 'eventSettingsTable')}.list.${eventIndex}.map.${subIndex}.value`}
+                                  name={`forms.${formIndex}.parameter.${fields.findIndex(
+                                    (field) => field.key === 'eventSettingsTable'
+                                  )}.list.${eventIndex}.map.${subIndex}.value`}
                                   render={({ field }) => (
                                     <FormControl>
                                       <Input
-                                        {...register(`forms.${formIndex}.parameter.${fields.findIndex(field => field.key === 'eventSettingsTable')}.list.${eventIndex}.map.${subIndex}.value`)}
+                                        {...register(
+                                          `forms.${formIndex}.parameter.${fields.findIndex(
+                                            (field) => field.key === 'eventSettingsTable'
+                                          )}.list.${eventIndex}.map.${subIndex}.value`
+                                        )}
                                         value={field.value}
                                         onChange={field.onChange}
                                         placeholder="Input"
@@ -482,11 +533,17 @@ const GoogleTag = ({ formIndex, table = [] }: Props) => {
                               {subItem.key === 'parameterValue' && (
                                 <FormField
                                   control={control}
-                                  name={`forms.${formIndex}.parameter.${fields.findIndex(field => field.key === 'eventSettingsTable')}.list.${eventIndex}.map.${subIndex}.value`}
+                                  name={`forms.${formIndex}.parameter.${fields.findIndex(
+                                    (field) => field.key === 'eventSettingsTable'
+                                  )}.list.${eventIndex}.map.${subIndex}.value`}
                                   render={({ field }) => (
                                     <FormControl>
                                       <Input
-                                        {...register(`forms.${formIndex}.parameter.${fields.findIndex(field => field.key === 'eventSettingsTable')}.list.${eventIndex}.map.${subIndex}.value`)}
+                                        {...register(
+                                          `forms.${formIndex}.parameter.${fields.findIndex(
+                                            (field) => field.key === 'eventSettingsTable'
+                                          )}.list.${eventIndex}.map.${subIndex}.value`
+                                        )}
                                         value={field.value}
                                         onChange={field.onChange}
                                         placeholder="Output"
@@ -497,7 +554,10 @@ const GoogleTag = ({ formIndex, table = [] }: Props) => {
                               )}
                             </React.Fragment>
                           ))}
-                          <Button type="button" onClick={() => removeEventSettingsTable(eventIndex)}>
+                          <Button
+                            type="button"
+                            onClick={() => removeEventSettingsTable(eventIndex)}
+                          >
                             Remove
                           </Button>
                         </div>
@@ -573,7 +633,10 @@ const GoogleTag = ({ formIndex, table = [] }: Props) => {
                 <div className="grid grid-cols-2 gap-4">
                   <FormItem className="flex items-center space-x-2">
                     <FormLabel>Time Zone</FormLabel>
-                    <Select value={timeZone.toString()} onValueChange={(value) => setTimeZone(Number(value))}>
+                    <Select
+                      value={timeZone.toString()}
+                      onValueChange={(value) => setTimeZone(Number(value))}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select Time Zone" />
                       </SelectTrigger>
@@ -601,14 +664,14 @@ const GoogleTag = ({ formIndex, table = [] }: Props) => {
                           <PopoverTrigger asChild>
                             <FormControl>
                               <Button
-                                variant={"outline"}
+                                variant={'outline'}
                                 className={cn(
-                                  "pl-3 text-left font-normal",
-                                  !selectedStartDate && "text-muted-foreground"
+                                  'pl-3 text-left font-normal',
+                                  !selectedStartDate && 'text-muted-foreground'
                                 )}
                               >
                                 {selectedStartDate ? (
-                                  format(selectedStartDate, "PPP")
+                                  format(selectedStartDate, 'PPP')
                                 ) : (
                                   <span>Pick a date</span>
                                 )}
@@ -622,7 +685,7 @@ const GoogleTag = ({ formIndex, table = [] }: Props) => {
                               selected={selectedStartDate}
                               onSelect={handleStartDateChange}
                               disabled={(date) =>
-                                date > new Date() || date < new Date("1900-01-01")
+                                date > new Date() || date < new Date('1900-01-01')
                               }
                               initialFocus
                             />
@@ -649,14 +712,14 @@ const GoogleTag = ({ formIndex, table = [] }: Props) => {
                           <PopoverTrigger asChild>
                             <FormControl>
                               <Button
-                                variant={"outline"}
+                                variant={'outline'}
                                 className={cn(
-                                  "pl-3 text-left font-normal",
-                                  !selectedEndDate && "text-muted-foreground"
+                                  'pl-3 text-left font-normal',
+                                  !selectedEndDate && 'text-muted-foreground'
                                 )}
                               >
                                 {selectedEndDate ? (
-                                  format(selectedEndDate, "PPP")
+                                  format(selectedEndDate, 'PPP')
                                 ) : (
                                   <span>Pick a date</span>
                                 )}
@@ -670,7 +733,7 @@ const GoogleTag = ({ formIndex, table = [] }: Props) => {
                               selected={selectedEndDate}
                               onSelect={handleEndDateChange}
                               disabled={(date) =>
-                                date > new Date() || date < new Date("1900-01-01")
+                                date > new Date() || date < new Date('1900-01-01')
                               }
                               initialFocus
                             />
@@ -715,7 +778,10 @@ const GoogleTag = ({ formIndex, table = [] }: Props) => {
                 <FormItem>
                   <FormLabel>Tag firing options</FormLabel>
                   <FormControl>
-                    <Select value={field.value} onValueChange={(value) => handleSelectChange(field, value)}>
+                    <Select
+                      value={field.value}
+                      onValueChange={(value) => handleSelectChange(field, value)}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select a variable type" />
                       </SelectTrigger>
@@ -760,54 +826,61 @@ const GoogleTag = ({ formIndex, table = [] }: Props) => {
                       )}
                     />
 
-
-                    {includeSetupTag && setupTagFields.map((item, index) => (
-                      <React.Fragment key={item.id}>
-                        <FormField
-                          control={control}
-                          name={`forms.${formIndex}.setupTag.${index}.tagName`}
-                          render={({ field }) => (
-                            <FormItem className="flex items-center space-x-2">
-                              <FormLabel>Setup Tag</FormLabel>
-                              <FormControl>
-                                <Select value={field.value} onValueChange={(value) => field.onChange(value)}>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select Tag" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectGroup>
-                                      <SelectItem value="None">None</SelectItem>
-                                      {cachedTag.map((tag) => (
-                                        <SelectItem key={tag.id} value={tag.name}>
-                                          {tag.name}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectGroup>
-                                  </SelectContent>
-                                </Select>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={control}
-                          name={`forms.${formIndex}.setupTag.${index}.stopOnSetupFailure`}
-                          render={({ field }) => (
-                            <FormItem className="flex items-center space-x-2">
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value === true}
-                                  onCheckedChange={(checked) => field.onChange(checked ? true : false)}
-                                />
-                              </FormControl>
-                              <FormLabel>Don't fire new tag if setup tag fails or is paused</FormLabel>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </React.Fragment>
-                    ))}
+                    {includeSetupTag &&
+                      setupTagFields.map((item, index) => (
+                        <React.Fragment key={item.id}>
+                          <FormField
+                            control={control}
+                            name={`forms.${formIndex}.setupTag.${index}.tagName`}
+                            render={({ field }) => (
+                              <FormItem className="flex items-center space-x-2">
+                                <FormLabel>Setup Tag</FormLabel>
+                                <FormControl>
+                                  <Select
+                                    value={field.value}
+                                    onValueChange={(value) => field.onChange(value)}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select Tag" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectGroup>
+                                        <SelectItem value="None">None</SelectItem>
+                                        {cachedTag.map((tag) => (
+                                          <SelectItem key={tag.id} value={tag.name}>
+                                            {tag.name}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectGroup>
+                                    </SelectContent>
+                                  </Select>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={control}
+                            name={`forms.${formIndex}.setupTag.${index}.stopOnSetupFailure`}
+                            render={({ field }) => (
+                              <FormItem className="flex items-center space-x-2">
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value === true}
+                                    onCheckedChange={(checked) =>
+                                      field.onChange(checked ? true : false)
+                                    }
+                                  />
+                                </FormControl>
+                                <FormLabel>
+                                  Don't fire new tag if setup tag fails or is paused
+                                </FormLabel>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </React.Fragment>
+                      ))}
 
                     <FormField
                       control={control}
@@ -819,7 +892,7 @@ const GoogleTag = ({ formIndex, table = [] }: Props) => {
                               checked={field.value === true}
                               onCheckedChange={(checked) => {
                                 field.onChange(checked ? true : false);
-                                setIncludeTeardownTag(checked === true)
+                                setIncludeTeardownTag(checked === true);
                               }}
                             />
                           </FormControl>
@@ -829,54 +902,65 @@ const GoogleTag = ({ formIndex, table = [] }: Props) => {
                       )}
                     />
 
-                    {includeTeardownTag && teardownTagFields.map((item, index) => (
-                      <React.Fragment key={item.id}>
-                        <FormField
-                          control={control}
-                          name={`forms.${formIndex}.teardownTag.${index}.tagName`}
-                          render={({ field }) => (
-                            <FormItem className="flex items-center space-x-2">
-                              <FormLabel>Cleanup Tag</FormLabel>
-                              <FormControl>
-                                <Select value={field.value} onValueChange={(value) => field.onChange(value)}>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select Tag" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectGroup>
-                                      <SelectItem value="None">None</SelectItem>
-                                      {cachedTag.map((tag) => (
-                                        <SelectItem key={tag.id} value={tag.name}>
-                                          {tag.name}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectGroup>
-                                  </SelectContent>
-                                </Select>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={control}
-                          name={`forms.${formIndex}.teardownTag.${index}.stopTeardownOnFailure`}
-                          render={({ field }) => (
-                            <FormItem className="flex items-center space-x-2">
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value === true}
-                                  onCheckedChange={(checked) => field.onChange(checked ? true : false)}
-                                />
-                              </FormControl>
-                              <FormLabel>Don't fire cleanup tag if new tag fails or is paused</FormLabel>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </React.Fragment>
-                    ))}
-                    <Button type="button" onClick={() => appendTeardownTag({ tagName: '', stopOnSetupFailure: false })}>
+                    {includeTeardownTag &&
+                      teardownTagFields.map((item, index) => (
+                        <React.Fragment key={item.id}>
+                          <FormField
+                            control={control}
+                            name={`forms.${formIndex}.teardownTag.${index}.tagName`}
+                            render={({ field }) => (
+                              <FormItem className="flex items-center space-x-2">
+                                <FormLabel>Cleanup Tag</FormLabel>
+                                <FormControl>
+                                  <Select
+                                    value={field.value}
+                                    onValueChange={(value) => field.onChange(value)}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select Tag" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectGroup>
+                                        <SelectItem value="None">None</SelectItem>
+                                        {cachedTag.map((tag) => (
+                                          <SelectItem key={tag.id} value={tag.name}>
+                                            {tag.name}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectGroup>
+                                    </SelectContent>
+                                  </Select>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={control}
+                            name={`forms.${formIndex}.teardownTag.${index}.stopTeardownOnFailure`}
+                            render={({ field }) => (
+                              <FormItem className="flex items-center space-x-2">
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value === true}
+                                    onCheckedChange={(checked) =>
+                                      field.onChange(checked ? true : false)
+                                    }
+                                  />
+                                </FormControl>
+                                <FormLabel>
+                                  Don't fire cleanup tag if new tag fails or is paused
+                                </FormLabel>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </React.Fragment>
+                      ))}
+                    <Button
+                      type="button"
+                      onClick={() => appendTeardownTag({ tagName: '', stopOnSetupFailure: false })}
+                    >
                       Add Teardown Tag
                     </Button>
                   </AccordionContent>
@@ -955,7 +1039,11 @@ const GoogleTag = ({ formIndex, table = [] }: Props) => {
                             </FormItem>
                           )}
                         />
-                        <Button className='mt-6' type="button" onClick={() => monitoringMetadataRemove(index)}>
+                        <Button
+                          className="mt-6"
+                          type="button"
+                          onClick={() => monitoringMetadataRemove(index)}
+                        >
                           <MinusIcon />
                         </Button>
                       </div>
@@ -996,9 +1084,7 @@ const GoogleTag = ({ formIndex, table = [] }: Props) => {
                                 <FormControl>
                                   <RadioGroupItem value="notSet" />
                                 </FormControl>
-                                <FormLabel className="font-normal">
-                                  Not Set
-                                </FormLabel>
+                                <FormLabel className="font-normal">Not Set</FormLabel>
                               </FormItem>
                               <FormItem className="flex items-center space-x-3 space-y-0">
                                 <FormControl>
@@ -1012,7 +1098,9 @@ const GoogleTag = ({ formIndex, table = [] }: Props) => {
                                 <FormControl>
                                   <RadioGroupItem value="needed" />
                                 </FormControl>
-                                <FormLabel className="font-normal">Require additional consent for tag to fire</FormLabel>
+                                <FormLabel className="font-normal">
+                                  Require additional consent for tag to fire
+                                </FormLabel>
                               </FormItem>
                             </RadioGroup>
                           </FormControl>
@@ -1021,32 +1109,38 @@ const GoogleTag = ({ formIndex, table = [] }: Props) => {
                       )}
                     />
 
-                    {consentStatus === 'needed' && consentTypeFields.map((item: any, index: number) => (
-                      <div key={item.id} className="flex items-center space-x-4">
-                        <FormField
-                          control={control}
-                          name={`forms.${formIndex}.consentSettings.consentType.list.${index}.value`}
-                          render={({ field }) => (
-                            <FormItem className="flex-1">
-                              <FormLabel>Element ID</FormLabel>
-                              <FormControl>
-                                <Input {...field} placeholder="value" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <Button type="button" onClick={() => consentTypeRemove(index)}>
-                          Remove
-                        </Button>
-                      </div>
-                    ))}
+                    {consentStatus === 'needed' &&
+                      consentTypeFields.map((item: any, index: number) => (
+                        <div key={item.id} className="flex items-center space-x-4">
+                          <FormField
+                            control={control}
+                            name={`forms.${formIndex}.consentSettings.consentType.list.${index}.value`}
+                            render={({ field }) => (
+                              <FormItem className="flex-1">
+                                <FormLabel>Element ID</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="value" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <Button type="button" onClick={() => consentTypeRemove(index)}>
+                            Remove
+                          </Button>
+                        </div>
+                      ))}
 
                     {consentStatus === 'needed' && (
-                      <Button type="button" onClick={() => consentTypeAppend({
-                        type: 'template',
-                        value: '',
-                      })}>
+                      <Button
+                        type="button"
+                        onClick={() =>
+                          consentTypeAppend({
+                            type: 'template',
+                            value: '',
+                          })
+                        }
+                      >
                         Add
                       </Button>
                     )}
