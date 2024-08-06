@@ -52,7 +52,7 @@ export interface Price {
   products?: Product;
 }
 
-export interface PriceWithProduct extends Price {}
+export interface PriceWithProduct extends Price { }
 
 export interface Subscription {
   id: string /* primary key */;
@@ -932,7 +932,7 @@ interface MonitoringMetadata {
 // Consent Settings Interface
 interface ConsentSettings {
   consentStatus: 'needed' | 'notNeeded' | 'notSet';
-  consentType: {
+  consentType?: {
     type: ParameterType;
     key: string;
     value: string;
@@ -960,9 +960,9 @@ export interface Tag {
   parameter: Parameter[];
   fingerprint: string;
   firingTriggerId: string[];
-  blockingTriggerId: string[];
-  setupTag: SetupTag[];
-  teardownTag: TeardownTag[];
+  blockingTriggerId?: string[];
+  setupTag?: SetupTag[];
+  teardownTag?: TeardownTag[];
   parentFolderId: string;
   tagFiringOption: 'oncePerEvent' | 'oncePerLoad' | 'tagFiringOptionUnspecified' | 'unlimited';
   tagManagerUrl: string;

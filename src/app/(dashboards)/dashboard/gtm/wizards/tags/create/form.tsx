@@ -40,6 +40,8 @@ import { Input } from '@/src/components/ui/input';
 import EntityComponent from '../components/entity';
 import { tagTypeArray } from '../../../configurations/@tags/items';
 import GoogleTag from './googleTag';
+import { CreateTags } from '@/src/lib/fetch/dashboard/actions/gtm/tags';
+import FiringTriggerComponent from '../components/firingTrigger';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -66,47 +68,12 @@ const formDataDefaults: Tag = {
     {
       type: 'template',
       key: 'tagId',
-      value: 'G-H9MLDVMFBC',
+      value: '',
     },
     {
       type: 'list',
       key: 'configSettingsTable',
-      list: [
-        {
-          type: 'map',
-          map: [
-            {
-              type: 'template',
-              key: 'parameter',
-              value: '',
-            },
-            {
-              type: 'template',
-              key: 'parameterValue',
-              value: '',
-            },
-          ],
-          key: '',
-          value: '',
-        },
-        {
-          type: 'map',
-          map: [
-            {
-              type: 'template',
-              key: 'parameter',
-              value: '',
-            },
-            {
-              type: 'template',
-              key: 'parameterValue',
-              value: '',
-            },
-          ],
-          key: '',
-          value: '',
-        },
-      ],
+      list: [],
       value: '',
     },
   ],
@@ -119,32 +86,27 @@ const formDataDefaults: Tag = {
   },
   consentSettings: {
     consentStatus: 'notSet',
-    consentType: {
-      type: 'boolean',
-      key: '',
-      value: '',
-      list: undefined,
-      map: undefined,
-      isWeakReference: undefined,
-    },
   },
   path: '',
   firingRuleId: [],
   blockingRuleId: [],
   liveOnly: false,
-  priority: null,
+  priority: {
+    type: 'integer',
+    value: '0',
+    key: ''
+  },
   notes: '',
   scheduleStartMs: 0,
   scheduleEndMs: 0,
   fingerprint: '',
   blockingTriggerId: [],
-  setupTag: [],
-  teardownTag: [],
   parentFolderId: '',
   tagManagerUrl: '',
   paused: false,
   monitoringMetadataTagNameKey: '',
 };
+
 
 const FormCreateTag: React.FC<FormCreateGTMProps> = ({ tierLimits, table = [], data }) => {
   const dispatch = useDispatch();
@@ -357,6 +319,9 @@ const FormCreateTag: React.FC<FormCreateGTMProps> = ({ tierLimits, table = [], d
     dispatch(decrementStep());
   };
 
+  console.log('forms', form.formState.errors);
+
+
   return (
     <div className="overflow-y-auto h-full">
       {currentStep === 1 ? (
@@ -398,13 +363,13 @@ const FormCreateTag: React.FC<FormCreateGTMProps> = ({ tierLimits, table = [], d
           </Form>
         </div>
       ) : (
-        <div className="flex items-center justify-center">
+        <div className="items-center justify-center">
           {fields.map(
             (field, index) =>
               currentStep === index + 2 && (
                 <div
                   key={field.id}
-                  className="max-w-full md:max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-1"
+                  className="max-w-full px-4 py-10 sm:px-6 lg:px-8 lg:py-1"
                 >
                   <div className="max-w-full mx-auto">
                     <h1>Tag {index + 1}</h1>
@@ -487,6 +452,8 @@ const FormCreateTag: React.FC<FormCreateGTMProps> = ({ tierLimits, table = [], d
                                     return <div>Unknown Trigger Type</div>;
                                 }
                               })()}
+
+                            <FiringTriggerComponent formIndex={currentStep - 2} />
 
                             <EntityComponent formIndex={currentStep - 2} entityData={data} />
                           </>

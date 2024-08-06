@@ -13,21 +13,21 @@ const ParameterType = z.enum([
 ]);
 
 const TagPrioritySchema = z.object({
-  type: ParameterType,
-  key: z.string(),
-  value: z.string(),
-  list: z.array(z.lazy(() => ParameterSchema)),
-  map: z.array(z.lazy(() => ParameterSchema)),
-  isWeakReference: z.boolean(),
+  type: ParameterType.optional(),
+  key: z.string().optional(),
+  value: z.string().optional(),
+  list: z.array(z.lazy(() => ParameterSchema)).optional(),
+  map: z.array(z.lazy(() => ParameterSchema)).optional(),
+  isWeakReference: z.boolean().optional(),
 });
 
 const ParameterSchema = z.object({
   type: ParameterType,
-  key: z.string(),
-  value: z.string(),
-  list: z.array(z.lazy(() => ParameterSchema)),
-  map: z.array(z.lazy(() => ParameterSchema)),
-  isWeakReference: z.boolean(),
+  key: z.string().optional(),
+  value: z.string().optional(),
+  list: z.array(z.lazy(() => ParameterSchema)).optional(),
+  map: z.array(z.lazy(() => ParameterSchema)).optional(),
+  isWeakReference: z.boolean().optional(),
 });
 
 const SetupTagSchema = z.object({
@@ -42,11 +42,11 @@ const TeardownTagSchema = z.object({
 
 const ConsentTypeSchema = z.object({
   type: ParameterType,
-  key: z.string(),
-  value: z.string(),
-  list: z.array(z.lazy(() => ParameterSchema)),
-  map: z.array(z.lazy(() => ParameterSchema)),
-  isWeakReference: z.boolean(),
+  key: z.string().optional(),
+  value: z.string().optional(),
+  list: z.array(z.lazy(() => ParameterSchema)).optional(),
+  map: z.array(z.lazy(() => ParameterSchema)).optional(),
+  isWeakReference: z.boolean().optional(),
 });
 
 const ConsentSettingsSchema = z.object({
@@ -56,11 +56,11 @@ const ConsentSettingsSchema = z.object({
 
 const MonitoringMetadataSchema = z.object({
   type: ParameterType,
-  key: z.string(),
-  value: z.string(),
-  list: z.array(z.lazy(() => ParameterSchema)),
-  map: z.array(z.lazy(() => ParameterSchema)),
-  isWeakReference: z.boolean(),
+  key: z.string().optional(),
+  value: z.string().optional(),
+  list: z.array(z.lazy(() => ParameterSchema)).optional(),
+  map: z.array(z.lazy(() => ParameterSchema)).optional(),
+  isWeakReference: z.boolean().optional(),
 });
 
 const TagSchema = z.object({
@@ -81,7 +81,7 @@ const TagSchema = z.object({
   parameter: z.array(ParameterSchema),
   fingerprint: z.string().optional(),
   firingTriggerId: z.array(z.string()),
-  blockingTriggerId: z.array(z.string()),
+  blockingTriggerId: z.array(z.string()).optional(),
   setupTag: z.array(SetupTagSchema).optional(),
   teardownTag: z.array(TeardownTagSchema).optional(),
   parentFolderId: z.string().optional(),

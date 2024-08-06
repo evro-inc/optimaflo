@@ -1,4 +1,4 @@
-import { listTriggers } from '@/src/lib/fetch/dashboard/actions/gtm/triggers';
+import { listTags } from "@/src/lib/fetch/dashboard/actions/gtm/tags";
 
 export const tagTypeArray = [
   { type: 'googtag', name: 'Google Tag' },
@@ -28,27 +28,35 @@ export const filterType = [
   { type: 'greaterOrEquals', name: 'greater than or equal to' },
 ];
 
-export async function fetchAllTriggers() {
+
+export const tagOptions = [
+  { type: 'oncePerEvent', name: 'Once per event' },
+  { type: 'oncePerLoad', name: 'Once per page' },
+  { type: 'unlimited', name: 'Unlimited' },
+];
+
+
+export async function fetchAllTags() {
   try {
-    const [triggers] = await Promise.all([listTriggers()]);
+    const [tags] = await Promise.all([listTags()]);
 
     // Clean and structure the data
-    const formattedTriggers = triggers.flat().map((data) => ({
+    const formattedTags = tags.flat().map((data) => ({
       name: data.name,
       type: data.type,
-      id: data.triggerId,
+      id: data.tagId,
     }));
 
-    const allTriggers = [...formattedTriggers];
+    const allTags = [...formattedTags];
 
     // Remove duplicates by type
-    const uniqueTriggers = Array.from(new Set(allTriggers.map((variable) => variable.id))).map(
+    const uniqueTags = Array.from(new Set(allTags.map((variable) => variable.id))).map(
       (id) => {
-        return allTriggers.find((t) => t.id === id);
+        return allTags.find((t) => t.id === id);
       }
     );
 
-    return uniqueTriggers;
+    return uniqueTags;
   } catch (error) {
     console.error('Error fetching variables:', error);
     return [];
