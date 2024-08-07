@@ -1,7 +1,3 @@
-/* export const CountMethodData = {
-  Once Per Event: 'ONCE_PER_EVENT',
-  Event: 'ONCE_PER_SESSION',
-}; */
 export const CountMethodData = {
   'Once Per Event': 'ONCE_PER_EVENT',
   'Once Per Session': 'ONCE_PER_SESSION',

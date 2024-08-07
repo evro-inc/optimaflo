@@ -91,7 +91,6 @@ export default async function tagsPage({
       typeName: getTagTypeName(tag.type),
     };
   });
-  console.log('combinedData', combinedData);
 
   return (
     <>

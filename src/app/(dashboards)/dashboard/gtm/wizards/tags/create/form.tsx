@@ -327,8 +327,6 @@ const FormCreateTag: React.FC<FormCreateGTMProps> = ({ tierLimits, table = [], d
     dispatch(decrementStep());
   };
 
-  console.log('forms', form.formState.errors);
-
   return (
     <div className="overflow-y-auto h-full">
       {currentStep === 1 ? (

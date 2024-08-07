@@ -18,7 +18,7 @@ import {
 } from '@/src/components/ui/form';
 
 import { Input } from '@/src/components/ui/input';
-import { FeatureResponse, Trigger } from '@/src/types/types';
+import { FeatureResponse, Tag } from '@/src/types/types';
 import { toast } from 'sonner';
 import {
   selectTable,
@@ -29,7 +29,7 @@ import {
 import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { FormsSchema } from '@/src/lib/schemas/gtm/triggers';
+import { FormsSchema } from '@/src/lib/schemas/gtm/tags';
 import {
   Select,
   SelectContent,
@@ -39,17 +39,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/src/components/ui/select';
-import { UpdateTriggers } from '@/src/lib/fetch/dashboard/actions/gtm/triggers';
-import LinkClickTrigger from '../components/linkClick';
-import VisTrigger from '../components/vis';
-import ScrollDepthTrigger from '../components/scroll';
-import YouTubeTrigger from '../components/youTube';
-import CustomEventTrigger from '../components/customEvent';
-import TimerTrigger from '../components/timer';
-import TriggerGroup from '../components/triggerGroup';
-import FiringOnTrigger from '../components/firesOnTrigger';
+import { UpdateTags } from '@/src/lib/fetch/dashboard/actions/gtm/tags';
 import EntityComponent from '../components/entity';
-import { triggerTypeArray } from '../../../configurations/@triggers/items';
+import { tagTypeArray } from '../../../configurations/@tags/items';
+import ConfigTag from '../components/configTag';
+import EventTag from '../components/eventTag';
+import FiringTriggerComponent from '../components/firingTrigger';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -67,7 +62,7 @@ const ErrorModal = dynamic(
 
 type Forms = z.infer<typeof FormsSchema>;
 
-const FormUpdateTriggers = ({ data }) => {
+const FormUpdateTags = ({ data }) => {
   const dispatch = useDispatch();
   const loading = useSelector((state: RootState) => state.form.loading);
   const error = useSelector((state: RootState) => state.form.error);
@@ -82,15 +77,50 @@ const FormUpdateTriggers = ({ data }) => {
     router.push('/dashboard/gtm/configurations');
   }
 
-  const formDataDefaults: Trigger[] = Object.values(selectedRowData).map((rowData) => ({
+  const formDataDefaults: Tag[] = Object.values(selectedRowData).map((rowData) => ({
     accountId: rowData.accountId,
     containerId: rowData.containerId,
     workspaceId: rowData.workspaceId,
-    triggerId: rowData.triggerId,
-    name: rowData.name,
-    type: rowData.type,
+    tagId: rowData.tagId || '',
+    name: rowData.name || '',
+    type: rowData.type || 'googtag',
     parameter: rowData.parameter || [],
-    formatValue: { caseConversionType: 'none' },
+    firingTriggerId: rowData.firingTriggerId || ['2147479553'], // Ensure firingTriggerId is included here
+    tagFiringOption: rowData.tagFiringOption || 'oncePerEvent',
+    monitoringMetadata: rowData.monitoringMetadata || {
+      type: 'map',
+      key: '',
+      value: '',
+    },
+    consentSettings: {
+      consentStatus: 'notSet',
+      consentType: {
+        type: 'list',
+        key: '',
+        value: '',
+        list: [],
+        map: [],
+        isWeakReference: false,
+      },
+    },
+    path: rowData.path || '',
+    firingRuleId: rowData.firingRuleId || [],
+    blockingRuleId: rowData.blockingRuleId || [],
+    liveOnly: rowData.liveOnly || false,
+    priority: rowData.priority || {
+      type: 'integer',
+      value: '0',
+      key: '',
+    },
+    notes: rowData.notes || '',
+    scheduleStartMs: rowData.scheduleStartMs ? Number(rowData.scheduleStartMs) : 0,
+    scheduleEndMs: rowData.scheduleEndMs ? Number(rowData.scheduleEndMs) : 0,
+    fingerprint: rowData.fingerprint || '',
+    blockingTriggerId: rowData.blockingTriggerId || [],
+    parentFolderId: rowData.parentFolderId || '',
+    tagManagerUrl: rowData.tagManagerUrl || '',
+    paused: rowData.paused || false,
+    monitoringMetadataTagNameKey: rowData.monitoringMetadataTagNameKey || '',
   }));
 
   if (notFoundError) {
@@ -122,11 +152,8 @@ const FormUpdateTriggers = ({ data }) => {
       form.setValue(`forms.${index}.accountId`, data.accountId);
       form.setValue(`forms.${index}.containerId`, data.containerId);
       form.setValue(`forms.${index}.workspaceId`, data.workspaceId);
-      form.setValue(`forms.${index}.triggerId`, data.triggerId);
+      form.setValue(`forms.${index}.tagId`, data.tagId);
     });
-
-    // Log the form data to the console
-    console.log('Form data:', form.getValues());
   }, [form, formDataDefaults]);
 
   const handleNext = async () => {
@@ -137,7 +164,7 @@ const FormUpdateTriggers = ({ data }) => {
       `${currentFormPath}.accountId`,
       `${currentFormPath}.containerId`,
       `${currentFormPath}.workspaceId`,
-      `${currentFormPath}.triggerId`,
+      `${currentFormPath}.tagId`,
     ];
 
     const isFormValid = await form.trigger(fieldsToValidate as any);
@@ -156,19 +183,19 @@ const FormUpdateTriggers = ({ data }) => {
 
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
-    toast('Updating triggers...', {
+    toast('Updating tags...', {
       action: {
         label: 'Close',
         onClick: () => toast.dismiss(),
       },
     });
 
-    const uniqueTriggers = new Set<string>();
+    const uniqueTags = new Set<string>();
 
     for (const form of forms) {
-      const identifier = `${form.accountId}-${form.containerId}-${form.workspaceId}-${form.triggerId}`;
-      if (uniqueTriggers.has(identifier)) {
-        toast.error(`Duplicate trigger found for ${form.name}`, {
+      const identifier = `${form.accountId}-${form.containerId}-${form.workspaceId}-${form.tagId}`;
+      if (uniqueTags.has(identifier)) {
+        toast.error(`Duplicate tag found for ${form.name}`, {
           action: {
             label: 'Close',
             onClick: () => toast.dismiss(),
@@ -177,17 +204,17 @@ const FormUpdateTriggers = ({ data }) => {
         dispatch(setLoading(false));
         return;
       }
-      uniqueTriggers.add(identifier);
+      uniqueTags.add(identifier);
     }
 
     try {
-      const res = (await UpdateTriggers({ forms })) as FeatureResponse;
+      const res = (await UpdateTags({ forms })) as FeatureResponse;
 
       if (res.success) {
         res.results.forEach((result) => {
           if (result.success) {
             toast.success(
-              `Trigger ${result.name} updated successfully. The table will update shortly.`,
+              `Tag ${result.name} updated successfully. The table will update shortly.`,
               {
                 action: {
                   label: 'Close',
@@ -291,103 +318,81 @@ const FormUpdateTriggers = ({ data }) => {
                       id={`createVar-${currentFormIndex}`}
                       className="space-y-6"
                     >
-                      <div>
-                        <FormField
-                          control={form.control}
-                          name={`forms.${currentFormIndex}.name`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Trigger Name</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="Name of Trigger"
-                                  {...form.register(`forms.${currentFormIndex}.name`)}
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                      <div>
-                        <FormField
-                          control={form.control}
-                          name={`forms.${currentFormIndex}.type`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Trigger Type</FormLabel>
-                              <FormDescription>
-                                This is the trigger type you want to create.
-                              </FormDescription>
-                              <FormControl>
-                                <Select
-                                  {...form.register(`forms.${currentFormIndex}.type`)}
-                                  {...field}
-                                  onValueChange={field.onChange}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select a trigger type." />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectGroup>
-                                      <SelectLabel>Trigger Type</SelectLabel>
-                                      {triggerTypeArray.map((trigger) => (
-                                        <SelectItem key={trigger.type} value={trigger.type}>
-                                          {trigger.name}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectGroup>
-                                  </SelectContent>
-                                </Select>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                      {selectedType &&
-                        (() => {
-                          switch (selectedType) {
-                            case 'consentInit':
-                              return null;
-                            case 'init':
-                              return null;
-                            case 'pageview':
-                              return null;
-                            case 'domReady':
-                              return null;
-                            case 'windowLoaded':
-                              return null;
-                            case 'click':
-                              return null;
-                            case 'linkClick':
-                              return <LinkClickTrigger formIndex={currentFormIndex} />;
-                            case 'elementVisibility':
-                              return <VisTrigger formIndex={currentFormIndex} />;
-                            case 'formSubmission':
-                              return <LinkClickTrigger formIndex={currentFormIndex} />;
-                            case 'scrollDepth':
-                              return <ScrollDepthTrigger formIndex={currentFormIndex} />;
-                            case 'youTubeVideo':
-                              return <YouTubeTrigger formIndex={currentFormIndex} />;
-                            case 'customEvent':
-                              return <CustomEventTrigger formIndex={currentFormIndex} />;
-                            case 'historyChange':
-                              return null;
-                            case 'jsError':
-                              return null;
-                            case 'timer':
-                              return <TimerTrigger formIndex={currentFormIndex} />;
-                            case 'triggerGroup':
-                              return <TriggerGroup formIndex={currentFormIndex} table={data} />;
-                            default:
-                              return <div>Unknown Trigger Type</div>;
-                          }
-                        })()}
+                      <>
+                        <div>
+                          <FormField
+                            control={form.control}
+                            name={`forms.${currentFormIndex}.name`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Tag Name</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    placeholder="Name of Tag"
+                                    {...form.register(`forms.${currentFormIndex}.name`)}
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        <div>
+                          <FormField
+                            control={form.control}
+                            name={`forms.${currentFormIndex}.type`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Tag Type</FormLabel>
+                                <FormDescription>
+                                  This is the tag type you want to create.
+                                </FormDescription>
+                                <FormControl>
+                                  <Select
+                                    {...form.register(`forms.${currentFormIndex}.type`)}
+                                    {...field}
+                                    onValueChange={field.onChange}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select a tag type." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectGroup>
+                                        <SelectLabel>Tag Type</SelectLabel>
+                                        {tagTypeArray.map((trigger) => (
+                                          <SelectItem key={trigger.type} value={trigger.type}>
+                                            {trigger.name}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectGroup>
+                                    </SelectContent>
+                                  </Select>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
 
-                      <FiringOnTrigger formIndex={currentFormIndex} />
+                        {selectedType &&
+                          (() => {
+                            switch (selectedType) {
+                              case 'googtag':
+                                return <ConfigTag formIndex={currentFormIndex} table={data} />;
+                              case 'gaawe':
+                                return <EventTag formIndex={currentFormIndex} table={data} />;
+                              case 'html':
+                                return null;
+                              case 'gclidw':
+                                return null;
+                              default:
+                                return <div>Unknown Trigger Type</div>;
+                            }
+                          })()}
 
+                        <FiringTriggerComponent formIndex={currentFormIndex} />
+                      </>
                       <div className="flex justify-between">
                         <Button type="button" onClick={handlePrevious}>
                           Previous
@@ -415,4 +420,4 @@ const FormUpdateTriggers = ({ data }) => {
   );
 };
 
-export default FormUpdateTriggers;
+export default FormUpdateTags;

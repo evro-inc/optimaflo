@@ -508,8 +508,6 @@ export async function CreateTriggers(formData: TriggerType) {
 
                 const validationResult = FormsSchema.safeParse(formDataToValidate);
 
-                console.log('formDataToValidate', JSON.stringify(formDataToValidate, null, 2));
-
                 if (!validationResult.success) {
                   let errorMessage = validationResult.error.issues
                     .map((issue) => `${issue.path[0]}: ${issue.message}`)

@@ -40,12 +40,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/src/components/ui/select';
-import { Switch } from '@/src/components/ui/switch';
-import { Label } from '@/src/components/ui/label';
-import { CountMethodData, Currencies } from '../../../properties/@keyEvents/items';
-import { Checkbox } from '@/src/components/ui/checkbox';
-import { Separator } from '@/src/components/ui/separator';
 import { RadioGroup, RadioGroupItem } from '@/src/components/ui/radio-group';
+import { CountMethodData, Currencies } from '../../../../ga/properties/@keyEvents/items';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -85,9 +81,9 @@ const FormUpdateKeyEvents = () => {
     countingMethod: rowData.countingMethod ?? CountingMethod.UNSPECIFIED,
     defaultValue: rowData.defaultValue
       ? {
-          numericValue: rowData.defaultValue.numericValue ?? undefined,
-          currencyCode: rowData.defaultValue.currencyCode ?? undefined,
-        }
+        numericValue: rowData.defaultValue.numericValue ?? undefined,
+        currencyCode: rowData.defaultValue.currencyCode ?? undefined,
+      }
       : undefined,
     includeDefaultValue:
       rowData.defaultValue?.numericValue !== undefined ||
@@ -95,7 +91,7 @@ const FormUpdateKeyEvents = () => {
   }));
 
   if (notFoundError) {
-    return <NotFoundErrorModal />;
+    return <NotFoundErrorModal onClose={undefined} />;
   }
   if (error) {
     return <ErrorModal />;

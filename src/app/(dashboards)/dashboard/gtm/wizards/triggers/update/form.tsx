@@ -124,9 +124,6 @@ const FormUpdateTriggers = ({ data }) => {
       form.setValue(`forms.${index}.workspaceId`, data.workspaceId);
       form.setValue(`forms.${index}.triggerId`, data.triggerId);
     });
-
-    // Log the form data to the console
-    console.log('Form data:', form.getValues());
   }, [form, formDataDefaults]);
 
   const handleNext = async () => {

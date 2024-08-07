@@ -51,7 +51,7 @@ const ConsentTypeSchema = z.object({
 
 const ConsentSettingsSchema = z.object({
   consentStatus: z.enum(['needed', 'notNeeded', 'notSet']),
-  consentType: ConsentTypeSchema,
+  consentType: ConsentTypeSchema.optional(),
 });
 
 const MonitoringMetadataSchema = z.object({

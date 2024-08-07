@@ -80,8 +80,6 @@ const EventTag = ({ formIndex, table = [] }: Props) => {
   const [timeZone, setTimeZone] = useState<number>(0);
   const [includeUserData, setIncludeUserData] = useState(false);
 
-  console.log('cachedTag', cachedTag);
-
   const { control, register, setValue } = useFormContext();
   const { fields, append, remove } = useFieldArray({
     control,
@@ -165,9 +163,6 @@ const EventTag = ({ formIndex, table = [] }: Props) => {
     )}.value`,
   });
 
-  console.log('getEcommerceDataFrom', getEcommerceDataFrom);
-  console.log('allVar', allVar);
-
   useEffect(() => {
     const fetchAllVariableData = async () => {
       try {
@@ -232,9 +227,6 @@ const EventTag = ({ formIndex, table = [] }: Props) => {
 
     fetchAllTagData();
   }, []);
-
-  console.log('userDataTag', userDataTag);
-  console.log('eventSettingVar', eventSettingVar);
 
   useEffect(() => {
     if (fields.length === 0) {

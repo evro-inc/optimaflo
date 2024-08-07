@@ -148,9 +148,6 @@ const FormUpdateVariables = (data) => {
       form.setValue(`forms.${index}.workspaceId`, data.workspaceId);
       form.setValue(`forms.${index}.variableId`, data.variableId);
     });
-
-    // Log the form data to the console
-    console.log('Form data:', form.getValues());
   }, [form, formDataDefaults]);
 
   const handleNext = async () => {
