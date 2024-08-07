@@ -60,7 +60,7 @@ const timeZoneOptions = [
   { label: 'GMT+12', value: 12 },
 ];
 
-const GoogleTag = ({ formIndex, table = [] }: Props) => {
+const ConfigTag = ({ formIndex, table = [] }: Props) => {
   const [cachedConfigTag, setCachedConfigTags] = useState<any[]>([]);
   const [cachedEventTag, setCachedEventTags] = useState<any[]>([]);
   const [cachedTag, setCachedTags] = useState<any[]>([]);
@@ -73,8 +73,6 @@ const GoogleTag = ({ formIndex, table = [] }: Props) => {
   const [timeZone, setTimeZone] = useState<number>(0);
   const [includeSetupTag, setIncludeSetupTag] = useState(false);
   const [includeTeardownTag, setIncludeTeardownTag] = useState(false);
-
-  console.log('cachedTag', cachedTag);
 
   const { control, register, setValue } = useFormContext();
   const { fields, append, remove } = useFieldArray({
@@ -957,12 +955,6 @@ const GoogleTag = ({ formIndex, table = [] }: Props) => {
                           />
                         </React.Fragment>
                       ))}
-                    <Button
-                      type="button"
-                      onClick={() => appendTeardownTag({ tagName: '', stopOnSetupFailure: false })}
-                    >
-                      Add Teardown Tag
-                    </Button>
                   </AccordionContent>
                 </AccordionItem>
 
@@ -1155,4 +1147,4 @@ const GoogleTag = ({ formIndex, table = [] }: Props) => {
   );
 };
 
-export default GoogleTag;
+export default ConfigTag;

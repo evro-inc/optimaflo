@@ -70,6 +70,7 @@ export default async function tagsPage({
     const containerName = containers ? containers.name : 'Container Name Unknown';
     const workspaceName = workspaces ? workspaces.name : 'Workspace Name Unknown';
 
+    // showing published for all tags
     const isPublished = statusDataFlat.find(
       (p) =>
         p.tags &&

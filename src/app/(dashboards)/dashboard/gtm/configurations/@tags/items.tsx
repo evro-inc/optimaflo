@@ -3,8 +3,13 @@ import { listTags } from '@/src/lib/fetch/dashboard/actions/gtm/tags';
 export const tagTypeArray = [
   { type: 'googtag', name: 'Google Tag' },
   { type: 'gaawe', name: 'Google Analytic 4: GA4 Event' },
-  { type: 'html', name: 'Custom HTML' },
-  { type: 'gclidw', name: 'Google Conversion Linker' },
+  /*   { type: 'html', name: 'Custom HTML' },
+    { type: 'gclidw', name: 'Google Conversion Linker' }, */
+];
+
+export const eCommValuesArray = [
+  { type: 'dataLayer', name: 'Data Layer' },
+  { type: 'customObject', name: 'Custom Object' },
 ];
 
 export const filterType = [

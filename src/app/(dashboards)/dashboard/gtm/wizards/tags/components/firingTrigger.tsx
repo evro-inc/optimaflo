@@ -11,6 +11,7 @@ import {
 } from '@/src/components/ui/select';
 import { Button } from '@/src/components/ui/button';
 import { fetchAllTriggers } from '../../../configurations/@triggers/items';
+import { MinusIcon } from '@radix-ui/react-icons';
 
 interface Props {
   formIndex: number;
@@ -62,87 +63,92 @@ const FiringTriggerComponent = ({ formIndex, table = [] }: Props) => {
 
   return (
     <form className="space-y-4">
-      {firingField.map((item: any, index: number) => (
-        <div className="grid grid-cols-2 gap-4" key={item.id}>
-          <FormField
-            control={control}
-            name={`forms.${formIndex}.firingTriggerId.${index}`}
-            render={({ field }) => (
-              <FormItem className="flex items-center space-x-2">
-                <FormLabel>Firing Trigger</FormLabel>
-                <FormControl>
-                  <Select
-                    value={field.value}
-                    onValueChange={(value) => handleSelectChange(field, value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Trigger" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectItem value="None">None</SelectItem>
-                        {cachedTriggers.map((tag) => (
-                          <SelectItem key={tag.id} value={tag.id}>
-                            {tag.name}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <Button type="button" onClick={() => firingRemove(index)}>
-            Remove
-          </Button>
-        </div>
-      ))}
-      <Button type="button" className="mt-5" onClick={() => firingAppend({})}>
-        Add Firing Trigger
-      </Button>
+      <div>
+        {firingField.map((item: any, index: number) => (
+          <div className="grid grid-cols-2 gap-4" key={item.id}>
+            <FormField
+              control={control}
+              name={`forms.${formIndex}.firingTriggerId.${index}`}
+              render={({ field }) => (
+                <FormItem className="flex items-center space-x-2">
+                  <FormLabel>Firing Trigger</FormLabel>
+                  <FormControl>
+                    <Select
+                      value={field.value}
+                      onValueChange={(value) => handleSelectChange(field, value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Trigger" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem value="None">None</SelectItem>
+                          {cachedTriggers.map((tag) => (
+                            <SelectItem key={tag.id} value={tag.id}>
+                              {tag.name}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-      {blockingField.map((item: any, index: number) => (
-        <div className="grid grid-cols-2 gap-4" key={item.id}>
-          <FormField
-            control={control}
-            name={`forms.${formIndex}.blockingTriggerId.${index}`}
-            render={({ field }) => (
-              <FormItem className="flex items-center space-x-2">
-                <FormLabel>Blocking Trigger</FormLabel>
-                <FormControl>
-                  <Select
-                    value={field.value}
-                    onValueChange={(value) => handleSelectChange(field, value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Trigger" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectItem value="None">None</SelectItem>
-                        {cachedTriggers.map((tag) => (
-                          <SelectItem key={tag.id} value={tag.id}>
-                            {tag.name}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <Button type="button" onClick={() => blockingRemove(index)}>
-            Remove
-          </Button>
-        </div>
-      ))}
-      <Button type="button" className="mt-5" onClick={() => blockingAppend({})}>
-        Add Blocking Trigger
-      </Button>
+            <Button className="mt-2" type="button" onClick={() => firingRemove(index)}>
+              <MinusIcon />
+            </Button>
+          </div>
+        ))}
+        <Button type="button" className="mt-5" onClick={() => firingAppend({})}>
+          Add Firing Trigger
+        </Button>
+      </div>
+
+      <div>
+        {blockingField.map((item: any, index: number) => (
+          <div className="grid grid-cols-2 gap-4" key={item.id}>
+            <FormField
+              control={control}
+              name={`forms.${formIndex}.blockingTriggerId.${index}`}
+              render={({ field }) => (
+                <FormItem className="flex items-center space-x-2">
+                  <FormLabel>Blocking Trigger</FormLabel>
+                  <FormControl>
+                    <Select
+                      value={field.value}
+                      onValueChange={(value) => handleSelectChange(field, value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Trigger" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem value="None">None</SelectItem>
+                          {cachedTriggers.map((tag) => (
+                            <SelectItem key={tag.id} value={tag.id}>
+                              {tag.name}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <Button type="button" onClick={() => blockingRemove(index)}>
+              Remove
+            </Button>
+          </div>
+        ))}
+        <Button type="button" className="mt-5" onClick={() => blockingAppend({})}>
+          Add Blocking Trigger
+        </Button>
+      </div>
     </form>
   );
 };

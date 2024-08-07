@@ -39,9 +39,10 @@ import dynamic from 'next/dynamic';
 import { Input } from '@/src/components/ui/input';
 import EntityComponent from '../components/entity';
 import { tagTypeArray } from '../../../configurations/@tags/items';
-import GoogleTag from './googleTag';
+import ConfigTag from '../components/configTag';
 import { CreateTags } from '@/src/lib/fetch/dashboard/actions/gtm/tags';
 import FiringTriggerComponent from '../components/firingTrigger';
+import EventTag from '../components/eventTag';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -444,9 +445,9 @@ const FormCreateTag: React.FC<FormCreateGTMProps> = ({ tierLimits, table = [], d
                               (() => {
                                 switch (selectedType) {
                                   case 'googtag':
-                                    return <GoogleTag formIndex={currentStep - 2} table={table} />;
+                                    return <ConfigTag formIndex={currentStep - 2} table={table} />;
                                   case 'gaawe':
-                                    return null;
+                                    return <EventTag formIndex={currentStep - 2} table={table} />;
                                   case 'html':
                                     return null;
                                   case 'gclidw':
