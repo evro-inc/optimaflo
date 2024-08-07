@@ -418,6 +418,7 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
     // Step 2: Upsert tier limits
     const featureLimits = createFeatureLimitsByTier[productId];
 
+
     if (!featureLimits) {
       return;
     }

@@ -94,6 +94,12 @@ export default function PricingCards({ products = [] }: Props) {
           onClick: () => toast.dismiss(),
         },
       });
+      toast.error(error.message, {
+        action: {
+          label: 'Close',
+          onClick: () => toast.dismiss(),
+        },
+      });
     } finally {
       setPriceIdLoading(undefined);
     }
