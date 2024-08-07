@@ -24,7 +24,7 @@ type Schema = z.infer<typeof FormSchema>;
 /************************************************************************************
   Function to list GTM containers
 ************************************************************************************/
-export async function listGtmContainers() {
+export async function listGtmContainers(skipCache = false) {
   let retries = 0;
   const MAX_RETRIES = 3;
   let delay = 1000;
@@ -38,10 +38,12 @@ export async function listGtmContainers() {
   const accessToken = token[0].token;
 
   const cacheKey = `gtm:containers:userId:${userId}`;
-  const cachedValue = await redis.get(cacheKey);
 
-  if (cachedValue) {
-    return JSON.parse(cachedValue);
+  if (skipCache == false) {
+    const cacheData = await redis.get(cacheKey);
+    if (cacheData) {
+      return JSON.parse(cacheData);
+    }
   }
 
   await fetchGtmSettings(userId);
@@ -85,7 +87,14 @@ export async function listGtmContainers() {
 
               allData.push(responseBody.container || []);
             } catch (error: any) {
-              throw new Error(`Error fetching data: ${error.message}`);
+              if (error.code === 429 || error.status === 429) {
+                const jitter = Math.random() * 300;
+                await new Promise((resolve) => setTimeout(resolve, delay + jitter));
+                delay *= 2;
+                retries++;
+              } else {
+                throw new Error(`Error fetching data: ${error.message}`);
+              }
             }
           }
         });
@@ -307,7 +316,7 @@ export async function DeleteContainers(
           // Otherwise, just invalidate cache for the single account
           const cacheKey = `gtm:containers:userId:${userId}`;
           await redis.del(cacheKey);
-          await revalidatePath(`/dashboard/gtm/containers`);
+          await revalidatePath(`/dashboard/gtm/entities`);
         }
       }
     }
@@ -342,7 +351,7 @@ export async function DeleteContainers(
     // Update the Redis cache
     await redis.del(cacheKey);
     // Revalidate paths if needed
-    revalidatePath(`/dashboard/gtm/containers`);
+    revalidatePath(`/dashboard/gtm/entities`);
   }
 
   // Returning the result of the deletion process
@@ -613,7 +622,7 @@ export async function CreateContainers(formData: Schema) {
         if (userId) {
           const cacheKey = `gtm:containers:userId:${userId}`;
           await redis.del(cacheKey);
-          await revalidatePath(`/dashboard/gtm/containers`);
+          await revalidatePath(`/dashboard/gtm/entities`);
         }
       }
     }
@@ -645,7 +654,7 @@ export async function CreateContainers(formData: Schema) {
     const cacheKey = `gtm:containers:userId:${userId}`;
 
     await redis.del(cacheKey);
-    revalidatePath(`/dashboard/gtm/containers`);
+    revalidatePath(`/dashboard/gtm/entities`);
   }
 
   // Map over formData.forms to create the results array
@@ -872,7 +881,7 @@ export async function UpdateContainers(formData: Schema) {
 
           const cacheKey = `gtm:containers:userId:${userId}`;
           await redis.del(cacheKey);
-          await revalidatePath(`/dashboard/gtm/containers`);
+          await revalidatePath(`/dashboard/gtm/entities`);
 
           if (notFoundLimit.length > 0) {
             return {
@@ -932,7 +941,7 @@ export async function UpdateContainers(formData: Schema) {
         // This block will run regardless of the outcome of the try...catch
         if (accountIdsForCache && userId) {
           await redis.del(`gtm:containers:accountId:${accountIdsForCache}:userId:${userId}`);
-          await revalidatePath(`/dashboard/gtm/containers`);
+          await revalidatePath(`/dashboard/gtm/entities`);
         }
       }
     }
@@ -962,7 +971,7 @@ export async function UpdateContainers(formData: Schema) {
 
   if (successfulUpdates.length > 0) {
     await redis.del(`gtm:containers:accountId:${accountIdsForCache}:userId:${userId}`);
-    revalidatePath(`/dashboard/gtm/containers`);
+    revalidatePath(`/dashboard/gtm/entities`);
   }
 
   // Map over formData.forms to update the results array

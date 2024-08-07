@@ -143,20 +143,10 @@ export async function handleApiResponseError(
 ) {
   switch (response.status) {
     case 400:
-      if (
-        parsedResponse.error &&
-        parsedResponse.error.message.includes('Returned an error response for your request')
-      ) {
-        return {
-          success: false,
-          errorCode: 400,
-          message: `${feature} was not created. Please try again. Make sure you're not creating a duplicate ${feature}.`,
-        };
-      }
       return {
         success: false,
         errorCode: 400,
-        message: parsedResponse.error.message,
+        message: `${feature} ${names} was not created. ${parsedResponse.error.message}`,
       };
 
     case 404:
@@ -286,26 +276,55 @@ export async function fetchPages<T>(
   return totalPages;
 }
 
-export async function revalidate(keys, path, userId) {
-  const pipeline = redis.pipeline();
+export async function revalidate(keys: string[], path: string, userId: string) {
+  try {
+    const pipeline = redis.pipeline();
 
-  const user = await prisma.user.findFirst({
-    where: {
-      id: userId,
-    },
-  });
+    const user = await prisma.user.findFirst({
+      where: { id: userId },
+    });
 
-  if (!user) {
-    notFound();
+    if (!user) {
+      notFound();
+    }
+
+    await fetchGtmSettings(userId);
+    await fetchGASettings(userId);
+
+    keys.forEach((key) => pipeline.del(key));
+
+    await pipeline.exec(); // Execute all queued commands in a batch
+    await revalidatePath(path);
+  } catch (error) {
+    console.error('Error during revalidation:', error);
+    throw new Error('Revalidation failed');
   }
-
-  await fetchGtmSettings(userId);
-  await fetchGASettings(userId);
-
-  for (const key of keys) {
-    pipeline.del(key);
-  }
-
-  await pipeline.exec(); // Execute all queued commands in a batch
-  await revalidatePath(path);
 }
+
+export const fetchWithRetry = async (url: string, headers: any, retries = 0): Promise<any> => {
+  const MAX_RETRIES = 20;
+  const INITIAL_DELAY = 1500;
+  let delay = INITIAL_DELAY;
+
+  try {
+    const response = await fetch(url, { headers });
+    if (response.status === 429 && retries < MAX_RETRIES) {
+      const jitter = Math.random() * 200;
+      await new Promise((resolve) => setTimeout(resolve, delay + jitter));
+      delay = Math.min(delay * 2, 30000); // Cap delay at 16 seconds
+      return fetchWithRetry(url, retries + 1);
+    } else if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    if (retries < MAX_RETRIES) {
+      const jitter = Math.random() * 200;
+      await new Promise((resolve) => setTimeout(resolve, delay + jitter));
+      delay = Math.min(delay * 2, 30000); // Cap delay at 16 seconds
+      return fetchWithRetry(url, retries + 1);
+    } else {
+      throw error;
+    }
+  }
+};

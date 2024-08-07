@@ -1,15 +1,12 @@
-'use client';
-
 import React from 'react';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { Alert, AlertTitle, AlertDescription } from '@/src/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table';
-
 import { useDispatch, useSelector } from 'react-redux';
 import { Button } from '../../ui/button';
 import { setNotFoundError } from '@/src/redux/tableSlice';
 
-export function NotFoundError() {
+export function NotFoundError({ onClose }) {
   // Use a selector to get the error details from the store
   const errorDetails = useSelector((state: any) => state.table.errorDetails);
 
@@ -18,10 +15,12 @@ export function NotFoundError() {
 
   const dispatch = useDispatch();
 
-  const onClose = () => {
+  const handleClose = () => {
     // Clear the error details from the store
     dispatch(setNotFoundError(false));
+    onClose(); // Call the onClose prop function
   };
+
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
       {/* Overlay */}
@@ -31,19 +30,25 @@ export function NotFoundError() {
           <ExclamationTriangleIcon className="h-6 w-6 text-red-600" />
           <AlertTitle>Not Found</AlertTitle>
           <AlertDescription className="text-center">
-            Check if you have access to this account or container. If you do, please contact the
-            team that manages access to your GTM account(s) or container(s).
+            Check if you have access to this feature. If you do, please contact the team that
+            manages access to your GTM and your GA4 data flows.
             {hasErrorDetails ? (
               <Table className="mt-5 mb-5">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-left"> Name</TableHead>
+                    {errorDetails.some((errorItem) => errorItem.name === 'Unknown') ? (
+                      <TableHead className="text-left">Message</TableHead>
+                    ) : (
+                      <TableHead className="text-left">Name</TableHead>
+                    )}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {errorDetails.map((errorItem) => (
                     <TableRow key={errorItem.id}>
-                      <TableCell className="text-left">{errorItem.name}</TableCell>
+                      <TableCell className="text-left">
+                        {errorItem.name === 'Unknown' ? errorItem.message : errorItem.name}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -52,9 +57,8 @@ export function NotFoundError() {
               <p>No specific details available.</p>
             )}
           </AlertDescription>
-
-          {/*  Close button */}
-          <Button className="mt-5" type="button" onClick={onClose}>
+          {/* Close button */}
+          <Button className="mt-5" type="button" onClick={handleClose}>
             Close
           </Button>
         </div>

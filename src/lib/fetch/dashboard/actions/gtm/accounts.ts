@@ -18,7 +18,7 @@ type FormUpdateSchema = z.infer<typeof FormsSchema>;
 /************************************************************************************
  * List All Google Tag Manager Accounts
  ************************************************************************************/
-export async function listGtmAccounts() {
+export async function listGtmAccounts(skipCache = false) {
   // Initialization of retry mechanism
   let retries = 0;
   const MAX_RETRIES = 3;
@@ -34,10 +34,12 @@ export async function listGtmAccounts() {
 
   const cacheKey = `gtm:accounts:userId:${userId}`;
 
-  const cachedValue = await redis.get(cacheKey);
+  if (skipCache == false) {
+    const cachedValue = await redis.get(cacheKey);
 
-  if (cachedValue) {
-    return JSON.parse(cachedValue);
+    if (cachedValue) {
+      return JSON.parse(cachedValue);
+    }
   }
 
   // Loop for retry mechanism
@@ -245,7 +247,7 @@ export async function updateAccounts(
           await redis.set(cacheKey, JSON.stringify(updatedAccounts), 'EX', 60 * 60 * 2);
 
           // Revalidating the path to update the cached data
-          const path = `/dashboard/gtm/accounts`;
+          const path = `/dashboard/gtm/entities`;
           revalidatePath(path);
 
           // Returning success with the updated workspaces

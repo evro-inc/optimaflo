@@ -1,5 +1,4 @@
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager';
-import { boolean } from 'joi';
 import Stripe from 'stripe';
 
 export interface PageMeta {
@@ -208,6 +207,7 @@ export type FormCreateProps = {
   table: any;
   accounts?: any;
   properties?: any;
+  containers?: any;
   tierLimits?: any;
   dimensions?: any;
   metrics?: any;
@@ -238,6 +238,7 @@ export interface FeatureResult {
   remaining?: number;
   message?: string;
   errors?: string[];
+  response?: any;
 }
 
 export interface FeatureResponse {
@@ -251,25 +252,6 @@ export interface FeatureResponse {
   notFoundError?: boolean;
   revalidationSuccess?: boolean;
 }
-export type GTMAccountType = {
-  accountId: string;
-  name: string;
-};
-
-export type Container = {
-  accountId: string;
-  containerId: string;
-  name: string;
-  publicId: string;
-  usageContext: string[];
-};
-
-export type Workspace = {
-  accountId: string;
-  containerId: string;
-  workspaceId: string;
-  name: string;
-};
 
 export type GA4AccountType = {
   name: string;
@@ -693,3 +675,669 @@ export interface KeyEventType {
   name?: string;
   includeDefaultValue: boolean;
 }
+
+/*********************************************************
+ GTM 
+ *********************************************************/
+export type GTMAccountType = {
+  accountId: string;
+  name: string;
+};
+
+export type Container = {
+  accountId: string;
+  containerId: string;
+  name: string;
+  publicId: string;
+  usageContext: string[];
+};
+
+export type Workspace = {
+  accountId: string;
+  containerId: string;
+  workspaceId: string;
+  name: string;
+};
+
+export type FormCreateGTMProps = {
+  showOptions?: boolean;
+  onClose?: () => void;
+  tierLimits?: any;
+  table: any;
+  accounts?: any;
+  properties?: any;
+  containers?: any;
+  workspaces?: any;
+  data?: any;
+};
+
+type ParameterType =
+  | 'boolean'
+  | 'integer'
+  | 'list'
+  | 'map'
+  | 'tagReference'
+  | 'template'
+  | 'triggerReference'
+  | 'typeUnspecified';
+
+// Parameter Interface
+interface Parameter {
+  type: ParameterType;
+  key: string;
+  value: string;
+  list?: Parameter[];
+  map?: Parameter[];
+  isWeakReference?: boolean;
+}
+
+/*********************************************************
+ GTM Built-In Variables
+ *********************************************************/
+// Query parameters
+export type BuiltInVariableType =
+  | 'advertiserId'
+  | 'advertisingTrackingEnabled'
+  | 'ampBrowserLanguage'
+  | 'ampCanonicalHost'
+  | 'ampCanonicalPath'
+  | 'ampCanonicalUrl'
+  | 'ampClientId'
+  | 'ampClientMaxScrollX'
+  | 'ampClientMaxScrollY'
+  | 'ampClientScreenHeight'
+  | 'ampClientScreenWidth'
+  | 'ampClientScrollX'
+  | 'ampClientScrollY'
+  | 'ampClientTimestamp'
+  | 'ampClientTimezone'
+  | 'ampGtmEvent'
+  | 'ampPageDownloadTime'
+  | 'ampPageLoadTime'
+  | 'ampPageViewId'
+  | 'ampReferrer'
+  | 'ampTitle'
+  | 'ampTotalEngagedTime'
+  | 'appId'
+  | 'appName'
+  | 'appVersionCode'
+  | 'appVersionName'
+  | 'builtInVariableTypeUnspecified'
+  | 'clickClasses'
+  | 'clickElement'
+  | 'clickId'
+  | 'clickTarget'
+  | 'clickText'
+  | 'clickUrl'
+  | 'clientName'
+  | 'containerId'
+  | 'containerVersion'
+  | 'debugMode'
+  | 'deviceName'
+  | 'elementVisibilityFirstTime'
+  | 'elementVisibilityRatio'
+  | 'elementVisibilityRecentTime'
+  | 'elementVisibilityTime'
+  | 'environmentName'
+  | 'errorLine'
+  | 'errorMessage'
+  | 'errorUrl'
+  | 'event'
+  | 'eventName'
+  | 'firebaseEventParameterCampaign'
+  | 'firebaseEventParameterCampaignAclid'
+  | 'firebaseEventParameterCampaignAnid'
+  | 'firebaseEventParameterCampaignClickTimestamp'
+  | 'firebaseEventParameterCampaignContent'
+  | 'firebaseEventParameterCampaignCp1'
+  | 'firebaseEventParameterCampaignGclid'
+  | 'firebaseEventParameterCampaignSource'
+  | 'firebaseEventParameterCampaignTerm'
+  | 'firebaseEventParameterCurrency'
+  | 'firebaseEventParameterDynamicLinkAcceptTime'
+  | 'firebaseEventParameterDynamicLinkLinkid'
+  | 'firebaseEventParameterNotificationMessageDeviceTime'
+  | 'firebaseEventParameterNotificationMessageId'
+  | 'firebaseEventParameterNotificationMessageName'
+  | 'firebaseEventParameterNotificationMessageTime'
+  | 'firebaseEventParameterNotificationTopic'
+  | 'firebaseEventParameterPreviousAppVersion'
+  | 'firebaseEventParameterPreviousOsVersion'
+  | 'firebaseEventParameterPrice'
+  | 'firebaseEventParameterProductId'
+  | 'firebaseEventParameterQuantity'
+  | 'firebaseEventParameterValue'
+  | 'firstPartyServingUrl'
+  | 'formClasses'
+  | 'formElement'
+  | 'formId'
+  | 'formTarget'
+  | 'formText'
+  | 'formUrl'
+  | 'historySource'
+  | 'htmlId'
+  | 'language'
+  | 'newHistoryFragment'
+  | 'newHistoryState'
+  | 'newHistoryUrl'
+  | 'oldHistoryFragment'
+  | 'oldHistoryState'
+  | 'oldHistoryUrl'
+  | 'osVersion'
+  | 'pageHostname'
+  | 'pagePath'
+  | 'pageUrl'
+  | 'platform'
+  | 'queryString'
+  | 'randomNumber'
+  | 'referrer'
+  | 'requestMethod'
+  | 'requestPath'
+  | 'resolution'
+  | 'scrollDepthDirection'
+  | 'scrollDepthThreshold'
+  | 'scrollDepthUnits'
+  | 'sdkVersion'
+  | 'serverPageLocationHostname'
+  | 'serverPageLocationPath'
+  | 'serverPageLocationUrl'
+  | 'videoCurrentTime'
+  | 'videoDuration'
+  | 'videoPercent'
+  | 'videoProvider'
+  | 'videoStatus'
+  | 'videoTitle'
+  | 'videoUrl'
+  | 'videoVisible'
+  | 'visitorRegion';
+
+export interface QueryParameters {
+  type: BuiltInVariableType[];
+  entity: string[];
+}
+
+// Built-In Variable
+export interface BuiltInVariable {
+  path: string; // GTM BuiltInVariable's API relative path
+  accountId: string; // GTM Account ID
+  containerId: string; // GTM Container ID
+  workspaceId: string; // GTM Workspace ID
+  type: BuiltInVariableType; // Type of built-in variable
+  name: string; // Name of the built-in variable
+}
+
+/*********************************************************
+ GTM Container Version Interface
+ *********************************************************/
+
+export interface GTMContainerVersion {
+  path: string;
+  accountId: string;
+  containerId: string;
+  containerVersionId: string;
+  name: string;
+  deleted: boolean;
+  description: string;
+  container: Container;
+  tag: Tag[];
+  trigger: Trigger[];
+  variable: Variable[];
+  folder: Folder[];
+  builtInVariable: BuiltInVariable[];
+  fingerprint: string;
+  tagManagerUrl: string;
+  zone: Zone[];
+  customTemplate: CustomTemplate[];
+  client: Client[];
+  gtagConfig: GtagConfig[];
+  transformation: Transformation[];
+}
+
+/*********************************************************
+ GTM Tags
+ *********************************************************/
+
+// Priority Interface
+interface Priority {
+  type: string;
+  key: string;
+  value: string;
+  list?: Parameter[];
+  map?: Parameter[];
+  isWeakReference?: boolean;
+}
+
+// Setup Tag Interface
+interface SetupTag {
+  tagName: string;
+  stopOnSetupFailure: boolean;
+}
+
+// Teardown Tag Interface
+interface TeardownTag {
+  tagName: string;
+  stopTeardownOnFailure: boolean;
+}
+
+// Monitoring Metadata Interface
+interface MonitoringMetadata {
+  type: string;
+  key: string;
+  value: string;
+  list?: Parameter[];
+  map?: Parameter[];
+  isWeakReference?: boolean;
+}
+
+// Consent Settings Interface
+interface ConsentSettings {
+  consentStatus: 'needed' | 'notNeeded' | 'notSet';
+  consentType?: {
+    type: ParameterType;
+    key: string;
+    value: string;
+    list?: Parameter[];
+    map?: Parameter[];
+    isWeakReference?: boolean;
+  };
+}
+
+export interface Tag {
+  path: string;
+  accountId: string;
+  containerId: string;
+  workspaceId: string;
+  tagId: string;
+  name: string;
+  type: string;
+  firingRuleId: string[];
+  blockingRuleId: string[];
+  liveOnly: boolean;
+  priority: Priority;
+  notes: string;
+  scheduleStartMs: number;
+  scheduleEndMs: number;
+  parameter: Parameter[];
+  fingerprint: string;
+  firingTriggerId: string[];
+  blockingTriggerId?: string[];
+  setupTag?: SetupTag[];
+  teardownTag?: TeardownTag[];
+  parentFolderId: string;
+  tagFiringOption: 'oncePerEvent' | 'oncePerLoad' | 'tagFiringOptionUnspecified' | 'unlimited';
+  tagManagerUrl: string;
+  paused: boolean;
+  monitoringMetadata: MonitoringMetadata;
+  monitoringMetadataTagNameKey: string;
+  consentSettings: ConsentSettings;
+}
+
+/*********************************************************
+ GTM Triggers
+ *********************************************************/
+
+interface Filter {
+  type: string;
+  parameter: Parameter[];
+}
+
+interface WaitForTags {
+  type: string;
+  key: string;
+  value: string;
+  list?: Parameter[];
+  map?: Parameter[];
+  isWeakReference?: boolean;
+}
+
+interface CheckValidation {
+  type: string;
+  key: string;
+  value: string;
+  list?: Parameter[];
+  map?: Parameter[];
+  isWeakReference?: boolean;
+}
+
+interface TimeParameter {
+  type: string;
+  key: string;
+  value: string;
+  list?: Parameter[];
+  map?: Parameter[];
+  isWeakReference?: boolean;
+}
+
+interface UniqueTriggerId {
+  type: string;
+  key: string;
+  value: string;
+  list?: Parameter[];
+  map?: Parameter[];
+  isWeakReference?: boolean;
+}
+
+interface Selector {
+  type: string;
+  key: string;
+  value: string;
+  list?: Parameter[];
+  map?: Parameter[];
+  isWeakReference?: boolean;
+}
+
+export interface Trigger {
+  accountId: string;
+  containerId: string;
+  workspaceId: string;
+  triggerId: string;
+  name: string;
+  type: string;
+  customEventFilter?: Filter[];
+  filter?: Filter[];
+  autoEventFilter?: Filter[];
+  waitForTags?: WaitForTags;
+  checkValidation?: CheckValidation;
+  waitForTagsTimeout?: TimeParameter;
+  uniqueTriggerId?: UniqueTriggerId;
+  eventName?: Parameter;
+  interval?: TimeParameter;
+  limit?: TimeParameter;
+  fingerprint?: string;
+  parentFolderId?: string;
+  selector?: Selector;
+  intervalSeconds?: TimeParameter;
+  maxTimerLengthSeconds?: TimeParameter;
+  verticalScrollPercentageList?: Parameter;
+  horizontalScrollPercentageList?: Parameter;
+  visibilitySelector?: Selector;
+  visiblePercentageMin?: Parameter;
+  visiblePercentageMax?: Parameter;
+  continuousTimeMinMilliseconds?: TimeParameter;
+  totalTimeMinMilliseconds?: TimeParameter;
+  tagManagerUrl?: string;
+  notes?: string;
+  parameter?: Parameter[];
+}
+
+/*********************************************************
+ GTM Variables
+ *********************************************************/
+export type VariableType =
+  | 'k'
+  | 'aev'
+  | 'c'
+  | 'jsm'
+  | 'v'
+  | 'd'
+  | 'f'
+  | 'j'
+  | 'gas'
+  | 'smm'
+  | 'remm'
+  | 'u'
+  | 'vis'
+  | 'e'
+  | 'ev'
+  | 'r'
+  | 'uv'
+  | 'awec'
+  | 'cid'
+  | 'dbg'
+  | 'gtes'
+  | 'gtcs'
+  | 'ctv';
+
+interface FormatValue {
+  caseConversionType: 'lowercase' | 'none' | 'uppercase';
+  convertNullToValue?: Parameter;
+  convertUndefinedToValue?: Parameter;
+  convertTrueToValue?: Parameter;
+  convertFalseToValue?: Parameter;
+}
+
+export interface Variable {
+  path?: string;
+  accountId: string;
+  containerId: string;
+  workspaceId: string;
+  variableId: string;
+  name: string;
+  type: VariableType;
+  notes?: string;
+  decodeCookie?: string;
+  scheduleStartMs?: number;
+  scheduleEndMs?: number;
+  parameter?: Parameter[];
+  enablingTriggerId?: string[];
+  disablingTriggerId?: string[];
+  fingerprint?: string;
+  parentFolderId?: string;
+  tagManagerUrl?: string;
+  formatValue?: FormatValue;
+}
+
+/*********************************************************
+ GTM Folders
+ *********************************************************/
+
+interface Folder {
+  path: string;
+  accountId: string;
+  containerId: string;
+  workspaceId: string;
+  folderId: string;
+  name: string;
+  fingerprint?: string;
+  tagManagerUrl?: string;
+  notes?: string;
+}
+
+/*********************************************************
+ GTM Zones
+ *********************************************************/
+
+// Condition interface
+interface Condition {
+  type: string;
+  parameter: Parameter[];
+}
+
+// Boundary interface
+interface Boundary {
+  condition: Condition[];
+  customEvaluationTriggerId: string[];
+}
+
+// ChildContainer interface
+interface ChildContainer {
+  publicId: string;
+  nickname: string;
+}
+
+// TypeRestriction interface
+interface TypeRestriction {
+  enable: boolean;
+  whitelistedTypeId: string[];
+}
+
+// GTMZone interface
+export interface Zone {
+  path: string;
+  accountId: string;
+  containerId: string;
+  workspaceId: string;
+  zoneId: string;
+  name: string;
+  fingerprint?: string;
+  tagManagerUrl?: string;
+  notes?: string;
+  childContainer: ChildContainer[];
+  boundary: Boundary;
+  typeRestriction: TypeRestriction;
+}
+
+/*********************************************************
+ GTM Custom Templates
+ *********************************************************/
+
+// Gallery Reference interface
+interface GalleryReference {
+  host: string;
+  owner: string;
+  repository: string;
+  version: string;
+  isModified: boolean;
+  signature: string;
+}
+
+// GTM Custom Template interface
+export interface CustomTemplate {
+  path: string;
+  accountId: string;
+  containerId: string;
+  workspaceId: string;
+  templateId: string;
+  name: string;
+  fingerprint?: string;
+  tagManagerUrl?: string;
+  templateData: string;
+  galleryReference?: GalleryReference;
+}
+
+/*********************************************************
+ GTM Clients
+ *********************************************************/
+
+// GTMClient interface
+export interface Client {
+  path: string;
+  accountId: string;
+  containerId: string;
+  workspaceId: string;
+  clientId: string;
+  name: string;
+  type: string;
+  parameter: Parameter[];
+  priority: number;
+  fingerprint?: string;
+  tagManagerUrl?: string;
+  parentFolderId?: string;
+  notes?: string;
+}
+
+/*********************************************************
+ GTM Google Tag Configuration
+ *********************************************************/
+
+// GTM Google Tag Configuration interface
+export interface GtagConfig {
+  path: string;
+  accountId: string;
+  containerId: string;
+  workspaceId: string;
+  gtagConfigId: string;
+  type: string;
+  parameter: Parameter[];
+  fingerprint?: string;
+  tagManagerUrl?: string;
+}
+
+/*********************************************************
+ GTM Transformations
+ *********************************************************/
+
+export interface Transformation {
+  path: string;
+  accountId: string;
+  containerId: string;
+  workspaceId: string;
+  transformationId: string;
+  name: string;
+  type: string;
+  parameter: Parameter[];
+  fingerprint?: string;
+  tagManagerUrl?: string;
+  parentFolderId?: string;
+  notes?: string;
+}
+
+/*********************************************************
+ GTM Envs
+ *********************************************************/
+
+// Enum for environment types
+export enum EnvironmentType {
+  Latest = 'latest',
+  Live = 'live',
+  User = 'user',
+  Workspace = 'workspace',
+}
+
+// Type for authorizationTimestamp
+export interface AuthorizationTimestamp {
+  seconds: number;
+  nanos: number;
+}
+
+// Type for the Google Tag Manager Environment
+export interface GoogleTagEnvironment {
+  path: string;
+  accountId: string;
+  containerId: string;
+  environmentId: string;
+  type: EnvironmentType;
+  fingerprint: string;
+  name: string;
+  description: string;
+  enableDebug: boolean;
+  url: string;
+  authorizationCode: string;
+  authorizationTimestamp: AuthorizationTimestamp;
+  containerVersionId: string;
+  workspaceId: string;
+  tagManagerUrl: string;
+}
+
+/*********************************************************
+ GTM Permissions
+ *********************************************************/
+// Enum for account access permissions
+export enum AccountPermission {
+  UNSPECIFIED = 'accountPermissionUnspecified',
+  ADMIN = 'admin',
+  NO_ACCESS = 'noAccess',
+  USER = 'user',
+}
+
+export enum ContainerPermission {
+  APPROVE = 'approve',
+  UNSPECIFIED = 'containerPermissionUnspecified',
+  EDIT = 'edit',
+  NO_ACCESS = 'noAccess',
+  PUBLISH = 'publish',
+  READ = 'read',
+}
+
+export interface AccountAccess {
+  permission: AccountPermission;
+}
+
+export interface ContainerAccess {
+  containerId: string;
+  permission: ContainerPermission;
+}
+
+export interface UserPermission {
+  accountId: string;
+  emailAddress: string;
+  accountAccess: AccountAccess;
+  containerAccess: ContainerAccess[];
+  path?: string;
+}
+
+export interface FormValues {
+  permissions: UserPermission[];
+}
+
+export type FeatureUnion = BuiltInVariable | Variable | WorkspaceType /* other types as needed */;

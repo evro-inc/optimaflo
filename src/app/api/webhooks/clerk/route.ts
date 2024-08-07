@@ -1,6 +1,6 @@
 import { Webhook } from 'svix';
 import { headers } from 'next/headers';
-import { WebhookEvent, clerkClient } from '@clerk/nextjs/server';
+import { WebhookEvent, clerkClient } from '@clerk/nextjs';
 import prisma from '@/src/lib/prisma';
 
 export async function handler(req: Request) {

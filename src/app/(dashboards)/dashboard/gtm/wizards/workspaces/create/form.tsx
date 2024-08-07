@@ -28,7 +28,7 @@ import {
 } from '@/src/components/ui/select';
 
 import { Input } from '@/src/components/ui/input';
-import { WorkspaceType, FeatureResponse, FormCreateProps, WorkspaceType } from '@/src/types/types';
+import { FeatureResponse, FormCreateProps, WorkspaceType } from '@/src/types/types';
 import { toast } from 'sonner';
 import {
   selectTable,
