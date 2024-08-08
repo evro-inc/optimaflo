@@ -34,11 +34,20 @@ jobs:
         run: supabase db dump --db-url "$supabase_db_url" -f schema.sql
       - name: Backup data
         run: supabase db dump --db-url "$supabase_db_url" -f data.sql --data-only --use-copy
-      - name: Commit files
+      - name: Configure Git
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git checkout -b backup-${{ github.ref == 'refs/heads/sandbox' && 'sandbox' || 'main' }}-branch
+      - name: Create or Checkout Branch
+        run: |
+          git fetch origin
+          if git show-ref --quiet refs/heads/backup-${{ github.ref == 'refs/heads/sandbox' && 'sandbox' || 'main' }}-branch; then
+            git checkout backup-${{ github.ref == 'refs/heads/sandbox' && 'sandbox' || 'main' }}-branch
+          else
+            git checkout -b backup-${{ github.ref == 'refs/heads/sandbox' && 'sandbox' || 'main' }}-branch
+          fi
+      - name: Commit files
+        run: |
           git add roles.sql schema.sql data.sql
           git commit -m "Supabase backup for ${{ github.ref == 'refs/heads/sandbox' && 'sandbox' || 'main' }}"
       - name: Create Pull Request
