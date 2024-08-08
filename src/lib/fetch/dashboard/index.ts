@@ -51,7 +51,7 @@ export async function fetchGtmSettings(userId: string) {
   }
 
   const token = await clerkClient().users.getUserOauthAccessToken(userId, 'oauth_google');
-  const tokenValue = token[0].token;
+  const tokenValue = token.data[0].token;
   const headers = { Authorization: `Bearer ${tokenValue}` };
 
   const existingRecords = await prisma.gtm.findMany({ where: { userId } });
@@ -147,7 +147,7 @@ export async function fetchGASettings(userId: string) {
   }
 
   const token = await clerkClient().users.getUserOauthAccessToken(userId, 'oauth_google');
-  const tokenValue = token[0].token;
+  const tokenValue = token.data[0].token;
   const headers = { Authorization: `Bearer ${tokenValue}` };
 
   const existingRecords = await prisma.gtm.findMany({ where: { userId } });

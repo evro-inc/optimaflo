@@ -17,8 +17,8 @@ export default async function PermissionsFormPage() {
 
   const tierLimits = await getTierLimit(subscriptionId);
 
-  const accountData = await listGtmAccounts(true);
-  const containerData = await listGtmContainers(true);
+  const accountData = await listGtmAccounts();
+  const containerData = await listGtmContainers();
   const permissionData = await listGtmPermissions();
 
   const [accounts, containers, permissions] = await Promise.all([

@@ -30,7 +30,7 @@ export async function listGACustomMetrics() {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-  const accessToken = token[0].token;
+
 
   const cacheKey = `ga:customMetrics:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
@@ -65,7 +65,7 @@ export async function listGACustomMetrics() {
           );
 
           const headers = {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
             'Accept-Encoding': 'gzip',
           };
@@ -189,7 +189,7 @@ export async function createGACustomMetrics(formData: CustomMetricSchemaType) {
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.property}/customMetrics`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -510,7 +510,7 @@ export async function updateGACustomMetrics(formData: CustomMetricSchemaType) {
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.name}?updateMask=${updateMask}`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -808,7 +808,7 @@ export async function deleteGACustomMetrics(
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.name}:archive`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };

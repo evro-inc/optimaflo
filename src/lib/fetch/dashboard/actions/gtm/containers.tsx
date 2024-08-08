@@ -35,7 +35,7 @@ export async function listGtmContainers(skipCache = false) {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-  const accessToken = token[0].token;
+
 
   const cacheKey = `gtm:containers:userId:${userId}`;
 
@@ -71,7 +71,7 @@ export async function listGtmContainers(skipCache = false) {
           );
 
           const headers = {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
             'Accept-Encoding': 'gzip',
           };
@@ -189,7 +189,7 @@ export async function DeleteContainers(
 
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}`;
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -457,7 +457,7 @@ export async function CreateContainers(formData: Schema) {
 
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/`;
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -773,7 +773,7 @@ export async function UpdateContainers(formData: Schema) {
 
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerData.containerId}`;
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -1059,7 +1059,7 @@ export async function UpdateContainers(formData: Schema) {
 
     const requestHeaders = {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken}`,
+      Authorization: `Bearer ${token}`,
     };
 
     const featureLimitReached: string[] = [];

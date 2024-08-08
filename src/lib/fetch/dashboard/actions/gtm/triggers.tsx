@@ -33,7 +33,7 @@ export async function listTriggers(skipCache = false) {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-  const accessToken = token[0].token;
+
 
   const cacheKey = `gtm:triggers:userId:${userId}`;
   if (skipCache == false) {
@@ -75,7 +75,7 @@ export async function listTriggers(skipCache = false) {
           });
 
           const headers = {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
             'Accept-Encoding': 'gzip',
           };
@@ -201,7 +201,7 @@ export async function DeleteTriggers(ga4TriggerToDelete: Trigger[]): Promise<Fea
               let url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/triggers/${triggerId}`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -290,8 +290,8 @@ export async function DeleteTriggers(ga4TriggerToDelete: Trigger[]): Promise<Fea
               notFoundError: true, // Set the notFoundError flag
               message: `Could not delete trigger. Please check your permissions. Container Name: 
               ${notFoundLimit
-                .map(({ name }) => name)
-                .join(', ')}. All other triggers were successfully deleted.`,
+                  .map(({ name }) => name)
+                  .join(', ')}. All other triggers were successfully deleted.`,
               results: notFoundLimit.map(({ combinedId, name }) => {
                 const [accountId, containerId, workspaceId] = combinedId.split('-');
                 return {
@@ -498,7 +498,7 @@ export async function CreateTriggers(formData: TriggerType) {
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${identifier.accountId}/containers/${identifier.containerId}/workspaces/${identifier.workspaceId}/triggers`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -802,7 +802,7 @@ export async function UpdateTriggers(formData: TriggerType) {
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${identifier.accountId}/containers/${identifier.containerId}/workspaces/${identifier.workspaceId}/triggers/${identifier.triggerId}`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };

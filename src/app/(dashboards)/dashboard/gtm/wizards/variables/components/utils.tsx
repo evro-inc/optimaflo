@@ -5,9 +5,9 @@ import { listGtmWorkspaces } from '@/src/lib/fetch/dashboard/actions/gtm/workspa
 
 /* Fetch Data */
 export async function fetchGtmData() {
-  const accountData = await listGtmAccounts(true);
-  const containerData = await listGtmContainers(true);
-  const workspaceData = await listGtmWorkspaces(true);
+  const accountData = await listGtmAccounts();
+  const containerData = await listGtmContainers();
+  const workspaceData = await listGtmWorkspaces();
   const varData = await listVariables();
 
   return { accountData, containerData, workspaceData, varData };

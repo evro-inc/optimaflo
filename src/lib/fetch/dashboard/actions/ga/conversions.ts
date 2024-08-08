@@ -30,7 +30,7 @@ export async function listGAConversionEvents() {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-  const accessToken = token[0].token;
+
 
   const cacheKey = `ga:conversionEvents:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
@@ -65,7 +65,7 @@ export async function listGAConversionEvents() {
           );
 
           const headers = {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
             'Accept-Encoding': 'gzip',
           };
@@ -189,7 +189,7 @@ export async function createGAConversionEvents(formData: CustomConversionSchemaT
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.property}/conversionEvents`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -504,7 +504,7 @@ export async function updateGAConversionEvents(formData: CustomConversionSchemaT
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.name}?updateMask=${updateMask}`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -800,7 +800,7 @@ export async function deleteGAConversionEvents(
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.name}`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };

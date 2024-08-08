@@ -23,11 +23,11 @@ export default async function ChangesPage({
   const { userId } = auth();
   if (!userId) return notFound();
 
-  const accountData = await listGtmAccounts(true);
-  const containerData = await listGtmContainers(true);
-  const workspaceData = await listGtmWorkspaces(true);
-  const builtInVarData = await listGtmBuiltInVariables(true);
-  const varData = await listVariables(true);
+  const accountData = await listGtmAccounts();
+  const containerData = await listGtmContainers();
+  const workspaceData = await listGtmWorkspaces();
+  const builtInVarData = await listGtmBuiltInVariables();
+  const varData = await listVariables();
 
   const [accounts, containers, workspaces, builtInVar, variable] = await Promise.all([
     accountData,

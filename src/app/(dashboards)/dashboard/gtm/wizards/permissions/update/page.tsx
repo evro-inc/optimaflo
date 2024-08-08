@@ -28,9 +28,9 @@ export default async function PermissionsFormPage() {
     redirect('/dashboard/gtm/entities');
   }
 
-  const accountData = await listGtmAccounts(true);
-  const containerData = await listGtmContainers(true);
-  const permissionData = await listGtmPermissions(true);
+  const accountData = await listGtmAccounts();
+  const containerData = await listGtmContainers();
+  const permissionData = await listGtmPermissions();
 
   const [accounts, containers, permissions] = await Promise.all([
     accountData,

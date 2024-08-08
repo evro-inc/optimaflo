@@ -30,7 +30,7 @@ export async function listGAFirebaseLinks() {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-  const accessToken = token[0].token;
+
 
   const cacheKey = `ga:firebaseLinks:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
@@ -65,7 +65,7 @@ export async function listGAFirebaseLinks() {
           );
 
           const headers = {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
             'Accept-Encoding': 'gzip',
           };
@@ -189,7 +189,7 @@ export async function createGAFirebaseLinks(formData: FirebaseLinkSchemaType) {
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.property}/firebaseLinks`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -483,7 +483,7 @@ export async function deleteGAFirebaseLinks(
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.name}`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };

@@ -56,7 +56,7 @@ async function getWorkspace(
 
   const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}`;
   const headers = {
-    Authorization: `Bearer ${accessToken}`,
+    Authorization: `Bearer ${token}`,
     'Content-Type': 'application/json',
   };
 
@@ -134,7 +134,7 @@ export async function GET(
       accountId,
       containerId,
       workspaceId,
-      accessToken[0].token
+      accesstoken.data[0].token
     );
 
     return NextResponse.json(
@@ -265,7 +265,7 @@ export async function PATCH(request: NextRequest) {
           // If we haven't hit the rate limit, proceed with the API request
 
           // If the data is not in the cache, fetch it from the API
-          const oauth2Client = createOAuth2Client(accessToken[0].token);
+          const oauth2Client = createOAuth2Client(accesstoken.data[0].token);
           if (!oauth2Client) {
             // If oauth2Client is null, return an error response or throw an error
             return NextResponse.error();
@@ -442,7 +442,7 @@ export async function DELETE(request: NextRequest) {
           // If we haven't hit the rate limit, proceed with the API request
 
           // If the data is not in the cache, fetch it from the API
-          const oauth2Client = createOAuth2Client(accessToken[0].token);
+          const oauth2Client = createOAuth2Client(accesstoken.data[0].token);
           if (!oauth2Client) {
             // If oauth2Client is null, return an error response or throw an error
             return NextResponse.error();

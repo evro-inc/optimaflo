@@ -30,7 +30,7 @@ export async function listGAGoogleAdsLinks() {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-  const accessToken = token[0].token;
+
 
   const cacheKey = `ga:ads:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
@@ -65,7 +65,7 @@ export async function listGAGoogleAdsLinks() {
           );
 
           const headers = {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
             'Accept-Encoding': 'gzip',
           };
@@ -189,7 +189,7 @@ export async function createGAGoogleAdsLinks(formData: GoogleAdsLinkSchemaType) 
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.property}/googleAdsLinks`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -499,7 +499,7 @@ export async function updateGAGoogleAdsLinks(formData: GoogleAdsLinkSchemaType) 
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.name}?updateMask=${updateMask}`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -790,7 +790,7 @@ export async function deleteGAGoogleAdsLinks(
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.name}`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };

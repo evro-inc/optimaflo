@@ -22,7 +22,7 @@ export async function GET() {
     }
 
     const token = await currentUserOauthAccessToken(userId);
-    const response = await listGtmAccounts(token[0].token);
+    const response = await listGtmAccounts(token.data[0].token);
 
     redis.set(`gtm:accounts-userId:${userId}`, JSON.stringify(response), 'EX', 60 * 60 * 24 * 7);
 

@@ -30,7 +30,7 @@ export async function listGAAccessBindings() {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-  const accessToken = token[0].token;
+
 
   const cacheKey = `ga:accountAccess:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
@@ -65,7 +65,7 @@ export async function listGAAccessBindings() {
           );
 
           const headers = {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
             'Accept-Encoding': 'gzip',
           };
@@ -190,7 +190,7 @@ export async function createGAAccessBindings(formData: AccountPermissionsSchema)
               const url = `https://analyticsadmin.googleapis.com/v1alpha/${identifier.account}/accessBindings`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -496,7 +496,7 @@ export async function updateGAAccessBindings(formData: AccountPermissionsSchema)
               const url = `https://analyticsadmin.googleapis.com/v1alpha/${identifier.name}`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -787,7 +787,7 @@ export async function deleteGAAccessBindings(
               const url = `https://analyticsadmin.googleapis.com/v1alpha/${identifier.name}`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };

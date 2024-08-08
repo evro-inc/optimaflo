@@ -34,7 +34,7 @@ export async function listGtmBuiltInVariables(skipCache = false) {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-  const accessToken = token[0].token;
+
 
   const cacheKey = `gtm:builtInVariables:userId:${userId}`;
   if (!skipCache) {
@@ -73,7 +73,7 @@ export async function listGtmBuiltInVariables(skipCache = false) {
           });
 
           const headers = {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
             'Accept-Encoding': 'gzip',
           };
@@ -191,7 +191,7 @@ export async function DeleteBuiltInVariables(
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/built_in_variables?type=${types}`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -376,9 +376,9 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
     formData.forms.flatMap((form) =>
       Array.isArray(form.entity)
         ? form.entity.map((entity) => ({
-            entity,
-            type: form.type,
-          }))
+          entity,
+          type: form.type,
+        }))
         : [{ entity: form.entity, type: form.type }]
     )
   );
@@ -471,7 +471,7 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
                 const finalUrl = url + '?' + params.toString();
 
                 const headers = {
-                  Authorization: `Bearer ${token[0].token}`,
+                  Authorization: `Bearer ${token.data[0].token}`,
                   'Content-Type': 'application/json',
                   'Accept-Encoding': 'gzip',
                 };
@@ -735,7 +735,7 @@ export async function RevertBuiltInVariables(
               const url = `https://www.googleapis.com/tagmanager/v2/${data.path}:revert?type=${type}`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };

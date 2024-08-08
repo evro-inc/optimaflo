@@ -32,7 +32,7 @@ export async function listGAPropertyStreams() {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-  const accessToken = token[0].token;
+
 
   const cacheKey = `ga:streams:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
@@ -67,7 +67,7 @@ export async function listGAPropertyStreams() {
           );
 
           const headers = {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
             'Accept-Encoding': 'gzip',
           };
@@ -190,7 +190,7 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.property}/dataStreams`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -545,7 +545,7 @@ export async function updateGAPropertyStreams(formData: DataStreamType) {
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.parentURL}?updateMask=${updateMask}`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -866,7 +866,7 @@ export async function deleteGAPropertyStreams(
             const deletePromises = Array.from(toDeleteStreams).map(async (identifier) => {
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.name}`;
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
