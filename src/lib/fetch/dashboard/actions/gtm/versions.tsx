@@ -10,7 +10,6 @@ import prisma from '@/src/lib/prisma';
 import {
   FeatureResult,
   FeatureResponse,
-  KeyEventType,
   GTMContainerVersion,
 } from '@/src/types/types';
 import {
@@ -22,7 +21,6 @@ import {
 import { fetchGASettings, fetchGtmSettings } from '../..';
 import { ContainerVersionType, UpdateVersionSchemaType } from '@/src/lib/schemas/gtm/versions';
 import { UpdateVersionFormSchema } from '@/src/lib/schemas/gtm/versions';
-import { container, container_v1 } from 'googleapis/build/src/apis/container';
 
 /************************************************************************************
   Function to list GA Versions
@@ -452,7 +450,7 @@ export async function DeleteVersions(
       (prop) => `${prop.accountId}-${prop.containerId}-${prop.containerVersionId}`
     )
   );
-  let accountIdForCache: string | undefined;
+  /* let accountIdForCache: string | undefined; */
 
   // Authenticating user and getting user ID
   const { userId } = await auth();

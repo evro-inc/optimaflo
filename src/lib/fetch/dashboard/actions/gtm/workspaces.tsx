@@ -131,8 +131,8 @@ export async function DeleteWorkspaces(
   const featureLimitReached: { containerId: string; workspaceId: string }[] = [];
   const notFoundLimit: { containerId: string; workspaceId: string }[] = [];
   const toDeleteWorkspaces = new Set<string>(selectedWorkspaces);
-  let accountIdForCache: string | undefined;
-
+  /*   let accountIdForCache: string | undefined;
+   */
   // Authenticating user and getting user ID
   const { userId } = await auth();
   // If user ID is not found, return a 'not found' error
@@ -1445,9 +1445,6 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
   Function to list or get one GTM workspaces - Error: Error fetching data: HTTP error! status: 429. Too Many Requests
 ************************************************************************************/
 export async function getStatusGtmWorkspaces() {
-  const MAX_RETRIES = 20;
-  const INITIAL_DELAY = 1000;
-  let delay = INITIAL_DELAY;
 
   // Authenticating the user and getting the user ID
   const { userId } = await auth();

@@ -14,13 +14,11 @@ import {
   handleApiResponseError,
   tierCreateLimit,
   tierDeleteLimit,
-  tierUpdateLimit,
 } from '@/src/utils/server';
 import { fetchGtmSettings } from '../..';
 
 // Define the types for the form data
 type FormCreateSchema = z.infer<typeof FormsSchema>;
-type FormUpdateSchema = z.infer<typeof FormsSchema>;
 
 /************************************************************************************
   Function to list or get one GTM builtInVariables
