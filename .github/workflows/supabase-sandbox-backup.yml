@@ -7,7 +7,7 @@ on:
     branches: [sandbox]
   workflow_dispatch:
   schedule:
-    - cron: '0 0 * * *' # Runs every day at midnight
+    - cron: '0 0 * * 0' # Runs every Sunday at midnight
 
 jobs:
   run_db_backup:
@@ -17,7 +17,7 @@ jobs:
     env:
       supabase_db_url_sandbox: ${{ secrets.SUPABASE_DB_URL_OPTIMAFLO_SANDBOX }} # Sandbox DB URL
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
       - uses: supabase/setup-cli@v1
@@ -31,4 +31,4 @@ jobs:
         run: supabase db dump --db-url "$supabase_db_url_sandbox" -f data.sql --data-only --use-copy
       - uses: stefanzweifel/git-auto-commit-action@v4
         with:
-          commit_message: Supabase backup
+          commit_message: Supabase sandbox backup
