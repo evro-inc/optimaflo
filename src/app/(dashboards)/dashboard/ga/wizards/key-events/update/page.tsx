@@ -1,6 +1,6 @@
 import React from 'react';
 import { notFound, redirect } from 'next/navigation';
-import { currentUser } from '@clerk/nextjs';
+import { currentUser } from '@clerk/nextjs/server';
 import FormUpdateKeyEvents from './form';
 import { getSubscription } from '@/src/lib/fetch/subscriptions';
 import { getTierLimit } from '@/src/lib/fetch/tierLimit';

@@ -1,10 +1,9 @@
 import { Webhook } from 'svix';
 import { headers } from 'next/headers';
-import { WebhookEvent, clerkClient } from '@clerk/nextjs';
+import { clerkClient, WebhookEvent } from '@clerk/nextjs/server';
 import prisma from '@/src/lib/prisma';
 
-export async function handler(req: Request) {
-  // You can find this in the Clerk Dashboard -> Webhooks -> choose the webhook
+export async function POST(req: Request) {
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET as string;
 
   if (!WEBHOOK_SECRET) {
@@ -17,9 +16,8 @@ export async function handler(req: Request) {
   const svix_timestamp = headerPayload.get('svix-timestamp');
   const svix_signature = headerPayload.get('svix-signature');
 
-  // If there are no headers, error out
   if (!svix_id || !svix_timestamp || !svix_signature) {
-    return new Response('Error occured -- no svix headers', {
+    return new Response('Error occurred -- no svix headers', {
       status: 400,
     });
   }
@@ -41,92 +39,102 @@ export async function handler(req: Request) {
       'svix-signature': svix_signature,
     }) as WebhookEvent;
   } catch (err) {
-    return new Response('Error occured', {
+    console.error('Error verifying webhook:', err);
+    return new Response('Error occurred', {
       status: 400,
     });
   }
 
   const eventType = evt.type;
+  console.log('Webhook event verified:', evt);
+
+  // Helper function to fetch or create user from Clerk
+  async function fetchOrCreateUser(clerkUserId: string) {
+    try {
+      const clerkUserData = await clerkClient().users.getUser(clerkUserId);
+
+      // Check if user already exists by email
+      const existingUserByEmail = await prisma.User.findUnique({
+        where: { email: clerkUserData.emailAddresses[0]?.emailAddress },
+      });
+
+      if (existingUserByEmail) {
+        // Update the existing user
+        return await prisma.User.update({
+          where: { email: clerkUserData.emailAddresses[0]?.emailAddress },
+          data: {
+            id: clerkUserData.id,
+            name: `${clerkUserData.firstName} ${clerkUserData.lastName}`,
+            image: clerkUserData.imageUrl,
+          },
+        });
+      }
+
+      // If no existing user by email, upsert by ID
+      return await prisma.User.upsert({
+        where: { id: clerkUserData.id },
+        update: {
+          email: clerkUserData.emailAddresses[0]?.emailAddress,
+          name: `${clerkUserData.firstName} ${clerkUserData.lastName}`,
+          image: clerkUserData.imageUrl,
+        },
+        create: {
+          id: clerkUserData.id,
+          stripeCustomerId: null,
+          subscriptionId: null,
+          name: `${clerkUserData.firstName} ${clerkUserData.lastName}`,
+          email: clerkUserData.emailAddresses[0]?.emailAddress,
+          image: clerkUserData.imageUrl,
+        },
+      });
+    } catch (error) {
+      console.error(`Error fetching user from Clerk: ${error.message}`);
+      return null;
+    }
+  }
 
   // Handle the event with a switch statement
   switch (eventType) {
     // USER EVENTS
     case 'user.created':
     case 'user.updated': {
-      const clerkUser = evt.data; // Clerk user data
+      const clerkUser = evt.data;
 
-      await prisma.User.upsert({
-        where: { id: clerkUser.id },
-        update: {
-          email: clerkUser.email_addresses[0]?.email_address,
-          name: clerkUser.first_name + ' ' + clerkUser.last_name,
-          image: clerkUser.image_url,
-        },
-        create: {
-          id: clerkUser.id,
-          stripeCustomerId: null, // or appropriate initial value
-          subscriptionId: null, // or appropriate initial value
-          name: clerkUser.first_name + ' ' + clerkUser.last_name,
-          email: clerkUser.email_addresses[0]?.email_address,
-          image: clerkUser.image_url,
-        },
-      });
+      await fetchOrCreateUser(clerkUser.id);
       break;
     }
-    case 'user.deleted':
-      {
-        const clerkUser = evt.data; // Clerk user data
+    case 'user.deleted': {
+      const clerkUser = evt.data;
 
-        // Check if the user exists in the database
-        const existingUser = await prisma.User.findUnique({
+      const existingUser = await prisma.User.findUnique({
+        where: { id: clerkUser.id },
+      });
+
+      if (existingUser) {
+        await prisma.User.delete({
           where: { id: clerkUser.id },
         });
-
-        // Only delete the user if they exist in the database
-        if (existingUser) {
-          await prisma.User.delete({
-            where: { id: clerkUser.id },
-          });
-        }
       }
       break;
+    }
 
     // SESSION EVENTS
     case 'session.created':
     case 'session.ended':
     case 'session.removed':
-    case 'session.revoked':
-      {
-        const clerkSession = evt.data; // Clerk session data
+    case 'session.revoked': {
+      const clerkSession = evt.data;
 
-        // Check if user exists
-        const existingUser = await prisma.User.findUnique({
-          where: { id: clerkSession.id },
-        });
+      // Ensure user exists before upserting session
+      let existingUser = await prisma.User.findUnique({
+        where: { id: clerkSession.user_id },
+      });
 
-        // If the user does not exist, you might create it here or handle the error
-        if (!existingUser) {
-          const clerkUserData = await clerkClient.users.getUser(clerkSession.user_id);
-          await prisma.User.upsert({
-            where: { email: clerkUserData.emailAddresses[0]?.emailAddress },
-            update: {
-              email: clerkUserData.emailAddresses[0]?.emailAddress,
-              name: clerkUserData.firstName + ' ' + clerkUserData.lastName,
-              image: clerkUserData.imageUrl,
-              // Add other fields as needed
-            },
-            create: {
-              id: clerkUserData.id,
-              stripeCustomerId: null, // or appropriate initial value
-              subscriptionId: null, // or appropriate initial value
-              name: clerkUserData.firstName + ' ' + clerkUserData.lastName,
-              email: clerkUserData.emailAddresses[0]?.emailAddress,
-              image: clerkUserData.imageUrl,
-              // Add other fields as needed
-            },
-          });
-        }
+      if (!existingUser) {
+        existingUser = await fetchOrCreateUser(clerkSession.user_id);
+      }
 
+      if (existingUser) {
         await prisma.Session.upsert({
           where: { id: clerkSession.id },
           update: {
@@ -151,15 +159,14 @@ export async function handler(req: Request) {
             userId: clerkSession.user_id,
           },
         });
+      } else {
+        console.error(`Failed to create session for non-existent user ID: ${clerkSession.user_id}`);
       }
       break;
+    }
     default:
       throw new Error('Unhandled event type: ' + eventType);
   }
 
   return new Response('', { status: 200 });
 }
-
-export const GET = handler;
-export const POST = handler;
-export const PUT = handler;

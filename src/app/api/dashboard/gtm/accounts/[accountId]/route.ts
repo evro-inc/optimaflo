@@ -5,7 +5,7 @@ import { createOAuth2Client } from '@/src/lib/oauth2Client';
 import Joi from 'joi';
 import { isErrorWithStatus } from '@/src/lib/fetch/dashboard';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
-import { clerkClient, currentUser } from '@clerk/nextjs';
+import { clerkClient, currentUser } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 
 /************************************************************************************
@@ -120,7 +120,7 @@ export async function GET(
       });
     }
 
-    const accessToken = await clerkClient.users.getUserOauthAccessToken(user?.id, 'oauth_google');
+    const accessToken = await clerkClient().users.getUserOauthAccessToken(user?.id, 'oauth_google');
 
     if (!accessToken) {
       // If the access token is null or undefined, return an error response
@@ -211,7 +211,7 @@ export async function PATCH(request: NextRequest) {
     };
 
     const validatedParams = await validatePatchParams(params);
-    const accessToken = await clerkClient.users.getUserOauthAccessToken(userId, 'oauth_google');
+    const accessToken = await clerkClient().users.getUserOauthAccessToken(userId, 'oauth_google');
 
     if (!accessToken) {
       return new NextResponse(JSON.stringify({ message: 'Access token is missing' }), {

@@ -4,7 +4,6 @@ import { useTheme } from 'next-themes';
 import { MoonIcon, SunIcon, Bars3BottomRightIcon, XMarkIcon } from '@heroicons/react/24/solid';
 import Link from 'next/link';
 import { Button } from '@/src/components/ui/button';
-import { SignInButton } from '@clerk/nextjs';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,6 +17,7 @@ import {
 } from '@/src/components/ui/alert-dialog';
 import { setLoading } from '@/src/redux/globalSlice';
 import { useDispatch } from 'react-redux';
+import { SignInButton } from '@clerk/nextjs';
 
 const getModeClasses = (variant, billingInterval?) => {
   let baseClasses = '';

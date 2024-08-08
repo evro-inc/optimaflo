@@ -16,7 +16,7 @@ import {
   aevValidationSchema,
   firstPartyCookieValidationSchema,
 } from '@/src/lib/fetch/dashboard/gtm/validation';
-import { useSession } from '@clerk/nextjs' ; */
+import { useSession } from '@clerk/nextjs/server' ; */
 
 /* export async function GET(
   req: NextRequest,

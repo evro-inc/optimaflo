@@ -8,9 +8,9 @@ import prisma from '@/src/lib/prisma';
 import Joi from 'joi';
 import { isErrorWithStatus } from '@/src/lib/fetch/dashboard';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
-import { BuiltInVariableType } from '@/src/types/gtm';
 
-import { useSession } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs/server';
+import { BuiltInVariableType } from '@/src/types/types';
 
 export async function POST(
   request: NextRequest,
@@ -25,8 +25,7 @@ export async function POST(
     };
   }
 ) {
-  const { session } = useSession();
-
+  const { userId } = auth();
   try {
     const body = JSON.parse(await request.text());
 
@@ -38,7 +37,7 @@ export async function POST(
 
     // Create a JavaScript object with the extracted parameters
     const paramsJOI = {
-      userId: session?.user?.id,
+      userId: userId,
       accountId,
       containerId,
       workspaceId,
@@ -64,8 +63,6 @@ export async function POST(
         status: 400,
       });
     }
-
-    const { userId } = paramsJOI;
 
     // using userId get accessToken from prisma account table
     const user = await prisma.account.findFirst({

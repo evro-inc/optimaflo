@@ -6,7 +6,7 @@ import NavApp from '@/src/components/client/Navbar/NavApp';
 import SideBar from '@/src/components/client/Navbar/SideBar';
 
 import { notFound } from 'next/navigation';
-import { currentUser } from '@clerk/nextjs';
+import { currentUser } from '@clerk/nextjs/server';
 
 export default async function ProfileLayout({
   // Layouts must accept a children prop.

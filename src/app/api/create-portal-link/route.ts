@@ -2,7 +2,7 @@ import { stripe } from '@/src/lib/stripe';
 import { getURL } from '@/src/utils/helpers';
 import { NextResponse } from 'next/server';
 import prisma from '@/src/lib/prisma';
-import { currentUser } from '@clerk/nextjs';
+import { currentUser } from '@clerk/nextjs/server';
 
 export async function POST() {
   const user = await currentUser();

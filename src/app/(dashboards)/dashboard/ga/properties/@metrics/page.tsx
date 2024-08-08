@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import { notFound } from 'next/navigation';
-import { auth } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs/server';
 import { Skeleton } from '@/src/components/ui/skeleton';
 import { columns } from './columns';
 import { listGAProperties } from '@/src/lib/fetch/dashboard/actions/ga/properties';

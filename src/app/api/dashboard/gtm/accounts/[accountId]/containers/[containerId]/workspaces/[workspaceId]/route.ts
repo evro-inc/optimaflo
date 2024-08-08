@@ -7,7 +7,7 @@ import Joi from 'joi';
 import { isErrorWithStatus } from '@/src/lib/fetch/dashboard';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
 import { limiter } from '@/src/lib/bottleneck';
-import { clerkClient, currentUser } from '@clerk/nextjs';
+import { clerkClient, currentUser } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 
@@ -127,7 +127,7 @@ export async function GET(
 
     const { accountId, containerId, workspaceId } = validateParams;
 
-    const accessToken = await clerkClient.users.getUserOauthAccessToken(user?.id, 'oauth_google');
+    const accessToken = await clerkClient().users.getUserOauthAccessToken(user?.id, 'oauth_google');
 
     const data = await getWorkspace(
       userId,
@@ -210,7 +210,7 @@ export async function PATCH(request: NextRequest) {
       });
     }
 
-    const accessToken = await clerkClient.users.getUserOauthAccessToken(user?.id, 'oauth_google');
+    const accessToken = await clerkClient().users.getUserOauthAccessToken(user?.id, 'oauth_google');
 
     if (!accessToken) {
       // If the access token is null or undefined, return an error response
@@ -387,7 +387,7 @@ export async function DELETE(request: NextRequest) {
       });
     }
 
-    const accessToken = await clerkClient.users.getUserOauthAccessToken(user?.id, 'oauth_google');
+    const accessToken = await clerkClient().users.getUserOauthAccessToken(user?.id, 'oauth_google');
 
     if (!accessToken) {
       // If the access token is null or undefined, return an error response

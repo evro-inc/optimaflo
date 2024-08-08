@@ -6,7 +6,7 @@ import prisma from '@/src/lib/prisma';
 import Joi from 'joi';
 import { isErrorWithStatus } from '@/src/lib/fetch/dashboard';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
-import { useSession } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs/server';
 
 // Get Version
 export async function GET(
@@ -21,7 +21,7 @@ export async function GET(
     };
   }
 ) {
-  const { session } = useSession();
+  const { userId } = auth();
   try {
     const accountId = params.accountId;
     const containerId = params.containerId;
@@ -54,8 +54,6 @@ export async function GET(
         status: 400,
       });
     }
-
-    const userId = session?.user?.id;
 
     // using userId get accessToken from prisma account table
     const user = await prisma.account.findFirst({

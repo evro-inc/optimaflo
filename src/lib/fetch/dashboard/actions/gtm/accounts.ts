@@ -1,7 +1,7 @@
 'use server'; // Indicates that this file should only be used in a server environment
 
 // Importing necessary modules and functions
-import { auth } from '@clerk/nextjs'; // Importing authentication function from Clerk
+import { auth } from '@clerk/nextjs/server'; // Importing authentication function from Clerk
 import { limiter } from '../../../../bottleneck'; // Importing rate limiter configuration
 import { gtmRateLimit } from '../../../../redis/rateLimits'; // Importing rate limiting utility for Google Tag Manager
 import { FormsSchema } from '../../../../schemas/gtm/accounts'; // Importing schema for account updates

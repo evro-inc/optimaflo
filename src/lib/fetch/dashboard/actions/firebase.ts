@@ -1,7 +1,7 @@
 'use server';
 import { revalidatePath } from 'next/cache';
 import z from 'zod';
-import { auth } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs/server';
 import { redis } from '@/src/lib/redis/cache';
 import { notFound } from 'next/navigation';
 import { currentUserOauthAccessToken } from '@/src/lib/clerk';

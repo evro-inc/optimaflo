@@ -2,7 +2,7 @@
 import { revalidatePath } from 'next/cache';
 import { FormsSchema, TagType } from '@/src/lib/schemas/gtm/tags';
 import z from 'zod';
-import { auth } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 import { limiter } from '../../../../bottleneck';
 import { gtmRateLimit } from '../../../../redis/rateLimits';

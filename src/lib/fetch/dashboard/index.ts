@@ -1,7 +1,7 @@
 //API HELPERS
 import prisma from '@/src/lib/prisma';
 import { fetchWithRetry } from '@/src/utils/server';
-import { clerkClient } from '@clerk/nextjs';
+import { clerkClient } from '@clerk/nextjs/server';
 
 export function isErrorWithStatus(error: unknown): error is { status: number } {
   return (error as { status: number }).status !== undefined;
@@ -50,7 +50,7 @@ export async function fetchGtmSettings(userId: string) {
     await prisma.User.create({ data: { id: userId } });
   }
 
-  const token = await clerkClient.users.getUserOauthAccessToken(userId, 'oauth_google');
+  const token = await clerkClient().users.getUserOauthAccessToken(userId, 'oauth_google');
   const tokenValue = token[0].token;
   const headers = { Authorization: `Bearer ${tokenValue}` };
 
@@ -146,7 +146,7 @@ export async function fetchGASettings(userId: string) {
     await prisma.User.create({ data: { id: userId } });
   }
 
-  const token = await clerkClient.users.getUserOauthAccessToken(userId, 'oauth_google');
+  const token = await clerkClient().users.getUserOauthAccessToken(userId, 'oauth_google');
   const tokenValue = token[0].token;
   const headers = { Authorization: `Bearer ${tokenValue}` };
 

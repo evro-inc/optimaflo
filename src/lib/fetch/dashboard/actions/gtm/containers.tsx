@@ -2,7 +2,7 @@
 import { revalidatePath } from 'next/cache';
 import { FormSchema } from '@/src/lib/schemas/gtm/containers';
 import z from 'zod';
-import { auth } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs/server';
 import { gtmRateLimit } from '../../../../redis/rateLimits';
 import { limiter } from '../../../../bottleneck';
 import { redis } from '@/src/lib/redis/cache';

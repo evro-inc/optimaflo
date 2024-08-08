@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ValidationError } from '@/src/lib/exceptions';
 import Joi from 'joi';
 
-import { auth } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 import { listGtmWorkspaces } from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
 import { redis } from '@/src/lib/redis/cache';
