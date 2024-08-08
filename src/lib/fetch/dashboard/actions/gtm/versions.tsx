@@ -1,6 +1,6 @@
 'use server';
 import { revalidatePath } from 'next/cache';
-import { auth } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs/server';
 import { gaRateLimit, gtmRateLimit } from '../../../../redis/rateLimits';
 import { limiter } from '../../../../bottleneck';
 import { redis } from '@/src/lib/redis/cache';
@@ -37,7 +37,7 @@ export async function listGTMVersionHeaders() {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-  const accessToken = token[0].token;
+
 
   const cacheKey = `gtm:versionHeaders:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
@@ -74,7 +74,7 @@ export async function listGTMVersionHeaders() {
           });
 
           const headers = {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
             'Accept-Encoding': 'gzip',
           };
@@ -221,7 +221,7 @@ export async function publishGTM(formData: ContainerVersionType) {
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${versionData.accountId}/containers/${versionData.containerId}/versions/${versionData.containerVersionId}:publish`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -510,7 +510,7 @@ export async function DeleteVersions(
               let url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/versions/${containerVersionId}?`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -601,8 +601,8 @@ export async function DeleteVersions(
               notFoundError: true, // Set the notFoundError flag
               message: `Could not delete version. Please check your permissions. Container Name: 
               ${notFoundLimit
-                .map(({ name }) => name)
-                .join(', ')}. All other variables were successfully deleted.`,
+                  .map(({ name }) => name)
+                  .join(', ')}. All other variables were successfully deleted.`,
               results: notFoundLimit.map(({ combinedId, name }) => {
                 const [accountId, containerId, containerVersionId] = combinedId.split('-');
                 return {
@@ -821,7 +821,7 @@ export async function UpdateVersions(formData: UpdateVersionSchemaType) {
 
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${versionData.accountId}/containers/${versionData.containerId}/versions/${versionData.containerVersionId}`;
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };

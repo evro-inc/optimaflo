@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ValidationError } from '@/src/lib/exceptions';
 import Joi from 'joi';
 
-import { auth } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 import { listGtmWorkspaces } from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
 import { redis } from '@/src/lib/redis/cache';
@@ -59,7 +59,7 @@ async function validatePostParams(params) {
 async function createGtmWorkspace(accessToken, accountId, containerId, name, description) {
   const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces`;
   const headers = {
-    Authorization: `Bearer ${accessToken}`,
+    Authorization: `Bearer ${token}`,
     'Content-Type': 'application/json',
   };
 
@@ -115,7 +115,7 @@ export async function GET(
       });
     }
     const token = await currentUserOauthAccessToken(userId);
-    const data = await listGtmWorkspaces(token[0].token, accountId, containerId);
+    const data = await listGtmWorkspaces(token.data[0].token, accountId, containerId);
 
     redis.set(
       `gtm:workspaces:${accountId}:${containerId}`,
@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
 
     // Call the function to create a GTM workspace
     const workspaceData = await createGtmWorkspace(
-      accessToken[0].token,
+      accesstoken.data[0].token,
       validatedParams.accountId,
       validatedParams.containerId,
       validatedParams.name,

@@ -1,7 +1,7 @@
 'use server';
 import { notFound } from 'next/navigation';
 import prisma from '../lib/prisma';
-import { auth } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs/server';
 import { revalidatePath } from 'next/cache';
 import { redis } from '../lib/redis/cache';
 import { fetchGASettings, fetchGtmSettings } from '../lib/fetch/dashboard';

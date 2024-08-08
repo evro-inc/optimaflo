@@ -7,7 +7,7 @@ import Joi from 'joi';
 import { isErrorWithStatus } from '@/src/lib/fetch/dashboard';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
 import { limiter } from '@/src/lib/bottleneck';
-import { clerkClient, currentUser } from '@clerk/nextjs';
+import { clerkClient, currentUser } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 
@@ -56,7 +56,7 @@ async function getWorkspace(
 
   const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}`;
   const headers = {
-    Authorization: `Bearer ${accessToken}`,
+    Authorization: `Bearer ${token}`,
     'Content-Type': 'application/json',
   };
 
@@ -127,14 +127,14 @@ export async function GET(
 
     const { accountId, containerId, workspaceId } = validateParams;
 
-    const accessToken = await clerkClient.users.getUserOauthAccessToken(user?.id, 'oauth_google');
+    const accessToken = await clerkClient().users.getUserOauthAccessToken(user?.id, 'oauth_google');
 
     const data = await getWorkspace(
       userId,
       accountId,
       containerId,
       workspaceId,
-      accessToken[0].token
+      accesstoken.data[0].token
     );
 
     return NextResponse.json(
@@ -210,7 +210,7 @@ export async function PATCH(request: NextRequest) {
       });
     }
 
-    const accessToken = await clerkClient.users.getUserOauthAccessToken(user?.id, 'oauth_google');
+    const accessToken = await clerkClient().users.getUserOauthAccessToken(user?.id, 'oauth_google');
 
     if (!accessToken) {
       // If the access token is null or undefined, return an error response
@@ -265,7 +265,7 @@ export async function PATCH(request: NextRequest) {
           // If we haven't hit the rate limit, proceed with the API request
 
           // If the data is not in the cache, fetch it from the API
-          const oauth2Client = createOAuth2Client(accessToken[0].token);
+          const oauth2Client = createOAuth2Client(accesstoken.data[0].token);
           if (!oauth2Client) {
             // If oauth2Client is null, return an error response or throw an error
             return NextResponse.error();
@@ -387,7 +387,7 @@ export async function DELETE(request: NextRequest) {
       });
     }
 
-    const accessToken = await clerkClient.users.getUserOauthAccessToken(user?.id, 'oauth_google');
+    const accessToken = await clerkClient().users.getUserOauthAccessToken(user?.id, 'oauth_google');
 
     if (!accessToken) {
       // If the access token is null or undefined, return an error response
@@ -442,7 +442,7 @@ export async function DELETE(request: NextRequest) {
           // If we haven't hit the rate limit, proceed with the API request
 
           // If the data is not in the cache, fetch it from the API
-          const oauth2Client = createOAuth2Client(accessToken[0].token);
+          const oauth2Client = createOAuth2Client(accesstoken.data[0].token);
           if (!oauth2Client) {
             // If oauth2Client is null, return an error response or throw an error
             return NextResponse.error();

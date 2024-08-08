@@ -8,7 +8,7 @@ import SideBar from '@/src/components/client/Navbar/SideBar';
 import { Toaster } from '@/src/components/ui/sonner';
 
 import { notFound } from 'next/navigation';
-import { currentUser } from '@clerk/nextjs';
+import { currentUser } from '@clerk/nextjs/server';
 import { ClerkProvider } from '@clerk/nextjs';
 
 export default async function DashboardLayout({

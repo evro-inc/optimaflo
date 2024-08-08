@@ -2,7 +2,7 @@ import { NextResponse, NextRequest } from 'next/server';
 import { stripe } from '@/src/lib/stripe';
 import { getURL } from '@/src/utils/helpers';
 import prisma from '@/src/lib/prisma';
-import { auth, currentUser } from '@clerk/nextjs';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 
 export async function POST(request: NextRequest) {

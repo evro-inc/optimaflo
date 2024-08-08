@@ -2,7 +2,7 @@
 import { revalidatePath } from 'next/cache';
 import { FormsSchema, VariableSchemaType } from '@/src/lib/schemas/gtm/variables';
 import z from 'zod';
-import { auth } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 import { limiter } from '../../../../bottleneck';
 import { gtmRateLimit } from '../../../../redis/rateLimits';
@@ -33,7 +33,7 @@ export async function listVariables(skipCache = false) {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-  const accessToken = token[0].token;
+
 
   const cacheKey = `gtm:variables:userId:${userId}`;
   if (skipCache == false) {
@@ -75,7 +75,7 @@ export async function listVariables(skipCache = false) {
           });
 
           const headers = {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
             'Accept-Encoding': 'gzip',
           };
@@ -210,7 +210,7 @@ export async function DeleteVariables(ga4VarToDelete: Variable[]): Promise<Featu
               let url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/variables/${variableId}`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -299,8 +299,8 @@ export async function DeleteVariables(ga4VarToDelete: Variable[]): Promise<Featu
               notFoundError: true, // Set the notFoundError flag
               message: `Could not delete variable. Please check your permissions. Container Name: 
               ${notFoundLimit
-                .map(({ name }) => name)
-                .join(', ')}. All other variables were successfully deleted.`,
+                  .map(({ name }) => name)
+                  .join(', ')}. All other variables were successfully deleted.`,
               results: notFoundLimit.map(({ combinedId, name }) => {
                 const [accountId, containerId, workspaceId] = combinedId.split('-');
                 return {
@@ -506,7 +506,7 @@ export async function CreateVariables(formData: VariableSchemaType) {
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${identifier.accountId}/containers/${identifier.containerId}/workspaces/${identifier.workspaceId}/variables`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -807,7 +807,7 @@ export async function RevertVariables(ga4VarToDelete: any[]): Promise<FeatureRes
               let url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/variables/${variableId}:revert`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -896,8 +896,8 @@ export async function RevertVariables(ga4VarToDelete: any[]): Promise<FeatureRes
               notFoundError: true, // Set the notFoundError flag
               message: `Could not revert variable. Please check your permissions. Container Name: 
               ${notFoundLimit
-                .map(({ name }) => name)
-                .join(', ')}. All other variables were successfully reverted.`,
+                  .map(({ name }) => name)
+                  .join(', ')}. All other variables were successfully reverted.`,
               results: notFoundLimit.map(({ combinedId, name }) => {
                 const [accountId, containerId, workspaceId] = combinedId.split('-');
                 return {
@@ -1103,7 +1103,7 @@ export async function UpdateVariables(formData: VariableSchemaType) {
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${identifier.accountId}/containers/${identifier.containerId}/workspaces/${identifier.workspaceId}/variables/${identifier.variableId}`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { ValidationError } from '@/src/lib/exceptions';
 import { listGtmAccounts } from '@/src/lib/fetch/dashboard/actions/gtm/accounts';
 import { currentUserOauthAccessToken } from '@/src/lib/clerk';
-import { auth } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 import { redis } from '@/src/lib/redis/cache';
 
@@ -22,7 +22,7 @@ export async function GET() {
     }
 
     const token = await currentUserOauthAccessToken(userId);
-    const response = await listGtmAccounts(token[0].token);
+    const response = await listGtmAccounts(token.data[0].token);
 
     redis.set(`gtm:accounts-userId:${userId}`, JSON.stringify(response), 'EX', 60 * 60 * 24 * 7);
 

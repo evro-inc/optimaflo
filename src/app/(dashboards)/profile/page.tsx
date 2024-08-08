@@ -2,7 +2,7 @@
 import { CardTitle, CardHeader, CardContent, Card, CardFooter } from '@/components/ui/card';
 import { AvatarImage, AvatarFallback, Avatar } from '@/components/ui/avatar';
 import ProfileInformation from './modalProfileData';
-import { currentUser } from '@clerk/nextjs';
+import { currentUser } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 import { getSubscription } from '@/src/lib/fetch/subscriptions';
 import { ButtonCustomerPortal } from '@/src/components/client/Button/Button';

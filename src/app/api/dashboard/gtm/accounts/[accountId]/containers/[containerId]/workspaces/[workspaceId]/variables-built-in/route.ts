@@ -10,7 +10,7 @@ import { isErrorWithStatus } from '@/src/lib/fetch/dashboard';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
 import { BuiltInVariableType } from '@/src/types/gtm';
 
-import { useSession } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs/server';
 
 export async function GET(
   req: NextRequest,
@@ -24,8 +24,7 @@ export async function GET(
     };
   }
 ) {
-  const { session } = useSession();
-
+  const { userId } = auth();
   try {
     const accountId = params.accountId;
     const containerId = params.containerId;
@@ -58,8 +57,6 @@ export async function GET(
         status: 400,
       });
     }
-
-    const userId = session?.user?.id;
 
     // using userId get accessToken from prisma account table
     const user = await prisma.account.findFirst({
@@ -154,8 +151,7 @@ export async function POST(
     };
   }
 ) {
-  const { session } = useSession();
-
+  const { userId } = auth();
   try {
     const limit = Number(request.nextUrl.searchParams.get('limit')) || 10;
     const body = JSON.parse(await request.text());
@@ -168,7 +164,7 @@ export async function POST(
 
     // Create a JavaScript object with the extracted parameters
     const paramsJOI = {
-      userId: session?.user?.id,
+      userId: userId,
       accountId,
       containerId,
       workspaceId,
@@ -347,8 +343,7 @@ export async function DELETE(
     };
   }
 ) {
-  const { session } = useSession();
-
+  const { userId } = auth();
   try {
     const limit = Number(request.nextUrl.searchParams.get('limit')) || 10;
     const body = JSON.parse(await request.text());
@@ -361,7 +356,7 @@ export async function DELETE(
 
     // Create a JavaScript object with the extracted parameters
     const paramsJOI = {
-      userId: session?.user?.id,
+      userId: userId,
       accountId,
       containerId,
       workspaceId,
@@ -387,8 +382,6 @@ export async function DELETE(
         status: 400,
       });
     }
-
-    const { userId } = paramsJOI;
 
     // using userId get accessToken from prisma account table
     const user = await prisma.account.findFirst({

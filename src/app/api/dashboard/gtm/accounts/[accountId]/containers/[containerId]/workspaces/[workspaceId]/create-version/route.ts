@@ -9,7 +9,7 @@ import Joi from 'joi';
 import { isErrorWithStatus } from '@/src/lib/fetch/dashboard';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
 
-import { useSession } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs/server';
 
 export async function POST(
   request: NextRequest,
@@ -23,7 +23,7 @@ export async function POST(
     };
   }
 ) {
-  const { session } = useSession();
+  const { userId } = auth();
 
   try {
     const limit = Number(request.nextUrl.searchParams.get('limit')) || 10;
@@ -38,7 +38,7 @@ export async function POST(
 
     // Create a JavaScript object with the extracted parameters
     const paramsJOI = {
-      userId: session?.user?.id,
+      userId: userId,
       accountId,
       containerId,
       name,
@@ -66,8 +66,6 @@ export async function POST(
         status: 400,
       });
     }
-
-    const { userId } = paramsJOI;
 
     // using userId get accessToken from prisma account table
     const user = await prisma.account.findFirst({

@@ -6,7 +6,7 @@ import {
   TransformedFormSchema,
   UserPermissionSchema,
 } from '@/src/lib/schemas/gtm/userPermissions';
-import { auth } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 import { limiter } from '../../../../bottleneck';
 import { gtmRateLimit } from '../../../../redis/rateLimits';
@@ -36,7 +36,7 @@ export async function listGtmPermissions(skipCache = false) {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-  const accessToken = token[0].token;
+
   let responseBody: any;
 
   const cacheKey = `gtm:permissions:userId:${userId}`;
@@ -74,7 +74,7 @@ export async function listGtmPermissions(skipCache = false) {
           });
 
           const headers = {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
             'Accept-Encoding': 'gzip',
           };
@@ -209,7 +209,7 @@ export async function CreatePermissions(formData: FormValuesType) {
 
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${permissionData.accountId}/user_permissions`;
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -415,11 +415,11 @@ export async function CreatePermissions(formData: FormValuesType) {
   const results: FeatureResult[] = formData.forms.flatMap((form) =>
     form.emailAddresses
       ? form.emailAddresses.map((emailObj) => ({
-          id: [], // Ensure id is an array of strings
-          name: [emailObj.emailAddress], // Wrap the string in an array
-          success: true, // or false, depending on the actual result
-          notFound: false, // Set this to the appropriate value based on your logic
-        }))
+        id: [], // Ensure id is an array of strings
+        name: [emailObj.emailAddress], // Wrap the string in an array
+        success: true, // or false, depending on the actual result
+        notFound: false, // Set this to the appropriate value based on your logic
+      }))
       : []
   );
 
@@ -537,7 +537,7 @@ export async function UpdatePermissions(formData: FormValuesType) {
               const url = `https://www.googleapis.com/tagmanager/v2/${permissionData.paths}`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -751,11 +751,11 @@ export async function UpdatePermissions(formData: FormValuesType) {
   const results: FeatureResult[] = formData.forms.flatMap((form) =>
     form.emailAddresses
       ? form.emailAddresses.map((emailObj) => ({
-          id: [], // Ensure id is an array of strings
-          name: [emailObj.emailAddress], // Wrap the string in an array
-          success: true, // or false, depending on the actual result
-          notFound: false, // Set this to the appropriate value based on your logic
-        }))
+        id: [], // Ensure id is an array of strings
+        name: [emailObj.emailAddress], // Wrap the string in an array
+        success: true, // or false, depending on the actual result
+        notFound: false, // Set this to the appropriate value based on your logic
+      }))
       : []
   );
 
@@ -861,7 +861,7 @@ export async function DeletePermissions(
               const url = `https://www.googleapis.com/tagmanager/v2/${path}`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };

@@ -1,7 +1,7 @@
 'use server';
 import { revalidatePath } from 'next/cache';
 import z from 'zod';
-import { auth } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs/server';
 import { gaRateLimit } from '../../../../redis/rateLimits';
 import { limiter } from '../../../../bottleneck';
 import { redis } from '@/src/lib/redis/cache';
@@ -36,7 +36,7 @@ export async function listGAProperties() {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-  const accessToken = token[0].token;
+
 
   const cacheKey = `ga:properties:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
@@ -70,7 +70,7 @@ export async function listGAProperties() {
           );
 
           const headers = {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
             'Accept-Encoding': 'gzip',
           };
@@ -210,7 +210,7 @@ export async function DeleteProperties(
 
               const url = `https://analyticsadmin.googleapis.com/v1beta/properties/${identifier.name}`;
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -500,7 +500,7 @@ export async function createProperties(formData: FormCreateSchema) {
 
               const url = `https://analyticsadmin.googleapis.com/v1beta/properties`;
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -839,7 +839,7 @@ export async function updateProperties(formData: FormUpdateSchema) {
 
               const url = `https://analyticsadmin.googleapis.com/v1beta/properties/${identifier.parent}?updateMask=${updateMask}`;
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -1168,7 +1168,7 @@ export async function updateDataRetentionSettings(formData: FormUpdateSchema) {
 
             const url = `https://analyticsadmin.googleapis.com/v1beta/properties/${identifier.name}/dataRetentionSettings?updateMask=${updateMask}`;
             const headers = {
-              Authorization: `Bearer ${token[0].token}`,
+              Authorization: `Bearer ${token.data[0].token}`,
               'Content-Type': 'application/json',
               'Accept-Encoding': 'gzip',
             };
@@ -1461,7 +1461,7 @@ export async function acknowledgeUserDataCollection(selectedRows) {
 
               const url = `https://analyticsadmin.googleapis.com/v1beta/properties/${identifier.name}:acknowledgeUserDataCollection`;
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -1710,7 +1710,7 @@ export async function getMetadataProperties() {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-  const accessToken = token[0].token;
+
 
   await fetchGASettings(userId);
   const gaData = await prisma.user.findFirst({
@@ -1737,7 +1737,7 @@ export async function getMetadataProperties() {
           );
 
           const headers = {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
             'Accept-Encoding': 'gzip',
           };

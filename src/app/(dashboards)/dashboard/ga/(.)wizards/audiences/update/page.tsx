@@ -1,6 +1,6 @@
 import React from 'react';
 import { notFound } from 'next/navigation';
-import { currentUser } from '@clerk/nextjs';
+import { currentUser } from '@clerk/nextjs/server';
 import FormUpdateConversionEvent from './form';
 
 export default async function UpdateCustomDimensionPage() {

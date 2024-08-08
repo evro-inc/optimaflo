@@ -2,7 +2,7 @@
 import { revalidatePath } from 'next/cache';
 import { FormsSchema, TagType } from '@/src/lib/schemas/gtm/tags';
 import z from 'zod';
-import { auth } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 import { limiter } from '../../../../bottleneck';
 import { gtmRateLimit } from '../../../../redis/rateLimits';
@@ -33,7 +33,7 @@ export async function listTags(skipCache = false) {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-  const accessToken = token[0].token;
+
 
   const cacheKey = `gtm:tags:userId:${userId}`;
   if (skipCache == false) {
@@ -75,7 +75,7 @@ export async function listTags(skipCache = false) {
           });
 
           const headers = {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
             'Accept-Encoding': 'gzip',
           };
@@ -201,7 +201,7 @@ export async function DeleteTags(ga4TagToDelete: Tag[]): Promise<FeatureResponse
               let url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/tags/${tagId}`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -288,8 +288,8 @@ export async function DeleteTags(ga4TagToDelete: Tag[]): Promise<FeatureResponse
               notFoundError: true, // Set the notFoundError flag
               message: `Could not delete tag. Please check your permissions. Container Name: 
               ${notFoundLimit
-                .map(({ name }) => name)
-                .join(', ')}. All other tags were successfully deleted.`,
+                  .map(({ name }) => name)
+                  .join(', ')}. All other tags were successfully deleted.`,
               results: notFoundLimit.map(({ combinedId, name }) => {
                 const [accountId, containerId, workspaceId] = combinedId.split('-');
                 return {
@@ -496,7 +496,7 @@ export async function CreateTags(formData: TagType) {
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${identifier.accountId}/containers/${identifier.containerId}/workspaces/${identifier.workspaceId}/tags`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -800,7 +800,7 @@ export async function UpdateTags(formData: TagType) {
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${identifier.accountId}/containers/${identifier.containerId}/workspaces/${identifier.workspaceId}/tags/${identifier.tagId}`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };

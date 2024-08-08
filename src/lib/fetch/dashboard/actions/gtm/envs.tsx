@@ -2,7 +2,7 @@
 import { revalidatePath } from 'next/cache';
 import { FormSchema } from '@/src/lib/schemas/gtm/envs';
 import z from 'zod';
-import { auth } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 import { limiter } from '../../../../bottleneck';
 import { gtmRateLimit } from '../../../../redis/rateLimits';
@@ -34,7 +34,7 @@ export async function listGtmEnvs() {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-  const accessToken = token[0].token;
+
 
   const cacheKey = `gtm:environments:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
@@ -71,7 +71,7 @@ export async function listGtmEnvs() {
           });
 
           const headers = {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
             'Accept-Encoding': 'gzip',
           };
@@ -119,7 +119,7 @@ export async function getGtmEnv(formData: GoogleTagEnvironmentType) {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-  const accessToken = token[0].token;
+
 
   // Ensure environmentId is always an array
   const toGetEnv = new Set(
@@ -154,7 +154,7 @@ export async function getGtmEnv(formData: GoogleTagEnvironmentType) {
                 const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/environments/${envId}`;
 
                 const headers = {
-                  Authorization: `Bearer ${accessToken}`,
+                  Authorization: `Bearer ${token}`,
                   'Content-Type': 'application/json',
                   'Accept-Encoding': 'gzip',
                 };
@@ -386,7 +386,7 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${envData.accountId}/containers/${envData.containerId}/environments/${envNumber}`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };

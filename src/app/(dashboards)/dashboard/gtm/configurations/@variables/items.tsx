@@ -80,8 +80,8 @@ export const caseConversionType = [
 export async function fetchAllVariables() {
   try {
     const [builtIns, userDefs] = await Promise.all([
-      listGtmBuiltInVariables(true),
-      listVariables(true),
+      listGtmBuiltInVariables(),
+      listVariables(),
     ]);
 
     // Clean and structure the data

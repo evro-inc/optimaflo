@@ -1,7 +1,7 @@
 'use server';
 import { revalidatePath } from 'next/cache';
 import z from 'zod';
-import { auth } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs/server';
 import { redis } from '@/src/lib/redis/cache';
 import { notFound } from 'next/navigation';
 import { currentUserOauthAccessToken } from '@/src/lib/clerk';
@@ -32,7 +32,7 @@ export async function listGCPProjects() {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-  const accessToken = token[0].token;
+
 
   const cacheKey = `ga:projects:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
@@ -49,7 +49,7 @@ export async function listGCPProjects() {
           const url = 'https://firebase.googleapis.com/v1beta1/availableProjects';
 
           const headers = {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
             'Accept-Encoding': 'gzip',
           };
@@ -176,7 +176,7 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.property}/dataStreams`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };

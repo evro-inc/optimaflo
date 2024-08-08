@@ -1,7 +1,7 @@
 'use server'; // Indicates that this file should only be used in a server environment
 
 // Importing necessary modules and functions
-import { auth } from '@clerk/nextjs'; // Importing authentication function from Clerk
+import { auth } from '@clerk/nextjs/server'; // Importing authentication function from Clerk
 import { limiter } from '../../../../bottleneck'; // Importing rate limiter configuration
 import { gaRateLimit } from '../../../../redis/rateLimits'; // Importing rate limiting utility for Google Tag Manager
 import { FormsSchema } from '../../../../schemas/ga/accounts'; // Importing schema for account updates
@@ -40,7 +40,7 @@ export async function listGaAccounts() {
 
   const token: any = await currentUserOauthAccessToken(userId);
 
-  const accessToken = token[0].token;
+
 
   const cacheKey = `ga:accounts:userId:${userId}`;
 
@@ -63,7 +63,7 @@ export async function listGaAccounts() {
           // Setting up the API call
           const url = `https://analyticsadmin.googleapis.com/v1beta/accounts?fields=accounts(name,displayName,regionCode)`;
           const headers = {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
             'Accept-Encoding': 'gzip',
           };
@@ -202,7 +202,7 @@ export async function UpdateGaAccounts(formData: FormUpdateSchema) {
 
               const url = `https://analyticsadmin.googleapis.com/v1beta/${accountIdentifier}?updateMask=displayName`;
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -520,7 +520,7 @@ export async function deleteAccounts(
 
               const url = `https://analyticsadmin.googleapis.com/v1beta/${name}`;
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -787,7 +787,7 @@ export async function createAccounts(formData: FormCreateSchema) {
 
               const url = `https://analyticsadmin.googleapis.com/v1beta/accounts:provisionAccountTicket`;
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };

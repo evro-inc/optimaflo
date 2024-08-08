@@ -2,7 +2,7 @@
 import { revalidatePath } from 'next/cache';
 import { FormSchema } from '@/src/lib/schemas/gtm/workspaces';
 import z from 'zod';
-import { auth } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 import { limiter } from '../../../../bottleneck';
 import { gtmRateLimit } from '../../../../redis/rateLimits';
@@ -35,7 +35,7 @@ export async function listGtmWorkspaces(skipCache = false) {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-  const accessToken = token[0].token;
+
   let responseBody: any;
 
   const cacheKey = `gtm:workspaces:userId:${userId}`;
@@ -76,7 +76,7 @@ export async function listGtmWorkspaces(skipCache = false) {
           });
 
           const headers = {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
             'Accept-Encoding': 'gzip',
           };
@@ -188,7 +188,7 @@ export async function DeleteWorkspaces(
 
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}`;
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -481,7 +481,7 @@ export async function CreateWorkspaces(formData: FormCreateSchema) {
 
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${workspaceData.accountId}/containers/${workspaceData.containerId}/workspaces`;
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -804,7 +804,7 @@ export async function UpdateWorkspaces(formData: FormUpdateSchema) {
 
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${workspaceData.accountId}/containers/${workspaceData.containerId}/workspaces/${workspaceData.workspaceId}`;
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -1065,7 +1065,7 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-  const accessToken = token[0].token;
+
 
   let retries = 0;
   const MAX_RETRIES = 3;
@@ -1185,7 +1185,7 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${workspaceData.accountId}/containers/${workspaceData.containerId}/workspaces/${workspaceData.workspaceId}:create_version`;
 
               const headers = {
-                Authorization: `Bearer ${accessToken}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -1454,7 +1454,7 @@ export async function getStatusGtmWorkspaces() {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-  const accessToken = token[0].token;
+
 
   await fetchGtmSettings(userId);
 
@@ -1477,7 +1477,7 @@ export async function getStatusGtmWorkspaces() {
   });
 
   const headers = {
-    Authorization: `Bearer ${accessToken}`,
+    Authorization: `Bearer ${token}`,
     'Content-Type': 'application/json',
     'Accept-Encoding': 'gzip',
   };

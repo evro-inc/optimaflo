@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import { DataTable } from '@/src/app/(dashboards)/dashboard/gtm/entities/@permissions/table';
-import { auth } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 import { listGtmAccounts } from '@/src/lib/fetch/dashboard/actions/gtm/accounts';
 import { Skeleton } from '@/src/components/ui/skeleton';

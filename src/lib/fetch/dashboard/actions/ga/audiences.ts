@@ -1,6 +1,6 @@
 'use server';
 import { revalidatePath } from 'next/cache';
-import { auth } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs/server';
 import { gaRateLimit } from '../../../../redis/rateLimits';
 import { limiter } from '../../../../bottleneck';
 import { redis } from '@/src/lib/redis/cache';
@@ -30,7 +30,7 @@ export async function listGAAudiences() {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-  const accessToken = token[0].token;
+
 
   const cacheKey = `ga:audiences:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
@@ -65,7 +65,7 @@ export async function listGAAudiences() {
           );
 
           const headers = {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
             'Accept-Encoding': 'gzip',
           };
@@ -190,7 +190,7 @@ export async function createGAAudiences(formData: Audience) {
               const url = `https://analyticsadmin.googleapis.com/v1alpha/${identifier.property}/audiences`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -280,9 +280,9 @@ export async function createGAAudiences(formData: Audience) {
                   adsPersonalizationEnabled: validatedData.adsPersonalizationEnabled,
                   eventTrigger: validatedData.eventTrigger
                     ? {
-                        eventName: validatedData.eventTrigger.eventName,
-                        logCondition: validatedData.eventTrigger.logCondition,
-                      }
+                      eventName: validatedData.eventTrigger.eventName,
+                      logCondition: validatedData.eventTrigger.logCondition,
+                    }
                     : undefined, // Include eventTrigger only if present
                   exclusionDurationMode: validatedData.exclusionDurationMode,
                   filterClauses: buildFilterClauses(validatedData.filterClauses),
@@ -568,7 +568,7 @@ export async function updateGAAudiences(formData: Audience) {
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.name}?updateMask=${updateMask}`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -864,7 +864,7 @@ export async function deleteGAAudiences(
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.name}`;
 
               const headers = {
-                Authorization: `Bearer ${token[0].token}`,
+                Authorization: `Bearer ${token.data[0].token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };

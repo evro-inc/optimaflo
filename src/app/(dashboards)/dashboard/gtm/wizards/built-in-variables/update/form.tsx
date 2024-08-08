@@ -81,9 +81,9 @@ const FormUpdateKeyEvents = () => {
     countingMethod: rowData.countingMethod ?? CountingMethod.UNSPECIFIED,
     defaultValue: rowData.defaultValue
       ? {
-        numericValue: rowData.defaultValue.numericValue ?? undefined,
-        currencyCode: rowData.defaultValue.currencyCode ?? undefined,
-      }
+          numericValue: rowData.defaultValue.numericValue ?? undefined,
+          currencyCode: rowData.defaultValue.currencyCode ?? undefined,
+        }
       : undefined,
     includeDefaultValue:
       rowData.defaultValue?.numericValue !== undefined ||
