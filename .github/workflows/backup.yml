@@ -14,7 +14,7 @@ jobs:
     permissions:
       contents: write
     env:
-      supabase_db_url: ${{ process.env.DIRECT_URL }} # For example: postgresql://postgres:[YOUR-PASSWORD]@db.<ref>.supabase.co:5432/postgres
+      supabase_db_url: ${{ secrets.SUPABASE_DB_URL_OPTIMAFLO_PROD }} # For example: postgresql://postgres:[YOUR-PASSWORD]@db.<ref>.supabase.co:5432/postgres
     steps:
       - uses: actions/checkout@v3
         with:
