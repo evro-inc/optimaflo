@@ -22,7 +22,7 @@ jobs:
       supabase_db_url_prod: ${{ secrets.SUPABASE_DB_URL_OPTIMAFLO_PROD }} # Production DB URL
       supabase_db_url_sandbox: ${{ secrets.SUPABASE_DB_URL_OPTIMAFLO_SANDBOX }} # Sandbox DB URL
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4  # Ensure to use the latest version compatible with Node 16/20
       - uses: supabase/setup-cli@v1
         with:
           version: latest
@@ -38,9 +38,10 @@ jobs:
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
-      - name: Create or Checkout Branch
+      - name: Fetch and Checkout Branch
         run: |
           git fetch origin
+          git branch -a  # List all branches for debugging
           if git show-ref --quiet refs/heads/backup-${{ github.ref == 'refs/heads/sandbox' && 'sandbox' || 'main' }}-branch; then
             git checkout backup-${{ github.ref == 'refs/heads/sandbox' && 'sandbox' || 'main' }}-branch
           else
@@ -51,7 +52,8 @@ jobs:
           git add roles.sql schema.sql data.sql
           git commit -m "Supabase backup for ${{ github.ref == 'refs/heads/sandbox' && 'sandbox' || 'main' }}"
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v3
+        id: create_pr
+        uses: peter-evans/create-pull-request@v4  # Update to the latest version
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: Supabase backup for ${{ github.ref == 'refs/heads/sandbox' && 'sandbox' || 'main' }}
@@ -59,3 +61,6 @@ jobs:
           title: "[AUTO] Supabase backup for ${{ github.ref == 'refs/heads/sandbox' && 'sandbox' || 'main' }}"
           body: "Automated backup of Supabase data for ${{ github.ref == 'refs/heads/sandbox' && 'sandbox' || 'main' }}"
           base: ${{ github.ref == 'refs/heads/sandbox' && 'sandbox' || 'main' }}
+      - name: Verify Pull Request Creation
+        if: steps.create_pr.outputs.pull-request-url != ''
+        run: echo "Pull request created: ${{ steps.create_pr.outputs.pull-request-url }}"
