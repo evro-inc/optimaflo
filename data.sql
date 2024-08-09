@@ -380,6 +380,16 @@ f7494ff9-6277-40ff-b994-3d2162fc3a1d	6ceef05fa4276c376e898ca3eefe2b706e8ba4be57b
 --
 
 COPY "public"."ga" ("id", "user_id", "account_id", "property_id", "status") FROM stdin;
+clzn5uwb90000ya0bp33i4lpd	user_2kM2kkcA9SGqWlvoyhd9fL6uTF9	accounts/240133506	330596172	\N
+clzn5uwgr0001ya0b8p6n57f2	user_2kM2kkcA9SGqWlvoyhd9fL6uTF9	accounts/240133506	331458876	\N
+clzn5uwl50002ya0b5x6z2fiv	user_2kM2kkcA9SGqWlvoyhd9fL6uTF9	accounts/240133506	353795135	\N
+clzn5uwpn0003ya0btp5t11zv	user_2kM2kkcA9SGqWlvoyhd9fL6uTF9	accounts/240133506	354471664	\N
+clzn5uwxn0004ya0bsaggsmeo	user_2kM2kkcA9SGqWlvoyhd9fL6uTF9	accounts/240133506	443227926	\N
+clzn5ux4u0005ya0bgjnd53r9	user_2kM2kkcA9SGqWlvoyhd9fL6uTF9	accounts/240133506	443194426	\N
+clzn5uxdl0006ya0b6do5rj5g	user_2kM2kkcA9SGqWlvoyhd9fL6uTF9	accounts/260310161	357901472	\N
+clzn5uxmn0007ya0bc9ge5fwi	user_2kM2kkcA9SGqWlvoyhd9fL6uTF9	accounts/300860996	426648744	\N
+clzn5uxrt0008ya0bb4nb0p8p	user_2kM2kkcA9SGqWlvoyhd9fL6uTF9	accounts/300860996	428849133	\N
+clzn5uxx50009ya0bbllo4ngw	user_2kM2kkcA9SGqWlvoyhd9fL6uTF9	accounts/300860996	428843375	\N
 \.
 
 
