@@ -69,12 +69,6 @@ const FormUpdatePropertyAccess = () => {
     name: rowData.name,
   }));
 
-  if (notFoundError) {
-    return <NotFoundErrorModal />;
-  }
-  if (error) {
-    return <ErrorModal />;
-  }
   const form = useForm<Forms>({
     defaultValues: {
       forms: formDataDefaults,
@@ -86,6 +80,13 @@ const FormUpdatePropertyAccess = () => {
     control: form.control,
     name: 'forms',
   });
+
+  if (notFoundError) {
+    return <NotFoundErrorModal onClose={undefined} />;
+  }
+  if (error) {
+    return <ErrorModal />;
+  }
 
   const handleNext = async () => {
     // Determine the names of the fields in the current form to validate

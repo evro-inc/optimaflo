@@ -42,25 +42,21 @@ export function useUpdateHookForm(
       return notFound(); // Make sure `notFound` is defined or imported appropriately
     }
 
-    try {
-      const handleUpdateLimit: any = await tierUpdateLimit(userId, updateTierLimitType); // Ensure tierUpdateLimit is imported or defined
+    const handleUpdateLimit: any = await tierUpdateLimit(userId, updateTierLimitType); // Ensure tierUpdateLimit is imported or defined
 
-      const limit = Number(handleUpdateLimit.updateLimit);
-      const updateUsage = Number(handleUpdateLimit.updateUsage);
-      const availableUpdateUsage = limit - updateUsage;
+    const limit = Number(handleUpdateLimit.updateLimit);
+    const updateUsage = Number(handleUpdateLimit.updateUsage);
+    const availableUpdateUsage = limit - updateUsage;
 
-      if (rowSelectedCount > availableUpdateUsage) {
-        toast.error(
-          `Cannot update ${rowSelectedCount} streams as it exceeds the available limit. You have ${availableUpdateUsage} more creation(s) available.`
-        );
-        dispatch(setIsLimitReached(true));
-      } else if (handleUpdateLimit && handleUpdateLimit.limitReached) {
-        dispatch(setIsLimitReached(true));
-      } else {
-        router.push(url);
-      }
-    } catch (error) {
-      throw error; // Rethrow or handle as needed
+    if (rowSelectedCount > availableUpdateUsage) {
+      toast.error(
+        `Cannot update ${rowSelectedCount} streams as it exceeds the available limit. You have ${availableUpdateUsage} more creation(s) available.`
+      );
+      dispatch(setIsLimitReached(true));
+    } else if (handleUpdateLimit && handleUpdateLimit.limitReached) {
+      dispatch(setIsLimitReached(true));
+    } else {
+      router.push(url);
     }
   };
 }

@@ -48,7 +48,6 @@ import CustomEventTrigger from '../components/customEvent';
 import TimerTrigger from '../components/timer';
 import TriggerGroup from '../components/triggerGroup';
 import FiringOnTrigger from '../components/firesOnTrigger';
-import EntityComponent from '../components/entity';
 import { triggerTypeArray } from '../../../configurations/@triggers/items';
 
 const NotFoundErrorModal = dynamic(
@@ -93,13 +92,6 @@ const FormUpdateTriggers = ({ data }) => {
     formatValue: { caseConversionType: 'none' },
   }));
 
-  if (notFoundError) {
-    return <NotFoundErrorModal onClose={undefined} />;
-  }
-  if (error) {
-    return <ErrorModal />;
-  }
-
   const form = useForm<Forms>({
     defaultValues: {
       forms: formDataDefaults,
@@ -107,7 +99,7 @@ const FormUpdateTriggers = ({ data }) => {
     resolver: zodResolver(FormsSchema),
   });
 
-  const { fields, append } = useFieldArray({
+  const { fields } = useFieldArray({
     control: form.control,
     name: 'forms',
   });
@@ -125,6 +117,13 @@ const FormUpdateTriggers = ({ data }) => {
       form.setValue(`forms.${index}.triggerId`, data.triggerId);
     });
   }, [form, formDataDefaults]);
+
+  if (notFoundError) {
+    return <NotFoundErrorModal onClose={undefined} />;
+  }
+  if (error) {
+    return <ErrorModal />;
+  }
 
   const handleNext = async () => {
     const currentFormPath = `forms.${currentFormIndex}`;

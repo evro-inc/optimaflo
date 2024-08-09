@@ -18,7 +18,7 @@ interface Props {
   table?: any;
 }
 
-const VisTrigger = ({ formIndex, table = [] }: Props) => {
+const VisTrigger = ({ formIndex }: Props) => {
   const { control, register, setValue } = useFormContext();
   const { fields, append, remove } = useFieldArray({
     control,

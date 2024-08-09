@@ -1,11 +1,6 @@
 'use server';
 import { revalidatePath } from 'next/cache';
-import {
-  FormSchema,
-  FormValuesType,
-  TransformedFormSchema,
-  UserPermissionSchema,
-} from '@/src/lib/schemas/gtm/userPermissions';
+import { FormValuesType, TransformedFormSchema } from '@/src/lib/schemas/gtm/userPermissions';
 import { auth } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 import { limiter } from '../../../../bottleneck';
@@ -125,8 +120,6 @@ export async function CreatePermissions(formData: FormValuesType) {
   const successfulCreations: string[] = [];
   const featureLimitReached: string[] = [];
   const notFoundLimit: { id: string; name: string; message?: string }[] = [];
-  let accountIdForCache: string | undefined;
-  let containerIdForCache: string | undefined;
 
   const toCreatePermissions = new Set(formData.forms);
 
@@ -192,8 +185,7 @@ export async function CreatePermissions(formData: FormValuesType) {
           await limiter.schedule(async () => {
             const createPromises = Array.from(toCreatePermissions).map(async (identifier: any) => {
               const { accountId, emailAddress, accountAccess, containerAccess } = identifier;
-              accountIdForCache = accountId;
-              containerIdForCache = identifier.containerAccess[0].containerId;
+
               const permissionData = {
                 accountId: accountId,
                 emailAddress: emailAddress,
@@ -374,7 +366,7 @@ export async function CreatePermissions(formData: FormValuesType) {
         }
       } finally {
         // This block will run regardless of the outcome of the try...catch
-        if (accountIdForCache && containerIdForCache && userId) {
+        if (userId) {
           const cacheKey = `gtm:permissions:userId:${userId}`;
           await redis.del(cacheKey);
           await revalidatePath(`/dashboard/gtm/entities`);
@@ -405,7 +397,7 @@ export async function CreatePermissions(formData: FormValuesType) {
     };
   }
 
-  if (successfulCreations.length > 0 && accountIdForCache && containerIdForCache) {
+  if (successfulCreations.length > 0) {
     const cacheKey = `gtm:permissions:userId:${userId}`;
     await redis.del(cacheKey);
     revalidatePath(`/dashboard/gtm/entities`);
@@ -415,11 +407,11 @@ export async function CreatePermissions(formData: FormValuesType) {
   const results: FeatureResult[] = formData.forms.flatMap((form) =>
     form.emailAddresses
       ? form.emailAddresses.map((emailObj) => ({
-        id: [], // Ensure id is an array of strings
-        name: [emailObj.emailAddress], // Wrap the string in an array
-        success: true, // or false, depending on the actual result
-        notFound: false, // Set this to the appropriate value based on your logic
-      }))
+          id: [], // Ensure id is an array of strings
+          name: [emailObj.emailAddress], // Wrap the string in an array
+          success: true, // or false, depending on the actual result
+          notFound: false, // Set this to the appropriate value based on your logic
+        }))
       : []
   );
 
@@ -449,8 +441,6 @@ export async function UpdatePermissions(formData: FormValuesType) {
   const successfulCreations: string[] = [];
   const featureLimitReached: string[] = [];
   const notFoundLimit: { id: string; name: string; message?: string }[] = [];
-  let accountIdForCache: string | undefined;
-  let containerIdForCache: string | undefined;
 
   const toUpdatePermissions = new Set(formData.forms);
 
@@ -517,8 +507,6 @@ export async function UpdatePermissions(formData: FormValuesType) {
           await limiter.schedule(async () => {
             const updatePromises = Array.from(toUpdatePermissions).map(async (identifier: any) => {
               const { accountId, emailAddress, accountAccess, containerAccess, paths } = identifier;
-              accountIdForCache = accountId;
-              containerIdForCache = identifier.containerAccess[0].containerId;
 
               const permissionData = {
                 accountId: accountId,
@@ -710,7 +698,7 @@ export async function UpdatePermissions(formData: FormValuesType) {
         }
       } finally {
         // This block will run regardless of the outcome of the try...catch
-        if (accountIdForCache && containerIdForCache && userId) {
+        if (userId) {
           const cacheKey = `gtm:permissions:userId:${userId}`;
           await redis.del(cacheKey);
           await revalidatePath(`/dashboard/gtm/entities`);
@@ -741,7 +729,7 @@ export async function UpdatePermissions(formData: FormValuesType) {
     };
   }
 
-  if (successfulCreations.length > 0 && accountIdForCache && containerIdForCache) {
+  if (successfulCreations.length > 0) {
     const cacheKey = `gtm:permissions:userId:${userId}`;
     await redis.del(cacheKey);
     revalidatePath(`/dashboard/gtm/entities`);
@@ -751,11 +739,11 @@ export async function UpdatePermissions(formData: FormValuesType) {
   const results: FeatureResult[] = formData.forms.flatMap((form) =>
     form.emailAddresses
       ? form.emailAddresses.map((emailObj) => ({
-        id: [], // Ensure id is an array of strings
-        name: [emailObj.emailAddress], // Wrap the string in an array
-        success: true, // or false, depending on the actual result
-        notFound: false, // Set this to the appropriate value based on your logic
-      }))
+          id: [], // Ensure id is an array of strings
+          name: [emailObj.emailAddress], // Wrap the string in an array
+          success: true, // or false, depending on the actual result
+          notFound: false, // Set this to the appropriate value based on your logic
+        }))
       : []
   );
 
@@ -802,8 +790,6 @@ export async function DeletePermissions(
         path: permission.path as string,
       }))
   );
-
-  let accountIdForCache: string | undefined;
 
   // Authenticating user and getting user ID
   const { userId } = await auth();
@@ -856,7 +842,6 @@ export async function DeletePermissions(
             // Creating promises for each container deletion
             const deletePromises = Array.from(toDeletePermissions).map(async (props) => {
               const { accountId, emailAddress, path } = props;
-              accountIdForCache = accountId;
 
               const url = `https://www.googleapis.com/tagmanager/v2/${path}`;
 
@@ -913,11 +898,6 @@ export async function DeletePermissions(
 
                   toDeletePermissions.delete(props);
                   permissionDenied = errorResult ? true : permissionDenied;
-
-                  if (selectedPermissions.length > 0) {
-                    const firstPermissionId = selectedPermissions.values().next().value;
-                    accountIdForCache = firstPermissionId.split('-')[0];
-                  }
                 }
               } catch (error: any) {
                 // Handling exceptions during fetch

@@ -1,7 +1,6 @@
-import React, { Suspense } from 'react';
+import React from 'react';
 import { notFound } from 'next/navigation';
 import { auth } from '@clerk/nextjs/server';
-import Link from 'next/link';
 
 export default async function Page() {
   const { userId } = auth();

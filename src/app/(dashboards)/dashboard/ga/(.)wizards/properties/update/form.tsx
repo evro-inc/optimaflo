@@ -19,7 +19,7 @@ import {
 } from '@/src/components/ui/form';
 
 import { Input } from '@/src/components/ui/input';
-import { FeatureResponse, FormWizardUpdateProps, GA4PropertyType } from '@/src/types/types';
+import { FeatureResponse, GA4PropertyType } from '@/src/types/types';
 import { toast } from 'sonner';
 import { updateProperties } from '@/src/lib/fetch/dashboard/actions/ga/properties';
 import {
@@ -89,12 +89,6 @@ const FormUpdateProperty = () => {
     acknowledgment: rowData.acknowledgment,
   }));
 
-  if (notFoundError) {
-    return <NotFoundErrorModal />;
-  }
-  if (error) {
-    return <ErrorModal />;
-  }
   const form = useForm<Forms>({
     defaultValues: {
       forms: formDataDefaults,
@@ -106,6 +100,13 @@ const FormUpdateProperty = () => {
     control: form.control,
     name: 'forms',
   });
+
+  if (notFoundError) {
+    return <NotFoundErrorModal onClose={undefined} />;
+  }
+  if (error) {
+    return <ErrorModal />;
+  }
 
   const handleNext = async () => {
     const currentFormIndex = currentStep - 2; // Adjusting for the array index and step count

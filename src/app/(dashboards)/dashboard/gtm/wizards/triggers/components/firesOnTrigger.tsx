@@ -1,17 +1,9 @@
 'use client';
 import { Button } from '@/src/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/src/components/ui/form';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/src/components/ui/form';
 import { MinusIcon, PlusIcon, QuestionMarkCircledIcon } from '@radix-ui/react-icons';
 import React, { useEffect, useState } from 'react';
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
-import { useDispatch } from 'react-redux';
 import {
   Select,
   SelectContent,
@@ -24,7 +16,6 @@ import { fetchAllVariables } from '../../../configurations/@variables/items';
 import { filterType } from '../../../configurations/@triggers/items';
 import { Input } from '@/src/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/src/components/ui/radio-group';
-import { Label } from '@/src/components/ui/label';
 import {
   Tooltip,
   TooltipContent,
@@ -33,13 +24,12 @@ import {
 } from '@/src/components/ui/tooltip';
 
 const FiringOnTrigger = ({ formIndex }) => {
-  const dispatch = useDispatch();
-  const { control, register, setValue, watch } = useFormContext();
+  const { control, register } = useFormContext();
   const { fields, remove, append } = useFieldArray({
     control,
     name: `forms.${formIndex}.filter`,
   });
-  const [cachedVariables, setCachedVariables] = useState<any[]>([]);
+  const [, setCachedVariables] = useState<any[]>([]);
 
   const selectedPages = useWatch({
     control,

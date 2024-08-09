@@ -471,7 +471,7 @@ const FormCreateWorkspace: React.FC<FormCreateWorkspaceProps> = ({
 
       {isLimitReached && <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />}
 
-      {notFoundError && <NotFoundErrorModal />}
+      {notFoundError && <NotFoundErrorModal onClose={undefined} />}
     </>
   );
 };

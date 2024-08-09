@@ -34,7 +34,6 @@ import {
   FormCreateProps,
   MeasurementUnit,
   MetricScope,
-  RestrictedMetricType,
 } from '@/src/types/types';
 import { toast } from 'sonner';
 import {
@@ -117,19 +116,6 @@ const FormCreateCustomMetric: React.FC<FormCreateProps> = ({
     },
   });
 
-  // Effect to update count when amount changes
-  useEffect(() => {
-    const amount = parseInt(formCreateAmount.getValues('amount').toString());
-    dispatch(setCount(amount));
-  }, [formCreateAmount.watch('amount'), dispatch]);
-
-  if (notFoundError) {
-    return <NotFoundErrorModal />;
-  }
-  if (error) {
-    return <ErrorModal />;
-  }
-
   const form = useForm<Forms>({
     defaultValues: {
       forms: [formDataDefaults],
@@ -141,6 +127,21 @@ const FormCreateCustomMetric: React.FC<FormCreateProps> = ({
     control: form.control,
     name: 'forms',
   });
+
+  // Effect to update count when amount changes
+  useEffect(() => {
+    const amountValue = formCreateAmount.watch('amount'); // Extract the watched value
+    const amount = parseInt(amountValue?.toString() || '0'); // Handle cases where amountValue might be undefined or null
+    dispatch(setCount(amount));
+  }, [formCreateAmount, dispatch]); // Include formCreateAmount and dispatch as dependencies
+
+  if (notFoundError) {
+    return <NotFoundErrorModal onClose={undefined} />;
+  }
+  if (error) {
+    return <ErrorModal />;
+  }
+
   const addForm = () => {
     append(formDataDefaults);
   };
@@ -321,16 +322,18 @@ const FormCreateCustomMetric: React.FC<FormCreateProps> = ({
               name="amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>How many custom metrics do you want to create?</FormLabel>
+                  <FormLabel>How many properties do you want to create?</FormLabel>
                   <Select
                     onValueChange={(value) => {
+                      field.onChange(value); // Use field.onChange to update the form value
                       handleAmountChange(value); // Call the modified handler
                     }}
+                    value={field.value.toString()} // Ensure the Select reflects the form state
                     defaultValue={count.toString()}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select the amount of custom metrics you want to create." />
+                        <SelectValue placeholder="Select the amount of properties you want to create." />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -344,6 +347,7 @@ const FormCreateCustomMetric: React.FC<FormCreateProps> = ({
                 </FormItem>
               )}
             />
+
             <Button type="button" onClick={handleNext}>
               Next
             </Button>
@@ -592,7 +596,7 @@ const FormCreateCustomMetric: React.FC<FormCreateProps> = ({
                                   <FormField
                                     control={form.control}
                                     name={`forms.${currentStep - 2}.restrictedMetricType`}
-                                    render={({ field }) => (
+                                    render={() => (
                                       <FormItem>
                                         <FormLabel>Restricted Metric Type</FormLabel>
                                         <FormDescription>
@@ -604,15 +608,12 @@ const FormCreateCustomMetric: React.FC<FormCreateProps> = ({
 
                                         {RestrictedMetric.map((item) => (
                                           <FormField
-                                            key={item.id}
+                                            key={item.id} // Ensure the key is placed at the correct position
                                             control={form.control}
                                             name={`forms.${currentStep - 2}.restrictedMetricType`}
                                             render={({ field }) => {
                                               return (
-                                                <FormItem
-                                                  key={item.id}
-                                                  className="flex flex-row items-start space-x-3 space-y-0"
-                                                >
+                                                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                                                   <FormControl>
                                                     <Checkbox
                                                       checked={

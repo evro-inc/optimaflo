@@ -18,7 +18,7 @@ interface Props {
   table?: any;
 }
 
-const YouTubeTrigger = ({ formIndex, table = [] }: Props) => {
+const YouTubeTrigger = ({ formIndex }: Props) => {
   const { control, register, setValue } = useFormContext();
   const { fields, append } = useFieldArray({
     control,
@@ -29,13 +29,6 @@ const YouTubeTrigger = ({ formIndex, table = [] }: Props) => {
     control,
     name: `forms.${formIndex}.type`,
   });
-
-  const parameters =
-    useWatch({
-      control,
-      name: `forms.${formIndex}.parameter`,
-      exact: true,
-    }) || [];
 
   const captureProgressValue = useWatch({
     control,

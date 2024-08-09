@@ -10,11 +10,7 @@ import { redis } from '../../../../redis/cache';
 import { currentUserOauthAccessToken } from '../../../../clerk';
 import prisma from '@/src/lib/prisma';
 import { BuiltInVariable, FeatureResponse, FeatureResult } from '@/src/types/types';
-import {
-  handleApiResponseError,
-  tierCreateLimit,
-  tierDeleteLimit,
-} from '@/src/utils/server';
+import { handleApiResponseError, tierCreateLimit, tierDeleteLimit } from '@/src/utils/server';
 import { fetchGtmSettings } from '../..';
 
 // Define the types for the form data
@@ -32,7 +28,6 @@ export async function listGtmBuiltInVariables(skipCache = false) {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-
 
   const cacheKey = `gtm:builtInVariables:userId:${userId}`;
   if (!skipCache) {
@@ -182,81 +177,79 @@ export async function DeleteBuiltInVariables(
 
       if (remaining > 0) {
         await limiter.schedule(async () => {
-          const deletePromises = Array.from(groupedVars.entries()).map(
-            async ([combinedId, props]) => {
-              const { accountId, containerId, workspaceId } = props[0];
-              const types = props.map((prop) => prop.type).join('&type=');
-              const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/built_in_variables?type=${types}`;
+          const deletePromises = Array.from(groupedVars.entries()).map(async ([, props]) => {
+            const { accountId, containerId, workspaceId } = props[0];
+            const types = props.map((prop) => prop.type).join('&type=');
+            const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/built_in_variables?type=${types}`;
 
-              const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
-                'Content-Type': 'application/json',
-                'Accept-Encoding': 'gzip',
-              };
+            const headers = {
+              Authorization: `Bearer ${token.data[0].token}`,
+              'Content-Type': 'application/json',
+              'Accept-Encoding': 'gzip',
+            };
 
-              try {
-                const response = await fetch(url, {
-                  method: 'DELETE',
-                  headers: headers,
+            try {
+              const response = await fetch(url, {
+                method: 'DELETE',
+                headers: headers,
+              });
+              const parsedResponse = await response.json();
+
+              if (response.ok) {
+                successfulDeletions.push({
+                  combinedId: `${accountId}-${containerId}-${workspaceId}`,
+                  name: types,
                 });
-                const parsedResponse = await response.json();
 
-                if (response.ok) {
-                  successfulDeletions.push({
-                    combinedId: `${accountId}-${containerId}-${workspaceId}`,
-                    name: types,
-                  });
+                await prisma.tierLimit.update({
+                  where: { id: tierLimitResponse.id },
+                  data: { deleteUsage: { increment: 1 } },
+                });
 
-                  await prisma.tierLimit.update({
-                    where: { id: tierLimitResponse.id },
-                    data: { deleteUsage: { increment: 1 } },
-                  });
+                fetchGtmSettings(userId);
 
-                  fetchGtmSettings(userId);
-
-                  return {
-                    combinedId: `${accountId}-${containerId}-${workspaceId}`,
-                    success: true,
-                  };
-                } else {
-                  const errorResult = await handleApiResponseError(
-                    response,
-                    parsedResponse,
-                    'builtInVariable',
-                    types.split('&type=')
-                  );
-
-                  if (errorResult) {
-                    errors.push(`${errorResult.message}`);
-                    if (
-                      errorResult.errorCode === 403 &&
-                      parsedResponse.message === 'Feature limit reached'
-                    ) {
-                      featureLimitReached.push({
-                        combinedId: `${accountId}-${containerId}-${workspaceId}`,
-                        name: types,
-                      });
-                    } else if (errorResult.errorCode === 404) {
-                      notFoundLimit.push({
-                        combinedId: `${accountId}-${containerId}-${workspaceId}`,
-                        name: types,
-                      });
-                    }
-                  } else {
-                    errors.push(`An unknown error occurred for built-in variable types ${types}.`);
-                  }
-
-                  permissionDenied = errorResult ? true : permissionDenied;
-                }
-              } catch (error: any) {
-                errors.push(
-                  `Error deleting built-in variable ${accountId}-${containerId}-${workspaceId}: ${error.message}`
+                return {
+                  combinedId: `${accountId}-${containerId}-${workspaceId}`,
+                  success: true,
+                };
+              } else {
+                const errorResult = await handleApiResponseError(
+                  response,
+                  parsedResponse,
+                  'builtInVariable',
+                  types.split('&type=')
                 );
-              }
 
-              return { containerId, success: false };
+                if (errorResult) {
+                  errors.push(`${errorResult.message}`);
+                  if (
+                    errorResult.errorCode === 403 &&
+                    parsedResponse.message === 'Feature limit reached'
+                  ) {
+                    featureLimitReached.push({
+                      combinedId: `${accountId}-${containerId}-${workspaceId}`,
+                      name: types,
+                    });
+                  } else if (errorResult.errorCode === 404) {
+                    notFoundLimit.push({
+                      combinedId: `${accountId}-${containerId}-${workspaceId}`,
+                      name: types,
+                    });
+                  }
+                } else {
+                  errors.push(`An unknown error occurred for built-in variable types ${types}.`);
+                }
+
+                permissionDenied = errorResult ? true : permissionDenied;
+              }
+            } catch (error: any) {
+              errors.push(
+                `Error deleting built-in variable ${accountId}-${containerId}-${workspaceId}: ${error.message}`
+              );
             }
-          );
+
+            return { containerId, success: false };
+          });
 
           await Promise.all(deletePromises);
         });
@@ -366,17 +359,15 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
   const successfulCreations: string[] = [];
   const featureLimitReached: string[] = [];
   const notFoundLimit: { id: string; name: string }[] = [];
-  let accountIdForCache: string | undefined;
-  let containerIdForCache: string | undefined;
 
   // Refactor: Use string identifiers in the set
   const toCreateBuiltInVariables = new Set(
     formData.forms.flatMap((form) =>
       Array.isArray(form.entity)
         ? form.entity.map((entity) => ({
-          entity,
-          type: form.type,
-        }))
+            entity,
+            type: form.type,
+          }))
         : [{ entity: form.entity, type: form.type }]
     )
   );
@@ -454,9 +445,6 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
 
                 const [accountId, containerId, workspaceId] = identifier.entity.split('-');
 
-                accountIdForCache = accountId;
-                containerIdForCache = containerId;
-
                 const url = new URL(
                   `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/built_in_variables`
                 );
@@ -483,8 +471,6 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
                   const parsedResponse = await response.json();
 
                   if (response.ok) {
-                    const numberOfCreatedVariables = builtInVariableData.type.length; // Get the number of created variables
-
                     await prisma.tierLimit.update({
                       where: { id: tierLimitResponse.id },
                       data: { createUsage: { increment: 1 } }, // Increment by the number of created variables
@@ -607,7 +593,7 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
         }
       } finally {
         // This block will run regardless of the outcome of the try...catch
-        if (accountIdForCache && containerIdForCache && userId) {
+        if (userId) {
           const cacheKey = `gtm:builtInVariables:userId:${userId}`;
           await redis.del(cacheKey);
           await revalidatePath(`/dashboard/gtm/configurations`);
@@ -638,7 +624,7 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
     };
   }
 
-  if (successfulCreations.length > 0 && accountIdForCache && containerIdForCache) {
+  if (successfulCreations.length > 0) {
     const cacheKey = `gtm:builtInVariables:userId:${userId}`;
     await redis.del(cacheKey);
     revalidatePath(`/dashboard/gtm/configurations`);
@@ -682,7 +668,6 @@ export async function RevertBuiltInVariables(
   const notFoundLimit: Array<{ combinedId: string; name: string }> = [];
 
   const toDeleteBuiltInVariables = new Set<BuiltInVariable>(ga4BuiltInVarToRevert);
-  let accountIdForCache: string | undefined;
 
   // Correctly group by path
   const groupedByPath = Array.from(toDeleteBuiltInVariables).reduce((acc: any, variable: any) => {
@@ -728,8 +713,6 @@ export async function RevertBuiltInVariables(
         await limiter.schedule(async () => {
           const deletePromises = Array.from(toDeleteGroupedVariables).flatMap((data) => {
             return data.type.map(async (type) => {
-              accountIdForCache = data.accountId;
-
               const url = `https://www.googleapis.com/tagmanager/v2/${data.path}:revert?type=${type}`;
 
               const headers = {

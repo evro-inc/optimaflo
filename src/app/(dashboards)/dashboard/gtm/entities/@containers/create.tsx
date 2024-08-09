@@ -464,7 +464,7 @@ const FormCreateContainer: React.FC<FormCreateAccountProps> = ({
 
       {isLimitReached && <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />}
 
-      {notFoundError && <NotFoundErrorModal />}
+      {notFoundError && <NotFoundErrorModal onClose={undefined} />}
     </>
   );
 };

@@ -63,8 +63,6 @@ type Forms = z.infer<typeof FormsSchema>;
 
 const FormCreateBuiltInVariable: React.FC<FormCreateGTMProps> = ({
   tierLimits,
-  properties = [],
-  table = [],
   accounts = [],
   containers = [],
   workspaces = [],
@@ -151,19 +149,6 @@ const FormCreateBuiltInVariable: React.FC<FormCreateGTMProps> = ({
     },
   });
 
-  // Effect to update count when amount changes
-  useEffect(() => {
-    const amount = parseInt(formCreateAmount.getValues('amount').toString());
-    dispatch(setCount(amount));
-  }, [formCreateAmount.watch('amount'), dispatch]);
-
-  if (notFoundError) {
-    return <NotFoundErrorModal />;
-  }
-  if (error) {
-    return <ErrorModal />;
-  }
-
   const form = useForm<Forms>({
     defaultValues: {
       forms: [formDataDefaults],
@@ -177,6 +162,20 @@ const FormCreateBuiltInVariable: React.FC<FormCreateGTMProps> = ({
   });
 
   const includeDefaultValue = form.watch('forms');
+
+  // Effect to update count when amount changes
+  useEffect(() => {
+    const amountValue = formCreateAmount.watch('amount'); // Extract the watched value
+    const amount = parseInt(amountValue?.toString() || '0'); // Handle cases where amountValue might be undefined or null
+    dispatch(setCount(amount));
+  }, [formCreateAmount, dispatch]); // Include formCreateAmount and dispatch as dependencies
+
+  if (notFoundError) {
+    return <NotFoundErrorModal onClose={undefined} />;
+  }
+  if (error) {
+    return <ErrorModal />;
+  }
 
   const addForm = () => {
     append(formDataDefaults as any);
@@ -369,7 +368,7 @@ const FormCreateBuiltInVariable: React.FC<FormCreateGTMProps> = ({
             <FormField
               control={formCreateAmount.control}
               name="amount"
-              render={({ field }) => (
+              render={() => (
                 <FormItem>
                   <FormLabel>How many key built-in variable forms do you want to create?</FormLabel>
                   <Select
@@ -403,13 +402,10 @@ const FormCreateBuiltInVariable: React.FC<FormCreateGTMProps> = ({
         fields.map(
           (field, index) =>
             currentStep === index + 2 && (
-              <div>
+              <div key={field.id}>
                 {/* Render only the form corresponding to the current step - 1 
               (since step 1 is for selecting the number of forms) */}
-                <div
-                  key={field.id}
-                  className="max-w-full md:max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-1"
-                >
+                <div className="max-w-full md:max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-1">
                   <div className="max-w-full mx-auto">
                     <h1>Built In Variable {index + 1}</h1>
                     <div className="mt-2 md:mt-12">
@@ -581,7 +577,7 @@ const FormCreateBuiltInVariable: React.FC<FormCreateGTMProps> = ({
                                               create the built-in variable(s) for?
                                             </FormDescription>
                                           </div>
-                                          {gtmAccountContainerWorkspacesPairs.map((item, idx) => (
+                                          {gtmAccountContainerWorkspacesPairs.map((item) => (
                                             <FormField
                                               key={`${item.account}-${item.container}-${item.workspace}`}
                                               control={form.control}

@@ -31,7 +31,6 @@ export async function listGAKeyEvents() {
 
   const token = await currentUserOauthAccessToken(userId);
 
-
   const cacheKey = `ga:keyEvents:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
 
@@ -327,7 +326,7 @@ export async function createGAKeyEvents(formData: KeyEvents) {
               limitReached: true,
               notFoundError: false,
               message: `Feature limit reached for key events: ${featureLimitReached.join(', ')}`,
-              results: featureLimitReached.map((eventName) => {
+              results: featureLimitReached.map(() => {
                 // Find the name associated with the propertyId
                 const conversionEventName =
                   keyEventNames.find((eventName) => eventName.includes(eventName)) || 'Unknown';
@@ -644,7 +643,7 @@ export async function updateGAKeyEvents(formData: KeyEvents) {
               limitReached: true,
               notFoundError: false,
               message: `Feature limit reached for key events: ${featureLimitReached.join(', ')}`,
-              results: featureLimitReached.map((eventName) => {
+              results: featureLimitReached.map(() => {
                 // Find the name associated with the propertyId
                 const conversionEventName =
                   keyEventNames.find((eventName) => eventName.includes(eventName)) || 'Unknown';

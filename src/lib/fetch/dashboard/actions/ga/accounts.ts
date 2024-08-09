@@ -40,8 +40,6 @@ export async function listGaAccounts() {
 
   const token: any = await currentUserOauthAccessToken(userId);
 
-
-
   const cacheKey = `ga:accounts:userId:${userId}`;
 
   const cachedValue = await redis.get(cacheKey);

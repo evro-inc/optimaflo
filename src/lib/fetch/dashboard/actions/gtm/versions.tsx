@@ -7,11 +7,7 @@ import { redis } from '@/src/lib/redis/cache';
 import { notFound } from 'next/navigation';
 import { currentUserOauthAccessToken } from '@/src/lib/clerk';
 import prisma from '@/src/lib/prisma';
-import {
-  FeatureResult,
-  FeatureResponse,
-  GTMContainerVersion,
-} from '@/src/types/types';
+import { FeatureResult, FeatureResponse, GTMContainerVersion } from '@/src/types/types';
 import {
   handleApiResponseError,
   tierCreateLimit,
@@ -35,7 +31,6 @@ export async function listGTMVersionHeaders() {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-
 
   const cacheKey = `gtm:versionHeaders:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
@@ -450,7 +445,6 @@ export async function DeleteVersions(
       (prop) => `${prop.accountId}-${prop.containerId}-${prop.containerVersionId}`
     )
   );
-  /* let accountIdForCache: string | undefined; */
 
   // Authenticating user and getting user ID
   const { userId } = await auth();
@@ -500,10 +494,8 @@ export async function DeleteVersions(
 
         if (remaining > 0) {
           await limiter.schedule(async () => {
-            // Creating promises for each container deletion
             const deletePromises = Array.from(versionsToDelete).map(async (prop) => {
               const { accountId, containerId, containerVersionId } = prop;
-              accountIdForCache = accountId;
 
               let url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/versions/${containerVersionId}?`;
 
@@ -599,8 +591,8 @@ export async function DeleteVersions(
               notFoundError: true, // Set the notFoundError flag
               message: `Could not delete version. Please check your permissions. Container Name: 
               ${notFoundLimit
-                  .map(({ name }) => name)
-                  .join(', ')}. All other variables were successfully deleted.`,
+                .map(({ name }) => name)
+                .join(', ')}. All other variables were successfully deleted.`,
               results: notFoundLimit.map(({ combinedId, name }) => {
                 const [accountId, containerId, containerVersionId] = combinedId.split('-');
                 return {

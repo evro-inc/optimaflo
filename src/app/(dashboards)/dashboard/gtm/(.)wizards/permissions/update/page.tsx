@@ -39,7 +39,6 @@ export default async function PermissionsFormPage() {
   ]);
 
   const flatPermissions = permissions.flatMap((item) => item);
-  const flatAccounts = accounts.flat();
   const flatContainers = containers.flat();
 
   const combinedData = flatPermissions.flatMap((prop) => {

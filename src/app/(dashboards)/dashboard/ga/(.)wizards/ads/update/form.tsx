@@ -15,10 +15,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
 } from '@/src/components/ui/form';
-
-import { Input } from '@/src/components/ui/input';
 import { FeatureResponse, GoogleAdsLink } from '@/src/types/types';
 import { toast } from 'sonner';
 import { updateGAGoogleAdsLinks } from '@/src/lib/fetch/dashboard/actions/ga/ads';
@@ -31,18 +28,6 @@ import {
 import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from '@/src/components/ui/select';
-import { ConversionCountingItems, Currencies } from '../../../properties/@conversions/items';
-import { Checkbox } from '@/src/components/ui/checkbox';
-import { RadioGroup, RadioGroupItem } from '@/src/components/ui/radio-group';
 import { Switch } from '@/src/components/ui/switch';
 
 const NotFoundErrorModal = dynamic(
@@ -80,12 +65,6 @@ const FormUpdateGoogleAd = () => {
     name: rowData.name,
   }));
 
-  if (notFoundError) {
-    return <NotFoundErrorModal />;
-  }
-  if (error) {
-    return <ErrorModal />;
-  }
   const form = useForm<Forms>({
     defaultValues: {
       forms: formDataDefaults,
@@ -97,6 +76,13 @@ const FormUpdateGoogleAd = () => {
     control: form.control,
     name: 'forms',
   });
+
+  if (notFoundError) {
+    return <NotFoundErrorModal onClose={undefined} />;
+  }
+  if (error) {
+    return <ErrorModal />;
+  }
 
   const handleNext = async () => {
     // Determine the names of the fields in the current form to validate

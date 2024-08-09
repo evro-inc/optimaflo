@@ -8,12 +8,7 @@ import { notFound } from 'next/navigation';
 import { currentUserOauthAccessToken } from '@/src/lib/clerk';
 import prisma from '@/src/lib/prisma';
 import { FeatureResult, FeatureResponse, FirebaseLink } from '@/src/types/types';
-import {
-  handleApiResponseError,
-  tierCreateLimit,
-  tierDeleteLimit,
-  tierUpdateLimit,
-} from '@/src/utils/server';
+import { handleApiResponseError, tierCreateLimit, tierDeleteLimit } from '@/src/utils/server';
 import { fetchGASettings } from '../..';
 import { FirebaseLinkSchemaType, FormsSchema } from '@/src/lib/schemas/ga/firebaseLinks';
 
@@ -30,7 +25,6 @@ export async function listGAFirebaseLinks() {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-
 
   const cacheKey = `ga:firebaseLinks:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);

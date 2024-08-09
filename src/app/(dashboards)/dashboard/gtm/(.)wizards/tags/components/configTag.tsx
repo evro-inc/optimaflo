@@ -60,7 +60,7 @@ const timeZoneOptions = [
   { label: 'GMT+12', value: 12 },
 ];
 
-const ConfigTag = ({ formIndex, table = [] }: Props) => {
+const ConfigTag = ({ formIndex }: Props) => {
   const [cachedConfigTag, setCachedConfigTags] = useState<any[]>([]);
   const [cachedEventTag, setCachedEventTags] = useState<any[]>([]);
   const [cachedTag, setCachedTags] = useState<any[]>([]);
@@ -75,7 +75,7 @@ const ConfigTag = ({ formIndex, table = [] }: Props) => {
   const [includeTeardownTag, setIncludeTeardownTag] = useState(false);
 
   const { control, register, setValue } = useFormContext();
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append } = useFieldArray({
     control,
     name: `forms.${formIndex}.parameter`,
   });
@@ -252,13 +252,13 @@ const ConfigTag = ({ formIndex, table = [] }: Props) => {
     if (includeSetupTag) {
       appendSetupTag({ tagName: '', stopOnSetupFailure: false });
     }
-  }, [includeSetupTag]);
+  }, [includeSetupTag, appendSetupTag]);
 
   useEffect(() => {
     if (includeTeardownTag) {
       appendTeardownTag({ tagName: '', stopOnSetupFailure: false });
     }
-  }, [includeTeardownTag]);
+  }, [includeTeardownTag, appendTeardownTag]);
 
   const handleStartDateChange = (date: Date | undefined) => {
     setSelectedStartDate(date || null);
@@ -655,7 +655,7 @@ const ConfigTag = ({ formIndex, table = [] }: Props) => {
                   <FormField
                     control={control}
                     name={`forms.${formIndex}.scheduleStartMs`}
-                    render={({ field }) => (
+                    render={() => (
                       <FormItem className="flex items-center space-x-2">
                         <FormLabel>Start Date</FormLabel>
                         <Popover>
@@ -703,7 +703,7 @@ const ConfigTag = ({ formIndex, table = [] }: Props) => {
                   <FormField
                     control={control}
                     name={`forms.${formIndex}.scheduleEndMs`}
-                    render={({ field }) => (
+                    render={() => (
                       <FormItem className="flex items-center space-x-2">
                         <FormLabel>End Date</FormLabel>
                         <Popover>
@@ -871,7 +871,7 @@ const ConfigTag = ({ formIndex, table = [] }: Props) => {
                                   />
                                 </FormControl>
                                 <FormLabel>
-                                  Don't fire new tag if setup tag fails or is paused
+                                  Do not fire new tag if setup tag fails or is paused
                                 </FormLabel>
                                 <FormMessage />
                               </FormItem>
@@ -947,7 +947,7 @@ const ConfigTag = ({ formIndex, table = [] }: Props) => {
                                   />
                                 </FormControl>
                                 <FormLabel>
-                                  Don't fire cleanup tag if new tag fails or is paused
+                                  Do not fire cleanup tag if new tag fails or is paused
                                 </FormLabel>
                                 <FormMessage />
                               </FormItem>

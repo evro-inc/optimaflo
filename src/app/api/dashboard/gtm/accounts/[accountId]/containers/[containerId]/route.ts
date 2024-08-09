@@ -51,7 +51,7 @@ async function fetchGtmData(
   while (retries < MAX_RETRIES) {
     const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}`;
     const headers = {
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
     };
 
@@ -430,7 +430,7 @@ export async function GET(
 
     const accessToken = await clerkClient().users.getUserOauthAccessToken(user?.id, 'oauth_google');
 
-    const data = await fetchGtmData(userId, accesstoken.data[0].token, accountId, containerId);
+    const data = await fetchGtmData(userId, accessToken.data[0].token, accountId, containerId);
 
     return NextResponse.json(
       {
@@ -489,7 +489,7 @@ export async function PUT(request: NextRequest) {
 
     const data = await updateGtmData(
       userId,
-      accesstoken.data[0].token,
+      accessToken.data[0].token,
       accountId,
       containerId,
       containerName,
@@ -547,7 +547,7 @@ export async function DELETE(request: NextRequest) {
     // using userId get accessToken from prisma account table
     const accessToken = await clerkClient().users.getUserOauthAccessToken(user?.id, 'oauth_google');
 
-    const data = await deleteGtmData(userId, accesstoken.data[0].token, accountId, containerId);
+    const data = await deleteGtmData(userId, accessToken.data[0].token, accountId, containerId);
 
     return NextResponse.json(
       {

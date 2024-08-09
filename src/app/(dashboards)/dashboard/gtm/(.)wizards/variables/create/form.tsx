@@ -5,7 +5,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setLoading, incrementStep, decrementStep, setCount } from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm, useWatch } from 'react-hook-form';
-import { z } from 'zod';
 import {
   FormCreateAmountSchema,
   VariableSchemaType,
@@ -41,9 +40,9 @@ import {
 import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { Separator } from '@/src/components/ui/separator';
+
 import { fetchAllVariables, variableTypeArray } from '../../../configurations/@variables/items';
-import { CreateVariables, listVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variables';
+import { CreateVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variables';
 import HttpReferrer from '../components/httpReferrer';
 import FirstPartyCookie from '../components/firstPartyCookie';
 import { Input } from '@/src/components/ui/input';
@@ -92,7 +91,7 @@ const formDataDefaults: Variable = {
   disablingTriggerId: [],
 };
 
-const FormCreateVariable: React.FC<FormCreateGTMProps> = ({ tierLimits, table = [], data }) => {
+const FormCreateVariable: React.FC<FormCreateGTMProps> = ({ tierLimits, data }) => {
   const dispatch = useDispatch();
   const loading = useSelector((state: RootState) => state.form.loading);
   const error = useSelector((state: RootState) => state.form.error);
@@ -156,9 +155,10 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({ tierLimits, table = 
   }, [selectedType, form, currentStep]);
 
   useEffect(() => {
-    const amount = parseInt(formCreateAmount.getValues('amount').toString());
+    const amountValue = formCreateAmount.watch('amount'); // Extract the watched value
+    const amount = parseInt(amountValue?.toString() || '0'); // Handle cases where amountValue might be undefined or null
     dispatch(setCount(amount));
-  }, [formCreateAmount.watch('amount'), dispatch]);
+  }, [formCreateAmount, dispatch]); // Include formCreateAmount and dispatch as dependencies
 
   if (notFoundError) {
     return <NotFoundErrorModal onClose={undefined} />;
@@ -203,8 +203,6 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({ tierLimits, table = 
           }))
           .filter((entity) => entity.accountId && entity.containerId && entity.workspaceId) // Filter out empty entities
     );
-
-    const uniqueVariables = new Set();
 
     try {
       const res = (await CreateVariables({ forms: formsWithEntities })) as FeatureResponse;
@@ -323,7 +321,7 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({ tierLimits, table = 
               <FormField
                 control={formCreateAmount.control}
                 name="amount"
-                render={({ field }) => (
+                render={() => (
                   <FormItem>
                     <FormLabel>How many variable forms do you want to create?</FormLabel>
                     <Select

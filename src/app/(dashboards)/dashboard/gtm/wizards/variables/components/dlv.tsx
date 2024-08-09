@@ -18,9 +18,9 @@ interface Props {
   table?: any;
 }
 
-const DataLayerVariable = ({ formIndex, type, table = [] }: Props) => {
+const DataLayerVariable = ({ formIndex }: Props) => {
   const { control, register, setValue } = useFormContext();
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append } = useFieldArray({
     control,
     name: `forms.${formIndex}.parameter`,
   });

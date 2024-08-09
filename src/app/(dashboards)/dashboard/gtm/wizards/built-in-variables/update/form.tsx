@@ -36,7 +36,6 @@ import {
   SelectContent,
   SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/src/components/ui/select';
@@ -69,7 +68,6 @@ const FormUpdateKeyEvents = () => {
 
   const selectedRowData = useSelector((state: RootState) => state.table.selectedRows);
   const currentFormIndex = currentStep - 1; // Adjust for 0-based index
-  const currentFormData = selectedRowData[currentFormIndex]; // Get data for the current step
 
   if (Object.keys(selectedRowData).length === 0) {
     router.push('/dashboard/ga/properties');
@@ -90,12 +88,6 @@ const FormUpdateKeyEvents = () => {
       rowData.defaultValue?.currencyCode !== undefined,
   }));
 
-  if (notFoundError) {
-    return <NotFoundErrorModal onClose={undefined} />;
-  }
-  if (error) {
-    return <ErrorModal />;
-  }
   const form = useForm<Forms>({
     defaultValues: {
       forms: formDataDefaults,
@@ -108,7 +100,12 @@ const FormUpdateKeyEvents = () => {
     name: 'forms',
   });
 
-  const includeDefaultValue = form.watch('forms');
+  if (notFoundError) {
+    return <NotFoundErrorModal onClose={undefined} />;
+  }
+  if (error) {
+    return <ErrorModal />;
+  }
 
   const handleValueChange = (newValue, index) => {
     if (newValue === 'false') {
@@ -154,7 +151,7 @@ const FormUpdateKeyEvents = () => {
     }
   };
 
-  const handlePrevious = (index) => {
+  const handlePrevious = () => {
     dispatch(decrementStep());
   };
 
@@ -286,11 +283,11 @@ const FormUpdateKeyEvents = () => {
       {fields.map(
         (field, index) =>
           currentStep === index + 1 && (
-            <div className="w-full">
+            <div className="w-full" key={field.id}>
               {/* Render only the form corresponding to the current step - 1 
               (since step 1 is for selecting the number of forms) */}
               {fields.length > 0 && fields.length >= currentStep && (
-                <div key={field.id} className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
+                <div className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
                   <div className="max-w-xl mx-auto">
                     <h1>{fields[currentFormIndex]?.eventName}</h1>
                     <div className="mt-12">
@@ -374,7 +371,7 @@ const FormUpdateKeyEvents = () => {
                                   <FormField
                                     control={form.control}
                                     name={`forms.${index}.defaultValue`}
-                                    render={({ field }) => (
+                                    render={() => (
                                       <FormItem className="space-y-3">
                                         <FormLabel>Default Conversion Value</FormLabel>
                                         <FormControl>
@@ -394,7 +391,7 @@ const FormUpdateKeyEvents = () => {
                                                 <RadioGroupItem value="false" />
                                               </FormControl>
                                               <FormLabel className="font-normal">
-                                                Don't set a default conversion value
+                                                Do not set a default conversion value
                                               </FormLabel>
                                             </FormItem>
                                             <FormItem className="flex items-center space-x-3 space-y-0">

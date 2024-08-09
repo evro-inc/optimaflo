@@ -1,5 +1,5 @@
 'use client';
-import { createSelector, createSlice } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
 
 // Update your slice to include isLoading
 export const subscriberSlice = createSlice({

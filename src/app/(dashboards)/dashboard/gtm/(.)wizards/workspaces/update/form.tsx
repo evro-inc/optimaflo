@@ -68,12 +68,6 @@ const FormUpdateWorkspace = () => {
     containerName: rowData.containerName,
   }));
 
-  if (notFoundError) {
-    return <NotFoundErrorModal />;
-  }
-  if (error) {
-    return <ErrorModal />;
-  }
   const form = useForm<Forms>({
     defaultValues: {
       forms: formDataDefaults,
@@ -85,6 +79,13 @@ const FormUpdateWorkspace = () => {
     control: form.control,
     name: 'forms',
   });
+
+  if (notFoundError) {
+    return <NotFoundErrorModal onClose={undefined} />;
+  }
+  if (error) {
+    return <ErrorModal />;
+  }
 
   const handleNext = async () => {
     const currentFormIndex = currentStep - 2; // Adjusting for the array index and step count

@@ -19,7 +19,7 @@ import {
 } from '@/src/components/ui/form';
 
 import { Input } from '@/src/components/ui/input';
-import { FeatureResponse, ConversionEvent, MeasurementUnit } from '@/src/types/types';
+import { FeatureResponse, ConversionEvent } from '@/src/types/types';
 import { toast } from 'sonner';
 import { updateGAConversionEvents } from '@/src/lib/fetch/dashboard/actions/ga/conversions';
 import {
@@ -41,7 +41,6 @@ import {
   SelectValue,
 } from '@/src/components/ui/select';
 import { ConversionCountingItems, Currencies } from '../../../properties/@conversions/items';
-import { Checkbox } from '@/src/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/src/components/ui/radio-group';
 
 const NotFoundErrorModal = dynamic(
@@ -80,12 +79,6 @@ const FormUpdateConversionEvent = () => {
     name: rowData.name,
   }));
 
-  if (notFoundError) {
-    return <NotFoundErrorModal />;
-  }
-  if (error) {
-    return <ErrorModal />;
-  }
   const form = useForm<Forms>({
     defaultValues: {
       forms: formDataDefaults,
@@ -97,6 +90,13 @@ const FormUpdateConversionEvent = () => {
     control: form.control,
     name: 'forms',
   });
+
+  if (notFoundError) {
+    return <NotFoundErrorModal onClose={undefined} />;
+  }
+  if (error) {
+    return <ErrorModal />;
+  }
 
   const handleNext = async () => {
     // Determine the names of the fields in the current form to validate
@@ -284,7 +284,7 @@ const FormUpdateConversionEvent = () => {
                                       <FormDescription>
                                         Choose how to count this conversion. The counting method you
                                         choose will be used to count future conversion actions; it
-                                        won't be used to count past data.
+                                        will not be used to count past data.
                                       </FormDescription>
                                       <FormControl>
                                         <Select
@@ -350,7 +350,7 @@ const FormUpdateConversionEvent = () => {
                                               <RadioGroupItem value="none" />
                                             </FormControl>
                                             <FormLabel className="font-normal">
-                                              Don't set a default conversion value
+                                              Do not set a default conversion value
                                             </FormLabel>
                                           </FormItem>
                                           <FormItem className="flex items-center space-x-3 space-y-0">

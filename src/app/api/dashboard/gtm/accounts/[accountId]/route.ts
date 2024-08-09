@@ -34,7 +34,7 @@ async function validatePatchParams(params) {
 async function PatchGtmAccount(accessToken, accountId, name, userId) {
   const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}`;
   const headers = {
-    Authorization: `Bearer ${token}`,
+    Authorization: `Bearer ${accessToken}`,
     'Content-Type': 'application/json',
   };
 
@@ -138,7 +138,7 @@ export async function GET(
 
         if (remaining > 0) {
           // If the data is not in the cache, fetch it from the API
-          const oauth2Client = createOAuth2Client(accesstoken.data[0].token);
+          const oauth2Client = createOAuth2Client(accessToken.data[0].token);
           if (!oauth2Client) {
             // If oauth2Client is null, return an error response or throw an error
             return NextResponse.error();
@@ -220,7 +220,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const accountData = await PatchGtmAccount(
-      accesstoken.data[0].token,
+      accessToken.data[0].token,
       validatedParams.accountId,
       validatedParams.name,
       userId

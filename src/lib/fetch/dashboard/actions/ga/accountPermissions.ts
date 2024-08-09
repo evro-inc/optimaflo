@@ -31,7 +31,6 @@ export async function listGAAccessBindings() {
 
   const token = await currentUserOauthAccessToken(userId);
 
-
   const cacheKey = `ga:accountAccess:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
 
@@ -317,7 +316,7 @@ export async function createGAAccessBindings(formData: AccountPermissionsSchema)
               message: `Feature limit reached for custom metrics: ${featureLimitReached.join(
                 ', '
               )}`,
-              results: featureLimitReached.map((eventName) => {
+              results: featureLimitReached.map(() => {
                 // Find the name associated with the propertyId
                 const conversionEventName =
                   conversionEventNames.find((eventName) => eventName.includes(eventName)) ||
@@ -622,7 +621,7 @@ export async function updateGAAccessBindings(formData: AccountPermissionsSchema)
               message: `Feature limit reached for custom metrics: ${featureLimitReached.join(
                 ', '
               )}`,
-              results: featureLimitReached.map((eventName) => {
+              results: featureLimitReached.map(() => {
                 // Find the name associated with the propertyId
                 const conversionEventName =
                   conversionEventNames.find((eventName) => eventName.includes(eventName)) ||

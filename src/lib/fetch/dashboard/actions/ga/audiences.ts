@@ -31,7 +31,6 @@ export async function listGAAudiences() {
 
   const token = await currentUserOauthAccessToken(userId);
 
-
   const cacheKey = `ga:audiences:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
 
@@ -280,9 +279,9 @@ export async function createGAAudiences(formData: Audience) {
                   adsPersonalizationEnabled: validatedData.adsPersonalizationEnabled,
                   eventTrigger: validatedData.eventTrigger
                     ? {
-                      eventName: validatedData.eventTrigger.eventName,
-                      logCondition: validatedData.eventTrigger.logCondition,
-                    }
+                        eventName: validatedData.eventTrigger.eventName,
+                        logCondition: validatedData.eventTrigger.logCondition,
+                      }
                     : undefined, // Include eventTrigger only if present
                   exclusionDurationMode: validatedData.exclusionDurationMode,
                   filterClauses: buildFilterClauses(validatedData.filterClauses),
@@ -298,7 +297,7 @@ export async function createGAAudiences(formData: Audience) {
                 const parsedResponse = await response.json();
 
                 if (response.ok) {
-                  successfulCreations.push(validatedContainerData.eventName);
+                  successfulCreations.push(validatedData.name);
                   toCreateAudiences.delete(identifier);
                   fetchGASettings(userId);
 
@@ -307,16 +306,16 @@ export async function createGAAudiences(formData: Audience) {
                     data: { createUsage: { increment: 1 } },
                   });
                   creationResults.push({
-                    conversionEventName: validatedContainerData.eventName,
+                    conversionEventName: validatedData.name,
                     success: true,
-                    message: `Successfully created property ${validatedContainerData.eventName}`,
+                    message: `Successfully created property ${validatedData.name}`,
                   });
                 } else {
                   const errorResult = await handleApiResponseError(
                     response,
                     parsedResponse,
                     'conversionEvent',
-                    [validatedContainerData.eventName]
+                    [validatedData.name]
                   );
 
                   if (errorResult) {
@@ -325,34 +324,30 @@ export async function createGAAudiences(formData: Audience) {
                       errorResult.errorCode === 403 &&
                       parsedResponse.message === 'Feature limit reached'
                     ) {
-                      featureLimitReached.push(validatedContainerData.eventName);
+                      featureLimitReached.push(validatedData.name);
                     } else if (errorResult.errorCode === 404) {
                       notFoundLimit.push({
                         id: identifier.property,
-                        name: validatedContainerData.eventName,
+                        name: validatedData.name,
                       });
                     }
                   } else {
-                    errors.push(
-                      `An unknown error occurred for property ${validatedContainerData.eventName}.`
-                    );
+                    errors.push(`An unknown error occurred for property ${validatedData.name}.`);
                   }
 
                   toCreateAudiences.delete(identifier);
                   permissionDenied = errorResult ? true : permissionDenied;
                   creationResults.push({
-                    conversionEventName: validatedContainerData.eventName,
+                    conversionEventName: validatedData.name,
                     success: false,
                     message: errorResult?.message,
                   });
                 }
               } catch (error: any) {
-                errors.push(
-                  `Exception creating property ${identifier.eventName}: ${error.message}`
-                );
+                errors.push(`Exception creating property ${identifier.name}: ${error.message}`);
                 toCreateAudiences.delete(identifier);
                 creationResults.push({
-                  conversionEventName: identifier.eventName,
+                  conversionEventName: identifier.name,
                   success: false,
                   message: error.message,
                 });
@@ -386,7 +381,7 @@ export async function createGAAudiences(formData: Audience) {
               message: `Feature limit reached for custom metrics: ${featureLimitReached.join(
                 ', '
               )}`,
-              results: featureLimitReached.map((eventName) => {
+              results: featureLimitReached.map(() => {
                 // Find the name associated with the propertyId
                 const conversionEventName =
                   conversionEventNames.find((eventName) => eventName.includes(eventName)) ||
@@ -459,10 +454,10 @@ export async function createGAAudiences(formData: Audience) {
   // Map over formData.forms to create the results array
   const results: FeatureResult[] = formData.forms.map((form) => {
     // Ensure that form.propertyId is defined before adding it to the array
-    const conversionEventId = form.eventName ? [form.eventName] : []; // Provide an empty array as a fallback
+    const conversionEventId = form.name ? [form.name] : []; // Provide an empty array as a fallback
     return {
       id: conversionEventId, // Ensure id is an array of strings
-      name: [form.eventName], // Wrap the string in an array
+      name: [form.name], // Wrap the string in an array
       success: true, // or false, depending on the actual result
       // Include `notFound` if applicable
       notFound: false, // Set this to the appropriate value based on your logic
@@ -699,7 +694,7 @@ export async function updateGAAudiences(formData: Audience) {
               message: `Feature limit reached for custom metrics: ${featureLimitReached.join(
                 ', '
               )}`,
-              results: featureLimitReached.map((eventName) => {
+              results: featureLimitReached.map(() => {
                 // Find the name associated with the propertyId
                 const conversionEventName =
                   conversionEventNames.find((eventName) => eventName.includes(eventName)) ||

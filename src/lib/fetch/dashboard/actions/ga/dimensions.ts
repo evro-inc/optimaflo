@@ -31,7 +31,6 @@ export async function listGACustomDimensions() {
 
   const token = await currentUserOauthAccessToken(userId);
 
-
   const cacheKey = `ga:customDimensions:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
 
@@ -322,7 +321,7 @@ export async function createGACustomDimensions(formData: CustomDimensionSchemaTy
               message: `Feature limit reached for custom dimensions: ${featureLimitReached.join(
                 ', '
               )}`,
-              results: featureLimitReached.map((displayName) => {
+              results: featureLimitReached.map(() => {
                 // Find the name associated with the propertyId
                 const customDimensionName =
                   customDimensionNames.find((displayName) => displayName.includes(displayName)) ||
@@ -636,7 +635,7 @@ export async function updateGACustomDimensions(formData: CustomDimensionSchemaTy
               message: `Feature limit reached for custom dimensions: ${featureLimitReached.join(
                 ', '
               )}`,
-              results: featureLimitReached.map((displayName) => {
+              results: featureLimitReached.map(() => {
                 // Find the name associated with the propertyId
                 const customDimensionName =
                   customDimensionNames.find((displayName) => displayName.includes(displayName)) ||

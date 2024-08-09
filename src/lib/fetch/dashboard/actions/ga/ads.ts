@@ -31,7 +31,6 @@ export async function listGAGoogleAdsLinks() {
 
   const token = await currentUserOauthAccessToken(userId);
 
-
   const cacheKey = `ga:ads:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
 
@@ -317,7 +316,7 @@ export async function createGAGoogleAdsLinks(formData: GoogleAdsLinkSchemaType) 
               message: `Feature limit reached for custom metrics: ${featureLimitReached.join(
                 ', '
               )}`,
-              results: featureLimitReached.map((eventName) => {
+              results: featureLimitReached.map(() => {
                 // Find the name associated with the propertyId
                 const googleAdsLinkName =
                   googleAdsLinkNames.find((eventName) => eventName.includes(eventName)) ||

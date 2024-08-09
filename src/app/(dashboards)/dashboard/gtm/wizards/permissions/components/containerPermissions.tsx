@@ -1,13 +1,5 @@
 import { Button } from '@/src/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/src/components/ui/form';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/src/components/ui/form';
 import {
   Select,
   SelectContent,
@@ -17,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/src/components/ui/select';
-import { MinusIcon, PlusIcon } from '@radix-ui/react-icons';
+import { MinusIcon } from '@radix-ui/react-icons';
 import React, { useMemo } from 'react';
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 import { containerAccessPermissions } from '../../../entities/@permissions/items';
@@ -27,30 +19,32 @@ export const ContainerPermissions: React.FC<{
   permissionIndex: number;
   table: any;
 }> = ({ formIndex, permissionIndex, table }) => {
-  const { setValue, getValues, control, register, watch } = useFormContext();
-  const { fields, append, remove } = useFieldArray({
+  const { setValue, getValues, control, register } = useFormContext();
+  const { fields, remove } = useFieldArray({
     control: control,
     name: `forms.${formIndex}.permissions.${permissionIndex}.containerAccess`,
   });
 
-  const selectedContainerIds =
+  // Call useWatch directly to get containerAccess and selectedAccountId
+  const containerAccess =
     useWatch({
       control,
       name: `forms.${formIndex}.permissions.${permissionIndex}.containerAccess`,
-    })?.map((container) => container.containerId) || [];
+    }) || [];
+
+  const selectedContainerIds = containerAccess.map((container) => container.containerId);
 
   const selectedAccountId = useWatch({
     control,
     name: `forms.${formIndex}.permissions.${permissionIndex}.accountId`,
   });
 
+  // Now you can use the values in useMemo
   const filteredContainers = useMemo(() => {
     return table.filter((permission) => permission.accountId === selectedAccountId);
   }, [table, selectedAccountId]);
 
-  const isAddContainerDisabled = useMemo(() => {
-    return selectedContainerIds.length >= filteredContainers.length;
-  }, [selectedContainerIds, filteredContainers]);
+  const isAddContainerDisabled = selectedContainerIds.length >= filteredContainers.length;
 
   return (
     <div className="flex flex-col">
@@ -70,7 +64,7 @@ export const ContainerPermissions: React.FC<{
             <FormField
               control={control}
               name={`forms.${formIndex}.permissions.${permissionIndex}.containerAccess.${containerIndex}.containerId`}
-              render={({ field }) => (
+              render={() => (
                 <FormItem>
                   <FormControl>
                     <Select
@@ -118,7 +112,7 @@ export const ContainerPermissions: React.FC<{
             <FormField
               control={control}
               name={`forms.${formIndex}.permissions.${permissionIndex}.containerAccess.${containerIndex}.permission`}
-              render={({ field }) => (
+              render={() => (
                 <FormItem>
                   <FormControl>
                     <Select

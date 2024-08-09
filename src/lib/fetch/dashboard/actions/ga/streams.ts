@@ -1,6 +1,5 @@
 'use server';
 import { revalidatePath } from 'next/cache';
-import z from 'zod';
 import { auth } from '@clerk/nextjs/server';
 import { gaRateLimit } from '../../../../redis/rateLimits';
 import { limiter } from '../../../../bottleneck';
@@ -32,7 +31,6 @@ export async function listGAPropertyStreams() {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-
 
   const cacheKey = `ga:streams:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
@@ -349,7 +347,7 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
               limitReached: true,
               notFoundError: false,
               message: `Feature limit reached for streams: ${featureLimitReached.join(', ')}`,
-              results: featureLimitReached.map((displayName) => {
+              results: featureLimitReached.map(() => {
                 // Find the name associated with the propertyId
                 const streamName =
                   streamNames.find((displayName) => displayName.includes(displayName)) || 'Unknown';
@@ -703,7 +701,7 @@ export async function updateGAPropertyStreams(formData: DataStreamType) {
               limitReached: true,
               notFoundError: false,
               message: `Feature limit reached for streams: ${featureLimitReached.join(', ')}`,
-              results: featureLimitReached.map((displayName) => {
+              results: featureLimitReached.map(() => {
                 // Find the name associated with the propertyId
                 const streamName =
                   streamNames.find((displayName) => displayName.includes(displayName)) || 'Unknown';

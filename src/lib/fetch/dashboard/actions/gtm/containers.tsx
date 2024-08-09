@@ -36,7 +36,6 @@ export async function listGtmContainers(skipCache = false) {
 
   const token = await currentUserOauthAccessToken(userId);
 
-
   const cacheKey = `gtm:containers:userId:${userId}`;
 
   if (skipCache == false) {

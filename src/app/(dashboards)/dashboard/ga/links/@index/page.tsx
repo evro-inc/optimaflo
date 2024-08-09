@@ -25,11 +25,7 @@ export default async function FirebaseLinkPage({
   const propertyData = await listGAProperties();
   const firebaseLinkData = await listGAFirebaseLinks();
 
-  const [accounts, properties, fb] = await Promise.all([
-    accountData,
-    propertyData,
-    firebaseLinkData,
-  ]);
+  const [accounts, properties] = await Promise.all([accountData, propertyData, firebaseLinkData]);
 
   const flatAccounts = accounts.flat();
   const flatProperties = properties.flat();

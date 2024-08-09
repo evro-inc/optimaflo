@@ -32,9 +32,6 @@ export async function listGtmAccounts(skipCache = false) {
   const token = await currentUserOauthAccessToken(userId);
   console.log('token', token);
 
-
-
-
   const cacheKey = `gtm:accounts:userId:${userId}`;
 
   if (skipCache == false) {

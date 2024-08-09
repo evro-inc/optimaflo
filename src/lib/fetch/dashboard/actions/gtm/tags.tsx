@@ -1,7 +1,6 @@
 'use server';
 import { revalidatePath } from 'next/cache';
 import { FormsSchema, TagType } from '@/src/lib/schemas/gtm/tags';
-import z from 'zod';
 import { auth } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 import { limiter } from '../../../../bottleneck';
@@ -18,9 +17,6 @@ import {
 } from '@/src/utils/server';
 import { fetchGtmSettings } from '../..';
 
-// Define the types for the form data
-type schema = z.infer<typeof FormsSchema>;
-
 /************************************************************************************
   Function to list or get one GTM tags
 ************************************************************************************/
@@ -33,7 +29,6 @@ export async function listTags(skipCache = false) {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-
 
   const cacheKey = `gtm:tags:userId:${userId}`;
   if (skipCache == false) {
@@ -143,7 +138,6 @@ export async function DeleteTags(ga4TagToDelete: Tag[]): Promise<FeatureResponse
       (prop) => `${prop.accountId}-${prop.containerId}-${prop.workspaceId}-${prop.type}`
     )
   );
-  let accountIdForCache: string | undefined;
 
   // Authenticating user and getting user ID
   const { userId } = await auth();
@@ -196,7 +190,6 @@ export async function DeleteTags(ga4TagToDelete: Tag[]): Promise<FeatureResponse
             // Creating promises for each container deletion
             const deletePromises = Array.from(ga4TagToDelete).map(async (prop) => {
               const { accountId, containerId, workspaceId, tagId, type } = prop;
-              accountIdForCache = accountId;
 
               let url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/tags/${tagId}`;
 
@@ -288,8 +281,8 @@ export async function DeleteTags(ga4TagToDelete: Tag[]): Promise<FeatureResponse
               notFoundError: true, // Set the notFoundError flag
               message: `Could not delete tag. Please check your permissions. Container Name: 
               ${notFoundLimit
-                  .map(({ name }) => name)
-                  .join(', ')}. All other tags were successfully deleted.`,
+                .map(({ name }) => name)
+                .join(', ')}. All other tags were successfully deleted.`,
               results: notFoundLimit.map(({ combinedId, name }) => {
                 const [accountId, containerId, workspaceId] = combinedId.split('-');
                 return {
@@ -417,8 +410,6 @@ export async function CreateTags(formData: TagType) {
   const successfulCreations: string[] = [];
   const featureLimitReached: string[] = [];
   const notFoundLimit: { id: string; name: string }[] = [];
-  let accountIdForCache: string | undefined;
-  let containerIdForCache: string | undefined;
 
   // Refactor: Use string identifiers in the set
   const toCreateTags = new Set(formData.forms.map((tag) => tag));
@@ -447,7 +438,7 @@ export async function CreateTags(formData: TagType) {
   // refactor and verify
   if (toCreateTags.size > availableCreateUsage) {
     const attemptedCreations = Array.from(toCreateTags).map((identifier: any) => {
-      const { name: tagName, filter } = identifier;
+      const { name: tagName } = identifier;
 
       return {
         id: [], // No tag ID since creation did not happen
@@ -489,9 +480,6 @@ export async function CreateTags(formData: TagType) {
                 toCreateTags.delete(identifier);
                 return;
               }
-
-              accountIdForCache = identifier.accountId;
-              containerIdForCache = identifier.containerId;
 
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${identifier.accountId}/containers/${identifier.containerId}/workspaces/${identifier.workspaceId}/tags`;
 
@@ -648,7 +636,7 @@ export async function CreateTags(formData: TagType) {
         }
       } finally {
         // This block will run regardless of the outcome of the try...catch
-        if (accountIdForCache && containerIdForCache && userId) {
+        if (userId) {
           const cacheKey = `gtm:tags:userId:${userId}`;
           await redis.del(cacheKey);
           await revalidatePath(`/dashboard/gtm/configurations`);
@@ -679,7 +667,7 @@ export async function CreateTags(formData: TagType) {
     };
   }
 
-  if (successfulCreations.length > 0 && accountIdForCache && containerIdForCache) {
+  if (successfulCreations.length > 0) {
     const cacheKey = `gtm:tags:userId:${userId}`;
     await redis.del(cacheKey);
     revalidatePath(`/dashboard/gtm/configurations`);
@@ -722,8 +710,6 @@ export async function UpdateTags(formData: TagType) {
   const successfulCreations: string[] = [];
   const featureLimitReached: string[] = [];
   const notFoundLimit: { id: string; name: string }[] = [];
-  let accountIdForCache: string | undefined;
-  let containerIdForCache: string | undefined;
 
   // Refactor: Use string identifiers in the set
   const toUpdateTags = new Set(formData.forms.map((tag) => tag));
@@ -793,9 +779,6 @@ export async function UpdateTags(formData: TagType) {
                 toUpdateTags.delete(identifier);
                 return;
               }
-
-              accountIdForCache = identifier.accountId;
-              containerIdForCache = identifier.containerId;
 
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${identifier.accountId}/containers/${identifier.containerId}/workspaces/${identifier.workspaceId}/tags/${identifier.tagId}`;
 
@@ -951,7 +934,7 @@ export async function UpdateTags(formData: TagType) {
         }
       } finally {
         // This block will run regardless of the outcome of the try...catch
-        if (accountIdForCache && containerIdForCache && userId) {
+        if (userId) {
           const cacheKey = `gtm:tags:userId:${userId}`;
           await redis.del(cacheKey);
           await revalidatePath(`/dashboard/gtm/configurations`);
@@ -982,7 +965,7 @@ export async function UpdateTags(formData: TagType) {
     };
   }
 
-  if (successfulCreations.length > 0 && accountIdForCache && containerIdForCache) {
+  if (successfulCreations.length > 0) {
     const cacheKey = `gtm:tags:userId:${userId}`;
     await redis.del(cacheKey);
     revalidatePath(`/dashboard/gtm/configurations`);

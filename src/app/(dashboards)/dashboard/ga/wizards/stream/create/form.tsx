@@ -118,19 +118,6 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
     },
   });
 
-  // Effect to update count when amount changes
-  useEffect(() => {
-    const amount = parseInt(formCreateAmount.getValues('amount').toString());
-    dispatch(setCount(amount));
-  }, [formCreateAmount.watch('amount'), dispatch]);
-
-  if (notFoundError) {
-    return <NotFoundErrorModal />;
-  }
-  if (error) {
-    return <ErrorModal />;
-  }
-
   const form = useForm<Forms>({
     defaultValues: {
       forms: [formDataDefaults],
@@ -142,6 +129,21 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
     control: form.control,
     name: 'forms',
   });
+
+  // Effect to update count when amount changes
+  useEffect(() => {
+    const amountValue = formCreateAmount.watch('amount'); // Extract the watched value
+    const amount = parseInt(amountValue?.toString() || '0'); // Handle cases where amountValue might be undefined or null
+    dispatch(setCount(amount));
+  }, [formCreateAmount, dispatch]); // Include formCreateAmount and dispatch as dependencies
+
+  if (notFoundError) {
+    return <NotFoundErrorModal onClose={undefined} />;
+  }
+  if (error) {
+    return <ErrorModal />;
+  }
+
   const addForm = () => {
     append(formDataDefaults);
   };
@@ -331,16 +333,19 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
               name="amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>How many streams do you want to create?</FormLabel>
+                  <FormLabel>How many users do you want to add?</FormLabel>
                   <Select
+                    {...field} // This binds the Select to the form state
                     onValueChange={(value) => {
+                      field.onChange(value); // Update form state
                       handleAmountChange(value); // Call the modified handler
                     }}
-                    defaultValue={count.toString()}
+                    defaultValue={count.toString()} // Convert count to string
+                    value={field.value.toString()} // Convert value to string
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select the amount of streams you want to create." />
+                        <SelectValue placeholder="Select the amount of conversion events you want to create." />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -354,6 +359,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                 </FormItem>
               )}
             />
+
             <Button type="button" onClick={handleNext}>
               Next
             </Button>
@@ -524,11 +530,12 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                               )}
                             />
 
-                            {Object.keys(streamType).map(
-                              (type) =>
-                                form.watch(`forms.${currentStep - 2}.type`) ===
-                                  streamType[type] && (
+                            {Object.keys(streamType).map((type) => {
+                              const streamTypeValue = form.watch(`forms.${currentStep - 2}.type`);
+                              if (streamTypeValue === streamType[type]) {
+                                return (
                                   <FormField
+                                    key={type} // Add a unique key prop
                                     control={form.control}
                                     name={`forms.${currentStep - 2}.${
                                       type.toLowerCase() === 'web'
@@ -562,8 +569,10 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                                       </FormItem>
                                     )}
                                   />
-                                )
-                            )}
+                                );
+                              }
+                              return null; // Return null if the condition is not met
+                            })}
                           </>
                         );
                       })()}

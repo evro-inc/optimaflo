@@ -1,7 +1,7 @@
 import React from 'react';
-import { useFormContext, Controller } from 'react-hook-form';
+import { useFormContext } from 'react-hook-form';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/src/components/ui/form';
-import { formatValueOptions, caseConversionTypes } from '../../../configurations/@variables/items';
+import { formatValueOptions } from '../../../configurations/@variables/items';
 import { Checkbox } from '@/src/components/ui/checkbox';
 import { Input } from '@/src/components/ui/input';
 import {

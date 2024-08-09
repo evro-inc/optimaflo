@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager';
 import Stripe from 'stripe';
 

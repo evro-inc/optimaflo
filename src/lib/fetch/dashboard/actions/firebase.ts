@@ -1,18 +1,12 @@
 'use server';
 import { revalidatePath } from 'next/cache';
-import z from 'zod';
 import { auth } from '@clerk/nextjs/server';
 import { redis } from '@/src/lib/redis/cache';
 import { notFound } from 'next/navigation';
 import { currentUserOauthAccessToken } from '@/src/lib/clerk';
 import prisma from '@/src/lib/prisma';
-import { FeatureResult, FeatureResponse, GA4PropertyType, GA4StreamType } from '@/src/types/types';
-import {
-  handleApiResponseError,
-  tierCreateLimit,
-  tierDeleteLimit,
-  tierUpdateLimit,
-} from '@/src/utils/server';
+import { FeatureResult } from '@/src/types/types';
+import { handleApiResponseError, tierCreateLimit } from '@/src/utils/server';
 import { DataStreamType, FormsSchema } from '@/src/lib/schemas/ga/streams';
 import { gaRateLimit } from '@/src/lib/redis/rateLimits';
 import { limiter } from '@/src/lib/bottleneck';
@@ -32,7 +26,6 @@ export async function listGCPProjects() {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-
 
   const cacheKey = `ga:projects:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
@@ -64,13 +57,9 @@ export async function listGCPProjects() {
             const responseBody = await response.json();
             const projects = responseBody['projectInfo'];
 
-            for (let i in projects) {
-              const project = projects[i];
-            }
+            redis.set(cacheKey, JSON.stringify(projects), 'EX', 3600);
 
-            /* redis.set(cacheKey, JSON.stringify(projects), 'EX', 3600);
-
-                return projects; */
+            return projects;
 
             // Removed the problematic line here
           } catch (error: any) {
@@ -335,7 +324,7 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
               limitReached: true,
               notFoundError: false,
               message: `Feature limit reached for streams: ${featureLimitReached.join(', ')}`,
-              results: featureLimitReached.map((displayName) => {
+              results: featureLimitReached.map(() => {
                 // Find the name associated with the propertyId
                 const streamName =
                   streamNames.find((displayName) => displayName.includes(displayName)) || 'Unknown';

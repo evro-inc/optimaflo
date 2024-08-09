@@ -36,15 +36,12 @@ import {
   SelectContent,
   SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/src/components/ui/select';
-import { Switch } from '@/src/components/ui/switch';
-import { Label } from '@/src/components/ui/label';
+
 import { CountMethodData, Currencies } from '../../../properties/@keyEvents/items';
-import { Checkbox } from '@/src/components/ui/checkbox';
-import { Separator } from '@/src/components/ui/separator';
+
 import { RadioGroup, RadioGroupItem } from '@/src/components/ui/radio-group';
 
 const NotFoundErrorModal = dynamic(
@@ -73,7 +70,6 @@ const FormUpdateKeyEvents = () => {
 
   const selectedRowData = useSelector((state: RootState) => state.table.selectedRows);
   const currentFormIndex = currentStep - 1; // Adjust for 0-based index
-  const currentFormData = selectedRowData[currentFormIndex]; // Get data for the current step
 
   if (Object.keys(selectedRowData).length === 0) {
     router.push('/dashboard/ga/properties');
@@ -94,12 +90,6 @@ const FormUpdateKeyEvents = () => {
       rowData.defaultValue?.currencyCode !== undefined,
   }));
 
-  if (notFoundError) {
-    return <NotFoundErrorModal />;
-  }
-  if (error) {
-    return <ErrorModal />;
-  }
   const form = useForm<Forms>({
     defaultValues: {
       forms: formDataDefaults,
@@ -112,7 +102,12 @@ const FormUpdateKeyEvents = () => {
     name: 'forms',
   });
 
-  const includeDefaultValue = form.watch('forms');
+  if (notFoundError) {
+    return <NotFoundErrorModal onClose={undefined} />;
+  }
+  if (error) {
+    return <ErrorModal />;
+  }
 
   const handleValueChange = (newValue, index) => {
     if (newValue === 'false') {
@@ -158,7 +153,7 @@ const FormUpdateKeyEvents = () => {
     }
   };
 
-  const handlePrevious = (index) => {
+  const handlePrevious = () => {
     dispatch(decrementStep());
   };
 
@@ -290,11 +285,9 @@ const FormUpdateKeyEvents = () => {
       {fields.map(
         (field, index) =>
           currentStep === index + 1 && (
-            <div className="w-full">
-              {/* Render only the form corresponding to the current step - 1 
-              (since step 1 is for selecting the number of forms) */}
+            <div key={field.id} className="w-full">
               {fields.length > 0 && fields.length >= currentStep && (
-                <div key={field.id} className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
+                <div className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
                   <div className="max-w-xl mx-auto">
                     <h1>{fields[currentFormIndex]?.eventName}</h1>
                     <div className="mt-12">
@@ -383,9 +376,11 @@ const FormUpdateKeyEvents = () => {
                                         <FormLabel>Default Conversion Value</FormLabel>
                                         <FormControl>
                                           <RadioGroup
-                                            onValueChange={(newValue) =>
-                                              handleValueChange(newValue, index)
-                                            }
+                                            {...field} // Apply field props to the RadioGroup
+                                            onValueChange={(newValue) => {
+                                              field.onChange(newValue); // Ensure the field is updated
+                                              handleValueChange(newValue, index);
+                                            }}
                                             value={
                                               form.watch(`forms.${index}.includeDefaultValue`)
                                                 ? 'true'
@@ -398,7 +393,7 @@ const FormUpdateKeyEvents = () => {
                                                 <RadioGroupItem value="false" />
                                               </FormControl>
                                               <FormLabel className="font-normal">
-                                                Don't set a default conversion value
+                                                Do not set a default conversion value
                                               </FormLabel>
                                             </FormItem>
                                             <FormItem className="flex items-center space-x-3 space-y-0">
@@ -438,7 +433,9 @@ const FormUpdateKeyEvents = () => {
                                                       form.setValue(
                                                         `forms.${index}.defaultValue.currencyCode`,
                                                         selectedCurrency,
-                                                        { shouldValidate: true }
+                                                        {
+                                                          shouldValidate: true,
+                                                        }
                                                       );
                                                     }}
                                                   >

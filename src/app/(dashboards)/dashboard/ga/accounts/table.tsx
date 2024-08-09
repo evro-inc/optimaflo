@@ -32,16 +32,13 @@ import {
 } from '@/src/components/ui/dropdown-menu';
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
-import { revalidate, tierCreateLimit } from '@/src/utils/server';
-import { ReloadIcon } from '@radix-ui/react-icons';
+import { revalidate } from '@/src/utils/server';
 
 import { useDispatch } from 'react-redux';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
 import { useDeleteHook } from './delete';
-import { notFound } from 'next/navigation';
-import { setIsLimitReached, setSelectedRows } from '@/src/redux/tableSlice';
-import { toggleCreate, toggleUpdate } from '@/src/redux/globalSlice';
-import { useCreateHookForm, useUpdateHookForm } from '@/src/hooks/useCRUD';
+import { setSelectedRows } from '@/src/redux/tableSlice';
+import { useUpdateHookForm } from '@/src/hooks/useCRUD';
 import { useTransition } from 'react';
 import { LimitReached } from '@/src/components/client/modals/limitReached';
 
@@ -52,7 +49,6 @@ interface DataTableProps<TData, TValue> {
 
 export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData, TValue>) {
   const dispatch = useDispatch();
-  const [isCreatePending, startCreateTransition] = useTransition();
   const [isUpdatePending, startUpdateTransition] = useTransition();
   const { user } = useUser();
   const userId = user?.id as string;
@@ -88,20 +84,20 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
   }, {});
   const rowSelectedCount = Object.keys(selectedRowData).length;
 
-  const handleCreateClick = useCreateHookForm(
-    userId,
-    'GA4Accounts',
-    '/dashboard/ga/wizards/accounts/create'
-  );
-
-  const onCreateButtonClick = () => {
-    startCreateTransition(() => {
-      handleCreateClick().catch((error) => {
-        throw new Error(error);
+  /*   const handleCreateClick = useCreateHookForm(
+      userId,
+      'GA4Accounts',
+      '/dashboard/ga/wizards/accounts/create'
+    );
+  
+    const onCreateButtonClick = () => {
+      startCreateTransition(() => {
+        handleCreateClick().catch((error) => {
+          throw new Error(error);
+        });
       });
-    });
-  };
-
+    };
+   */
   const handleUpdateClick = useUpdateHookForm(
     userId,
     'GA4Accounts',
@@ -159,6 +155,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
           <ButtonDelete
             disabled={Object.keys(table.getState().rowSelection).length === 0}
             onDelete={handleDelete}
+            action={undefined}
           />
 
           <DropdownMenu>

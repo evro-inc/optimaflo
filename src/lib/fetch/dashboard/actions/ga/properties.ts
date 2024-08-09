@@ -37,7 +37,6 @@ export async function listGAProperties() {
 
   const token = await currentUserOauthAccessToken(userId);
 
-
   const cacheKey = `ga:properties:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
 
@@ -152,8 +151,6 @@ export async function DeleteProperties(
   const featureLimitReached: { accountId: string; propertyId: string }[] = [];
   const notFoundLimit: { accountId: string; propertyId: string }[] = [];
   const toDeleteProperties = new Set<GA4PropertyType>(selectedProperties);
-  let accountIdForCache: string | undefined;
-  let propertyIdForCache: string | undefined;
 
   // Authenticating user and getting user ID
   const { userId } = await auth();
@@ -205,9 +202,6 @@ export async function DeleteProperties(
           await limiter.schedule(async () => {
             // Creating promises for each property deletion
             const deletePromises = Array.from(toDeleteProperties).map(async (identifier) => {
-              accountIdForCache = identifier.parent;
-              propertyIdForCache = identifier.name;
-
               const url = `https://analyticsadmin.googleapis.com/v1beta/properties/${identifier.name}`;
               const headers = {
                 Authorization: `Bearer ${token.data[0].token}`,
@@ -278,11 +272,6 @@ export async function DeleteProperties(
 
                   toDeleteProperties.delete(identifier);
                   permissionDenied = errorResult ? true : permissionDenied;
-
-                  if (selectedProperties.size > 0) {
-                    const firstPropertyId = selectedProperties.values().next().value;
-                    accountIdForCache = firstPropertyId.split('-')[0];
-                  }
                 }
               } catch (error: any) {
                 // Handling exceptions during fetch
@@ -743,9 +732,6 @@ export async function updateProperties(formData: FormUpdateSchema) {
   const featureLimitReached: string[] = [];
   const notFoundLimit: { id: string; name: string }[] = [];
 
-  let accountIdForCache: string | undefined;
-  let propertyIdForCache: string | undefined;
-
   // Refactor: Use string identifiers in the set
   const toUpdateProperties = new Set(
     formData.forms.map((prop) => ({
@@ -815,8 +801,6 @@ export async function updateProperties(formData: FormUpdateSchema) {
         if (remaining > 0) {
           await limiter.schedule(async () => {
             const updatePromises = Array.from(toUpdateProperties).map(async (identifier) => {
-              accountIdForCache = identifier.parent;
-              propertyIdForCache = identifier.name;
               const propertyData = formData.forms.find(
                 (prop) =>
                   prop.parent === identifier.parent &&
@@ -1027,7 +1011,7 @@ export async function updateProperties(formData: FormUpdateSchema) {
         }
       } finally {
         // This block will run regardless of the outcome of the try...catch
-        if (accountIdForCache && propertyIdForCache && userId) {
+        if (userId) {
           const cacheKey = `ga:properties:userId:${userId}`;
           await redis.del(cacheKey);
           await revalidatePath(`/dashboard/ga/properties`);
@@ -1058,7 +1042,7 @@ export async function updateProperties(formData: FormUpdateSchema) {
     };
   }
 
-  if (successfulUpdates.length > 0 && accountIdForCache && propertyIdForCache) {
+  if (successfulUpdates.length > 0) {
     const cacheKey = `ga:properties:userId:${userId}`;
     await redis.del(cacheKey);
     revalidatePath(`/dashboard/ga/properties`);
@@ -1105,8 +1089,6 @@ export async function updateDataRetentionSettings(formData: FormUpdateSchema) {
   const featureLimitReached: string[] = [];
   const notFoundLimit: { id: string; name: string }[] = [];
 
-  let accountIdForCache: string | undefined;
-  let propertyIdForCache: string | undefined;
   let parsedResponse: any;
 
   // Refactor: Use string identifiers in the set
@@ -1139,8 +1121,6 @@ export async function updateDataRetentionSettings(formData: FormUpdateSchema) {
       if (remaining > 0) {
         await limiter.schedule(async () => {
           const updatePromises = Array.from(toUpdateProperties).map(async (identifier) => {
-            accountIdForCache = identifier.parent;
-            propertyIdForCache = identifier.name;
             const propertyData = formData.forms.find(
               (prop) =>
                 prop.parent === identifier.parent &&
@@ -1350,7 +1330,7 @@ export async function updateDataRetentionSettings(formData: FormUpdateSchema) {
       }
     } finally {
       // This block will run regardless of the outcome of the try...catch
-      if (accountIdForCache && propertyIdForCache && userId) {
+      if (userId) {
         redis.append(`ga:properties:userId:${userId}`, parsedResponse);
         await revalidatePath(`/dashboard/ga/properties`);
       }
@@ -1379,7 +1359,7 @@ export async function updateDataRetentionSettings(formData: FormUpdateSchema) {
     };
   }
 
-  if (successfulUpdates.length > 0 && accountIdForCache && propertyIdForCache) {
+  if (successfulUpdates.length > 0) {
     redis.append(`ga:properties:userId:${userId}`, parsedResponse);
     revalidatePath(`/dashboard/ga/properties`);
   }
@@ -1425,7 +1405,6 @@ export async function acknowledgeUserDataCollection(selectedRows) {
   const featureLimitReached: string[] = [];
   const notFoundLimit: { id: string; name: string }[] = [];
 
-  let propertyIdForCache: string | undefined;
   let parsedResponse: any;
 
   // Refactor: Use string identifiers in the set
@@ -1637,7 +1616,7 @@ export async function acknowledgeUserDataCollection(selectedRows) {
       }
     } finally {
       // This block will run regardless of the outcome of the try...catch
-      if (propertyIdForCache && userId) {
+      if (userId) {
         redis.append(`ga:properties:userId:${userId}`, parsedResponse);
         await revalidatePath(`/dashboard/ga/properties`);
       }
@@ -1666,7 +1645,7 @@ export async function acknowledgeUserDataCollection(selectedRows) {
     };
   }
 
-  if (successfulUpdates.length > 0 && propertyIdForCache) {
+  if (successfulUpdates.length > 0) {
     redis.append(`ga:properties:userId:${userId}`, parsedResponse);
     revalidatePath(`/dashboard/ga/properties`);
   }
@@ -1710,7 +1689,6 @@ export async function getMetadataProperties() {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-
 
   await fetchGASettings(userId);
   const gaData = await prisma.user.findFirst({

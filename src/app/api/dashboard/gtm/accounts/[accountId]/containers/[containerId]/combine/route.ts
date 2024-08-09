@@ -2,38 +2,8 @@ import { NextResponse } from 'next/server';
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager/v2';
 import { createOAuth2Client } from '@/src/lib/oauth2Client';
 import prisma from '@/src/lib/prisma';
-import Joi from 'joi';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
 import { limiter } from '@/src/lib/bottleneck';
-
-/************************************************************************************
- * POST UTILITY FUNCTIONS
- ************************************************************************************/
-/************************************************************************************
-  Validate the POST parameters
-************************************************************************************/
-async function validatePostParams(params: {
-  accountId: string;
-  containerId: string;
-  containerIdToCombine: string;
-}) {
-  const schema = Joi.object({
-    accountId: Joi.string()
-      .pattern(/^\d{10}$/)
-      .required(),
-    containerId: Joi.string().required(),
-    containerIdToCombine: Joi.string().required(),
-  });
-
-  const { error } = schema.validate(params);
-
-  if (error) {
-    // If validation fails, return a 400 Bad Request response
-    return new NextResponse(JSON.stringify({ error: error.message }), {
-      status: 400,
-    });
-  }
-}
 
 /************************************************************************************
   Function to combine GTM containers

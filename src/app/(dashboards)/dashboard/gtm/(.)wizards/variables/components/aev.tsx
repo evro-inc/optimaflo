@@ -21,9 +21,9 @@ interface Props {
   table?: any;
 }
 
-const AEV = ({ formIndex, type, table = [] }: Props) => {
-  const { control, register, setValue } = useFormContext();
-  const { fields, append, remove } = useFieldArray({
+const AEV = ({ formIndex }: Props) => {
+  const { control, setValue } = useFormContext();
+  const { fields, append } = useFieldArray({
     control,
     name: `forms.${formIndex}.parameter`,
   });

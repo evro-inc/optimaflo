@@ -31,7 +31,6 @@ export async function listGACustomMetrics() {
 
   const token = await currentUserOauthAccessToken(userId);
 
-
   const cacheKey = `ga:customMetrics:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
 
@@ -323,7 +322,7 @@ export async function createGACustomMetrics(formData: CustomMetricSchemaType) {
               message: `Feature limit reached for custom metrics: ${featureLimitReached.join(
                 ', '
               )}`,
-              results: featureLimitReached.map((displayName) => {
+              results: featureLimitReached.map(() => {
                 // Find the name associated with the propertyId
                 const customMetricName =
                   customMetricNames.find((displayName) => displayName.includes(displayName)) ||
@@ -643,7 +642,7 @@ export async function updateGACustomMetrics(formData: CustomMetricSchemaType) {
               message: `Feature limit reached for custom metrics: ${featureLimitReached.join(
                 ', '
               )}`,
-              results: featureLimitReached.map((displayName) => {
+              results: featureLimitReached.map(() => {
                 // Find the name associated with the propertyId
                 const customMetricName =
                   customMetricNames.find((displayName) => displayName.includes(displayName)) ||

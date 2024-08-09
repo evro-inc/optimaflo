@@ -5,7 +5,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setLoading, incrementStep, decrementStep } from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
-import { z } from 'zod';
 import { UpdateVersionFormSchema, UpdateVersionSchemaType } from '@/src/lib/schemas/gtm/versions';
 import { Button } from '@/src/components/ui/button';
 import {
@@ -67,12 +66,6 @@ const FormUpdateVersion = () => {
     })
   );
 
-  if (notFoundError) {
-    return <NotFoundErrorModal onClose={undefined} />;
-  }
-  if (error) {
-    return <ErrorModal />;
-  }
   const form = useForm<UpdateVersionSchemaType>({
     defaultValues: {
       updateVersion: formDataDefaults,
@@ -84,6 +77,13 @@ const FormUpdateVersion = () => {
     control: form.control,
     name: 'updateVersion',
   });
+
+  if (notFoundError) {
+    return <NotFoundErrorModal onClose={undefined} />;
+  }
+  if (error) {
+    return <ErrorModal />;
+  }
 
   const handleNext = async () => {
     const currentFormIndex = currentStep - 2; // Adjusting for the array index and step count

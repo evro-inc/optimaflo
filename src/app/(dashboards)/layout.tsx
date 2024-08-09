@@ -2,9 +2,7 @@
 
 import React from 'react';
 import '../../styles/globals.css';
-import NavApp from '@/src/components/client/Navbar/NavApp';
 import { ReduxProvider } from '../providers';
-import SideBar from '@/src/components/client/Navbar/SideBar';
 import { Toaster } from '@/src/components/ui/sonner';
 
 import { notFound } from 'next/navigation';

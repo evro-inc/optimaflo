@@ -9,7 +9,7 @@ interface Props {
   table?: any;
 }
 
-const Constant = ({ formIndex, type, table = [] }: Props) => {
+const Constant = ({ formIndex }: Props) => {
   const { control, register, setValue } = useFormContext();
   const { fields, append, remove } = useFieldArray({
     control,

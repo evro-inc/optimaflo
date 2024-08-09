@@ -12,7 +12,7 @@ interface Props {
   table?: any;
 }
 
-const GoogleTagConfigSettings = ({ formIndex, type, table = [] }: Props) => {
+const GoogleTagConfigSettings = ({ formIndex }: Props) => {
   const { control, register, setValue } = useFormContext();
   const { fields, append } = useFieldArray({
     control,

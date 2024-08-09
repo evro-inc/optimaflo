@@ -28,7 +28,7 @@ interface Props {
 }
 
 const URL = ({ formIndex, variables }: Props) => {
-  const { control, register, setValue } = useFormContext();
+  const { control, setValue } = useFormContext();
   const { fields, append } = useFieldArray({
     control,
     name: `forms.${formIndex}.parameter`,
@@ -136,7 +136,7 @@ const URL = ({ formIndex, variables }: Props) => {
               name={`forms.${formIndex}.parameter.${index}.value`}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Strip 'www.'</FormLabel>
+                  <FormLabel>Strip www.</FormLabel>
                   <FormControl>
                     <Checkbox
                       {...field}
