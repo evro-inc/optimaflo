@@ -183,7 +183,7 @@ export async function createGAFirebaseLinks(formData: FirebaseLinkSchemaType) {
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.property}/firebaseLinks`;
 
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -477,7 +477,7 @@ export async function deleteGAFirebaseLinks(
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.name}`;
 
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };

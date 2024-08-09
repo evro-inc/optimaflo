@@ -214,7 +214,7 @@ export async function publishGTM(formData: ContainerVersionType) {
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${versionData.accountId}/containers/${versionData.containerId}/versions/${versionData.containerVersionId}:publish`;
 
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -500,7 +500,7 @@ export async function DeleteVersions(
               let url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/versions/${containerVersionId}?`;
 
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -811,7 +811,7 @@ export async function UpdateVersions(formData: UpdateVersionSchemaType) {
 
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${versionData.accountId}/containers/${versionData.containerId}/versions/${versionData.containerVersionId}`;
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };

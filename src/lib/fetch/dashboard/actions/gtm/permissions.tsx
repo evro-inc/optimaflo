@@ -201,7 +201,7 @@ export async function CreatePermissions(formData: FormValuesType) {
 
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${permissionData.accountId}/user_permissions`;
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -525,7 +525,7 @@ export async function UpdatePermissions(formData: FormValuesType) {
               const url = `https://www.googleapis.com/tagmanager/v2/${permissionData.paths}`;
 
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -846,7 +846,7 @@ export async function DeletePermissions(
               const url = `https://www.googleapis.com/tagmanager/v2/${path}`;
 
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };

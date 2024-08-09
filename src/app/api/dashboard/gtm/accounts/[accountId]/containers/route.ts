@@ -234,7 +234,7 @@ export async function GET(
     // Call listGtmContainers for each accountId
     const allResults = await Promise.all(
       (accountId ? [accountId] : []).map(async (accountId) => {
-        return await listGtmContainers(token.data[0].token, accountId);
+        return await listGtmContainers();
       })
     );
 
@@ -317,7 +317,7 @@ export async function POST(
 
     const response = await createGtmContainer(
       userId,
-      token.data[0].token,
+      token,
       accountId,
       name,
       usageContext,

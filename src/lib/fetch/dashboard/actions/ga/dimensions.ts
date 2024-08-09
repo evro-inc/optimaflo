@@ -188,7 +188,7 @@ export async function createGACustomDimensions(formData: CustomDimensionSchemaTy
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.property}/customDimensions`;
 
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -503,7 +503,7 @@ export async function updateGACustomDimensions(formData: CustomDimensionSchemaTy
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.name}?updateMask=${updateMask}`;
 
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -800,7 +800,7 @@ export async function deleteGACustomDimensions(
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.name}:archive`;
 
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };

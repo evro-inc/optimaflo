@@ -194,7 +194,7 @@ export async function createGAKeyEvents(formData: KeyEvents) {
                 }
 
                 const headers = {
-                  Authorization: `Bearer ${token.data[0].token}`,
+                  Authorization: `Bearer ${token}`,
                   'Content-Type': 'application/json',
                   'Accept-Encoding': 'gzip',
                 };
@@ -512,7 +512,7 @@ export async function updateGAKeyEvents(formData: KeyEvents) {
                 const url = `https://analyticsadmin.googleapis.com/v1alpha/${identifier.accountProperty}?updateMask=${updateMask}`;
 
                 const headers = {
-                  Authorization: `Bearer ${token.data[0].token}`,
+                  Authorization: `Bearer ${token}`,
                   'Content-Type': 'application/json',
                   'Accept-Encoding': 'gzip',
                 };
@@ -807,7 +807,7 @@ export async function deleteGAKeyEvents(
               const url = `https://analyticsadmin.googleapis.com/v1alpha/${identifier.name}`;
 
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };

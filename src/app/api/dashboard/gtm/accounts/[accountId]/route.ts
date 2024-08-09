@@ -5,8 +5,9 @@ import { createOAuth2Client } from '@/src/lib/oauth2Client';
 import Joi from 'joi';
 import { isErrorWithStatus } from '@/src/lib/fetch/dashboard';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
-import { clerkClient, currentUser } from '@clerk/nextjs/server';
+import { currentUser } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
+import { currentUserOauthAccessToken } from '@/src/lib/clerk';
 
 /************************************************************************************
  * PATCH UTILITY FUNCTIONS
@@ -120,7 +121,7 @@ export async function GET(
       });
     }
 
-    const accessToken = await clerkClient().users.getUserOauthAccessToken(user?.id, 'oauth_google');
+    const accessToken = await currentUserOauthAccessToken(userId);
 
     if (!accessToken) {
       // If the access token is null or undefined, return an error response
@@ -138,7 +139,7 @@ export async function GET(
 
         if (remaining > 0) {
           // If the data is not in the cache, fetch it from the API
-          const oauth2Client = createOAuth2Client(accessToken.data[0].token);
+          const oauth2Client = createOAuth2Client(accessToken);
           if (!oauth2Client) {
             // If oauth2Client is null, return an error response or throw an error
             return NextResponse.error();
@@ -211,7 +212,7 @@ export async function PATCH(request: NextRequest) {
     };
 
     const validatedParams = await validatePatchParams(params);
-    const accessToken = await clerkClient().users.getUserOauthAccessToken(userId, 'oauth_google');
+    const accessToken = await currentUserOauthAccessToken(userId);
 
     if (!accessToken) {
       return new NextResponse(JSON.stringify({ message: 'Access token is missing' }), {
@@ -220,7 +221,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const accountData = await PatchGtmAccount(
-      accessToken.data[0].token,
+      accessToken,
       validatedParams.accountId,
       validatedParams.name,
       userId

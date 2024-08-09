@@ -200,7 +200,7 @@ export async function UpdateGaAccounts(formData: FormUpdateSchema) {
 
               const url = `https://analyticsadmin.googleapis.com/v1beta/${accountIdentifier}?updateMask=displayName`;
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -518,7 +518,7 @@ export async function deleteAccounts(
 
               const url = `https://analyticsadmin.googleapis.com/v1beta/${name}`;
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -785,7 +785,7 @@ export async function createAccounts(formData: FormCreateSchema) {
 
               const url = `https://analyticsadmin.googleapis.com/v1beta/accounts:provisionAccountTicket`;
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };

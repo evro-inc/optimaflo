@@ -46,7 +46,6 @@ export async function POST(req: Request) {
   }
 
   const eventType = evt.type;
-  console.log('Webhook event verified:', evt);
 
   // Helper function to fetch or create user from Clerk
   async function fetchOrCreateUser(clerkUserId: string) {

@@ -183,7 +183,7 @@ export async function DeleteBuiltInVariables(
             const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/built_in_variables?type=${types}`;
 
             const headers = {
-              Authorization: `Bearer ${token.data[0].token}`,
+              Authorization: `Bearer ${token}`,
               'Content-Type': 'application/json',
               'Accept-Encoding': 'gzip',
             };
@@ -457,7 +457,7 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
                 const finalUrl = url + '?' + params.toString();
 
                 const headers = {
-                  Authorization: `Bearer ${token.data[0].token}`,
+                  Authorization: `Bearer ${token}`,
                   'Content-Type': 'application/json',
                   'Accept-Encoding': 'gzip',
                 };
@@ -716,7 +716,7 @@ export async function RevertBuiltInVariables(
               const url = `https://www.googleapis.com/tagmanager/v2/${data.path}:revert?type=${type}`;
 
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };

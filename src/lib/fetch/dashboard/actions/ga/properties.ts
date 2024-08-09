@@ -204,7 +204,7 @@ export async function DeleteProperties(
             const deletePromises = Array.from(toDeleteProperties).map(async (identifier) => {
               const url = `https://analyticsadmin.googleapis.com/v1beta/properties/${identifier.name}`;
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -489,7 +489,7 @@ export async function createProperties(formData: FormCreateSchema) {
 
               const url = `https://analyticsadmin.googleapis.com/v1beta/properties`;
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -823,7 +823,7 @@ export async function updateProperties(formData: FormUpdateSchema) {
 
               const url = `https://analyticsadmin.googleapis.com/v1beta/properties/${identifier.parent}?updateMask=${updateMask}`;
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -1148,7 +1148,7 @@ export async function updateDataRetentionSettings(formData: FormUpdateSchema) {
 
             const url = `https://analyticsadmin.googleapis.com/v1beta/properties/${identifier.name}/dataRetentionSettings?updateMask=${updateMask}`;
             const headers = {
-              Authorization: `Bearer ${token.data[0].token}`,
+              Authorization: `Bearer ${token}`,
               'Content-Type': 'application/json',
               'Accept-Encoding': 'gzip',
             };
@@ -1440,7 +1440,7 @@ export async function acknowledgeUserDataCollection(selectedRows) {
 
               const url = `https://analyticsadmin.googleapis.com/v1beta/properties/${identifier.name}:acknowledgeUserDataCollection`;
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };

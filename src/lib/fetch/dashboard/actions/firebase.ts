@@ -165,7 +165,7 @@ export async function createGAPropertyStreams(formData: DataStreamType) {
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.property}/dataStreams`;
 
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };

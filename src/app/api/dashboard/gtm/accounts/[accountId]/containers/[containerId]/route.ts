@@ -6,8 +6,9 @@ import prisma from '@/src/lib/prisma';
 import Joi from 'joi';
 import { gtmRateLimit } from '@/src/lib/redis/rateLimits';
 import { limiter } from '@/src/lib/bottleneck';
-import { clerkClient, currentUser } from '@clerk/nextjs/server';
+import { currentUser } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
+import { currentUserOauthAccessToken } from '@/src/lib/clerk';
 
 /************************************************************************************
  * GET UTILITY FUNCTIONS
@@ -428,9 +429,9 @@ export async function GET(
     const validatedParams = await validateGetParams(paramsJOI);
     const { accountId, containerId } = validatedParams;
 
-    const accessToken = await clerkClient().users.getUserOauthAccessToken(user?.id, 'oauth_google');
+    const accessToken = await currentUserOauthAccessToken(user?.id);
 
-    const data = await fetchGtmData(userId, accessToken.data[0].token, accountId, containerId);
+    const data = await fetchGtmData(userId, accessToken, accountId, containerId);
 
     return NextResponse.json(
       {
@@ -485,11 +486,11 @@ export async function PUT(request: NextRequest) {
     const { accountId, containerId, containerName, usageContext } = validateParams;
 
     // using userId get accessToken from prisma account table
-    const accessToken = await clerkClient().users.getUserOauthAccessToken(user?.id, 'oauth_google');
+    const accessToken = await currentUserOauthAccessToken(user?.id);
 
     const data = await updateGtmData(
       userId,
-      accessToken.data[0].token,
+      accessToken,
       accountId,
       containerId,
       containerName,
@@ -545,9 +546,9 @@ export async function DELETE(request: NextRequest) {
     const { accountId, containerId } = validateParams;
 
     // using userId get accessToken from prisma account table
-    const accessToken = await clerkClient().users.getUserOauthAccessToken(user?.id, 'oauth_google');
+    const accessToken = await currentUserOauthAccessToken(user?.id);
 
-    const data = await deleteGtmData(userId, accessToken.data[0].token, accountId, containerId);
+    const data = await deleteGtmData(userId, accessToken, accountId, containerId);
 
     return NextResponse.json(
       {
