@@ -338,7 +338,7 @@ const FormUpdateWorkspace: React.FC<FormUpdateWorkspaceProps> = ({
 
       {isLimitReached && <LimitReached onClose={() => dispatch(setIsLimitReached(false))} />}
 
-      {notFoundError && <NotFoundErrorModal />}
+      {notFoundError && <NotFoundErrorModal onClose={undefined} />}
     </>
   );
 };

@@ -1,15 +1,13 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setLoading, incrementStep, decrementStep, setCount } from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import {
   FormCreateAmountSchema,
-  FormSchema,
   FormValuesType,
-  UserPermissionSchema,
   TransformedFormSchema,
   UserPermissionType,
 } from '@/src/lib/schemas/gtm/userPermissions';
@@ -17,7 +15,6 @@ import { Button } from '@/src/components/ui/button';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -26,20 +23,16 @@ import {
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/src/components/ui/select';
 
-import { Input } from '@/src/components/ui/input';
 import {
   AccountPermission,
   ContainerPermission,
   FeatureResponse,
   FormCreateProps,
-  UserPermission,
 } from '@/src/types/types';
 import { toast } from 'sonner';
 import {
@@ -51,17 +44,10 @@ import {
 import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import {
-  CreatePermissions,
-  UpdatePermissions,
-} from '@/src/lib/fetch/dashboard/actions/gtm/permissions';
-import {
-  accountAccessPermissions,
-  containerAccessPermissions,
-} from '../../../entities/@permissions/items';
+import { UpdatePermissions } from '@/src/lib/fetch/dashboard/actions/gtm/permissions';
+
 import EmailForm from '../components/email';
 import EntitySelection from '../components/entitySelection';
-import Email from '../components/email';
 import { addForm } from '@/src/redux/gtm/userPermissionSlice';
 
 const NotFoundErrorModal = dynamic(
@@ -95,14 +81,10 @@ const FormUpdatePermissions: React.FC<FormCreateProps> = ({
   const loading = useSelector((state: RootState) => state.form.loading);
   const error = useSelector((state: RootState) => state.form.error);
   const currentStep = useSelector((state: RootState) => state.form.currentStep);
-  const propertyCount = useSelector((state: RootState) => state.form.count);
+  const count = useSelector((state: RootState) => state.form.count);
   const forms = useSelector((state: RootState) => state.gtmUserPermission.forms);
   const notFoundError = useSelector(selectTable).notFoundError;
   const router = useRouter();
-  const count = useSelector((state: RootState) => state.form.count);
-  const emailAddresses = useSelector((state: RootState) =>
-    state.gtmUserPermission.forms.flatMap((form) => form.emailAddresses)
-  );
 
   const foundTierLimit = tierLimits.find(
     (subscription) => subscription.Feature?.name === 'GTMPermissions'
@@ -131,17 +113,16 @@ const FormUpdatePermissions: React.FC<FormCreateProps> = ({
     /* resolver: zodResolver(FormSchema), */ // Client-side validation
   });
 
-  const {
-    fields: formFields,
-    append: appendForm,
-    remove: removeForm,
-  } = useFieldArray({
+  const { fields: formFields, append: appendForm } = useFieldArray({
     control: form.control,
     name: 'forms',
   });
 
-  // Effect to update propertyCount when amount changes
+  // Extract the watched value
+  const watchedAmount = formCreateAmount.watch('amount');
+
   useEffect(() => {
+    // Convert the watched amount to an integer
     const amount = parseInt(formCreateAmount.getValues('amount').toString());
     dispatch(setCount(amount));
 
@@ -153,7 +134,7 @@ const FormUpdatePermissions: React.FC<FormCreateProps> = ({
         }
       }
     }
-  }, [formCreateAmount.watch('amount'), dispatch, forms]);
+  }, [watchedAmount, dispatch, forms, formCreateAmount]);
 
   if (notFoundError) {
     return (
@@ -165,6 +146,7 @@ const FormUpdatePermissions: React.FC<FormCreateProps> = ({
       />
     );
   }
+
   if (error) {
     return <ErrorModal />;
   }
@@ -419,16 +401,19 @@ const FormUpdatePermissions: React.FC<FormCreateProps> = ({
               name="amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>How many permissions do you want to create?</FormLabel>
+                  <FormLabel>How many conversion events do you want to create?</FormLabel>
                   <Select
+                    {...field}
+                    value={field.value.toString()} // Convert value to string
                     onValueChange={(value) => {
-                      handleAmountChange(value);
+                      field.onChange(value); // Update form state
+                      handleAmountChange(value); // Call the modified handler
                     }}
-                    defaultValue={propertyCount.toString()}
+                    defaultValue={count.toString()}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select the amount of properties you want to create." />
+                        <SelectValue placeholder="Select the amount of conversion events you want to create." />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -439,9 +424,11 @@ const FormUpdatePermissions: React.FC<FormCreateProps> = ({
                       ))}
                     </SelectContent>
                   </Select>
+                  <FormMessage />
                 </FormItem>
               )}
             />
+
             <Button type="button" onClick={handleNext}>
               Next
             </Button>

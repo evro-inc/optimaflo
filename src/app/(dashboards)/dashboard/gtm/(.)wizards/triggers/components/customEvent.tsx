@@ -9,7 +9,7 @@ interface Props {
   table?: any;
 }
 
-const CustomEventTrigger = ({ formIndex, table = [] }: Props) => {
+const CustomEventTrigger = ({ formIndex }: Props) => {
   const { control, register, setValue } = useFormContext();
   const { fields, append, remove } = useFieldArray({
     control,

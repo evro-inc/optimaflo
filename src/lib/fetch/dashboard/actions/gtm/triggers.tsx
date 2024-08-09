@@ -1,7 +1,6 @@
 'use server';
 import { revalidatePath } from 'next/cache';
 import { FormsSchema, TriggerType } from '@/src/lib/schemas/gtm/triggers';
-import z from 'zod';
 import { auth } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 import { limiter } from '../../../../bottleneck';
@@ -18,9 +17,6 @@ import {
 } from '@/src/utils/server';
 import { fetchGtmSettings } from '../..';
 
-// Define the types for the form data
-type schema = z.infer<typeof FormsSchema>;
-
 /************************************************************************************
   Function to list or get one GTM triggers
 ************************************************************************************/
@@ -33,7 +29,6 @@ export async function listTriggers(skipCache = false) {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-
 
   const cacheKey = `gtm:triggers:userId:${userId}`;
   if (skipCache == false) {
@@ -143,7 +138,6 @@ export async function DeleteTriggers(ga4TriggerToDelete: Trigger[]): Promise<Fea
       (prop) => `${prop.accountId}-${prop.containerId}-${prop.workspaceId}-${prop.type}`
     )
   );
-  let accountIdForCache: string | undefined;
 
   // Authenticating user and getting user ID
   const { userId } = await auth();
@@ -196,12 +190,11 @@ export async function DeleteTriggers(ga4TriggerToDelete: Trigger[]): Promise<Fea
             // Creating promises for each container deletion
             const deletePromises = Array.from(ga4TriggerToDelete).map(async (prop) => {
               const { accountId, containerId, workspaceId, triggerId, type } = prop;
-              accountIdForCache = accountId;
 
               let url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/triggers/${triggerId}`;
 
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -290,8 +283,8 @@ export async function DeleteTriggers(ga4TriggerToDelete: Trigger[]): Promise<Fea
               notFoundError: true, // Set the notFoundError flag
               message: `Could not delete trigger. Please check your permissions. Container Name: 
               ${notFoundLimit
-                  .map(({ name }) => name)
-                  .join(', ')}. All other triggers were successfully deleted.`,
+                .map(({ name }) => name)
+                .join(', ')}. All other triggers were successfully deleted.`,
               results: notFoundLimit.map(({ combinedId, name }) => {
                 const [accountId, containerId, workspaceId] = combinedId.split('-');
                 return {
@@ -419,8 +412,6 @@ export async function CreateTriggers(formData: TriggerType) {
   const successfulCreations: string[] = [];
   const featureLimitReached: string[] = [];
   const notFoundLimit: { id: string; name: string }[] = [];
-  let accountIdForCache: string | undefined;
-  let containerIdForCache: string | undefined;
 
   // Refactor: Use string identifiers in the set
   const toCreateTriggers = new Set(formData.forms.map((trigger) => trigger));
@@ -449,7 +440,7 @@ export async function CreateTriggers(formData: TriggerType) {
   // refactor and verify
   if (toCreateTriggers.size > availableCreateUsage) {
     const attemptedCreations = Array.from(toCreateTriggers).map((identifier: any) => {
-      const { name: triggerName, filter } = identifier;
+      const { name: triggerName } = identifier;
 
       return {
         id: [], // No trigger ID since creation did not happen
@@ -492,13 +483,10 @@ export async function CreateTriggers(formData: TriggerType) {
                 return;
               }
 
-              accountIdForCache = identifier.accountId;
-              containerIdForCache = identifier.containerId;
-
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${identifier.accountId}/containers/${identifier.containerId}/workspaces/${identifier.workspaceId}/triggers`;
 
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -650,7 +638,7 @@ export async function CreateTriggers(formData: TriggerType) {
         }
       } finally {
         // This block will run regardless of the outcome of the try...catch
-        if (accountIdForCache && containerIdForCache && userId) {
+        if (userId) {
           const cacheKey = `gtm:triggers:userId:${userId}`;
           await redis.del(cacheKey);
           await revalidatePath(`/dashboard/gtm/configurations`);
@@ -681,7 +669,7 @@ export async function CreateTriggers(formData: TriggerType) {
     };
   }
 
-  if (successfulCreations.length > 0 && accountIdForCache && containerIdForCache) {
+  if (successfulCreations.length > 0) {
     const cacheKey = `gtm:triggers:userId:${userId}`;
     await redis.del(cacheKey);
     revalidatePath(`/dashboard/gtm/configurations`);
@@ -724,8 +712,6 @@ export async function UpdateTriggers(formData: TriggerType) {
   const successfulCreations: string[] = [];
   const featureLimitReached: string[] = [];
   const notFoundLimit: { id: string; name: string }[] = [];
-  let accountIdForCache: string | undefined;
-  let containerIdForCache: string | undefined;
 
   // Refactor: Use string identifiers in the set
   const toUpdateTriggers = new Set(formData.forms.map((trigger) => trigger));
@@ -796,13 +782,10 @@ export async function UpdateTriggers(formData: TriggerType) {
                 return;
               }
 
-              accountIdForCache = identifier.accountId;
-              containerIdForCache = identifier.containerId;
-
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${identifier.accountId}/containers/${identifier.containerId}/workspaces/${identifier.workspaceId}/triggers/${identifier.triggerId}`;
 
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -953,7 +936,7 @@ export async function UpdateTriggers(formData: TriggerType) {
         }
       } finally {
         // This block will run regardless of the outcome of the try...catch
-        if (accountIdForCache && containerIdForCache && userId) {
+        if (userId) {
           const cacheKey = `gtm:triggers:userId:${userId}`;
           await redis.del(cacheKey);
           await revalidatePath(`/dashboard/gtm/configurations`);
@@ -984,7 +967,7 @@ export async function UpdateTriggers(formData: TriggerType) {
     };
   }
 
-  if (successfulCreations.length > 0 && accountIdForCache && containerIdForCache) {
+  if (successfulCreations.length > 0) {
     const cacheKey = `gtm:triggers:userId:${userId}`;
     await redis.del(cacheKey);
     revalidatePath(`/dashboard/gtm/configurations`);

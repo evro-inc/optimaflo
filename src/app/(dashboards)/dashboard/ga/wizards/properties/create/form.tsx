@@ -115,19 +115,6 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
     },
   });
 
-  // Effect to update propertyCount when amount changes
-  useEffect(() => {
-    const amount = parseInt(formCreateAmount.getValues('amount').toString());
-    dispatch(setCount(amount));
-  }, [formCreateAmount.watch('amount'), dispatch]);
-
-  if (notFoundError) {
-    return <NotFoundErrorModal />;
-  }
-  if (error) {
-    return <ErrorModal />;
-  }
-
   const form = useForm<Forms>({
     defaultValues: {
       forms: [formDataDefaults],
@@ -139,6 +126,21 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
     control: form.control,
     name: 'forms',
   });
+
+  // Effect to update propertyCount when amount changes
+  useEffect(() => {
+    const amountValue = formCreateAmount.watch('amount'); // Extract the watched value
+    const amount = parseInt(amountValue?.toString() || '0'); // Handle cases where amountValue might be undefined or null
+    dispatch(setCount(amount));
+  }, [formCreateAmount, dispatch]); // Include formCreateAmount and dispatch as dependencies
+
+  if (notFoundError) {
+    return <NotFoundErrorModal onClose={undefined} />;
+  }
+  if (error) {
+    return <ErrorModal />;
+  }
+
   const addForm = () => {
     append(formDataDefaults);
   };
@@ -281,7 +283,6 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
   const handleNext = async () => {
     const currentFormIndex = currentStep - 2; // Adjusting for the array index and step count
     const currentFormPath = `forms.${currentFormIndex}`;
-    const currentFormData = form.getValues(currentFormPath as `forms.${number}`);
 
     // Start with the common fields that are always present
     const fieldsToValidate = [
@@ -316,16 +317,19 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
               name="amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>How many properties do you want to create?</FormLabel>
+                  <FormLabel>How many users do you want to add?</FormLabel>
                   <Select
+                    {...field} // This binds the Select to the form state
                     onValueChange={(value) => {
+                      field.onChange(value); // Update form state
                       handleAmountChange(value); // Call the modified handler
                     }}
-                    defaultValue={propertyCount.toString()}
+                    defaultValue={propertyCount.toString()} // Convert count to string
+                    value={field.value.toString()} // Convert value to string
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select the amount of properties you want to create." />
+                        <SelectValue placeholder="Select the amount of conversion events you want to create." />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -339,6 +343,7 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
                 </FormItem>
               )}
             />
+
             <Button type="button" onClick={handleNext}>
               Next
             </Button>

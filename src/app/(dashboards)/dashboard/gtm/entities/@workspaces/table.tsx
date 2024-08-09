@@ -47,11 +47,7 @@ interface DataTableProps<TData, TValue> {
   accounts: any;
 }
 
-export function DataTable<TData, TValue>({
-  columns,
-  data,
-  accounts,
-}: DataTableProps<TData, TValue>) {
+export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData, TValue>) {
   const dispatch = useDispatch();
 
   const { user } = useUser();
@@ -61,7 +57,7 @@ export function DataTable<TData, TValue>({
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [isCreatePending, startCreateTransition] = useTransition();
-  const [isCreateVersionPending, startCreateVersionTransition] = useTransition();
+  const [isCreateVersionPending] = useTransition();
   const [isUpdatePending, startUpdateTransition] = useTransition();
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});

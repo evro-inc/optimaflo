@@ -1,7 +1,6 @@
 'use server';
 import { revalidatePath } from 'next/cache';
 import { FormSchema } from '@/src/lib/schemas/gtm/envs';
-import z from 'zod';
 import { auth } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 import { limiter } from '../../../../bottleneck';
@@ -9,16 +8,10 @@ import { gtmRateLimit } from '../../../../redis/rateLimits';
 import { redis } from '../../../../redis/cache';
 import { currentUserOauthAccessToken } from '../../../../clerk';
 import prisma from '@/src/lib/prisma';
-import { FeatureResponse, FeatureResult } from '@/src/types/types';
-import {
-  handleApiResponseError,
-  tierCreateLimit,
-  tierDeleteLimit,
-  tierUpdateLimit,
-} from '@/src/utils/server';
+import { FeatureResult } from '@/src/types/types';
+import { handleApiResponseError, tierUpdateLimit } from '@/src/utils/server';
 import { fetchGtmSettings } from '../..';
 import { GoogleTagEnvironmentType } from '@/src/lib/schemas/gtm/envs';
-import { EnvironmentApi } from 'svix/dist/openapi';
 
 const MAX_RETRIES = 3;
 const INITIAL_DELAY = 1000;
@@ -34,7 +27,6 @@ export async function listGtmEnvs() {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-
 
   const cacheKey = `gtm:environments:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
@@ -119,7 +111,6 @@ export async function getGtmEnv(formData: GoogleTagEnvironmentType) {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-
 
   // Ensure environmentId is always an array
   const toGetEnv = new Set(
@@ -284,8 +275,6 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
 
-  const containerVersionId = formData.forms.map((env) => env.containerVersionId);
-
   let retries = 0;
   let delay = INITIAL_DELAY;
   const errors: string[] = [];
@@ -386,7 +375,7 @@ export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${envData.accountId}/containers/${envData.containerId}/environments/${envNumber}`;
 
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };

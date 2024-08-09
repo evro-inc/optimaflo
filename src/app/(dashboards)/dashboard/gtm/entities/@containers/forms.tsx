@@ -47,7 +47,7 @@ export default function ContainerForms({ accounts, selectedRows, table }) {
       {/* Modals */}
       {isLimitReached && <LimitReachedModal onClose={() => dispatch(setIsLimitReached(false))} />}
 
-      {notFoundError && <NotFoundErrorModal />}
+      {notFoundError && <NotFoundErrorModal onClose={undefined} />}
 
       {error && <ErrorMessage onClose={clearError} />}
 

@@ -19,7 +19,7 @@ import {
 } from '@/src/components/ui/form';
 
 import { Input } from '@/src/components/ui/input';
-import { FeatureResponse, FormWizardUpdateProps, GA4StreamType } from '@/src/types/types';
+import { FeatureResponse, GA4StreamType } from '@/src/types/types';
 import { toast } from 'sonner';
 import { updateGAPropertyStreams } from '@/src/lib/fetch/dashboard/actions/ga/streams';
 import {
@@ -80,12 +80,6 @@ const FormUpdateStream = () => {
     parent: rowData.parent,
   }));
 
-  if (notFoundError) {
-    return <NotFoundErrorModal />;
-  }
-  if (error) {
-    return <ErrorModal />;
-  }
   const form = useForm<Forms>({
     defaultValues: {
       forms: formDataDefaults,
@@ -97,6 +91,13 @@ const FormUpdateStream = () => {
     control: form.control,
     name: 'forms',
   });
+
+  if (notFoundError) {
+    return <NotFoundErrorModal onClose={undefined} />;
+  }
+  if (error) {
+    return <ErrorModal />;
+  }
 
   const handleNext = async () => {
     // Determine the names of the fields in the current form to validate

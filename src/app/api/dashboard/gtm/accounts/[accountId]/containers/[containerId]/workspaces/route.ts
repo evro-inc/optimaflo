@@ -59,7 +59,7 @@ async function validatePostParams(params) {
 async function createGtmWorkspace(accessToken, accountId, containerId, name, description) {
   const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces`;
   const headers = {
-    Authorization: `Bearer ${token}`,
+    Authorization: `Bearer ${accessToken}`,
     'Content-Type': 'application/json',
   };
 
@@ -114,8 +114,7 @@ export async function GET(
         status: 200,
       });
     }
-    const token = await currentUserOauthAccessToken(userId);
-    const data = await listGtmWorkspaces(token.data[0].token, accountId, containerId);
+    const data = await listGtmWorkspaces();
 
     redis.set(
       `gtm:workspaces:${accountId}:${containerId}`,
@@ -168,7 +167,7 @@ export async function POST(request: NextRequest) {
 
     // Call the function to create a GTM workspace
     const workspaceData = await createGtmWorkspace(
-      accesstoken.data[0].token,
+      accessToken,
       validatedParams.accountId,
       validatedParams.containerId,
       validatedParams.name,

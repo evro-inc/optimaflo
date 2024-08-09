@@ -1,6 +1,5 @@
 import { listVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variables';
 import { listGtmBuiltInVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variablesBuiltIn';
-import { listGtmWorkspaces } from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
 
 export const variableTypeArray = [
   { type: 'k', name: 'First Party Cookie' },
@@ -79,10 +78,7 @@ export const caseConversionType = [
 
 export async function fetchAllVariables() {
   try {
-    const [builtIns, userDefs] = await Promise.all([
-      listGtmBuiltInVariables(),
-      listVariables(),
-    ]);
+    const [builtIns, userDefs] = await Promise.all([listGtmBuiltInVariables(), listVariables()]);
 
     // Clean and structure the data
     const formattedBuiltIns = builtIns.flat().map((variable) => ({

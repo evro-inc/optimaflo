@@ -346,7 +346,7 @@ export const ButtonSubmitAlert = ({ text, form }: { text: string; form: string }
             Once you click continue, you have see tabs open in your browser. These tabs will be for
             you to accept the Google Analytics terms of service for each account you want to create.
             Once you have accepted, you will need to come back here and refresh the table to see
-            you're updated account(s).
+            your updated account(s).
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

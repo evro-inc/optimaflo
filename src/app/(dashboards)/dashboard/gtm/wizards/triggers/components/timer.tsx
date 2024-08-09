@@ -19,7 +19,7 @@ interface Props {
   table?: any;
 }
 
-const TimerTrigger = ({ formIndex, table = [] }: Props) => {
+const TimerTrigger = ({ formIndex }: Props) => {
   const { control, register, setValue } = useFormContext();
   const {
     fields: autoEventFields,

@@ -18,7 +18,7 @@ import {
 } from '@/src/components/ui/form';
 
 import { Input } from '@/src/components/ui/input';
-import { FeatureResponse, GTMContainerVersion, Variable } from '@/src/types/types';
+import { FeatureResponse, Variable } from '@/src/types/types';
 import { toast } from 'sonner';
 import {
   selectTable,
@@ -29,7 +29,6 @@ import {
 import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { UpdateVersions } from '@/src/lib/fetch/dashboard/actions/gtm/versions';
 import { FormsSchema } from '@/src/lib/schemas/gtm/variables';
 import HttpReferrer from '../components/httpReferrer';
 import FirstPartyCookie from '../components/firstPartyCookie';
@@ -74,12 +73,11 @@ const ErrorModal = dynamic(
 
 type Forms = z.infer<typeof FormsSchema>;
 
-const FormUpdateVariables = (data) => {
+const FormUpdateVariables = () => {
   const dispatch = useDispatch();
   const loading = useSelector((state: RootState) => state.form.loading);
   const error = useSelector((state: RootState) => state.form.error);
   const currentStep = useSelector((state: RootState) => state.form.currentStep);
-  const count = useSelector((state: RootState) => state.form.count);
   const notFoundError = useSelector(selectTable).notFoundError;
   const router = useRouter();
 
@@ -104,8 +102,6 @@ const FormUpdateVariables = (data) => {
     fetchAllVariablesData();
   }, []);
 
-  const tableData = Array.isArray(selectedRowData) ? selectedRowData : [selectedRowData];
-
   const formDataDefaults: Variable[] = Object.values(selectedRowData).map((rowData) => ({
     accountId: rowData.accountId,
     containerId: rowData.containerId,
@@ -117,13 +113,6 @@ const FormUpdateVariables = (data) => {
     formatValue: { caseConversionType: 'none' },
   }));
 
-  if (notFoundError) {
-    return <NotFoundErrorModal onClose={undefined} />;
-  }
-  if (error) {
-    return <ErrorModal />;
-  }
-
   const form = useForm<Forms>({
     defaultValues: {
       forms: formDataDefaults,
@@ -131,7 +120,7 @@ const FormUpdateVariables = (data) => {
     resolver: zodResolver(FormsSchema),
   });
 
-  const { fields, append } = useFieldArray({
+  const { fields } = useFieldArray({
     control: form.control,
     name: 'forms',
   });
@@ -149,6 +138,13 @@ const FormUpdateVariables = (data) => {
       form.setValue(`forms.${index}.variableId`, data.variableId);
     });
   }, [form, formDataDefaults]);
+
+  if (notFoundError) {
+    return <NotFoundErrorModal onClose={undefined} />;
+  }
+  if (error) {
+    return <ErrorModal />;
+  }
 
   const handleNext = async () => {
     const currentFormPath = `forms.${currentFormIndex}`;

@@ -1,5 +1,5 @@
 'use client';
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Button } from '@/src/components/ui/button';
 
 interface ButtonConfig {

@@ -30,10 +30,6 @@ export async function listGtmAccounts(skipCache = false) {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-  console.log('token', token);
-
-
-
 
   const cacheKey = `gtm:accounts:userId:${userId}`;
 
@@ -167,7 +163,7 @@ export async function updateAccounts(
           updatePromises = forms.map(async (form) => {
             const url = `https://www.googleapis.com/tagmanager/v2/accounts/${form.accountId}`;
             const headers = {
-              Authorization: `Bearer ${token.data[0].token}`,
+              Authorization: `Bearer ${token}`,
               'Content-Type': 'application/json',
               'Accept-Encoding': 'gzip',
             };

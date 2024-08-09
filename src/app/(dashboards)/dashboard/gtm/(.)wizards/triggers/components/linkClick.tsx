@@ -20,7 +20,7 @@ interface Props {
   table?: any;
 }
 
-const LinkClickTrigger = ({ formIndex, table = [] }: Props) => {
+const LinkClickTrigger = ({ formIndex }: Props) => {
   const { control, register, setValue } = useFormContext();
   const { fields, append, remove } = useFieldArray({
     control,

@@ -131,7 +131,6 @@ export async function DeleteWorkspaces(
   const featureLimitReached: { containerId: string; workspaceId: string }[] = [];
   const notFoundLimit: { containerId: string; workspaceId: string }[] = [];
   const toDeleteWorkspaces = new Set<string>(selectedWorkspaces);
-  let accountIdForCache: string | undefined;
 
   // Authenticating user and getting user ID
   const { userId } = await auth();
@@ -184,11 +183,10 @@ export async function DeleteWorkspaces(
             // Creating promises for each container deletion
             const deletePromises = Array.from(toDeleteWorkspaces).map(async (combinedId) => {
               const [accountId, containerId, workspaceId] = combinedId.split('-');
-              accountIdForCache = accountId;
 
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}`;
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -248,11 +246,6 @@ export async function DeleteWorkspaces(
 
                   toDeleteWorkspaces.delete(`${accountId}-${containerId}-${workspaceId}`);
                   permissionDenied = errorResult ? true : permissionDenied;
-
-                  if (selectedWorkspaces.size > 0) {
-                    const firstWorkspaceId = selectedWorkspaces.values().next().value;
-                    accountIdForCache = firstWorkspaceId.split('-')[0];
-                  }
                 }
               } catch (error: any) {
                 // Handling exceptions during fetch
@@ -393,8 +386,6 @@ export async function CreateWorkspaces(formData: FormCreateSchema) {
   const successfulCreations: string[] = [];
   const featureLimitReached: string[] = [];
   const notFoundLimit: { id: string; name: string }[] = [];
-  let accountIdForCache: string | undefined;
-  let containerIdForCache: string | undefined;
 
   // Refactor: Use string identifiers in the set
   const toCreateWorkspaces = new Set(
@@ -467,8 +458,6 @@ export async function CreateWorkspaces(formData: FormCreateSchema) {
           await limiter.schedule(async () => {
             const createPromises = Array.from(toCreateWorkspaces).map(async (identifier: any) => {
               const { accountId, name: workspaceName } = identifier;
-              accountIdForCache = accountId;
-              containerIdForCache = identifier.containerId;
               const workspaceData = formData.forms.find(
                 (cd) => cd.accountId === accountId && cd.name === workspaceName
               );
@@ -481,7 +470,7 @@ export async function CreateWorkspaces(formData: FormCreateSchema) {
 
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${workspaceData.accountId}/containers/${workspaceData.containerId}/workspaces`;
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -638,7 +627,7 @@ export async function CreateWorkspaces(formData: FormCreateSchema) {
         }
       } finally {
         // This block will run regardless of the outcome of the try...catch
-        if (accountIdForCache && containerIdForCache && userId) {
+        if (userId) {
           const cacheKey = `gtm:workspaces:userId:${userId}`;
           await redis.del(cacheKey);
           await revalidatePath(`/dashboard/gtm/entities`);
@@ -669,7 +658,7 @@ export async function CreateWorkspaces(formData: FormCreateSchema) {
     };
   }
 
-  if (successfulCreations.length > 0 && accountIdForCache && containerIdForCache) {
+  if (successfulCreations.length > 0) {
     const cacheKey = `gtm:workspaces:userId:${userId}`;
     await redis.del(cacheKey);
     revalidatePath(`/dashboard/gtm/entities`);
@@ -715,9 +704,6 @@ export async function UpdateWorkspaces(formData: FormUpdateSchema) {
   const successfulUpdates: string[] = [];
   const featureLimitReached: string[] = [];
   const notFoundLimit: { id: string; name: string }[] = [];
-
-  let accountIdForCache: string | undefined;
-  let containerIdForCache: string | undefined;
 
   // Refactor: Use string identifiers in the set
   const toUpdateWorkspaces = new Set(
@@ -786,8 +772,6 @@ export async function UpdateWorkspaces(formData: FormUpdateSchema) {
         if (remaining > 0) {
           await limiter.schedule(async () => {
             const updatePromises = Array.from(toUpdateWorkspaces).map(async (identifier) => {
-              accountIdForCache = identifier.accountId;
-              containerIdForCache = identifier.containerId;
               const workspaceData = formData.forms.find(
                 (prop) =>
                   prop.accountId === identifier.accountId &&
@@ -804,7 +788,7 @@ export async function UpdateWorkspaces(formData: FormUpdateSchema) {
 
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${workspaceData.accountId}/containers/${workspaceData.containerId}/workspaces/${workspaceData.workspaceId}`;
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -995,7 +979,7 @@ export async function UpdateWorkspaces(formData: FormUpdateSchema) {
         }
       } finally {
         // This block will run regardless of the outcome of the try...catch
-        if (accountIdForCache && containerIdForCache && userId) {
+        if (userId) {
           const cacheKey = `gtm:workspaces:userId:${userId}`;
           await redis.del(cacheKey);
           await revalidatePath(`/dashboard/gtm/entities`);
@@ -1026,7 +1010,7 @@ export async function UpdateWorkspaces(formData: FormUpdateSchema) {
     };
   }
 
-  if (successfulUpdates.length > 0 && accountIdForCache && containerIdForCache) {
+  if (successfulUpdates.length > 0) {
     const cacheKey = `gtm:workspaces:userId:${userId}`;
     await redis.del(cacheKey);
     revalidatePath(`/dashboard/gtm/entities`);
@@ -1066,7 +1050,6 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
 
   const token = await currentUserOauthAccessToken(userId);
 
-
   let retries = 0;
   const MAX_RETRIES = 3;
   let delay = 1000;
@@ -1084,9 +1067,6 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
   const successfulCreations: string[] = [];
   const featureLimitReached: string[] = [];
   const notFoundLimit: { id: string; name: string }[] = [];
-
-  let accountIdForCache: string | undefined;
-  let containerIdForCache: string | undefined;
 
   const uniqueForms = formData.forms.filter(
     (value, index, self) =>
@@ -1167,8 +1147,6 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
         if (remaining > 0) {
           await limiter.schedule(async () => {
             const createPromises = Array.from(toCreateVersions).map(async (identifier) => {
-              accountIdForCache = identifier.accountId;
-              containerIdForCache = identifier.containerId;
               const workspaceData = uniqueForms.find(
                 (prop) =>
                   prop.accountId === identifier.accountId &&
@@ -1380,7 +1358,7 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
         }
       } finally {
         // This block will run regardless of the outcome of the try...catch
-        if (accountIdForCache && containerIdForCache && userId) {
+        if (userId) {
           const cacheKey = `gtm:workspaces:userId:${userId}`;
           await redis.del(cacheKey);
           await revalidatePath(`/dashboard/gtm/entities`);
@@ -1411,7 +1389,7 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
     };
   }
 
-  if (successfulCreations.length > 0 && accountIdForCache && containerIdForCache) {
+  if (successfulCreations.length > 0) {
     const cacheKey = `gtm:workspaces:userId:${userId}`;
     await redis.del(cacheKey);
     revalidatePath(`/dashboard/gtm/entities`);
@@ -1445,16 +1423,11 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
   Function to list or get one GTM workspaces - Error: Error fetching data: HTTP error! status: 429. Too Many Requests
 ************************************************************************************/
 export async function getStatusGtmWorkspaces() {
-  const MAX_RETRIES = 20;
-  const INITIAL_DELAY = 1000;
-  let delay = INITIAL_DELAY;
-
   // Authenticating the user and getting the user ID
   const { userId } = await auth();
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-
 
   await fetchGtmSettings(userId);
 

@@ -36,15 +36,11 @@ import {
   SelectContent,
   SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/src/components/ui/select';
-import { Switch } from '@/src/components/ui/switch';
-import { Label } from '@/src/components/ui/label';
+
 import { CountMethodData, Currencies } from '../../../properties/@keyEvents/items';
-import { Checkbox } from '@/src/components/ui/checkbox';
-import { Separator } from '@/src/components/ui/separator';
 import { RadioGroup, RadioGroupItem } from '@/src/components/ui/radio-group';
 
 const NotFoundErrorModal = dynamic(
@@ -73,11 +69,6 @@ const FormUpdateKeyEvents = () => {
 
   const selectedRowData = useSelector((state: RootState) => state.table.selectedRows);
   const currentFormIndex = currentStep - 1; // Adjust for 0-based index
-  const currentFormData = selectedRowData[currentFormIndex]; // Get data for the current step
-
-  if (Object.keys(selectedRowData).length === 0) {
-    router.push('/dashboard/ga/properties');
-  }
 
   const formDataDefaults: KeyEventType[] = Object.values(selectedRowData).map((rowData) => ({
     accountProperty: Array.isArray(rowData.name) ? rowData.name : [rowData.name], // Ensure accountProperty is an array
@@ -93,13 +84,6 @@ const FormUpdateKeyEvents = () => {
       rowData.defaultValue?.numericValue !== undefined ||
       rowData.defaultValue?.currencyCode !== undefined,
   }));
-
-  if (notFoundError) {
-    return <NotFoundErrorModal />;
-  }
-  if (error) {
-    return <ErrorModal />;
-  }
   const form = useForm<Forms>({
     defaultValues: {
       forms: formDataDefaults,
@@ -112,7 +96,16 @@ const FormUpdateKeyEvents = () => {
     name: 'forms',
   });
 
-  const includeDefaultValue = form.watch('forms');
+  if (Object.keys(selectedRowData).length === 0) {
+    router.push('/dashboard/ga/properties');
+  }
+
+  if (notFoundError) {
+    return <NotFoundErrorModal onClose={undefined} />;
+  }
+  if (error) {
+    return <ErrorModal />;
+  }
 
   const handleValueChange = (newValue, index) => {
     if (newValue === 'false') {
@@ -158,7 +151,7 @@ const FormUpdateKeyEvents = () => {
     }
   };
 
-  const handlePrevious = (index) => {
+  const handlePrevious = () => {
     dispatch(decrementStep());
   };
 
@@ -290,9 +283,7 @@ const FormUpdateKeyEvents = () => {
       {fields.map(
         (field, index) =>
           currentStep === index + 1 && (
-            <div className="w-full">
-              {/* Render only the form corresponding to the current step - 1 
-              (since step 1 is for selecting the number of forms) */}
+            <div className="w-full" key={field.id}>
               {fields.length > 0 && fields.length >= currentStep && (
                 <div key={field.id} className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
                   <div className="max-w-xl mx-auto">
@@ -383,9 +374,10 @@ const FormUpdateKeyEvents = () => {
                                         <FormLabel>Default Conversion Value</FormLabel>
                                         <FormControl>
                                           <RadioGroup
-                                            onValueChange={(newValue) =>
-                                              handleValueChange(newValue, index)
-                                            }
+                                            onValueChange={(newValue) => {
+                                              handleValueChange(newValue, index);
+                                              field.onChange(newValue); // Ensure field.onChange is called
+                                            }}
                                             value={
                                               form.watch(`forms.${index}.includeDefaultValue`)
                                                 ? 'true'
@@ -398,7 +390,7 @@ const FormUpdateKeyEvents = () => {
                                                 <RadioGroupItem value="false" />
                                               </FormControl>
                                               <FormLabel className="font-normal">
-                                                Don't set a default conversion value
+                                                Do not set a default conversion value
                                               </FormLabel>
                                             </FormItem>
                                             <FormItem className="flex items-center space-x-3 space-y-0">
@@ -412,24 +404,21 @@ const FormUpdateKeyEvents = () => {
                                                 <div className="flex items-center space-x-3">
                                                   <Input
                                                     placeholder="Enter default conversion value"
-                                                    {...form.register(
-                                                      `forms.${index}.defaultValue.numericValue`,
-                                                      {
-                                                        valueAsNumber: true,
-                                                        setValueAs: (value) =>
-                                                          value === '' ? undefined : Number(value),
-                                                      }
-                                                    )}
                                                     type="number"
                                                     min={0}
-                                                    onChange={(e) =>
-                                                      handleNumericValueChange(
-                                                        e.target.value,
-                                                        index
-                                                      )
-                                                    }
+                                                    {...field} // Bind the rest of the field props (name, ref, etc.)
+                                                    value={field.value?.numericValue ?? ''} // Extract numericValue or use empty string if undefined
+                                                    onChange={(e) => {
+                                                      const numericValue = parseFloat(
+                                                        e.target.value
+                                                      );
+                                                      handleNumericValueChange(numericValue, index);
+                                                      field.onChange({
+                                                        ...field.value,
+                                                        numericValue,
+                                                      }); // Pass updated value to field.onChange
+                                                    }}
                                                   />
-
                                                   <Select
                                                     value={form.watch(
                                                       `forms.${index}.defaultValue.currencyCode`
@@ -440,6 +429,7 @@ const FormUpdateKeyEvents = () => {
                                                         selectedCurrency,
                                                         { shouldValidate: true }
                                                       );
+                                                      field.onChange(selectedCurrency); // Ensure field.onChange is called
                                                     }}
                                                   >
                                                     <SelectTrigger>

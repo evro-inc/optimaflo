@@ -1,7 +1,6 @@
 'use client';
 import { Button } from '@/src/components/ui/button';
 import {
-  Form,
   FormControl,
   FormDescription,
   FormField,
@@ -21,10 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/src/components/ui/select';
-import {
-  accountAccessPermissions,
-  containerAccessPermissions,
-} from '../../../entities/@permissions/items';
+import { accountAccessPermissions } from '../../../entities/@permissions/items';
 import { AccountPermission, ContainerPermission } from '@/src/types/types';
 import { ContainerPermissions } from './containerPermissions';
 import { useDispatch, useSelector } from 'react-redux';
@@ -37,7 +33,7 @@ type FieldItem = {
   containerId?: string;
 };
 
-export default ({
+export default function EntitySelect({
   accountsWithContainers,
   containers,
   formIndex,
@@ -49,7 +45,7 @@ export default ({
   formIndex: number;
   table?: any;
   type?: string;
-}) => {
+}) {
   const dispatch = useDispatch();
   const { setValue, getValues, control, register } = useFormContext();
 
@@ -66,16 +62,15 @@ export default ({
     }
   }, [formIndex, forms, dispatch]);
 
+  // Compute selectedAccountIds directly without memoization
   const selectedAccountIds =
     useWatch({
       control,
       name: `forms.${formIndex}.permissions`,
     })?.map((permission) => permission.accountId) || [];
 
-  const isAddEntityDisabled = useMemo(
-    () => selectedAccountIds.length >= accountsWithContainers.length,
-    [selectedAccountIds, accountsWithContainers]
-  );
+  // Compute isAddEntityDisabled directly without memoization
+  const isAddEntityDisabled = selectedAccountIds.length >= accountsWithContainers.length;
 
   useEffect(() => {
     const updatedPermissions = getValues(`forms.${formIndex}.permissions`);
@@ -105,7 +100,7 @@ export default ({
     } else {
       return accountsWithContainers;
     }
-  }, [selectedEmailAddresses, table, accountsWithContainers, selectedAccountIds, type]);
+  }, [selectedEmailAddresses, table, accountsWithContainers, type]);
 
   return (
     <>
@@ -127,7 +122,7 @@ export default ({
                 <FormField
                   control={control}
                   name={`forms.${formIndex}.permissions.${permissionIndex}.accountId`}
-                  render={({ field }) => (
+                  render={() => (
                     <FormItem>
                       <FormLabel>Account ID</FormLabel>
                       <FormControl>
@@ -240,4 +235,4 @@ export default ({
       </div>
     </>
   );
-};
+}

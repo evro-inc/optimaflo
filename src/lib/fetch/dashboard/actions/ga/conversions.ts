@@ -31,7 +31,6 @@ export async function listGAConversionEvents() {
 
   const token = await currentUserOauthAccessToken(userId);
 
-
   const cacheKey = `ga:conversionEvents:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
 
@@ -189,7 +188,7 @@ export async function createGAConversionEvents(formData: CustomConversionSchemaT
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.property}/conversionEvents`;
 
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -322,7 +321,7 @@ export async function createGAConversionEvents(formData: CustomConversionSchemaT
               message: `Feature limit reached for custom metrics: ${featureLimitReached.join(
                 ', '
               )}`,
-              results: featureLimitReached.map((eventName) => {
+              results: featureLimitReached.map(() => {
                 // Find the name associated with the propertyId
                 const conversionEventName =
                   conversionEventNames.find((eventName) => eventName.includes(eventName)) ||
@@ -504,7 +503,7 @@ export async function updateGAConversionEvents(formData: CustomConversionSchemaT
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.name}?updateMask=${updateMask}`;
 
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -635,7 +634,7 @@ export async function updateGAConversionEvents(formData: CustomConversionSchemaT
               message: `Feature limit reached for custom metrics: ${featureLimitReached.join(
                 ', '
               )}`,
-              results: featureLimitReached.map((eventName) => {
+              results: featureLimitReached.map(() => {
                 // Find the name associated with the propertyId
                 const conversionEventName =
                   conversionEventNames.find((eventName) => eventName.includes(eventName)) ||
@@ -800,7 +799,7 @@ export async function deleteGAConversionEvents(
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.name}`;
 
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };

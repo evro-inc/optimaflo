@@ -1,21 +1,8 @@
 import React, { useEffect } from 'react';
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
-import {
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/src/components/ui/form';
-import {
-  caseConversionTypes,
-  formatValueOptions,
-  httpReferrerType,
-} from '../../../configurations/@variables/items';
-import { Checkbox } from '@/src/components/ui/checkbox';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/src/components/ui/form';
+
 import { Input } from '@/src/components/ui/input';
-import FormatValue from './formatValue';
 
 interface Props {
   formIndex: number;
@@ -23,9 +10,9 @@ interface Props {
   table?: any;
 }
 
-const JavaScriptVariable = ({ formIndex, type, table = [] }: Props) => {
+const JavaScriptVariable = ({ formIndex }: Props) => {
   const { control, register, setValue } = useFormContext();
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append } = useFieldArray({
     control,
     name: `forms.${formIndex}.parameter`,
   });

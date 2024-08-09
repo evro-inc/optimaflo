@@ -31,7 +31,6 @@ export async function listGAAccessBindings() {
 
   const token = await currentUserOauthAccessToken(userId);
 
-
   const cacheKey = `ga:propertyAccess:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
 
@@ -191,7 +190,7 @@ export async function createGAAccessBindings(formData: PropertyPermissionsSchema
               const url = `https://analyticsadmin.googleapis.com/v1alpha/${identifier.property}/accessBindings`;
 
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -318,7 +317,7 @@ export async function createGAAccessBindings(formData: PropertyPermissionsSchema
               message: `Feature limit reached for custom metrics: ${featureLimitReached.join(
                 ', '
               )}`,
-              results: featureLimitReached.map((eventName) => {
+              results: featureLimitReached.map(() => {
                 // Find the name associated with the propertyId
                 const conversionEventName =
                   conversionEventNames.find((eventName) => eventName.includes(eventName)) ||
@@ -497,7 +496,7 @@ export async function updateGAAccessBindings(formData: PropertyPermissionsSchema
               const url = `https://analyticsadmin.googleapis.com/v1alpha/${identifier.name}`;
 
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -623,7 +622,7 @@ export async function updateGAAccessBindings(formData: PropertyPermissionsSchema
               message: `Feature limit reached for custom metrics: ${featureLimitReached.join(
                 ', '
               )}`,
-              results: featureLimitReached.map((eventName) => {
+              results: featureLimitReached.map(() => {
                 // Find the name associated with the propertyId
                 const conversionEventName =
                   conversionEventNames.find((eventName) => eventName.includes(eventName)) ||
@@ -788,7 +787,7 @@ export async function deleteGAAccessBindings(
               const url = `https://analyticsadmin.googleapis.com/v1alpha/${identifier.name}`;
 
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };

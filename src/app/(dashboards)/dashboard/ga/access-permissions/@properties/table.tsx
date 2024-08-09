@@ -32,12 +32,11 @@ import {
 } from '@/src/components/ui/dropdown-menu';
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
-import { revalidate, tierCreateLimit } from '@/src/utils/server';
+import { revalidate } from '@/src/utils/server';
 import { useDispatch } from 'react-redux';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
 import { useDeleteHook } from './delete';
-import { notFound } from 'next/navigation';
-import { setIsLimitReached, setSelectedRows } from '@/src/redux/tableSlice';
+import { setSelectedRows } from '@/src/redux/tableSlice';
 import { useCreateHookForm, useUpdateHookForm } from '@/src/hooks/useCRUD';
 import { useTransition } from 'react';
 import { LimitReached } from '@/src/components/client/modals/limitReached';
@@ -48,11 +47,7 @@ interface DataTableProps<TData, TValue> {
   parentData: any;
 }
 
-export function DataTable<TData, TValue>({
-  columns,
-  data,
-  parentData,
-}: DataTableProps<TData, TValue>) {
+export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData, TValue>) {
   const dispatch = useDispatch();
   const [isCreatePending, startCreateTransition] = useTransition();
   const [isUpdatePending, startUpdateTransition] = useTransition();

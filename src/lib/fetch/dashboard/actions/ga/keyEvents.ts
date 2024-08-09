@@ -31,7 +31,6 @@ export async function listGAKeyEvents() {
 
   const token = await currentUserOauthAccessToken(userId);
 
-
   const cacheKey = `ga:keyEvents:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
 
@@ -195,7 +194,7 @@ export async function createGAKeyEvents(formData: KeyEvents) {
                 }
 
                 const headers = {
-                  Authorization: `Bearer ${token.data[0].token}`,
+                  Authorization: `Bearer ${token}`,
                   'Content-Type': 'application/json',
                   'Accept-Encoding': 'gzip',
                 };
@@ -327,7 +326,7 @@ export async function createGAKeyEvents(formData: KeyEvents) {
               limitReached: true,
               notFoundError: false,
               message: `Feature limit reached for key events: ${featureLimitReached.join(', ')}`,
-              results: featureLimitReached.map((eventName) => {
+              results: featureLimitReached.map(() => {
                 // Find the name associated with the propertyId
                 const conversionEventName =
                   keyEventNames.find((eventName) => eventName.includes(eventName)) || 'Unknown';
@@ -513,7 +512,7 @@ export async function updateGAKeyEvents(formData: KeyEvents) {
                 const url = `https://analyticsadmin.googleapis.com/v1alpha/${identifier.accountProperty}?updateMask=${updateMask}`;
 
                 const headers = {
-                  Authorization: `Bearer ${token.data[0].token}`,
+                  Authorization: `Bearer ${token}`,
                   'Content-Type': 'application/json',
                   'Accept-Encoding': 'gzip',
                 };
@@ -644,7 +643,7 @@ export async function updateGAKeyEvents(formData: KeyEvents) {
               limitReached: true,
               notFoundError: false,
               message: `Feature limit reached for key events: ${featureLimitReached.join(', ')}`,
-              results: featureLimitReached.map((eventName) => {
+              results: featureLimitReached.map(() => {
                 // Find the name associated with the propertyId
                 const conversionEventName =
                   keyEventNames.find((eventName) => eventName.includes(eventName)) || 'Unknown';
@@ -808,7 +807,7 @@ export async function deleteGAKeyEvents(
               const url = `https://analyticsadmin.googleapis.com/v1alpha/${identifier.name}`;
 
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };

@@ -40,7 +40,6 @@ import {
   SelectValue,
 } from '@/src/components/ui/select';
 import { UpdateTags } from '@/src/lib/fetch/dashboard/actions/gtm/tags';
-import EntityComponent from '../components/entity';
 import { tagTypeArray } from '../../../configurations/@tags/items';
 import ConfigTag from '../components/configTag';
 import EventTag from '../components/eventTag';
@@ -123,13 +122,6 @@ const FormUpdateTags = ({ data }) => {
     monitoringMetadataTagNameKey: rowData.monitoringMetadataTagNameKey || '',
   }));
 
-  if (notFoundError) {
-    return <NotFoundErrorModal onClose={undefined} />;
-  }
-  if (error) {
-    return <ErrorModal />;
-  }
-
   const form = useForm<Forms>({
     defaultValues: {
       forms: formDataDefaults,
@@ -137,7 +129,7 @@ const FormUpdateTags = ({ data }) => {
     resolver: zodResolver(FormsSchema),
   });
 
-  const { fields, append } = useFieldArray({
+  const { fields } = useFieldArray({
     control: form.control,
     name: 'forms',
   });
@@ -155,6 +147,13 @@ const FormUpdateTags = ({ data }) => {
       form.setValue(`forms.${index}.tagId`, data.tagId);
     });
   }, [form, formDataDefaults]);
+
+  if (notFoundError) {
+    return <NotFoundErrorModal onClose={undefined} />;
+  }
+  if (error) {
+    return <ErrorModal />;
+  }
 
   const handleNext = async () => {
     const currentFormPath = `forms.${currentFormIndex}`;

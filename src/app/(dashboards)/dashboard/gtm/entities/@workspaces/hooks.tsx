@@ -1,12 +1,7 @@
 // src/app/(dashboards)/dashboard/gtm/workspaces/delete.tsx
 'use client';
 
-import {
-  clearSelectedRows,
-  setErrorDetails,
-  setIsLimitReached,
-  setNotFoundError,
-} from '@/src/redux/tableSlice';
+import { setErrorDetails, setIsLimitReached, setNotFoundError } from '@/src/redux/tableSlice';
 import {
   createGTMVersion,
   DeleteWorkspaces,

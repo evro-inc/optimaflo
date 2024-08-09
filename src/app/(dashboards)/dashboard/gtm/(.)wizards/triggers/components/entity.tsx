@@ -1,17 +1,10 @@
 'use client';
 import { Button } from '@/src/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/src/components/ui/form';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/src/components/ui/form';
 import { MinusIcon, PlusIcon } from '@radix-ui/react-icons';
-import React, { useEffect, useState } from 'react';
-import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
-import { useDispatch, useSelector } from 'react-redux';
+import React from 'react';
+import { useFieldArray, useFormContext } from 'react-hook-form';
+import { useDispatch } from 'react-redux';
 import {
   Select,
   SelectContent,
@@ -38,8 +31,7 @@ interface Props {
 
 const EntityComponent = ({ formIndex, entityData = [] }: Props) => {
   const dispatch = useDispatch();
-  const entities = useSelector((state: any) => state?.accountContainerWorkspace?.entities || []);
-  const { control, register, setValue, watch } = useFormContext();
+  const { control, register, watch } = useFormContext();
   const { fields, remove, append } = useFieldArray({
     control,
     name: `forms.${formIndex}.entities`, // Ensure entities are part of the form structure

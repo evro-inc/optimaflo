@@ -108,26 +108,6 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
     acknowledgment: true,
   };
 
-  const formCreateAmount = useForm({
-    resolver: zodResolver(FormCreateAmountSchema),
-    defaultValues: {
-      amount: 1,
-    },
-  });
-
-  // Effect to update propertyCount when amount changes
-  useEffect(() => {
-    const amount = parseInt(formCreateAmount.getValues('amount').toString());
-    dispatch(setCount(amount));
-  }, [formCreateAmount.watch('amount'), dispatch]);
-
-  if (notFoundError) {
-    return <NotFoundErrorModal />;
-  }
-  if (error) {
-    return <ErrorModal />;
-  }
-
   const form = useForm<Forms>({
     defaultValues: {
       forms: [formDataDefaults],
@@ -142,6 +122,27 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
   const addForm = () => {
     append(formDataDefaults);
   };
+
+  const formCreateAmount = useForm({
+    resolver: zodResolver(FormCreateAmountSchema),
+    defaultValues: {
+      amount: 1,
+    },
+  });
+
+  // Effect to update propertyCount when amount changes
+  useEffect(() => {
+    const amountValue = formCreateAmount.watch('amount'); // Extract the watched value
+    const amount = parseInt(amountValue?.toString() || '0'); // Handle cases where amountValue might be undefined or null
+    dispatch(setCount(amount));
+  }, [formCreateAmount, dispatch]); // Include formCreateAmount and dispatch as dependencies
+
+  if (notFoundError) {
+    return <NotFoundErrorModal onClose={undefined} />;
+  }
+  if (error) {
+    return <ErrorModal />;
+  }
 
   // Adjust handleAmountSubmit or create a new function to handle selection change
   const handleAmountChange = (selectedAmount) => {
@@ -281,7 +282,6 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
   const handleNext = async () => {
     const currentFormIndex = currentStep - 2; // Adjusting for the array index and step count
     const currentFormPath = `forms.${currentFormIndex}`;
-    const currentFormData = form.getValues(currentFormPath as `forms.${number}`);
 
     // Start with the common fields that are always present
     const fieldsToValidate = [
@@ -319,8 +319,10 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
                   <FormLabel>How many properties do you want to create?</FormLabel>
                   <Select
                     onValueChange={(value) => {
+                      field.onChange(value); // Use field.onChange to update the form value
                       handleAmountChange(value); // Call the modified handler
                     }}
+                    value={field.value.toString()} // Ensure the Select reflects the form state
                     defaultValue={propertyCount.toString()}
                   >
                     <FormControl>
@@ -339,6 +341,7 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
                 </FormItem>
               )}
             />
+
             <Button type="button" onClick={handleNext}>
               Next
             </Button>

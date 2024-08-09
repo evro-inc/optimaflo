@@ -1,7 +1,6 @@
 'use client';
 import { Button } from '@/src/components/ui/button';
 import {
-  Form,
   FormControl,
   FormDescription,
   FormField,
@@ -14,7 +13,7 @@ import { updateEmailAddresses } from '@/src/redux/gtm/userPermissionSlice';
 import { MinusIcon, PlusIcon } from '@radix-ui/react-icons';
 import React, { useEffect, useMemo } from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import {
   Select,
   SelectContent,
@@ -37,7 +36,7 @@ interface Props {
 
 const EmailForm = ({ formIndex, type, table = [] }: Props) => {
   const dispatch = useDispatch();
-  const { control, register, getValues, setValue, watch } = useFormContext();
+  const { control, getValues, setValue, watch } = useFormContext();
   const { fields, remove, append } = useFieldArray({
     control,
     name: `forms.${formIndex}.emailAddresses`,

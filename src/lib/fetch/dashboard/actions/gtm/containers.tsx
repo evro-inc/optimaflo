@@ -36,7 +36,6 @@ export async function listGtmContainers(skipCache = false) {
 
   const token = await currentUserOauthAccessToken(userId);
 
-
   const cacheKey = `gtm:containers:userId:${userId}`;
 
   if (skipCache == false) {
@@ -189,7 +188,7 @@ export async function DeleteContainers(
 
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}`;
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -457,7 +456,7 @@ export async function CreateContainers(formData: Schema) {
 
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/`;
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -773,7 +772,7 @@ export async function UpdateContainers(formData: Schema) {
 
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerData.containerId}`;
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };

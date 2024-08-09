@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setLoading, incrementStep, decrementStep, setCount } from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -126,8 +126,6 @@ const FormCreateTag: React.FC<FormCreateGTMProps> = ({ tierLimits, table = [], d
   const entities = useSelector((state: RootState) => state.gtmEntity.entities);
   const router = useRouter();
 
-  const [cachedTags, setCachedTags] = useState<any[]>([]);
-
   const foundTierLimit = tierLimits.find(
     (subscription) => subscription.Feature?.name === 'GTMTags'
   );
@@ -167,9 +165,10 @@ const FormCreateTag: React.FC<FormCreateGTMProps> = ({ tierLimits, table = [], d
   }, [selectedType, form, currentStep]);
 
   useEffect(() => {
-    const amount = parseInt(formCreateAmount.getValues('amount').toString());
+    const amountValue = formCreateAmount.watch('amount'); // Extract the watched value
+    const amount = parseInt(amountValue?.toString() || '0'); // Handle cases where amountValue might be undefined or null
     dispatch(setCount(amount));
-  }, [formCreateAmount.watch('amount'), dispatch]);
+  }, [formCreateAmount, dispatch]); // Include formCreateAmount and dispatch as dependencies
 
   if (notFoundError) {
     return <NotFoundErrorModal onClose={undefined} />;
@@ -214,8 +213,6 @@ const FormCreateTag: React.FC<FormCreateGTMProps> = ({ tierLimits, table = [], d
           }))
           .filter((entity) => entity.accountId && entity.containerId && entity.workspaceId) // Filter out empty entities
     );
-
-    const uniqueTags = new Set<string>();
 
     // Find dup names and show toast
 
@@ -336,7 +333,7 @@ const FormCreateTag: React.FC<FormCreateGTMProps> = ({ tierLimits, table = [], d
               <FormField
                 control={formCreateAmount.control}
                 name="amount"
-                render={({ field }) => (
+                render={() => (
                   <FormItem>
                     <FormLabel>How many tag forms do you want to create?</FormLabel>
                     <Select

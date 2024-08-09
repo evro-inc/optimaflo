@@ -31,7 +31,6 @@ export async function listGACustomDimensions() {
 
   const token = await currentUserOauthAccessToken(userId);
 
-
   const cacheKey = `ga:customDimensions:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
 
@@ -189,7 +188,7 @@ export async function createGACustomDimensions(formData: CustomDimensionSchemaTy
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.property}/customDimensions`;
 
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -322,7 +321,7 @@ export async function createGACustomDimensions(formData: CustomDimensionSchemaTy
               message: `Feature limit reached for custom dimensions: ${featureLimitReached.join(
                 ', '
               )}`,
-              results: featureLimitReached.map((displayName) => {
+              results: featureLimitReached.map(() => {
                 // Find the name associated with the propertyId
                 const customDimensionName =
                   customDimensionNames.find((displayName) => displayName.includes(displayName)) ||
@@ -504,7 +503,7 @@ export async function updateGACustomDimensions(formData: CustomDimensionSchemaTy
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.name}?updateMask=${updateMask}`;
 
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -636,7 +635,7 @@ export async function updateGACustomDimensions(formData: CustomDimensionSchemaTy
               message: `Feature limit reached for custom dimensions: ${featureLimitReached.join(
                 ', '
               )}`,
-              results: featureLimitReached.map((displayName) => {
+              results: featureLimitReached.map(() => {
                 // Find the name associated with the propertyId
                 const customDimensionName =
                   customDimensionNames.find((displayName) => displayName.includes(displayName)) ||
@@ -801,7 +800,7 @@ export async function deleteGACustomDimensions(
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.name}:archive`;
 
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };

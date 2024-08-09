@@ -1,13 +1,5 @@
 import { Button } from '@/src/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/src/components/ui/form';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/src/components/ui/form';
 import {
   Select,
   SelectContent,
@@ -17,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/src/components/ui/select';
-import { MinusIcon, PlusIcon } from '@radix-ui/react-icons';
+import { MinusIcon } from '@radix-ui/react-icons';
 import React, { useMemo } from 'react';
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 import { containerAccessPermissions } from '../../../entities/@permissions/items';
@@ -27,17 +19,19 @@ export const ContainerPermissions: React.FC<{
   permissionIndex: number;
   table: any;
 }> = ({ formIndex, permissionIndex, table }) => {
-  const { setValue, getValues, control, register, watch } = useFormContext();
-  const { fields, append, remove } = useFieldArray({
+  const { setValue, getValues, control, register } = useFormContext();
+  const { fields, remove } = useFieldArray({
     control: control,
     name: `forms.${formIndex}.permissions.${permissionIndex}.containerAccess`,
   });
 
-  const selectedContainerIds =
+  const containerAccess =
     useWatch({
       control,
       name: `forms.${formIndex}.permissions.${permissionIndex}.containerAccess`,
-    })?.map((container) => container.containerId) || [];
+    }) || [];
+
+  const selectedContainerIds = containerAccess.map((container) => container.containerId);
 
   const selectedAccountId = useWatch({
     control,
@@ -70,7 +64,7 @@ export const ContainerPermissions: React.FC<{
             <FormField
               control={control}
               name={`forms.${formIndex}.permissions.${permissionIndex}.containerAccess.${containerIndex}.containerId`}
-              render={({ field }) => (
+              render={() => (
                 <FormItem>
                   <FormControl>
                     <Select
@@ -115,10 +109,11 @@ export const ContainerPermissions: React.FC<{
                 </FormItem>
               )}
             />
+
             <FormField
               control={control}
               name={`forms.${formIndex}.permissions.${permissionIndex}.containerAccess.${containerIndex}.permission`}
-              render={({ field }) => (
+              render={() => (
                 <FormItem>
                   <FormControl>
                     <Select
@@ -159,6 +154,7 @@ export const ContainerPermissions: React.FC<{
                 </FormItem>
               )}
             />
+
             <Button
               type="button"
               onClick={() => {

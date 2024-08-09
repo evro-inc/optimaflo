@@ -2,7 +2,7 @@
 
 import { setErrorDetails, setIsLimitReached, setNotFoundError } from '@/src/redux/tableSlice';
 import { DeletePermissions } from '@/src/lib/fetch/dashboard/actions/gtm/permissions';
-import { GTMContainerVersion, FeatureResponse, UserPermission } from '@/src/types/types';
+import { FeatureResponse, UserPermission } from '@/src/types/types';
 import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
 

@@ -1,7 +1,6 @@
 'use server';
 import { revalidatePath } from 'next/cache';
 import { FormsSchema, VariableSchemaType } from '@/src/lib/schemas/gtm/variables';
-import z from 'zod';
 import { auth } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 import { limiter } from '../../../../bottleneck';
@@ -18,9 +17,6 @@ import {
 } from '@/src/utils/server';
 import { fetchGtmSettings } from '../..';
 
-// Define the types for the form data
-type schema = z.infer<typeof FormsSchema>;
-
 /************************************************************************************
   Function to list or get one GTM variables
 ************************************************************************************/
@@ -33,7 +29,6 @@ export async function listVariables(skipCache = false) {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-
 
   const cacheKey = `gtm:variables:userId:${userId}`;
   if (skipCache == false) {
@@ -98,15 +93,6 @@ export async function listVariables(skipCache = false) {
 
         redis.set(cacheKey, JSON.stringify(allData.flat()));
 
-        // Logging each variable and its parameters
-        allData.flat().forEach((variable) => {
-          if (variable.parameter) {
-            const defaultPagesParameter = variable.parameter.find(
-              (param) => param.key === 'defaultPages'
-            );
-          }
-        });
-
         return allData;
       }
     } catch (error: any) {
@@ -152,7 +138,6 @@ export async function DeleteVariables(ga4VarToDelete: Variable[]): Promise<Featu
       (prop) => `${prop.accountId}-${prop.containerId}-${prop.workspaceId}-${prop.type}`
     )
   );
-  let accountIdForCache: string | undefined;
 
   // Authenticating user and getting user ID
   const { userId } = await auth();
@@ -205,12 +190,11 @@ export async function DeleteVariables(ga4VarToDelete: Variable[]): Promise<Featu
             // Creating promises for each container deletion
             const deletePromises = Array.from(ga4VarToDelete).map(async (prop) => {
               const { accountId, containerId, workspaceId, variableId, type } = prop;
-              accountIdForCache = accountId;
 
               let url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/variables/${variableId}`;
 
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -299,8 +283,8 @@ export async function DeleteVariables(ga4VarToDelete: Variable[]): Promise<Featu
               notFoundError: true, // Set the notFoundError flag
               message: `Could not delete variable. Please check your permissions. Container Name: 
               ${notFoundLimit
-                  .map(({ name }) => name)
-                  .join(', ')}. All other variables were successfully deleted.`,
+                .map(({ name }) => name)
+                .join(', ')}. All other variables were successfully deleted.`,
               results: notFoundLimit.map(({ combinedId, name }) => {
                 const [accountId, containerId, workspaceId] = combinedId.split('-');
                 return {
@@ -428,9 +412,6 @@ export async function CreateVariables(formData: VariableSchemaType) {
   const successfulCreations: string[] = [];
   const featureLimitReached: string[] = [];
   const notFoundLimit: { id: string; name: string }[] = [];
-  let accountIdForCache: string | undefined;
-  let containerIdForCache: string | undefined;
-
   // Refactor: Use string identifiers in the set
   const toCreateVariables = new Set(formData.forms.map((variable) => variable));
 
@@ -500,13 +481,10 @@ export async function CreateVariables(formData: VariableSchemaType) {
                 return;
               }
 
-              accountIdForCache = identifier.accountId;
-              containerIdForCache = identifier.containerId;
-
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${identifier.accountId}/containers/${identifier.containerId}/workspaces/${identifier.workspaceId}/variables`;
 
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -657,7 +635,7 @@ export async function CreateVariables(formData: VariableSchemaType) {
         }
       } finally {
         // This block will run regardless of the outcome of the try...catch
-        if (accountIdForCache && containerIdForCache && userId) {
+        if (userId) {
           const cacheKey = `gtm:variables:userId:${userId}`;
           await redis.del(cacheKey);
           await revalidatePath(`/dashboard/gtm/configurations`);
@@ -688,7 +666,7 @@ export async function CreateVariables(formData: VariableSchemaType) {
     };
   }
 
-  if (successfulCreations.length > 0 && accountIdForCache && containerIdForCache) {
+  if (successfulCreations.length > 0) {
     const cacheKey = `gtm:variables:userId:${userId}`;
     await redis.del(cacheKey);
     revalidatePath(`/dashboard/gtm/configurations`);
@@ -746,7 +724,6 @@ export async function RevertVariables(ga4VarToDelete: any[]): Promise<FeatureRes
       (prop) => `${prop.accountId}-${prop.containerId}-${prop.workspaceId}-${prop.type}`
     )
   );
-  let accountIdForCache: string | undefined;
 
   // Authenticating user and getting user ID
   const { userId } = await auth();
@@ -802,12 +779,10 @@ export async function RevertVariables(ga4VarToDelete: any[]): Promise<FeatureRes
                 variable: { accountId, containerId, workspaceId, variableId, type },
               } = prop;
 
-              accountIdForCache = accountId;
-
               let url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/variables/${variableId}:revert`;
 
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -896,8 +871,8 @@ export async function RevertVariables(ga4VarToDelete: any[]): Promise<FeatureRes
               notFoundError: true, // Set the notFoundError flag
               message: `Could not revert variable. Please check your permissions. Container Name: 
               ${notFoundLimit
-                  .map(({ name }) => name)
-                  .join(', ')}. All other variables were successfully reverted.`,
+                .map(({ name }) => name)
+                .join(', ')}. All other variables were successfully reverted.`,
               results: notFoundLimit.map(({ combinedId, name }) => {
                 const [accountId, containerId, workspaceId] = combinedId.split('-');
                 return {
@@ -1025,8 +1000,6 @@ export async function UpdateVariables(formData: VariableSchemaType) {
   const successfulCreations: string[] = [];
   const featureLimitReached: string[] = [];
   const notFoundLimit: { id: string; name: string }[] = [];
-  let accountIdForCache: string | undefined;
-  let containerIdForCache: string | undefined;
 
   // Refactor: Use string identifiers in the set
   const toUpdateVariables = new Set(formData.forms.map((variable) => variable));
@@ -1097,13 +1070,10 @@ export async function UpdateVariables(formData: VariableSchemaType) {
                 return;
               }
 
-              accountIdForCache = identifier.accountId;
-              containerIdForCache = identifier.containerId;
-
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${identifier.accountId}/containers/${identifier.containerId}/workspaces/${identifier.workspaceId}/variables/${identifier.variableId}`;
 
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -1254,7 +1224,7 @@ export async function UpdateVariables(formData: VariableSchemaType) {
         }
       } finally {
         // This block will run regardless of the outcome of the try...catch
-        if (accountIdForCache && containerIdForCache && userId) {
+        if (userId) {
           const cacheKey = `gtm:variables:userId:${userId}`;
           await redis.del(cacheKey);
           await revalidatePath(`/dashboard/gtm/configurations`);
@@ -1285,7 +1255,7 @@ export async function UpdateVariables(formData: VariableSchemaType) {
     };
   }
 
-  if (successfulCreations.length > 0 && accountIdForCache && containerIdForCache) {
+  if (successfulCreations.length > 0) {
     const cacheKey = `gtm:variables:userId:${userId}`;
     await redis.del(cacheKey);
     revalidatePath(`/dashboard/gtm/configurations`);

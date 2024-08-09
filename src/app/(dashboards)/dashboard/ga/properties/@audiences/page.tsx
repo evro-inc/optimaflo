@@ -25,11 +25,7 @@ export default async function AudiencePage({
   const propertyData = await listGAProperties();
   const audienceData = await listGAAudiences();
 
-  const [accounts, properties, audience] = await Promise.all([
-    accountData,
-    propertyData,
-    audienceData,
-  ]);
+  const [accounts, properties] = await Promise.all([accountData, propertyData, audienceData]);
 
   const flatAccounts = accounts.flat();
   const flatProperties = properties.flat();

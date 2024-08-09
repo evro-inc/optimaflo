@@ -46,8 +46,7 @@ interface DataTableProps<TData, TValue> {
 
 export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData, TValue>) {
   const dispatch = useDispatch();
-  const [isCreatePending, startCreateTransition] = useTransition();
-  const [isUpdatePending, startUpdateTransition] = useTransition();
+  const [, startUpdateTransition] = useTransition();
   const { user } = useUser();
   const userId = user?.id as string;
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -113,7 +112,6 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     await revalidate(keys, '/dashboard/gtm/accounts', userId);
   };
 
-  const selectedRowsData = table.getSelectedRowModel().rows.map((row) => row.original);
   dispatch(setSelectedRows(selectedRowData));
 
   return (

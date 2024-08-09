@@ -7,12 +7,7 @@ import { redis } from '@/src/lib/redis/cache';
 import { notFound } from 'next/navigation';
 import { currentUserOauthAccessToken } from '@/src/lib/clerk';
 import prisma from '@/src/lib/prisma';
-import {
-  FeatureResult,
-  FeatureResponse,
-  KeyEventType,
-  GTMContainerVersion,
-} from '@/src/types/types';
+import { FeatureResult, FeatureResponse, GTMContainerVersion } from '@/src/types/types';
 import {
   handleApiResponseError,
   tierCreateLimit,
@@ -22,7 +17,6 @@ import {
 import { fetchGASettings, fetchGtmSettings } from '../..';
 import { ContainerVersionType, UpdateVersionSchemaType } from '@/src/lib/schemas/gtm/versions';
 import { UpdateVersionFormSchema } from '@/src/lib/schemas/gtm/versions';
-import { container, container_v1 } from 'googleapis/build/src/apis/container';
 
 /************************************************************************************
   Function to list GA Versions
@@ -37,7 +31,6 @@ export async function listGTMVersionHeaders() {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-
 
   const cacheKey = `gtm:versionHeaders:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
@@ -221,7 +214,7 @@ export async function publishGTM(formData: ContainerVersionType) {
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${versionData.accountId}/containers/${versionData.containerId}/versions/${versionData.containerVersionId}:publish`;
 
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -452,7 +445,6 @@ export async function DeleteVersions(
       (prop) => `${prop.accountId}-${prop.containerId}-${prop.containerVersionId}`
     )
   );
-  let accountIdForCache: string | undefined;
 
   // Authenticating user and getting user ID
   const { userId } = await auth();
@@ -502,15 +494,13 @@ export async function DeleteVersions(
 
         if (remaining > 0) {
           await limiter.schedule(async () => {
-            // Creating promises for each container deletion
             const deletePromises = Array.from(versionsToDelete).map(async (prop) => {
               const { accountId, containerId, containerVersionId } = prop;
-              accountIdForCache = accountId;
 
               let url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/versions/${containerVersionId}?`;
 
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -601,8 +591,8 @@ export async function DeleteVersions(
               notFoundError: true, // Set the notFoundError flag
               message: `Could not delete version. Please check your permissions. Container Name: 
               ${notFoundLimit
-                  .map(({ name }) => name)
-                  .join(', ')}. All other variables were successfully deleted.`,
+                .map(({ name }) => name)
+                .join(', ')}. All other variables were successfully deleted.`,
               results: notFoundLimit.map(({ combinedId, name }) => {
                 const [accountId, containerId, containerVersionId] = combinedId.split('-');
                 return {
@@ -821,7 +811,7 @@ export async function UpdateVersions(formData: UpdateVersionSchemaType) {
 
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${versionData.accountId}/containers/${versionData.containerId}/versions/${versionData.containerVersionId}`;
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };

@@ -3,7 +3,6 @@ import { notFound, redirect } from 'next/navigation';
 import { currentUser } from '@clerk/nextjs/server';
 import { getTierLimit } from '@/src/lib/fetch/tierLimit';
 import { getSubscription } from '@/src/lib/fetch/subscriptions';
-import FormCreateKeyEvents from './form';
 import { listGtmAccounts } from '@/src/lib/fetch/dashboard/actions/gtm/accounts';
 import { listGtmContainers } from '@/src/lib/fetch/dashboard/actions/gtm/containers';
 import { listGtmBuiltInVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variablesBuiltIn';

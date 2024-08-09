@@ -18,9 +18,9 @@ interface Props {
   table?: any;
 }
 
-const FiringTriggerComponent = ({ formIndex, table = [] }: Props) => {
+const FiringTriggerComponent = ({ formIndex }: Props) => {
   const [cachedTriggers, setCachedTriggers] = useState<any[]>([]);
-  const { control, setValue } = useFormContext();
+  const { control } = useFormContext();
   const {
     fields: firingField,
     append: firingAppend,

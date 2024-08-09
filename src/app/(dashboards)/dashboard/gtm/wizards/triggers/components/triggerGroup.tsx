@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/src/components/ui/form';
+import { FormControl, FormField, FormItem, FormMessage } from '@/src/components/ui/form';
 import { Button } from '@/src/components/ui/button';
 import { MinusIcon, PlusIcon } from '@radix-ui/react-icons';
 import {
@@ -19,7 +19,7 @@ interface Props {
   table?: any;
 }
 
-const TriggerGroup = ({ formIndex, table = [] }: Props) => {
+const TriggerGroup = ({ formIndex }: Props) => {
   const [cachedTriggers, setCachedTriggers] = useState<any[]>([]);
   const { control, register, setValue } = useFormContext();
   const { fields, append, remove } = useFieldArray({

@@ -14,35 +14,42 @@ import {
   userRateLimit,
 } from './lib/redis/rateLimits';
 
-const isProtectedRoute = createRouteMatcher(['/protected(.*)']);
+const isPublicRoute = createRouteMatcher([
+  '/',
+  '/about',
+  '/features',
+  '/pricing',
+  '/contact',
+  '/tos',
+  '/privacy',
+  '/api/webhooks(.*)',
+]);
 
-export default clerkMiddleware((auth, req) => {
-  if (isProtectedRoute(req)) {
-    auth().protect();
+/* const isProtectedRoute = createRouteMatcher([
+  '/api/dashboard/(.*)',
+  '/api/users/(.*)',
+  '/api/customers/(.*)',
+  '/api/subscriptions/(.*)',
+  '/api/products/(.*)',
+  '/api/prices/(.*)',
+  '/api/create-checkout-session',
+  '/api/create-portal-link',
+]); */
+
+export default clerkMiddleware(async (auth, req) => {
+  const { userId, redirectToSignIn } = auth();
+
+  if (!isPublicRoute(req) && !userId) {
+    return redirectToSignIn();
   }
-});
 
-export const config = {
-  matcher: [
-    // Skip Next.js internals and all static files, unless found in search params
-    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    // Always run for API routes
-    '/(api|trpc)(.*)',
-  ],
-};
-
-/* LEGACY */
-/* export default clerkMiddleware({
-  afterAuth: async (auth, req) => {
-    if (!auth.userId && !auth.isPublicRoute) {
-      return redirectToSignIn({ returnBackUrl: req.url ?? '/' });
-    }
-
+  if (!isPublicRoute(req)) {
+    auth().protect();
     const ip = req.ip ?? '127.0.0.1';
 
     // Your subscription and rate limit checks here
     try {
-      if (auth.userId) {
+      if (userId) {
         // Define a mapping between paths and product IDs
         const regexToProductIds = {
           '^/dashboard/gtm.*': [
@@ -57,7 +64,7 @@ export const config = {
         for (const [regexString, productIds] of Object.entries(regexToProductIds)) {
           const regex = new RegExp(regexString);
           if (regex.test(req.nextUrl.pathname)) {
-            const subscriptions = await getSubscriptions(auth.userId);
+            const subscriptions = await getSubscriptions(userId);
 
             const activeProductIds = subscriptions
               .filter((subscription) => subscription.status === 'active')
@@ -130,26 +137,17 @@ export const config = {
     } catch (error) {
       return NextResponse.error();
     }
+  }
 
-    // Continue with the request if user is authorized and passes all checks
-    return NextResponse.next();
-  },
-  publicRoutes: [
-    '/',
-    '/about',
-    '/features',
-    '/pricing',
-    '/contact',
-    '/tos',
-    '/privacy',
-    '/api/webhooks(.*)',
-  ],
-  apiRoutes: [
-
-  ],
+  // Continue with the request if user is authorized and passes all checks
+  return NextResponse.next();
 });
 
 export const config = {
-  matcher: ['/((?!.+\\.[\\w]+$|_next).*)', '/', '/(api|trpc)(.*)'],
+  matcher: [
+    // Skip Next.js internals and all static files, unless found in search params
+    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    // Always run for API routes
+    '/(api|trpc)(.*)',
+  ],
 };
- */

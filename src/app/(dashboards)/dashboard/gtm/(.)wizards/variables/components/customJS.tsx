@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/src/components/ui/form';
 import CodeEditor from '@uiw/react-textarea-code-editor';
@@ -9,8 +9,8 @@ interface Props {
   table?: any;
 }
 
-const CustomJS = ({ formIndex, type, table = [] }: Props) => {
-  const { control, register, setValue } = useFormContext();
+const CustomJS = ({ formIndex }: Props) => {
+  const { control, setValue } = useFormContext();
   const { fields, append, remove } = useFieldArray({
     control,
     name: `forms.${formIndex}.parameter`,

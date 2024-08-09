@@ -36,10 +36,7 @@ import { FeatureResponse } from '@/src/types/types';
 import { useRouter } from 'next/navigation';
 import { setErrorDetails, setIsLimitReached, setNotFoundError } from '@/src/redux/tableSlice';
 import { RootState } from '@/src/redux/store';
-import {
-  createGTMVersion,
-  getStatusGtmWorkspaces,
-} from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
+import { createGTMVersion } from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
 import { UpdateEnvs } from '@/src/lib/fetch/dashboard/actions/gtm/envs';
 import { Checkbox } from '@/src/components/ui/checkbox';
 import { revalidate } from '@/src/utils/server';
@@ -198,7 +195,7 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
   });
 
   // Utility function to show toast notifications
-  const showToast = (message: string, isError: boolean = false) => {
+  const showToast = (message: string) => {
     toast(message, {
       action: {
         label: 'Close',
@@ -317,7 +314,7 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
   const handleResponseSuccess = async (
     res: FeatureResponse,
     userId: string,
-    setIsDrawerOpen: (isOpen: boolean) => void
+    setIsDrawerOpen: () => void
   ) => {
     res.results.forEach((result) => {
       if (result.success) {
@@ -405,8 +402,6 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
         form?.environmentId?.split(',').filter((env) => !env.toLowerCase().includes('live'))
       )
     ).size;
-
-    const workspaceStatus = await getStatusGtmWorkspaces();
 
     if (activeTab === 'publish') {
       try {
@@ -533,9 +528,7 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
   };
 
   const handleCheckboxChange = (checked, item, index) => {
-    const [accountId, containerId, workspaceId, environmentId, name] = item.split('-');
-
-    const envId = environmentId;
+    const [accountId, containerId, environmentId, name] = item.split('-');
 
     const forms = form.watch('forms');
     const fieldValue = Array.isArray(forms[index].createVersion.entityId)
@@ -587,7 +580,7 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
           >
             {fields.map((field, index) => {
               return (
-                <Form {...form}>
+                <Form {...form} key={field.id}>
                   <form onSubmit={form.handleSubmit(processForm)} className="space-y-6">
                     <Card>
                       <CardHeader className="grid grid-cols-2 items-center">

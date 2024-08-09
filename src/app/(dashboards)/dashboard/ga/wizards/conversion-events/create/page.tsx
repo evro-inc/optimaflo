@@ -6,7 +6,6 @@ import { listGaAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
 import { getTierLimit } from '@/src/lib/fetch/tierLimit';
 import { getSubscription } from '@/src/lib/fetch/subscriptions';
 import FormCreateConversionEvent from './form';
-import { listGACustomMetrics } from '@/src/lib/fetch/dashboard/actions/ga/metrics';
 import { listGAConversionEvents } from '@/src/lib/fetch/dashboard/actions/ga/conversions';
 
 export default async function CreateCustomDimensionPage() {

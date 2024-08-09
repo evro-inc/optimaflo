@@ -17,7 +17,7 @@ interface Props {
   table?: any;
 }
 
-const Vis = ({ formIndex, type, table = [] }: Props) => {
+const Vis = ({ formIndex }: Props) => {
   const { control, register, setValue } = useFormContext();
   const { fields, append } = useFieldArray({
     control,

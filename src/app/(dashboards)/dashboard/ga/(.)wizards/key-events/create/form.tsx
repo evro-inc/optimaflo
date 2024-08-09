@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setLoading, incrementStep, decrementStep, setCount } from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -22,19 +22,12 @@ import {
   SelectContent,
   SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/src/components/ui/select';
 
 import { Input } from '@/src/components/ui/input';
-import {
-  KeyEventType,
-  DimensionScope,
-  FeatureResponse,
-  FormCreateProps,
-  CountingMethod,
-} from '@/src/types/types';
+import { KeyEventType, FeatureResponse, FormCreateProps, CountingMethod } from '@/src/types/types';
 import { toast } from 'sonner';
 import {
   selectTable,
@@ -46,12 +39,9 @@ import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { createGAKeyEvents } from '@/src/lib/fetch/dashboard/actions/ga/keyEvents';
-import { DimensionScopeType } from '../../../properties/@dimensions/dimensionItems';
-import { Switch } from '@/src/components/ui/switch';
 import { CountMethodData, Currencies } from '../../../properties/@keyEvents/items';
 import { Checkbox } from '@/src/components/ui/checkbox';
 import { Separator } from '@/src/components/ui/separator';
-import { Label } from '@/src/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/src/components/ui/radio-group';
 
 const NotFoundErrorModal = dynamic(
@@ -73,7 +63,6 @@ type Forms = z.infer<typeof FormsSchema>;
 const FormCreateKeyEvents: React.FC<FormCreateProps> = ({
   tierLimits,
   properties = [],
-  table = [],
   accounts = [],
 }) => {
   const dispatch = useDispatch();
@@ -127,20 +116,6 @@ const FormCreateKeyEvents: React.FC<FormCreateProps> = ({
       amount: 1,
     },
   });
-
-  // Effect to update count when amount changes
-  useEffect(() => {
-    const amount = parseInt(formCreateAmount.getValues('amount').toString());
-    dispatch(setCount(amount));
-  }, [formCreateAmount.watch('amount'), dispatch]);
-
-  if (notFoundError) {
-    return <NotFoundErrorModal />;
-  }
-  if (error) {
-    return <ErrorModal />;
-  }
-
   const form = useForm<Forms>({
     defaultValues: {
       forms: [formDataDefaults],
@@ -152,6 +127,19 @@ const FormCreateKeyEvents: React.FC<FormCreateProps> = ({
     control: form.control,
     name: 'forms',
   });
+
+  useEffect(() => {
+    const amountValue = formCreateAmount.watch('amount');
+    const amount = parseInt(amountValue.toString());
+    dispatch(setCount(amount));
+  }, [formCreateAmount, dispatch]); // Only include `formCreateAmount` and `dispatch` as dependencies
+
+  if (notFoundError) {
+    return <NotFoundErrorModal onClose={undefined} />;
+  }
+  if (error) {
+    return <ErrorModal />;
+  }
 
   const includeDefaultValue = form.watch('forms');
 
@@ -364,8 +352,10 @@ const FormCreateKeyEvents: React.FC<FormCreateProps> = ({
                   <FormLabel>How many key events do you want to create?</FormLabel>
                   <Select
                     onValueChange={(value) => {
+                      field.onChange(value); // Use the field's onChange method
                       handleAmountChange(value); // Call the modified handler
                     }}
+                    value={field.value?.toString()} // Use field.value
                     defaultValue={count.toString()}
                   >
                     <FormControl>
@@ -384,6 +374,7 @@ const FormCreateKeyEvents: React.FC<FormCreateProps> = ({
                 </FormItem>
               )}
             />
+
             <Button type="button" onClick={handleNext}>
               Next
             </Button>
@@ -393,13 +384,8 @@ const FormCreateKeyEvents: React.FC<FormCreateProps> = ({
         fields.map(
           (field, index) =>
             currentStep === index + 2 && (
-              <div className="w-full">
-                {/* Render only the form corresponding to the current step - 1 
-              (since step 1 is for selecting the number of forms) */}
-                <div
-                  key={field.id}
-                  className="max-w-full md:max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-1"
-                >
+              <div key={field.id} className="w-full">
+                <div className="max-w-full md:max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-1">
                   <div className="max-w-full md:max-w-xl mx-auto">
                     <h1>Key Event {index + 1}</h1>
                     <div className="mt-2 md:mt-12">
@@ -499,7 +485,7 @@ const FormCreateKeyEvents: React.FC<FormCreateProps> = ({
                                                 <RadioGroupItem value="false" />
                                               </FormControl>
                                               <FormLabel className="font-normal">
-                                                Don't set a default conversion value
+                                                Do not set a default conversion value
                                               </FormLabel>
                                             </FormItem>
                                             <FormItem className="flex items-center space-x-3 space-y-0">

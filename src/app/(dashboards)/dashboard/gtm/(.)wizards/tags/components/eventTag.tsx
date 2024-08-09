@@ -60,12 +60,12 @@ const timeZoneOptions = [
   { label: 'GMT+12', value: 12 },
 ];
 
-const EventTag = ({ formIndex, table = [] }: Props) => {
+const EventTag = ({ formIndex }: Props) => {
   const [cachedConfigTag, setCachedConfigTags] = useState<any[]>([]);
-  const [cachedEventTag, setCachedEventTags] = useState<any[]>([]);
+  const [, setCachedEventTags] = useState<any[]>([]);
   const [cachedTag, setCachedTags] = useState<any[]>([]);
   const [userDataTag, setUserDataTag] = useState<any[]>([]);
-  const [eventSettingVar, setEventSettingVar] = useState<any[]>([]);
+  const [, setEventSettingVar] = useState<any[]>([]);
   const [eComm, setEComm] = useState(false);
   const [includeSetupTag, setIncludeSetupTag] = useState(false);
   const [includeTeardownTag, setIncludeTeardownTag] = useState(false);
@@ -81,7 +81,7 @@ const EventTag = ({ formIndex, table = [] }: Props) => {
   const [includeUserData, setIncludeUserData] = useState(false);
 
   const { control, register, setValue } = useFormContext();
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append } = useFieldArray({
     control,
     name: `forms.${formIndex}.parameter`,
   });
@@ -102,17 +102,6 @@ const EventTag = ({ formIndex, table = [] }: Props) => {
   } = useFieldArray({
     control,
     name: `forms.${formIndex}.consentSettings.consentType.list`,
-  });
-
-  const {
-    fields: configSettingsTableFields,
-    append: appendConfigSettingsTable,
-    remove: removeConfigSettingsTable,
-  } = useFieldArray({
-    control,
-    name: `forms.${formIndex}.parameter.${fields.findIndex(
-      (field: any) => field.key === 'configSettingsTable'
-    )}.list`,
   });
 
   const {
@@ -334,13 +323,13 @@ const EventTag = ({ formIndex, table = [] }: Props) => {
     if (includeSetupTag) {
       appendSetupTag({ tagName: '', stopOnSetupFailure: false });
     }
-  }, [includeSetupTag]);
+  }, [includeSetupTag, appendSetupTag]);
 
   useEffect(() => {
     if (includeTeardownTag) {
       appendTeardownTag({ tagName: '', stopOnSetupFailure: false });
     }
-  }, [includeTeardownTag]);
+  }, [includeTeardownTag, appendTeardownTag]);
 
   const handleStartDateChange = (date: Date | undefined) => {
     setSelectedStartDate(date || null);
@@ -603,7 +592,7 @@ const EventTag = ({ formIndex, table = [] }: Props) => {
         <AccordionItem value="item-2">
           <AccordionTrigger>User Properties</AccordionTrigger>
           <AccordionContent>
-            {fields.map((item: any, index: number) => (
+            {fields.map((item: any) => (
               <div className="grid grid-cols-2 gap-4" key={item.id}>
                 {item.key === 'userProperties' && (
                   <div className="pt-4">
@@ -862,7 +851,7 @@ const EventTag = ({ formIndex, table = [] }: Props) => {
                   <FormField
                     control={control}
                     name={`forms.${formIndex}.scheduleStartMs`}
-                    render={({ field }) => (
+                    render={() => (
                       <FormItem className="flex items-center space-x-2">
                         <FormLabel>Start Date</FormLabel>
                         <Popover>
@@ -910,7 +899,7 @@ const EventTag = ({ formIndex, table = [] }: Props) => {
                   <FormField
                     control={control}
                     name={`forms.${formIndex}.scheduleEndMs`}
-                    render={({ field }) => (
+                    render={() => (
                       <FormItem className="flex items-center space-x-2">
                         <FormLabel>End Date</FormLabel>
                         <Popover>
@@ -1078,7 +1067,7 @@ const EventTag = ({ formIndex, table = [] }: Props) => {
                                   />
                                 </FormControl>
                                 <FormLabel>
-                                  Don't fire new tag if setup tag fails or is paused
+                                  Do not fire new tag if setup tag fails or is paused
                                 </FormLabel>
                                 <FormMessage />
                               </FormItem>
@@ -1154,7 +1143,7 @@ const EventTag = ({ formIndex, table = [] }: Props) => {
                                   />
                                 </FormControl>
                                 <FormLabel>
-                                  Don't fire cleanup tag if new tag fails or is paused
+                                  Do not fire cleanup tag if new tag fails or is paused
                                 </FormLabel>
                                 <FormMessage />
                               </FormItem>

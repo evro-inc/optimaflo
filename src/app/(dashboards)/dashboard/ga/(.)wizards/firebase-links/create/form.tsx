@@ -28,12 +28,7 @@ import {
 } from '@/src/components/ui/select';
 
 import { Input } from '@/src/components/ui/input';
-import {
-  ConversionCountingMethod,
-  FirebaseLink,
-  FeatureResponse,
-  FormCreateProps,
-} from '@/src/types/types';
+import { FirebaseLink, FeatureResponse, FormCreateProps } from '@/src/types/types';
 import { toast } from 'sonner';
 import {
   selectTable,
@@ -45,8 +40,6 @@ import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { createGAFirebaseLinks } from '@/src/lib/fetch/dashboard/actions/ga/links';
-import { ConversionCountingItems, Currencies } from '../../../properties/@conversions/items';
-import { RadioGroup, RadioGroupItem } from '@/src/components/ui/radio-group';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -111,19 +104,6 @@ const FormCreateFBLink: React.FC<FormCreateProps> = ({
     },
   });
 
-  // Effect to update count when amount changes
-  useEffect(() => {
-    const amount = parseInt(formCreateAmount.getValues('amount').toString());
-    dispatch(setCount(amount));
-  }, [formCreateAmount.watch('amount'), dispatch]);
-
-  if (notFoundError) {
-    return <NotFoundErrorModal />;
-  }
-  if (error) {
-    return <ErrorModal />;
-  }
-
   const form = useForm<Forms>({
     defaultValues: {
       forms: [formDataDefaults],
@@ -135,6 +115,21 @@ const FormCreateFBLink: React.FC<FormCreateProps> = ({
     control: form.control,
     name: 'forms',
   });
+
+  // Effect to update count when amount changes
+  useEffect(() => {
+    const amountValue = formCreateAmount.watch('amount'); // Extract the watched value
+    const amount = parseInt(amountValue?.toString() || '0'); // Handle cases where amountValue might be undefined or null
+    dispatch(setCount(amount));
+  }, [formCreateAmount, dispatch]); // Include formCreateAmount and dispatch as dependencies
+
+  if (notFoundError) {
+    return <NotFoundErrorModal onClose={undefined} />;
+  }
+  if (error) {
+    return <ErrorModal />;
+  }
+
   const addForm = () => {
     append(formDataDefaults);
   };
@@ -308,16 +303,18 @@ const FormCreateFBLink: React.FC<FormCreateProps> = ({
               name="amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>How many conversion events do you want to create?</FormLabel>
+                  <FormLabel>How many properties do you want to create?</FormLabel>
                   <Select
                     onValueChange={(value) => {
+                      field.onChange(value); // Use field.onChange to update the form value
                       handleAmountChange(value); // Call the modified handler
                     }}
+                    value={field.value.toString()} // Ensure the Select reflects the form state
                     defaultValue={count.toString()}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select the amount of conversion events you want to create." />
+                        <SelectValue placeholder="Select the amount of properties you want to create." />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -331,6 +328,7 @@ const FormCreateFBLink: React.FC<FormCreateProps> = ({
                 </FormItem>
               )}
             />
+
             <Button type="button" onClick={handleNext}>
               Next
             </Button>

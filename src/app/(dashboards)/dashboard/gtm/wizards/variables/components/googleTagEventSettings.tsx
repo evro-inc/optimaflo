@@ -10,9 +10,9 @@ interface Props {
   table?: any;
 }
 
-const GoogleTagEventSettings = ({ formIndex, type, table = [] }: Props) => {
-  const { control, register, setValue } = useFormContext();
-  const { fields, append, replace } = useFieldArray({
+const GoogleTagEventSettings = ({ formIndex }: Props) => {
+  const { control, register } = useFormContext();
+  const { fields, replace } = useFieldArray({
     control,
     name: `forms.${formIndex}.parameter`,
   });

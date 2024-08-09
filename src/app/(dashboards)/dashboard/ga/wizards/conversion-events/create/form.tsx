@@ -113,19 +113,6 @@ const FormCreateConversionEvent: React.FC<FormCreateProps> = ({
     },
   });
 
-  // Effect to update count when amount changes
-  useEffect(() => {
-    const amount = parseInt(formCreateAmount.getValues('amount').toString());
-    dispatch(setCount(amount));
-  }, [formCreateAmount.watch('amount'), dispatch]);
-
-  if (notFoundError) {
-    return <NotFoundErrorModal />;
-  }
-  if (error) {
-    return <ErrorModal />;
-  }
-
   const form = useForm<Forms>({
     defaultValues: {
       forms: [formDataDefaults],
@@ -137,6 +124,21 @@ const FormCreateConversionEvent: React.FC<FormCreateProps> = ({
     control: form.control,
     name: 'forms',
   });
+
+  // Effect to update count when amount changes
+  useEffect(() => {
+    const amountValue = formCreateAmount.watch('amount'); // Extract the watched value
+    const amount = parseInt(amountValue?.toString() || '0'); // Handle cases where amountValue might be undefined or null
+    dispatch(setCount(amount));
+  }, [formCreateAmount, dispatch]); // Include formCreateAmount and dispatch as dependencies
+
+  if (notFoundError) {
+    return <NotFoundErrorModal onClose={undefined} />;
+  }
+  if (error) {
+    return <ErrorModal />;
+  }
+
   const addForm = () => {
     append(formDataDefaults);
   };
@@ -313,16 +315,18 @@ const FormCreateConversionEvent: React.FC<FormCreateProps> = ({
               name="amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>How many conversion events do you want to create?</FormLabel>
+                  <FormLabel>How many properties do you want to create?</FormLabel>
                   <Select
                     onValueChange={(value) => {
+                      field.onChange(value); // Use field.onChange to update the form value
                       handleAmountChange(value); // Call the modified handler
                     }}
+                    value={field.value.toString()} // Ensure the Select reflects the form state
                     defaultValue={count.toString()}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select the amount of conversion events you want to create." />
+                        <SelectValue placeholder="Select the amount of properties you want to create." />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -336,6 +340,7 @@ const FormCreateConversionEvent: React.FC<FormCreateProps> = ({
                 </FormItem>
               )}
             />
+
             <Button type="button" onClick={handleNext}>
               Next
             </Button>
@@ -495,7 +500,7 @@ const FormCreateConversionEvent: React.FC<FormCreateProps> = ({
                                       <FormDescription>
                                         Choose how to count this conversion. The counting method you
                                         choose will be used to count future conversion actions; it
-                                        won't be used to count past data.
+                                        will not be used to count past data.
                                       </FormDescription>
                                       <FormControl>
                                         <Select
@@ -564,7 +569,7 @@ const FormCreateConversionEvent: React.FC<FormCreateProps> = ({
                                             <RadioGroupItem value="none" />
                                           </FormControl>
                                           <FormLabel className="font-normal">
-                                            Don't set a default conversion value
+                                            Do not set a default conversion value
                                           </FormLabel>
                                         </FormItem>
                                         <FormItem className="flex items-center space-x-3 space-y-0">

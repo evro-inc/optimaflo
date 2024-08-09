@@ -24,9 +24,9 @@ interface Props {
   variables: any[];
 }
 
-const UserProvidedData = ({ formIndex, type, table = [], variables }: Props) => {
+const UserProvidedData = ({ formIndex, variables }: Props) => {
   const { control, setValue } = useFormContext();
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append } = useFieldArray({
     control,
     name: `forms.${formIndex}.parameter`,
   });

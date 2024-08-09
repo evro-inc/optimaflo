@@ -1,4 +1,3 @@
-import { workerData } from 'worker_threads';
 import { z } from 'zod';
 
 const CreateVersionSchema = z.object({

@@ -5,7 +5,6 @@ import { Price } from '@prisma/client';
 import { ProductWithPrice } from '@/src/types/types';
 import { getStripe } from '@/src/lib/stripe-client';
 import { useSelector } from 'react-redux';
-import { selectUser } from '@/src/redux/userSlice';
 import { useAuth } from '@clerk/nextjs';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs';
 import {
@@ -49,7 +48,7 @@ export default function PricingCards({ products = [] }: Props) {
   // Set buttonText based on whether there is a subscribed product
   const buttonText = isSubscribedToProduct ? 'Manage' : 'Subscribe';
 
-  const handleCheckout = async (price: Price, product: ProductWithPrice) => {
+  const handleCheckout = async (price: Price) => {
     try {
       setPriceIdLoading(price.id);
       if (!userId) {

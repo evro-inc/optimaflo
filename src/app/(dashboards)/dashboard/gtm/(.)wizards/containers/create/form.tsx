@@ -62,7 +62,6 @@ const FormCreateContainer: React.FC<FormCreateProps> = ({ tierLimits, accounts =
   const loading = useSelector((state: RootState) => state.form.loading);
   const error = useSelector((state: RootState) => state.form.error);
   const currentStep = useSelector((state: RootState) => state.form.currentStep);
-  const propertyCount = useSelector((state: RootState) => state.form.count);
   const notFoundError = useSelector(selectTable).notFoundError;
   const router = useRouter();
   const count = useSelector((state: RootState) => state.form.count);
@@ -93,19 +92,6 @@ const FormCreateContainer: React.FC<FormCreateProps> = ({ tierLimits, accounts =
     },
   });
 
-  // Effect to update propertyCount when amount changes
-  useEffect(() => {
-    const amount = parseInt(formCreateAmount.getValues('amount').toString());
-    dispatch(setCount(amount));
-  }, [formCreateAmount.watch('amount'), dispatch]);
-
-  if (notFoundError) {
-    return <NotFoundErrorModal />;
-  }
-  if (error) {
-    return <ErrorModal />;
-  }
-
   const form = useForm<Forms>({
     defaultValues: {
       forms: [formDataDefaults],
@@ -117,6 +103,21 @@ const FormCreateContainer: React.FC<FormCreateProps> = ({ tierLimits, accounts =
     control: form.control,
     name: 'forms',
   });
+
+  // Effect to update propertyCount when amount changes
+  useEffect(() => {
+    const amountValue = formCreateAmount.watch('amount'); // Extract the watched value
+    const amount = parseInt(amountValue?.toString() || '0'); // Handle cases where amountValue might be undefined or null
+    dispatch(setCount(amount));
+  }, [formCreateAmount, dispatch]); // Include formCreateAmount and dispatch as dependencies
+
+  if (notFoundError) {
+    return <NotFoundErrorModal onClose={undefined} />;
+  }
+  if (error) {
+    return <ErrorModal />;
+  }
+
   const addForm = () => {
     append(formDataDefaults);
   };
@@ -294,16 +295,19 @@ const FormCreateContainer: React.FC<FormCreateProps> = ({ tierLimits, accounts =
               name="amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>How many properties do you want to create?</FormLabel>
+                  <FormLabel>How many conversion events do you want to create?</FormLabel>
                   <Select
+                    {...field}
+                    value={field.value.toString()} // Convert value to string
                     onValueChange={(value) => {
+                      field.onChange(value); // Update form state
                       handleAmountChange(value); // Call the modified handler
                     }}
-                    defaultValue={propertyCount.toString()}
+                    defaultValue={count.toString()}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select the amount of properties you want to create." />
+                        <SelectValue placeholder="Select the amount of conversion events you want to create." />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -314,9 +318,11 @@ const FormCreateContainer: React.FC<FormCreateProps> = ({ tierLimits, accounts =
                       ))}
                     </SelectContent>
                   </Select>
+                  <FormMessage />
                 </FormItem>
               )}
             />
+
             <Button type="button" onClick={handleNext}>
               Next
             </Button>

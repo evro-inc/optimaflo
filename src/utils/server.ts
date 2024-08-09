@@ -171,7 +171,6 @@ export async function handleApiResponseError(
           message: parsedResponse.error.message,
         };
       }
-      break;
 
     case 409:
       return {
@@ -194,7 +193,6 @@ export async function handleApiResponseError(
         message: `Error deleting container: ${response.status}`,
       };
   }
-  return null;
 }
 
 export async function fetchFilteredRows<T>(

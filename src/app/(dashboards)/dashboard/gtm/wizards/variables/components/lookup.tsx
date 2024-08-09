@@ -23,8 +23,8 @@ interface Props {
 }
 
 const LookupTableVariable = ({ formIndex, variables, selectedRows }: Props) => {
-  const { control, register, setValue, getValues } = useFormContext();
-  const { fields, append, remove } = useFieldArray({
+  const { control, register, setValue } = useFormContext();
+  const { fields, append } = useFieldArray({
     control,
     name: `forms.${formIndex}.parameter`,
   });

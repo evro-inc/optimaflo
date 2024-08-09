@@ -10,7 +10,7 @@ interface Props {
   table?: any;
 }
 
-const FirstPartyCookie = ({ formIndex, type, table = [] }: Props) => {
+const FirstPartyCookie = ({ formIndex }: Props) => {
   const { control, register, setValue } = useFormContext();
   const { fields, append, remove } = useFieldArray({
     control,

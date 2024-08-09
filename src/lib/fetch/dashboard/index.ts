@@ -1,6 +1,6 @@
 import prisma from '@/src/lib/prisma';
 import { fetchWithRetry } from '@/src/utils/server';
-import { clerkClient } from '@clerk/nextjs/server';
+import { currentUserOauthAccessToken } from '../../clerk';
 
 export function isErrorWithStatus(error: unknown): error is { status: number } {
   return (error as { status: number }).status !== undefined;
@@ -49,8 +49,8 @@ export async function fetchGtmSettings(userId: string) {
     await prisma.User.create({ data: { id: userId } });
   }
 
-  const token = await clerkClient().users.getUserOauthAccessToken(userId, 'oauth_google');
-  const tokenValue = token.data[0].token;
+  const token = await currentUserOauthAccessToken(userId);
+  const tokenValue = token;
   const headers = { Authorization: `Bearer ${tokenValue}` };
 
   const existingRecords = await prisma.gtm.findMany({ where: { userId } });
@@ -145,8 +145,8 @@ export async function fetchGASettings(userId: string) {
     await prisma.User.create({ data: { id: userId } });
   }
 
-  const token = await clerkClient().users.getUserOauthAccessToken(userId, 'oauth_google');
-  const tokenValue = token.data[0].token;
+  const token = await currentUserOauthAccessToken(userId);
+  const tokenValue = token;
   const headers = { Authorization: `Bearer ${tokenValue}` };
 
   const existingRecords = await prisma.gtm.findMany({ where: { userId } });

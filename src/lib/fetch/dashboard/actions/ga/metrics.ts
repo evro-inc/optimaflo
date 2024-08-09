@@ -31,7 +31,6 @@ export async function listGACustomMetrics() {
 
   const token = await currentUserOauthAccessToken(userId);
 
-
   const cacheKey = `ga:customMetrics:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
 
@@ -189,7 +188,7 @@ export async function createGACustomMetrics(formData: CustomMetricSchemaType) {
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.property}/customMetrics`;
 
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -323,7 +322,7 @@ export async function createGACustomMetrics(formData: CustomMetricSchemaType) {
               message: `Feature limit reached for custom metrics: ${featureLimitReached.join(
                 ', '
               )}`,
-              results: featureLimitReached.map((displayName) => {
+              results: featureLimitReached.map(() => {
                 // Find the name associated with the propertyId
                 const customMetricName =
                   customMetricNames.find((displayName) => displayName.includes(displayName)) ||
@@ -510,7 +509,7 @@ export async function updateGACustomMetrics(formData: CustomMetricSchemaType) {
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.name}?updateMask=${updateMask}`;
 
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };
@@ -643,7 +642,7 @@ export async function updateGACustomMetrics(formData: CustomMetricSchemaType) {
               message: `Feature limit reached for custom metrics: ${featureLimitReached.join(
                 ', '
               )}`,
-              results: featureLimitReached.map((displayName) => {
+              results: featureLimitReached.map(() => {
                 // Find the name associated with the propertyId
                 const customMetricName =
                   customMetricNames.find((displayName) => displayName.includes(displayName)) ||
@@ -808,7 +807,7 @@ export async function deleteGACustomMetrics(
               const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.name}:archive`;
 
               const headers = {
-                Authorization: `Bearer ${token.data[0].token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
                 'Accept-Encoding': 'gzip',
               };

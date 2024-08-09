@@ -31,16 +31,6 @@ import {
 import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from '@/src/components/ui/select';
-import { DimensionScopeType } from '../../../properties/@dimensions/dimensionItems';
 import { Switch } from '@/src/components/ui/switch';
 
 const NotFoundErrorModal = dynamic(
@@ -82,12 +72,6 @@ const FormUpdateCustomDimension = () => {
     property: rowData.property,
   }));
 
-  if (notFoundError) {
-    return <NotFoundErrorModal />;
-  }
-  if (error) {
-    return <ErrorModal />;
-  }
   const form = useForm<Forms>({
     defaultValues: {
       forms: formDataDefaults,
@@ -99,6 +83,13 @@ const FormUpdateCustomDimension = () => {
     control: form.control,
     name: 'forms',
   });
+
+  if (notFoundError) {
+    return <NotFoundErrorModal onClose={undefined} />;
+  }
+  if (error) {
+    return <ErrorModal />;
+  }
 
   const handleNext = async () => {
     // Determine the names of the fields in the current form to validate

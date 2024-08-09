@@ -25,11 +25,7 @@ export default async function KeyEventsPage({
   const propertyData = await listGAProperties();
   const keyEventsData = await listGAKeyEvents();
 
-  const [accounts, properties, keyEvents] = await Promise.all([
-    accountData,
-    propertyData,
-    keyEventsData,
-  ]);
+  const [accounts, properties] = await Promise.all([accountData, propertyData, keyEventsData]);
 
   const flatAccounts = accounts.flat();
   const flatProperties = properties.flat();

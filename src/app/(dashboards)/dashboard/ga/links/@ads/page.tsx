@@ -25,7 +25,7 @@ export default async function ConversionEventPage({
   const propertyData = await listGAProperties();
   const adLink = await listGAGoogleAdsLinks();
 
-  const [accounts, properties, ad] = await Promise.all([accountData, propertyData, adLink]);
+  const [accounts, properties] = await Promise.all([accountData, propertyData, adLink]);
 
   const flatAccounts = accounts.flat();
   const flatProperties = properties.flat();

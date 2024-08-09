@@ -18,7 +18,7 @@ interface Props {
   table?: any;
 }
 
-const ScrollDepthTrigger = ({ formIndex, table = [] }: Props) => {
+const ScrollDepthTrigger = ({ formIndex }: Props) => {
   const { control, register, setValue } = useFormContext();
   const { fields, append, remove } = useFieldArray({
     control,

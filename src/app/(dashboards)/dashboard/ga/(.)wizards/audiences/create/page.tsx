@@ -41,11 +41,7 @@ export default async function CreateCustomDimensionPage() {
     const uniqueEventNames = new Set(eventDimensions.map((dimension) => dimension.apiName));
     const uniqueEventNamesArray = Array.from(uniqueEventNames); */
 
-  const [accounts, properties, audience] = await Promise.all([
-    accountData,
-    propertyData,
-    audienceData,
-  ]);
+  const [accounts, properties] = await Promise.all([accountData, propertyData, audienceData]);
 
   const flatAccounts = accounts.flat();
   const flatProperties = properties.flat();
