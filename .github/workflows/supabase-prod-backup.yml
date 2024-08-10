@@ -30,13 +30,17 @@ jobs:
       - name: Backup data
         run: supabase db dump --db-url "$supabase_db_url_prod" -f data.sql --data-only --use-copy
 
+      - name: Create dynamic branch name
+        id: create_branch_name
+        run: echo "::set-output name=branch_name::backup/$(date +%Y-%m-%d)"
+
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v3
         with:
-          branch: backup/$(date +%Y-%m-%d)
+          branch: ${{ steps.create_branch_name.outputs.branch_name }}
           base: sandbox
-          title: 'Supabase production backup $(date +%Y-%m-%d)'
+          title: 'Supabase production backup ${{ steps.create_branch_name.outputs.branch_name }}'
           commit-message: 'Supabase production backup'
           body: |
-            Automated backup of Supabase production database on $(date +%Y-%m-%d).
+            Automated backup of Supabase production database on ${{ steps.create_branch_name.outputs.branch_name }}.
           author: 'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
