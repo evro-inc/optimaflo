@@ -152,10 +152,13 @@ COPY "pgsodium"."key" ("id", "status", "created", "expires", "key_type", "key_id
 
 COPY "public"."Product" ("id", "active", "name", "description", "image", "metadata", "updated") FROM stdin;
 prod_PR67hSV5IpooDJ	f	Analyst	Ideal for basic data management and automation needs.	\N	{"bulletOne": "Affordable Data Automation", "bulletTwo": "User Friendly UI", "bulletThree": "Scaled Data Management"}	1706916174
-prod_PUV4HNwx8EuHOi	t	Analyst	Ideal for basic data management and automation needs.	\N	{}	1706916181
 prod_PR6ETKqabgOXDt	f	Enterprise	Premium tier for businesses requiring extensive, tailored solutions with zero API limits.	\N	{"bulletOne": "Features included from other tiers", "bulletTwo": "Unlimited API Usage up to Google Limits", "bulletThree": "Unlimited Data Automation"}	1706916276
-prod_PUV6oomP5QRnkp	t	Enterprise	Premium tier for businesses requiring extensive, tailored solutions with zero API limits.	\N	{}	1706916324
-prod_PUV5bXKCjMOpz8	t	Consultant	Designed for businesses with moderate data management needs, requiring more advanced features.	\N	{}	1706927722
+prod_PUV4HNwx8EuHOi	f	Analyst	Ideal for basic data management and automation needs.	\N	{}	1723307502
+prod_PUV5bXKCjMOpz8	f	Consultant	Designed for businesses with moderate data management needs, requiring more advanced features.	\N	{}	1723307508
+prod_PUV6oomP5QRnkp	f	Enterprise	Premium tier for businesses requiring extensive, tailored solutions with zero API limits.	\N	{}	1723307511
+prod_QdZO0kPsz2tazE	t	Analyst	Ideal for basic data management and automation needs.	\N	{}	1723307704
+prod_QdZQouN3OTAsys	t	Consultant	Designed for businesses with moderate data management needs, requiring more advanced features.	\N	{}	1723307801
+prod_QdZQsrc5pD9fdl	t	Enterprise	Premium tier for businesses requiring extensive, tailored solutions with zero API limits.	\N	{}	1723307837
 \.
 
 
@@ -176,6 +179,12 @@ price_1OfU9nJpXmm9uoVNkS4amvpv	prod_PR67hSV5IpooDJ	t	\N	30000	usd	recurring	year
 price_1OfW4IJpXmm9uoVN5P9J3opl	prod_PUV4HNwx8EuHOi	t	\N	2999	usd	recurring	month	1	0	\N	month	1
 price_1OfW6WJpXmm9uoVNh5C1lfrE	prod_PUV6oomP5QRnkp	t	\N	49999	usd	recurring	month	1	0	\N	month	1
 price_1OfW5nJpXmm9uoVNyNq7s5DU	prod_PUV5bXKCjMOpz8	t	\N	100000	usd	recurring	month	1	0	\N	year	1
+price_1PmIFvJpXmm9uoVNVYlVVNyC	prod_QdZO0kPsz2tazE	t	\N	2999	usd	recurring	month	1	0	\N	month	1
+price_1PmIFvJpXmm9uoVNs9eNzJgJ	prod_QdZO0kPsz2tazE	t	\N	30000	usd	recurring	year	1	0	\N	year	1
+price_1PmIHUJpXmm9uoVNZyV6j3kL	prod_QdZQouN3OTAsys	t	\N	100000	usd	recurring	year	1	0	\N	year	1
+price_1PmIHUJpXmm9uoVNEzZtZk9n	prod_QdZQouN3OTAsys	t	\N	9999	usd	recurring	month	1	0	\N	month	1
+price_1PmII4JpXmm9uoVNgPuH3Pyz	prod_QdZQsrc5pD9fdl	t	\N	49999	usd	recurring	month	1	0	\N	month	1
+price_1PmII4JpXmm9uoVNu4BYBhEc	prod_QdZQsrc5pD9fdl	t	\N	500000	usd	recurring	year	1	0	\N	year	1
 \.
 
 
@@ -184,7 +193,7 @@ price_1OfW5nJpXmm9uoVNyNq7s5DU	prod_PUV5bXKCjMOpz8	t	\N	100000	usd	recurring	mon
 --
 
 COPY "public"."User" ("id", "stripeCustomerId", "subscriptionId", "subscriptionStatus", "name", "email", "emailVerified", "image", "role") FROM stdin;
-user_2kM2kkcA9SGqWlvoyhd9fL6uTF9	\N	\N	\N	Ev Ro	crypto.evro@gmail.com	\N	https://img.clerk.com/eyJ0eXBlIjoicHJveHkiLCJzcmMiOiJodHRwczovL2ltYWdlcy5jbGVyay5kZXYvb2F1dGhfZ29vZ2xlL2ltZ18ya00ya2llRHltdWY2WFdnT0VIR0paNWhxcGMifQ	USER
+user_2kRdmCzimWd2UQM4qkYGICjtvTI	\N	\N	\N	Ev Ro	crypto.evro@gmail.com	\N	https://img.clerk.com/eyJ0eXBlIjoicHJveHkiLCJzcmMiOiJodHRwczovL2ltYWdlcy5jbGVyay5kZXYvb2F1dGhfZ29vZ2xlL2ltZ18ya1JkbURxSmpYM2k0dUJ1STJ5d1lhSmVXc3YifQ	USER
 \.
 
 
@@ -193,7 +202,7 @@ user_2kM2kkcA9SGqWlvoyhd9fL6uTF9	\N	\N	\N	Ev Ro	crypto.evro@gmail.com	\N	https:/
 --
 
 COPY "public"."Subscription" ("id", "user_id", "metadata", "price_id", "quantity", "cancel_at_period_end", "created", "current_period_start", "current_period_end", "ended_at", "cancel_at", "canceled_at", "trial_start", "trial_end", "product_id", "subId", "status") FROM stdin;
-clzkkxz4f0006tr5yr47ds3wf	user_2kM2kkcA9SGqWlvoyhd9fL6uTF9	\N	price_1OfW6WJpXmm9uoVNh5C1lfrE	1	f	2024-08-08 01:08:45+00	2024-08-08 01:08:45+00	2024-09-08 01:08:45+00	\N	\N	\N	\N	\N	prod_PUV6oomP5QRnkp	sub_1PlKqPJpXmm9uoVNOCCFdvHh	active
+clzkkxz4f0006tr5yr47ds3wf	user_2kRdmCzimWd2UQM4qkYGICjtvTI	\N	price_1OfW6WJpXmm9uoVNh5C1lfrE	1	f	2024-08-08 01:08:45+00	2024-08-08 01:08:45+00	2024-09-08 01:08:45+00	\N	\N	\N	\N	\N	prod_PUV6oomP5QRnkp	sub_1PlKqPJpXmm9uoVNOCCFdvHh	active
 \.
 
 
@@ -202,7 +211,7 @@ clzkkxz4f0006tr5yr47ds3wf	user_2kM2kkcA9SGqWlvoyhd9fL6uTF9	\N	price_1OfW6WJpXmm9
 --
 
 COPY "public"."CheckoutSession" ("id", "paymentStatus", "amountTotal", "currency", "user_id", "subscription_id") FROM stdin;
-cs_test_b16Vzq6GsLn90C6zoZibTC0ects66F8A7rxeltSyi3s0N4nIVY77lOwt7r	paid	49999	usd	user_2kM2kkcA9SGqWlvoyhd9fL6uTF9	clzkkxz4f0006tr5yr47ds3wf
+cs_test_b16Vzq6GsLn90C6zoZibTC0ects66F8A7rxeltSyi3s0N4nIVY77lOwt7r	paid	49999	usd	user_2kRdmCzimWd2UQM4qkYGICjtvTI	clzkkxz4f0006tr5yr47ds3wf
 \.
 
 
@@ -211,7 +220,7 @@ cs_test_b16Vzq6GsLn90C6zoZibTC0ects66F8A7rxeltSyi3s0N4nIVY77lOwt7r	paid	49999	us
 --
 
 COPY "public"."Customer" ("id", "stripe_customer_id", "user_id") FROM stdin;
-clzkkx8mj0007nb4zpwvvczp3	cus_QcZzC6uTRdOuTc	user_2kM2kkcA9SGqWlvoyhd9fL6uTF9
+clzkkx8mj0007nb4zpwvvczp3	cus_QcZzC6uTRdOuTc	user_2kRdmCzimWd2UQM4qkYGICjtvTI
 \.
 
 
@@ -254,7 +263,7 @@ clxp8utwn0000ezohlk75w9qt	GTMPermissions	GTMPermissions
 --
 
 COPY "public"."Invoice" ("id", "status", "created", "paid", "amount_due", "amount_paid", "currency", "customer_id", "due_date", "subscription_id", "user_id") FROM stdin;
-in_1PlKqPJpXmm9uoVNQxoYGMtC	paid	2024-08-08 01:08:45+00	t	49999	49999	usd	cus_QcZzC6uTRdOuTc	2024-09-07 01:08:45+00	clzkkxz4f0006tr5yr47ds3wf	user_2kM2kkcA9SGqWlvoyhd9fL6uTF9
+in_1PlKqPJpXmm9uoVNQxoYGMtC	paid	2024-08-08 01:08:45+00	t	49999	49999	usd	cus_QcZzC6uTRdOuTc	2024-09-07 01:08:45+00	clzkkxz4f0006tr5yr47ds3wf	user_2kRdmCzimWd2UQM4qkYGICjtvTI
 \.
 
 
@@ -272,9 +281,9 @@ clsp416d10005bah3it7m3ak9	prod_PUV6oomP5QRnkp	t	\N
 clsovvkm50001lqqd8hazqrdp	prod_PUV4HNwx8EuHOi	t	\N
 clsovvkmj0003lqqdyyw8aedh	prod_PUV5bXKCjMOpz8	t	\N
 clsovvkmv0005lqqdanrtp6x0	prod_PUV6oomP5QRnkp	t	\N
-clzkkxzxi001ktr5yrkr3lvqb	prod_PUV4HNwx8EuHOi	t	user_2kM2kkcA9SGqWlvoyhd9fL6uTF9
-clzkkxzy9001mtr5yosrgmq37	prod_PUV5bXKCjMOpz8	t	user_2kM2kkcA9SGqWlvoyhd9fL6uTF9
-clzkkxzyq001otr5y40keqm1h	prod_PUV6oomP5QRnkp	t	user_2kM2kkcA9SGqWlvoyhd9fL6uTF9
+clzkkxzxi001ktr5yrkr3lvqb	prod_PUV4HNwx8EuHOi	t	user_2kRdmCzimWd2UQM4qkYGICjtvTI
+clzkkxzy9001mtr5yosrgmq37	prod_PUV5bXKCjMOpz8	t	user_2kRdmCzimWd2UQM4qkYGICjtvTI
+clzkkxzyq001otr5y40keqm1h	prod_PUV6oomP5QRnkp	t	user_2kRdmCzimWd2UQM4qkYGICjtvTI
 \.
 
 
@@ -283,8 +292,10 @@ clzkkxzyq001otr5y40keqm1h	prod_PUV6oomP5QRnkp	t	user_2kM2kkcA9SGqWlvoyhd9fL6uTF9
 --
 
 COPY "public"."Session" ("id", "user_id", "abandonAt", "clientId", "createdAt", "expireAt", "lastActiveAt", "status", "updatedAt") FROM stdin;
-sess_2kM2kk9fXFP3qmStg5JjMFEFGUo	user_2kM2kkcA9SGqWlvoyhd9fL6uTF9	1725671269178	client_2kM0ylGJVOyohn37tt6T08zIsyt	1723079269178	1723684069178	1723079269178	ended	1723081018700
-sess_2kM6KQV9a0NVNlDdkb0DPy95QQq	user_2kM2kkcA9SGqWlvoyhd9fL6uTF9	1725673033977	client_2kM6Jnk1gIg0RQpnDXrKXayoA9x	1723081033977	1723685833977	1723081033977	active	1723081034007
+sess_2kM2kk9fXFP3qmStg5JjMFEFGUo	user_2kRdmCzimWd2UQM4qkYGICjtvTI	1725671269178	client_2kM0ylGJVOyohn37tt6T08zIsyt	1723079269178	1723684069178	1723079269178	ended	1723081018700
+sess_2kM6KQV9a0NVNlDdkb0DPy95QQq	user_2kRdmCzimWd2UQM4qkYGICjtvTI	1725673033977	client_2kM6Jnk1gIg0RQpnDXrKXayoA9x	1723081033977	1723685833977	1723081033977	active	1723081034007
+sess_2kRdmGXaS0kaZ6z8fNU8iMMM63q	user_2kRdmCzimWd2UQM4qkYGICjtvTI	1725842479458	client_2kRdllplGHQKRqPiUsybDykxScE	1723250479458	1723855279458	1723251295901	ended	1723296780554
+sess_2kT9dXAHAiu3qJ4X4s4poJcxIaG	user_2kRdmCzimWd2UQM4qkYGICjtvTI	1725888786863	client_2kT9dALX12SKnKOtA1WQlaxlU8y	1723296786863	1723901586863	1723296786863	active	1723296786894
 \.
 
 
@@ -380,6 +391,16 @@ f7494ff9-6277-40ff-b994-3d2162fc3a1d	6ceef05fa4276c376e898ca3eefe2b706e8ba4be57b
 --
 
 COPY "public"."ga" ("id", "user_id", "account_id", "property_id", "status") FROM stdin;
+clzn5uwb90000ya0bp33i4lpd	user_2kRdmCzimWd2UQM4qkYGICjtvTI	accounts/240133506	330596172	\N
+clzn5uwgr0001ya0b8p6n57f2	user_2kRdmCzimWd2UQM4qkYGICjtvTI	accounts/240133506	331458876	\N
+clzn5uwl50002ya0b5x6z2fiv	user_2kRdmCzimWd2UQM4qkYGICjtvTI	accounts/240133506	353795135	\N
+clzn5uwpn0003ya0btp5t11zv	user_2kRdmCzimWd2UQM4qkYGICjtvTI	accounts/240133506	354471664	\N
+clzn5uwxn0004ya0bsaggsmeo	user_2kRdmCzimWd2UQM4qkYGICjtvTI	accounts/240133506	443227926	\N
+clzn5ux4u0005ya0bgjnd53r9	user_2kRdmCzimWd2UQM4qkYGICjtvTI	accounts/240133506	443194426	\N
+clzn5uxdl0006ya0b6do5rj5g	user_2kRdmCzimWd2UQM4qkYGICjtvTI	accounts/260310161	357901472	\N
+clzn5uxmn0007ya0bc9ge5fwi	user_2kRdmCzimWd2UQM4qkYGICjtvTI	accounts/300860996	426648744	\N
+clzn5uxrt0008ya0bb4nb0p8p	user_2kRdmCzimWd2UQM4qkYGICjtvTI	accounts/300860996	428849133	\N
+clzn5uxx50009ya0bbllo4ngw	user_2kRdmCzimWd2UQM4qkYGICjtvTI	accounts/300860996	428843375	\N
 \.
 
 
@@ -388,10 +409,10 @@ COPY "public"."ga" ("id", "user_id", "account_id", "property_id", "status") FROM
 --
 
 COPY "public"."gtm" ("id", "user_id", "account_id", "container_id", "workspace_id") FROM stdin;
-clzklzh3o002gnb4zrdlfzxxm	user_2kM2kkcA9SGqWlvoyhd9fL6uTF9	6051211458	165040396	202
-clzklzhbm002hnb4z69f0fmaa	user_2kM2kkcA9SGqWlvoyhd9fL6uTF9	6051211458	188359717	6
-clzklzhoc002inb4ziki71wbk	user_2kM2kkcA9SGqWlvoyhd9fL6uTF9	6141326151	176345981	2
-clzklzhxg002jnb4zqeosz7et	user_2kM2kkcA9SGqWlvoyhd9fL6uTF9	6141326151	177249347	3
+clzklzh3o002gnb4zrdlfzxxm	user_2kRdmCzimWd2UQM4qkYGICjtvTI	6051211458	165040396	202
+clzklzhbm002hnb4z69f0fmaa	user_2kRdmCzimWd2UQM4qkYGICjtvTI	6051211458	188359717	6
+clzklzhoc002inb4ziki71wbk	user_2kRdmCzimWd2UQM4qkYGICjtvTI	6141326151	176345981	2
+clzklzhxg002jnb4zqeosz7et	user_2kRdmCzimWd2UQM4qkYGICjtvTI	6141326151	177249347	3
 \.
 
 
