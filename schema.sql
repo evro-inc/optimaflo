@@ -10,11 +10,7 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
-CREATE EXTENSION IF NOT EXISTS "pg_net" WITH SCHEMA "extensions";
-
 CREATE EXTENSION IF NOT EXISTS "pgsodium" WITH SCHEMA "pgsodium";
-
-ALTER SCHEMA "public" OWNER TO "postgres";
 
 COMMENT ON SCHEMA "public" IS 'standard public schema';
 
@@ -230,16 +226,6 @@ CREATE TABLE IF NOT EXISTS "public"."_prisma_migrations" (
 
 ALTER TABLE "public"."_prisma_migrations" OWNER TO "postgres";
 
-CREATE TABLE IF NOT EXISTS "public"."ga" (
-    "id" "text" NOT NULL,
-    "user_id" "text" NOT NULL,
-    "account_id" "text" NOT NULL,
-    "property_id" "text" NOT NULL,
-    "status" "text"
-);
-
-ALTER TABLE "public"."ga" OWNER TO "postgres";
-
 CREATE TABLE IF NOT EXISTS "public"."gtm" (
     "id" "text" NOT NULL,
     "user_id" "text" NOT NULL,
@@ -286,9 +272,6 @@ ALTER TABLE ONLY "public"."User"
 ALTER TABLE ONLY "public"."_prisma_migrations"
     ADD CONSTRAINT "_prisma_migrations_pkey" PRIMARY KEY ("id");
 
-ALTER TABLE ONLY "public"."ga"
-    ADD CONSTRAINT "ga_pkey" PRIMARY KEY ("id");
-
 ALTER TABLE ONLY "public"."gtm"
     ADD CONSTRAINT "gtm_pkey" PRIMARY KEY ("id");
 
@@ -309,10 +292,6 @@ CREATE UNIQUE INDEX "User_email_key" ON "public"."User" USING "btree" ("email");
 CREATE UNIQUE INDEX "User_stripeCustomerId_key" ON "public"."User" USING "btree" ("stripeCustomerId");
 
 CREATE UNIQUE INDEX "User_subscriptionId_key" ON "public"."User" USING "btree" ("subscriptionId");
-
-CREATE INDEX "gaSettingsUserId" ON "public"."ga" USING "btree" ("user_id");
-
-CREATE UNIQUE INDEX "ga_user_id_account_id_property_id_key" ON "public"."ga" USING "btree" ("user_id", "account_id", "property_id");
 
 CREATE INDEX "gtmSettingsUserId" ON "public"."gtm" USING "btree" ("user_id");
 
@@ -369,9 +348,6 @@ ALTER TABLE ONLY "public"."TierLimit"
 
 ALTER TABLE ONLY "public"."TierLimit"
     ADD CONSTRAINT "TierLimit_subscriptionId_fkey" FOREIGN KEY ("subscriptionId") REFERENCES "public"."Subscription"("id") ON UPDATE CASCADE ON DELETE SET NULL;
-
-ALTER TABLE ONLY "public"."ga"
-    ADD CONSTRAINT "ga_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."User"("id") ON UPDATE CASCADE ON DELETE RESTRICT;
 
 ALTER TABLE ONLY "public"."gtm"
     ADD CONSTRAINT "gtm_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."User"("id") ON UPDATE CASCADE ON DELETE RESTRICT;
@@ -446,6 +422,76 @@ ALTER TABLE "public"."gtm" ENABLE ROW LEVEL SECURITY;
 
 ALTER PUBLICATION "supabase_realtime" OWNER TO "postgres";
 
-REVOKE USAGE ON SCHEMA "public" FROM PUBLIC;
+GRANT USAGE ON SCHEMA "public" TO "postgres";
+GRANT USAGE ON SCHEMA "public" TO "anon";
+GRANT USAGE ON SCHEMA "public" TO "authenticated";
+GRANT USAGE ON SCHEMA "public" TO "service_role";
+
+GRANT ALL ON TABLE "public"."CheckoutSession" TO "anon";
+GRANT ALL ON TABLE "public"."CheckoutSession" TO "authenticated";
+GRANT ALL ON TABLE "public"."CheckoutSession" TO "service_role";
+
+GRANT ALL ON TABLE "public"."Customer" TO "anon";
+GRANT ALL ON TABLE "public"."Customer" TO "authenticated";
+GRANT ALL ON TABLE "public"."Customer" TO "service_role";
+
+GRANT ALL ON TABLE "public"."Feature" TO "anon";
+GRANT ALL ON TABLE "public"."Feature" TO "authenticated";
+GRANT ALL ON TABLE "public"."Feature" TO "service_role";
+
+GRANT ALL ON TABLE "public"."Invoice" TO "anon";
+GRANT ALL ON TABLE "public"."Invoice" TO "authenticated";
+GRANT ALL ON TABLE "public"."Invoice" TO "service_role";
+
+GRANT ALL ON TABLE "public"."Price" TO "anon";
+GRANT ALL ON TABLE "public"."Price" TO "authenticated";
+GRANT ALL ON TABLE "public"."Price" TO "service_role";
+
+GRANT ALL ON TABLE "public"."Product" TO "anon";
+GRANT ALL ON TABLE "public"."Product" TO "authenticated";
+GRANT ALL ON TABLE "public"."Product" TO "service_role";
+
+GRANT ALL ON TABLE "public"."ProductAccess" TO "anon";
+GRANT ALL ON TABLE "public"."ProductAccess" TO "authenticated";
+GRANT ALL ON TABLE "public"."ProductAccess" TO "service_role";
+
+GRANT ALL ON TABLE "public"."Session" TO "anon";
+GRANT ALL ON TABLE "public"."Session" TO "authenticated";
+GRANT ALL ON TABLE "public"."Session" TO "service_role";
+
+GRANT ALL ON TABLE "public"."Subscription" TO "anon";
+GRANT ALL ON TABLE "public"."Subscription" TO "authenticated";
+GRANT ALL ON TABLE "public"."Subscription" TO "service_role";
+
+GRANT ALL ON TABLE "public"."TierLimit" TO "anon";
+GRANT ALL ON TABLE "public"."TierLimit" TO "authenticated";
+GRANT ALL ON TABLE "public"."TierLimit" TO "service_role";
+
+GRANT ALL ON TABLE "public"."User" TO "anon";
+GRANT ALL ON TABLE "public"."User" TO "authenticated";
+GRANT ALL ON TABLE "public"."User" TO "service_role";
+
+GRANT ALL ON TABLE "public"."_prisma_migrations" TO "anon";
+GRANT ALL ON TABLE "public"."_prisma_migrations" TO "authenticated";
+GRANT ALL ON TABLE "public"."_prisma_migrations" TO "service_role";
+
+GRANT ALL ON TABLE "public"."gtm" TO "anon";
+GRANT ALL ON TABLE "public"."gtm" TO "authenticated";
+GRANT ALL ON TABLE "public"."gtm" TO "service_role";
+
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES  TO "postgres";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES  TO "anon";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES  TO "authenticated";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES  TO "service_role";
+
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS  TO "postgres";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS  TO "anon";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS  TO "authenticated";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS  TO "service_role";
+
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES  TO "postgres";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES  TO "anon";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES  TO "authenticated";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES  TO "service_role";
 
 RESET ALL;
