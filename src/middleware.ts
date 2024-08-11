@@ -23,6 +23,7 @@ const isPublicRoute = createRouteMatcher([
   '/tos',
   '/privacy',
   '/api/webhooks(.*)',
+  '/api/resend',
 ]);
 
 /* const isProtectedRoute = createRouteMatcher([
