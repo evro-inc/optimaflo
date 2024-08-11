@@ -3,27 +3,18 @@ import {
     Container,
     Head,
     Html,
-    Img,
     Preview,
     Section,
     Text,
 } from "@react-email/components";
 
 export const EmailTemplate = () => {
-    const siteLogo = process.env.NEXT_PUBLIC_DOMAIN + "/speaker.svg";
     return (
         <Html>
             <Head />
             <Preview>{`You're on the waitlist for ${process.env.NEXT_PUBLIC_SITE_NAME}`}</Preview>
             <Body style={main}>
                 <Container style={container}>
-                    <Img
-                        style={img}
-                        src={process.env.NEXT_PUBLIC_LOGO || siteLogo}
-                        width="100"
-                        height="100"
-                        alt="Logo"
-                    />
                     <Section>
                         <Text
                             style={text}
