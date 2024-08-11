@@ -44,11 +44,6 @@ const container = {
     padding: "45px",
 };
 
-const img = {
-    paddingTop: "40px",
-    margin: "0 auto",
-};
-
 const text = {
     fontSize: "16px",
     fontFamily:
