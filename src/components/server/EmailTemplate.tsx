@@ -70,7 +70,3 @@ const text = {
     lineHeight: "26px",
     // padding: "0 40px",
 };
-
-const anchor = {
-    textDecoration: "underline",
-};
