@@ -14,7 +14,7 @@ export const EmailTemplate = () => {
     return (
         <Html>
             <Head />
-            <Preview>{`You’re on the waitlist for ${process.env.NEXT_PUBLIC_SITE_NAME}`}</Preview>
+            <Preview>{`You're on the waitlist for ${process.env.NEXT_PUBLIC_SITE_NAME}`}</Preview>
             <Body style={main}>
                 <Container style={container}>
                     <Img
@@ -27,17 +27,14 @@ export const EmailTemplate = () => {
                     <Section>
                         <Text
                             style={text}
-                        >{`Big welcome and thanks for subscribing ${process.env.NEXT_PUBLIC_SITE_NAME}`}</Text>
+                        >{`Thank you for joining the waitlist for ${process.env.NEXT_PUBLIC_SITE_NAME}!`}</Text>
                         <Text style={text}>
-                            🚀 The mission is to send out a stylish and simple newsletter that
-                            help busy creatives to stay updated without cluttering their
-                            inbox.
+                            🚀 We are very excited to have you on board as we build a cutting-edge platform to help you automate and scale your Google marketing operations seamlessly.
                         </Text>
                         <Text style={text}>
-                            🛳 All new AI resources and tools are carefully curated, with only
-                            a handful of the best being shipped.
+                            🛠️ Look out for new features and updates as we get closer to our official launch. We are committed to providing you with the tools you need to optimize your marketing strategy and drive success.
                         </Text>
-                        <Text style={text}>Expect a new shipment every Tuesday!</Text>
+                        <Text style={text}>Stay tuned for more, and thanks again for your support!</Text>
                     </Section>
                 </Container>
             </Body>

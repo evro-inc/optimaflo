@@ -7,6 +7,7 @@ import React from 'react';
 /* import Footer from '@/src/components/server/Footer/Footer';
  *//* import Navbar from '@/src/components/client/Navbar/Navbar';
  */import { ClerkProvider } from '@clerk/nextjs';
+import { Toaster } from 'sonner';
 
 export default function RootLayout({
   // Layouts must accept a children prop.
@@ -24,6 +25,7 @@ export default function RootLayout({
             <ReduxProvider>
               {/* <Navbar /> */}
               {children}
+              <Toaster />
               {/*               <Footer />
  */}            </ReduxProvider>
           </body>
