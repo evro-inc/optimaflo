@@ -19,7 +19,7 @@
     "stripe:listen": "stripe listen --forward-to=localhost:3000/api/webhooks --project-name=saas-starter",
     "lint": "next lint",
     "preview-email": "email dev",
-    "vercel-build": "prisma generate && next build",
+    "vercel-build": "prisma generate && echo 'Prisma client successfully generated' && next build",
     "storybook": "concurrently 'npm run watch:*'",
     "build:storybook": "storybook build",
     "build:tailwind": "npx tailwindcss -i ./src/styles/globals.css -o ./src/styles/tailwind.css",
