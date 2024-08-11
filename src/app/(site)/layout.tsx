@@ -4,11 +4,9 @@ import '../../styles/tailwind.css';
 
 import { ReduxProvider } from '../providers';
 import React from 'react';
-import Footer from '@/src/components/server/Footer/Footer';
-import Navbar from '@/src/components/client/Navbar/Navbar';
-import { Alert, AlertDescription, AlertTitle } from '@/src/components/ui/alert';
-import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
-import { ClerkProvider } from '@clerk/nextjs';
+/* import Footer from '@/src/components/server/Footer/Footer';
+ *//* import Navbar from '@/src/components/client/Navbar/Navbar';
+ */import { ClerkProvider } from '@clerk/nextjs';
 
 export default function RootLayout({
   // Layouts must accept a children prop.
@@ -24,19 +22,10 @@ export default function RootLayout({
         <ClerkProvider>
           <body>
             <ReduxProvider>
-              <Alert variant="destructive">
-                <ExclamationTriangleIcon className="h-4 w-4" />
-                <AlertTitle>Warning!!</AlertTitle>
-                <AlertDescription>
-                  This app, as of now, is solely for demo purposes. You may experience some bugs and
-                  errors. This is still a work in progress.
-                </AlertDescription>
-              </Alert>
-
-              <Navbar />
+              {/* <Navbar /> */}
               {children}
-              <Footer />
-            </ReduxProvider>
+              {/*               <Footer />
+ */}            </ReduxProvider>
           </body>
         </ClerkProvider>
       </html>

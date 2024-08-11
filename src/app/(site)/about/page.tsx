@@ -1,5 +1,5 @@
 import { Images } from '@/src/components/client/Images/Images';
-import CTA from '@/src/components/server/CTA/cta';
+import CTA from '@/src/components/server/cta';
 import FAQ from '@/src/components/server/FAQ/Faq';
 import { client } from '@/src/lib/sanity/sanity-utils';
 

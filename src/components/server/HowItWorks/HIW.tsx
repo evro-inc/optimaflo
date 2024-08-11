@@ -1,15 +1,5 @@
 import React from 'react';
 import { client } from '@/src/lib/sanity/sanity-utils';
-import imageUrlBuilder from '@sanity/image-url';
-import { Images } from '../../client/Images/Images';
-
-// Set up the image URL builder
-const builder = imageUrlBuilder(client);
-
-// Function to get the URL of an image
-function urlFor(source) {
-  return builder.image(source);
-}
 
 type HomePage = {
   id: string;
@@ -43,57 +33,31 @@ export default async function HowItWorks() {
 
     if (homePage && Array.isArray(homePage)) {
       return (
-        <section>
+        <section className="w-full py-12 md:py-24 lg:py-32">
           {homePage.map(() => {
             return (
               <>
-                <div className="flex justify-center items-center">
-                  <div className="grid grid-cols-1 lg:grid-cols-3 max-w-[85rem] mx-auto">
-                    <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-0 lg:py-24 space-y-8 col-span-2 order-2 lg:order-1">
-                      <div className="gap-y-4 text-left ">
-                        <div>
-                          <h2 className="block font-medium text-2xl md:text-3xl lg:text-4xl pt-5 pb-10">
-                            We make it easy to manage data flows across Google data products.
-                          </h2>
-                        </div>
-                        <div>
-                          <p className="text-lg">
-                            OptimaFlo is not just a tool, but a comprehensive solution designed to
-                            address the common challenges faced in managing large-scale data flows.
-                            Our suite of features is built on the insights gained from extensive
-                            experience in the field, and each one is designed to streamline your
-                            workflows, enhance your data management, and provide you with actionable
-                            insights.
-                          </p>
-                        </div>
-                      </div>
-                      <div className="pt-10 grid grid-cols-1 sm:grid-cols-2 gap-10">
-                        {homePage[0].howItWorks.map((hiw, index) => {
-                          return (
-                            <div key={index} className="items-left space-y-4 min-h-[200px] pb-10">
-                              <Images
-                                src={urlFor(hiw.image).url()}
-                                alt="Google Tag Manager Logo"
-                                width={50}
-                                height={50}
-                              />
-                              <h2 className="font-bold">{hiw.title}</h2>
-                              <p>{hiw.description}</p>
-                            </div>
-                          );
-                        })}
-                      </div>
+                <div className="container space-y-12 px-4 md:px-6">
+                  <div className="flex flex-col items-center justify-center space-y-4 text-center">
+                    <div className="space-y-2">
+                      <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">How It Works</div>
+                      <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">A Simple Process</h2>
+                      <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                        OptimaFlo is designed to be easy to use and get you up and running your Google Data Flows in no time.
+                      </p>
                     </div>
-                    <div className="h-full justify-self-center order-1 lg:order-2">
-                      <div className="pt-20 lg:pt-[24rem]">
-                        <Images
-                          src="/hiw-image.jpg"
-                          alt="Google Tag Manager Logo"
-                          height={500}
-                          width={500}
-                        />
-                      </div>
-                    </div>
+                  </div>
+                  <div className="mx-auto grid items-start gap-8 sm:max-w-4xl sm:grid-cols-2 md:gap-12 lg:max-w-5xl lg:grid-cols-2">
+
+                    {homePage[0].howItWorks.map((hiw, index) => {
+                      return (
+                        <div key={index} className="grid gap-1">
+
+                          <h3 className="text-lg font-bold">{hiw.title}</h3>
+                          <p className="text-muted-foreground">{hiw.description}</p>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </>
