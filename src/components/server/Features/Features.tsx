@@ -1,16 +1,7 @@
 import React from 'react';
-import imageUrlBuilder from '@sanity/image-url';
-import { Images } from '../../client/Images/Images';
 import { client } from '@/src/lib/sanity/sanity-utils';
 
-const builder = imageUrlBuilder(client);
-
-// Function to get the URL of an image
-function urlFor(source) {
-  return builder.image(source);
-}
-
-type HomePage = {
+type FeaturePage = {
   id: string;
   title: string;
   subtitle: string;
@@ -39,43 +30,33 @@ type HomePage = {
 // Set up the image URL builder
 export default async function Features() {
   try {
-    const homePage = await client.fetch<HomePage[]>(`*[_type == "homePage"]`);
+    const homePage = await client.fetch<FeaturePage[]>(`*[_type == "homePage"]`);
 
     if (homePage && Array.isArray(homePage)) {
       return (
-        <section>
+        <section className="w-full py-12 md:py-24 lg:py-32">
           {homePage.map(() => {
             return (
               <>
-                <div className=" mx-auto px-4 sm:px-6 lg:px-8 py-24 space-y-8 bg-offBackground">
-                  <div className="text-left">
-                    <h2 className="block font-medium text-2xl md:text-3xl lg:text-4xl pt-5 pb-10">
-                      Explore Our Amazing Features
-                    </h2>
-
-                    <p className="text-lg">
-                      OptimaFlo is not just a tool, but a comprehensive solution designed to address
-                      the common challenges faced in managing large-scale data flows. Our suite of
-                      features is built on the insights gained from extensive experience in the
-                      field, and each one is designed to streamline your workflows, enhance your
-                      data management, and provide you with actionable insights.
-                    </p>
+                <div className="container space-y-12 px-4 md:px-6">
+                  <div className="flex flex-col items-center justify-center space-y-4 text-center">
+                    <div className="space-y-2">
+                      <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">Key Features</div>
+                      <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Why You Will Love OptimaFlo</h2>
+                      <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                        OptimaFlo is designed to streamline your Google data workflows and boost your productivity. Check out some of the
+                        key features that set us apart.
+                      </p>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-4 lg:gap-x-28 gap-y-10 pt-10 justify-items-center">
+                  <div className="mx-auto grid items-start gap-8 sm:max-w-4xl sm:grid-cols-2 md:gap-12 lg:max-w-5xl lg:grid-cols-3">
                     {homePage[0].features.map((feature, index) => {
                       return (
-                        <div
-                          key={index}
-                          className="flex flex-col items-left space-y-4 min-h-[200px] pb-10"
-                        >
-                          <Images
-                            src={urlFor(feature.featureImage).url()}
-                            alt="Google Tag Manager Logo"
-                            width={50}
-                            height={50}
-                          />
-                          <h2 className="font-bold">{feature.featureTitle}</h2>
-                          <p>{feature.featureDescription}</p>
+                        <div key={index} className="grid gap-1">
+                          <h3 className="text-lg font-bold">{feature.featureTitle}</h3>
+                          <p className="text-muted-foreground">
+                            {feature.featureDescription}
+                          </p>
                         </div>
                       );
                     })}

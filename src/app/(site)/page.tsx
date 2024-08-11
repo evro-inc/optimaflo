@@ -1,22 +1,28 @@
 import React from 'react';
-
-import Integrations from '@/src/components/server/Block/Integrations';
+import WaitlistForm from '@/src/components/server/WaitlistForm';
 import Features from '@/src/components/server/Features/Features';
-import FAQ from '@/src/components/server/FAQ/Faq';
 import HIW from '@/src/components/server/HowItWorks/HIW';
-import CTA from '@/src/components/server/CTA/cta';
-import Hero from '@/src/components/server/Hero/Hero';
+import FAQ from '@/src/components/server/FAQ/Faq';
+import CTA from '@/src/components/server/cta';
+
+/* import Integrations from '@/src/components/server/Block/Integrations';
+
+import Hero from '@/src/components/server/Hero/Hero'; */
 
 export default async function Home() {
   return (
     <main>
-      <Hero />
-
-      <Features />
-      <HIW />
+      {/*       <Hero />    
       <Integrations />
-      <FAQ />
-      <CTA />
+
+       */}
+      <div className="flex flex-col min-h-dvh">
+        <WaitlistForm />
+        <Features />
+        <HIW />
+        <FAQ />
+        <CTA />
+      </div>
     </main>
   );
 }

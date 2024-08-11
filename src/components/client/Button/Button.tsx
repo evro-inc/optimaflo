@@ -27,40 +27,40 @@ const getModeClasses = (variant, billingInterval?) => {
   switch (variant) {
     case 'primary':
       baseClasses =
-        'cursor-pointer bg-blue-500 border border-blue-700 rounded-full inline-flex justify-center items-center gap-x-3 text-center hover:bg-blue-300 text-sm lg:text-base font-medium focus:outline-none focus:ring-2 focus:ring-yellow-600 focus:ring-offset-2 focus:ring-offset-white transition px-6 w-7/12 sm:w-auto';
+        'cursor-pointer bg-blue-500 border border-blue-700 rounded-md inline-flex justify-center items-center gap-x-3 text-center hover:bg-blue-300 text-sm lg:text-base font-medium focus:outline-none focus:ring-2 focus:ring-yellow-600 focus:ring-offset-2 focus:ring-offset-white transition px-6 w-7/12 sm:w-auto';
       break;
     case 'signup':
       baseClasses =
-        'cursor-pointer py-3 bg-blue-500 border border-blue-700 rounded-full inline-flex justify-center items-center gap-x-3 text-center hover:bg-blue-300 font-medium px-6 w-full lg:w-36 active:bg-blue-700 focus:outline-none focus:ring focus:ring-blue-100';
+        'cursor-pointer py-3 bg-blue-500 border border-blue-700 rounded-md inline-flex justify-center items-center gap-x-3 text-center hover:bg-blue-300 font-medium px-6 w-full lg:w-36 active:bg-blue-700 focus:outline-none focus:ring focus:ring-blue-100';
       break;
 
     case 'signupNav':
       baseClasses =
-        'cursor-pointer py-3 bg-blue-500 border border-blue-700 rounded-full  inline-flex justify-center items-center gap-x-3 text-center hover:bg-blue-300 font-medium px-6 w-full lg:w-36 active:bg-blue-700 focus:outline-none focus:ring focus:ring-blue-100';
+        'cursor-pointer py-3 bg-blue-500 border border-blue-700 rounded-md  inline-flex justify-center items-center gap-x-3 text-center hover:bg-blue-300 font-medium px-6 w-full lg:w-36 active:bg-blue-700 focus:outline-none focus:ring focus:ring-blue-100';
       break;
 
     case 'body':
       baseClasses =
-        'cursor-pointer py-3 bg-blue-500 border border-blue-700 rounded-full  inline-flex justify-center items-center gap-x-3 text-center hover:bg-blue-300 font-medium px-6 w-36 active:bg-blue-700 focus:outline-none focus:ring focus:ring-blue-100';
+        'cursor-pointer py-3 bg-blue-500 border border-blue-700 rounded-md  inline-flex justify-center items-center gap-x-3 text-center hover:bg-blue-300 font-medium px-6 w-36 active:bg-blue-700 focus:outline-none focus:ring focus:ring-blue-100';
       break;
     case 'bodyGray':
       baseClasses =
-        'cursor-pointer py-3 bg-offwhite-700 rounded-full  inline-flex justify-center items-center gap-x-3 text-center hover:bg-offwhite-500 font-medium px-0 sm:px-6 w-36 active:bg-gray-700 focus:outline-none focus:ring focus:ring-gray-100';
+        'cursor-pointer py-3 bg-offwhite-700 rounded-md  inline-flex justify-center items-center gap-x-3 text-center hover:bg-offwhite-500 font-medium px-0 sm:px-6 w-36 active:bg-gray-700 focus:outline-none focus:ring focus:ring-gray-100';
       break;
 
     case 'bodyLong':
       baseClasses =
-        'cursor-pointer py-3 bg-blue-500 border border-blue-700 rounded-full  inline-flex justify-center items-center gap-x-3 text-center hover:bg-blue-300 font-medium px-6 w-56 active:bg-blue-700 focus:outline-none focus:ring focus:ring-blue-100 whitespace-nowrap';
+        'cursor-pointer py-3 bg-blue-500 border border-blue-700 rounded-md  inline-flex justify-center items-center gap-x-3 text-center hover:bg-blue-300 font-medium px-6 w-56 active:bg-blue-700 focus:outline-none focus:ring focus:ring-blue-100 whitespace-nowrap';
       break;
 
     case 'bodyThin':
       baseClasses =
-        'bg-offwhite-600 rounded-full  inline-flex justify-center items-center gap-x-3 text-center font-medium uppercase w-36';
+        'bg-offwhite-600 rounded-md  inline-flex justify-center items-center gap-x-3 text-center font-medium uppercase w-36';
       break;
 
     case 'circle':
       baseClasses =
-        'hs-dropdown-toggle inline-flex flex-shrink-0 justify-center items-center gap-2 h-[2.375rem] w-[2.375rem] rounded-full font-medium bg-white text-gray-700 align-middle hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 focus:ring-offset-white transition-all text-xs';
+        'hs-dropdown-toggle inline-flex flex-shrink-0 justify-center items-center gap-2 h-[2.375rem] w-[2.375rem] rounded-md font-medium bg-white text-gray-700 align-middle hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 focus:ring-offset-white transition-all text-xs';
       break;
 
     case 'toggle':
@@ -69,7 +69,7 @@ const getModeClasses = (variant, billingInterval?) => {
       break;
     case 'subscribe':
       baseClasses =
-        'cursor-pointer py-3 rounded-full inline-flex justify-center items-center gap-x-3 text-center font-medium px-6 w-24 hover:bg-blue-500 hover: transition active:bg-blue-500 focus:outline-none focus:ring focus:ring-blue-100 focus:bg-blue-500 focus: mx-2';
+        'cursor-pointer py-3 rounded-md inline-flex justify-center items-center gap-x-3 text-center font-medium px-6 w-24 hover:bg-blue-500 hover: transition active:bg-blue-500 focus:outline-none focus:ring focus:ring-blue-100 focus:bg-blue-500 focus: mx-2';
       break;
     case 'delete':
       baseClasses =
@@ -96,11 +96,11 @@ const BASE_BUTTON_CLASSES = '';
 /**
  * Primary UI component for user interaction
  */
-export const ButtonPrim = ({ variant = 'primary', text, billingInterval, ...props }) => {
+export const ButtonPrim = ({ variant = 'primary', text, ...props }) => {
   const computedClasses = useMemo(() => {
-    const modeClass = getModeClasses(variant, billingInterval);
+    const modeClass = getModeClasses(variant);
     return [modeClass].join(' ');
-  }, [variant, billingInterval]);
+  }, [variant]);
 
   return (
     <Button className={`${BASE_BUTTON_CLASSES} ${computedClasses}`} {...props}>

@@ -11,6 +11,7 @@ type FAQProps = {
   }[];
   ctaTitle: string;
   ctaDescription: string;
+  oneLinerDescription: string;
 };
 
 export default async function FAQ() {
