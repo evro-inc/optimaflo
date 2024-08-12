@@ -24,7 +24,7 @@ export default async function FAQ() {
           {homePage.map((page) => {
             return (
               <>
-                <div className="bg-white-500 " key={page.id}>
+                <div className="bg-muted" key={page.id}>
                   <div className="max-w-[85rem] mx-auto px-4 sm:px-6 lg:px-8 py-24 space-y-8">
                     <div className="max-w-3xl text-center mx-auto">
                       <h2 className="block font-medium text-2xl md:text-3xl lg:text-4xl">

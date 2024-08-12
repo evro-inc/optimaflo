@@ -2,10 +2,9 @@ import React from 'react';
 import { client } from '@/src/lib/sanity/sanity-utils';
 
 import Image from 'next/image';
-
-import { LinkSignUp } from '../../client/Links/Links';
-import { Button } from '../../ui/button';
 import Link from 'next/link';
+import { Button } from '../ui/button';
+import { LinkSignUp } from '../client/Links/Links';
 
 type HomePage = {
   id: string;

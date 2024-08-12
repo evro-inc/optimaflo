@@ -4,6 +4,7 @@ import Features from '@/src/components/server/Features/Features';
 import HIW from '@/src/components/server/HowItWorks/HIW';
 import FAQ from '@/src/components/server/FAQ/Faq';
 import CTA from '@/src/components/server/cta';
+import Banner from '@/src/components/server/banner';
 
 /* import Integrations from '@/src/components/server/Block/Integrations';
 
@@ -18,6 +19,7 @@ export default async function Home() {
        */}
       <div className="flex flex-col min-h-dvh">
         <WaitlistForm />
+        <Banner />
         <Features />
         <HIW />
         <FAQ />
