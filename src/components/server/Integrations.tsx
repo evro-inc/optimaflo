@@ -1,6 +1,6 @@
 import React from 'react';
 import { client } from '@/src/lib/sanity/sanity-utils';
-import { Button } from '../../ui/button';
+import { Button } from '../ui/button';
 import Link from 'next/link';
 
 type HomePage = {
