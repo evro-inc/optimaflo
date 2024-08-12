@@ -98,7 +98,7 @@ const WaitlistForm = () => {
           </Form>
           <p className="text-xs text-muted-foreground">
             By signing up, you agree to our{" "}
-            <Link href="#/tos" className="underline underline-offset-2" prefetch={false}>
+            <Link href="/tos" className="underline underline-offset-2" prefetch={false}>
               Terms &amp; Conditions
             </Link>
           </p>
