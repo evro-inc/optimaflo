@@ -4,10 +4,10 @@ import '../../styles/tailwind.css';
 
 import { ReduxProvider } from '../providers';
 import React from 'react';
-/* import Footer from '@/src/components/server/Footer/Footer';
- *//* import Navbar from '@/src/components/client/Navbar/Navbar';
- */import { ClerkProvider } from '@clerk/nextjs';
+import Navbar from '@/src/components/client/Navbar/Navbar';
+import { ClerkProvider } from '@clerk/nextjs';
 import { Toaster } from 'sonner';
+import Footer from '@/src/components/server/Footer';
 
 export default function RootLayout({
   // Layouts must accept a children prop.
@@ -23,11 +23,11 @@ export default function RootLayout({
         <ClerkProvider>
           <body>
             <ReduxProvider>
-              {/* <Navbar /> */}
+              <Navbar />
               {children}
               <Toaster />
-              {/*               <Footer />
- */}            </ReduxProvider>
+              <Footer />
+            </ReduxProvider>
           </body>
         </ClerkProvider>
       </html>

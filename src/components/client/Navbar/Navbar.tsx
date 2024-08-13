@@ -4,8 +4,8 @@ import Link from 'next/link';
 import React from 'react';
 import { ButtonSignIn } from '../../client/Button/Button';
 import { LinkSignUp, LinkNav } from '../Links/Links';
-import { SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
-import { HamburgerMenuIcon, PlayIcon } from '@radix-ui/react-icons';
+import { SignedIn, SignedOut, UserButton, } from '@clerk/nextjs';
+import { HamburgerMenuIcon } from '@radix-ui/react-icons';
 import { Sheet, SheetClose, SheetContent, SheetTrigger } from '../../ui/sheet';
 import { Button } from '../../ui/button';
 
@@ -22,8 +22,7 @@ export default function Navbar() {
       {/* Left side: Logo */}
       <div className="flex items-center">
         <Link className="flex-none text-xl font-semibold ml-5" href="/" aria-label="Brand">
-          <PlayIcon />
-          <span className="sr-only">OptimaFlo</span>
+          OptimaFlo
         </Link>
       </div>
 
@@ -32,7 +31,7 @@ export default function Navbar() {
           <SignedIn>
             {/* Mount the UserButton component */}
             <div className="px-5 lg:hidden">
-              <UserButton afterSignOutUrl="/" />
+              <UserButton />
             </div>
           </SignedIn>
           <SheetTrigger asChild>
