@@ -1,5 +1,5 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
-import { getSubscriptions } from './lib/fetch/subscriptions';
+import { getSubscriptionsAPI } from './lib/fetch/subscriptions';
 import { NextResponse } from 'next/server';
 import {
   checkoutSessionRateLimit,
@@ -16,66 +16,60 @@ import {
 
 const isPublicRoute = createRouteMatcher([
   '/',
+  '/blocked',
   '/about',
   '/features',
   '/pricing',
   '/contact',
   '/tos',
   '/privacy',
+  '/api/contact',
   '/api/webhooks(.*)',
   '/api/resend',
 ]);
 
-/* const isProtectedRoute = createRouteMatcher([
-  '/api/dashboard/(.*)',
-  '/api/users/(.*)',
-  '/api/customers/(.*)',
-  '/api/subscriptions/(.*)',
-  '/api/products/(.*)',
-  '/api/prices/(.*)',
-  '/api/create-checkout-session',
-  '/api/create-portal-link',
-]); */
+const nonSubscriptionRoutes = createRouteMatcher([
+  '/api/users(.*)',
+  '/api/subscriptions(.*)',
+  '/api/customers(.*)',
+  '/profile'
+]);
+
+
 
 export default clerkMiddleware(async (auth, req) => {
-  const { userId, redirectToSignIn } = auth();
+  const { userId } = auth();
+
+  const path = req.nextUrl.pathname;
+
+  console.log('Current path:', path);
+  console.log('Is non-subscription route:', nonSubscriptionRoutes(req));
+  console.log('Is public route:', isPublicRoute(req));
 
   if (!isPublicRoute(req) && !userId) {
-    return redirectToSignIn();
+    return NextResponse.redirect(new URL('/', req.url));
   }
 
-  if (!isPublicRoute(req)) {
+  if (!isPublicRoute(req) && !nonSubscriptionRoutes(req)) {
     auth().protect();
     const ip = req.ip ?? '127.0.0.1';
 
     // Your subscription and rate limit checks here
     try {
       if (userId) {
-        // Define a mapping between paths and product IDs
-        const regexToProductIds = {
-          '^/dashboard/gtm.*': [
-            'prod_PUV6oomP5QRnkp',
-            'prod_PUV5bXKCjMOpz8',
-            'prod_PUV4HNwx8EuHOi',
-          ],
-          '^/dashboard/ga.*': ['prod_PUV4HNwx8EuHOi', 'prod_PUV5bXKCjMOpz8', 'prod_PUV6oomP5QRnkp'],
-        };
+        const subscriptions = await getSubscriptionsAPI(userId);
 
-        // Subscription check
-        for (const [regexString, productIds] of Object.entries(regexToProductIds)) {
-          const regex = new RegExp(regexString);
-          if (regex.test(req.nextUrl.pathname)) {
-            const subscriptions = await getSubscriptions(userId);
+        console.log('subscription', subscriptions);
 
-            const activeProductIds = subscriptions
-              .filter((subscription) => subscription.status === 'active')
-              .map((subscription) => subscription.productId);
+        const hasActiveSubscription = subscriptions
+          .filter((subscription) => subscription.status === 'active')
+          .map((subscription) => subscription.productId);
 
-            if (!activeProductIds.some((productId) => productIds.includes(productId))) {
-              return NextResponse.redirect(new URL('/blocked', req.url));
-            }
-          }
+        // If the user doesn't have any active subscription, redirect to /blocked
+        if (!hasActiveSubscription) {
+          return NextResponse.redirect(new URL('/blocked', req.url));
         }
+
 
         // Rate limit check
         // Check the general API rate limit
@@ -136,6 +130,8 @@ export default clerkMiddleware(async (auth, req) => {
         }
       }
     } catch (error) {
+      console.error('Error while checking subscriptions:', error);
+
       return NextResponse.error();
     }
   }

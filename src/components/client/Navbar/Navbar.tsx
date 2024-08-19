@@ -92,7 +92,7 @@ export default function Navbar() {
             <Link href="/profile" className="pr-10" aria-label="profile page button">
               Profile
             </Link>
-            <UserButton afterSignOutUrl="/" />
+            <UserButton />
           </div>
         </SignedIn>
         <SignedOut>

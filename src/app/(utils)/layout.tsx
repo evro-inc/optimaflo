@@ -4,6 +4,7 @@ import '../../styles/tailwind.css';
 
 import React from 'react';
 import { ReduxProvider } from '../providers';
+import { ClerkProvider } from '@clerk/nextjs';
 
 export default function BlockLayout({
   // Layouts must accept a children prop.
@@ -16,9 +17,11 @@ export default function BlockLayout({
   return (
     <>
       <html lang="en" suppressHydrationWarning className={`${openSans.className}`}>
-        <body>
-          <ReduxProvider>{children}</ReduxProvider>
-        </body>
+        <ClerkProvider>
+          <body>
+            <ReduxProvider>{children}</ReduxProvider>
+          </body>
+        </ClerkProvider>
       </html>
     </>
   );

@@ -6,7 +6,6 @@ datasource db {
 
 generator client {
   provider = "prisma-client-js"
-  output   = "./generated/client"
 }
 
 model Session {
@@ -70,17 +69,18 @@ model Customer {
 }
 
 model Product {
-  id            String          @id
-  active        Boolean
-  name          String
-  description   String?
-  image         String?
-  updated       Int
-  metadata      Json?
-  Price         Price[]
-  Subscriptions Subscription[]
-  ProductAccess ProductAccess[]
-  TierLimits    TierLimit[]
+  id                String             @id
+  active            Boolean
+  name              String
+  description       String?
+  image             String?
+  updated           Int
+  metadata          Json?
+  Price             Price[]
+  Subscriptions     Subscription[]
+  ProductAccess     ProductAccess[]
+  TierLimits        TierLimit[]
+  TierFeatureLimits TierFeatureLimit[] // Add this line
 }
 
 enum PricingType {
@@ -153,10 +153,11 @@ model Subscription {
 }
 
 model Feature {
-  id          String      @id @default(cuid())
-  name        String      @unique
-  description String?     @map("description")
-  TierLimits  TierLimit[]
+  id                String             @id @default(cuid())
+  name              String             @unique
+  description       String?            @map("description")
+  TierLimits        TierLimit[]
+  TierFeatureLimits TierFeatureLimit[]
 }
 
 model TierLimit {
@@ -226,4 +227,17 @@ model ga {
 
   @@unique([userId, accountId, propertyId], name: "userId_accountId_propertyId")
   @@index([userId], name: "gaSettingsUserId")
+}
+
+model TierFeatureLimit {
+  id          String  @id @default(cuid())
+  productId   String  @map("product_id")
+  featureId   String  @map("feature_id")
+  createLimit Int     @default(0)
+  updateLimit Int     @default(0)
+  deleteLimit Int     @default(0)
+  Product     Product @relation(fields: [productId], references: [id])
+  Feature     Feature @relation(fields: [featureId], references: [id])
+
+  @@unique([productId, featureId])
 }

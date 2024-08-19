@@ -1,11 +1,11 @@
 import { stripe } from '@/src/lib/stripe';
-import { getURL } from '@/src/utils/helpers';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/src/lib/prisma';
 import { currentUser } from '@clerk/nextjs/server';
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   const user = await currentUser();
+  const baseUrl = `${request.nextUrl.protocol}//${request.nextUrl.host}`;
 
   try {
     if (!user || !user?.id || !user?.emailAddresses) {
@@ -52,7 +52,7 @@ export async function POST() {
 
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: customer.id,
-      return_url: `${getURL()}/profile`,
+      return_url: `${baseUrl}/profile`,
     });
     const url = portalSession.url;
 

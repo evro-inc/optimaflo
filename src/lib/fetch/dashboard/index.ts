@@ -13,34 +13,7 @@ export function cleanWorkspaceFeatures(workspaces: any[] | undefined) {
   });
 }
 
-/* GTM UTILS */
-export async function grantProductAccess(customerId: string) {
-  // Fetch user ID using the Stripe Customer ID
-  const customerRecord = await prisma.customer.findFirst({
-    where: {
-      stripeCustomerId: customerId,
-    },
-  });
 
-  if (!customerRecord) {
-    throw new Error('Customer record not found');
-  }
-
-  const userId = customerRecord.userId;
-
-  // Get the product IDs for the GTM products - Needs to make IDs from Stripe webhook - see function grantAccessToContent
-  const productIds = ['prod_PUV4HNwx8EuHOi', 'prod_PUV5bXKCjMOpz8', 'prod_PUV6oomP5QRnkp'];
-
-  // Iterate over the product IDs
-  for (const productId of productIds) {
-    // Update the ProductAccess record for this user and product to grant access
-    await prisma.productAccess.upsert({
-      where: { userId_productId: { userId, productId } },
-      update: { granted: true },
-      create: { userId, productId, granted: true },
-    });
-  }
-}
 
 export async function fetchGtmSettings(userId: string) {
   const existingUser = await prisma.User.findFirst({ where: { id: userId } });
