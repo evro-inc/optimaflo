@@ -13,8 +13,6 @@ const subject = `You’re on the waitlist for ${siteName}`;
 export async function POST(req: NextRequest) {
     const body = await req.json();
 
-    console.log('body', body);
-
     try {
         const sendEmail = await resend.emails.send({
             from: fromEmail as string,
@@ -26,9 +24,6 @@ export async function POST(req: NextRequest) {
                 "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
             },
         });
-
-        console.log('send', sendEmail);
-
 
         const addContact = await resend.contacts.create({
             email: body.email,

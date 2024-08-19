@@ -1,7 +1,16 @@
 /* eslint-disable */
-
+import { PortableTextBlock } from 'sanity';
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager';
 import Stripe from 'stripe';
+
+// Sanity CMS Type
+export type Page = {
+  _id: string;
+  _createdAt: string;
+  title: string;
+  slug: string;
+  content: PortableTextBlock[];
+};
 
 export interface PageMeta {
   title: string;
@@ -54,7 +63,7 @@ export interface Price {
   products?: Product;
 }
 
-export interface PriceWithProduct extends Price {}
+export interface PriceWithProduct extends Price { }
 
 export interface Subscription {
   id: string /* primary key */;

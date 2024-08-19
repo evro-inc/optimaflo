@@ -13,7 +13,6 @@ export async function getSubscriptionsAPI(userId: string) {
 
   try {
     const user = await fetch(userApi, options);
-    console.log('user response status:', user.status);
 
     if (!user.ok) {
       const responseText = await user.text();
@@ -22,8 +21,6 @@ export async function getSubscriptionsAPI(userId: string) {
 
     const userText = await user.json();
     const userSubscriptions = userText.data.Subscription;
-
-    console.log('user subscriptions:', userSubscriptions);
 
     if (!userSubscriptions) {
       throw new Error('User has no subscriptions');

@@ -41,9 +41,6 @@ const WaitlistForm = () => {
           headers: { "Content-Type": "application/json" },
         });
 
-        console.log('res', res);
-
-
         if (res.ok) {
           form.reset();
           toast.success(

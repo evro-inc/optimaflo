@@ -40,12 +40,6 @@ const nonSubscriptionRoutes = createRouteMatcher([
 export default clerkMiddleware(async (auth, req) => {
   const { userId } = auth();
 
-  const path = req.nextUrl.pathname;
-
-  console.log('Current path:', path);
-  console.log('Is non-subscription route:', nonSubscriptionRoutes(req));
-  console.log('Is public route:', isPublicRoute(req));
-
   if (!isPublicRoute(req) && !userId) {
     return NextResponse.redirect(new URL('/', req.url));
   }
@@ -57,9 +51,10 @@ export default clerkMiddleware(async (auth, req) => {
     // Your subscription and rate limit checks here
     try {
       if (userId) {
-        const subscriptions = await getSubscriptionsAPI(userId);
-
-        console.log('subscription', subscriptions);
+        const [subscriptions, generalRateLimitResult] = await Promise.all([
+          getSubscriptionsAPI(userId),
+          generalApiRateLimit.limit(ip),
+        ]);
 
         const hasActiveSubscription = subscriptions
           .filter((subscription) => subscription.status === 'active')
@@ -73,7 +68,6 @@ export default clerkMiddleware(async (auth, req) => {
 
         // Rate limit check
         // Check the general API rate limit
-        const generalRateLimitResult = await generalApiRateLimit.limit(ip);
         if (!generalRateLimitResult.success) {
           return NextResponse.redirect(new URL('/blocked', req.url));
         }
@@ -119,15 +113,16 @@ export default clerkMiddleware(async (auth, req) => {
         ];
 
         // Check the rate limit for each rule - Comment out while testing
-        for (const rule of rateLimitRules) {
+        const rateLimitPromises = rateLimitRules.map(async (rule) => {
           if (rule.urlPattern.test(req.nextUrl.pathname)) {
             const rateLimitResult = await rule.rateLimit.limit(ip);
-
             if (!rateLimitResult.success) {
               return NextResponse.redirect(new URL('/blocked', req.url));
             }
           }
-        }
+        });
+
+        await Promise.all(rateLimitPromises);
       }
     } catch (error) {
       console.error('Error while checking subscriptions:', error);

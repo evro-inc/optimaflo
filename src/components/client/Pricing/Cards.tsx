@@ -74,8 +74,6 @@ export default function PricingCards({ products = [] }: Props) {
         //nextjs redirect
         router.push(url);
       } else {
-        console.log('checkout');
-
         const { sessionId } = await fetch('/api/create-checkout-session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
