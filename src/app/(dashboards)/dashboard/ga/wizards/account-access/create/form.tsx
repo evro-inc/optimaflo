@@ -83,6 +83,7 @@ const FormCreateAccountAccess: React.FC<FormCreateProps> = ({ tierLimits, accoun
     roles: [Role.VIEWER],
     account: '',
     user: '',
+    property: ''
   };
 
   const formCreateAmount = useForm({
@@ -477,14 +478,14 @@ const FormCreateAccountAccess: React.FC<FormCreateProps> = ({ tierLimits, accoun
                                                     onCheckedChange={(checked) => {
                                                       return checked
                                                         ? field.onChange([
-                                                            ...(field.value ?? []),
-                                                            item.id as Role,
-                                                          ])
+                                                          ...(field.value ?? []),
+                                                          item.id as Role,
+                                                        ])
                                                         : field.onChange(
-                                                            (field.value ?? []).filter(
-                                                              (value) => value !== item.id
-                                                            )
-                                                          );
+                                                          (field.value ?? []).filter(
+                                                            (value) => value !== item.id
+                                                          )
+                                                        );
                                                     }}
                                                   />
                                                 </FormControl>

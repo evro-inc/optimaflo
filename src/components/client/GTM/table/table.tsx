@@ -31,9 +31,9 @@ import {
   DropdownMenuTrigger,
 } from '@/src/components/ui/dropdown-menu';
 import { LimitReached } from '@/src/components/client/modals/limitReached';
-import { ButtonDelete } from '../../../Button/Button';
 import { RevertVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variables';
 import { useRevertHook } from '@/src/hooks/useCRUD';
+import { ButtonDelete } from '../../Button/Button';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
