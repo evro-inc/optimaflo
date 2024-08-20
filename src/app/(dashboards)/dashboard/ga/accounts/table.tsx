@@ -36,11 +36,14 @@ import { revalidate } from '@/src/utils/server';
 
 import { useDispatch } from 'react-redux';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
-import { useDeleteHook } from './delete';
 import { setSelectedRows } from '@/src/redux/tableSlice';
-import { useUpdateHookForm } from '@/src/hooks/useCRUD';
+import { useDeleteHook, useUpdateHookForm } from '@/src/hooks/useCRUD';
 import { useTransition } from 'react';
 import { LimitReached } from '@/src/components/client/modals/limitReached';
+
+import { deleteAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
+import { GA4AccountType } from '@/src/types/types';
+import RefreshGA from '@/src/components/client/GA/refresh';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -112,7 +115,15 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
       });
     });
   };
-  const handleDelete = useDeleteHook(selectedRowData, table);
+
+  const getDisplayNames = (items) => items.map((item: GA4AccountType) => item.name);
+  const handleDelete = useDeleteHook(
+    deleteAccounts,
+    selectedRowData,
+    table,
+    getDisplayNames,
+    'property permissions'
+  );
 
   const refreshAllCache = async () => {
     toast.info('Updating our systems. This may take a minute or two to update on screen.', {
@@ -121,7 +132,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
         onClick: () => toast.dismiss(),
       },
     });
-    const keys = [`ga:accounts:userId:${userId}`, `ga:properties:userId:${userId}`];
+    const keys = [`ga:accounts:userId:${userId}`];
     await revalidate(keys, '/dashboard/ga/accounts', userId);
   };
 
@@ -129,7 +140,13 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
 
   return (
     <div>
-      <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">Accounts</h1>
+      <div className="flex items-center justify-between py-4">
+        <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
+          Accounts
+        </h1>
+        <RefreshGA gaPath="accounts" />
+      </div>
+
       <div className="flex items-center py-4">
         <Input
           placeholder="Filter account names..."

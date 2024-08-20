@@ -9,6 +9,8 @@ import { listGtmAccounts } from '@/src/lib/fetch/dashboard/actions/gtm/accounts'
 import { listGtmContainers } from '@/src/lib/fetch/dashboard/actions/gtm/containers';
 import { listGtmWorkspaces } from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
 import { listVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variables';
+import { listTags } from '@/src/lib/fetch/dashboard/actions/gtm/tags';
+import { listTriggers } from '@/src/lib/fetch/dashboard/actions/gtm/triggers';
 
 export default async function ChangesPage({
   searchParams,
@@ -28,13 +30,18 @@ export default async function ChangesPage({
   const workspaceData = await listGtmWorkspaces();
   const builtInVarData = await listGtmBuiltInVariables();
   const varData = await listVariables();
+  const tagData = await listTags();
+  const triggerData = await listTriggers();
 
-  const [accounts, containers, workspaces, builtInVar, variable] = await Promise.all([
+
+  const [accounts, containers, workspaces, builtInVar, variable, tag, trigger] = await Promise.all([
     accountData,
     containerData,
     workspaceData,
     builtInVarData,
     varData,
+    tagData,
+    triggerData
   ]);
 
   const flatAccounts = accounts.flat();
@@ -42,8 +49,10 @@ export default async function ChangesPage({
   const flatWorkspaces = workspaces.flat();
   const flatBuiltInVars = builtInVar.flat();
   const flatVars = variable.flat();
+  const flatTags = tag.flat();
+  const flatTriggers = trigger.flat();
 
-  const mapVarsToCombinedData = (varsArray: any[]) => {
+  const mapCombinedData = (varsArray: any[]) => {
     return varsArray.map((vars) => {
       const accountId = vars.accountId;
       const containerId = vars.containerId;
@@ -65,8 +74,10 @@ export default async function ChangesPage({
   };
 
   const combinedData = [
-    ...mapVarsToCombinedData(flatBuiltInVars),
-    ...mapVarsToCombinedData(flatVars),
+    ...mapCombinedData(flatBuiltInVars),
+    ...mapCombinedData(flatVars),
+    ...mapCombinedData(flatTags),
+    ...mapCombinedData(flatTriggers)
   ];
 
   return (

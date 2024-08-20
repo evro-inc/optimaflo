@@ -34,12 +34,15 @@ import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
 import { revalidate } from '@/src/utils/server';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
-import { useDeleteHook } from './delete';
-import { useCreateHookForm, useUpdateHookForm } from '@/src/hooks/useCRUD';
+import { useCreateHookForm, useUpdateHookForm, useDeleteHook } from '@/src/hooks/useCRUD';
+
 import { setSelectedRows } from '@/src/redux/tableSlice';
 import { useDispatch } from 'react-redux';
 import { useTransition } from 'react';
 import { LimitReached } from '@/src/components/client/modals/limitReached';
+
+import { Tag } from '@/src/types/types';
+import { DeleteTags } from '@/src/lib/fetch/dashboard/actions/gtm/tags';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -113,7 +116,14 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     });
   };
 
-  const handleDelete = useDeleteHook(selectedRowData, table);
+  const getDisplayNames = (items) => items.map((item: Tag) => item.name);
+  const handleDelete = useDeleteHook(
+    DeleteTags,
+    selectedRowData,
+    table,
+    getDisplayNames,
+    'tag'
+  );
 
   const refreshAllCache = async () => {
     toast.info('Updating our systems. This may take a minute or two to update on screen.', {

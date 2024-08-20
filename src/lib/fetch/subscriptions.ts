@@ -1,3 +1,5 @@
+'use server';
+
 import prisma from '../prisma';
 
 // Get subscriptions. This function is used in the middleware file and calls the API because Prisma functions can not be run in the middleware file.

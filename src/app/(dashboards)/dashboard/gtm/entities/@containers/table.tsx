@@ -33,13 +33,16 @@ import {
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
 import { revalidate } from '@/src/utils/server';
-import { useDeleteHook } from './delete';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
-import { useCreateHookForm, useUpdateHookForm } from '@/src/hooks/useCRUD';
+import { useCreateHookForm, useUpdateHookForm, useDeleteHook } from '@/src/hooks/useCRUD';
+
 import { useDispatch } from 'react-redux';
 import { useTransition } from 'react';
 import { setSelectedRows } from '@/src/redux/tableSlice';
 import { LimitReached } from '@/src/components/client/modals/limitReached';
+import { DeleteContainers } from '@/src/lib/fetch/dashboard/actions/gtm/containers';
+
+import { Container } from '@/src/types/types';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -89,9 +92,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
       },
     });
     const keys = [
-      `gtm:accounts:userId:${userId}`,
       `gtm:containers:userId:${userId}`,
-      `gtm:workspaces:userId:${userId}`,
     ];
     await revalidate(keys, '/dashboard/gtm/containers', userId);
   };
@@ -101,7 +102,15 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
   }, {});
   const rowSelectedCount = Object.keys(selectedRowData).length;
 
-  const handleDelete = useDeleteHook(selectedRowData, table);
+  const getDisplayNames = (items) => items.map((item: Container) => item.name);
+  const handleDelete = useDeleteHook(
+    DeleteContainers,
+    selectedRowData,
+    table,
+    getDisplayNames,
+    'container'
+  );
+
   const handleCreateClick = useCreateHookForm(
     userId,
     'GTMContainer',

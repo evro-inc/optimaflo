@@ -34,12 +34,15 @@ import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
 import { revalidate } from '@/src/utils/server';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
-import { useDeleteHook } from './delete';
-import { useCreateHookForm, useUpdateHookForm } from '@/src/hooks/useCRUD';
+import { useCreateHookForm, useUpdateHookForm, useDeleteHook } from '@/src/hooks/useCRUD';
+
 import { setSelectedRows } from '@/src/redux/tableSlice';
 import { useDispatch } from 'react-redux';
 import { useTransition } from 'react';
 import { LimitReached } from '@/src/components/client/modals/limitReached';
+import { Variable } from '@/src/types/types';
+
+import { DeleteVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variables';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -113,7 +116,15 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     });
   };
 
-  const handleDelete = useDeleteHook(selectedRowData, table);
+  const getDisplayNames = (items) => items.map((item: Variable) => item.name);
+  const handleDelete = useDeleteHook(
+    DeleteVariables,
+    selectedRowData,
+    table,
+    getDisplayNames,
+    'variable'
+  );
+
 
   const refreshAllCache = async () => {
     toast.info('Updating our systems. This may take a minute or two to update on screen.', {
@@ -123,9 +134,6 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
       },
     });
     const keys = [
-      `gtm:accounts:userId:${userId}`,
-      `gtm:containers:userId:${userId}`,
-      `gtm:workspaces:userId:${userId}`,
       `gtm:variables:userId:${userId}`,
     ];
     await revalidate(keys, '/dashboard/gtm/configurations', userId);

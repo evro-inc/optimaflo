@@ -35,11 +35,12 @@ import { toast } from 'sonner';
 import { revalidate } from '@/src/utils/server';
 import { useDispatch } from 'react-redux';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
-import { useDeleteHook } from './delete';
 import { setSelectedRows } from '@/src/redux/tableSlice';
-import { useCreateHookForm, useUpdateHookForm } from '@/src/hooks/useCRUD';
+import { useCreateHookForm, useDeleteHook, useUpdateHookForm } from '@/src/hooks/useCRUD';
 import { useTransition } from 'react';
 import { LimitReached } from '@/src/components/client/modals/limitReached';
+import { deleteGAAccessBindings } from '@/src/lib/fetch/dashboard/actions/ga/accountPermissions';
+import { AccessBinding } from '@/src/types/types';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -113,7 +114,15 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
       });
     });
   };
-  const handleDelete = useDeleteHook(selectedRowData, table);
+
+  const getDisplayNames = (items) => items.map((item: AccessBinding) => item.name);
+  const handleDelete = useDeleteHook(
+    deleteGAAccessBindings,
+    selectedRowData,
+    table,
+    getDisplayNames,
+    'account permissions'
+  );
 
   const refreshAllCache = async () => {
     toast.info('Updating our systems. This may take a minute or two to update on screen.', {

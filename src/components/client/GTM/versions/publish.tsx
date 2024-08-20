@@ -1,4 +1,5 @@
 'use client';
+
 import { Button } from '@/src/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/src/components/ui/card';
 import {
@@ -551,84 +552,134 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
     form.setValue(`forms.${index}.environmentId`, newEnvValue.join(','));
   };
 
-  return (
-    <Drawer
-      snapPoints={[0.4, 1]}
-      activeSnapPoint={snap}
-      setActiveSnapPoint={setSnap}
-      open={isDrawerOpen}
-      onOpenChange={setIsDrawerOpen}
-    >
-      <DrawerTrigger asChild>
-        <Button
-          variant="outline"
-          type="button"
-          onClick={() => setIsDrawerOpen(true)}
-          disabled={changes.length === 0}
-        >
-          Publish
-        </Button>
-      </DrawerTrigger>
-      <DrawerOverlay className="fixed inset-0 bg-black/40" />
-      <DrawerPortal>
-        <DrawerContent className="fixed flex flex-col bg-white border border-gray-200 border-b-none rounded-t-[10px] bottom-0 left-0 right-0 h-full max-h-[97%] mx-[-1px]">
-          <div
-            className={clsx('grid gap-6 p-6 mx-auto w-full pt-5', {
-              'overflow-y-auto': snap === 1,
-              'overflow-hidden': snap !== 1,
-            })}
-          >
-            {fields.map((field, index) => {
-              return (
-                <Form {...form} key={field.id}>
-                  <form onSubmit={form.handleSubmit(processForm)} className="space-y-6">
-                    <Card>
-                      <CardHeader className="grid grid-cols-2 items-center">
-                        <CardTitle className="col-start-1 col-end-2">
-                          Submission Configuration
-                        </CardTitle>
-                        <Button type="submit" className="col-start-2 col-end-3 justify-self-end">
-                          {loading ? 'Submitting...' : 'Submit'}
-                        </Button>
-                      </CardHeader>
+  const refreshAllCache = async () => {
+    toast.info('Updating our systems. This may take a minute or two to update on screen.', {
+      action: {
+        label: 'Close',
+        onClick: () => toast.dismiss(),
+      },
+    });
+    const keys = [
+      `gtm:accounts:userId:${userId}`,
+      `gtm:containers:userId:${userId}`,
+      `gtm:workspaces:userId:${userId}`,
+      `gtm:tags:userId:${userId}`,
+      `gtm:triggers:userId:${userId}`,
+      `gtm:variables:userId:${userId}`,
+      `gtm:versionHeaders:userId:${userId}`,
+      `gtm:permissions:userId:${userId}`,
+      `gtm:environments:userId:${userId}`,
+      `gtm:builtInVariables:userId:${userId}`,
+    ];
+    await revalidate(keys, '/dashboard/gtm/entities', userId);
+  };
 
-                      <Tabs defaultValue="publish" value={activeTab} onValueChange={setActiveTab}>
-                        <TabsList className="grid w-full grid-cols-2">
-                          <TabsTrigger
-                            value="publish"
-                            className={`relative p-2 transition-colors ${
-                              activeTab === 'publish' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
-                            }`}
-                          >
-                            Publish and Create Version
-                          </TabsTrigger>
-                          <TabsTrigger
-                            value="version"
-                            className={`relative p-2 transition-colors ${
-                              activeTab === 'version' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
-                            }`}
-                          >
-                            Create Version
-                          </TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="publish">
-                          <CardContent className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
+
+  return (
+    <div className="flex flex-row gap-4">
+      <Button onClick={refreshAllCache}>Refresh GTM Cache</Button>
+      <Drawer
+        snapPoints={[0.4, 1]}
+        activeSnapPoint={snap}
+        setActiveSnapPoint={setSnap}
+        open={isDrawerOpen}
+        onOpenChange={setIsDrawerOpen}
+      >
+        <DrawerTrigger asChild>
+
+          <Button
+            variant="outline"
+            type="button"
+            onClick={() => setIsDrawerOpen(true)}
+            disabled={changes.length === 0}
+          >
+            Publish
+          </Button>
+        </DrawerTrigger>
+        <DrawerOverlay className="fixed inset-0 bg-black/40" />
+        <DrawerPortal>
+          <DrawerContent className="fixed flex flex-col bg-white border border-gray-200 border-b-none rounded-t-[10px] bottom-0 left-0 right-0 h-full max-h-[97%] mx-[-1px]">
+            <div
+              className={clsx('grid gap-6 p-6 mx-auto w-full pt-5', {
+                'overflow-y-auto': snap === 1,
+                'overflow-hidden': snap !== 1,
+              })}
+            >
+              {fields.map((field, index) => {
+                return (
+                  <Form {...form} key={field.id}>
+                    <form onSubmit={form.handleSubmit(processForm)} className="space-y-6">
+                      <Card>
+                        <CardHeader className="grid grid-cols-2 items-center">
+                          <CardTitle className="col-start-1 col-end-2">
+                            Submission Configuration
+                          </CardTitle>
+                          <Button type="submit" className="col-start-2 col-end-3 justify-self-end">
+                            {loading ? 'Submitting...' : 'Submit'}
+                          </Button>
+                        </CardHeader>
+
+                        <Tabs defaultValue="publish" value={activeTab} onValueChange={setActiveTab}>
+                          <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger
+                              value="publish"
+                              className={`relative p-2 transition-colors ${activeTab === 'publish' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
+                                }`}
+                            >
+                              Publish and Create Version
+                            </TabsTrigger>
+                            <TabsTrigger
+                              value="version"
+                              className={`relative p-2 transition-colors ${activeTab === 'version' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
+                                }`}
+                            >
+                              Create Version
+                            </TabsTrigger>
+                          </TabsList>
+                          <TabsContent value="publish">
+                            <CardContent className="space-y-4">
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                  <FormField
+                                    control={form.control}
+                                    name={`forms.${index}.createVersion.name`}
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Version Name</FormLabel>
+                                        <FormDescription>
+                                          The version name will be applied to all containers you are
+                                          trying to publish.
+                                        </FormDescription>
+                                        <FormControl>
+                                          <Input
+                                            placeholder="This name will be applied on all containers you are currently trying to publish."
+                                            {...form.register(`forms.${index}.createVersion.name`)}
+                                            {...field}
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                </div>
+                              </div>
                               <div className="space-y-2">
                                 <FormField
                                   control={form.control}
-                                  name={`forms.${index}.createVersion.name`}
+                                  name={`forms.${index}.createVersion.notes`}
                                   render={({ field }) => (
                                     <FormItem>
-                                      <FormLabel>Version Name</FormLabel>
+                                      <FormLabel>Version Description</FormLabel>
                                       <FormDescription>
-                                        The version name will be applied to all containers you are
-                                        trying to publish.
+                                        The version description will be applied to all containers you
+                                        are trying to publish. Optional.
                                       </FormDescription>
                                       <FormControl>
-                                        <Input
-                                          placeholder="This name will be applied on all containers you are currently trying to publish."
-                                          {...form.register(`forms.${index}.createVersion.name`)}
+                                        <Textarea
+                                          id="description"
+                                          rows={3}
+                                          defaultValue="Pushing GTM changes."
+                                          {...form.register(`forms.${index}.createVersion.notes`)}
                                           {...field}
                                         />
                                       </FormControl>
@@ -637,93 +688,177 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
                                   )}
                                 />
                               </div>
-                            </div>
-                            <div className="space-y-2">
-                              <FormField
-                                control={form.control}
-                                name={`forms.${index}.createVersion.notes`}
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>Version Description</FormLabel>
-                                    <FormDescription>
-                                      The version description will be applied to all containers you
-                                      are trying to publish. Optional.
-                                    </FormDescription>
-                                    <FormControl>
-                                      <Textarea
-                                        id="description"
-                                        rows={3}
-                                        defaultValue="Pushing GTM changes."
-                                        {...form.register(`forms.${index}.createVersion.notes`)}
-                                        {...field}
-                                      />
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                            </div>
 
-                            <div className="flex">
-                              <div className="space-y-2 pr-10">
+                              <div className="flex">
+                                <div className="space-y-2 pr-10">
+                                  <FormField
+                                    control={form.control}
+                                    name={`forms.${index}.createVersion.entityId`}
+                                    render={() => (
+                                      <FormItem>
+                                        <div className="mb-4">
+                                          <FormLabel className="text-base">
+                                            Choose GTM Entity
+                                          </FormLabel>
+                                          <FormDescription>
+                                            Select the GTM entities you want to publish the changes
+                                            to.
+                                          </FormDescription>
+                                        </div>
+                                        {combinedInfo.map((item) => (
+                                          <FormItem key={`${item.accountId}-${item.containerId}`}>
+                                            {item.environments.map((env) => {
+                                              return (
+                                                <FormField
+                                                  key={`${item.accountId}-${item.containerId}-${env.environmentId}`} // Ensure a unique key
+                                                  control={form.control}
+                                                  name={`forms.${index}.createVersion.entityId`}
+                                                  render={({ field }) => {
+                                                    // Ensure field.value is an array
+                                                    const fieldValue = Array.isArray(field.value)
+                                                      ? field.value
+                                                      : [];
+                                                    const envId = `${item.accountId}-${item.containerId}-${item.workspaceId}-${env.environmentId}-${env.name}`;
+                                                    return (
+                                                      <FormItem
+                                                        key={envId}
+                                                        className="flex flex-row items-start space-x-3 space-y-0"
+                                                      >
+                                                        <FormControl>
+                                                          <Checkbox
+                                                            checked={fieldValue.includes(envId)}
+                                                            onCheckedChange={(checked) =>
+                                                              handleCheckboxChange(
+                                                                checked,
+                                                                envId,
+                                                                index
+                                                              )
+                                                            }
+                                                          />
+                                                        </FormControl>
+                                                        <FormLabel className="font-normal">
+                                                          {env.name} - {item.accountName} -{' '}
+                                                          {item.containerName} (ID:{' '}
+                                                          {env.environmentId})
+                                                        </FormLabel>
+                                                      </FormItem>
+                                                    );
+                                                  }}
+                                                />
+                                              );
+                                            })}
+                                            <FormMessage />
+                                          </FormItem>
+                                        ))}
+
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                </div>
+                              </div>
+                            </CardContent>
+                          </TabsContent>
+                          <TabsContent value="version">
+                            <CardContent className="space-y-4">
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                  <FormField
+                                    control={form.control}
+                                    name={`forms.${index}.createVersion.name`}
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Version Name</FormLabel>
+                                        <FormDescription>
+                                          The version name will be applied to all containers you are
+                                          trying to publish.
+                                        </FormDescription>
+                                        <FormControl>
+                                          <Input
+                                            placeholder="This name will be applied on all containers you are currently trying to publish."
+                                            {...form.register(`forms.${index}.createVersion.name`)}
+                                            {...field}
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                </div>
+                              </div>
+                              <div className="space-y-2">
+                                <FormField
+                                  control={form.control}
+                                  name={`forms.${index}.createVersion.notes`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Version Description</FormLabel>
+                                      <FormDescription>
+                                        The version description will be applied to all containers you
+                                        are trying to publish. Optional.
+                                      </FormDescription>
+                                      <FormControl>
+                                        <Textarea
+                                          id="description"
+                                          rows={3}
+                                          defaultValue="Pushing GTM changes."
+                                          {...form.register(`forms.${index}.createVersion.notes`)}
+                                          {...field}
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+                              <div className="space-y-2">
                                 <FormField
                                   control={form.control}
                                   name={`forms.${index}.createVersion.entityId`}
                                   render={() => (
                                     <FormItem>
                                       <div className="mb-4">
-                                        <FormLabel className="text-base">
-                                          Choose GTM Entity
-                                        </FormLabel>
+                                        <FormLabel className="text-base">Choose GTM Entity</FormLabel>
                                         <FormDescription>
-                                          Select the GTM entities you want to publish the changes
-                                          to.
+                                          Select the GTM entities you want to publish the changes to.
                                         </FormDescription>
                                       </div>
-                                      {combinedInfo.map((item) => (
-                                        <FormItem key={`${item.accountId}-${item.containerId}`}>
-                                          {item.environments.map((env) => {
+                                      {uniqueAccountContainerInfo.map((item) => (
+                                        <FormField
+                                          key={`${item.accountId}-${item.containerId}`} // Ensure a unique key
+                                          control={form.control}
+                                          name={`forms.${index}.createVersion.entityId`}
+                                          render={({ field }) => {
+                                            // Ensure field.value is an array
+                                            const fieldValue = Array.isArray(field.value)
+                                              ? field.value
+                                              : [];
                                             return (
-                                              <FormField
-                                                key={`${item.accountId}-${item.containerId}-${env.environmentId}`} // Ensure a unique key
-                                                control={form.control}
-                                                name={`forms.${index}.createVersion.entityId`}
-                                                render={({ field }) => {
-                                                  // Ensure field.value is an array
-                                                  const fieldValue = Array.isArray(field.value)
-                                                    ? field.value
-                                                    : [];
-                                                  const envId = `${item.accountId}-${item.containerId}-${item.workspaceId}-${env.environmentId}-${env.name}`;
-                                                  return (
-                                                    <FormItem
-                                                      key={envId}
-                                                      className="flex flex-row items-start space-x-3 space-y-0"
-                                                    >
-                                                      <FormControl>
-                                                        <Checkbox
-                                                          checked={fieldValue.includes(envId)}
-                                                          onCheckedChange={(checked) =>
-                                                            handleCheckboxChange(
-                                                              checked,
-                                                              envId,
-                                                              index
-                                                            )
-                                                          }
-                                                        />
-                                                      </FormControl>
-                                                      <FormLabel className="font-normal">
-                                                        {env.name} - {item.accountName} -{' '}
-                                                        {item.containerName} (ID:{' '}
-                                                        {env.environmentId})
-                                                      </FormLabel>
-                                                    </FormItem>
-                                                  );
-                                                }}
-                                              />
+                                              <FormItem
+                                                key={`${item.accountId}-${item.containerId}`}
+                                                className="flex flex-row items-start space-x-3 space-y-0"
+                                              >
+                                                <FormControl>
+                                                  <Checkbox
+                                                    checked={fieldValue.includes(
+                                                      `${item.accountId}-${item.containerId}-${item.workspaceId}`
+                                                    )}
+                                                    onCheckedChange={(checked) =>
+                                                      handleCheckboxChange(
+                                                        checked,
+                                                        `${item.accountId}-${item.containerId}-${item.workspaceId}`,
+                                                        index
+                                                      )
+                                                    }
+                                                  />
+                                                </FormControl>
+                                                <FormLabel className="font-normal">
+                                                  {item.accountName} - {item.containerName}
+                                                </FormLabel>
+                                              </FormItem>
                                             );
-                                          })}
-                                          <FormMessage />
-                                        </FormItem>
+                                          }}
+                                        />
                                       ))}
 
                                       <FormMessage />
@@ -731,137 +866,28 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
                                   )}
                                 />
                               </div>
-                            </div>
-                          </CardContent>
-                        </TabsContent>
-                        <TabsContent value="version">
-                          <CardContent className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                <FormField
-                                  control={form.control}
-                                  name={`forms.${index}.createVersion.name`}
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Version Name</FormLabel>
-                                      <FormDescription>
-                                        The version name will be applied to all containers you are
-                                        trying to publish.
-                                      </FormDescription>
-                                      <FormControl>
-                                        <Input
-                                          placeholder="This name will be applied on all containers you are currently trying to publish."
-                                          {...form.register(`forms.${index}.createVersion.name`)}
-                                          {...field}
-                                        />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                              </div>
-                            </div>
-                            <div className="space-y-2">
-                              <FormField
-                                control={form.control}
-                                name={`forms.${index}.createVersion.notes`}
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>Version Description</FormLabel>
-                                    <FormDescription>
-                                      The version description will be applied to all containers you
-                                      are trying to publish. Optional.
-                                    </FormDescription>
-                                    <FormControl>
-                                      <Textarea
-                                        id="description"
-                                        rows={3}
-                                        defaultValue="Pushing GTM changes."
-                                        {...form.register(`forms.${index}.createVersion.notes`)}
-                                        {...field}
-                                      />
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <FormField
-                                control={form.control}
-                                name={`forms.${index}.createVersion.entityId`}
-                                render={() => (
-                                  <FormItem>
-                                    <div className="mb-4">
-                                      <FormLabel className="text-base">Choose GTM Entity</FormLabel>
-                                      <FormDescription>
-                                        Select the GTM entities you want to publish the changes to.
-                                      </FormDescription>
-                                    </div>
-                                    {uniqueAccountContainerInfo.map((item) => (
-                                      <FormField
-                                        key={`${item.accountId}-${item.containerId}`} // Ensure a unique key
-                                        control={form.control}
-                                        name={`forms.${index}.createVersion.entityId`}
-                                        render={({ field }) => {
-                                          // Ensure field.value is an array
-                                          const fieldValue = Array.isArray(field.value)
-                                            ? field.value
-                                            : [];
-                                          return (
-                                            <FormItem
-                                              key={`${item.accountId}-${item.containerId}`}
-                                              className="flex flex-row items-start space-x-3 space-y-0"
-                                            >
-                                              <FormControl>
-                                                <Checkbox
-                                                  checked={fieldValue.includes(
-                                                    `${item.accountId}-${item.containerId}-${item.workspaceId}`
-                                                  )}
-                                                  onCheckedChange={(checked) =>
-                                                    handleCheckboxChange(
-                                                      checked,
-                                                      `${item.accountId}-${item.containerId}-${item.workspaceId}`,
-                                                      index
-                                                    )
-                                                  }
-                                                />
-                                              </FormControl>
-                                              <FormLabel className="font-normal">
-                                                {item.accountName} - {item.containerName}
-                                              </FormLabel>
-                                            </FormItem>
-                                          );
-                                        }}
-                                      />
-                                    ))}
+                            </CardContent>
+                          </TabsContent>
+                        </Tabs>
+                      </Card>
+                    </form>
+                  </Form>
+                );
+              })}
 
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                            </div>
-                          </CardContent>
-                        </TabsContent>
-                      </Tabs>
-                    </Card>
-                  </form>
-                </Form>
-              );
-            })}
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Workspace Changes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <DataTable columns={columns} data={changes} />
-              </CardContent>
-            </Card>
-          </div>
-        </DrawerContent>
-      </DrawerPortal>
-    </Drawer>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Workspace Changes</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <DataTable columns={columns} data={changes} />
+                </CardContent>
+              </Card>
+            </div>
+          </DrawerContent>
+        </DrawerPortal>
+      </Drawer>
+    </div>
   );
 }
 

@@ -1,8 +1,15 @@
-import { useDispatch } from 'react-redux';
 import { tierCreateLimit, tierUpdateLimit } from '../utils/server';
 import { notFound, useRouter } from 'next/navigation';
-import { setIsLimitReached } from '@/src/redux/tableSlice';
+import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
+import {
+  clearSelectedRows,
+  setErrorDetails,
+  setIsLimitReached,
+  setNotFoundError,
+} from '@/src/redux/tableSlice';
+import { FeatureResponse, WorkspaceType } from '@/src/types/types';
+import { createGTMVersion } from '../lib/fetch/dashboard/actions/gtm/workspaces';
 
 export function useCreateHookForm(userId: string, createTierLimitType: string, url: string) {
   const router = useRouter();
@@ -60,3 +67,201 @@ export function useUpdateHookForm(
     }
   };
 }
+
+export const useDeleteHook = (
+  deleteAction, // The dynamic delete action function
+  selectedRows, // Selected rows, generic type
+  table,        // The table instance to reset row selection
+  getDisplayNames, // Function to extract display names from selected rows
+  typeName = 'items' // A generic name to be used in toast messages (optional)
+) => {
+  const dispatch = useDispatch();
+
+  const handleDelete = async () => {
+    toast(`Deleting ${typeName}...`, {
+      action: {
+        label: 'Close',
+        onClick: () => toast.dismiss(),
+      },
+    });
+
+    // Use Object.values to get the values from the selectedRows object and map them as needed
+    const itemsToDelete = Object.values(selectedRows).map((item) => item);
+
+    const displayNames = getDisplayNames(itemsToDelete);
+
+    // Call the dynamic delete action with the selected items and their display names
+    const response: FeatureResponse = await deleteAction(
+      new Set(itemsToDelete),
+      displayNames
+    );
+
+    if (!response.success) {
+      let message = response.message || 'An error occurred.';
+      if (response.errors && response.errors.length > 0) {
+        message = response.errors.join(', ');
+      }
+      if (response.notFoundError) {
+        dispatch(setNotFoundError(true));
+      }
+      toast.error(message, {
+        action: {
+          label: 'Close',
+          onClick: () => toast.dismiss(),
+        },
+      });
+    } else {
+      toast.success(`${response.message}. The table will update shortly.`, {
+        action: {
+          label: 'Close',
+          onClick: () => toast.dismiss(),
+        },
+      });
+    }
+
+    if (response.limitReached) {
+      dispatch(setIsLimitReached(true));
+    }
+
+    if (response.notFoundError) {
+      const unsuccessfulResults = response.results.filter((result) => !result.success);
+      dispatch(setErrorDetails(unsuccessfulResults));
+      dispatch(setNotFoundError(true));
+    }
+
+    dispatch(clearSelectedRows());
+    table.resetRowSelection({});
+  };
+
+  return handleDelete;
+};
+
+export const useRevertHook = (
+  revertAction, // The dynamic revert action function
+  selectedRows, // Selected rows, generic type
+  table,        // The table instance to reset row selection
+  getDisplayNames, // Function to extract display names from selected rows (optional)
+  typeName = 'items' // A generic name to be used in toast messages (optional)
+) => {
+  const dispatch = useDispatch();
+
+  const handleRevert = async () => {
+    toast(`Reverting ${typeName}...`, {
+      action: {
+        label: 'Close',
+        onClick: () => toast.dismiss(),
+      },
+    });
+
+    // Use Object.values to get the values from the selectedRows object and map them as needed
+    const itemsToRevert = Object.values(selectedRows).map((item) => item);
+
+    // Call the dynamic revert action with the selected items
+    const response: FeatureResponse = await revertAction(new Set(itemsToRevert));
+
+    if (!response.success) {
+      let message = response.message || 'An error occurred.';
+      if (response.errors && response.errors.length > 0) {
+        message = response.errors.join(', ');
+      }
+      if (response.notFoundError) {
+        dispatch(setNotFoundError(true));
+      }
+      toast.error(message, {
+        action: {
+          label: 'Close',
+          onClick: () => toast.dismiss(),
+        },
+      });
+    } else {
+      toast.success(`${response.message}. The table will update shortly.`, {
+        action: {
+          label: 'Close',
+          onClick: () => toast.dismiss(),
+        },
+      });
+    }
+
+    if (response.limitReached) {
+      dispatch(setIsLimitReached(true));
+    }
+
+    if (response.notFoundError) {
+      const unsuccessfulResults = response.results.filter((result) => !result.success);
+      dispatch(setErrorDetails(unsuccessfulResults));
+      dispatch(setNotFoundError(true));
+    }
+
+    dispatch(clearSelectedRows());
+    table.resetRowSelection({});
+  };
+
+  return handleRevert;
+};
+
+export const useCreateVersionHook = (selectedRows, table) => {
+  const dispatch = useDispatch();
+
+  const handleCreateVersion = async () => {
+    toast('Creating version(s)...', {
+      action: {
+        label: 'Close',
+        onClick: () => toast.dismiss(),
+      },
+    });
+
+    // Use Object.values to get the values from the selectedRows object and cast them to WorkspaceType
+    const workspacesToCreateVersion = Object.values(
+      selectedRows as Record<string, WorkspaceType>
+    ).map((workspace) => ({
+      accountId: workspace.accountId,
+      containerId: workspace.containerId,
+      workspaceId: workspace.workspaceId,
+      name: workspace.name,
+      description: workspace.description,
+    }));
+
+    const formData = {
+      forms: workspacesToCreateVersion,
+    };
+
+    const response: FeatureResponse = await createGTMVersion(formData);
+
+    if (!response.success) {
+      let message = response.message || 'An error occurred.';
+      if (response.errors && response.errors.length > 0) {
+        message = response.errors.join(', ');
+      }
+      if (response.notFoundError) {
+        dispatch(setNotFoundError(true));
+      }
+      toast.error(message, {
+        action: {
+          label: 'Close',
+          onClick: () => toast.dismiss(),
+        },
+      });
+    } else {
+      toast.success(response.message + ' The table will update shortly.', {
+        action: {
+          label: 'Close',
+          onClick: () => toast.dismiss(),
+        },
+      });
+    }
+
+    if (response.limitReached) {
+      dispatch(setIsLimitReached(true));
+    }
+
+    if (response.notFoundError) {
+      const unsuccessfulResults = response.results.filter((result) => !result.success);
+      dispatch(setErrorDetails(unsuccessfulResults));
+      dispatch(setNotFoundError(true));
+    }
+
+    table.resetRowSelection({});
+  };
+
+  return handleCreateVersion;
+};

@@ -34,12 +34,15 @@ import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
 import { revalidate } from '@/src/utils/server';
 import { useDispatch } from 'react-redux';
-import { useDeleteHook } from './delete';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
-import { useCreateHookForm, useUpdateHookForm } from '@/src/hooks/useCRUD';
+import { useCreateHookForm, useUpdateHookForm, useDeleteHook } from '@/src/hooks/useCRUD';
+
 import { useTransition } from 'react';
 import { setSelectedRows } from '@/src/redux/tableSlice';
 import { LimitReached } from '@/src/components/client/modals/limitReached';
+
+import { UserPermission } from '@/src/types/types';
+import { DeletePermissions } from '@/src/lib/fetch/dashboard/actions/gtm/permissions';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -88,7 +91,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
         onClick: () => toast.dismiss(),
       },
     });
-    const keys = [`gtm:accounts:userId:${userId}`, `gtm:permissions:userId:${userId}`];
+    const keys = [`gtm:permissions:userId:${userId}`];
     await revalidate(keys, '/dashboard/gtm/entities', userId);
   };
 
@@ -126,7 +129,16 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
       });
     });
   };
-  const handleDelete = useDeleteHook(selectedRowData, table);
+
+  const getDisplayNames = (items) => items.map((item: UserPermission) => item.emailAddress);
+  const handleDelete = useDeleteHook(
+    DeletePermissions,
+    selectedRowData,
+    table,
+    getDisplayNames,
+    'permission'
+  );
+
   dispatch(setSelectedRows(selectedRowData)); // Update the selected rows in Redux
 
   return (

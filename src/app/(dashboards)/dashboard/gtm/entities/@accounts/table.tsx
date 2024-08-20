@@ -106,10 +106,8 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     });
     const keys = [
       `gtm:accounts:userId:${userId}`,
-      `gtm:containers:userId:${userId}`,
-      `gtm:workspaces:userId:${userId}`,
     ];
-    await revalidate(keys, '/dashboard/gtm/accounts', userId);
+    await revalidate(keys, '/dashboard/gtm/entities', userId);
   };
 
   dispatch(setSelectedRows(selectedRowData));

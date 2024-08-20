@@ -36,7 +36,6 @@ import { revalidate } from '@/src/utils/server';
 
 import { useDispatch } from 'react-redux';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
-import { useDeleteHook } from './delete';
 import { setIsLimitReached, setSelectedRows } from '@/src/redux/tableSlice';
 import {
   Dialog,
@@ -48,9 +47,12 @@ import {
   DialogTrigger,
 } from '@/src/components/ui/dialog';
 import { acknowledgeUserDataCollection } from '@/src/lib/fetch/dashboard/actions/ga/properties';
-import { useCreateHookForm } from '@/src/hooks/useCRUD';
+import { useCreateHookForm, useDeleteHook } from '@/src/hooks/useCRUD';
 import { useTransition } from 'react';
 import { LimitReached } from '@/src/components/client/modals/limitReached';
+
+import { FirebaseLink } from '@/src/types/types';
+import { deleteGAFirebaseLinks } from '@/src/lib/fetch/dashboard/actions/ga/links';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -108,7 +110,14 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     });
   };
 
-  const handleDelete = useDeleteHook(selectedRowData, table);
+  const getDisplayNames = (items) => items.map((item: FirebaseLink) => item.name);
+  const handleDelete = useDeleteHook(
+    deleteGAFirebaseLinks,
+    selectedRowData,
+    table,
+    getDisplayNames,
+    'ad link'
+  );
 
   const refreshAllCache = async () => {
     toast.info('Updating our systems. This may take a minute or two to update on screen.', {
@@ -206,6 +215,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
           <ButtonDelete
             disabled={Object.keys(table.getState().rowSelection).length === 0}
             onDelete={handleDelete}
+            action={undefined}
           />
 
           <Dialog>

@@ -34,12 +34,14 @@ import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
 import { revalidate } from '@/src/utils/server';
 import { useDispatch } from 'react-redux';
-import { useDeleteHook } from './delete';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
-import { useUpdateHookForm } from '@/src/hooks/useCRUD';
+import { useDeleteHook, useUpdateHookForm } from '@/src/hooks/useCRUD';
 import { useTransition } from 'react';
 import { setSelectedRows } from '@/src/redux/tableSlice';
 import { LimitReached } from '@/src/components/client/modals/limitReached';
+
+import { DeleteVersions } from '@/src/lib/fetch/dashboard/actions/gtm/versions';
+import { GTMContainerVersion } from '@/src/types/types';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -88,8 +90,6 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
       },
     });
     const keys = [
-      `gtm:accounts:userId:${userId}`,
-      `gtm:containers:userId:${userId}`,
       `gtm:versionHeaders:userId:${userId}`,
     ];
     await revalidate(keys, '/dashboard/gtm/entities', userId);
@@ -115,7 +115,16 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
       });
     });
   };
-  const handleDelete = useDeleteHook(selectedRowData, table);
+
+  const getDisplayNames = (items) => items.map((item: GTMContainerVersion) => item.name);
+  const handleDelete = useDeleteHook(
+    DeleteVersions,
+    selectedRowData,
+    table,
+    getDisplayNames,
+    'version'
+  );
+
   dispatch(setSelectedRows(selectedRowData)); // Update the selected rows in Redux
 
   return (
