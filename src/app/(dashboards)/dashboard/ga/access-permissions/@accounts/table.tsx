@@ -144,7 +144,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
       </h2>
       <div className="flex items-center py-4">
         <Input
-          placeholder="Filter property names..."
+          placeholder="Filter account emails..."
           value={(table.getColumn('user')?.getFilterValue() as string) ?? ''}
           onChange={(event) => table.getColumn('user')?.setFilterValue(event.target.value)}
           className="max-w-sm"
@@ -167,6 +167,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
           <ButtonDelete
             disabled={Object.keys(table.getState().rowSelection).length === 0}
             onDelete={handleDelete}
+            action={undefined}
           />
 
           <DropdownMenu>

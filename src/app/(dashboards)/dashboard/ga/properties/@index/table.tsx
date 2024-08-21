@@ -240,6 +240,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
           <ButtonDelete
             disabled={Object.keys(table.getState().rowSelection).length === 0}
             onDelete={handleDelete}
+            action={undefined}
           />
 
           <Dialog>

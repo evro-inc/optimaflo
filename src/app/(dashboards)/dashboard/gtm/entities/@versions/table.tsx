@@ -132,7 +132,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
       <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">Versions</h1>
       <div className="flex items-center py-4">
         <Input
-          placeholder="Filter workspace names..."
+          placeholder="Filter version names..."
           value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
           onChange={(event) => table.getColumn('name')?.setFilterValue(event.target.value)}
           className="max-w-sm"

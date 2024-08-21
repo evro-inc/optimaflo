@@ -199,7 +199,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
       </h2>
       <div className="flex items-center py-4">
         <Input
-          placeholder="Filter property names..."
+          placeholder="Filter Firebase link names..."
           value={(table.getColumn('project')?.getFilterValue() as string) ?? ''}
           onChange={(event) => table.getColumn('project')?.setFilterValue(event.target.value)}
           className="max-w-sm"

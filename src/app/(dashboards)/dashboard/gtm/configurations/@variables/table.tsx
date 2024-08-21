@@ -148,7 +148,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
       </h2>
       <div className="flex items-center py-4">
         <Input
-          placeholder="Filter conversion event names..."
+          placeholder="Filter variable names..."
           value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
           onChange={(event) => table.getColumn('name')?.setFilterValue(event.target.value)}
           className="max-w-sm"

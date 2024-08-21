@@ -37,7 +37,7 @@ export const columns: ColumnDef<BuiltInVariable>[] = [
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Trigger Name
+          Tag Name
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );

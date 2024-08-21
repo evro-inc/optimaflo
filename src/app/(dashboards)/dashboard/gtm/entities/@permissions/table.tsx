@@ -148,9 +148,9 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
       </h1>
       <div className="flex items-center py-4">
         <Input
-          placeholder="Filter workspace names..."
-          value={(table.getColumn('accountName')?.getFilterValue() as string) ?? ''}
-          onChange={(event) => table.getColumn('accountName')?.setFilterValue(event.target.value)}
+          placeholder="Filter emails..."
+          value={(table.getColumn('emailAddress')?.getFilterValue() as string) ?? ''}
+          onChange={(event) => table.getColumn('emailAddress')?.setFilterValue(event.target.value)}
           className="max-w-sm"
         />
 
