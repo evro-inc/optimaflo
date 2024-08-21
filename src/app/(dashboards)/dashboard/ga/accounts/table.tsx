@@ -139,23 +139,17 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
   dispatch(setSelectedRows(selectedRowData)); // Update the selected rows in Redux
 
   return (
-    <div>
-      <div className="flex items-center justify-between py-4">
-        <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
-          Accounts
-        </h1>
-        <RefreshGA gaPath="accounts" />
-      </div>
-
-      <div className="flex items-center py-4">
+    <div className="container mx-auto p-4">
+      <h2 className="text-2xl font-bold mb-4">Accounts</h2>
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-4 space-y-2 sm:space-y-0 sm:space-x-2">
         <Input
           placeholder="Filter account names..."
           value={(table.getColumn('displayName')?.getFilterValue() as string) ?? ''}
           onChange={(event) => table.getColumn('displayName')?.setFilterValue(event.target.value)}
-          className="max-w-sm"
+          className="w-full sm:w-64"
         />
 
-        <div className="ml-auto space-x-4">
+        <div className="flex space-x-2">
           <Button onClick={refreshAllCache}>Refresh</Button>
 
           {/* <Button disabled={isCreatePending} onClick={onCreateButtonClick}>
@@ -199,7 +193,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
           </DropdownMenu>
         </div>
       </div>
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
