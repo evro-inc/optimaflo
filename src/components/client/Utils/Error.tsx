@@ -1,28 +1,37 @@
 'use client';
 
 import { Button } from "@/src/components/ui/button";
-import { useRouter } from "next/navigation";
+import { revalidate } from "@/src/utils/server";
+import { useUser } from "@clerk/nextjs";
+import { toast } from "sonner";
 
-export default function ErrorComponent() {
-    const router = useRouter();
-
-    const refresh = () => {
-        router.refresh();
+export default function ErrorComponent(feature, path) {
+    const { user } = useUser();
+    const userId = user?.id as string;
+    const refreshCache = async () => {
+        toast.info('Updating our systems. This may take a minute or two to update on screen.', {
+            action: {
+                label: 'Close',
+                onClick: () => toast.dismiss(),
+            },
+        });
+        const keys = [`ga:${feature}:userId:${userId}`];
+        await revalidate(keys, `${path}`, userId);
     };
 
     return (
-        <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-background px-4 py-12 sm:px-6 lg:px-8">
+        <div className="flex flex-col items-center justify-center bg-background px-4 py-12 sm:px-6 lg:px-8">
             <div className="mx-auto max-w-md text-center">
                 <BugIcon className="mx-auto h-12 w-12 text-primary" />
                 <h1 className="mt-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-                    Oops, something went wrong!
+                    Oops, something went wrong with this feature!
                 </h1>
                 <p className="mt-4 text-muted-foreground">
                     Sorry, but an unexpected error has occurred while processing your data. Please try again later or
                     contact our support team if the issue persists.
                 </p>
                 <div className="mt-6">
-                    <Button type="button" onClick={refresh}>
+                    <Button type="button" onClick={refreshCache}>
                         Refresh
                     </Button>
                 </div>
