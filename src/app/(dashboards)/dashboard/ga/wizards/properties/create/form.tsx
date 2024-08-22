@@ -44,7 +44,9 @@ import {
   CurrencyCodes,
   IndustryCategories,
   TimeZones,
-} from '../../../properties/@index/propertyItems';
+} from '../../../properties/@properties/propertyItems';
+import { handleAmountChange, processForm } from '@/src/utils/utils';
+import { useFormInitialization } from '@/src/hooks/wizard';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -72,7 +74,6 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
   const loading = useSelector((state: RootState) => state.form.loading);
   const error = useSelector((state: RootState) => state.form.error);
   const currentStep = useSelector((state: RootState) => state.form.currentStep);
-  const propertyCount = useSelector((state: RootState) => state.form.count);
   const notFoundError = useSelector(selectTable).notFoundError;
   const router = useRouter();
 
@@ -108,177 +109,19 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
     acknowledgment: true,
   };
 
-  const formCreateAmount = useForm({
-    resolver: zodResolver(FormCreateAmountSchema),
-    defaultValues: {
-      amount: 1,
-    },
-  });
+  const { formCreateAmount, form, fields, addForm, propertyCount } = useFormInitialization(formDataDefaults);
 
-  const form = useForm<Forms>({
-    defaultValues: {
-      forms: [formDataDefaults],
-    },
-    resolver: zodResolver(FormsSchema),
-  });
+  if (notFoundError) return <NotFoundErrorModal onClose={undefined} />;
+  if (error) return <ErrorModal />;
 
-  const { fields, append } = useFieldArray({
-    control: form.control,
-    name: 'forms',
-  });
 
-  // Effect to update propertyCount when amount changes
-  useEffect(() => {
-    const amountValue = formCreateAmount.watch('amount'); // Extract the watched value
-    const amount = parseInt(amountValue?.toString() || '0'); // Handle cases where amountValue might be undefined or null
-    dispatch(setCount(amount));
-  }, [formCreateAmount, dispatch]); // Include formCreateAmount and dispatch as dependencies
-
-  if (notFoundError) {
-    return <NotFoundErrorModal onClose={undefined} />;
-  }
-  if (error) {
-    return <ErrorModal />;
-  }
-
-  const addForm = () => {
-    append(formDataDefaults);
-  };
-
-  // Adjust handleAmountSubmit or create a new function to handle selection change
-  const handleAmountChange = (selectedAmount) => {
-    // Convert the selected amount to a number
-    const amount = parseInt(selectedAmount);
-
-    // First, reset the current forms to start fresh
-    // Note: This step might need adjustment based on your exact requirements
-    // and the behavior you observe with your form state management
-    form.reset({ forms: [] }); // Clear existing forms
-
-    // Then, append new forms based on the selected amount
-    for (let i = 0; i < amount; i++) {
-      addForm(); // Use your existing addForm function that calls append
-    }
-
-    // Update the stream count in your state management (if necessary)
-    dispatch(setCount(amount));
-  };
-
-  const processForm: SubmitHandler<Forms> = async (data) => {
-    const { forms } = data;
-    dispatch(setLoading(true)); // Set loading to true using Redux action
-
-    toast('Creating properties...', {
-      action: {
-        label: 'Close',
-        onClick: () => toast.dismiss(),
-      },
-    });
-
-    const uniqueProperties = new Set(forms.map((form) => form.parent));
-
-    for (const form of forms) {
-      const identifier = `${form.parent} - ${form.name} - ${form.displayName}`;
-      if (uniqueProperties.has(identifier)) {
-        toast.error(`Duplicate property found for ${form.name} - ${form.displayName}`, {
-          action: {
-            label: 'Close',
-            onClick: () => toast.dismiss(),
-          },
-        });
-        dispatch(setLoading(false));
-        return;
-      }
-      uniqueProperties.add(identifier);
-    }
-
-    try {
-      const res = (await createProperties({ forms })) as FeatureResponse;
-
-      if (res.success) {
-        res.results.forEach((result) => {
-          if (result.success) {
-            toast.success(
-              `Property ${result.name} created successfully. The table will update shortly.`,
-              {
-                action: {
-                  label: 'Close',
-                  onClick: () => toast.dismiss(),
-                },
-              }
-            );
-          }
-        });
-
-        router.push('/dashboard/ga/properties');
-      } else {
-        if (res.notFoundError) {
-          res.results.forEach((result) => {
-            if (result.notFound) {
-              toast.error(
-                `Unable to create stream ${result.name}. Please check your access permissions. Any other properties created were successful.`,
-                {
-                  action: {
-                    label: 'Close',
-                    onClick: () => toast.dismiss(),
-                  },
-                }
-              );
-            }
-          });
-
-          dispatch(setErrorDetails(res.results)); // Assuming results contain the error details
-          dispatch(setNotFoundError(true)); // Dispatch the not found error action
-        }
-
-        if (res.limitReached) {
-          res.results.forEach((result) => {
-            if (result.limitReached) {
-              toast.error(
-                `Unable to create stream ${result.name}. You have ${result.remaining} more stream(s) you can create.`,
-                {
-                  action: {
-                    label: 'Close',
-                    onClick: () => toast.dismiss(),
-                  },
-                }
-              );
-            }
-          });
-          dispatch(setIsLimitReached(true));
-        }
-        if (res.errors) {
-          res.errors.forEach((error) => {
-            toast.error(`Unable to create stream. ${error}`, {
-              action: {
-                label: 'Close',
-                onClick: () => toast.dismiss(),
-              },
-            });
-          });
-          router.push('/dashboard/ga/properties');
-        }
-        form.reset({
-          forms: [formDataDefaults],
-        });
-      }
-
-      // Reset the forms here, regardless of success or limit reached
-      form.reset({
-        forms: [formDataDefaults],
-      });
-    } catch (error) {
-      toast.error('An unexpected error occurred.', {
-        action: {
-          label: 'Close',
-          onClick: () => toast.dismiss(),
-        },
-      });
-      return { success: false };
-    } finally {
-      dispatch(setLoading(false)); // Set loading to false
-    }
-  };
+  const onSubmit: SubmitHandler<Forms> = processForm<GA4PropertyType>(
+    createProperties,
+    formDataDefaults,
+    () => form.reset({ forms: [formDataDefaults] }),
+    dispatch,
+    router
+  );
 
   const handleNext = async () => {
     const currentFormIndex = currentStep - 2; // Adjusting for the array index and step count
@@ -322,7 +165,7 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
                     {...field} // This binds the Select to the form state
                     onValueChange={(value) => {
                       field.onChange(value); // Update form state
-                      handleAmountChange(value); // Call the modified handler
+                      handleAmountChange(value, form, addForm, dispatch);
                     }}
                     defaultValue={propertyCount.toString()} // Convert count to string
                     value={field.value.toString()} // Convert value to string
@@ -367,7 +210,7 @@ const FormCreateProperty: React.FC<FormCreateProps> = ({
 
                   <Form {...form}>
                     <form
-                      onSubmit={form.handleSubmit(processForm)}
+                      onSubmit={form.handleSubmit(onSubmit)}
                       id="createProperty"
                       className="space-y-6"
                     >

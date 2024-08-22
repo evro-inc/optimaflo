@@ -93,6 +93,9 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     },
   });
 
+  console.log(data);
+
+
   const selectedRowData = table.getSelectedRowModel().rows.reduce((acc, row) => {
     acc[row.id] = row.original;
     return acc;
@@ -212,7 +215,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
 
   return (
     <div className="container mx-auto p-4">
-      <h2 className="text-2xl font-bold mb-4">Conversion Events</h2>
+      <h2 className="text-2xl font-bold mb-4">Properties</h2>
       <div className="flex flex-col sm:flex-row justify-between items-center mb-4 space-y-2 sm:space-y-0 sm:space-x-2">
         <Input
           placeholder="Filter property names..."

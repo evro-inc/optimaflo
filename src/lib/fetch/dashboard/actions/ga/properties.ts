@@ -527,8 +527,12 @@ export async function createProperties(formData: FormCreateSchema) {
                     parent: validatedContainerData.parent,
                   }),
                 });
+                console.log("response", response);
 
-                let parsedResponse;
+
+                const parsedResponse = await response.json();
+                console.log('pr', parsedResponse);
+
 
                 if (response.ok) {
                   successfulCreations.push(validatedContainerData.displayName);
@@ -545,7 +549,7 @@ export async function createProperties(formData: FormCreateSchema) {
                     message: `Successfully created property ${validatedContainerData.displayName}`,
                   });
                 } else {
-                  parsedResponse = await response.json();
+
 
                   const errorResult = await handleApiResponseError(
                     response,

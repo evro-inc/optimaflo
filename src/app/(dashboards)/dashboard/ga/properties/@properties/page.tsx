@@ -58,6 +58,8 @@ export default async function StreamPage({
     };
   });
 
+  console.log(combinedData);
+
   return (
     <>
       <Suspense

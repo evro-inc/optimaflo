@@ -46,7 +46,7 @@ import {
   TimeZones,
   retentionSettings360,
   retentionSettingsStandard,
-} from '../../../properties/@index/propertyItems';
+} from '../../../properties/@properties/propertyItems';
 import { Switch } from '@/src/components/ui/switch';
 
 const NotFoundErrorModal = dynamic(
@@ -445,7 +445,7 @@ const FormUpdateProperty = () => {
                                               {Object.entries(
                                                 selectedRowData[currentFormIndex] &&
                                                   selectedRowData[currentFormIndex].serviceLevel ===
-                                                    'Standard'
+                                                  'Standard'
                                                   ? retentionSettingsStandard || {}
                                                   : retentionSettings360 || {}
                                               ).map(([label, value]) => (

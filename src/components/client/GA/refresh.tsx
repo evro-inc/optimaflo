@@ -5,11 +5,7 @@ import { toast } from 'sonner';
 import { revalidate } from '@/src/utils/server';
 import { useUser } from '@clerk/nextjs';
 
-
-
-
-
-function RefreshGA(gaPath) {
+function RefreshGA({ gaPath }) {
   const { user } = useUser();
   const userId = user?.id as string;
 
@@ -20,6 +16,7 @@ function RefreshGA(gaPath) {
         onClick: () => toast.dismiss(),
       },
     });
+
     const keys = [
       `gtm:accountAccess:userId:${userId}`,
       `gtm:accounts:userId:${userId}`,
@@ -34,9 +31,14 @@ function RefreshGA(gaPath) {
       `gtm:propertyAccess:userId:${userId}`,
       `gtm:streams:userId:${userId}`,
     ];
-    await revalidate(keys, `/dashboard/gtm/${gaPath}`, userId);
-  };
 
+    // Ensure `gaPath` is correctly formatted
+    if (typeof gaPath === 'string') {
+      await revalidate(keys, `/dashboard/gtm/${gaPath}`, userId);
+    } else {
+      console.error('Invalid gaPath:', gaPath);
+    }
+  };
 
   return (
     <div className="flex flex-row gap-4">
