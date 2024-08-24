@@ -32,10 +32,8 @@ const nonSubscriptionRoutes = createRouteMatcher([
   '/api/users(.*)',
   '/api/subscriptions(.*)',
   '/api/customers(.*)',
-  '/profile'
+  '/profile',
 ]);
-
-
 
 export default clerkMiddleware(async (auth, req) => {
   const { userId } = auth();
@@ -64,7 +62,6 @@ export default clerkMiddleware(async (auth, req) => {
         if (!hasActiveSubscription) {
           return NextResponse.redirect(new URL('/blocked', req.url));
         }
-
 
         // Rate limit check
         // Check the general API rate limit

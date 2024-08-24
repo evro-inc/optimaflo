@@ -39,6 +39,7 @@ import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { createGAKeyEvents } from '@/src/lib/fetch/dashboard/actions/ga/keyEvents';
+
 import { CountMethodData, Currencies } from '../../../properties/@keyEvents/items';
 import { Checkbox } from '@/src/components/ui/checkbox';
 import { Separator } from '@/src/components/ui/separator';
@@ -116,6 +117,7 @@ const FormCreateKeyEvents: React.FC<FormCreateProps> = ({
       amount: 1,
     },
   });
+
   const form = useForm<Forms>({
     defaultValues: {
       forms: [formDataDefaults],
@@ -128,11 +130,12 @@ const FormCreateKeyEvents: React.FC<FormCreateProps> = ({
     name: 'forms',
   });
 
+  // Effect to update count when amount changes
   useEffect(() => {
-    const amountValue = formCreateAmount.watch('amount');
-    const amount = parseInt(amountValue.toString());
+    const amountValue = formCreateAmount.watch('amount'); // Extract the watched value
+    const amount = parseInt(amountValue?.toString() || '0'); // Handle cases where amountValue might be undefined or null
     dispatch(setCount(amount));
-  }, [formCreateAmount, dispatch]); // Only include `formCreateAmount` and `dispatch` as dependencies
+  }, [formCreateAmount, dispatch]); // Include formCreateAmount and dispatch as dependencies
 
   if (notFoundError) {
     return <NotFoundErrorModal onClose={undefined} />;
@@ -349,18 +352,19 @@ const FormCreateKeyEvents: React.FC<FormCreateProps> = ({
               name="amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>How many key events do you want to create?</FormLabel>
+                  <FormLabel>How many users do you want to add?</FormLabel>
                   <Select
+                    {...field} // This binds the Select to the form state
                     onValueChange={(value) => {
-                      field.onChange(value); // Use the field's onChange method
+                      field.onChange(value); // Update form state
                       handleAmountChange(value); // Call the modified handler
                     }}
-                    value={field.value?.toString()} // Use field.value
-                    defaultValue={count.toString()}
+                    defaultValue={count.toString()} // Convert count to string
+                    value={field.value.toString()} // Convert value to string
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select the amount of key events you want to create." />
+                        <SelectValue placeholder="Select the amount of conversion events you want to create." />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -385,6 +389,8 @@ const FormCreateKeyEvents: React.FC<FormCreateProps> = ({
           (field, index) =>
             currentStep === index + 2 && (
               <div key={field.id} className="w-full">
+                {/* Render only the form corresponding to the current step - 1 
+              (since step 1 is for selecting the number of forms) */}
                 <div className="max-w-full md:max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-1">
                   <div className="max-w-full md:max-w-xl mx-auto">
                     <h1>Key Event {index + 1}</h1>

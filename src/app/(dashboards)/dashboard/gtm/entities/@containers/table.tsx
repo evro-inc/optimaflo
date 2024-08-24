@@ -91,9 +91,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
         onClick: () => toast.dismiss(),
       },
     });
-    const keys = [
-      `gtm:containers:userId:${userId}`,
-    ];
+    const keys = [`gtm:containers:userId:${userId}`];
     await revalidate(keys, '/dashboard/gtm/containers', userId);
   };
   const selectedRowData = table.getSelectedRowModel().rows.reduce((acc, row) => {

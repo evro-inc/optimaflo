@@ -63,7 +63,7 @@ export interface Price {
   products?: Product;
 }
 
-export interface PriceWithProduct extends Price { }
+export interface PriceWithProduct extends Price {}
 
 export interface Subscription {
   id: string /* primary key */;
@@ -164,11 +164,7 @@ export type FormUpdateWorkspaceProps = {
   table: any;
 };
 export type FormUpdateProps = {
-  showOptions: boolean;
-  onClose: () => void;
-  selectedRows: Map<string, GA4PropertyType>;
-  workspaces?: any;
-  table?: any;
+  tierLimits?: TierLimit[];
 };
 
 export type ResultType = {
@@ -219,7 +215,7 @@ export type FormCreateProps = {
   accounts?: any;
   properties?: any;
   containers?: any;
-  tierLimits?: any;
+  tierLimits?: TierLimit[];
   dimensions?: any;
   metrics?: any;
 };
@@ -254,7 +250,7 @@ export interface FeatureResult {
 
 export interface FeatureResponse {
   success: boolean;
-  features?: string[];
+  features?: FeatureResult[];
   errors?: string[];
   limitReached?: boolean;
   errorCode?: number;
@@ -304,7 +300,7 @@ export type GA4StreamType = {
   };
 };
 
-type TierLimit = {
+export type TierLimit = {
   id: string;
   subscriptionId: string;
   createLimit: number;
@@ -713,7 +709,7 @@ export type Workspace = {
 export type FormCreateGTMProps = {
   showOptions?: boolean;
   onClose?: () => void;
-  tierLimits?: any;
+  tierLimits?: TierLimit[];
   table: any;
   accounts?: any;
   properties?: any;

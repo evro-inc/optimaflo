@@ -4,7 +4,7 @@ import Link from 'next/link';
 import React from 'react';
 import { ButtonSignIn } from '../../client/Button/Button';
 import { LinkSignUp, LinkNav } from '../Links/Links';
-import { SignedIn, SignedOut, UserButton, } from '@clerk/nextjs';
+import { SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
 import { HamburgerMenuIcon } from '@radix-ui/react-icons';
 import { Sheet, SheetClose, SheetContent, SheetTrigger } from '../../ui/sheet';
 import { Button } from '../../ui/button';

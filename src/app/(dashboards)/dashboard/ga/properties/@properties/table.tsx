@@ -47,7 +47,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/src/components/ui/dialog';
-import { acknowledgeUserDataCollection, DeleteProperties } from '@/src/lib/fetch/dashboard/actions/ga/properties';
+import {
+  acknowledgeUserDataCollection,
+  DeleteProperties,
+} from '@/src/lib/fetch/dashboard/actions/ga/properties';
 import { useCreateHookForm, useUpdateHookForm, useDeleteHook } from '@/src/hooks/useCRUD';
 
 import { useTransition } from 'react';
@@ -94,7 +97,6 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
   });
 
   console.log(data);
-
 
   const selectedRowData = table.getSelectedRowModel().rows.reduce((acc, row) => {
     acc[row.id] = row.original;

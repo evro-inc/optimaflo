@@ -33,7 +33,6 @@ export default async function ChangesPage({
   const tagData = await listTags();
   const triggerData = await listTriggers();
 
-
   const [accounts, containers, workspaces, builtInVar, variable, tag, trigger] = await Promise.all([
     accountData,
     containerData,
@@ -41,7 +40,7 @@ export default async function ChangesPage({
     builtInVarData,
     varData,
     tagData,
-    triggerData
+    triggerData,
   ]);
 
   const flatAccounts = accounts.flat();
@@ -77,7 +76,7 @@ export default async function ChangesPage({
     ...mapCombinedData(flatBuiltInVars),
     ...mapCombinedData(flatVars),
     ...mapCombinedData(flatTags),
-    ...mapCombinedData(flatTriggers)
+    ...mapCombinedData(flatTriggers),
   ];
 
   return (

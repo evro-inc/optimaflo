@@ -9,9 +9,7 @@ export default async function Page() {
 
   return (
     <div className="container mx-auto py-10 flex items-center justify-between">
-      <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
-        Links
-      </h1>
+      <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">Links</h1>
       <RefreshGA gaPath="links" />
     </div>
   );

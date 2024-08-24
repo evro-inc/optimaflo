@@ -1,4 +1,5 @@
 'use server';
+
 import { revalidatePath } from 'next/cache';
 import z from 'zod';
 import { auth } from '@clerk/nextjs/server';
@@ -16,10 +17,9 @@ import {
   tierUpdateLimit,
 } from '@/src/utils/server';
 import { fetchGASettings } from '../..';
-import { FormsSchema } from '@/src/lib/schemas/ga/properties';
+import { FormSchemaType, FormsSchema } from '@/src/lib/schemas/ga/properties';
 
 // Define the types for the form data
-type FormCreateSchema = z.infer<typeof FormsSchema>;
 type FormUpdateSchema = z.infer<typeof FormsSchema>;
 
 /************************************************************************************
@@ -398,7 +398,7 @@ export async function DeleteProperties(
 /************************************************************************************
   Create a single property or multiple properties
 ************************************************************************************/
-export async function createProperties(formData: FormCreateSchema) {
+export async function createProperties(formData: FormSchemaType): Promise<FeatureResponse> {
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
@@ -436,18 +436,19 @@ export async function createProperties(formData: FormCreateSchema) {
   }
 
   if (toCreateProperties.size > availableCreateUsage) {
-    const attemptedCreations = Array.from(toCreateProperties).map((identifier) => {
-      const displayName = identifier.displayName;
-      return {
+    // Prepare the attempted creations with the correct types directly
+    const attemptedCreations: FeatureResult[] = Array.from(toCreateProperties).map(
+      (identifier) => ({
         id: [], // No property ID since creation did not happen
-        name: displayName, // Include the property name from the identifier
+        name: [identifier.displayName], // Ensure 'name' is an array
         success: false,
-        message: `Creation limit reached. Cannot create property "${displayName}".`,
-        // remaining creation limit
+        message: `Creation limit reached. Cannot create property "${identifier.displayName}".`,
         remaining: availableCreateUsage,
         limitReached: true,
-      };
-    });
+      })
+    );
+
+    // Return the response with the correctly typed results
     return {
       success: false,
       features: [],
@@ -455,7 +456,7 @@ export async function createProperties(formData: FormCreateSchema) {
       errors: [
         `Cannot create ${toCreateProperties.size} properties as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
       ],
-      results: attemptedCreations,
+      results: attemptedCreations, // Directly use the prepared array
       limitReached: true,
     };
   }
@@ -527,12 +528,8 @@ export async function createProperties(formData: FormCreateSchema) {
                     parent: validatedContainerData.parent,
                   }),
                 });
-                console.log("response", response);
-
 
                 const parsedResponse = await response.json();
-                console.log('pr', parsedResponse);
-
 
                 if (response.ok) {
                   successfulCreations.push(validatedContainerData.displayName);
@@ -549,8 +546,6 @@ export async function createProperties(formData: FormCreateSchema) {
                     message: `Successfully created property ${validatedContainerData.displayName}`,
                   });
                 } else {
-
-
                   const errorResult = await handleApiResponseError(
                     response,
                     parsedResponse,
@@ -607,10 +602,9 @@ export async function createProperties(formData: FormCreateSchema) {
               limitReached: false,
               notFoundError: true, // Set the notFoundError flag
               features: [],
-
               results: notFoundLimit.map((item) => ({
-                id: item.id,
-                name: item.name,
+                id: [item.id], // Convert 'id' to an array
+                name: [item.name], // Convert 'name' to an array
                 success: false,
                 notFound: true,
               })),
@@ -678,11 +672,18 @@ export async function createProperties(formData: FormCreateSchema) {
   if (errors.length > 0) {
     return {
       success: false,
-      features: successfulCreations,
+      features: successfulCreations.map((propertyName) => ({
+        id: [], // Assuming no IDs are assigned in this error state
+        name: [propertyName], // Convert the propertyName to an array of strings
+        success: true,
+        message: '', // Provide an appropriate message if needed
+      })),
       errors: errors,
       results: successfulCreations.map((propertyName) => ({
-        propertyName,
-        success: true,
+        id: [], // Assuming no IDs are assigned in this error state
+        name: [propertyName], // Convert the propertyName to an array of strings
+        success: true, // Assuming these creations were successful before the errors
+        message: '', // Provide an appropriate message if needed
       })),
       message: errors.join(', '),
     };
@@ -697,14 +698,11 @@ export async function createProperties(formData: FormCreateSchema) {
 
   // Map over formData.forms to create the results array
   const results: FeatureResult[] = formData.forms.map((form) => {
-    // Ensure that form.propertyId is defined before adding it to the array
-    const propertyId = form.name ? [form.name] : []; // Provide an empty array as a fallback
     return {
-      id: propertyId, // Ensure id is an array of strings
-      name: [form.displayName], // Wrap the string in an array
-      success: true, // or false, depending on the actual result
-      // Include `notFound` if applicable
-      notFound: false, // Set this to the appropriate value based on your logic
+      id: form.name ? [form.name] : [], // Convert 'id' to an array if needed
+      name: [form.displayName], // Change this to an array of strings
+      success: true, // Assuming success is true, set it as needed
+      // Add other required fields of FeatureResult here
     };
   });
 
@@ -723,7 +721,7 @@ export async function createProperties(formData: FormCreateSchema) {
 /************************************************************************************
   Create a single property or multiple properties
 ************************************************************************************/
-export async function updateProperties(formData: FormUpdateSchema) {
+export async function updateProperties(formData: FormUpdateSchema): Promise<FeatureResponse> {
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
@@ -771,18 +769,14 @@ export async function updateProperties(formData: FormUpdateSchema) {
   }
 
   if (toUpdateProperties.size > availableUpdateUsage) {
-    const attemptedUpdates = Array.from(toUpdateProperties).map((identifier) => {
-      const displayName = identifier.displayName;
-      return {
-        id: [], // No property ID since update did not happen
-        name: displayName, // Include the property name from the identifier
-        success: false,
-        message: `Update limit reached. Cannot update property "${displayName}".`,
-        // remaining update limit
-        remaining: availableUpdateUsage,
-        limitReached: true,
-      };
-    });
+    const attemptedUpdates: FeatureResult[] = Array.from(toUpdateProperties).map((identifier) => ({
+      id: [], // No property ID since creation did not happen
+      name: [identifier.displayName], // Ensure 'name' is an array
+      success: false,
+      message: `Update limit reached. Cannot create property "${identifier.displayName}".`,
+      remaining: availableUpdateUsage,
+      limitReached: true,
+    }));
     return {
       success: false,
       features: [],
@@ -945,10 +939,9 @@ export async function updateProperties(formData: FormUpdateSchema) {
               limitReached: false,
               notFoundError: true, // Set the notFoundError flag
               features: [],
-
               results: notFoundLimit.map((item) => ({
-                id: item.id,
-                name: item.name,
+                id: [item.id], // Convert 'id' to an array
+                name: [item.name], // Convert 'name' to an array
                 success: false,
                 notFound: true,
               })),
@@ -1036,11 +1029,18 @@ export async function updateProperties(formData: FormUpdateSchema) {
   if (errors.length > 0) {
     return {
       success: false,
-      features: successfulUpdates,
+      features: successfulUpdates.map((propertyName) => ({
+        id: [], // Assuming no IDs are assigned in this error state
+        name: [propertyName], // Convert the propertyName to an array of strings
+        success: true,
+        message: '', // Provide an appropriate message if needed
+      })),
       errors: errors,
       results: successfulUpdates.map((propertyName) => ({
-        propertyName,
-        success: true,
+        id: [], // Assuming no IDs are assigned in this error state
+        name: [propertyName], // Convert the propertyName to an array of strings
+        success: true, // Assuming these creations were successful before the errors
+        message: '', // Provide an appropriate message if needed
       })),
       message: errors.join(', '),
     };

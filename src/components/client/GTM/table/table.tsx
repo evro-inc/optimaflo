@@ -77,10 +77,10 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
   const variables = selectedRowArray.filter((row: any) => row.variable);
 
   const handleRevertVar = useRevertHook(
-    RevertVariables,  // Pass the specific revert function
-    selectedRowData,            // Pass selected rows
-    table,                   // Pass the table instance
-    'version'     // Optionally pass a custom name for the type being reverted
+    RevertVariables, // Pass the specific revert function
+    selectedRowData, // Pass selected rows
+    table, // Pass the table instance
+    'version' // Optionally pass a custom name for the type being reverted
   );
 
   const handleRevert = () => {

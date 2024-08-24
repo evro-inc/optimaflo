@@ -124,9 +124,6 @@ const FormCreateConversionEvent: React.FC<FormCreateProps> = ({
     control: form.control,
     name: 'forms',
   });
-  const addForm = () => {
-    append(formDataDefaults);
-  };
 
   // Effect to update count when amount changes
   useEffect(() => {
@@ -142,6 +139,9 @@ const FormCreateConversionEvent: React.FC<FormCreateProps> = ({
     return <ErrorModal />;
   }
 
+  const addForm = () => {
+    append(formDataDefaults);
+  };
   const currentFormIndex = currentStep - 2;
 
   // Adjust handleAmountSubmit or create a new function to handle selection change

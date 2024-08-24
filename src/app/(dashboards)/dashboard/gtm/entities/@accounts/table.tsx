@@ -104,9 +104,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
         onClick: () => toast.dismiss(),
       },
     });
-    const keys = [
-      `gtm:accounts:userId:${userId}`,
-    ];
+    const keys = [`gtm:accounts:userId:${userId}`];
     await revalidate(keys, '/dashboard/gtm/entities', userId);
   };
 

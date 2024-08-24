@@ -35,7 +35,12 @@ import { toast } from 'sonner';
 import { revalidate } from '@/src/utils/server';
 import { useDispatch } from 'react-redux';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
-import { useCreateHookForm, useCreateVersionHook, useUpdateHookForm, useDeleteHook } from '@/src/hooks/useCRUD';
+import {
+  useCreateHookForm,
+  useCreateVersionHook,
+  useUpdateHookForm,
+  useDeleteHook,
+} from '@/src/hooks/useCRUD';
 import { useTransition } from 'react';
 import { setSelectedRows } from '@/src/redux/tableSlice';
 import { LimitReached } from '@/src/components/client/modals/limitReached';
@@ -91,9 +96,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
         onClick: () => toast.dismiss(),
       },
     });
-    const keys = [
-      `gtm:workspaces:userId:${userId}`,
-    ];
+    const keys = [`gtm:workspaces:userId:${userId}`];
     await revalidate(keys, '/dashboard/gtm/workspaces', userId);
   };
 

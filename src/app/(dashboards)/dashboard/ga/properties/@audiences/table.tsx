@@ -133,9 +133,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
         onClick: () => toast.dismiss(),
       },
     });
-    const keys = [
-      `ga:audiences:userId:${userId}`,
-    ];
+    const keys = [`ga:audiences:userId:${userId}`];
     await revalidate(keys, '/dashboard/ga/properties', userId);
   };
 

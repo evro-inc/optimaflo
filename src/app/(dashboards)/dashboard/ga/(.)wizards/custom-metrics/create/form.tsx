@@ -596,7 +596,7 @@ const FormCreateCustomMetric: React.FC<FormCreateProps> = ({
                                   <FormField
                                     control={form.control}
                                     name={`forms.${currentStep - 2}.restrictedMetricType`}
-                                    render={({ field }) => (
+                                    render={() => (
                                       <FormItem>
                                         <FormLabel>Restricted Metric Type</FormLabel>
                                         <FormDescription>
@@ -606,38 +606,42 @@ const FormCreateCustomMetric: React.FC<FormCreateProps> = ({
                                           measurement unit.
                                         </FormDescription>
 
-                                        {/* Iterate through the restricted metric items and render checkboxes */}
                                         {RestrictedMetric.map((item) => (
-                                          <FormItem
-                                            key={item.id}
-                                            className="flex flex-row items-start space-x-3 space-y-0"
-                                          >
-                                            <FormControl>
-                                              <Checkbox
-                                                checked={
-                                                  Array.isArray(field.value) &&
-                                                  field.value.includes(item.id)
-                                                }
-                                                onCheckedChange={(checked) => {
-                                                  if (Array.isArray(field.value)) {
-                                                    const updatedValue = checked
-                                                      ? [...field.value, item.id]
-                                                      : field.value.filter(
-                                                          (value) => value !== item.id
-                                                        );
-                                                    field.onChange(updatedValue); // Update the field value
-                                                  } else {
-                                                    field.onChange([item.id]); // Handle the case where the field value is not an array
-                                                  }
-                                                }}
-                                              />
-                                            </FormControl>
-                                            <FormLabel className="text-sm font-normal">
-                                              {item.label}
-                                            </FormLabel>
-                                          </FormItem>
+                                          <FormField
+                                            key={item.id} // Ensure the key is placed at the correct position
+                                            control={form.control}
+                                            name={`forms.${currentStep - 2}.restrictedMetricType`}
+                                            render={({ field }) => {
+                                              return (
+                                                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                                                  <FormControl>
+                                                    <Checkbox
+                                                      checked={
+                                                        Array.isArray(field.value) &&
+                                                        field.value.includes(item.id)
+                                                      }
+                                                      onCheckedChange={(checked) => {
+                                                        if (Array.isArray(field.value)) {
+                                                          const updatedValue = checked
+                                                            ? [...field.value, item.id]
+                                                            : field.value.filter(
+                                                                (value) => value !== item.id
+                                                              );
+                                                          field.onChange(updatedValue);
+                                                        } else {
+                                                          field.onChange([item.id]);
+                                                        }
+                                                      }}
+                                                    />
+                                                  </FormControl>
+                                                  <FormLabel className="text-sm font-normal">
+                                                    {item.label}
+                                                  </FormLabel>
+                                                </FormItem>
+                                              );
+                                            }}
+                                          />
                                         ))}
-
                                         <FormMessage />
                                       </FormItem>
                                     )}

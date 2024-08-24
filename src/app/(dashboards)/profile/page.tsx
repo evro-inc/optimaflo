@@ -122,7 +122,7 @@ export default async function Profile() {
           </CardFooter>
         </Card>
 
-        <Card className="md:col-span-12">
+        {/* <Card className="md:col-span-12">
           <CardHeader>
             <CardTitle>Tier Limits</CardTitle>
           </CardHeader>
@@ -155,7 +155,7 @@ export default async function Profile() {
               </TableBody>
             </Table>
           </CardContent>
-        </Card>
+        </Card> */}
       </div>
     </div>
   );

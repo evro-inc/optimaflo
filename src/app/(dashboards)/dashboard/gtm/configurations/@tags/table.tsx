@@ -117,13 +117,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
   };
 
   const getDisplayNames = (items) => items.map((item: Tag) => item.name);
-  const handleDelete = useDeleteHook(
-    DeleteTags,
-    selectedRowData,
-    table,
-    getDisplayNames,
-    'tag'
-  );
+  const handleDelete = useDeleteHook(DeleteTags, selectedRowData, table, getDisplayNames, 'tag');
 
   const refreshAllCache = async () => {
     toast.info('Updating our systems. This may take a minute or two to update on screen.', {

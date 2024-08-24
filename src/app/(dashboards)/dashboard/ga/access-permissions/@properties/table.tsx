@@ -43,7 +43,6 @@ import { LimitReached } from '@/src/components/client/modals/limitReached';
 import { deleteGAAccessBindings } from '@/src/lib/fetch/dashboard/actions/ga/propertyPermissions';
 import { AccessBinding } from '@/src/types/types';
 
-
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];

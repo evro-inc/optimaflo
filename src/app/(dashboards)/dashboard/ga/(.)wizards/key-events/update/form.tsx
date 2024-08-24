@@ -41,7 +41,6 @@ import {
 } from '@/src/components/ui/select';
 
 import { CountMethodData, Currencies } from '../../../properties/@keyEvents/items';
-
 import { RadioGroup, RadioGroupItem } from '@/src/components/ui/radio-group';
 
 const NotFoundErrorModal = dynamic(
@@ -71,10 +70,6 @@ const FormUpdateKeyEvents = () => {
   const selectedRowData = useSelector((state: RootState) => state.table.selectedRows);
   const currentFormIndex = currentStep - 1; // Adjust for 0-based index
 
-  if (Object.keys(selectedRowData).length === 0) {
-    router.push('/dashboard/ga/properties');
-  }
-
   const formDataDefaults: KeyEventType[] = Object.values(selectedRowData).map((rowData) => ({
     accountProperty: Array.isArray(rowData.name) ? rowData.name : [rowData.name], // Ensure accountProperty is an array
     eventName: rowData.eventName ?? '',
@@ -89,7 +84,6 @@ const FormUpdateKeyEvents = () => {
       rowData.defaultValue?.numericValue !== undefined ||
       rowData.defaultValue?.currencyCode !== undefined,
   }));
-
   const form = useForm<Forms>({
     defaultValues: {
       forms: formDataDefaults,
@@ -101,6 +95,10 @@ const FormUpdateKeyEvents = () => {
     control: form.control,
     name: 'forms',
   });
+
+  if (Object.keys(selectedRowData).length === 0) {
+    router.push('/dashboard/ga/properties');
+  }
 
   if (notFoundError) {
     return <NotFoundErrorModal onClose={undefined} />;
@@ -285,9 +283,9 @@ const FormUpdateKeyEvents = () => {
       {fields.map(
         (field, index) =>
           currentStep === index + 1 && (
-            <div key={field.id} className="w-full">
+            <div className="w-full" key={field.id}>
               {fields.length > 0 && fields.length >= currentStep && (
-                <div className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
+                <div key={field.id} className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
                   <div className="max-w-xl mx-auto">
                     <h1>{fields[currentFormIndex]?.eventName}</h1>
                     <div className="mt-12">
@@ -376,10 +374,9 @@ const FormUpdateKeyEvents = () => {
                                         <FormLabel>Default Conversion Value</FormLabel>
                                         <FormControl>
                                           <RadioGroup
-                                            {...field} // Apply field props to the RadioGroup
                                             onValueChange={(newValue) => {
-                                              field.onChange(newValue); // Ensure the field is updated
                                               handleValueChange(newValue, index);
+                                              field.onChange(newValue); // Ensure field.onChange is called
                                             }}
                                             value={
                                               form.watch(`forms.${index}.includeDefaultValue`)
@@ -407,24 +404,21 @@ const FormUpdateKeyEvents = () => {
                                                 <div className="flex items-center space-x-3">
                                                   <Input
                                                     placeholder="Enter default conversion value"
-                                                    {...form.register(
-                                                      `forms.${index}.defaultValue.numericValue`,
-                                                      {
-                                                        valueAsNumber: true,
-                                                        setValueAs: (value) =>
-                                                          value === '' ? undefined : Number(value),
-                                                      }
-                                                    )}
                                                     type="number"
                                                     min={0}
-                                                    onChange={(e) =>
-                                                      handleNumericValueChange(
-                                                        e.target.value,
-                                                        index
-                                                      )
-                                                    }
+                                                    {...field} // Bind the rest of the field props (name, ref, etc.)
+                                                    value={field.value?.numericValue ?? ''} // Extract numericValue or use empty string if undefined
+                                                    onChange={(e) => {
+                                                      const numericValue = parseFloat(
+                                                        e.target.value
+                                                      );
+                                                      handleNumericValueChange(numericValue, index);
+                                                      field.onChange({
+                                                        ...field.value,
+                                                        numericValue,
+                                                      }); // Pass updated value to field.onChange
+                                                    }}
                                                   />
-
                                                   <Select
                                                     value={form.watch(
                                                       `forms.${index}.defaultValue.currencyCode`
@@ -433,10 +427,9 @@ const FormUpdateKeyEvents = () => {
                                                       form.setValue(
                                                         `forms.${index}.defaultValue.currencyCode`,
                                                         selectedCurrency,
-                                                        {
-                                                          shouldValidate: true,
-                                                        }
+                                                        { shouldValidate: true }
                                                       );
+                                                      field.onChange(selectedCurrency); // Ensure field.onChange is called
                                                     }}
                                                   >
                                                     <SelectTrigger>

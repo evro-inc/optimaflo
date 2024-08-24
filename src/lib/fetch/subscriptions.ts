@@ -35,7 +35,6 @@ export async function getSubscriptionsAPI(userId: string) {
   }
 }
 
-
 // This function is used in the profile page to get the subscription details.
 export async function getSubscription(userId: string) {
   const subscription = await prisma.subscription.findFirst({

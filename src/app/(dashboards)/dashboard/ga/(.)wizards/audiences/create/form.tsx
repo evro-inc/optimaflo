@@ -41,7 +41,9 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/src/components/ui/select';
@@ -60,6 +62,7 @@ import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { createGAAudiences } from '@/src/lib/fetch/dashboard/actions/ga/audiences';
 import { Card, CardContent, CardFooter, CardHeader } from '@/src/components/ui/card';
+
 import { Checkbox } from '@/src/components/ui/checkbox';
 import {
   ImmediatelyFollows,
@@ -121,8 +124,8 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   properties = [],
   table = [],
   accounts = [],
-  /*   dimensions = [],
-    metrics = [], */
+  dimensions = [],
+  metrics = [],
 }) => {
   const dispatch = useDispatch();
   const loading = useSelector((state: RootState) => state.form.loading);
@@ -150,47 +153,47 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
   const excludeCardsToShow = useSelector((state: RootState) => state.excludeForm.showCard);
   const excludeShowStep = useSelector((state: RootState) => state.excludeForm.showStep);
 
-  /*   const categorizedDimensions = dimensions.reduce((acc, item) => {
-      const categoryIndex = acc.findIndex((cat) => cat.name === item.category);
-      if (categoryIndex > -1) {
-        const isUnique = !acc[categoryIndex].items.some(
-          (existingItem) => existingItem.apiName === item.apiName
-        );
-        if (isUnique) {
-          acc[categoryIndex].items.push(item);
-        }
-      } else {
-        acc.push({ name: item.category, items: [item] });
+  const categorizedDimensions = dimensions.reduce((acc, item) => {
+    const categoryIndex = acc.findIndex((cat) => cat.name === item.category);
+    if (categoryIndex > -1) {
+      const isUnique = !acc[categoryIndex].items.some(
+        (existingItem) => existingItem.apiName === item.apiName
+      );
+      if (isUnique) {
+        acc[categoryIndex].items.push(item);
       }
-      return acc;
-    }, []); */
+    } else {
+      acc.push({ name: item.category, items: [item] });
+    }
+    return acc;
+  }, []);
 
-  /*   const categorizedMetrics = metrics.reduce((acc, item) => {
-      const categoryIndex = acc.findIndex((cat) => cat.name === item.category);
-      if (categoryIndex > -1) {
-        const isUnique = !acc[categoryIndex].items.some(
-          (existingItem) => existingItem.apiName === item.apiName
-        );
-        if (isUnique) {
-          acc[categoryIndex].items.push(item);
-        }
-      } else {
-        acc.push({ name: item.category, items: [item] });
+  const categorizedMetrics = metrics.reduce((acc, item) => {
+    const categoryIndex = acc.findIndex((cat) => cat.name === item.category);
+    if (categoryIndex > -1) {
+      const isUnique = !acc[categoryIndex].items.some(
+        (existingItem) => existingItem.apiName === item.apiName
+      );
+      if (isUnique) {
+        acc[categoryIndex].items.push(item);
       }
-      return acc;
-    }, []); */
+    } else {
+      acc.push({ name: item.category, items: [item] });
+    }
+    return acc;
+  }, []);
 
-  /*   const combinedCategories = [
-      {
-        name: 'Dimensions',
-        categories: categorizedDimensions,
-      },
-      {
-        name: 'Metrics',
-        categories: categorizedMetrics,
-      },
-    ];
-   */
+  const combinedCategories = [
+    {
+      name: 'Dimensions',
+      categories: categorizedDimensions,
+    },
+    {
+      name: 'Metrics',
+      categories: categorizedMetrics,
+    },
+  ];
+
   const extractedData = table.map((item) => {
     const propertyId = item.name.split('/')[1];
     const property = item.property;
@@ -650,39 +653,41 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
 
   const ConditionalForm = () => {
     //Using local useState instead of redux because of re-rendering issues
-    const [selectedCategoryItems /* setSelectedCategoryItems */] = useState([]);
+    const [selectedCategoryItems, setSelectedCategoryItems] = useState([]);
 
     // This function is called when an item in the first Select is selected
-    /*     const handleCategorySelection = (selectedCategoryName) => {
-          // Find the category and its items based on the selected name
-          const selectedCategory = combinedCategories
-            .flatMap((category) => category.categories)
-            .find((category) => category.name === selectedCategoryName);
-    
-          // Update the state to reflect the items of the selected category
-          setSelectedCategoryItems(selectedCategory ? selectedCategory.items : []);
-        };
-     */
+    const handleCategorySelection = (selectedCategoryName) => {
+      // Find the category and its items based on the selected name
+      const selectedCategory = combinedCategories
+        .flatMap((category) => category.categories)
+        .find((category) => category.name === selectedCategoryName);
+
+      // Update the state to reflect the items of the selected category
+      setSelectedCategoryItems(selectedCategory ? selectedCategory.items : []);
+    };
+
     return (
       <div className="flex space-x-4">
-        {/*    <Select onValueChange={handleCategorySelection}>
+        <Select onValueChange={handleCategorySelection}>
           <SelectTrigger>
             <SelectValue placeholder="Select Category" />
           </SelectTrigger>
           <SelectContent>
-             {combinedCategories.flatMap(parentCategory => parentCategory.categories).map((category) => (
+            {/* {combinedCategories.flatMap(parentCategory => parentCategory.categories).map((category) => (
               <SelectItem value={category.name}>{category.name}</SelectItem>
-            ))} 
+            ))} */}
             {combinedCategories.map((parentCategory) => (
               <SelectGroup key={parentCategory.name}>
                 <SelectLabel>{parentCategory.name}</SelectLabel>
                 {parentCategory.categories.map((category) => (
-                  <SelectItem value={category.name}>{category.name}</SelectItem>
+                  <SelectItem key={category.name} value={category.name}>
+                    {category.name}
+                  </SelectItem>
                 ))}
               </SelectGroup>
             ))}
           </SelectContent>
-        </Select> */}
+        </Select>
 
         {/* Second Select that displays items based on the selected category */}
         <Select disabled={selectedCategoryItems.length === 0}>
@@ -692,14 +697,11 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
           <SelectContent>
             {selectedCategoryItems.map((item: any) => (
               <SelectItem key={item.apiName} value={item.apiName}>
-                {' '}
-                {/* Add key prop here */}
                 {item.uiName}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-
         {/*   <Dialog>
           <DialogTrigger asChild>
             <Button className="flex justify-between items-center w-full" variant="ghost">
@@ -1429,7 +1431,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                     <Separator />
                     <div className="w-full flex justify-start">
                       {' '}
-                     
+                    
   <Button
     className="flex items-center space-x-2"
     onClick={() => handleShowStep(form.id, 'excludeStep')}
@@ -1652,7 +1654,7 @@ const FormCreateAudience: React.FC<FormCreateProps> = ({
                               </div>
                             </div>
 
-                            {/*  {showExcludeParent.map((form, index) => (
+                            {/*      {showExcludeParent.map((form, index) => (
                               <div className="max-w-4xl mx-auto p-5">
                                 <div className="flex items-center">
                                   <div className="flex basis-9 mb-5">

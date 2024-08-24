@@ -125,7 +125,6 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     'variable'
   );
 
-
   const refreshAllCache = async () => {
     toast.info('Updating our systems. This may take a minute or two to update on screen.', {
       action: {
@@ -133,9 +132,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
         onClick: () => toast.dismiss(),
       },
     });
-    const keys = [
-      `gtm:variables:userId:${userId}`,
-    ];
+    const keys = [`gtm:variables:userId:${userId}`];
     await revalidate(keys, '/dashboard/gtm/configurations', userId);
   };
 

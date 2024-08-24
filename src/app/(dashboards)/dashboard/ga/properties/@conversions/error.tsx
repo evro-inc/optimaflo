@@ -1,10 +1,7 @@
 'use client';
 
-import ErrorComponent from "@/src/components/client/Utils/Error";
+import ErrorComponent from '@/src/components/client/Utils/Error';
 
 export default function Error() {
-  return (
-    <ErrorComponent feature="conversionEvents" path="dashboard/ga/properties" />
-  )
+  return <ErrorComponent feature="conversionEvents" path="dashboard/ga/properties" />;
 }
-

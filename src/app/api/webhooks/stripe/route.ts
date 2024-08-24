@@ -26,8 +26,6 @@ const relevantEvents = new Set([
   'invoice.paid',
 ]);
 
-
-
 async function upsertProductRecord(product: Stripe.Product) {
   const currentTimestamp = Math.floor(Date.now() / 1000);
   await prisma.product.upsert({
@@ -55,9 +53,14 @@ async function upsertProductRecord(product: Stripe.Product) {
 // Product created or updated
 async function upsertFeatureLimitsRecord(product: Stripe.Product) {
   const tier = product.metadata?.tier;
-  const productId = product.id
+  const productId = product.id;
 
-  let defaultFeatureLimits: { featureName: string, createLimit: number, updateLimit: number, deleteLimit: number }[] = [];
+  let defaultFeatureLimits: {
+    featureName: string;
+    createLimit: number;
+    updateLimit: number;
+    deleteLimit: number;
+  }[] = [];
 
   switch (tier) {
     case 'analyst':
@@ -68,7 +71,12 @@ async function upsertFeatureLimitsRecord(product: Stripe.Product) {
         { featureName: 'GTMClients', createLimit: 40, updateLimit: 40, deleteLimit: 40 },
         { featureName: 'GTMVariables', createLimit: 60, updateLimit: 60, deleteLimit: 60 },
         { featureName: 'GTMWorkspaces', createLimit: 10, updateLimit: 10, deleteLimit: 10 },
-        { featureName: 'GTMVariablesBuiltIn', createLimit: 150, updateLimit: 150, deleteLimit: 150 },
+        {
+          featureName: 'GTMVariablesBuiltIn',
+          createLimit: 150,
+          updateLimit: 150,
+          deleteLimit: 150,
+        },
         { featureName: 'GTMFolders', createLimit: 10, updateLimit: 10, deleteLimit: 10 },
         { featureName: 'GTMTemplates', createLimit: 3, updateLimit: 3, deleteLimit: 3 },
         { featureName: 'GTMTransformations', createLimit: 9, updateLimit: 9, deleteLimit: 9 },
@@ -95,7 +103,12 @@ async function upsertFeatureLimitsRecord(product: Stripe.Product) {
         { featureName: 'GTMTriggers', createLimit: 120, updateLimit: 120, deleteLimit: 120 },
         { featureName: 'GTMVariables', createLimit: 180, updateLimit: 180, deleteLimit: 180 },
         { featureName: 'GTMWorkspaces', createLimit: 30, updateLimit: 30, deleteLimit: 30 },
-        { featureName: 'GTMVariablesBuiltIn', createLimit: 450, updateLimit: 450, deleteLimit: 450 },
+        {
+          featureName: 'GTMVariablesBuiltIn',
+          createLimit: 450,
+          updateLimit: 450,
+          deleteLimit: 450,
+        },
         { featureName: 'GTMFolders', createLimit: 30, updateLimit: 30, deleteLimit: 30 },
         { featureName: 'GTMTemplates', createLimit: 10, updateLimit: 10, deleteLimit: 10 },
         { featureName: 'GTMTransformations', createLimit: 20, updateLimit: 20, deleteLimit: 20 },
@@ -121,24 +134,69 @@ async function upsertFeatureLimitsRecord(product: Stripe.Product) {
         { featureName: 'GTMTags', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
         { featureName: 'GTMTriggers', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
         { featureName: 'GTMVariables', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
-        { featureName: 'GTMWorkspaces', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
-        { featureName: 'GTMVariablesBuiltIn', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
+        {
+          featureName: 'GTMWorkspaces',
+          createLimit: 10000,
+          updateLimit: 10000,
+          deleteLimit: 10000,
+        },
+        {
+          featureName: 'GTMVariablesBuiltIn',
+          createLimit: 10000,
+          updateLimit: 10000,
+          deleteLimit: 10000,
+        },
         { featureName: 'GTMClients', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
         { featureName: 'GTMFolders', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
         { featureName: 'GTMTemplates', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
-        { featureName: 'GTMTransformations', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
+        {
+          featureName: 'GTMTransformations',
+          createLimit: 10000,
+          updateLimit: 10000,
+          deleteLimit: 10000,
+        },
         { featureName: 'GTMZones', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
         { featureName: 'GTMVersions', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
         { featureName: 'GA4Accounts', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
-        { featureName: 'GA4Properties', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
-        { featureName: 'GA4ConversionEvents', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
-        { featureName: 'GA4CustomDimensions', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
-        { featureName: 'GA4CustomMetrics', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
+        {
+          featureName: 'GA4Properties',
+          createLimit: 10000,
+          updateLimit: 10000,
+          deleteLimit: 10000,
+        },
+        {
+          featureName: 'GA4ConversionEvents',
+          createLimit: 10000,
+          updateLimit: 10000,
+          deleteLimit: 10000,
+        },
+        {
+          featureName: 'GA4CustomDimensions',
+          createLimit: 10000,
+          updateLimit: 10000,
+          deleteLimit: 10000,
+        },
+        {
+          featureName: 'GA4CustomMetrics',
+          createLimit: 10000,
+          updateLimit: 10000,
+          deleteLimit: 10000,
+        },
         { featureName: 'GA4Streams', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
         { featureName: 'GA4FBLinks', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
         { featureName: 'GA4AdLinks', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
-        { featureName: 'GA4AccountAccess', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
-        { featureName: 'GA4PropertyAccess', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
+        {
+          featureName: 'GA4AccountAccess',
+          createLimit: 10000,
+          updateLimit: 10000,
+          deleteLimit: 10000,
+        },
+        {
+          featureName: 'GA4PropertyAccess',
+          createLimit: 10000,
+          updateLimit: 10000,
+          deleteLimit: 10000,
+        },
         { featureName: 'GA4Audiences', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
         { featureName: 'GA4KeyEvents', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
       ];
@@ -148,46 +206,48 @@ async function upsertFeatureLimitsRecord(product: Stripe.Product) {
   }
 
   const operations = defaultFeatureLimits.map((limit) => {
-    return prisma.feature.findUnique({
-      where: { name: limit.featureName },
-    }).then((feature) => {
-      if (feature) {
-        return prisma.tierFeatureLimit.findFirst({
-          where: {
-            productId: productId,
-            featureId: feature.id,
-          },
-        }).then((existingLimit) => {
-          if (existingLimit) {
-            return prisma.tierFeatureLimit.update({
-              where: { id: existingLimit.id },
-              data: {
-                createLimit: limit.createLimit,
-                updateLimit: limit.updateLimit,
-                deleteLimit: limit.deleteLimit,
-              },
-            });
-          } else {
-            return prisma.tierFeatureLimit.create({
-              data: {
+    return prisma.feature
+      .findUnique({
+        where: { name: limit.featureName },
+      })
+      .then((feature) => {
+        if (feature) {
+          return prisma.tierFeatureLimit
+            .findFirst({
+              where: {
                 productId: productId,
                 featureId: feature.id,
-                createLimit: limit.createLimit,
-                updateLimit: limit.updateLimit,
-                deleteLimit: limit.deleteLimit,
               },
+            })
+            .then((existingLimit) => {
+              if (existingLimit) {
+                return prisma.tierFeatureLimit.update({
+                  where: { id: existingLimit.id },
+                  data: {
+                    createLimit: limit.createLimit,
+                    updateLimit: limit.updateLimit,
+                    deleteLimit: limit.deleteLimit,
+                  },
+                });
+              } else {
+                return prisma.tierFeatureLimit.create({
+                  data: {
+                    productId: productId,
+                    featureId: feature.id,
+                    createLimit: limit.createLimit,
+                    updateLimit: limit.updateLimit,
+                    deleteLimit: limit.deleteLimit,
+                  },
+                });
+              }
             });
-          }
-        });
-      }
-      return null; // Ensures that the map always returns a promise
-    });
+        }
+        return null; // Ensures that the map always returns a promise
+      });
   });
 
   // Ensure to filter out any null operations (if `feature` was not found)
   await prisma.$transaction(operations.filter(Boolean));
-
-
 }
 
 // Product deleted
@@ -222,7 +282,6 @@ async function deleteProductRecord(product: Stripe.Product) {
     });
   });
 }
-
 
 // Price created or updated
 async function upsertPriceRecord(price: Stripe.Price) {
@@ -362,13 +421,11 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
     }
 
     await prisma.$transaction(operations);
-
   } catch (error: any) {
     console.error(`Error upserting subscription: ${error.message}`);
     throw new Error(error);
   }
 }
-
 
 // Handle Checkout Session Events Created by Stripe
 async function upsertCheckoutSessionRecord(checkoutSession: Stripe.Checkout.Session) {
@@ -558,8 +615,12 @@ async function upsertInvoiceRecord(invoice: Stripe.Invoice) {
       currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
       endedAt: stripeSubscription.ended_at ? new Date(stripeSubscription.ended_at * 1000) : null,
       cancelAt: stripeSubscription.cancel_at ? new Date(stripeSubscription.cancel_at * 1000) : null,
-      canceledAt: stripeSubscription.canceled_at ? new Date(stripeSubscription.canceled_at * 1000) : null,
-      trialStart: stripeSubscription.trial_start ? new Date(stripeSubscription.trial_start * 1000) : null,
+      canceledAt: stripeSubscription.canceled_at
+        ? new Date(stripeSubscription.canceled_at * 1000)
+        : null,
+      trialStart: stripeSubscription.trial_start
+        ? new Date(stripeSubscription.trial_start * 1000)
+        : null,
       trialEnd: stripeSubscription.trial_end ? new Date(stripeSubscription.trial_end * 1000) : null,
       quantity: stripeSubscription.items.data[0]?.quantity || 1,
       User: {
@@ -587,8 +648,12 @@ async function upsertInvoiceRecord(invoice: Stripe.Invoice) {
       currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
       endedAt: stripeSubscription.ended_at ? new Date(stripeSubscription.ended_at * 1000) : null,
       cancelAt: stripeSubscription.cancel_at ? new Date(stripeSubscription.cancel_at * 1000) : null,
-      canceledAt: stripeSubscription.canceled_at ? new Date(stripeSubscription.canceled_at * 1000) : null,
-      trialStart: stripeSubscription.trial_start ? new Date(stripeSubscription.trial_start * 1000) : null,
+      canceledAt: stripeSubscription.canceled_at
+        ? new Date(stripeSubscription.canceled_at * 1000)
+        : null,
+      trialStart: stripeSubscription.trial_start
+        ? new Date(stripeSubscription.trial_start * 1000)
+        : null,
       trialEnd: stripeSubscription.trial_end ? new Date(stripeSubscription.trial_end * 1000) : null,
       quantity: stripeSubscription.items.data[0]?.quantity || 1,
       User: {
@@ -770,7 +835,7 @@ export async function POST(req: NextRequest) {
         case 'product.created':
         case 'product.updated':
           await upsertProductRecord(event.data.object as Stripe.Product);
-          await upsertFeatureLimitsRecord(event.data.object as Stripe.Product)
+          await upsertFeatureLimitsRecord(event.data.object as Stripe.Product);
           break;
         case 'product.deleted':
           await deleteProductRecord(event.data.object as Stripe.Product);

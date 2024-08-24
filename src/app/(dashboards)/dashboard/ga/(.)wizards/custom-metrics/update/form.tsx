@@ -92,6 +92,7 @@ const FormUpdateCustomMetric = () => {
     control: form.control,
     name: 'forms',
   });
+  const measurementUnit = form.watch(`forms.${currentFormIndex}.measurementUnit`);
 
   if (notFoundError) {
     return <NotFoundErrorModal onClose={undefined} />;
@@ -99,8 +100,6 @@ const FormUpdateCustomMetric = () => {
   if (error) {
     return <ErrorModal />;
   }
-
-  const measurementUnit = form.watch(`forms.${currentFormIndex}.measurementUnit`);
 
   const handleNext = async () => {
     // Determine the names of the fields in the current form to validate
@@ -372,7 +371,7 @@ const FormUpdateCustomMetric = () => {
                                 {measurementUnit === MeasurementUnit.CURRENCY && (
                                   <FormField
                                     control={form.control}
-                                    name={`forms.${currentStep - 2}.restrictedMetricType`}
+                                    name={`forms.${currentFormIndex}.restrictedMetricType`}
                                     render={({ field }) => (
                                       <FormItem>
                                         <FormLabel>Restricted Metric Type</FormLabel>
@@ -382,8 +381,6 @@ const FormUpdateCustomMetric = () => {
                                           unit. Must be empty for metrics with a non-CURRENCY
                                           measurement unit.
                                         </FormDescription>
-
-                                        {/* Iterate through the restricted metric items and render checkboxes */}
                                         {RestrictedMetric.map((item) => (
                                           <FormItem
                                             key={item.id}
@@ -402,9 +399,9 @@ const FormUpdateCustomMetric = () => {
                                                       : field.value.filter(
                                                           (value) => value !== item.id
                                                         );
-                                                    field.onChange(updatedValue); // Update the field value
+                                                    field.onChange(updatedValue);
                                                   } else {
-                                                    field.onChange([item.id]); // Handle the case where the field value is not an array
+                                                    field.onChange([item.id]);
                                                   }
                                                 }}
                                               />
@@ -414,7 +411,6 @@ const FormUpdateCustomMetric = () => {
                                             </FormLabel>
                                           </FormItem>
                                         ))}
-
                                         <FormMessage />
                                       </FormItem>
                                     )}

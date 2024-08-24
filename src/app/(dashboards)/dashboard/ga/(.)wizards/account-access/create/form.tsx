@@ -83,6 +83,7 @@ const FormCreateAccountAccess: React.FC<FormCreateProps> = ({ tierLimits, accoun
     roles: [Role.VIEWER],
     account: '',
     user: '',
+    property: '',
   };
 
   const formCreateAmount = useForm({
@@ -91,6 +92,7 @@ const FormCreateAccountAccess: React.FC<FormCreateProps> = ({ tierLimits, accoun
       amount: 1,
     },
   });
+
   const form = useForm<Forms>({
     defaultValues: {
       forms: [formDataDefaults],

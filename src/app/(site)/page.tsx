@@ -14,7 +14,6 @@ import Hero from '@/src/components/server/Hero/Hero'; */
 export default async function Home() {
   return (
     <main>
-
       <div className="flex flex-col min-h-dvh">
         {/* <WaitlistForm /> */}
         <Hero />

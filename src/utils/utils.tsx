@@ -4,11 +4,25 @@ import { twMerge } from 'tailwind-merge';
 import { Dispatch } from 'redux';
 import { SubmitHandler, useFormContext } from 'react-hook-form';
 import { setCount, setLoading } from '@/redux/formSlice';
-import { FeatureResponse } from '../types/types';
+import { FeatureResponse, TierLimit } from '../types/types';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { setErrorDetails, setIsLimitReached, setNotFoundError } from '../redux/tableSlice';
 
+export interface Feature {
+  name: string;
+}
+
+export type LimitType = 'create' | 'update';
+
+/**
+ * Calculate the remaining limit for a specific feature and operation type (create/update).
+ *
+ * @param tierLimits - Array of Subscription objects.
+ * @param featureName - Name of the feature to find the tier limit for.
+ * @param limitType - Type of limit to calculate ('create' or 'update').
+ * @returns An object containing the limit, usage, and remaining limit for the specified type.
+ */
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -30,17 +44,17 @@ export const handleAmountChange = (
   dispatch(setCount(amount));
 };
 
-
 // Define a type constraint for forms that include the `parent` field
 type FormWithParent = { parent: string; name: string; displayName: string };
 
 // Make processForm generic to accept different types of forms
 export const processForm = <TFormValues extends FormWithParent>(
   apiCall: (data: { forms: TFormValues[] }) => Promise<FeatureResponse>,
-  formDataDefaults: TFormValues,
+  formDataDefaults: TFormValues[], // Accepting an array of defaults
   resetForm: () => void,
   dispatch: Dispatch,
-  router: ReturnType<typeof useRouter>
+  router: ReturnType<typeof useRouter>,
+  redirectPath: string
 ): SubmitHandler<{ forms: TFormValues[] }> => {
   return async (data) => {
     const { forms } = data;
@@ -73,14 +87,13 @@ export const processForm = <TFormValues extends FormWithParent>(
     try {
       const res = await apiCall({ forms });
 
-      console.log('res:', res);
-
+      console.log('res', res);
 
       if (res.success) {
         res.results.forEach((result) => {
           if (result.success) {
             toast.success(
-              `Property ${result.name} created successfully. The table will update shortly.`,
+              `Execution of ${result.name} is successful. The table will update shortly.`,
               {
                 action: {
                   label: 'Close',
@@ -91,8 +104,7 @@ export const processForm = <TFormValues extends FormWithParent>(
           }
         });
 
-
-        router.push('/dashboard/ga/properties');
+        router.push(redirectPath);
       } else {
         handleErrors(res, dispatch);
       }
@@ -118,7 +130,7 @@ const handleErrors = (res: FeatureResponse, dispatch: Dispatch) => {
     res.results.forEach((result) => {
       if (result.notFound) {
         toast.error(
-          `Unable to create stream ${result.name}. Please check your access permissions. Any other properties created were successful.`,
+          `Unable to execute ${result.name}. Please check your access permissions. Any other properties created were successful.`,
           {
             action: {
               label: 'Close',
@@ -160,4 +172,32 @@ const handleErrors = (res: FeatureResponse, dispatch: Dispatch) => {
       });
     });
   }
+};
+
+export const calculateRemainingLimit = (
+  tierLimits: TierLimit[],
+  featureName: string,
+  limitType: LimitType = 'create'
+) => {
+  const foundTierLimit = tierLimits.find(
+    (subscription) => subscription.Feature?.name === featureName
+  );
+
+  if (!foundTierLimit) {
+    return {
+      limit: 0,
+      usage: 0,
+      remaining: 0,
+    };
+  }
+
+  const limit = foundTierLimit[`${limitType}Limit`] || 0;
+  const usage = foundTierLimit[`${limitType}Usage`] || 0;
+  const remaining = limit - usage;
+
+  return {
+    limit,
+    usage,
+    remaining,
+  };
 };

@@ -315,6 +315,7 @@ const FormCreateAds: React.FC<FormCreateProps> = ({
                       handleAmountChange(value); // Call the modified handler
                     }}
                     value={field.value.toString()} // Ensure the Select reflects the form state
+                    defaultValue={count.toString()}
                   >
                     <FormControl>
                       <SelectTrigger>

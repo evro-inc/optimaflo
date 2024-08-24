@@ -574,7 +574,6 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
     await revalidate(keys, '/dashboard/gtm/entities', userId);
   };
 
-
   return (
     <div className="flex flex-row gap-4">
       <Button onClick={refreshAllCache}>Refresh GTM Cache</Button>
@@ -586,7 +585,6 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
         onOpenChange={setIsDrawerOpen}
       >
         <DrawerTrigger asChild>
-
           <Button
             variant="outline"
             type="button"
@@ -623,15 +621,21 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
                           <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger
                               value="publish"
-                              className={`relative p-2 transition-colors ${activeTab === 'publish' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
-                                }`}
+                              className={`relative p-2 transition-colors ${
+                                activeTab === 'publish'
+                                  ? 'bg-blue-100 shadow-md'
+                                  : 'hover:bg-blue-50'
+                              }`}
                             >
                               Publish and Create Version
                             </TabsTrigger>
                             <TabsTrigger
                               value="version"
-                              className={`relative p-2 transition-colors ${activeTab === 'version' ? 'bg-blue-100 shadow-md' : 'hover:bg-blue-50'
-                                }`}
+                              className={`relative p-2 transition-colors ${
+                                activeTab === 'version'
+                                  ? 'bg-blue-100 shadow-md'
+                                  : 'hover:bg-blue-50'
+                              }`}
                             >
                               Create Version
                             </TabsTrigger>
@@ -671,8 +675,8 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
                                     <FormItem>
                                       <FormLabel>Version Description</FormLabel>
                                       <FormDescription>
-                                        The version description will be applied to all containers you
-                                        are trying to publish. Optional.
+                                        The version description will be applied to all containers
+                                        you are trying to publish. Optional.
                                       </FormDescription>
                                       <FormControl>
                                         <Textarea
@@ -794,8 +798,8 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
                                     <FormItem>
                                       <FormLabel>Version Description</FormLabel>
                                       <FormDescription>
-                                        The version description will be applied to all containers you
-                                        are trying to publish. Optional.
+                                        The version description will be applied to all containers
+                                        you are trying to publish. Optional.
                                       </FormDescription>
                                       <FormControl>
                                         <Textarea
@@ -818,9 +822,12 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
                                   render={() => (
                                     <FormItem>
                                       <div className="mb-4">
-                                        <FormLabel className="text-base">Choose GTM Entity</FormLabel>
+                                        <FormLabel className="text-base">
+                                          Choose GTM Entity
+                                        </FormLabel>
                                         <FormDescription>
-                                          Select the GTM entities you want to publish the changes to.
+                                          Select the GTM entities you want to publish the changes
+                                          to.
                                         </FormDescription>
                                       </div>
                                       {uniqueAccountContainerInfo.map((item) => (

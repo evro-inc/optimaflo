@@ -13,8 +13,6 @@ export function cleanWorkspaceFeatures(workspaces: any[] | undefined) {
   });
 }
 
-
-
 export async function fetchGtmSettings(userId: string) {
   const existingUser = await prisma.User.findFirst({ where: { id: userId } });
 

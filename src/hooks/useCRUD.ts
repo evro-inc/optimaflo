@@ -71,7 +71,7 @@ export function useUpdateHookForm(
 export const useDeleteHook = (
   deleteAction, // The dynamic delete action function
   selectedRows, // Selected rows, generic type
-  table,        // The table instance to reset row selection
+  table, // The table instance to reset row selection
   getDisplayNames, // Function to extract display names from selected rows
   typeName = 'items' // A generic name to be used in toast messages (optional)
 ) => {
@@ -91,10 +91,7 @@ export const useDeleteHook = (
     const displayNames = getDisplayNames(itemsToDelete);
 
     // Call the dynamic delete action with the selected items and their display names
-    const response: FeatureResponse = await deleteAction(
-      new Set(itemsToDelete),
-      displayNames
-    );
+    const response: FeatureResponse = await deleteAction(new Set(itemsToDelete), displayNames);
 
     if (!response.success) {
       let message = response.message || 'An error occurred.';
@@ -139,7 +136,7 @@ export const useDeleteHook = (
 export const useRevertHook = (
   revertAction, // The dynamic revert action function
   selectedRows, // Selected rows, generic type
-  table,        // The table instance to reset row selection
+  table, // The table instance to reset row selection
   getDisplayNames, // Function to extract display names from selected rows (optional)
   typeName = 'items' // A generic name to be used in toast messages (optional)
 ) => {

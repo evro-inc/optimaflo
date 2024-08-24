@@ -333,18 +333,19 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
               name="amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>How many properties do you want to create?</FormLabel>
+                  <FormLabel>How many users do you want to add?</FormLabel>
                   <Select
+                    {...field} // This binds the Select to the form state
                     onValueChange={(value) => {
-                      field.onChange(value); // Use field.onChange to update the form value
+                      field.onChange(value); // Update form state
                       handleAmountChange(value); // Call the modified handler
                     }}
-                    value={field.value.toString()} // Ensure the Select reflects the form state
-                    defaultValue={count.toString()}
+                    defaultValue={count.toString()} // Convert count to string
+                    value={field.value.toString()} // Convert value to string
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select the amount of properties you want to create." />
+                        <SelectValue placeholder="Select the amount of conversion events you want to create." />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -529,12 +530,12 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                               )}
                             />
 
-                            {Object.keys(streamType).map(
-                              (type) =>
-                                form.watch(`forms.${currentStep - 2}.type`) ===
-                                  streamType[type] && (
+                            {Object.keys(streamType).map((type) => {
+                              const streamTypeValue = form.watch(`forms.${currentStep - 2}.type`);
+                              if (streamTypeValue === streamType[type]) {
+                                return (
                                   <FormField
-                                    key={type}
+                                    key={type} // Add a unique key prop
                                     control={form.control}
                                     name={`forms.${currentStep - 2}.${
                                       type.toLowerCase() === 'web'
@@ -568,8 +569,10 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                                       </FormItem>
                                     )}
                                   />
-                                )
-                            )}
+                                );
+                              }
+                              return null; // Return null if the condition is not met
+                            })}
                           </>
                         );
                       })()}
