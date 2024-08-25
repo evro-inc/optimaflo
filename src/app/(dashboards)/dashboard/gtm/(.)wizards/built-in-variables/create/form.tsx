@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/src/components/ui/select';
-import { BuiltInVariableType, FeatureResponse, FormCreateGTMProps } from '@/src/types/types';
+import { FeatureResponse, FormCreateGTMProps } from '@/src/types/types';
 import { toast } from 'sonner';
 import {
   selectTable,
@@ -43,6 +43,7 @@ import {
   listGtmBuiltInVariables,
 } from '@/src/lib/fetch/dashboard/actions/gtm/variablesBuiltIn';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/src/components/ui/tabs';
+import { BuiltInVariableType } from '@/src/types/gtm';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -160,6 +161,8 @@ const FormCreateBuiltInVariable: React.FC<FormCreateGTMProps> = ({
     name: 'forms',
   });
 
+  const includeDefaultValue = form.watch('forms');
+
   // Effect to update count when amount changes
   useEffect(() => {
     const amountValue = formCreateAmount.watch('amount'); // Extract the watched value
@@ -173,8 +176,6 @@ const FormCreateBuiltInVariable: React.FC<FormCreateGTMProps> = ({
   if (error) {
     return <ErrorModal />;
   }
-
-  const includeDefaultValue = form.watch('forms');
 
   const addForm = () => {
     append(formDataDefaults as any);
@@ -367,21 +368,18 @@ const FormCreateBuiltInVariable: React.FC<FormCreateGTMProps> = ({
             <FormField
               control={formCreateAmount.control}
               name="amount"
-              render={({ field }) => (
+              render={() => (
                 <FormItem>
-                  <FormLabel>How many conversion events do you want to create?</FormLabel>
+                  <FormLabel>How many key built-in variable forms do you want to create?</FormLabel>
                   <Select
-                    {...field}
-                    value={field.value.toString()} // Convert value to string
                     onValueChange={(value) => {
-                      field.onChange(value); // Update form state
                       handleAmountChange(value); // Call the modified handler
                     }}
                     defaultValue={count.toString()}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select the amount of conversion events you want to create." />
+                        <SelectValue placeholder="Select the amount of key events you want to create." />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -392,11 +390,9 @@ const FormCreateBuiltInVariable: React.FC<FormCreateGTMProps> = ({
                       ))}
                     </SelectContent>
                   </Select>
-                  <FormMessage />
                 </FormItem>
               )}
             />
-
             <Button type="button" onClick={handleNext}>
               Next
             </Button>

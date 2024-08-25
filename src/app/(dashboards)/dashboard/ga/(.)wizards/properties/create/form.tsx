@@ -18,7 +18,7 @@ import {
   useFormInitialization,
   useStepNavigation,
 } from '@/src/hooks/wizard';
-import { formFieldConfigs } from '@/src/utils/formFields';
+import { formFieldConfigs } from '@/src/utils/gaFormFields';
 import dynamic from 'next/dynamic';
 const FormFieldComponent = dynamic(
   () => import('@/src/components/client/Utils/Form').then((mod) => mod.FormFieldComponent),

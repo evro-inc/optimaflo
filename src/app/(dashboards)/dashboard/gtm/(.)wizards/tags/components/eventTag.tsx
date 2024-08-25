@@ -323,13 +323,13 @@ const EventTag = ({ formIndex }: Props) => {
     if (includeSetupTag) {
       appendSetupTag({ tagName: '', stopOnSetupFailure: false });
     }
-  }, [includeSetupTag, appendSetupTag]);
+  }, [appendSetupTag, includeSetupTag]);
 
   useEffect(() => {
     if (includeTeardownTag) {
       appendTeardownTag({ tagName: '', stopOnSetupFailure: false });
     }
-  }, [includeTeardownTag, appendTeardownTag]);
+  }, [appendTeardownTag, includeTeardownTag]);
 
   const handleStartDateChange = (date: Date | undefined) => {
     setSelectedStartDate(date || null);

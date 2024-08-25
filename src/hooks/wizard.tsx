@@ -25,12 +25,12 @@ type UseStepNavigationParams = {
     fieldsToValidate: string[];
 };
 
-export const useFormInitialization = (
-    formDataDefaults: GA4PropertyType[], // Change to an array of GA4PropertyType
+export const useFormInitialization = <T extends Record<string, any>>(
+    formDataDefaults: T[], // Generic type for formDataDefaults
     FormsSchema: ZodSchema
 ) => {
     const dispatch = useDispatch();
-    const propertyCount = useSelector((state: RootState) => state.form.count);
+    const count = useSelector((state: RootState) => state.form.count);
 
     // Infer the form type dynamically based on the provided schema
     type Forms = z.infer<typeof FormsSchema>;
@@ -61,7 +61,7 @@ export const useFormInitialization = (
         append(formDataDefaults[0]); // Append a single default form (or modify as needed)
     };
 
-    return { formAmount, form, fields, addForm, propertyCount };
+    return { formAmount, form, fields, addForm, count };
 };
 
 export const useStepNavigation = ({

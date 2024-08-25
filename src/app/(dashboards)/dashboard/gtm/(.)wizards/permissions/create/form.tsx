@@ -12,14 +12,7 @@ import {
   UserPermissionType,
 } from '@/src/lib/schemas/gtm/userPermissions';
 import { Button } from '@/src/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/src/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel } from '@/src/components/ui/form';
 import {
   Select,
   SelectContent,
@@ -27,7 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/src/components/ui/select';
-
 import {
   AccountPermission,
   ContainerPermission,
@@ -45,10 +37,8 @@ import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { CreatePermissions } from '@/src/lib/fetch/dashboard/actions/gtm/permissions';
-
 import EmailAddressField from '../components/email';
 import EntitySelection from '../components/entitySelection';
-
 import { addForm } from '@/src/redux/gtm/userPermissionSlice';
 
 const NotFoundErrorModal = dynamic(
@@ -81,7 +71,7 @@ const FormCreatePermission: React.FC<FormCreateProps> = ({
   const loading = useSelector((state: RootState) => state.form.loading);
   const error = useSelector((state: RootState) => state.form.error);
   const currentStep = useSelector((state: RootState) => state.form.currentStep);
-  const count = useSelector((state: RootState) => state.form.count);
+  const propertyCount = useSelector((state: RootState) => state.form.count);
   const forms = useSelector((state: RootState) => state.gtmUserPermission.forms);
   const notFoundError = useSelector(selectTable).notFoundError;
   const router = useRouter();
@@ -118,22 +108,21 @@ const FormCreatePermission: React.FC<FormCreateProps> = ({
     name: 'forms',
   });
 
-  // Effect to update propertyCount when amount changes
-  // Extract the watched value and complex expressions into variables
   const watchedAmount = formCreateAmount.watch('amount');
-  const parsedAmount = parseInt(watchedAmount.toString());
-  const areFormsInitialized = Array.isArray(forms) && forms.length >= parsedAmount;
 
   useEffect(() => {
-    dispatch(setCount(parsedAmount));
+    const amount = parseInt(formCreateAmount.getValues('amount').toString());
+    dispatch(setCount(amount));
 
     // Ensure forms are initialized
-    if (!areFormsInitialized) {
-      for (let i = forms.length; i < parsedAmount; i++) {
-        dispatch(addForm());
+    if (Array.isArray(forms)) {
+      for (let i = 0; i < amount; i++) {
+        if (!forms[i]) {
+          dispatch(addForm());
+        }
       }
     }
-  }, [parsedAmount, dispatch, forms.length, areFormsInitialized]);
+  }, [watchedAmount, dispatch, forms, formCreateAmount]);
 
   if (notFoundError) {
     return <NotFoundErrorModal onClose={undefined} />;
@@ -357,21 +346,18 @@ const FormCreatePermission: React.FC<FormCreateProps> = ({
             <FormField
               control={formCreateAmount.control}
               name="amount"
-              render={({ field }) => (
+              render={() => (
                 <FormItem>
-                  <FormLabel>How many conversion events do you want to create?</FormLabel>
+                  <FormLabel>How many permissions do you want to create?</FormLabel>
                   <Select
-                    {...field}
-                    value={field.value.toString()} // Convert value to string
                     onValueChange={(value) => {
-                      field.onChange(value); // Update form state
-                      handleAmountChange(value); // Call the modified handler
+                      handleAmountChange(value);
                     }}
-                    defaultValue={count.toString()}
+                    defaultValue={propertyCount.toString()}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select the amount of conversion events you want to create." />
+                        <SelectValue placeholder="Select the amount of properties you want to create." />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -382,11 +368,9 @@ const FormCreatePermission: React.FC<FormCreateProps> = ({
                       ))}
                     </SelectContent>
                   </Select>
-                  <FormMessage />
                 </FormItem>
               )}
             />
-
             <Button type="button" onClick={handleNext}>
               Next
             </Button>

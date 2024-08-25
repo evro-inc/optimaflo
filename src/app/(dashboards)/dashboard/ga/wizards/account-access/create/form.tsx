@@ -37,7 +37,7 @@ import { Separator } from '@/src/components/ui/separator';
 import { Checkbox } from '@/src/components/ui/checkbox';
 import { useErrorHandling, useFormInitialization, useStepNavigation } from '@/src/hooks/wizard';
 import { calculateRemainingLimit, handleAmountChange, processForm } from '@/src/utils/utils';
-import { formFieldConfigs } from '@/src/utils/formFields';
+import { formFieldConfigs } from '@/src/utils/gaFormFields';
 import { FormFieldComponent } from '@/src/components/client/Utils/Form';
 
 const FormCreateAccountAccess: React.FC<FormCreateProps> = React.memo(
@@ -71,7 +71,7 @@ const FormCreateAccountAccess: React.FC<FormCreateProps> = React.memo(
     }];
 
 
-    const { formAmount, form, fields, addForm, propertyCount } = useFormInitialization(
+    const { formAmount, form, fields, addForm, propertyCount } = useFormInitialization<AccessBinding>(
       formDataDefaults,
       FormsSchema
     );
@@ -89,7 +89,7 @@ const FormCreateAccountAccess: React.FC<FormCreateProps> = React.memo(
       () => form.reset({ forms: [formDataDefaults] }),
       dispatch,
       router,
-      '/dashboard/ga/properties'
+      '/dashboard/ga/access-permissions'
     );
 
     if (errorModal) return errorModal;

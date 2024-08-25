@@ -62,15 +62,20 @@ export default function EntitySelect({
     }
   }, [formIndex, forms, dispatch]);
 
-  // Compute selectedAccountIds directly without memoization
-  const selectedAccountIds =
+  // Move useWatch inside useMemo
+  const watchedPermissions =
     useWatch({
       control,
       name: `forms.${formIndex}.permissions`,
-    })?.map((permission) => permission.accountId) || [];
+    }) || [];
 
-  // Compute isAddEntityDisabled directly without memoization
-  const isAddEntityDisabled = selectedAccountIds.length >= accountsWithContainers.length;
+  // Use watchedPermissions directly
+  const selectedAccountIds = watchedPermissions.map((permission) => permission.accountId);
+
+  const isAddEntityDisabled = useMemo(
+    () => selectedAccountIds.length >= accountsWithContainers.length,
+    [selectedAccountIds, accountsWithContainers]
+  );
 
   useEffect(() => {
     const updatedPermissions = getValues(`forms.${formIndex}.permissions`);

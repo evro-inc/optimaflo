@@ -18,8 +18,8 @@ import {
   useFormInitialization,
   useStepNavigation,
 } from '@/src/hooks/wizard';
-import { formFieldConfigs } from '@/src/utils/formFields';
 import dynamic from 'next/dynamic';
+import { formFieldConfigs } from '@/src/utils/gtmFormFields';
 const FormFieldComponent = dynamic(
   () => import('@/src/components/client/Utils/Form').then((mod) => mod.FormFieldComponent),
   { ssr: false }
@@ -60,7 +60,7 @@ const FormCreateProperty: React.FC<FormCreateProps> = React.memo(
       },
     ];
 
-    const { formAmount, form, fields, addForm, propertyCount } = useFormInitialization(
+    const { formAmount, form, fields, addForm, propertyCount } = useFormInitialization<GA4PropertyType>(
       formDataDefaults,
       FormsSchema
     );

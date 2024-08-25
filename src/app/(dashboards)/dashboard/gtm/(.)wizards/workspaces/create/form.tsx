@@ -95,13 +95,6 @@ const FormCreateWorkspace: React.FC<FormCreateProps> = ({
     },
   });
 
-  // Effect to update propertyCount when amount changes
-  useEffect(() => {
-    const amountValue = formCreateAmount.watch('amount'); // Extract the watched value
-    const amount = parseInt(amountValue?.toString() || '0'); // Handle cases where amountValue might be undefined or null
-    dispatch(setCount(amount));
-  }, [formCreateAmount, dispatch]); // Include formCreateAmount and dispatch as dependencies
-
   const form = useForm<Forms>({
     defaultValues: {
       forms: [formDataDefaults],
@@ -113,6 +106,13 @@ const FormCreateWorkspace: React.FC<FormCreateProps> = ({
     control: form.control,
     name: 'forms',
   });
+
+  // Effect to update propertyCount when amount changes
+  useEffect(() => {
+    const amountValue = formCreateAmount.watch('amount'); // Extract the watched value
+    const amount = parseInt(amountValue?.toString() || '0'); // Handle cases where amountValue might be undefined or null
+    dispatch(setCount(amount));
+  }, [formCreateAmount, dispatch]); // Include formCreateAmount and dispatch as dependencies
 
   if (notFoundError) {
     return <NotFoundErrorModal onClose={undefined} />;

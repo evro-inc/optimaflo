@@ -32,13 +32,13 @@ export const FormCreateAmountSchema = z.object({
 // Schema for container create form data
 // Define the schema for a single form
 const SingleFormSchema = z.object({
-  path: z.string(),
+  path: z.string().optional(),
   accountId: z.string().nonempty('Account Id is required'),
   containerId: z.string().optional(),
   publicId: z.string(),
   tagIds: z.array(z.string()).optional(),
-  features: FeaturesSchema,
-  usageContext: z.array(UsageContextType),
+  features: FeaturesSchema.optional(),
+  usageContext: z.string(UsageContextType),
   name: z.string().nonempty('Container Name is required'),
   domainName: z
     .string()
@@ -66,7 +66,7 @@ const SingleFormSchema = z.object({
         message: 'Notes must be between 1 and 500 characters',
       }
     ),
-  tagManagerUrl: z.string(),
+  tagManagerUrl: z.string().optional(),
   taggingServerUrls: z.array(z.string()).optional(),
 });
 

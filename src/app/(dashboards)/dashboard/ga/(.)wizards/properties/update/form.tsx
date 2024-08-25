@@ -12,7 +12,7 @@ import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import { calculateRemainingLimit, processForm } from '@/src/utils/utils';
 import { useErrorHandling, useFormInitialization, useStepNavigation } from '@/src/hooks/wizard';
-import { formFieldConfigs } from '@/src/utils/formFields';
+import { formFieldConfigs } from '@/src/utils/gaFormFields';
 import { FormFieldComponent } from '@/src/components/client/Utils/Form';
 import { Form } from '@/src/components/ui/form';
 

@@ -40,7 +40,6 @@ import {
 import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-
 import { fetchAllVariables, variableTypeArray } from '../../../configurations/@variables/items';
 import { CreateVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variables';
 import HttpReferrer from '../components/httpReferrer';

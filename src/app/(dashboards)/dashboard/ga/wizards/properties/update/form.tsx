@@ -12,9 +12,9 @@ import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import { calculateRemainingLimit, processForm } from '@/src/utils/utils';
 import { useErrorHandling, useFormInitialization, useStepNavigation } from '@/src/hooks/wizard';
-import { formFieldConfigs } from '@/src/utils/formFields';
 import { FormFieldComponent } from '@/src/components/client/Utils/Form';
 import { Form } from '@/src/components/ui/form';
+import { formFieldConfigs } from '@/src/utils/gtmFormFields';
 
 const FormUpdateProperty: React.FC<FormUpdateProps> = React.memo(({ tierLimits }) => {
   // Destructure tierLimits from FormUpdateProps
@@ -72,7 +72,7 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = React.memo(({ tierLimits }
     acknowledgment: rowData.acknowledgment,
   }));
 
-  const { form, fields } = useFormInitialization(formDataDefaults, FormsSchema);
+  const { form, fields } = useFormInitialization<GA4PropertyType>(formDataDefaults, FormsSchema);
 
   const { handleNext, handlePrevious } = useStepNavigation({
     form,

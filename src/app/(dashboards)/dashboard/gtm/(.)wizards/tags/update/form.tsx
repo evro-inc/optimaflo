@@ -134,6 +134,11 @@ const FormUpdateTags = ({ data }) => {
     name: 'forms',
   });
 
+  const selectedType = useWatch({
+    control: form.control,
+    name: `forms.${currentFormIndex}.type`,
+  });
+
   useEffect(() => {
     formDataDefaults.forEach((data, index) => {
       form.setValue(`forms.${index}.accountId`, data.accountId);
@@ -142,11 +147,6 @@ const FormUpdateTags = ({ data }) => {
       form.setValue(`forms.${index}.tagId`, data.tagId);
     });
   }, [form, formDataDefaults]);
-
-  const selectedType = useWatch({
-    control: form.control,
-    name: `forms.${currentFormIndex}.type`,
-  });
 
   if (notFoundError) {
     return <NotFoundErrorModal onClose={undefined} />;

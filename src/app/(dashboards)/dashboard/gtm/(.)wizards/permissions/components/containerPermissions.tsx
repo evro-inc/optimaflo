@@ -25,6 +25,7 @@ export const ContainerPermissions: React.FC<{
     name: `forms.${formIndex}.permissions.${permissionIndex}.containerAccess`,
   });
 
+  // Call useWatch directly to get containerAccess and selectedAccountId
   const containerAccess =
     useWatch({
       control,
@@ -38,13 +39,12 @@ export const ContainerPermissions: React.FC<{
     name: `forms.${formIndex}.permissions.${permissionIndex}.accountId`,
   });
 
+  // Now you can use the values in useMemo
   const filteredContainers = useMemo(() => {
     return table.filter((permission) => permission.accountId === selectedAccountId);
   }, [table, selectedAccountId]);
 
-  const isAddContainerDisabled = useMemo(() => {
-    return selectedContainerIds.length >= filteredContainers.length;
-  }, [selectedContainerIds, filteredContainers]);
+  const isAddContainerDisabled = selectedContainerIds.length >= filteredContainers.length;
 
   return (
     <div className="flex flex-col">
@@ -109,7 +109,6 @@ export const ContainerPermissions: React.FC<{
                 </FormItem>
               )}
             />
-
             <FormField
               control={control}
               name={`forms.${formIndex}.permissions.${permissionIndex}.containerAccess.${containerIndex}.permission`}
@@ -154,7 +153,6 @@ export const ContainerPermissions: React.FC<{
                 </FormItem>
               )}
             />
-
             <Button
               type="button"
               onClick={() => {

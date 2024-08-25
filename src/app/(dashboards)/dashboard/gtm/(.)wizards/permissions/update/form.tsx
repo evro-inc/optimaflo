@@ -12,14 +12,7 @@ import {
   UserPermissionType,
 } from '@/src/lib/schemas/gtm/userPermissions';
 import { Button } from '@/src/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/src/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel } from '@/src/components/ui/form';
 import {
   Select,
   SelectContent,
@@ -48,6 +41,7 @@ import { UpdatePermissions } from '@/src/lib/fetch/dashboard/actions/gtm/permiss
 
 import EmailForm from '../components/email';
 import EntitySelection from '../components/entitySelection';
+
 import { addForm } from '@/src/redux/gtm/userPermissionSlice';
 
 const NotFoundErrorModal = dynamic(
@@ -81,7 +75,7 @@ const FormUpdatePermissions: React.FC<FormCreateProps> = ({
   const loading = useSelector((state: RootState) => state.form.loading);
   const error = useSelector((state: RootState) => state.form.error);
   const currentStep = useSelector((state: RootState) => state.form.currentStep);
-  const count = useSelector((state: RootState) => state.form.count);
+  const propertyCount = useSelector((state: RootState) => state.form.count);
   const forms = useSelector((state: RootState) => state.gtmUserPermission.forms);
   const notFoundError = useSelector(selectTable).notFoundError;
   const router = useRouter();
@@ -118,11 +112,10 @@ const FormUpdatePermissions: React.FC<FormCreateProps> = ({
     name: 'forms',
   });
 
-  // Extract the watched value
+  // Effect to update propertyCount when amount changes
   const watchedAmount = formCreateAmount.watch('amount');
 
   useEffect(() => {
-    // Convert the watched amount to an integer
     const amount = parseInt(formCreateAmount.getValues('amount').toString());
     dispatch(setCount(amount));
 
@@ -146,7 +139,6 @@ const FormUpdatePermissions: React.FC<FormCreateProps> = ({
       />
     );
   }
-
   if (error) {
     return <ErrorModal />;
   }
@@ -399,21 +391,18 @@ const FormUpdatePermissions: React.FC<FormCreateProps> = ({
             <FormField
               control={formCreateAmount.control}
               name="amount"
-              render={({ field }) => (
+              render={() => (
                 <FormItem>
-                  <FormLabel>How many conversion events do you want to create?</FormLabel>
+                  <FormLabel>How many permissions do you want to create?</FormLabel>
                   <Select
-                    {...field}
-                    value={field.value.toString()} // Convert value to string
                     onValueChange={(value) => {
-                      field.onChange(value); // Update form state
-                      handleAmountChange(value); // Call the modified handler
+                      handleAmountChange(value);
                     }}
-                    defaultValue={count.toString()}
+                    defaultValue={propertyCount.toString()}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select the amount of conversion events you want to create." />
+                        <SelectValue placeholder="Select the amount of properties you want to create." />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -424,11 +413,9 @@ const FormUpdatePermissions: React.FC<FormCreateProps> = ({
                       ))}
                     </SelectContent>
                   </Select>
-                  <FormMessage />
                 </FormItem>
               )}
             />
-
             <Button type="button" onClick={handleNext}>
               Next
             </Button>
