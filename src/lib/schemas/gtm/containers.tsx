@@ -8,22 +8,6 @@ const isValidDomainName = (domain: string) => {
   return domainRegex.test(domain);
 };
 
-const FeaturesSchema = z.object({
-  supportUserPermissions: z.boolean(),
-  supportEnvironments: z.boolean(),
-  supportWorkspaces: z.boolean(),
-  supportGtagConfigs: z.boolean(),
-  supportBuiltInVariables: z.boolean(),
-  supportClients: z.boolean(),
-  supportFolders: z.boolean(),
-  supportTags: z.boolean(),
-  supportTemplates: z.boolean(),
-  supportTriggers: z.boolean(),
-  supportVariables: z.boolean(),
-  supportVersions: z.boolean(),
-  supportZones: z.boolean(),
-  supportTransformations: z.boolean(),
-});
 
 export const FormCreateAmountSchema = z.object({
   amount: z.number(),
@@ -37,7 +21,6 @@ const SingleFormSchema = z.object({
   containerId: z.string().optional(),
   publicId: z.string(),
   tagIds: z.array(z.string()).optional(),
-  features: FeaturesSchema.optional(),
   usageContext: z.string(UsageContextType),
   name: z.string().nonempty('Container Name is required'),
   domainName: z

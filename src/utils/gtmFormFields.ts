@@ -1,11 +1,3 @@
-import { GA4PropertyType } from '@/src/types/types';
-import {
-    CurrencyCodes,
-    IndustryCategories,
-    retentionSettings360,
-    retentionSettingsStandard,
-    TimeZones,
-} from '../app/(dashboards)/dashboard/ga/properties/@properties/propertyItems';
 
 // GTM-specific field configurations
 

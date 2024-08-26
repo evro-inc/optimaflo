@@ -14,10 +14,9 @@ import { calculateRemainingLimit, processForm } from '@/src/utils/utils';
 import { useErrorHandling, useFormInitialization, useStepNavigation } from '@/src/hooks/wizard';
 import { FormFieldComponent } from '@/src/components/client/Utils/Form';
 import { Form } from '@/src/components/ui/form';
-import { formFieldConfigs } from '@/src/utils/gtmFormFields';
+import { gaFormFieldConfigs } from '@/src/utils/gaFormFields';
 
 const FormUpdateProperty: React.FC<FormUpdateProps> = React.memo(({ tierLimits }) => {
-  // Destructure tierLimits from FormUpdateProps
   const dispatch = useDispatch();
   const loading = useSelector((state: RootState) => state.form.loading);
   const error = useSelector((state: RootState) => state.form.error);
@@ -27,7 +26,6 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = React.memo(({ tierLimits }
   const errorModal = useErrorHandling(error, notFoundError);
 
   const selectedRowData = useSelector((state: RootState) => state.table.selectedRows);
-  const currentFormIndex = currentStep - 1; // Adjust for 0-based index
 
   const remainingUpdateData = calculateRemainingLimit(tierLimits || [], 'GA4Properties', 'update');
   const remainingUpdate = remainingUpdateData.remaining;
@@ -57,8 +55,12 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = React.memo(({ tierLimits }
     ])
   );
 
-  const configs = formFieldConfigs('update', remainingUpdate, selectedRowDataTransformed);
+  // Adjust currentPropertyIndex to match currentStep correctly
+  const currentPropertyIndex = currentStep - 1; // Adjust for zero-based indexing
 
+  const configs = gaFormFieldConfigs('GA4Property', 'update', remainingUpdate, selectedRowDataTransformed);
+
+  // Correct mapping of formDataDefaults to align each row data with the current step
   const formDataDefaults: GA4PropertyType[] = Object.values(selectedRowData).map((rowData) => ({
     name: rowData.displayName,
     parent: rowData.name,
@@ -91,93 +93,64 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = React.memo(({ tierLimits }
 
   if (errorModal) return errorModal;
 
+  const renderForms = () => {
+    // Use the currentPropertyIndex directly for the form values
+    const currentPropertyName = formDataDefaults[currentPropertyIndex]?.displayName || `Property ${currentPropertyIndex}`;
+
+    return (
+      <div className="w-full">
+        <div
+          key={fields[currentStep - 1]?.id} // Adjust key indexing to match current step
+          className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
+        >
+          <div className="max-w-xl mx-auto">
+            {/* Display the current property name */}
+            <h1>{currentPropertyName}</h1>
+            <div className="mt-12">
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  id="updateProperty"
+                  className="space-y-6"
+                >
+                  {Object.entries(configs)
+                    .filter(([key]) => key !== 'amount' && key !== 'parent')
+                    .map(([key, config]) => (
+                      <FormFieldComponent
+                        key={key}
+                        name={`forms.${currentStep - 1}.${key}`} // Ensure correct form name mapping
+                        label={config.label}
+                        description={config.description}
+                        placeholder={config.placeholder}
+                        type={config.type}
+                        options={config.options}
+                      />
+                    ))}
+                  <div className="flex justify-between">
+                    <Button type="button" onClick={handlePrevious} disabled={currentStep === 1}>
+                      Previous
+                    </Button>
+
+                    {currentStep < fields.length ? (
+                      <Button type="button" onClick={handleNext}>
+                        Next
+                      </Button>
+                    ) : (
+                      <Button type="submit">{loading ? 'Submitting...' : 'Submit'}</Button>
+                    )}
+                  </div>
+                </form>
+              </Form>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="flex items-center justify-center h-screen">
-      {/* Conditional rendering based on the currentStep */}
-
-      {currentStep && (
-        <div className="w-full">
-          {/* Render only the form corresponding to the current step - 1 
-              (since step 1 is for selecting the number of forms) */}
-          {fields.length > 0 && fields.length >= currentStep && (
-            <div
-              key={fields[currentFormIndex].id}
-              className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-            >
-              <div className="max-w-full mx-auto">
-                <h1>{fields[currentFormIndex]?.displayName}</h1>
-                <div className="mt-12">
-                  {/* Form */}
-
-                  <Form {...form}>
-                    <form
-                      onSubmit={form.handleSubmit(onSubmit)}
-                      id={`updateProperty-${currentFormIndex}`}
-                      className="space-y-6"
-                    >
-                      {fields.length > 0 &&
-                        fields.map((field, index) => {
-                          if (index === currentFormIndex) {
-                            return (
-                              <>
-                                <FormFieldComponent
-                                  name={`forms.${currentFormIndex}.displayName`}
-                                  {...configs.displayName}
-                                />
-
-                                <FormFieldComponent
-                                  name={`forms.${currentFormIndex}.currencyCode`}
-                                  {...configs.currencyCode}
-                                />
-
-                                <FormFieldComponent
-                                  name={`forms.${currentFormIndex}.timeZone`}
-                                  {...configs.timeZone}
-                                />
-
-                                <FormFieldComponent
-                                  name={`forms.${currentFormIndex}.industryCategory`}
-                                  {...configs.industryCategory}
-                                />
-
-                                <FormFieldComponent
-                                  name={`forms.${currentFormIndex}.retention`}
-                                  {...configs.retention}
-                                />
-
-                                <FormFieldComponent
-                                  name={`forms.${currentFormIndex}.resetOnNewActivity`}
-                                  {...configs.resetOnNewActivity}
-                                />
-                              </>
-                            );
-                          }
-                          return null;
-                        })}
-
-                      <div className="flex justify-between">
-                        <Button type="button" onClick={handlePrevious} disabled={currentStep === 1}>
-                          Previous
-                        </Button>
-
-                        {currentStep < fields.length ? (
-                          <Button type="button" onClick={handleNext}>
-                            Next
-                          </Button>
-                        ) : (
-                          <Button type="submit">{loading ? 'Submitting...' : 'Submit'}</Button>
-                        )}
-                      </div>
-                    </form>
-                  </Form>
-
-                  {/* End Form */}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      {renderForms()}
     </div>
   );
 });

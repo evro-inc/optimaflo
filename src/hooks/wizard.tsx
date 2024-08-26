@@ -5,7 +5,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { decrementStep, incrementStep, setCount } from '@/redux/formSlice';
 import { FormCreateAmountSchema } from '@/src/lib/schemas/ga/properties';
 import { RootState } from '@/src/redux/store';
-import { GA4PropertyType } from '@/src/types/types';
 import dynamic from 'next/dynamic';
 import { z, ZodSchema } from 'zod';
 

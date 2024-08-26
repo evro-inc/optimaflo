@@ -1,30 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { SubmitHandler } from 'react-hook-form';
 import { ContainerSchemaType, FormSchema } from '@/src/lib/schemas/gtm/containers';
 import { Button } from '@/src/components/ui/button';
 import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+  Form
 } from '@/src/components/ui/form';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from '@/src/components/ui/select';
-
-import { Input } from '@/src/components/ui/input';
 import { FormCreateProps, ContainerType } from '@/src/types/types';
 import {
   selectTable,
@@ -36,7 +19,7 @@ import { calculateRemainingLimit, handleAmountChange, processForm } from '@/src/
 import { useErrorHandling, useFormInitialization, useStepNavigation } from '@/src/hooks/wizard';
 import { FormFieldComponent } from '@/src/components/client/Utils/Form';
 import { gtmFormFieldConfigs } from '@/src/utils/gtmFormFields';
-
+import { setCurrentStep } from '@/src/redux/formSlice';
 
 const FormCreateContainer: React.FC<FormCreateProps> = ({ tierLimits, accounts = [] }) => {
   const dispatch = useDispatch();
@@ -48,8 +31,10 @@ const FormCreateContainer: React.FC<FormCreateProps> = ({ tierLimits, accounts =
   const count = useSelector((state: RootState) => state.form.count);
   const errorModal = useErrorHandling(error, notFoundError);
 
-  console.log('accounts', accounts);
-
+  useEffect(() => {
+    // Ensure that we reset to the first step when the component mounts
+    dispatch(setCurrentStep(1));
+  }, [dispatch]);
 
   const remainingCreateData = calculateRemainingLimit(
     tierLimits || [],
@@ -63,13 +48,12 @@ const FormCreateContainer: React.FC<FormCreateProps> = ({ tierLimits, accounts =
   const formDataDefaults: ContainerType[] = [
     {
       accountId: '',
-      usageContext: [''],
+      usageContext: '',
       name: '',
       domainName: '',
       notes: '',
       containerId: '',
       publicId: '',
-      accountName: '',
     },
   ];
 
@@ -96,85 +80,77 @@ const FormCreateContainer: React.FC<FormCreateProps> = ({ tierLimits, accounts =
 
   if (errorModal) return errorModal;
 
+  const renderStepOne = () => (
+    <Form {...formAmount}>
+      <form className="w-2/3 space-y-6">
+        <FormFieldComponent
+          name="amount"
+          {...configs.amount}
+          onChange={(value) => {
+            handleAmountChange(value.toString(), form, addForm, dispatch);
+          }}
+        />
+        <Button type="button" onClick={handleNext}>
+          Next
+        </Button>
+      </form>
+    </Form>
+  );
+
+  const renderStepForms = () => (
+    <div className="w-full">
+      {fields.length >= currentStep - 1 && (
+        <div
+          key={fields[currentStep - 2].id}
+          className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
+        >
+          <div className="max-w-xl mx-auto">
+            <h1>Property {currentStep - 1}</h1>
+            <div className="mt-12">
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  id="createContainer"
+                  className="space-y-6"
+                >
+                  {Object.entries(configs)
+                    .filter(([key]) => key !== 'amount')
+                    .map(([key, config]) => (
+                      <FormFieldComponent
+                        key={key}
+                        name={`forms.${currentStep - 2}.${key}`}
+                        label={config.label}
+                        description={config.description}
+                        placeholder={config.placeholder}
+                        type={config.type}
+                        options={config.options}
+                      />
+                    ))}
+                  <div className="flex justify-between">
+                    <Button type="button" onClick={handlePrevious}>
+                      Previous
+                    </Button>
+                    {currentStep - 1 < count ? (
+                      <Button type="button" onClick={handleNext}>
+                        Next
+                      </Button>
+                    ) : (
+                      <Button type="submit">{loading ? 'Submitting...' : 'Submit'}</Button>
+                    )}
+                  </div>
+                </form>
+              </Form>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
 
   return (
     <div className="flex items-center justify-center h-screen">
-      {/* Conditional rendering based on the currentStep */}
-      {currentStep === 1 && (
-        <Form {...formAmount}>
-          <form className="w-2/3 space-y-6">
-            {/* Amount selection logic */}
-            <FormFieldComponent
-              name="amount"
-              {...configs.amount}
-              onChange={(value) => {
-                handleAmountChange(value, form, addForm, dispatch);
-              }}
-            />
-            <Button type="button" onClick={handleNext}>
-              Next
-            </Button>
-          </form>
-        </Form>
-      )}
-
-      {currentStep > 1 && (
-        <div className="w-full">
-          {/* Render only the form corresponding to the current step - 1 
-              (since step 1 is for selecting the number of forms) */}
-          {fields.length >= currentStep - 1 && (
-            <div
-              key={fields[currentStep - 2].id}
-              className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-            >
-              <div className="max-w-xl mx-auto">
-                <h1>Property {currentStep - 1}</h1>
-                <div className="mt-12">
-                  {/* Form */}
-
-                  <Form {...form}>
-                    <form
-                      onSubmit={form.handleSubmit(onSubmit)}
-                      id="createContainer"
-                      className="space-y-6"
-                    >
-                      {Object.entries(configs)
-                        .filter(([key]) => key !== 'amount')
-                        .map(([key, config]) => (
-                          <FormFieldComponent
-                            key={key}
-                            name={`forms.${currentStep - 2}.${key}`}
-                            label={config.label}
-                            description={config.description}
-                            placeholder={config.placeholder}
-                            type={config.type}
-                            options={config.options}
-                          />
-                        ))}
-
-                      <div className="flex justify-between">
-                        <Button type="button" onClick={handlePrevious}>
-                          Previous
-                        </Button>
-
-                        {currentStep - 1 < count ? (
-                          <Button type="button" onClick={handleNext}>
-                            Next
-                          </Button>
-                        ) : (
-                          <Button type="submit">{loading ? 'Submitting...' : 'Submit'}</Button>
-                        )}
-                      </div>
-                    </form>
-                  </Form>
-
-                  {/* End Form */}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      {currentStep === 1 ? renderStepOne() : renderStepForms()}
     </div>
   );
 };

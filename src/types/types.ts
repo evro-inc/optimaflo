@@ -112,15 +112,29 @@ export type FormElement = {
 export type Form = {
   forms: FormElement[];
 };
-export type ContainerType = {
+
+
+
+export interface BaseForm {
+  parent?: string;
+  name?: string;
+  displayName?: string;
+}
+
+export type FormWithParent<T = {}> = BaseForm & T;
+
+export type ContainerType = BaseForm & {
   accountId: string;
-  containerId: string;
-  name: string;
+  usageContext: string;
   publicId: string;
-  accountName: string;
-  usageContext: [string, ...string[]];
+  name: string;
+  path?: string;
+  containerId?: string;
+  tagIds?: string[];
   domainName?: string;
   notes?: string;
+  tagManagerUrl?: string;
+  taggingServerUrls?: string[];
 };
 
 export type UpdateAccountResult = {

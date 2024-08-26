@@ -1,6 +1,6 @@
 'use server';
 import { revalidatePath } from 'next/cache';
-import { FormSchema } from '@/src/lib/schemas/gtm/containers';
+import { ContainerSchemaType, FormSchema } from '@/src/lib/schemas/gtm/containers';
 import z from 'zod';
 import { auth } from '@clerk/nextjs/server';
 import { gtmRateLimit } from '../../../../redis/rateLimits';
@@ -371,7 +371,7 @@ export async function DeleteContainers(
 /************************************************************************************
   Create a single container or multiple containers
 ************************************************************************************/
-export async function CreateContainers(formData: Schema) {
+export async function CreateContainers(formData: { forms: ContainerSchemaType['forms'] }): Promise<FeatureResponse> {
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
@@ -413,14 +413,14 @@ export async function CreateContainers(formData: Schema) {
       const [containerName] = identifier.split('-');
       return {
         id: [], // No container ID since creation did not happen
-        name: containerName, // Include the container name from the identifier
+        name: [containerName], // Wrap containerName in an array to match FeatureResult type
         success: false,
         message: `Creation limit reached. Cannot create container "${containerName}".`,
-        // remaining creation limit
-        remaining: availableCreateUsage,
+        remaining: availableCreateUsage, // remaining creation limit
         limitReached: true,
       };
     });
+
     return {
       success: false,
       features: [],
@@ -432,6 +432,7 @@ export async function CreateContainers(formData: Schema) {
       limitReached: true,
     };
   }
+
 
   let permissionDenied = false;
   const containerNames = formData.forms.map((cd) => cd.name);
@@ -568,15 +569,15 @@ export async function CreateContainers(formData: Schema) {
               limitReached: false,
               notFoundError: true, // Set the notFoundError flag
               features: [],
-
               results: notFoundLimit.map((item) => ({
-                id: item.id,
-                name: item.name,
+                id: [item.id], // Wrap id in an array to match FeatureResult type
+                name: [item.name], // Wrap name in an array to match FeatureResult type
                 success: false,
                 notFound: true,
               })),
             };
           }
+
 
           if (featureLimitReached.length > 0) {
             return {
@@ -639,10 +640,16 @@ export async function CreateContainers(formData: Schema) {
   if (errors.length > 0) {
     return {
       success: false,
-      features: successfulCreations,
+      features: successfulCreations.map((containerName): FeatureResult => ({
+        id: [], // or provide the actual container ID if available
+        name: [containerName], // Ensure name is an array
+        success: true, // or false depending on logic
+        // Add other necessary properties like notFound, limitReached, etc.
+      })),
       errors: errors,
       results: successfulCreations.map((containerName) => ({
-        containerName,
+        id: [], // or the actual ID if available
+        name: [containerName], // Ensure name is an array
         success: true,
       })),
       message: errors.join(', '),
@@ -658,26 +665,25 @@ export async function CreateContainers(formData: Schema) {
 
   // Map over formData.forms to create the results array
   const results: FeatureResult[] = formData.forms.map((form) => {
-    // Ensure that form.containerId is defined before adding it to the array
-    const containerId = form.containerId ? [form.containerId] : []; // Provide an empty array as a fallback
+    const containerId = form.containerId ? [form.containerId] : [];
     return {
       id: containerId, // Ensure id is an array of strings
       name: [form.name], // Wrap the string in an array
       success: true, // or false, depending on the actual result
-      // Include `notFound` if applicable
+      // Add other necessary properties
       notFound: false, // Set this to the appropriate value based on your logic
     };
   });
 
   // Return the response with the correctly typed results
   return {
-    success: true, // or false, depending on the actual results
-    features: [], // Populate with actual container IDs if applicable
-    errors: [], // Populate with actual error messages if applicable
-    limitReached: false, // Set based on actual limit status
-    message: 'Containers created successfully', // Customize the message as needed
+    success: true,
+    features: [], // Include actual feature IDs if applicable
+    errors: [], // Include actual error messages if applicable
+    limitReached: false, // Adjust based on actual limit status
+    message: 'Containers created successfully', // Customize as needed
     results: results, // Use the correctly typed results
-    notFoundError: false, // Set based on actual not found status
+    notFoundError: false, // Adjust based on actual status
   };
 }
 

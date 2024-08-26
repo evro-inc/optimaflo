@@ -18,8 +18,8 @@ import {
   useFormInitialization,
   useStepNavigation,
 } from '@/src/hooks/wizard';
-import { formFieldConfigs } from '@/src/utils/gaFormFields';
 import dynamic from 'next/dynamic';
+import { gaFormFieldConfigs } from '@/src/utils/gaFormFields';
 const FormFieldComponent = dynamic(
   () => import('@/src/components/client/Utils/Form').then((mod) => mod.FormFieldComponent),
   { ssr: false }
@@ -43,7 +43,7 @@ const FormCreateProperty: React.FC<FormCreateProps> = React.memo(
     );
     const remainingCreate = remainingCreateData.remaining;
 
-    const configs = formFieldConfigs('create', remainingCreate, accountsWithProperties);
+    const configs = gaFormFieldConfigs('GA4Property', 'create', remainingCreate, accountsWithProperties);
 
     const formDataDefaults: GA4PropertyType[] = [
       {
@@ -60,7 +60,7 @@ const FormCreateProperty: React.FC<FormCreateProps> = React.memo(
       },
     ];
 
-    const { formAmount, form, fields, addForm, propertyCount } = useFormInitialization(
+    const { formAmount, form, fields, addForm, count } = useFormInitialization<GA4PropertyType>(
       formDataDefaults,
       FormsSchema
     );
@@ -83,94 +83,76 @@ const FormCreateProperty: React.FC<FormCreateProps> = React.memo(
 
     if (errorModal) return errorModal;
 
-    return (
-      <div className="flex items-center justify-center h-screen">
-        {/* Conditional rendering based on the currentStep */}
-        {currentStep === 1 && (
-          <Form {...formAmount}>
-            <form className="w-2/3 space-y-6">
-              {/* Amount selection logic */}
-              <FormFieldComponent
-                name="amount"
-                {...configs.amount}
-                onChange={(value) => {
-                  handleAmountChange(value, form, addForm, dispatch);
-                }}
-              />
-              <Button type="button" onClick={handleNext}>
-                Next
-              </Button>
-            </form>
-          </Form>
-        )}
+    const renderStepOne = () => (
+      <Form {...formAmount}>
+        <form className="w-2/3 space-y-6">
+          <FormFieldComponent
+            name="amount"
+            {...configs.amount}
+            onChange={(value) => {
+              handleAmountChange(value.toString(), form, addForm, dispatch);
+            }}
+          />
+          <Button type="button" onClick={handleNext}>
+            Next
+          </Button>
+        </form>
+      </Form>
+    );
 
-        {currentStep > 1 && (
-          <div className="w-full">
-            {/* Render only the form corresponding to the current step - 1 
-              (since step 1 is for selecting the number of forms) */}
-            {fields.length >= currentStep - 1 && (
-              <div
-                key={fields[currentStep - 2].id}
-                className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-              >
-                <div className="max-w-xl mx-auto">
-                  <h1>Property {currentStep - 1}</h1>
-                  <div className="mt-12">
-                    {/* Form */}
-
-                    <Form {...form}>
-                      <form
-                        onSubmit={form.handleSubmit(onSubmit)}
-                        id="createProperty"
-                        className="space-y-6"
-                      >
+    const renderStepForms = () => (
+      <div className="w-full">
+        {fields.length >= currentStep - 1 && (
+          <div
+            key={fields[currentStep - 2].id}
+            className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
+          >
+            <div className="max-w-xl mx-auto">
+              <h1>Property {currentStep - 1}</h1>
+              <div className="mt-12">
+                <Form {...form}>
+                  <form
+                    onSubmit={form.handleSubmit(onSubmit)}
+                    id="createContainer"
+                    className="space-y-6"
+                  >
+                    {Object.entries(configs)
+                      .filter(([key]) => key !== 'amount')
+                      .map(([key, config]) => (
                         <FormFieldComponent
-                          name={`forms.${currentStep - 2}.displayName`}
-                          {...configs.displayName}
+                          key={key}
+                          name={`forms.${currentStep - 2}.${key}`}
+                          label={config.label}
+                          description={config.description}
+                          placeholder={config.placeholder}
+                          type={config.type}
+                          options={config.options}
                         />
-
-                        <FormFieldComponent
-                          name={`forms.${currentStep - 2}.parent`}
-                          {...configs.parent}
-                        />
-
-                        <FormFieldComponent
-                          name={`forms.${currentStep - 2}.currencyCode`}
-                          {...configs.currencyCode}
-                        />
-
-                        <FormFieldComponent
-                          name={`forms.${currentStep - 2}.timeZone`}
-                          {...configs.timeZone}
-                        />
-
-                        <FormFieldComponent
-                          name={`forms.${currentStep - 2}.industryCategory`}
-                          {...configs.industryCategory}
-                        />
-                        <div className="flex justify-between">
-                          <Button type="button" onClick={handlePrevious}>
-                            Previous
-                          </Button>
-
-                          {currentStep - 1 < propertyCount ? (
-                            <Button type="button" onClick={handleNext}>
-                              Next
-                            </Button>
-                          ) : (
-                            <Button type="submit">{loading ? 'Submitting...' : 'Submit'}</Button>
-                          )}
-                        </div>
-                      </form>
-                    </Form>
-
-                    {/* End Form */}
-                  </div>
-                </div>
+                      ))}
+                    <div className="flex justify-between">
+                      <Button type="button" onClick={handlePrevious}>
+                        Previous
+                      </Button>
+                      {currentStep - 1 < count ? (
+                        <Button type="button" onClick={handleNext}>
+                          Next
+                        </Button>
+                      ) : (
+                        <Button type="submit">{loading ? 'Submitting...' : 'Submit'}</Button>
+                      )}
+                    </div>
+                  </form>
+                </Form>
               </div>
-            )}
+            </div>
           </div>
         )}
+      </div>
+    );
+
+    return (
+      <div className="flex items-center justify-center h-screen">
+        {currentStep === 1 ? renderStepOne() : renderStepForms()}
       </div>
     );
   }

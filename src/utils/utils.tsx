@@ -4,7 +4,7 @@ import { twMerge } from 'tailwind-merge';
 import { Dispatch } from 'redux';
 import { SubmitHandler, useFormContext } from 'react-hook-form';
 import { setCount, setLoading } from '@/redux/formSlice';
-import { FeatureResponse, TierLimit } from '../types/types';
+import { FeatureResponse, FormWithParent, TierLimit } from '../types/types';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { setErrorDetails, setIsLimitReached, setNotFoundError } from '../redux/tableSlice';
@@ -45,7 +45,6 @@ export const handleAmountChange = (
 };
 
 // Define a type constraint for forms that include the `parent` field
-type FormWithParent = { parent: string; name: string; displayName: string };
 
 // Make processForm generic to accept different types of forms
 export const processForm = <TFormValues extends FormWithParent>(
