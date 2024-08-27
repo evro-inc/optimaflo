@@ -10,7 +10,6 @@ import { currentUserOauthAccessToken } from '../../../../clerk';
 import prisma from '@/src/lib/prisma';
 import { FeatureResult } from '@/src/types/types';
 import { handleApiResponseError, tierUpdateLimit } from '@/src/utils/server';
-import { fetchGtmSettings } from '../..';
 import { GoogleTagEnvironmentType } from '@/src/lib/schemas/gtm/envs';
 
 const MAX_RETRIES = 3;
@@ -33,8 +32,6 @@ export async function listGtmEnvs() {
   if (cachedValue) {
     return JSON.parse(cachedValue);
   }
-
-  await fetchGtmSettings(userId);
 
   const gtmData = await prisma.user.findFirst({
     where: {
@@ -122,8 +119,6 @@ export async function getGtmEnv(formData: GoogleTagEnvironmentType) {
       envIds: Array.isArray(env.environmentId) ? env.environmentId : [env.environmentId],
     }))
   );
-
-  await fetchGtmSettings(userId);
 
   const errors: string[] = [];
   const successfulFetches: any[] = [];

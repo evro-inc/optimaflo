@@ -47,8 +47,6 @@ export async function listGtmWorkspaces(skipCache = false) {
     }
   }
 
-  await fetchGtmSettings(userId);
-
   const gtmData = await prisma.user.findFirst({
     where: {
       id: userId,
@@ -512,7 +510,29 @@ export async function CreateWorkspaces(formData: FormCreateSchema) {
                 if (response.ok) {
                   successfulCreations.push(workspaceName);
                   toCreateWorkspaces.delete(identifier);
-                  fetchGtmSettings(userId);
+
+
+                  await prisma.gtm.upsert({
+                    where: {
+                      accountId_containerId_name: {
+                        accountId: validatedContainerData.accountId,
+                        containerId: validatedContainerData.containerId,
+                        name: validatedContainerData.name,
+                      },
+                    },
+                    update: {
+                      description: validatedContainerData.description, // Fields to update if the record exists
+                      userId: userId, // Update the user association if needed
+                    },
+                    create: {
+                      accountId: validatedContainerData.accountId,
+                      containerId: validatedContainerData.containerId,
+                      name: validatedContainerData.name,
+                      description: validatedContainerData.description,
+                      userId: userId, // Associate the workspace with the user
+                    },
+                  });
+
                   await prisma.tierLimit.update({
                     where: { id: tierLimitResponse.id },
                     data: { createUsage: { increment: 1 } },
@@ -1054,8 +1074,6 @@ export async function createGTMVersion(formData: FormUpdateSchema) {
   const MAX_RETRIES = 3;
   let delay = 1000;
 
-  await fetchGtmSettings(userId);
-
   /*   const cacheKey = `gtm:workspaces:userId:${userId}`;
     const cachedValue = await redis.get(cacheKey);
     if (cachedValue) {
@@ -1428,8 +1446,6 @@ export async function getStatusGtmWorkspaces() {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
-
-  await fetchGtmSettings(userId);
 
   const gtmData = await prisma.user.findFirst({
     where: { id: userId },

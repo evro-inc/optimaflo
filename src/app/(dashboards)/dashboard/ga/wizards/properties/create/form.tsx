@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { SubmitHandler } from 'react-hook-form';
 import { FormSchemaType, FormsSchema } from '@/src/lib/schemas/ga/properties';
@@ -20,6 +20,7 @@ import {
 } from '@/src/hooks/wizard';
 import dynamic from 'next/dynamic';
 import { gaFormFieldConfigs } from '@/src/utils/gaFormFields';
+import { setCurrentStep } from '@/src/redux/formSlice';
 const FormFieldComponent = dynamic(
   () => import('@/src/components/client/Utils/Form').then((mod) => mod.FormFieldComponent),
   { ssr: false }
@@ -35,6 +36,11 @@ const FormCreateProperty: React.FC<FormCreateProps> = React.memo(
     const router = useRouter();
     const errorModal = useErrorHandling(error, notFoundError);
     const accountsWithProperties = useAccountsWithProperties(accounts, properties);
+
+    useEffect(() => {
+      // Ensure that we reset to the first step when the component mounts
+      dispatch(setCurrentStep(1));
+    }, [dispatch]);
 
     const remainingCreateData = calculateRemainingLimit(
       tierLimits || [],

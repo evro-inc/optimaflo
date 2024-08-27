@@ -16,10 +16,6 @@ import {
   tierDeleteLimit,
   tierUpdateLimit,
 } from '@/src/utils/server';
-import { fetchGtmSettings } from '../..';
-
-// Define the types for the form data
-type Schema = z.infer<typeof FormSchema>;
 
 /************************************************************************************
   Function to list GTM containers
@@ -45,7 +41,6 @@ export async function listGtmContainers(skipCache = false) {
     }
   }
 
-  await fetchGtmSettings(userId);
   const gtmData = await prisma.user.findFirst({
     where: {
       id: userId,
@@ -135,6 +130,9 @@ export async function DeleteContainers(
   const notFoundLimit: string[] = [];
   const toDeleteContainers = new Set(selectedContainers);
 
+  console.log('toDeleteContainers', toDeleteContainers);
+
+
   // Authenticating user and getting user ID
   const { userId } = await auth();
   // If user ID is not found, return a 'not found' error
@@ -183,8 +181,14 @@ export async function DeleteContainers(
         if (remaining > 0) {
           await limiter.schedule(async () => {
             // Creating promises for each container deletion
-            const deletePromises = Array.from(toDeleteContainers).map(async (combinedId) => {
-              const [accountId, containerId] = combinedId.split('-');
+            const deletePromises = Array.from(toDeleteContainers).map(async (dataDelete: any) => {
+              console.log('combined', dataDelete);
+
+              const accountId = dataDelete.accountId
+              const containerId = dataDelete.containerId
+
+              console.log(accountId);
+
 
               const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}`;
               const headers = {
@@ -199,7 +203,12 @@ export async function DeleteContainers(
                   headers: headers,
                 });
 
-                let parsedResponse;
+                console.log('fetch', response);
+
+
+                const parsedResponse = await response.json();
+                console.log('parsed Res', parsedResponse);
+
 
                 if (response.ok) {
                   successfulDeletions.push(containerId);
@@ -220,7 +229,7 @@ export async function DeleteContainers(
 
                   return { containerId, success: true };
                 } else {
-                  parsedResponse = await response.json();
+
                   const errorResult = await handleApiResponseError(
                     response,
                     parsedResponse,
@@ -500,7 +509,24 @@ export async function CreateContainers(formData: { forms: ContainerSchemaType['f
                 if (response.ok) {
                   successfulCreations.push(containerName);
                   toCreateContainers.delete(identifier);
-                  fetchGtmSettings(userId);
+
+                  const createdContainer = await response.json(); // Add this line to parse the response
+                  successfulCreations.push(containerName);
+                  toCreateContainers.delete(identifier);
+                  await prisma.gtm.create({
+                    data: {
+                      accountId: accountId,
+                      containerId: createdContainer.containerId, // Assuming the response returns containerId
+                      name: containerName,
+                      publicId: createdContainer.publicId,  // Assuming the response returns publicId
+                      usageContext: validatedContainerData.usageContext,
+                      accountName: containerData.name,
+                      userId: userId, // Associating the container with the user
+                    },
+                  });
+
+
+
 
                   await prisma.tierLimit.update({
                     where: { id: tierLimitResponse.id },
@@ -690,7 +716,7 @@ export async function CreateContainers(formData: { forms: ContainerSchemaType['f
 /************************************************************************************
   Create a single container or multiple containers
 ************************************************************************************/
-export async function UpdateContainers(formData: Schema) {
+export async function UpdateContainers(formData: { forms: ContainerSchemaType['forms'] }): Promise<FeatureResponse> {
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
@@ -734,14 +760,14 @@ export async function UpdateContainers(formData: Schema) {
       const [containerName] = identifier.split('-');
       return {
         id: [], // No container ID since update did not happen
-        name: containerName, // Include the container name from the identifier
+        name: [containerName], // Ensure name is an array
         success: false,
         message: `Update limit reached. Cannot update container "${containerName}".`,
-        // remaining update limit
         remaining: availableUpdateUsage,
         limitReached: true,
       };
     });
+
     return {
       success: false,
       features: [],
@@ -753,6 +779,7 @@ export async function UpdateContainers(formData: Schema) {
       limitReached: true,
     };
   }
+
 
   let permissionDenied = false;
   const containerNames = formData.forms.map((cd) => cd.name);
@@ -785,8 +812,12 @@ export async function UpdateContainers(formData: Schema) {
 
               try {
                 const formDataToValidate = { forms: [containerData] };
+                console.log("formDataToValidate", formDataToValidate);
+
 
                 const validationResult = FormSchema.safeParse(formDataToValidate);
+                console.log('validation', validationResult);
+
 
                 if (!validationResult.success) {
                   let errorMessage = validationResult.error.issues
@@ -803,6 +834,8 @@ export async function UpdateContainers(formData: Schema) {
 
                 // Accessing the validated container data
                 const validatedContainerData = validationResult.data.forms[0];
+                console.log("validatedContainerData", validatedContainerData);
+
 
                 const response = await fetch(url, {
                   method: 'PUT',
@@ -816,7 +849,13 @@ export async function UpdateContainers(formData: Schema) {
                   }),
                 });
 
-                let parsedResponse;
+                console.log('response:', response);
+
+
+                const parsedResponse = await response.json();
+
+                console.log('parsedResponse', parsedResponse);
+
 
                 if (response.ok) {
                   successfulUpdates.push(containerName);
@@ -833,7 +872,6 @@ export async function UpdateContainers(formData: Schema) {
                     message: `Successfully updated container ${containerName}`,
                   });
                 } else {
-                  parsedResponse = await response.json();
 
                   const errorResult = await handleApiResponseError(
                     response,
@@ -894,15 +932,15 @@ export async function UpdateContainers(formData: Schema) {
               limitReached: false,
               notFoundError: true, // Set the notFoundError flag
               features: [],
-
               results: notFoundLimit.map((item) => ({
-                id: item.id,
-                name: item.name,
+                id: [item.id], // Wrap item.id in an array to match FeatureResult type
+                name: [item.name], // Wrap item.name in an array to match FeatureResult type
                 success: false,
                 notFound: true,
               })),
             };
           }
+
 
           if (featureLimitReached.length > 0) {
             return {
@@ -964,15 +1002,23 @@ export async function UpdateContainers(formData: Schema) {
   if (errors.length > 0) {
     return {
       success: false,
-      features: successfulUpdates,
+      features: successfulUpdates.map((containerName) => ({
+        id: [], // Provide appropriate IDs if available
+        name: [containerName], // Ensure this is an array
+        success: true, // Adjust this based on actual logic
+        // Add other properties required by FeatureResult
+      })),
       errors: errors,
       results: successfulUpdates.map((containerName) => ({
-        containerName,
-        success: true,
+        id: [], // Ensure this is an array of strings
+        name: [containerName], // Wrap containerName in an array
+        success: true, // Adjust this as necessary
+        // Add any additional properties that are required by FeatureResult
       })),
       message: errors.join(', '),
     };
   }
+
 
   if (successfulUpdates.length > 0) {
     await redis.del(`gtm:containers:accountId:${accountIdsForCache}:userId:${userId}`);
@@ -1004,171 +1050,3 @@ export async function UpdateContainers(formData: Schema) {
   };
 }
 
-/************************************************************************************
-  Combine containers
-************************************************************************************/
-/* export async function combineContainers(
-  formData: FormUpdateSchema // Replace 'any' with the actual type if known
-) {
-  try {
-    const { session } = useSession();
-
-    const userId = session?.user?.id;
-
-    const accessToken = await getAccessToken(userId);
-
-    const baseUrl = getURL();
-    const errors: string[] = [];
-
-    let accountIdsToRevalidate = new Set<string>();
-    const forms: any[] = [];
-
-    const plainDataArray = formData.forms.map((fd) => {
-      return Object.fromEntries(Object.keys(fd).map((key) => [key, fd[key]]));
-    });
-
-    const validationResult = FormSchema.safeParse({
-      forms: plainDataArray,
-    });
-
-    if (!validationResult.success) {
-      let errorMessage = '';
-
-      validationResult.error.format();
-
-      validationResult.error.issues.forEach((issue) => {
-        errorMessage =
-          errorMessage + issue.path[0] + ': ' + issue.message + '. ';
-      });
-      const formattedErrorMessage = errorMessage
-        .split(':')
-        .slice(1)
-        .join(':')
-        .trim();
-
-      return {
-        error: formattedErrorMessage,
-      };
-    }
-
-    validationResult.data.forms.forEach((formData: any) => {
-      forms.push({
-        containerName: formData.containerName,
-        usageContext: formData.usageContext,
-        accountId: formData.accountId,
-        domainName: formData.domainName ? formData.domainName.split(',') : [''],
-        notes: formData.notes,
-        containerId: formData.containerId,
-      });
-    });
-
-    const requestHeaders = {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    };
-
-    const featureLimitReached: string[] = [];
-
-    const updatePromises = forms.map(async (containerData) => {
-      const {
-        containerName,
-        usageContext,
-        accountId,
-        domainName,
-        notes,
-        containerId,
-      } = containerData; // Destructure from the current object
-
-      // Initialize payload with a flexible type
-      const payload: { [key: string]: any } = {
-        containerName: containerName,
-        usageContext: usageContext,
-        accountId: accountId,
-        notes: notes,
-        containerId: containerId,
-      };
-
-      // Conditionally add domainName if it exists and is not empty
-      if (domainName && domainName.length > 0 && domainName[0] !== '') {
-        payload['domainName'] = domainName;
-      }
-
-      accountIdsToRevalidate.add(accountId);
-
-      const response = await fetch(
-        `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers/${containerId}`,
-        {
-          method: 'PUT',
-          headers: requestHeaders,
-          body: JSON.stringify(payload),
-        }
-      );
-
-      const updateContainer = await response.json();
-
-      if (response.status === 403) {
-        if (updateContainer.message === 'Feature limit reached') {
-          featureLimitReached.push(containerData.containerName);
-          return {
-            success: false,
-            errorCode: 403,
-            message: 'Feature limit reached',
-          };
-        }
-      }
-
-      if (!response.ok) {
-        errors.push(
-          `Failed to update container with name ${containerData.containerName} in account ${containerData.accountId}: ${response.status}`
-        );
-
-        return {
-          success: false,
-          errorCode: response.status,
-          message: 'Failed to update',
-        };
-      }
-
-      return { success: true, updateContainer };
-    });
-
-    const results = await Promise.all(updatePromises);
-
-    if (featureLimitReached.length > 0) {
-      return {
-        success: false,
-        limitReached: true,
-        message: `Feature limit reached for containers: ${featureLimitReached.join(
-          ', '
-        )}`,
-      };
-    }
-
-    if (errors.length > 0) {
-      return {
-        success: false,
-        limitReached: false,
-        message: errors.join(', '),
-      };
-    } else {
-      accountIdsToRevalidate.forEach((accountId) => {
-        revalidatePath(
-          `${baseUrl}/api/dashboard/gtm/accounts/${accountId}/containers`
-        );
-      });
-      return {
-        success: true,
-        limitReached: false,
-        udpateContainers: results
-          .filter((r) => r.success)
-          .map((r) => r.updateContainer),
-      };
-    }
-  } catch (error: any) {
-    return {
-      success: false,
-      limitReached: false,
-      message: error.message,
-    };
-  }
-} */

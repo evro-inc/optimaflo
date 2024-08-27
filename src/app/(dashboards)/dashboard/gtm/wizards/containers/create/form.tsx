@@ -21,7 +21,7 @@ import { FormFieldComponent } from '@/src/components/client/Utils/Form';
 import { gtmFormFieldConfigs } from '@/src/utils/gtmFormFields';
 import { setCurrentStep } from '@/src/redux/formSlice';
 
-const FormCreateContainer: React.FC<FormCreateProps> = ({ tierLimits, accounts = [] }) => {
+const FormCreateContainer: React.FC<FormCreateProps> = React.memo(({ tierLimits, accounts = [] }) => {
   const dispatch = useDispatch();
   const loading = useSelector((state: RootState) => state.form.loading);
   const error = useSelector((state: RootState) => state.form.error);
@@ -48,7 +48,7 @@ const FormCreateContainer: React.FC<FormCreateProps> = ({ tierLimits, accounts =
   const formDataDefaults: ContainerType[] = [
     {
       accountId: '',
-      usageContext: '',
+      usageContext: 'web',
       name: '',
       domainName: '',
       notes: '',
@@ -97,55 +97,59 @@ const FormCreateContainer: React.FC<FormCreateProps> = ({ tierLimits, accounts =
     </Form>
   );
 
-  const renderStepForms = () => (
-    <div className="w-full">
-      {fields.length >= currentStep - 1 && (
-        <div
-          key={fields[currentStep - 2].id}
-          className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-        >
-          <div className="max-w-xl mx-auto">
-            <h1>Property {currentStep - 1}</h1>
-            <div className="mt-12">
-              <Form {...form}>
-                <form
-                  onSubmit={form.handleSubmit(onSubmit)}
-                  id="createContainer"
-                  className="space-y-6"
-                >
-                  {Object.entries(configs)
-                    .filter(([key]) => key !== 'amount')
-                    .map(([key, config]) => (
-                      <FormFieldComponent
-                        key={key}
-                        name={`forms.${currentStep - 2}.${key}`}
-                        label={config.label}
-                        description={config.description}
-                        placeholder={config.placeholder}
-                        type={config.type}
-                        options={config.options}
-                      />
-                    ))}
-                  <div className="flex justify-between">
-                    <Button type="button" onClick={handlePrevious}>
-                      Previous
-                    </Button>
-                    {currentStep - 1 < count ? (
-                      <Button type="button" onClick={handleNext}>
-                        Next
+  const renderStepForms = () => {
+    const currentPropertyName = formDataDefaults[currentStep - 1]?.name;
+
+    return (
+      <div className="w-full">
+        {fields.length >= currentStep - 1 && (
+          <div
+            key={fields[currentStep - 2].id}
+            className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
+          >
+            <div className="max-w-xl mx-auto">
+              <h1>{currentPropertyName}</h1>
+              <div className="mt-12">
+                <Form {...form}>
+                  <form
+                    onSubmit={form.handleSubmit(onSubmit)}
+                    id="createContainer"
+                    className="space-y-6"
+                  >
+                    {Object.entries(configs)
+                      .filter(([key]) => key !== 'amount')
+                      .map(([key, config]) => (
+                        <FormFieldComponent
+                          key={key}
+                          name={`forms.${currentStep - 2}.${key}`}
+                          label={config.label}
+                          description={config.description}
+                          placeholder={config.placeholder}
+                          type={config.type}
+                          options={config.options}
+                        />
+                      ))}
+                    <div className="flex justify-between">
+                      <Button type="button" onClick={handlePrevious}>
+                        Previous
                       </Button>
-                    ) : (
-                      <Button type="submit">{loading ? 'Submitting...' : 'Submit'}</Button>
-                    )}
-                  </div>
-                </form>
-              </Form>
+                      {currentStep - 1 < count ? (
+                        <Button type="button" onClick={handleNext}>
+                          Next
+                        </Button>
+                      ) : (
+                        <Button type="submit">{loading ? 'Submitting...' : 'Submit'}</Button>
+                      )}
+                    </div>
+                  </form>
+                </Form>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
-  );
+        )}
+      </div>
+    )
+  };
 
 
   return (
@@ -153,6 +157,8 @@ const FormCreateContainer: React.FC<FormCreateProps> = ({ tierLimits, accounts =
       {currentStep === 1 ? renderStepOne() : renderStepForms()}
     </div>
   );
-};
+});
+
+FormCreateContainer.displayName = 'FormCreateContainer';
 
 export default FormCreateContainer;

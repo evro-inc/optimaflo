@@ -43,6 +43,7 @@ export const useFormInitialization = <T extends Record<string, any>>(
     const form = useForm<Forms>({
         defaultValues: { forms: formDataDefaults }, // Use the array directly
         resolver: zodResolver(FormsSchema), // Use the passed schema for validation
+        mode: 'onChange',  // Trigger validation on change
     });
 
     const { fields, append } = useFieldArray({

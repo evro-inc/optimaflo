@@ -15,7 +15,6 @@ import {
   tierDeleteLimit,
   tierUpdateLimit,
 } from '@/src/utils/server';
-import { fetchGtmSettings } from '../..';
 
 /************************************************************************************
   Function to list or get one GTM permissions
@@ -42,7 +41,6 @@ export async function listGtmPermissions(skipCache = false) {
       return JSON.parse(cachedValue);
     }
   }
-  await fetchGtmSettings(userId);
 
   const gtmData = await prisma.user.findFirst({
     where: {
@@ -247,7 +245,21 @@ export async function CreatePermissions(formData: FormValuesType) {
                 if (response.ok) {
                   successfulCreations.push(validatedPermissionData.emailAddress);
                   toCreatePermissions.delete(identifier);
-                  fetchGtmSettings(userId);
+
+
+                  await prisma.gtmPermissions.create({
+                    data: {
+                      accountId: validatedPermissionData.accountId, // The accountId from the validated permission data
+                      emailAddress: validatedPermissionData.emailAddress, // The email address associated with the permission
+                      accountAccess: JSON.stringify(validatedPermissionData.accountAccess), // Assuming accountAccess needs to be stored as JSON
+                      containerAccess: JSON.stringify(validatedPermissionData.containerAccess), // Assuming containerAccess needs to be stored as JSON
+                      userId: userId, // Associating the permission with the user
+                    },
+                  });
+
+
+
+
                   await prisma.tierLimit.update({
                     where: { id: tierLimitResponse.id },
                     data: { createUsage: { increment: 1 } },
@@ -407,11 +419,11 @@ export async function CreatePermissions(formData: FormValuesType) {
   const results: FeatureResult[] = formData.forms.flatMap((form) =>
     form.emailAddresses
       ? form.emailAddresses.map((emailObj) => ({
-          id: [], // Ensure id is an array of strings
-          name: [emailObj.emailAddress], // Wrap the string in an array
-          success: true, // or false, depending on the actual result
-          notFound: false, // Set this to the appropriate value based on your logic
-        }))
+        id: [], // Ensure id is an array of strings
+        name: [emailObj.emailAddress], // Wrap the string in an array
+        success: true, // or false, depending on the actual result
+        notFound: false, // Set this to the appropriate value based on your logic
+      }))
       : []
   );
 
@@ -571,7 +583,29 @@ export async function UpdatePermissions(formData: FormValuesType) {
                 if (response.ok) {
                   successfulCreations.push(validatedPermissionData.emailAddress);
                   toUpdatePermissions.delete(identifier);
-                  fetchGtmSettings(userId);
+
+
+                  await prisma.gtmPermissions.upsert({
+                    where: {
+                      accountId_emailAddress: {
+                        accountId: validatedPermissionData.accountId, // The unique identifier in the upsert condition
+                        emailAddress: validatedPermissionData.emailAddress, // The email address associated with the permission
+                      },
+                    },
+                    update: {
+                      accountAccess: JSON.stringify(validatedPermissionData.accountAccess), // Assuming accountAccess needs to be stored as JSON
+                      containerAccess: JSON.stringify(validatedPermissionData.containerAccess), // Assuming containerAccess needs to be stored as JSON
+                    },
+                    create: {
+                      accountId: validatedPermissionData.accountId,
+                      emailAddress: validatedPermissionData.emailAddress,
+                      accountAccess: JSON.stringify(validatedPermissionData.accountAccess),
+                      containerAccess: JSON.stringify(validatedPermissionData.containerAccess),
+                      userId: userId, // Associating the permission with the user
+                    },
+                  });
+
+
                   await prisma.tierLimit.update({
                     where: { id: tierLimitResponse.id },
                     data: { updateUsage: { increment: 1 } },
@@ -739,11 +773,11 @@ export async function UpdatePermissions(formData: FormValuesType) {
   const results: FeatureResult[] = formData.forms.flatMap((form) =>
     form.emailAddresses
       ? form.emailAddresses.map((emailObj) => ({
-          id: [], // Ensure id is an array of strings
-          name: [emailObj.emailAddress], // Wrap the string in an array
-          success: true, // or false, depending on the actual result
-          notFound: false, // Set this to the appropriate value based on your logic
-        }))
+        id: [], // Ensure id is an array of strings
+        name: [emailObj.emailAddress], // Wrap the string in an array
+        success: true, // or false, depending on the actual result
+        notFound: false, // Set this to the appropriate value based on your logic
+      }))
       : []
   );
 
