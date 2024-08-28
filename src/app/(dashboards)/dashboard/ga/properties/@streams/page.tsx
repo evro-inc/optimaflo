@@ -26,6 +26,9 @@ export default async function PropertyPage({
   const propertyData = await listGAProperties();
   const streamData = await listGAPropertyStreams();
 
+  console.log("propertyData", propertyData);
+
+
   const [accounts, properties, streams] = await Promise.all([
     accountData,
     propertyData,
@@ -58,6 +61,9 @@ export default async function PropertyPage({
       accountName: accounts ? accounts[0].displayName : 'Unknown Account Name',
     };
   });
+
+  console.log("combinedData", combinedData);
+
 
   return (
     <>

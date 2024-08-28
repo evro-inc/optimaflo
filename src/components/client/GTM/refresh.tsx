@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { revalidate } from '@/src/utils/server';
 import { useUser } from '@clerk/nextjs';
 
-function RefreshGA({ path }) {
+function RefreshGTM({ path }) {
   const { user } = useUser();
   const userId = user?.id as string;
 
@@ -18,18 +18,16 @@ function RefreshGA({ path }) {
     });
 
     const keys = [
-      `ga:accountAccess:userId:${userId}`,
-      `ga:accounts:userId:${userId}`,
-      `ga:ads:userId:${userId}`,
-      `ga:audiences:userId:${userId}`,
-      `ga:conversionEvents:userId:${userId}`,
-      `ga:customDimensions:userId:${userId}`,
-      `ga:customMetrics:userId:${userId}`,
-      `ga:firebaseLinks:userId:${userId}`,
-      `ga:keyEvents:userId:${userId}`,
-      `ga:properties:userId:${userId}`,
-      `ga:propertyAccess:userId:${userId}`,
-      `ga:streams:userId:${userId}`,
+      `gtm:accounts:userId:${userId}`,
+      `gtm:containers:userId:${userId}`,
+      `gtm:workspaces:userId:${userId}`,
+      `gtm:tags:userId:${userId}`,
+      `gtm:triggers:userId:${userId}`,
+      `gtm:variables:userId:${userId}`,
+      `gtm:versionHeaders:userId:${userId}`,
+      `gtm:permissions:userId:${userId}`,
+      `gtm:environments:userId:${userId}`,
+      `gtm:builtInVariables:userId:${userId}`,
     ];
 
     // Ensure `path` is correctly formatted
@@ -47,4 +45,4 @@ function RefreshGA({ path }) {
   );
 }
 
-export default RefreshGA;
+export default RefreshGTM;

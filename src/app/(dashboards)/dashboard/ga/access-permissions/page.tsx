@@ -12,7 +12,7 @@ export default async function Page() {
       <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
         Access Permissions
       </h1>
-      <RefreshGA gaPath="access-permissions" />
+      <RefreshGA path="access-permissions" />
     </div>
   );
 }

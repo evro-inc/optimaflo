@@ -55,9 +55,6 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = React.memo(({ tierLimits }
     ])
   );
 
-  // Adjust currentPropertyIndex to match currentStep correctly
-  const currentPropertyIndex = currentStep - 1; // Adjust for zero-based indexing
-
   const configs = gaFormFieldConfigs('GA4Property', 'update', remainingUpdate, selectedRowDataTransformed);
 
   // Correct mapping of formDataDefaults to align each row data with the current step
@@ -94,13 +91,24 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = React.memo(({ tierLimits }
   if (errorModal) return errorModal;
 
   const renderForms = () => {
-    // Use the currentPropertyIndex directly for the form values
-    const currentPropertyName = formDataDefaults[currentPropertyIndex]?.displayName || `Property ${currentPropertyIndex}`;
+    const currentFormIndex = currentStep - 1; // Adjust for zero-based indexing
+    // Use the currentFormIndex directly for the form values
+
+    // Check if the current form index is within the bounds of the fields array
+    if (currentFormIndex < 0 || currentFormIndex >= fields.length) {
+      return null; // Return null or some fallback UI if out of bounds
+    }
+
+    // Get the field for the current form step
+    const field = fields[currentFormIndex];
+
+
+    const currentPropertyName = formDataDefaults[currentFormIndex]?.displayName || `Property ${currentFormIndex}`;
 
     return (
       <div className="w-full">
         <div
-          key={fields[currentStep - 1]?.id} // Adjust key indexing to match current step
+          key={field.id} // Adjust key indexing to match current step
           className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
         >
           <div className="max-w-xl mx-auto">
@@ -132,11 +140,11 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = React.memo(({ tierLimits }
                     </Button>
 
                     {currentStep < fields.length ? (
-                      <Button type="button" onClick={handleNext}>
+                      <Button disabled={!form.formState.isValid} type="button" onClick={handleNext}>
                         Next
                       </Button>
                     ) : (
-                      <Button type="submit">{loading ? 'Submitting...' : 'Submit'}</Button>
+                      <Button disabled={!form.formState.isValid} type="submit">{loading ? 'Submitting...' : 'Submit'}</Button>
                     )}
                   </div>
                 </form>

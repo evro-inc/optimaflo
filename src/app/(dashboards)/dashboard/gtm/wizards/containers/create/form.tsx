@@ -28,7 +28,6 @@ const FormCreateContainer: React.FC<FormCreateProps> = React.memo(({ tierLimits,
   const currentStep = useSelector((state: RootState) => state.form.currentStep);
   const notFoundError = useSelector(selectTable).notFoundError;
   const router = useRouter();
-  const count = useSelector((state: RootState) => state.form.count);
   const errorModal = useErrorHandling(error, notFoundError);
 
   useEffect(() => {
@@ -57,7 +56,7 @@ const FormCreateContainer: React.FC<FormCreateProps> = React.memo(({ tierLimits,
     },
   ];
 
-  const { formAmount, form, fields, addForm } = useFormInitialization<ContainerType>(
+  const { formAmount, form, fields, addForm, count } = useFormInitialization<ContainerType>(
     formDataDefaults,
     FormSchema
   );
@@ -108,7 +107,7 @@ const FormCreateContainer: React.FC<FormCreateProps> = React.memo(({ tierLimits,
             className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
           >
             <div className="max-w-xl mx-auto">
-              <h1>{currentPropertyName}</h1>
+              <h1>Container {currentStep - 1}</h1>
               <div className="mt-12">
                 <Form {...form}>
                   <form

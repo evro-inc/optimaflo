@@ -42,6 +42,7 @@ import { UpdateEnvs } from '@/src/lib/fetch/dashboard/actions/gtm/envs';
 import { Checkbox } from '@/src/components/ui/checkbox';
 import { revalidate } from '@/src/utils/server';
 import { useUser } from '@clerk/nextjs';
+import RefreshGTM from './refresh';
 
 type Forms = z.infer<typeof FormSchema>;
 
@@ -552,31 +553,9 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
     form.setValue(`forms.${index}.environmentId`, newEnvValue.join(','));
   };
 
-  const refreshAllCache = async () => {
-    toast.info('Updating our systems. This may take a minute or two to update on screen.', {
-      action: {
-        label: 'Close',
-        onClick: () => toast.dismiss(),
-      },
-    });
-    const keys = [
-      `gtm:accounts:userId:${userId}`,
-      `gtm:containers:userId:${userId}`,
-      `gtm:workspaces:userId:${userId}`,
-      `gtm:tags:userId:${userId}`,
-      `gtm:triggers:userId:${userId}`,
-      `gtm:variables:userId:${userId}`,
-      `gtm:versionHeaders:userId:${userId}`,
-      `gtm:permissions:userId:${userId}`,
-      `gtm:environments:userId:${userId}`,
-      `gtm:builtInVariables:userId:${userId}`,
-    ];
-    await revalidate(keys, '/dashboard/gtm/entities', userId);
-  };
-
   return (
     <div className="flex flex-row gap-4">
-      <Button onClick={refreshAllCache}>Refresh GTM Cache</Button>
+      <RefreshGTM path="entities" />
       <Drawer
         snapPoints={[0.4, 1]}
         activeSnapPoint={snap}
@@ -621,21 +600,19 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
                           <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger
                               value="publish"
-                              className={`relative p-2 transition-colors ${
-                                activeTab === 'publish'
-                                  ? 'bg-blue-100 shadow-md'
-                                  : 'hover:bg-blue-50'
-                              }`}
+                              className={`relative p-2 transition-colors ${activeTab === 'publish'
+                                ? 'bg-blue-100 shadow-md'
+                                : 'hover:bg-blue-50'
+                                }`}
                             >
                               Publish and Create Version
                             </TabsTrigger>
                             <TabsTrigger
                               value="version"
-                              className={`relative p-2 transition-colors ${
-                                activeTab === 'version'
-                                  ? 'bg-blue-100 shadow-md'
-                                  : 'hover:bg-blue-50'
-                              }`}
+                              className={`relative p-2 transition-colors ${activeTab === 'version'
+                                ? 'bg-blue-100 shadow-md'
+                                : 'hover:bg-blue-50'
+                                }`}
                             >
                               Create Version
                             </TabsTrigger>
