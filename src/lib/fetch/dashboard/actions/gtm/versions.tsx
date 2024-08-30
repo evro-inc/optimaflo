@@ -32,7 +32,7 @@ export async function listGTMVersionHeaders() {
 
   const token = await currentUserOauthAccessToken(userId);
 
-  const cacheKey = `gtm:versionHeaders:userId:${userId}`;
+  const cacheKey = `gtm:versions:userId:${userId}`;
   const cachedValue = await redis.get(cacheKey);
 
   if (cachedValue) {
@@ -591,8 +591,8 @@ export async function DeleteVersions(
               notFoundError: true, // Set the notFoundError flag
               message: `Could not delete version. Please check your permissions. Container Name: 
               ${notFoundLimit
-                .map(({ name }) => name)
-                .join(', ')}. All other variables were successfully deleted.`,
+                  .map(({ name }) => name)
+                  .join(', ')}. All other variables were successfully deleted.`,
               results: notFoundLimit.map(({ combinedId, name }) => {
                 const [accountId, containerId, containerVersionId] = combinedId.split('-');
                 return {
@@ -644,7 +644,7 @@ export async function DeleteVersions(
           break;
         }
       } finally {
-        const cacheKey = `gtm:versionHeaders:userId:${userId}`;
+        const cacheKey = `gtm:versions:userId:${userId}`;
         await redis.del(cacheKey);
 
         await revalidatePath(`/dashboard/gtm/entities`);
@@ -679,7 +679,7 @@ export async function DeleteVersions(
   }
   // If there are successful deletions, update the deleteUsage
   if (successfulDeletions.length > 0) {
-    const specificCacheKey = `gtm:versionHeaders:userId:${userId}`;
+    const specificCacheKey = `gtm:versions:userId:${userId}`;
     await redis.del(specificCacheKey);
 
     // Revalidate paths if needed
@@ -1002,7 +1002,7 @@ export async function UpdateVersions(formData: UpdateVersionSchemaType) {
       } finally {
         // This block will run regardless of the outcome of the try...catch
         if (accountIdForCache && containerIdForCache && userId) {
-          const cacheKey = `gtm:versionHeaders:userId:${userId}`;
+          const cacheKey = `gtm:versions:userId:${userId}`;
           await redis.del(cacheKey);
           await revalidatePath(`/dashboard/gtm/entities`);
         }
@@ -1033,7 +1033,7 @@ export async function UpdateVersions(formData: UpdateVersionSchemaType) {
   }
 
   if (successfulUpdates.length > 0 && accountIdForCache && containerIdForCache) {
-    const cacheKey = `gtm:versionHeaders:userId:${userId}`;
+    const cacheKey = `gtm:versions:userId:${userId}`;
     await redis.del(cacheKey);
     revalidatePath(`/dashboard/gtm/entities`);
   }

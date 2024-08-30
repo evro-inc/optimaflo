@@ -1,10 +1,16 @@
+/* global RequestInit */
+
 'use server';
+
 import { notFound } from 'next/navigation';
 import prisma from '../lib/prisma';
 import { auth } from '@clerk/nextjs/server';
 import { revalidatePath } from 'next/cache';
 import { redis } from '../lib/redis/cache';
 import { fetchGASettings, fetchGtmSettings } from '../lib/fetch/dashboard';
+import { currentUserOauthAccessToken } from '@/src/lib/clerk';
+import { gtmRateLimit } from '../lib/redis/rateLimits';
+import { limiter } from '../lib/bottleneck';
 
 // Define the type for the pagination and filtering result
 type PaginatedFilteredResult<T> = {
@@ -137,16 +143,18 @@ export const tierUpdateLimit = async (userId: string, featureName: string) => {
 // Function to Handle API Errors
 export async function handleApiResponseError(
   response: Response,
-  parsedResponse: any,
   feature: string,
   names: string[]
 ) {
+  // Parse the response body if not already parsed
+  const parsedResponse = await response.json().catch(() => null);
+
   switch (response.status) {
     case 400:
       return {
         success: false,
         errorCode: 400,
-        message: `${feature} ${names} was not created. ${parsedResponse.error.message}`,
+        message: `${feature} ${names} was not created. ${parsedResponse?.error?.message ?? 'Unknown error'}`,
       };
 
     case 404:
@@ -158,7 +166,7 @@ export async function handleApiResponseError(
       };
 
     case 403:
-      if (parsedResponse.message === 'Feature limit reached') {
+      if (parsedResponse?.message === 'Feature limit reached') {
         return {
           success: false,
           errorCode: 403,
@@ -168,7 +176,7 @@ export async function handleApiResponseError(
         return {
           success: false,
           errorCode: response.status,
-          message: parsedResponse.error.message,
+          message: parsedResponse?.error?.message ?? 'Unknown error',
         };
       }
 
@@ -190,10 +198,11 @@ export async function handleApiResponseError(
       return {
         success: false,
         errorCode: response.status,
-        message: `Error deleting container: ${response.status}`,
+        message: `Error with status: ${response.status}`,
       };
   }
 }
+
 
 export async function fetchFilteredRows<T>(
   allItems: T[],
@@ -274,7 +283,7 @@ export async function fetchPages<T>(
   return totalPages;
 }
 
-export async function revalidate(keys: string[], path: string, userId: string) {
+export async function revalidate(keys: string[], path: string, userId: string, global: boolean = false) {
   try {
     const pipeline = redis.pipeline();
 
@@ -286,8 +295,10 @@ export async function revalidate(keys: string[], path: string, userId: string) {
       notFound();
     }
 
-    await fetchGtmSettings(userId);
-    await fetchGASettings(userId);
+    if (global === true) {
+      await fetchGtmSettings(userId);
+      await fetchGASettings(userId);
+    }
 
     keys.forEach((key) => pipeline.del(key));
 
@@ -326,3 +337,114 @@ export const fetchWithRetry = async (url: string, headers: any, retries = 0): Pr
     }
   }
 };
+
+
+
+
+
+
+
+
+
+/************************************************************************************
+  API Helper Functions for Modularity and Reusability
+************************************************************************************/
+
+/** Authenticates the user and returns userId or throws a notFound error */
+export async function authenticateUser(): Promise<string> {
+  const { userId } = await auth();
+  if (!userId) throw notFound();
+  return userId;
+}
+
+/** Retrieves the OAuth access token for the user */
+export async function getOauthToken(userId: string): Promise<string> {
+  return await currentUserOauthAccessToken(userId);
+}
+
+/** Ensures rate limit is respected with retries */
+export async function ensureGTMRateLimit(userId: string): Promise<void> {
+  const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
+  if (remaining <= 0) throw new Error('Rate limit exceeded');
+}
+
+/** Checks if a feature limit is reached and returns available usage */
+export async function checkFeatureLimit(
+  userId: string,
+  feature: string,
+  limitType: 'create' | 'delete' | 'update'
+): Promise<{ tierLimitResponse: any; availableUsage: number }> {
+  let tierLimitResponse;
+  if (limitType === 'create') {
+    tierLimitResponse = await tierCreateLimit(userId, feature);
+  } else if (limitType === 'delete') {
+    tierLimitResponse = await tierDeleteLimit(userId, feature);
+  } else {
+    tierLimitResponse = await tierUpdateLimit(userId, feature);
+  }
+
+  const limit = Number(tierLimitResponse[`${limitType}Limit`]);
+  const usage = Number(tierLimitResponse[`${limitType}Usage`]);
+  const availableUsage = limit - usage;
+
+  return { tierLimitResponse, availableUsage };
+}
+
+/** Executes an API request with retry logic */
+export async function executeApiRequest(
+  url: string,
+  options: RequestInit,
+  feature: string = '',
+  names: string[] = [],
+  maxRetries = 5
+): Promise<any> {
+  let retries = 0;
+  let delay = 1000;
+
+  while (retries < maxRetries) {
+    try {
+      const response = await limiter.schedule(() => fetch(url, options));
+      if (response.ok) return await response.json();
+
+      if (response.status === 429) {
+        await handleRateLimitRetry(retries, delay);
+        delay *= 2;
+      } else {
+        const error = await handleApiResponseError(response, feature, names); // Pass all required arguments
+        throw error;
+      }
+    } catch (error: any) {
+      if (retries >= maxRetries - 1) throw error;
+      retries++;
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      delay *= 2;
+    }
+  }
+
+  throw new Error('Maximum retries reached without a successful response.');
+}
+
+
+/** Handles rate limit retry logic */
+export async function handleRateLimitRetry(retries: number, delay: number): Promise<void> {
+  if (retries < 3) {
+    const jitter = Math.random() * 200;
+    await new Promise((resolve) => setTimeout(resolve, delay + jitter));
+  } else {
+    throw new Error('Rate limit exceeded');
+  }
+}
+
+/** Validates form data using a schema */
+export async function validateFormData(schema: any, formData: any): Promise<any> {
+  const validationResult = schema.safeParse(formData);
+  if (!validationResult.success) {
+    const errorMessage = validationResult.error.issues
+      .map((issue) => `${issue.path[0]}: ${issue.message}`)
+      .join('. ');
+    throw new Error(errorMessage);
+  }
+  return validationResult.data;
+}
+
+

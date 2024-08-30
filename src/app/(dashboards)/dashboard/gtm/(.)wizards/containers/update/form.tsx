@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { SubmitHandler } from 'react-hook-form';
 import { ContainerSchemaType, FormSchema } from '@/src/lib/schemas/gtm/containers';
@@ -14,9 +14,9 @@ import {
 } from '@/src/redux/tableSlice';
 import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
-import { UpdateContainers } from '@/src/lib/fetch/dashboard/actions/gtm/containers';
+import { updateContainers } from '@/src/lib/fetch/dashboard/actions/gtm/containers';
 import { calculateRemainingLimit, processForm } from '@/src/utils/utils';
-import { useErrorHandling, useFormInitialization, useStepNavigation } from '@/src/hooks/wizard';
+import { useErrorHandling, useErrorRedirect, useFormInitialization, useStepNavigation } from '@/src/hooks/wizard';
 import { gtmFormFieldConfigs } from '@/src/utils/gtmFormFields';
 import { FormFieldComponent } from '@/src/components/client/Utils/Form';
 
@@ -34,35 +34,28 @@ const FormUpdateContainer: React.FC<FormUpdateProps> = React.memo(({ tierLimits 
   const remainingUpdateData = calculateRemainingLimit(tierLimits || [], 'GTMContainer', 'update');
   const remainingUpdate = remainingUpdateData.remaining;
 
-  useEffect(() => {
-    if (Object.keys(selectedRowData).length === 0) {
-      router.push('/dashboard/gtm/entities');
-    }
-  }, [selectedRowData, router]);
+  useErrorRedirect(selectedRowData, router, '/dashboard/gtm/entities');
 
   const selectedRowDataTransformed: Record<string, ContainerType> = Object.fromEntries(
     Object.entries(selectedRowData).map(([key, rowData]) => [
       key,
       {
         accountId: rowData.accountId,
-        usageContext: rowData.usageContext,
+        usageContext: Array.isArray(rowData.usageContext) ? rowData.usageContext : [rowData.usageContext],
         name: rowData.name,
         domainName: rowData.domainName || '',
         notes: rowData.notes || '',
         containerId: rowData.containerId,
         publicId: rowData.publicId,
-        accountName: rowData.accountName,
       } as ContainerType,
     ])
   );
-
-  const currentFormIndex = currentStep - 1; // Adjust for 0-based index
 
   const configs = gtmFormFieldConfigs('GTMContainer', 'update', remainingUpdate, selectedRowDataTransformed);
 
   const formDataDefaults: ContainerType[] = Object.values(selectedRowData).map((rowData) => ({
     accountId: rowData.accountId,
-    usageContext: rowData.usageContext,
+    usageContext: Array.isArray(rowData.usageContext) ? rowData.usageContext : [rowData.usageContext],
     name: rowData.name,
     domainName: rowData.domainName || '',
     notes: rowData.notes || '',
@@ -70,6 +63,9 @@ const FormUpdateContainer: React.FC<FormUpdateProps> = React.memo(({ tierLimits 
     publicId: rowData.publicId,
     accountName: rowData.accountName,
   }));
+
+  console.log('formDataDefaults', formDataDefaults);
+
 
   const { form, fields } = useFormInitialization<ContainerType>(formDataDefaults, FormSchema);
 
@@ -80,15 +76,13 @@ const FormUpdateContainer: React.FC<FormUpdateProps> = React.memo(({ tierLimits 
   });
 
   const onSubmit: SubmitHandler<ContainerSchemaType> = processForm(
-    UpdateContainers,
+    updateContainers,
     formDataDefaults,
     () => form.reset({ forms: formDataDefaults }),
     dispatch,
     router,
     '/dashboard/gtm/entities'
   );
-
-  console.log("form error", form.formState.errors);
 
   if (errorModal) return errorModal;
 
@@ -106,6 +100,10 @@ const FormUpdateContainer: React.FC<FormUpdateProps> = React.memo(({ tierLimits 
 
     // Use the currentPropertyIndex directly for the form values
     const currentPropertyName = formDataDefaults[currentFormIndex]?.name;
+    console.log('Form isValid:', form.formState.isValid)
+    console.log('Form errors:', form.formState.errors)
+    console.log('Form values:', form.getValues());
+    console.log('Fields:', fields);
 
     return (
       <div className="w-full">
@@ -143,11 +141,11 @@ const FormUpdateContainer: React.FC<FormUpdateProps> = React.memo(({ tierLimits 
                     </Button>
 
                     {currentStep < fields.length ? (
-                      <Button disabled={!form.formState.isValid} type="button" onClick={handleNext}>
+                      <Button type="button" onClick={handleNext}>
                         Next
                       </Button>
                     ) : (
-                      <Button disabled={!form.formState.isValid} type="submit">
+                      <Button type="submit">
                         {loading ? 'Submitting...' : 'Submit'}
                       </Button>
                     )}
@@ -160,6 +158,7 @@ const FormUpdateContainer: React.FC<FormUpdateProps> = React.memo(({ tierLimits 
       </div>
     );
   };
+
 
 
   return (

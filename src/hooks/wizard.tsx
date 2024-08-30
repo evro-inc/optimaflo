@@ -109,3 +109,11 @@ export const useAccountsWithProperties = (accounts, properties) => {
             .filter((account) => account.properties.length > 0);
     }, [accounts, properties]);
 };
+
+export function useErrorRedirect(selectedRowData: any, router: any, redirectPath: string) {
+    useEffect(() => {
+        if (Object.keys(selectedRowData).length === 0) {
+            router.push(redirectPath);
+        }
+    }, [selectedRowData, router, redirectPath]);
+}

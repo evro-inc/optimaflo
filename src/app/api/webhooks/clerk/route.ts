@@ -2,7 +2,7 @@ import { Webhook } from 'svix';
 import { headers } from 'next/headers';
 import { clerkClient, WebhookEvent } from '@clerk/nextjs/server';
 import prisma from '@/src/lib/prisma';
-import { fetchGtmSettings } from '@/src/lib/fetch/dashboard';
+import { fetchGASettings, fetchGtmSettings } from '@/src/lib/fetch/dashboard';
 
 export async function POST(req: Request) {
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET as string;
@@ -163,6 +163,7 @@ export async function POST(req: Request) {
         if (eventType === 'session.created') {
           try {
             await fetchGtmSettings(clerkSession.user_id);
+            await fetchGASettings(clerkSession.user_id);
           } catch (error) {
             console.error(`Failed to fetch GTM settings for user ID: ${clerkSession.user_id}`, error);
           }

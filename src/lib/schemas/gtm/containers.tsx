@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const UsageContextType = z.enum(['web', 'android', 'ios', 'iosSdk5']);
+const UsageContextType = z.enum(['web', 'android', 'ios', 'iosSdk5', 'androidSdk5', 'server', 'amp']);
 
 // Helper function to validate domain name (simplified example)
 const isValidDomainName = (domain: string) => {
@@ -21,11 +21,7 @@ const SingleFormSchema = z.object({
   containerId: z.string().optional(),
   publicId: z.string(),
   tagIds: z.array(z.string()).optional(),
-
-  usageContext: z.union([
-    z.string(UsageContextType),
-    z.array(UsageContextType),
-  ]),
+  usageContext: z.union([UsageContextType, z.array(UsageContextType)]),
   name: z.string().nonempty('Container Name is required'),
   domainName: z
     .string()

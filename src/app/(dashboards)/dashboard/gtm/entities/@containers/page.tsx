@@ -25,8 +25,13 @@ export default async function ContainerPage({
 
   const [accounts, containers] = await Promise.all([accountData, containerData]);
 
-  const combinedData = containers.flat().map((container) => {
-    const account = accounts.find((a) => a.accountId === container.accountId);
+  // Flatten the nested arrays in containerData to get all individual containers
+  const flatAccounts = accounts.flat();
+  const flatContainers = containers.flat().flatMap(c => c.container); // Correctly access individual containers
+
+  // Combine account data with container data based on matching accountId
+  const combinedData = flatContainers.map((container) => {
+    const account = flatAccounts.find((a) => a.accountId === container.accountId);
     if (account) {
       return {
         ...container,

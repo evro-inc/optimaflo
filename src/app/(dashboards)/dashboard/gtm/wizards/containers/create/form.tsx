@@ -14,7 +14,7 @@ import {
 } from '@/src/redux/tableSlice';
 import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
-import { CreateContainers } from '@/src/lib/fetch/dashboard/actions/gtm/containers';
+import { createContainers } from '@/src/lib/fetch/dashboard/actions/gtm/containers';
 import { calculateRemainingLimit, handleAmountChange, processForm } from '@/src/utils/utils';
 import { useErrorHandling, useFormInitialization, useStepNavigation } from '@/src/hooks/wizard';
 import { FormFieldComponent } from '@/src/components/client/Utils/Form';
@@ -47,7 +47,7 @@ const FormCreateContainer: React.FC<FormCreateProps> = React.memo(({ tierLimits,
   const formDataDefaults: ContainerType[] = [
     {
       accountId: '',
-      usageContext: 'web',
+      usageContext: ['web'],
       name: '',
       domainName: '',
       notes: '',
@@ -69,7 +69,7 @@ const FormCreateContainer: React.FC<FormCreateProps> = React.memo(({ tierLimits,
   });
 
   const onSubmit: SubmitHandler<ContainerSchemaType> = processForm(
-    CreateContainers,
+    createContainers,
     formDataDefaults,
     () => form.reset({ forms: [formDataDefaults] }),
     dispatch,
@@ -97,8 +97,6 @@ const FormCreateContainer: React.FC<FormCreateProps> = React.memo(({ tierLimits,
   );
 
   const renderStepForms = () => {
-    const currentPropertyName = formDataDefaults[currentStep - 1]?.name;
-
     return (
       <div className="w-full">
         {fields.length >= currentStep - 1 && (

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { SubmitHandler } from 'react-hook-form';
 import { FormSchemaType, FormsSchema } from '@/src/lib/schemas/ga/properties';
@@ -11,7 +11,7 @@ import { selectTable } from '@/src/redux/tableSlice';
 import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import { calculateRemainingLimit, processForm } from '@/src/utils/utils';
-import { useErrorHandling, useFormInitialization, useStepNavigation } from '@/src/hooks/wizard';
+import { useErrorHandling, useErrorRedirect, useFormInitialization, useStepNavigation } from '@/src/hooks/wizard';
 import { FormFieldComponent } from '@/src/components/client/Utils/Form';
 import { Form } from '@/src/components/ui/form';
 import { gaFormFieldConfigs } from '@/src/utils/gaFormFields';
@@ -30,11 +30,7 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = React.memo(({ tierLimits }
   const remainingUpdateData = calculateRemainingLimit(tierLimits || [], 'GA4Properties', 'update');
   const remainingUpdate = remainingUpdateData.remaining;
 
-  useEffect(() => {
-    if (Object.keys(selectedRowData).length === 0) {
-      router.push('/dashboard/ga/properties'); // Replace with your redirect path
-    }
-  }, [selectedRowData, router]);
+  useErrorRedirect(selectedRowData, router, '/dashboard/ga/properties');
 
   const selectedRowDataTransformed: Record<string, GA4PropertyType> = Object.fromEntries(
     Object.entries(selectedRowData).map(([key, row]) => [

@@ -40,7 +40,7 @@ import { useDispatch } from 'react-redux';
 import { useTransition } from 'react';
 import { setSelectedRows } from '@/src/redux/tableSlice';
 import { LimitReached } from '@/src/components/client/modals/limitReached';
-import { DeleteContainers } from '@/src/lib/fetch/dashboard/actions/gtm/containers';
+import { deleteContainers } from '@/src/lib/fetch/dashboard/actions/gtm/containers';
 
 import { Container } from '@/src/types/types';
 
@@ -91,9 +91,11 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
         onClick: () => toast.dismiss(),
       },
     });
-    const keys = [`gtm:containers:userId:${userId}`];
-    await revalidate(keys, '/dashboard/gtm/containers', userId);
+    await revalidate([`gtm:containers:userId:${userId}`, `gtm:workspaces:userId:${userId}`, `gtm:versions:userId:${userId}`, `gtm:permissions:userId:${userId}`], `/dashboard/gtm/entities`, userId).catch((err) => {
+      console.error('Error during revalidation:', err);
+    });
   };
+
   const selectedRowData = table.getSelectedRowModel().rows.reduce((acc, row) => {
     acc[row.id] = row.original;
     return acc;
@@ -102,7 +104,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
 
   const getDisplayNames = (items) => items.map((item: Container) => item.name);
   const handleDelete = useDeleteHook(
-    DeleteContainers,
+    deleteContainers,
     selectedRowData,
     table,
     getDisplayNames,

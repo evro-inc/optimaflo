@@ -17,8 +17,6 @@ import {
   tierDeleteLimit,
   tierUpdateLimit,
 } from '@/src/utils/server';
-import { fetchGtmSettings } from '../..';
-
 // Define the types for the form data
 type FormCreateSchema = z.infer<typeof FormSchema>;
 type FormUpdateSchema = z.infer<typeof FormSchema>;

@@ -123,11 +123,11 @@ export interface BaseForm {
 
 export type FormWithParent<T = {}> = BaseForm & T;
 
-type UsageContextType = (string | ("web" | "android" | "ios" | "iosSdk5")[]); // Remove 'undefined'
+export type UsageContextType = ("web" | "android" | "ios" | 'iosSdk5' | 'androidSdk5' | 'server' | 'amp');
 
 export type ContainerType = BaseForm & {
   accountId: string;
-  usageContext: UsageContextType; // Ensure usageContext is defined
+  usageContext: UsageContextType | UsageContextType[];
   publicId: string;
   name: string;
   path?: string;

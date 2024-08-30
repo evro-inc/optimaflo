@@ -24,7 +24,7 @@ function RefreshGTM({ path }) {
       `gtm:tags:userId:${userId}`,
       `gtm:triggers:userId:${userId}`,
       `gtm:variables:userId:${userId}`,
-      `gtm:versionHeaders:userId:${userId}`,
+      `gtm:versions:userId:${userId}`,
       `gtm:permissions:userId:${userId}`,
       `gtm:environments:userId:${userId}`,
       `gtm:builtInVariables:userId:${userId}`,
@@ -32,7 +32,7 @@ function RefreshGTM({ path }) {
 
     // Ensure `path` is correctly formatted
     if (typeof path === 'string') {
-      await revalidate(keys, `/dashboard/gtm/${path}`, userId);
+      await revalidate(keys, `/dashboard/gtm/${path}`, userId, true);
     } else {
       console.error('Invalid path:', path);
     }
@@ -40,7 +40,7 @@ function RefreshGTM({ path }) {
 
   return (
     <div className="flex flex-row gap-4">
-      <Button onClick={refreshAllCache}>Refresh GA Cache</Button>
+      <Button onClick={refreshAllCache}>Refresh GTM Cache</Button>
     </div>
   );
 }

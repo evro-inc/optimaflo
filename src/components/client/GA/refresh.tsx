@@ -34,7 +34,7 @@ function RefreshGA({ path }) {
 
     // Ensure `path` is correctly formatted
     if (typeof path === 'string') {
-      await revalidate(keys, `/dashboard/gtm/${path}`, userId);
+      await revalidate(keys, `/dashboard/gtm/${path}`, userId, true);
     } else {
       console.error('Invalid path:', path);
     }
