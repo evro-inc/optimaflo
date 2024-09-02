@@ -70,9 +70,6 @@ const FormUpdateContainer: React.FC<FormUpdateProps> = React.memo(({ tierLimits 
     accountName: rowData.accountName,
   }));
 
-  console.log('formDataDefaults', formDataDefaults);
-
-
   const { form, fields } = useFormInitialization<ContainerType>(formDataDefaults, FormSchema);
 
   const { handleNext, handlePrevious } = useStepNavigation({
@@ -106,10 +103,6 @@ const FormUpdateContainer: React.FC<FormUpdateProps> = React.memo(({ tierLimits 
 
     // Use the currentPropertyIndex directly for the form values
     const currentPropertyName = formDataDefaults[currentFormIndex]?.name;
-    console.log('Form isValid:', form.formState.isValid)
-    console.log('Form errors:', form.formState.errors)
-    console.log('Form values:', form.getValues());
-    console.log('Fields:', fields);
 
     return (
       <div className="w-full">

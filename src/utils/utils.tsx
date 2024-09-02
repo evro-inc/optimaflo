@@ -85,8 +85,6 @@ export const processForm = <TFormValues extends FormWithParent>(
     try {
       const res = await apiCall({ forms });
 
-      console.log('res', res);
-
       if (res.success) {
         res.results.forEach((result) => {
           if (result.success) {
@@ -109,8 +107,6 @@ export const processForm = <TFormValues extends FormWithParent>(
 
       resetForm();
     } catch (error) {
-      console.log('err:', error);
-
       toast.error('An unexpected error occurred.', {
         action: {
           label: 'Close',

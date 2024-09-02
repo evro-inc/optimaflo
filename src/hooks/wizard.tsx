@@ -100,15 +100,27 @@ export const useErrorHandling = (error, notFoundError) => {
 };
 
 export const useAccountsWithProperties = (accounts, properties) => {
+    console.log("Accounts input:", accounts);
+    console.log("Properties input:", properties);
+
     return useMemo(() => {
-        return accounts
+        // Directly use properties array since it is already flat
+        const allProperties = properties;
+
+        // Map accounts and attach properties that belong to each account
+        const mappedAccounts = accounts
             .map((account) => ({
                 ...account,
-                properties: properties.filter((property) => property.parent === account.name),
+                properties: allProperties.filter((property) => property.parent === account.name),
             }))
-            .filter((account) => account.properties.length > 0);
+            .filter((account) => account.properties.length > 0); // Filter out accounts with no properties
+
+        console.log("mappedAccounts", mappedAccounts);
+
+        return mappedAccounts;
     }, [accounts, properties]);
 };
+
 
 export function useErrorRedirect(selectedRowData: any, router: any, redirectPath: string) {
     useEffect(() => {

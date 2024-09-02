@@ -26,15 +26,22 @@ export default async function StreamPage({
   const [accounts, properties] = await Promise.all([accountData, propertyData]);
 
   const flatAccounts = accounts.flat();
-  const flatProperties = properties.flat();
 
-  const combinedData = flatProperties.map((property) => {
+  // Make sure you access the 'properties' field of propertyData correctly
+  const flatProperties = properties.flatMap((propertyObj) => propertyObj.properties);
+
+  // Filter out any undefined values from flatProperties
+  const validProperties = flatProperties.filter(property => property !== undefined);
+
+  const combinedData = validProperties.map((property) => {
     // Find the matching account
     const account = flatAccounts.find((a) => a.name === property.parent);
 
     // Transformation functions
     const extractId = (path) => path.split('/')[1];
     const formatType = (propertyType) => {
+      if (!propertyType) return 'Unknown'; // Check if propertyType is undefined
+
       // Split the string into parts based on underscores
       const parts = propertyType.split('_');
 
@@ -42,7 +49,7 @@ export default async function StreamPage({
       const lastPart = parts[parts.length - 1];
 
       // Convert that part to lowercase, then capitalize the first letter
-      return lastPart[0] + lastPart.slice(1).toLowerCase();
+      return lastPart[0].toUpperCase() + lastPart.slice(1).toLowerCase();
     };
 
     // Apply transformations
@@ -53,12 +60,12 @@ export default async function StreamPage({
       serviceLevel: formatType(property.serviceLevel), // Transforming the 'serviceLevel'
       propertyType: formatType(property.propertyType), // Transforming the 'propertyType'
       accountName: account ? account.displayName : 'Unknown Account', // Setting 'accountName' from 'flatAccounts' or default
-      retention: property.dataRetentionSettings.eventDataRetention,
-      resetOnNewActivity: property.dataRetentionSettings.resetUserDataOnNewActivity || false,
+
+      // Check if dataRetentionSettings exists before accessing its properties
+      retention: property.dataRetentionSettings ? property.dataRetentionSettings.eventDataRetention : 'Unknown',
+      resetOnNewActivity: property.dataRetentionSettings ? property.dataRetentionSettings.resetUserDataOnNewActivity : false,
     };
   });
-
-  console.log(combinedData);
 
   return (
     <>

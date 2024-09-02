@@ -32,14 +32,15 @@ export default async function PropertyPage({
   ]);
 
   const flatAccounts = accounts.flat();
-  const flatProperties = properties.flat();
+  const flatProperties = properties.flatMap((propertyObj) => propertyObj.properties || []).filter(Boolean); // Filters out undefined or empty objects
   const flattenedCustomDimensions = cd
     .filter((item) => item.customDimensions) // Filter out objects without customDimensions
     .flatMap((item) => item.customDimensions);
 
   const combinedData = flattenedCustomDimensions.map((cd) => {
     const propertyId = cd.name.split('/')[1];
-    const property = flatProperties.find((p) => p.name.includes(propertyId));
+    // Ensure 'p' and 'p.name' are defined before calling 'includes'
+    const property = flatProperties.find((p) => p && p.name && p.name.includes(propertyId));
     const accounts = flatAccounts.filter((a) => a.name === property?.parent);
 
     return {
@@ -48,9 +49,9 @@ export default async function PropertyPage({
       parameterName: cd.parameterName,
       displayName: cd.displayName,
       scope: cd.scope,
-      property: property.displayName,
-      account: accounts ? accounts[0].name : 'Unknown Account ID',
-      accountName: accounts ? accounts[0].displayName : 'Unknown Account Name',
+      property: property ? property.displayName : 'Unknown Property',
+      account: accounts.length > 0 ? accounts[0].name : 'Unknown Account ID',
+      accountName: accounts.length > 0 ? accounts[0].displayName : 'Unknown Account Name',
       disallowAdsPersonalization: cd.scope === 'USER' ? cd.disallowAdsPersonalization : false,
     };
   });

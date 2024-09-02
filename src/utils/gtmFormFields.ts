@@ -28,11 +28,6 @@ export const gtmFormFieldConfigs = (
     const isUpdate = formType === 'update';
     const data = !isUpdate && Array.isArray(dataSource) ? dataSource : [];
 
-    console.log('dataSource', dataSource);
-
-    console.log("data", data);
-
-
     switch (entityType) {
         case 'GTMContainer':
             if (isUpdate) {

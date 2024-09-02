@@ -28,14 +28,15 @@ export default async function CustomMetricPage({
   const [accounts, properties, cm] = await Promise.all([accountData, propertyData, customMetrics]);
 
   const flatAccounts = accounts.flat();
-  const flatProperties = properties.flat();
+  const flatProperties = properties.flatMap((propertyObj) => propertyObj.properties || []).filter(Boolean); // Ensures only valid entries
   const flattenedCustomMetrics = cm
     .filter((item) => item.customMetrics) // Filter out objects without customMetrics
     .flatMap((item) => item.customMetrics);
 
   const combinedData = flattenedCustomMetrics.map((cm) => {
     const propertyId = cm.name.split('/')[1];
-    const property = flatProperties.find((p) => p.name.includes(propertyId));
+    // Check both 'p' and 'p.name' are defined before using '.includes'
+    const property = flatProperties.find((p) => p && p.name && p.name.includes(propertyId));
     const accounts = flatAccounts.filter((a) => a.name === property?.parent);
 
     return {
@@ -45,10 +46,10 @@ export default async function CustomMetricPage({
       displayName: cm.displayName,
       scope: cm.scope,
       measurementUnit: cm.measurementUnit,
-      property: property.displayName,
+      property: property ? property.displayName : 'Unknown Property',
       restrictedMetricType: cm.restrictedMetricType,
-      account: accounts ? accounts[0].name : 'Unknown Account ID',
-      accountName: accounts ? accounts[0].displayName : 'Unknown Account Name',
+      account: accounts.length > 0 ? accounts[0].name : 'Unknown Account ID',
+      accountName: accounts.length > 0 ? accounts[0].displayName : 'Unknown Account Name',
       disallowAdsPersonalization: cm.scope === 'USER' ? cm.disallowAdsPersonalization : false,
     };
   });

@@ -4,7 +4,10 @@ import { ContainerSchemaType, FormSchema } from '@/src/lib/schemas/gtm/container
 import { redis } from '@/src/lib/redis/cache';
 import prisma from '@/src/lib/prisma';
 import { FeatureResult, FeatureResponse } from '@/src/types/types';
-import { authenticateUser, checkFeatureLimit, ensureGTMRateLimit, executeApiRequest, getOauthToken, revalidate, validateFormData } from '@/src/utils/server';
+import { authenticateUser, checkFeatureLimit, ensureGARateLimit, executeApiRequest, getOauthToken, revalidate, validateFormData } from '@/src/utils/server';
+
+
+const featureType: string = 'GTMContainer';
 
 /************************************************************************************
  Lists GTM containers for the authenticated user
@@ -16,19 +19,28 @@ export async function listGtmContainers(skipCache = false): Promise<any[]> {
 
   if (!skipCache) {
     const cacheData = await redis.get(cacheKey);
-    if (cacheData) return JSON.parse(cacheData);
+    if (cacheData) {
+      try {
+        const parsedData = JSON.parse(cacheData);
+        return parsedData;
+      } catch (error) {
+        console.error("Failed to parse cache data:", error);
+        console.log("Cached data:", cacheData); // Log the cached data for inspection
+        await redis.del(cacheKey);
+      }
+    }
   }
 
-  const gtmData = await prisma.user.findFirst({
+  const data = await prisma.user.findFirst({
     where: { id: userId },
     include: { gtm: true },
   });
 
-  if (!gtmData) return [];
+  if (!data) return [];
 
-  await ensureGTMRateLimit(userId);
+  await ensureGARateLimit(userId);
 
-  const uniqueAccountIds = Array.from(new Set(gtmData.gtm.map((item) => item.accountId)));
+  const uniqueAccountIds = Array.from(new Set(data.gtm.map((item) => item.accountId)));
   const urls = uniqueAccountIds.map(
     (accountId) =>
       `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers?fields=container(accountId,containerId,name,publicId,usageContext)`
@@ -42,7 +54,7 @@ export async function listGtmContainers(skipCache = false): Promise<any[]> {
 
   const allData = await Promise.all(urls.map((url) => executeApiRequest(url, { headers })));
 
-  await redis.set(cacheKey, JSON.stringify(allData.flat()));
+  await redis.set(cacheKey, JSON.stringify(allData.flat()), 'EX', 86400);
 
   return allData.flat();
 }
@@ -56,7 +68,7 @@ export async function deleteContainers(
 ): Promise<FeatureResponse> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
-  const { tierLimitResponse, availableUsage } = await checkFeatureLimit(userId, 'GTMContainer', 'delete');
+  const { tierLimitResponse, availableUsage } = await checkFeatureLimit(userId, featureType, 'delete');
 
   if (tierLimitResponse.limitReached || selectedContainers.size > availableUsage) {
     return {
@@ -73,13 +85,10 @@ export async function deleteContainers(
   let featureLimitReached: string[] = [];
   let notFoundLimit: string[] = [];
 
-  await ensureGTMRateLimit(userId);
+  await ensureGARateLimit(userId);
 
   await Promise.all(
     Array.from(selectedContainers).map(async (containerData: any) => {
-
-      console.log("containerData", containerData);
-
 
       const url = `https://www.googleapis.com/tagmanager/v2/accounts/${containerData.accountId}/containers/${containerData.containerId}`;
       const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
@@ -187,7 +196,7 @@ export async function createContainers(
 ): Promise<FeatureResponse> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
-  const { tierLimitResponse, availableUsage } = await checkFeatureLimit(userId, 'GTMContainer', 'create');
+  const { tierLimitResponse, availableUsage } = await checkFeatureLimit(userId, featureType, 'create');
 
   if (tierLimitResponse.limitReached || formData.forms.length > availableUsage) {
     return {
@@ -204,7 +213,7 @@ export async function createContainers(
   let featureLimitReached: string[] = [];
   let notFoundLimit: { id: string | undefined; name: string }[] = [];
 
-  await ensureGTMRateLimit(userId);
+  await ensureGARateLimit(userId);
 
   await Promise.all(
     formData.forms.map(async (containerData) => {
@@ -345,7 +354,7 @@ export async function updateContainers(
 ): Promise<FeatureResponse> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
-  const { tierLimitResponse, availableUsage } = await checkFeatureLimit(userId, 'GTMContainer', 'update');
+  const { tierLimitResponse, availableUsage } = await checkFeatureLimit(userId, featureType, 'update');
 
   if (tierLimitResponse.limitReached || formData.forms.length > availableUsage) {
     return {
@@ -363,7 +372,7 @@ export async function updateContainers(
   let notFoundLimit: { id: string | undefined; name: string }[] = [];
   const accountIdsForCache = new Set<string>();
 
-  await ensureGTMRateLimit(userId);
+  await ensureGARateLimit(userId);
 
   await Promise.all(
     formData.forms.map(async (containerData) => {

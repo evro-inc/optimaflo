@@ -9,6 +9,10 @@ import { currentUserOauthAccessToken } from '@/src/lib/clerk';
 import prisma from '@/src/lib/prisma';
 import { FeatureResult, FeatureResponse, ConversionEvent } from '@/src/types/types';
 import {
+  authenticateUser,
+  ensureGARateLimit,
+  executeApiRequest,
+  getOauthToken,
   handleApiResponseError,
   tierCreateLimit,
   tierDeleteLimit,
@@ -20,88 +24,61 @@ import { CustomConversionSchemaType, FormsSchema } from '@/src/lib/schemas/ga/co
 /************************************************************************************
   Function to list GA conversionEvents
 ************************************************************************************/
-export async function listGAConversionEvents() {
-  let retries = 0;
-  const MAX_RETRIES = 3;
-  let delay = 1000;
-
-  // Authenticating the user and getting the user ID
-  const { userId } = await auth();
-  if (!userId) return notFound();
-
-  const token = await currentUserOauthAccessToken(userId);
-
+export async function listGAConversionEvents(skipCache = false): Promise<any[]> {
+  const userId = await authenticateUser();
+  const token = await getOauthToken(userId);
   const cacheKey = `ga:conversionEvents:userId:${userId}`;
-  const cachedValue = await redis.get(cacheKey);
 
-  if (cachedValue) {
-    return JSON.parse(cachedValue);
-  }
-
-  await fetchGASettings(userId);
-
-  const gaData = await prisma.user.findFirst({
-    where: {
-      id: userId,
-    },
-    include: {
-      ga: true,
-    },
-  });
-
-  while (retries < MAX_RETRIES) {
-    try {
-      const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
-      if (remaining > 0) {
-        let allData: any[] = [];
-
-        await limiter.schedule(async () => {
-          const uniquePropertyIds = Array.from(new Set(gaData.ga.map((item) => item.propertyId)));
-
-          const urls = uniquePropertyIds.map(
-            (propertyId) =>
-              `https://analyticsadmin.googleapis.com/v1beta/properties/${propertyId}/conversionEvents`
-          );
-
-          const headers = {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'Accept-Encoding': 'gzip',
-          };
-
-          for (const url of urls) {
-            try {
-              const response = await fetch(url, { headers });
-              if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
-              }
-
-              const responseBody = await response.json();
-              allData.push(responseBody);
-
-              // Removed the problematic line here
-            } catch (error: any) {
-              throw new Error(`Error fetching data: ${error.message}`);
-            }
-          }
-        });
-        redis.set(cacheKey, JSON.stringify(allData), 'EX', 3600);
-
-        return allData;
-      }
-    } catch (error: any) {
-      if (error.code === 429 || error.status === 429) {
-        const jitter = Math.random() * 200;
-        await new Promise((resolve) => setTimeout(resolve, delay + jitter));
-        delay *= 2;
-        retries++;
-      } else {
-        throw error;
+  if (skipCache === false) {
+    const cacheData = await redis.get(cacheKey);
+    if (cacheData) {
+      try {
+        const parsedData = JSON.parse(cacheData);
+        return parsedData;
+      } catch (error) {
+        console.error("Failed to parse cache data:", error);
+        console.log("Cached data:", cacheData); // Log the cached data for inspection
+        await redis.del(cacheKey);
       }
     }
   }
-  throw new Error('Maximum retries reached without a successful response.');
+
+  const data = await prisma.user.findFirst({
+    where: { id: userId },
+    include: { ga: true },
+  });
+
+  if (!data) return [];
+
+  await ensureGARateLimit(userId);
+
+  const uniquePropertyIds = Array.from(new Set(data.ga.map((item) => item.propertyId)));
+
+  const urls = uniquePropertyIds.map(
+    (propertyId) =>
+      `https://analyticsadmin.googleapis.com/v1beta/properties/${propertyId}/conversionEvents`
+  );
+
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+    'Accept-Encoding': 'gzip',
+  };
+
+  const allData = await Promise.all(urls.map((url) => executeApiRequest(url, { headers })));
+
+  // Before storing the data in Redis, ensure it is a valid JSON
+  const flattenedData = allData.flat();
+  try {
+    const jsonData = JSON.stringify(flattenedData);
+    await redis.set(cacheKey, jsonData, 'EX', 86400);
+  } catch (error) {
+    console.error("Failed to stringify or set cache data:", error);
+  }
+
+  return flattenedData;
 }
+
 
 /************************************************************************************
   Create a single property or multiple conversionEvents

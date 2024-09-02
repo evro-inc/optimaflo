@@ -25,22 +25,24 @@ export default async function KeyEventsPage({
   const propertyData = await listGAProperties();
   const keyEventsData = await listGAKeyEvents();
 
-  const [accounts, properties] = await Promise.all([accountData, propertyData, keyEventsData]);
+  const [accounts, properties, keyEvents] = await Promise.all([accountData, propertyData, keyEventsData]);
 
   const flatAccounts = accounts.flat();
-  const flatProperties = properties.flat();
-  const flattenedkeyEvents = keyEventsData
-    .flatMap((item) => item.keyEvents)
-    .filter((keyEvent) => keyEvent !== undefined);
+  // Ensure 'flatProperties' only contains valid entries
+  const flatProperties = properties.flatMap((propertyObj) => propertyObj.properties || []).filter(Boolean);
+  const flattenedkeyEvents = keyEvents
+    .flatMap((item) => item.keyEvents || [])
+    .filter(Boolean); // Further filter out undefined entries
 
   const combinedData = flattenedkeyEvents.map((keyEvents) => {
     const propertyId = keyEvents.name.split('/')[1];
-    const property = flatProperties.find((p) => p.name.includes(propertyId));
+    // Add a check to ensure 'p' and 'p.name' are defined
+    const property = flatProperties.find((p) => p && p.name && p.name.includes(propertyId));
 
     const accounts = flatAccounts.find(
       (acc) =>
         acc.name ===
-        flatProperties.find((property) => property.name.split('/')[1] === propertyId)?.parent
+        flatProperties.find((property) => property && property.name && property.name.split('/')[1] === propertyId)?.parent
     );
 
     const accountName = accounts ? accounts.displayName : 'Account Name Unknown';
@@ -50,8 +52,8 @@ export default async function KeyEventsPage({
       ...keyEvents,
       account,
       accountName,
-      propertyName: property ? property?.displayName : 'Unknown Property Name',
-      property: property ? property?.name : 'Unknown Property Id',
+      propertyName: property ? property.displayName : 'Unknown Property Name',
+      property: property ? property.name : 'Unknown Property Id',
     };
   });
 

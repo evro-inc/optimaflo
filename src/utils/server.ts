@@ -283,7 +283,7 @@ export async function fetchPages<T>(
   return totalPages;
 }
 
-export async function revalidate(keys: string[], path: string, userId: string, global: boolean = false) {
+export async function revalidate(data: any, keys: string[], path: string, userId: string, global: boolean = false) {
   try {
     const pipeline = redis.pipeline();
 
@@ -300,7 +300,7 @@ export async function revalidate(keys: string[], path: string, userId: string, g
       await fetchGASettings(userId);
     }
 
-    keys.forEach((key) => pipeline.del(key));
+    keys.forEach((key) => pipeline.set(key, JSON.stringify(data)));
 
     await pipeline.exec(); // Execute all queued commands in a batch
     await revalidatePath(path);
@@ -363,7 +363,7 @@ export async function getOauthToken(userId: string): Promise<string> {
 }
 
 /** Ensures rate limit is respected with retries */
-export async function ensureGTMRateLimit(userId: string): Promise<void> {
+export async function ensureGARateLimit(userId: string): Promise<void> {
   const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
   if (remaining <= 0) throw new Error('Rate limit exceeded');
 }
@@ -404,7 +404,18 @@ export async function executeApiRequest(
   while (retries < maxRetries) {
     try {
       const response = await limiter.schedule(() => fetch(url, options));
-      if (response.ok) return await response.json();
+      console.log("response log", response);
+
+
+      // Parse the response once and store it
+      const responseData = await response.json();
+
+      console.log('response data', responseData);
+
+
+      if (response.ok) {
+        return responseData;  // Use the parsed data here
+      }
 
       if (response.status === 429) {
         await handleRateLimitRetry(retries, delay);
@@ -423,6 +434,7 @@ export async function executeApiRequest(
 
   throw new Error('Maximum retries reached without a successful response.');
 }
+
 
 
 /** Handles rate limit retry logic */

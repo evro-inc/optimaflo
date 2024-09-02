@@ -1,9 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { SubmitHandler } from 'react-hook-form';
-import { FormSchemaType, FormsSchema } from '@/src/lib/schemas/ga/properties';
+import { FormSchemaType, FormSchema } from '@/src/lib/schemas/ga/properties';
 import { Button } from '@/src/components/ui/button';
 import { FormUpdateProps, GA4PropertyType } from '@/src/types/types';
 import { updateProperties } from '@/src/lib/fetch/dashboard/actions/ga/properties';
@@ -15,6 +15,7 @@ import { useErrorHandling, useErrorRedirect, useFormInitialization, useStepNavig
 import { FormFieldComponent } from '@/src/components/client/Utils/Form';
 import { Form } from '@/src/components/ui/form';
 import { gaFormFieldConfigs } from '@/src/utils/gaFormFields';
+import { setCurrentStep } from '@/src/redux/formSlice';
 
 const FormUpdateProperty: React.FC<FormUpdateProps> = React.memo(({ tierLimits }) => {
   const dispatch = useDispatch();
@@ -24,6 +25,11 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = React.memo(({ tierLimits }
   const notFoundError = useSelector(selectTable).notFoundError;
   const router = useRouter();
   const errorModal = useErrorHandling(error, notFoundError);
+
+  useEffect(() => {
+    // Ensure that we reset to the first step when the component mounts
+    dispatch(setCurrentStep(1));
+  }, [dispatch]);
 
   const selectedRowData = useSelector((state: RootState) => state.table.selectedRows);
 
@@ -67,7 +73,7 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = React.memo(({ tierLimits }
     acknowledgment: rowData.acknowledgment,
   }));
 
-  const { form, fields } = useFormInitialization<GA4PropertyType>(formDataDefaults, FormsSchema);
+  const { form, fields } = useFormInitialization<GA4PropertyType>(formDataDefaults, FormSchema);
 
   const { handleNext, handlePrevious } = useStepNavigation({
     form,

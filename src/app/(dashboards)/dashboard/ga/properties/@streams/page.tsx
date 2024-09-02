@@ -33,7 +33,7 @@ export default async function PropertyPage({
   ]);
 
   const flatAccounts = accounts.flat();
-  const flatProperties = properties.flat();
+  const flatProperties = properties.flatMap((propertyObj) => propertyObj.properties || []).filter(Boolean); // Filter out undefined or empty objects
   const dataStreamsArray = streams
     .filter((stream) => stream.dataStreams)
     .flatMap((stream) => stream.dataStreams)
@@ -41,7 +41,8 @@ export default async function PropertyPage({
 
   const combinedData = dataStreamsArray.map((stream) => {
     const propertyId = stream.name.split('/')[1];
-    const property = flatProperties.find((p) => p.name.includes(propertyId));
+    // Check if property and property.name exist before using 'includes'
+    const property = flatProperties.find((p) => p && p.name && p.name.includes(propertyId));
     const accounts = flatAccounts.filter((a) => a.name === property?.parent);
 
     return {
@@ -49,13 +50,13 @@ export default async function PropertyPage({
       name: stream.name,
       type: stream.type,
       typeDisplayName: dataStreamTypeMapping[stream.type],
-      parent: property.name,
+      parent: property ? property.name : 'Unknown Property',
       createTime: stream.createTime,
       updateTime: stream.updateTime,
       displayName: stream.displayName,
-      property: property.displayName,
-      accountId: accounts ? accounts[0].name : 'Unknown Account ID',
-      accountName: accounts ? accounts[0].displayName : 'Unknown Account Name',
+      property: property ? property.displayName : 'Unknown Property Name',
+      accountId: accounts.length > 0 ? accounts[0].name : 'Unknown Account ID',
+      accountName: accounts.length > 0 ? accounts[0].displayName : 'Unknown Account Name',
     };
   });
 

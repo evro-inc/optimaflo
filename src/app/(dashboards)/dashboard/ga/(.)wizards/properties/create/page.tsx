@@ -12,7 +12,6 @@ export default async function CreateStreamPage() {
   if (!user) return notFound();
 
   const subscription = await getSubscription(user.id);
-
   const subscriptionId = subscription.id;
 
   const tierLimits = await getTierLimit(subscriptionId);
@@ -28,9 +27,11 @@ export default async function CreateStreamPage() {
     // Find the matching account
     const account = flatAccounts.find((a) => a.name === property.parent);
 
-    // Transformation functions
-    const extractId = (path) => path.split('/')[1];
+    // Transformation functions with null/undefined checks
+    const extractId = (path) => (path ? path.split('/')[1] : 'Unknown');
     const formatType = (propertyType) => {
+      if (!propertyType) return 'Unknown'; // Return 'Unknown' if propertyType is undefined
+
       // Split the string into parts based on underscores
       const parts = propertyType.split('_');
 
@@ -38,19 +39,19 @@ export default async function CreateStreamPage() {
       const lastPart = parts[parts.length - 1];
 
       // Convert that part to lowercase, then capitalize the first letter
-      return lastPart[0] + lastPart.slice(1).toLowerCase();
+      return lastPart[0].toUpperCase() + lastPart.slice(1).toLowerCase();
     };
 
-    // Apply transformations
+    // Apply transformations with checks for undefined properties
     return {
       ...property,
-      name: extractId(property.name), // Transforming the 'name' property
+      name: extractId(property.name), // Safely transform the 'name' property
       parent: property.parent ? extractId(property.parent) : 'Unknown', // Conditional transformation if 'parent' exists
-      serviceLevel: formatType(property.serviceLevel), // Transforming the 'serviceLevel'
-      propertyType: formatType(property.propertyType), // Transforming the 'propertyType'
-      accountName: account ? account.displayName : 'Unknown Account', // Setting 'accountName' from 'flatAccounts' or default
-      retention: property.dataRetentionSettings.eventDataRetention,
-      resetOnNewActivity: property.dataRetentionSettings.resetUserDataOnNewActivity || false,
+      serviceLevel: formatType(property.serviceLevel), // Safely transform the 'serviceLevel'
+      propertyType: formatType(property.propertyType), // Safely transform the 'propertyType'
+      accountName: account ? account.displayName : 'Unknown Account', // Set 'accountName' from 'flatAccounts' or default
+      retention: property.dataRetentionSettings?.eventDataRetention || 'Unknown', // Safely access nested property
+      resetOnNewActivity: property.dataRetentionSettings?.resetUserDataOnNewActivity || false, // Safely access nested property
     };
   });
 
@@ -60,8 +61,8 @@ export default async function CreateStreamPage() {
         <FormCreateProperty
           tierLimits={tierLimits}
           table={combinedData}
-          accounts={accounts}
-          properties={properties}
+          accounts={flatAccounts}
+          properties={flatProperties}
         />
       </div>
     </>

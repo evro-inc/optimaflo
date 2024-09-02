@@ -151,21 +151,29 @@ export async function fetchGASettings(userId: string) {
 
         for (const propertyId of propertyIds) {
           if (!existingCompositeKeySet.has(`${accountId}-${propertyId}`)) {
+
+
+            console.log("ga fetch property ID", propertyId);
+
+            const stripAccountId = accountId.split('/')[1]
+
+            console.log("stripAccountId", stripAccountId);
+
             await prisma.ga.upsert({
               where: {
                 userId_accountId_propertyId: {
                   userId,
-                  accountId,
+                  accountId: stripAccountId,
                   propertyId,
                 },
               },
               update: {
-                accountId,
+                accountId: stripAccountId,
                 propertyId,
                 User: { connect: { id: userId } },
               },
               create: {
-                accountId,
+                accountId: stripAccountId,
                 propertyId,
                 User: { connect: { id: userId } },
               },

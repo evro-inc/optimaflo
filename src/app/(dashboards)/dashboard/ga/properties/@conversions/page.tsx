@@ -32,12 +32,13 @@ export default async function CustomMetricPage({
   ]);
 
   const flatAccounts = accounts.flat();
-  const flatProperties = properties.flat();
+  const flatProperties = properties.flatMap((propertyObj) => propertyObj.properties || []).filter(Boolean); // Ensures only valid entries
   const flattenedConversionEvent = ce.flatMap((item) => item.conversionEvents || []);
 
   const combinedData = flattenedConversionEvent.map((ce) => {
     const propertyId = ce.name.split('/')[1];
-    const property = flatProperties.find((p) => p.name.includes(propertyId));
+    // Check both 'p' and 'p.name' are defined before using '.includes'
+    const property = flatProperties.find((p) => p && p.name && p.name.includes(propertyId));
     const accounts = flatAccounts.filter((a) => a.name === property?.parent);
 
     const deletable = ce.deletable === true ? true : false;
@@ -45,9 +46,9 @@ export default async function CustomMetricPage({
 
     return {
       ...ce,
-      account: accounts ? accounts[0].name : 'Unknown Account ID',
-      accountName: accounts ? accounts[0].displayName : 'Unknown Account Name',
-      property: property.displayName,
+      account: accounts.length > 0 ? accounts[0].name : 'Unknown Account ID',
+      accountName: accounts.length > 0 ? accounts[0].displayName : 'Unknown Account Name',
+      property: property ? property.displayName : 'Unknown Property',
       name: ce.name,
       eventName: ce.eventName,
       countingMethod: ce.countingMethod,

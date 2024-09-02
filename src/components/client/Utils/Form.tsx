@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
     FormControl,
     FormDescription,
@@ -19,6 +19,7 @@ import {
 import { Input } from '@/src/components/ui/input';
 import { useFormContext } from 'react-hook-form';
 import { Switch } from '../../ui/switch';
+import { FixedSizeList as List } from 'react-window';
 
 type FieldProps = {
     name: string;
@@ -35,7 +36,7 @@ export const FormFieldComponent: React.FC<FieldProps> = ({
     label,
     description,
     placeholder,
-    options,
+    options = [],
     type = 'text',
     onChange,
 }) => {
@@ -60,7 +61,17 @@ export const FormFieldComponent: React.FC<FieldProps> = ({
         );
     }
 
-    if (type === 'select' && options) {
+
+    if (type === 'select' && options.length > 0) {
+        const Row = useCallback(
+            ({ index, style }) => (
+                <div style={style}>
+                    <SelectItem value={options[index].value}>{options[index].label}</SelectItem>
+                </div>
+            ),
+            [options]
+        );
+
         return (
             <FormField
                 control={control}
@@ -73,7 +84,6 @@ export const FormFieldComponent: React.FC<FieldProps> = ({
                             <Select
                                 {...field}
                                 onValueChange={(value) => {
-                                    // For single select, directly set the value
                                     if (field.value !== value) {
                                         field.onChange(value);
                                         onChange?.(value); // Call custom onChange if provided
@@ -84,14 +94,14 @@ export const FormFieldComponent: React.FC<FieldProps> = ({
                                     <SelectValue placeholder={placeholder} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectGroup>
-                                        <SelectLabel>{label}</SelectLabel>
-                                        {options.map((option) => (
-                                            <SelectItem key={option.value} value={option.value}>
-                                                {option.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectGroup>
+                                    <List
+                                        height={200} // Adjust based on your design
+                                        itemCount={options.length}
+                                        itemSize={35} // Adjust this based on your option item height
+                                        width="100%"
+                                    >
+                                        {Row}
+                                    </List>
                                 </SelectContent>
                             </Select>
                         </FormControl>

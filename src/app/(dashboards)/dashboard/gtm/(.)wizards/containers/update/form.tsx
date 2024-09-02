@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { SubmitHandler } from 'react-hook-form';
 import { ContainerSchemaType, FormSchema } from '@/src/lib/schemas/gtm/containers';
@@ -19,6 +19,7 @@ import { calculateRemainingLimit, processForm } from '@/src/utils/utils';
 import { useErrorHandling, useErrorRedirect, useFormInitialization, useStepNavigation } from '@/src/hooks/wizard';
 import { gtmFormFieldConfigs } from '@/src/utils/gtmFormFields';
 import { FormFieldComponent } from '@/src/components/client/Utils/Form';
+import { setCurrentStep } from '@/src/redux/formSlice';
 
 const FormUpdateContainer: React.FC<FormUpdateProps> = React.memo(({ tierLimits }) => {
   const dispatch = useDispatch();
@@ -28,6 +29,11 @@ const FormUpdateContainer: React.FC<FormUpdateProps> = React.memo(({ tierLimits 
   const notFoundError = useSelector(selectTable).notFoundError;
   const router = useRouter();
   const errorModal = useErrorHandling(error, notFoundError);
+
+  useEffect(() => {
+    // Ensure that we reset to the first step when the component mounts
+    dispatch(setCurrentStep(1));
+  }, [dispatch]);
 
   const selectedRowData = useSelector((state: RootState) => state.table.selectedRows);
 
@@ -64,9 +70,6 @@ const FormUpdateContainer: React.FC<FormUpdateProps> = React.memo(({ tierLimits 
     accountName: rowData.accountName,
   }));
 
-  console.log('formDataDefaults', formDataDefaults);
-
-
   const { form, fields } = useFormInitialization<ContainerType>(formDataDefaults, FormSchema);
 
   const { handleNext, handlePrevious } = useStepNavigation({
@@ -100,10 +103,6 @@ const FormUpdateContainer: React.FC<FormUpdateProps> = React.memo(({ tierLimits 
 
     // Use the currentPropertyIndex directly for the form values
     const currentPropertyName = formDataDefaults[currentFormIndex]?.name;
-    console.log('Form isValid:', form.formState.isValid)
-    console.log('Form errors:', form.formState.errors)
-    console.log('Form values:', form.getValues());
-    console.log('Fields:', fields);
 
     return (
       <div className="w-full">

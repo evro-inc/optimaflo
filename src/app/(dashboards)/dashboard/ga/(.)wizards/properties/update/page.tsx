@@ -22,8 +22,6 @@ export default async function UpdatePropertyPage() {
   const updateUsage = ga4PropertiesTier.updateUsage;
   const remaining = updateLimit - updateUsage;
 
-  console.log('remaining', remaining);
-
   if (remaining <= 0) {
     redirect('/dashboard/ga/properties');
   }

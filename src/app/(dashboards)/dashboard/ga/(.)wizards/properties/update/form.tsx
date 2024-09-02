@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { SubmitHandler } from 'react-hook-form';
-import { FormSchemaType, FormsSchema } from '@/src/lib/schemas/ga/properties';
+import { FormSchemaType, FormSchema } from '@/src/lib/schemas/ga/properties';
 import { Button } from '@/src/components/ui/button';
 import { FormUpdateProps, GA4PropertyType } from '@/src/types/types';
 import { updateProperties } from '@/src/lib/fetch/dashboard/actions/ga/properties';
@@ -11,10 +11,11 @@ import { selectTable } from '@/src/redux/tableSlice';
 import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import { calculateRemainingLimit, processForm } from '@/src/utils/utils';
-import { useErrorHandling, useFormInitialization, useStepNavigation } from '@/src/hooks/wizard';
+import { useErrorHandling, useErrorRedirect, useFormInitialization, useStepNavigation } from '@/src/hooks/wizard';
 import { FormFieldComponent } from '@/src/components/client/Utils/Form';
 import { Form } from '@/src/components/ui/form';
 import { gaFormFieldConfigs } from '@/src/utils/gaFormFields';
+import { setCurrentStep } from '@/src/redux/formSlice';
 
 const FormUpdateProperty: React.FC<FormUpdateProps> = React.memo(({ tierLimits }) => {
   const dispatch = useDispatch();
@@ -25,16 +26,17 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = React.memo(({ tierLimits }
   const router = useRouter();
   const errorModal = useErrorHandling(error, notFoundError);
 
+  useEffect(() => {
+    // Ensure that we reset to the first step when the component mounts
+    dispatch(setCurrentStep(1));
+  }, [dispatch]);
+
   const selectedRowData = useSelector((state: RootState) => state.table.selectedRows);
 
   const remainingUpdateData = calculateRemainingLimit(tierLimits || [], 'GA4Properties', 'update');
   const remainingUpdate = remainingUpdateData.remaining;
 
-  useEffect(() => {
-    if (Object.keys(selectedRowData).length === 0) {
-      router.push('/dashboard/ga/properties'); // Replace with your redirect path
-    }
-  }, [selectedRowData, router]);
+  useErrorRedirect(selectedRowData, router, '/dashboard/ga/properties');
 
   const selectedRowDataTransformed: Record<string, GA4PropertyType> = Object.fromEntries(
     Object.entries(selectedRowData).map(([key, row]) => [
@@ -55,9 +57,6 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = React.memo(({ tierLimits }
     ])
   );
 
-  // Adjust currentPropertyIndex to match currentStep correctly
-  const currentPropertyIndex = currentStep - 1; // Adjust for zero-based indexing
-
   const configs = gaFormFieldConfigs('GA4Property', 'update', remainingUpdate, selectedRowDataTransformed);
 
   // Correct mapping of formDataDefaults to align each row data with the current step
@@ -74,7 +73,7 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = React.memo(({ tierLimits }
     acknowledgment: rowData.acknowledgment,
   }));
 
-  const { form, fields } = useFormInitialization<GA4PropertyType>(formDataDefaults, FormsSchema);
+  const { form, fields } = useFormInitialization<GA4PropertyType>(formDataDefaults, FormSchema);
 
   const { handleNext, handlePrevious } = useStepNavigation({
     form,
@@ -94,13 +93,24 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = React.memo(({ tierLimits }
   if (errorModal) return errorModal;
 
   const renderForms = () => {
-    // Use the currentPropertyIndex directly for the form values
-    const currentPropertyName = formDataDefaults[currentPropertyIndex]?.displayName || `Property ${currentPropertyIndex}`;
+    const currentFormIndex = currentStep - 1; // Adjust for zero-based indexing
+    // Use the currentFormIndex directly for the form values
+
+    // Check if the current form index is within the bounds of the fields array
+    if (currentFormIndex < 0 || currentFormIndex >= fields.length) {
+      return null; // Return null or some fallback UI if out of bounds
+    }
+
+    // Get the field for the current form step
+    const field = fields[currentFormIndex];
+
+
+    const currentPropertyName = formDataDefaults[currentFormIndex]?.displayName || `Property ${currentFormIndex}`;
 
     return (
       <div className="w-full">
         <div
-          key={fields[currentStep - 1]?.id} // Adjust key indexing to match current step
+          key={field.id} // Adjust key indexing to match current step
           className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
         >
           <div className="max-w-xl mx-auto">
@@ -124,7 +134,6 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = React.memo(({ tierLimits }
                         placeholder={config.placeholder}
                         type={config.type}
                         options={config.options}
-                        defaultValue={config.value} // Pass the default value for the update scenario
                       />
                     ))}
                   <div className="flex justify-between">
@@ -133,11 +142,11 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = React.memo(({ tierLimits }
                     </Button>
 
                     {currentStep < fields.length ? (
-                      <Button type="button" onClick={handleNext}>
+                      <Button disabled={!form.formState.isValid} type="button" onClick={handleNext}>
                         Next
                       </Button>
                     ) : (
-                      <Button type="submit">{loading ? 'Submitting...' : 'Submit'}</Button>
+                      <Button disabled={!form.formState.isValid} type="submit">{loading ? 'Submitting...' : 'Submit'}</Button>
                     )}
                   </div>
                 </form>

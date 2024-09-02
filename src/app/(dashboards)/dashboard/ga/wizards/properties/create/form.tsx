@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { SubmitHandler } from 'react-hook-form';
-import { FormSchemaType, FormsSchema } from '@/src/lib/schemas/ga/properties';
+import { FormSchemaType, FormSchema } from '@/src/lib/schemas/ga/properties';
 import { Button } from '@/src/components/ui/button';
 import { Form } from '@/src/components/ui/form';
 import { FormCreateProps, GA4PropertyType } from '@/src/types/types';
@@ -37,6 +37,11 @@ const FormCreateProperty: React.FC<FormCreateProps> = React.memo(
     const errorModal = useErrorHandling(error, notFoundError);
     const accountsWithProperties = useAccountsWithProperties(accounts, properties);
 
+    console.log('create properties', properties);
+
+    console.log("Accounts With Properties:", accountsWithProperties);
+
+
     useEffect(() => {
       // Ensure that we reset to the first step when the component mounts
       dispatch(setCurrentStep(1));
@@ -51,10 +56,11 @@ const FormCreateProperty: React.FC<FormCreateProps> = React.memo(
 
     const configs = gaFormFieldConfigs('GA4Property', 'create', remainingCreate, accountsWithProperties);
 
+    // Add a fallback in case `accountsWithProperties` is empty
     const formDataDefaults: GA4PropertyType[] = [
       {
-        name: table[0].displayName,
-        parent: accountsWithProperties[0].name,
+        name: table[0]?.displayName || 'Default Display Name', // Ensure there's a fallback if `table[0]` is undefined
+        parent: accountsWithProperties[0]?.name || 'Default Parent', // Provide a default if `accountsWithProperties[0]` is undefined
         currencyCode: 'USD',
         displayName: '',
         industryCategory: 'AUTOMOTIVE',
@@ -68,7 +74,7 @@ const FormCreateProperty: React.FC<FormCreateProps> = React.memo(
 
     const { formAmount, form, fields, addForm, count } = useFormInitialization<GA4PropertyType>(
       formDataDefaults,
-      FormsSchema
+      FormSchema
     );
 
     // Use the custom hook
@@ -155,6 +161,10 @@ const FormCreateProperty: React.FC<FormCreateProps> = React.memo(
         )}
       </div>
     );
+
+    console.log("Render Step One");
+    console.log("Form Configs:", configs);
+    console.log("Form Amount:", formAmount);
 
     return (
       <div className="flex items-center justify-center h-screen">

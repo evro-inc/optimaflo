@@ -49,7 +49,7 @@ import {
 } from '@/src/components/ui/dialog';
 import {
   acknowledgeUserDataCollection,
-  DeleteProperties,
+  deleteProperties,
 } from '@/src/lib/fetch/dashboard/actions/ga/properties';
 import { useCreateHookForm, useUpdateHookForm, useDeleteHook } from '@/src/hooks/useCRUD';
 
@@ -96,8 +96,6 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     },
   });
 
-  console.log(data);
-
   const selectedRowData = table.getSelectedRowModel().rows.reduce((acc, row) => {
     acc[row.id] = row.original;
     return acc;
@@ -135,7 +133,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
 
   const getDisplayNames = (items) => items.map((item: GA4PropertyType) => item.name);
   const handleDelete = useDeleteHook(
-    DeleteProperties,
+    deleteProperties,
     selectedRowData,
     table,
     getDisplayNames,
@@ -149,13 +147,23 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
         onClick: () => toast.dismiss(),
       },
     });
-    const keys = [`ga:accounts:userId:${userId}`, `ga:properties:userId:${userId}`];
+    const keys = [`ga:properties:userId:${userId}`];
     await revalidate(keys, '/dashboard/ga/properties', userId);
   };
 
   const handleAcknowledgement = async () => {
     try {
-      // If you're here, validation succeeded. Proceed with updateContainers.
+      toast('Processing your request...', {
+        action: {
+          label: 'Close',
+          onClick: () => toast.dismiss(),
+        },
+      });
+
+      const selectedRowData: GA4PropertyType[] = table.getSelectedRowModel().rows.map(
+        (row) => row.original as GA4PropertyType
+      );
+
       const res = await acknowledgeUserDataCollection(selectedRowData);
 
       if (res.success) {
@@ -184,9 +192,6 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
               );
             }
           });
-
-          /*  dispatch(setErrorDetails(res.results)); // Assuming results contain the error details
-          dispatch(setNotFoundError(true)); // Dispatch the not found error action */
         }
 
         if (res.limitReached) {
