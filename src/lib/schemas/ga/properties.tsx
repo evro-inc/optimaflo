@@ -7,7 +7,7 @@ const SingleFormSchema = z.object({
   timeZone: z.string().min(1, 'Timezone is required'),
   currencyCode: z.string().min(1, 'Currency is required'),
   industryCategory: z.string().min(1, 'Industry Category is required'),
-  name: z.string().min(1, 'Name is required'),
+  name: z.string().min(1, 'Name is required').optional(),
   parent: z.string().min(1, 'Parent is required'),
   propertyType: z.string().min(1, 'Property Type is required'),
   retention: z.string().min(1, 'Retention is required'),

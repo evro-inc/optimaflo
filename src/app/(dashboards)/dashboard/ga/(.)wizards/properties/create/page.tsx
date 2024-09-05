@@ -20,40 +20,42 @@ export default async function CreateStreamPage() {
 
   const [accounts, properties] = await Promise.all([accountData, propertyData]);
 
+  console.log('accounts 5', accounts);
+
+
   const flatAccounts = accounts.flat();
-  const flatProperties = properties.flat();
+  const flatProperties = properties.flatMap(item => item.properties);
+  const validProperties = flatProperties.filter(property => property != null);
 
-  const combinedData = flatProperties.map((property) => {
-    // Find the matching account
-    const account = flatAccounts.find((a) => a.name === property.parent);
+  const combinedData = validProperties
+    .filter((property) => property !== undefined)  // Filter out any undefined entries
+    .map((property) => {
+      console.log("property test", property);
 
-    // Transformation functions with null/undefined checks
-    const extractId = (path) => (path ? path.split('/')[1] : 'Unknown');
-    const formatType = (propertyType) => {
-      if (!propertyType) return 'Unknown'; // Return 'Unknown' if propertyType is undefined
+      // Find the matching account
+      const account = flatAccounts.find((a) => a.name === property.parent);
 
-      // Split the string into parts based on underscores
-      const parts = propertyType.split('_');
+      // Transformation functions with null/undefined checks
+      const extractId = (path) => (path ? path.split('/')[1] : 'Unknown');
+      const formatType = (propertyType) => {
+        if (!propertyType) return 'Unknown'; // Return 'Unknown' if propertyType is undefined
 
-      // Take the last part of the split string, which should be "ORDINARY" in your example
-      const lastPart = parts[parts.length - 1];
+        const parts = propertyType.split('_');
+        const lastPart = parts[parts.length - 1];
+        return lastPart[0].toUpperCase() + lastPart.slice(1).toLowerCase();
+      };
 
-      // Convert that part to lowercase, then capitalize the first letter
-      return lastPart[0].toUpperCase() + lastPart.slice(1).toLowerCase();
-    };
-
-    // Apply transformations with checks for undefined properties
-    return {
-      ...property,
-      name: extractId(property.name), // Safely transform the 'name' property
-      parent: property.parent ? extractId(property.parent) : 'Unknown', // Conditional transformation if 'parent' exists
-      serviceLevel: formatType(property.serviceLevel), // Safely transform the 'serviceLevel'
-      propertyType: formatType(property.propertyType), // Safely transform the 'propertyType'
-      accountName: account ? account.displayName : 'Unknown Account', // Set 'accountName' from 'flatAccounts' or default
-      retention: property.dataRetentionSettings?.eventDataRetention || 'Unknown', // Safely access nested property
-      resetOnNewActivity: property.dataRetentionSettings?.resetUserDataOnNewActivity || false, // Safely access nested property
-    };
-  });
+      return {
+        ...property,
+        name: extractId(property.name),
+        parent: property.parent ? extractId(property.parent) : 'Unknown',
+        serviceLevel: formatType(property.serviceLevel),
+        propertyType: formatType(property.propertyType),
+        accountName: account ? account.displayName : 'Unknown Account',
+        retention: property.dataRetentionSettings?.eventDataRetention || 'Unknown',
+        resetOnNewActivity: property.dataRetentionSettings?.resetUserDataOnNewActivity || false,
+      };
+    });
 
   return (
     <>
@@ -61,8 +63,7 @@ export default async function CreateStreamPage() {
         <FormCreateProperty
           tierLimits={tierLimits}
           table={combinedData}
-          accounts={flatAccounts}
-          properties={flatProperties}
+          data={accounts}
         />
       </div>
     </>

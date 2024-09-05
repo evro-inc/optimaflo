@@ -59,6 +59,7 @@ async function getWorkspace(
   const headers = {
     Authorization: `Bearer ${accessToken}`,
     'Content-Type': 'application/json',
+    'Accept-Encoding': 'gzip',
   };
 
   while (retries < MAX_RETRIES) {

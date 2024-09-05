@@ -71,6 +71,7 @@ export const FormFieldComponent: React.FC<FieldProps> = ({
             ),
             [options]
         );
+        const listHeight = Math.min(options.length * 35); // Adjust 35 and 200 as needed
 
         return (
             <FormField
@@ -95,7 +96,7 @@ export const FormFieldComponent: React.FC<FieldProps> = ({
                                 </SelectTrigger>
                                 <SelectContent>
                                     <List
-                                        height={200} // Adjust based on your design
+                                        height={listHeight}
                                         itemCount={options.length}
                                         itemSize={35} // Adjust this based on your option item height
                                         width="100%"

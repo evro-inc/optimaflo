@@ -36,7 +36,7 @@ export const useFormInitialization = <T extends Record<string, any>>(
 
     const formAmount = useForm({
         resolver: zodResolver(FormCreateAmountSchema),
-        defaultValues: { amount: 1 },
+        defaultValues: { amount: '1' },
     });
 
     // Initialize the form with multiple defaults
@@ -97,28 +97,6 @@ export const useErrorHandling = (error, notFoundError) => {
         if (notFoundError) return <NotFoundErrorModal onClose={undefined} />;
         return null;
     }, [error, notFoundError]);
-};
-
-export const useAccountsWithProperties = (accounts, properties) => {
-    console.log("Accounts input:", accounts);
-    console.log("Properties input:", properties);
-
-    return useMemo(() => {
-        // Directly use properties array since it is already flat
-        const allProperties = properties;
-
-        // Map accounts and attach properties that belong to each account
-        const mappedAccounts = accounts
-            .map((account) => ({
-                ...account,
-                properties: allProperties.filter((property) => property.parent === account.name),
-            }))
-            .filter((account) => account.properties.length > 0); // Filter out accounts with no properties
-
-        console.log("mappedAccounts", mappedAccounts);
-
-        return mappedAccounts;
-    }, [accounts, properties]);
 };
 
 

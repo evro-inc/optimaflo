@@ -37,7 +37,6 @@ export async function listGAAudiences(skipCache = false): Promise<any[]> {
         return parsedData;
       } catch (error) {
         console.error("Failed to parse cache data:", error);
-        console.log("Cached data:", cacheData); // Log the cached data for inspection
         await redis.del(cacheKey);
       }
     }

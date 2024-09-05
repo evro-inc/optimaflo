@@ -283,7 +283,10 @@ export async function fetchPages<T>(
   return totalPages;
 }
 
-export async function revalidate(data: any, keys: string[], path: string, userId: string, global: boolean = false) {
+/*************************************************************************
+ * Global Hard Refresh Cache
+*************************************************************************/
+export async function revalidateHardCacheGlobal(keys: string[], path: string, userId: string) {
   try {
     const pipeline = redis.pipeline();
 
@@ -295,12 +298,10 @@ export async function revalidate(data: any, keys: string[], path: string, userId
       notFound();
     }
 
-    if (global === true) {
-      await fetchGtmSettings(userId);
-      await fetchGASettings(userId);
-    }
+    await fetchGtmSettings(userId);
+    await fetchGASettings(userId);
 
-    keys.forEach((key) => pipeline.set(key, JSON.stringify(data)));
+    keys.forEach((key) => pipeline.del(key));
 
     await pipeline.exec(); // Execute all queued commands in a batch
     await revalidatePath(path);
@@ -309,6 +310,199 @@ export async function revalidate(data: any, keys: string[], path: string, userId
     throw new Error('Revalidation failed');
   }
 }
+
+/*************************************************************************
+ * Local Hard Refresh Cache
+*************************************************************************/
+export async function hardRevalidateFeatureCache(
+  keys: string[],  // Redis keys for cache entries
+  path: string,    // The path to revalidate
+  userId: string,  // User ID
+) {
+  try {
+    const pipeline = redis.pipeline();
+
+    // Fetch the user (ensure user exists)
+    const user = await prisma.user.findFirst({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      notFound();
+    }
+
+    // Iterate over each key and delete the entire key (set, hash, etc.)
+    keys.forEach((key) => {
+      console.log(`Deleting Redis key: ${key}`);
+      pipeline.del(key);  // Delete the entire Redis key
+    });
+
+    // Execute the pipeline commands
+    await pipeline.exec();  // Delete all keys in one batch
+
+    // Trigger Incremental Static Regeneration (ISR) to revalidate the path
+    await revalidatePath(path);
+
+  } catch (error) {
+    console.error('Error during hard revalidation:', error);
+    throw new Error('Revalidation failed');
+  }
+}
+
+/*************************************************************************
+ * Local Soft Refresh Cache
+ *************************************************************************/
+export async function softRevalidateFeatureCache(
+  keys: string[], // Redis keys for cache entries
+  path: string,   // The path to revalidate
+  userId: string, // User ID
+  operations: { type: "update" | "create" | "delete"; property: { name: string; parent: string;[key: string]: any } }[] // Array of operations
+) {
+  try {
+    const pipeline = redis.pipeline();
+
+    const user = await prisma.user.findFirst({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      notFound();
+    }
+
+    console.log("Operations to process:", operations);
+
+    // Fetch current cache data for each key (using HGETALL for hash data)
+    const cacheDataArray = await Promise.all(keys.map((key) => redis.hgetall(key)));
+
+    keys.forEach((key, index) => {
+      const cacheData = cacheDataArray[index];
+
+      // If the key has data (hash fields), proceed with revalidation
+      if (Object.keys(cacheData).length > 0) {
+        operations.forEach((operation) => {
+          const { type, property } = operation;
+
+          console.log('property 123', property);
+
+
+          switch (type) {
+            case "delete":
+              // Remove property from cache
+              console.log('key', key);
+              console.log('p1', property);
+
+
+
+              pipeline.hdel(key, property.name); // Use HDEL to remove the field from the hash
+              break;
+
+            case "update":
+              // Update property in cache
+              console.log('key', key);
+              console.log('p2', property);
+              pipeline.hset(key, property.name, JSON.stringify(property)); // Use HSET to update the field in the hash
+              break;
+
+            case "create":
+              // Add new property to cache
+              pipeline.hset(key, property.name, JSON.stringify(property)); // Use HSET to create a new field in the hash
+              break;
+
+            default:
+              console.warn(`Unknown operation type: ${type}`);
+          }
+        });
+      } else {
+        // If no data exists in Redis, delete the key or initialize an empty hash depending on operation
+        if (operations.some((op) => op.type !== "delete")) {
+          // For create/update, initialize a new hash
+          operations.forEach((op) => {
+            pipeline.hset(key, op.property.name, JSON.stringify(op.property));
+          });
+        } else {
+          // For delete, remove the key entirely
+          pipeline.del(key);
+        }
+      }
+    });
+
+    // Execute the Redis pipeline
+    await pipeline.exec();
+
+    // Trigger ISR to revalidate the path
+    await revalidatePath(path);
+
+  } catch (error) {
+    console.error('Error during revalidation:', error);
+    throw new Error('Revalidation failed');
+  }
+}
+
+
+
+
+
+
+
+
+
+export async function revalidate(
+  currentData: string[], // List of property names to delete from Redis
+  keys: string[] | string, // Redis keys for cache entries (handle both string and array)
+  path: string, // The path to revalidate
+  userId: string, // User ID
+  global: boolean = false // Global flag
+) {
+  try {
+    // Ensure 'keys' is an array
+    const keysArray = Array.isArray(keys) ? keys : [keys];
+
+    const pipeline = redis.pipeline();
+
+    const user = await prisma.user.findFirst({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      notFound();
+    }
+
+    if (global) {
+      await fetchGtmSettings(userId);
+      await fetchGASettings(userId);
+    }
+
+    // Fetch all necessary cache data in one go
+    const cacheDataArray = await Promise.all(keysArray.map((key) => redis.get(key)));
+
+    keysArray.forEach((key, index) => {
+      const cacheData = cacheDataArray[index];
+      if (cacheData) {
+        const parsedData = JSON.parse(cacheData);
+
+        // Filter out deleted properties from the parsed cache data
+        const updatedData = parsedData.filter(
+          (item: any) => !currentData.includes(item.name)
+        );
+
+        // Update the cache with the new data that no longer includes the deleted properties
+        pipeline.set(key, JSON.stringify(updatedData), 'EX', 86400); // Cache for 24 hours
+      } else if (global) {
+        // Clear the cache if global flag is true and no cache data found
+        pipeline.del(key);
+      }
+    });
+
+    await pipeline.exec(); // Execute all queued commands in a batch
+    await revalidatePath(path); // Trigger ISR to revalidate the path
+  } catch (error) {
+    console.error('Error during revalidation:', error);
+    throw new Error('Revalidation failed');
+  }
+}
+
+
+
 
 export const fetchWithRetry = async (url: string, headers: any, retries = 0): Promise<any> => {
   const MAX_RETRIES = 20;
@@ -460,3 +654,25 @@ export async function validateFormData(schema: any, formData: any): Promise<any>
 }
 
 
+/* MISC */
+
+// src/utils/server/server-utils.ts
+
+/**
+ * Server-side function to map accounts to their corresponding properties.
+ * This function does not rely on React hooks and can be used in server-side logic.
+ */
+export async function getAccountsWithProperties(accounts: any[], properties: any[]) {
+  // Flatten all properties arrays into a single array of properties
+  const allProperties = properties.flatMap((propertyGroup) => propertyGroup.properties || []);
+
+  // Map accounts and attach properties that belong to each account
+  const mappedAccounts = accounts
+    .map((account) => ({
+      ...account,
+      properties: allProperties.filter((property) => property.parent === account.name),
+    }))
+    .filter((account) => account.properties.length > 0); // Filter out accounts with no properties
+
+  return mappedAccounts;
+}

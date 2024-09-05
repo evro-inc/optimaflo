@@ -10,6 +10,7 @@ import {
   executeApiRequest,
   getOauthToken,
   revalidate,
+  softRevalidateFeatureCache,
   validateFormData,
 } from '@/src/utils/server';
 import { fetchGASettings } from '../..';
@@ -27,14 +28,17 @@ export async function listGAProperties(skipCache = false): Promise<any[]> {
   const cacheKey = `ga:properties:userId:${userId}`;
 
   if (!skipCache) {
-    const cacheData = await redis.get(cacheKey);
-    if (cacheData) {
+    const cacheData = await redis.hgetall(cacheKey);
+    console.log('ca 1', cacheData);
+
+    if (Object.keys(cacheData).length > 0) {
       try {
-        const parsedData = JSON.parse(cacheData);
+        const parsedData = Object.values(cacheData).map((data) => JSON.parse(data));
+        console.log('parse x', parsedData);
+
         return parsedData;
       } catch (error) {
         console.error("Failed to parse cache data:", error);
-        // Clear corrupted cache data if necessary
         await redis.del(cacheKey);
       }
     }
@@ -64,16 +68,38 @@ export async function listGAProperties(skipCache = false): Promise<any[]> {
   try {
     const allData = await Promise.all(urls.map((url) => executeApiRequest(url, { headers })));
     const flattenedData = allData.flat();
+    const cleanedData = flattenedData.filter((item) => Object.keys(item).length > 0);
+
+    // Flatten properties from the structure
+    const properties = cleanedData.flatMap(item => item.properties || []); // Flatten to get all properties directly
 
     try {
-      const jsonData = JSON.stringify(flattenedData);
+      // Use HSET to store each property under a unique field
+      const pipeline = redis.pipeline();
 
-      await redis.set(cacheKey, jsonData, 'EX', 86400); // Cache for 24 hours
+      properties.forEach((property: any) => {
+        console.log('property data', property);
+
+        const fieldKey = property.name;  // Access 'name' directly from the property object
+        console.log("fieldKey", fieldKey);
+
+        if (fieldKey) { // Ensure fieldKey is defined
+          pipeline.hset(cacheKey, fieldKey, JSON.stringify(property));
+        } else {
+          console.warn("Skipping property with undefined name:", property);
+        }
+      });
+
+      pipeline.expire(cacheKey, 86400); // Set expiration for the entire hash
+      await pipeline.exec(); // Execute the pipeline commands
+
     } catch (cacheError) {
-      console.error("Failed to stringify or set cache data:", cacheError);
+      console.error("Failed to set cache data with HSET:", cacheError);
     }
 
-    return flattenedData;
+    console.log('Returning all properties directly:', properties);
+
+    return properties; // Return only the properties array
   } catch (apiError) {
     console.error("Error fetching properties from API:", apiError);
     return []; // Return empty array or handle this more gracefully depending on your needs
@@ -81,12 +107,11 @@ export async function listGAProperties(skipCache = false): Promise<any[]> {
 }
 
 
-
 /************************************************************************************
   Delete a single or multiple properties
 ************************************************************************************/
 export async function deleteProperties(
-  selectedProperties: Set<string>,
+  selectedProperties: Set<GA4PropertyType>,
   propertyNames: string[]
 ): Promise<FeatureResponse> {
   const userId = await authenticateUser();
@@ -104,25 +129,32 @@ export async function deleteProperties(
   }
 
   let errors: string[] = [];
-  let successfulDeletions: string[] = [];
+  let successfulDeletions: { name: string; parent: string }[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: string[] = [];
 
   await ensureGARateLimit(userId);
 
   await Promise.all(
-    Array.from(selectedProperties).map(async (propertyId) => { // Note: Changed 'data' to 'propertyId'
-      const url = `https://analyticsadmin.googleapis.com/v1beta/properties/${propertyId}`;
-      const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+    Array.from(selectedProperties).map(async (data: GA4PropertyType) => {
+      const url = `https://analyticsadmin.googleapis.com/v1beta/properties/${data.name}`;
+
+      console.log('url', url);
+
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept-Encoding': 'gzip'
+      };
 
       try {
         await executeApiRequest(url, { method: 'DELETE', headers }, 'properties', propertyNames);
-        successfulDeletions.push(propertyId);
+        successfulDeletions.push({ name: data.name, parent: data.parent });
 
         await prisma.ga.deleteMany({
           where: {
-            accountId: `accounts/${propertyId.split('/')[1]}`, // Extract account ID from property ID
-            propertyId,
+            accountId: `accounts/${data.parent}`, // Extract account ID from property ID
+            propertyId: data.name,
             userId, // Ensure this matches the user ID
           },
         });
@@ -134,9 +166,9 @@ export async function deleteProperties(
 
       } catch (error: any) {
         if (error.message === 'Feature limit reached') {
-          featureLimitReached.push(propertyId);
+          featureLimitReached.push(data.name);
         } else if (error.message.includes('404')) {
-          notFoundLimit.push(propertyId);
+          notFoundLimit.push(data.name);
         } else {
           errors.push(error.message);
         }
@@ -147,16 +179,28 @@ export async function deleteProperties(
   // **Perform Selective Revalidation After All Deletions**:
   if (successfulDeletions.length > 0) {
     try {
-      // Only revalidate the affected properties
-      await revalidate(
-        successfulDeletions.map((id) => `ga:properties:userId:${userId}:${id}`),
+      // Explicitly type the operations array
+      const operations = successfulDeletions.map((deletion) => ({
+        type: "delete" as const,  // Explicitly set the type as "delete"
+        property: {
+          name: deletion.name,
+          parent: deletion.parent,
+        }
+      }));
+
+      // Call softRevalidateFeatureCache for deletions
+      await softRevalidateFeatureCache(
+        [`ga:properties:userId:${userId}`],
         `/dashboard/ga/properties`,
-        userId
+        userId,
+        operations // Pass the operations array for deletions
       );
+
     } catch (err) {
       console.error('Error during revalidation:', err);
     }
   }
+
 
   // Check for not found property and return response if applicable
   if (notFoundLimit.length > 0) {
@@ -167,9 +211,9 @@ export async function deleteProperties(
       message: `Could not delete property. Please check your permissions. Property Name: ${propertyNames.find((name) =>
         name.includes(name)
       )}. All other properties were successfully deleted.`,
-      results: notFoundLimit.map((propertyId) => ({
-        id: [propertyId], // Ensure id is an array
-        name: [propertyNames.find((name) => name.includes(propertyId)) || 'Unknown'], // Ensure name is an array
+      results: notFoundLimit.map((data) => ({
+        id: [data], // Ensure id is an array
+        name: [propertyNames.find((name) => name.includes(data)) || 'Unknown'], // Ensure name is an array
         success: false,
         notFound: true,
       })),
@@ -183,9 +227,9 @@ export async function deleteProperties(
       limitReached: true,
       notFoundError: false,
       message: `Feature limit reached for properties: ${featureLimitReached.join(', ')}`,
-      results: featureLimitReached.map((propertyId) => ({
-        id: [propertyId], // Ensure id is an array
-        name: [propertyNames.find((name) => name.includes(propertyId)) || 'Unknown'], // Ensure name is an array
+      results: featureLimitReached.map((data) => ({
+        id: [data], // Ensure id is an array
+        name: [propertyNames.find((name) => name.includes(data)) || 'Unknown'], // Ensure name is an array
         success: false,
         featureLimitReached: true,
       })),
@@ -205,16 +249,16 @@ export async function deleteProperties(
   return {
     success: true,
     message: `Successfully deleted ${successfulDeletions.length} property(ies)`,
-    features: successfulDeletions.map<FeatureResult>((propertyId) => ({
-      id: [propertyId],  // Wrap propertyId in an array to match FeatureResult type
-      name: [propertyNames.find((name) => name.includes(propertyId)) || 'Unknown'],  // Wrap name in an array to match FeatureResult type
+    features: successfulDeletions.map<FeatureResult>((data) => ({
+      id: [data],  // Wrap propertyId in an array to match FeatureResult type
+      name: [propertyNames.find((name) => name.includes(data)) || 'Unknown'],  // Wrap name in an array to match FeatureResult type
       success: true,  // Indicates success of the operation
     })),
     errors: [],
     notFoundError: notFoundLimit.length > 0,
-    results: successfulDeletions.map<FeatureResult>((propertyId) => ({
-      id: [propertyId],  // FeatureResult.id is an array
-      name: [propertyNames.find((name) => name.includes(propertyId)) || 'Unknown'],  // FeatureResult.name is an array
+    results: successfulDeletions.map<FeatureResult>((data) => ({
+      id: [data],  // FeatureResult.id is an array
+      name: [propertyNames.find((name) => name.includes(data)) || 'Unknown'],  // FeatureResult.name is an array
       success: true,  // FeatureResult.success indicates if the operation was successful
     })),
   };
@@ -222,7 +266,7 @@ export async function deleteProperties(
 
 
 /************************************************************************************
-  Create a single property or multiple properties
+  Create a single property or multiple properties - DONE
 ************************************************************************************/
 export async function createProperties(
   formData: { forms: FormSchemaType['forms'] }
@@ -242,13 +286,11 @@ export async function createProperties(
   }
 
   let errors: string[] = [];
-  let successfulCreations: string[] = [];
+  let successfulCreations: { name: string; parent: string; data?: any }[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: { id: string | undefined; name: string }[] = [];
 
   await ensureGARateLimit(userId);
-
-  let createdData: any = []
 
   await Promise.all(
     formData.forms.map(async (data) => {
@@ -275,29 +317,35 @@ export async function createProperties(
           }),
         });
 
-        successfulCreations.push(data.name);
-        createdData.push(createdProperty);
+        // Add the created property to successful creations
+        successfulCreations.push({
+          name: createdProperty.name,
+          parent: createdProperty.parent,
+          data: validatedData.forms[0],  // Add additional data as needed for Redis
+        });
 
         const accountId = createdProperty.account.split('/')[1];
         const propertyId = createdProperty.name.split('/')[1];
 
+        // Store the created property in the database
         await prisma.ga.create({
           data: {
-            accountId: accountId,  // Use the extracted numeric ID
-            propertyId: propertyId,  // Use the property name from createdProperty
-            userId: userId,  // Ensure this matches the user ID
+            accountId: accountId,
+            propertyId: propertyId,
+            userId: userId,
           },
         });
 
+        // Update the usage limit
         await prisma.tierLimit.update({
           where: { id: tierLimitResponse.id },
           data: { createUsage: { increment: 1 } },
         });
       } catch (error: any) {
         if (error.message === 'Feature limit reached') {
-          featureLimitReached.push(data.name);
+          featureLimitReached.push(data.name ?? 'Unknown');
         } else if (error.message.includes('404')) {
-          notFoundLimit.push({ id: data.parent, name: data.name });
+          notFoundLimit.push({ id: data.parent ?? 'Unknown', name: data.name ?? 'Unknown' });
         } else {
           errors.push(error.message);
         }
@@ -305,21 +353,31 @@ export async function createProperties(
     })
   );
 
-
   // **Perform Selective Revalidation After All Creations**:
   if (successfulCreations.length > 0) {
     try {
-      // Only revalidate the affected properties
-      await revalidate(
-        createdData,
+      // Map successful creations to the appropriate structure for Redis
+      const operations = successfulCreations.map((creation) => ({
+        type: "create" as const,  // Explicitly set the type as "create"
+        property: {
+          name: creation.name,       // The property name
+          parent: creation.parent,   // The parent account ID
+          ...creation.data           // Include any additional data as needed
+        }
+      }));
+
+      // Call softRevalidateFeatureCache with the operations
+      await softRevalidateFeatureCache(
         [`ga:properties:userId:${userId}`],
         `/dashboard/ga/properties`,
-        userId
+        userId,
+        operations // Pass the operations array
       );
     } catch (err) {
       console.error('Error during revalidation:', err);
     }
   }
+
 
   // Check for not found errors and return if any
   if (notFoundLimit.length > 0) {
@@ -330,8 +388,8 @@ export async function createProperties(
       features: [],
       message: `Some properties could not be found: ${notFoundLimit.map(item => item.name).join(', ')}`,
       results: notFoundLimit.map((item) => ({
-        id: item.id ? [item.id] : [],  // Ensure id is an array and filter out undefined
-        name: [item.name],  // Ensure name is an array to match FeatureResult type
+        id: item.id ? [item.id] : [],
+        name: [item.name],
         success: false,
         notFound: true,
       })),
@@ -346,8 +404,8 @@ export async function createProperties(
       notFoundError: false,
       message: `Feature limit reached for properties: ${featureLimitReached.join(', ')}`,
       results: featureLimitReached.map((propertyName) => ({
-        id: [],  // Populate with actual property IDs if available
-        name: [propertyName],  // Wrap the string in an array
+        id: [],
+        name: [propertyName],
         success: false,
         featureLimitReached: true,
       })),
@@ -368,17 +426,17 @@ export async function createProperties(
   return {
     success: true,
     message: `Successfully created ${successfulCreations.length} property(ies)`,
-    features: successfulCreations.map<FeatureResult>((propertyName) => ({
-      id: [], // Populate with actual property IDs if available
-      name: [propertyName], // Wrap the string in an array
-      success: true, // Indicates success of the operation
+    features: successfulCreations.map<FeatureResult>((property) => ({
+      id: [],
+      name: [property.name],
+      success: true,
     })),
     errors: [],
     notFoundError: notFoundLimit.length > 0,
-    results: successfulCreations.map<FeatureResult>((propertyName) => ({
-      id: [],  // Populate this with actual property IDs if available
-      name: [propertyName],  // Wrap the string in an array
-      success: true,  // Indicates success of the operation
+    results: successfulCreations.map<FeatureResult>((property) => ({
+      id: [],
+      name: [property.name],
+      success: true,
     })),
   };
 }
@@ -404,7 +462,7 @@ export async function updateProperties(
   }
 
   let errors: string[] = [];
-  let successfulUpdates: string[] = [];
+  let successfulUpdates: { name: string; parent: string; data?: any }[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: { id: string | undefined; name: string }[] = [];
   const accountIdsForCache = new Set<string>();
@@ -430,7 +488,7 @@ export async function updateProperties(
       };
 
       try {
-        await executeApiRequest(url, {
+        const updatedProperty = await executeApiRequest(url, {
           method: 'PATCH',
           headers,
           body: JSON.stringify({
@@ -441,9 +499,14 @@ export async function updateProperties(
           }),
         });
 
-        // Assuming property name is unique and used for revalidation, extract it correctly
-        const propertyName = validatedData.forms[0].name;
-        successfulUpdates.push(propertyName);
+        successfulUpdates.push({
+          name: updatedProperty.name,
+          parent: updatedProperty.parent,
+          data: validatedData.forms[0],  // Add additional data as needed for Redis
+        });
+
+        console.log("successfulUpdates", successfulUpdates);
+
 
         await prisma.tierLimit.update({
           where: { id: tierLimitResponse.id },
@@ -467,11 +530,30 @@ export async function updateProperties(
   if (successfulUpdates.length > 0) {
     try {
       // Only revalidate the affected properties
-      await revalidate(
-        successfulUpdates.map((name) => `ga:properties:userId:${userId}`),
+      const operations = successfulUpdates.map((update) => ({
+        type: "update" as const,  // Explicitly set the type as "update"
+        property: {
+          name: update.name,          // This is the Redis field (property name)
+          parent: update.parent,      // Parent should be included
+          displayName: update.data.displayName,  // Only update specific fields
+          timeZone: update.data.timeZone,        // Fields you're updating
+          industryCategory: update.data.industryCategory,  // Add fields as needed
+          currencyCode: update.data.currencyCode,  // Ensure this matches your Redis structure
+        }
+      }));
+
+      console.log('ops', operations);
+
+
+
+      // Call softRevalidateFeatureCache for updates
+      await softRevalidateFeatureCache(
+        [`ga:properties:userId:${userId}`],
         `/dashboard/ga/properties`,
-        userId
+        userId,
+        operations // Pass the operations array for updates
       );
+
     } catch (err) {
       console.error('Error during revalidation:', err);
     }
@@ -524,16 +606,16 @@ export async function updateProperties(
   return {
     success: true,
     message: `Successfully updated ${successfulUpdates.length} property(ies)`,
-    features: successfulUpdates.map<FeatureResult>((propertyName) => ({
-      id: [propertyName], // Populate with actual property IDs if available
-      name: [propertyName], // Wrap the string in an array
+    features: successfulUpdates.map<FeatureResult>((property) => ({
+      id: [property.name], // Populate with actual property IDs if available
+      name: [property.name], // Wrap the string in an array
       success: true, // Indicates success of the operation
     })),
     errors: [],
     notFoundError: notFoundLimit.length > 0,
-    results: successfulUpdates.map<FeatureResult>((propertyName) => ({
-      id: [propertyName],  // Populate this with actual property IDs if available
-      name: [propertyName],  // Wrap the string in an array
+    results: successfulUpdates.map<FeatureResult>((property) => ({
+      id: [property.name],  // Populate this with actual property IDs if available
+      name: [property.name],  // Wrap the string in an array
       success: true,  // Indicates success of the operation
     })),
   };
@@ -643,7 +725,7 @@ export async function updateDataRetentionSettings(
   if (successfulUpdates.length > 0) {
     try {
       await revalidate(
-        successfulUpdates.map((name) => `ga:properties:userId:${userId}`),
+        [`ga:properties:userId:${userId}`],
         `/dashboard/ga/properties`,
         userId
       );
@@ -812,7 +894,7 @@ export async function acknowledgeUserDataCollection(
   if (successfulUpdates.length > 0) {
     try {
       await revalidate(
-        successfulUpdates.map((name) => `ga:properties:userId:${userId}`),
+        [`ga:properties:userId:${userId}`],
         `/dashboard/ga/properties`,
         userId
       );

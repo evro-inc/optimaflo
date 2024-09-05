@@ -91,8 +91,11 @@ export async function deleteContainers(
     Array.from(selectedContainers).map(async (containerData: any) => {
 
       const url = `https://www.googleapis.com/tagmanager/v2/accounts/${containerData.accountId}/containers/${containerData.containerId}`;
-      const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
-
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept-Encoding': 'gzip'
+      };
       try {
         await executeApiRequest(url, { method: 'DELETE', headers }, 'containers', containerNames);
         successfulDeletions.push(containerData.containerId);

@@ -54,6 +54,7 @@ async function fetchGtmData(
     const headers = {
       Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
+      'Accept-Encoding': 'gzip',
     };
 
     try {

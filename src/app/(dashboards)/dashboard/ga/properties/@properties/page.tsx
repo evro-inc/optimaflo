@@ -27,8 +27,11 @@ export default async function StreamPage({
 
   const flatAccounts = accounts.flat();
 
+  console.log("z x", properties);
+
+
   // Make sure you access the 'properties' field of propertyData correctly
-  const flatProperties = properties.flatMap((propertyObj) => propertyObj.properties);
+  const flatProperties = properties.map((propertyObj) => propertyObj);
 
   // Filter out any undefined values from flatProperties
   const validProperties = flatProperties.filter(property => property !== undefined);
@@ -66,6 +69,7 @@ export default async function StreamPage({
       resetOnNewActivity: property.dataRetentionSettings ? property.dataRetentionSettings.resetUserDataOnNewActivity : false,
     };
   });
+
 
   return (
     <>

@@ -20,14 +20,14 @@ export default async function CreateStreamPage() {
 
   const [accounts, properties] = await Promise.all([accountData, propertyData]);
 
+  console.log('accounts 5', accounts);
+
+
   const flatAccounts = accounts.flat();
   const flatProperties = properties.flatMap(item => item.properties);
+  const validProperties = flatProperties.filter(property => property != null);
 
-  console.log("flatAccounts", flatAccounts);
-  console.log("flatProperties", flatProperties);
-
-
-  const combinedData = flatProperties
+  const combinedData = validProperties
     .filter((property) => property !== undefined)  // Filter out any undefined entries
     .map((property) => {
       console.log("property test", property);
@@ -63,6 +63,7 @@ export default async function CreateStreamPage() {
         <FormCreateProperty
           tierLimits={tierLimits}
           table={combinedData}
+          data={accounts}
         />
       </div>
     </>

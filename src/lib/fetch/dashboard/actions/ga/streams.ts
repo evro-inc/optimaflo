@@ -129,8 +129,11 @@ export async function deleteGAPropertyStreams(
     Array.from(selectedStreams).map(async (data: any) => {
 
       const url = `https://analyticsadmin.googleapis.com/v1beta/properties/${data.name}`;
-      const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
-
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept-Encoding': 'gzip'
+      };
       try {
         await executeApiRequest(url, { method: 'DELETE', headers }, 'streams', streamNames);
         successfulDeletions.push(data.streamId);

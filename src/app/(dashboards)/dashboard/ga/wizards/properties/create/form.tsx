@@ -13,7 +13,6 @@ import { useRouter } from 'next/navigation';
 import { createProperties } from '@/src/lib/fetch/dashboard/actions/ga/properties';
 import { calculateRemainingLimit, handleAmountChange, processForm } from '@/src/utils/utils';
 import {
-  useAccountsWithProperties,
   useErrorHandling,
   useFormInitialization,
   useStepNavigation,
@@ -27,7 +26,7 @@ const FormFieldComponent = dynamic(
 );
 
 const FormCreateProperty: React.FC<FormCreateProps> = React.memo(
-  ({ tierLimits, properties = [], table = [], accounts = [] }) => {
+  ({ tierLimits, table = [], data = [] }) => {
     const dispatch = useDispatch();
     const loading = useSelector((state: RootState) => state.form.loading);
     const error = useSelector((state: RootState) => state.form.error);
@@ -35,12 +34,6 @@ const FormCreateProperty: React.FC<FormCreateProps> = React.memo(
     const notFoundError = useSelector(selectTable).notFoundError;
     const router = useRouter();
     const errorModal = useErrorHandling(error, notFoundError);
-    const accountsWithProperties = useAccountsWithProperties(accounts, properties);
-
-    console.log('create properties', properties);
-
-    console.log("Accounts With Properties:", accountsWithProperties);
-
 
     useEffect(() => {
       // Ensure that we reset to the first step when the component mounts
@@ -54,13 +47,13 @@ const FormCreateProperty: React.FC<FormCreateProps> = React.memo(
     );
     const remainingCreate = remainingCreateData.remaining;
 
-    const configs = gaFormFieldConfigs('GA4Property', 'create', remainingCreate, accountsWithProperties);
+    const configs = gaFormFieldConfigs('GA4Property', 'create', remainingCreate, data);
 
     // Add a fallback in case `accountsWithProperties` is empty
     const formDataDefaults: GA4PropertyType[] = [
       {
-        name: table[0]?.displayName || 'Default Display Name', // Ensure there's a fallback if `table[0]` is undefined
-        parent: accountsWithProperties[0]?.name || 'Default Parent', // Provide a default if `accountsWithProperties[0]` is undefined
+        name: table[0]?.displayName,
+        parent: data[0]?.name, // Provide a default if `accountsWithProperties[0]` is undefined
         currencyCode: 'USD',
         displayName: '',
         industryCategory: 'AUTOMOTIVE',
@@ -162,9 +155,9 @@ const FormCreateProperty: React.FC<FormCreateProps> = React.memo(
       </div>
     );
 
-    console.log("Render Step One");
-    console.log("Form Configs:", configs);
-    console.log("Form Amount:", formAmount);
+    console.log('Form values:', form.getValues());
+    console.log('Form errors:', form.formState.errors);
+
 
     return (
       <div className="flex items-center justify-center h-screen">

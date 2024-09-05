@@ -22,7 +22,11 @@ export async function fetchGtmSettings(userId: string) {
 
   const token = await currentUserOauthAccessToken(userId);
   const tokenValue = token;
-  const headers = { Authorization: `Bearer ${tokenValue}` };
+  const headers = {
+    Authorization: `Bearer ${tokenValue}`,
+    'Content-Type': 'application/json',
+    'Accept-Encoding': 'gzip'
+  };
 
   const existingRecords = await prisma.gtm.findMany({ where: { userId } });
   const existingCompositeKeySet = new Set(
@@ -118,8 +122,11 @@ export async function fetchGASettings(userId: string) {
 
   const token = await currentUserOauthAccessToken(userId);
   const tokenValue = token;
-  const headers = { Authorization: `Bearer ${tokenValue}` };
-
+  const headers = {
+    Authorization: `Bearer ${tokenValue}`,
+    'Content-Type': 'application/json',
+    'Accept-Encoding': 'gzip'
+  };
   const existingRecords = await prisma.gtm.findMany({ where: { userId } });
   const existingCompositeKeySet = new Set(
     existingRecords.map((rec) => `${rec.accountId}-${rec.containerId}-${rec.workspaceId}`)

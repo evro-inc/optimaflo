@@ -234,6 +234,8 @@ export type FormCreateProps = {
   tierLimits?: TierLimit[];
   dimensions?: any;
   metrics?: any;
+
+  data?: any;
 };
 
 export type WorkspaceType = {

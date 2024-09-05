@@ -121,6 +121,12 @@ export const gaFormFieldConfigs = (
     const isUpdate = formType === 'update';
     const accountsWithProperties = !isUpdate && Array.isArray(dataSource) ? dataSource : [];
     const selectedRowData = isUpdate && !Array.isArray(dataSource) ? (dataSource as Record<string, any>) : {};
+    console.log('Amount options:', Array.from({ length: remaining }, (_, i) => ({
+        label: `${i + 1}`,
+        value: `${i + 1}`,
+    })));
+
+    const maxProperties = Math.min(remaining, 20);
 
     switch (entityType) {
         case 'GA4Property': {
@@ -141,7 +147,7 @@ export const gaFormFieldConfigs = (
                         description: 'This is the number of properties you want to create.',
                         placeholder: 'Select the number of properties you want to create.',
                         type: 'select',
-                        options: Array.from({ length: remaining }, (_, i) => ({
+                        options: Array.from({ length: maxProperties }, (_, i) => ({
                             label: `${i + 1}`,
                             value: `${i + 1}`,
                         })),

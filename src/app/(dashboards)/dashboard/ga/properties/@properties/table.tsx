@@ -32,7 +32,7 @@ import {
 } from '@/src/components/ui/dropdown-menu';
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
-import { revalidate } from '@/src/utils/server';
+import { hardRevalidateFeatureCache } from '@/src/utils/server';
 
 import { useDispatch } from 'react-redux';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
@@ -148,7 +148,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
       },
     });
     const keys = [`ga:properties:userId:${userId}`];
-    await revalidate(keys, '/dashboard/ga/properties', userId);
+    await hardRevalidateFeatureCache(keys, '/dashboard/ga/properties', userId);
   };
 
   const handleAcknowledgement = async () => {
