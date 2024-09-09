@@ -248,7 +248,7 @@ export const Icon = ({ variant = 'primary', icon, ...props }) => {
 export const ButtonSignIn = ({ ...props }) => {
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <SignInButton mode="modal" redirectUrl="/profile" afterSignUpUrl="/pricing">
+      <SignInButton mode="modal">
         <Button {...props} aria-label="Log in with Google Sign In">
           Log In
         </Button>

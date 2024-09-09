@@ -71,20 +71,6 @@ export const columns: ColumnDef<Property>[] = [
     },
   },
   {
-    accessorKey: 'timeZone',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Time Zone
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-  },
-  {
     accessorKey: 'retention',
     header: ({ column }) => {
       return (
@@ -136,6 +122,20 @@ export const columns: ColumnDef<Property>[] = [
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
           Service Level
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+  },
+  {
+    accessorKey: 'timeZone',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Time Zone
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );

@@ -9,7 +9,6 @@ import {
   ensureGARateLimit,
   executeApiRequest,
   getOauthToken,
-  revalidate,
   softRevalidateFeatureCache,
   validateFormData,
 } from '@/src/utils/server';
@@ -29,12 +28,10 @@ export async function listGAProperties(skipCache = false): Promise<any[]> {
 
   if (!skipCache) {
     const cacheData = await redis.hgetall(cacheKey);
-    console.log('ca 1', cacheData);
 
     if (Object.keys(cacheData).length > 0) {
       try {
         const parsedData = Object.values(cacheData).map((data) => JSON.parse(data));
-        console.log('parse x', parsedData);
 
         return parsedData;
       } catch (error) {
@@ -78,10 +75,8 @@ export async function listGAProperties(skipCache = false): Promise<any[]> {
       const pipeline = redis.pipeline();
 
       properties.forEach((property: any) => {
-        console.log('property data', property);
 
         const fieldKey = property.name;  // Access 'name' directly from the property object
-        console.log("fieldKey", fieldKey);
 
         if (fieldKey) { // Ensure fieldKey is defined
           pipeline.hset(cacheKey, fieldKey, JSON.stringify(property));
@@ -97,7 +92,6 @@ export async function listGAProperties(skipCache = false): Promise<any[]> {
       console.error("Failed to set cache data with HSET:", cacheError);
     }
 
-    console.log('Returning all properties directly:', properties);
 
     return properties; // Return only the properties array
   } catch (apiError) {
@@ -108,7 +102,7 @@ export async function listGAProperties(skipCache = false): Promise<any[]> {
 
 
 /************************************************************************************
-  Delete a single or multiple properties
+  Delete a single or multiple properties - Done
 ************************************************************************************/
 export async function deleteProperties(
   selectedProperties: Set<GA4PropertyType>,
@@ -139,7 +133,7 @@ export async function deleteProperties(
     Array.from(selectedProperties).map(async (data: GA4PropertyType) => {
       const url = `https://analyticsadmin.googleapis.com/v1beta/properties/${data.name}`;
 
-      console.log('url', url);
+      console.log('url del', url);
 
       const headers = {
         Authorization: `Bearer ${token}`,
@@ -442,7 +436,7 @@ export async function createProperties(
 }
 
 /************************************************************************************
-  Create a single property or multiple properties
+  Create a single property or multiple properties - Done
 ************************************************************************************/
 export async function updateProperties(
   formData: { forms: FormSchemaType['forms'] }
@@ -623,16 +617,16 @@ export async function updateProperties(
 
 
 /************************************************************************************
-  Update user data retention settings for a Google Analytics 4 property
+  Update user data retention settings for a Google Analytics 4 property - Refactored Not Tested
 ************************************************************************************/
-export async function updateDataRetentionSettings(
+/* export async function updateDataRetentionSettings(
   formData: { forms: FormSchemaType['forms'] }
 ): Promise<FeatureResponse> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
 
   let errors: string[] = [];
-  let successfulUpdates: string[] = [];
+  let successfulUpdates: { name: string; parent: string }[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: { id: string | undefined; name: string }[] = [];
 
@@ -685,7 +679,7 @@ export async function updateDataRetentionSettings(
         });
 
         // If update was successful
-        successfulUpdates.push(data.name);
+        successfulUpdates.push({ name: data.name, parent: data.parent });
         toUpdateProperties.delete(data);
 
         // **Update Cache Selectively**:
@@ -792,47 +786,204 @@ export async function updateDataRetentionSettings(
       success: true,
     })),
   };
-}
+} */
 
-
-/************************************************************************************
-Acknowledge user data collection for a Google Analytics 4 property
-************************************************************************************/
-export async function acknowledgeUserDataCollection(
-  selectedRows: GA4PropertyType[]
+export async function updateDataRetentionSettings(
+  formData: { forms: FormSchemaType['forms'] }
 ): Promise<FeatureResponse> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
 
   let errors: string[] = [];
-  let successfulUpdates: string[] = [];
+  let successfulUpdates: { name: string; parent: string; data?: any }[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: { id: string | undefined; name: string }[] = [];
 
-  // Prepare properties to update
   const toUpdateProperties = new Set(
-    selectedRows.map((prop) => ({
+    formData.forms.map((prop) => ({
+      parent: prop.parent,
+      displayName: prop.displayName,
       name: prop.name,
+      timeZone: prop.timeZone,
+      currencyCode: prop.currencyCode,
+      industryCategory: prop.industryCategory,
+      propertyType: prop.propertyType,
+      retention: prop.retention,
+      retentionReset: prop.resetOnNewActivity,
     }))
   );
 
   await ensureGARateLimit(userId);
 
-  // Process updates concurrently
   await Promise.all(
     Array.from(toUpdateProperties).map(async (data) => {
-      const propertyData = selectedRows.find((prop) => prop.name === data.name);
+      const validatedData = await validateFormData(FormSchema, { forms: [data] });
 
-      if (!propertyData) {
-        errors.push(`Property data not found for ${data.name}`);
-        toUpdateProperties.delete(data);
-        return;
-      }
+      const updateFields = ['displayName', 'timeZone', 'currencyCode', 'industryCategory'];
+      const updateMask = updateFields.join(',');
+
+      // Ensure validatedData has the correct property ID format for URL
+      const propertyId = validatedData.forms[0].parent;
+      const url = `https://analyticsadmin.googleapis.com/v1beta/properties/${propertyId}?updateMask=${updateMask}`;
+
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept-Encoding': 'gzip',
+      };
 
       try {
-        // Validate form data for each property
-        const rowDataToValidate = { forms: [propertyData] };
-        await validateFormData(FormSchema, rowDataToValidate);
+        const updatedProperty = await executeApiRequest(url, {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify({
+            name: `accounts/${validatedData.forms[0].parent}`,
+            eventDataRetention: validatedData.forms[0].retention,
+            resetUserDataOnNewActivity: validatedData.forms[0].retentionReset,
+          }),
+        });
+
+
+        successfulUpdates.push({
+          name: updatedProperty.name,
+          parent: updatedProperty.parent,
+          data: validatedData.forms[0],  // Add additional data as needed for Redis
+        });
+
+        console.log("successfulUpdates", successfulUpdates);
+
+        // Immediate revalidation per each update is not needed, aggregate revalidation is better
+      } catch (error: any) {
+        if (error.message === 'Feature limit reached') {
+          featureLimitReached.push(validatedData.forms[0].name);
+        } else if (error.message.includes('404')) {
+          notFoundLimit.push({ id: validatedData.forms[0].parent, name: validatedData.forms[0].name });
+        } else {
+          errors.push(error.message);
+        }
+      }
+    })
+  );
+
+  // **Perform Selective Revalidation After All Updates**:
+  if (successfulUpdates.length > 0) {
+    try {
+      // Only revalidate the affected properties
+      const operations = successfulUpdates.map((update) => ({
+        type: "update" as const,  // Explicitly set the type as "update"
+        property: {
+          name: update.name,          // This is the Redis field (property name)
+          parent: update.parent,      // Parent should be included
+          displayName: update.data.displayName,  // Only update specific fields
+          timeZone: update.data.timeZone,        // Fields you're updating
+          industryCategory: update.data.industryCategory,  // Add fields as needed
+          currencyCode: update.data.currencyCode,  // Ensure this matches your Redis structure
+          eventDataRetention: update.data.retention,
+          resetUserDataOnNewActivity: update.data.retentionReset
+        }
+      }));
+
+      console.log('ops', operations);
+
+
+
+      // Call softRevalidateFeatureCache for updates
+      await softRevalidateFeatureCache(
+        [`ga:properties:userId:${userId}`],
+        `/dashboard/ga/properties`,
+        userId,
+        operations // Pass the operations array for updates
+      );
+
+    } catch (err) {
+      console.error('Error during revalidation:', err);
+    }
+  }
+
+  // Check for not found errors and return if any
+  if (notFoundLimit.length > 0) {
+    return {
+      success: false,
+      limitReached: false,
+      notFoundError: true,
+      features: [],
+      message: `Some properties could not be found: ${notFoundLimit.map(item => item.name).join(', ')}`,
+      results: notFoundLimit.map((item) => ({
+        id: item.id ? [item.id] : [],  // Ensure id is an array and filter out undefined
+        name: [item.name],  // Ensure name is an array to match FeatureResult type
+        success: false,
+        notFound: true,
+      })),
+    };
+  }
+
+  // Check if feature limit is reached and return response if applicable
+  if (featureLimitReached.length > 0) {
+    return {
+      success: false,
+      limitReached: true,
+      notFoundError: false,
+      message: `Feature limit reached for properties: ${featureLimitReached.join(', ')}`,
+      results: featureLimitReached.map((propertyName) => ({
+        id: [],  // Populate with actual property IDs if available
+        name: [propertyName],  // Wrap the string in an array
+        success: false,
+        featureLimitReached: true,
+      })),
+    };
+  }
+
+  // Handle general errors
+  if (errors.length > 0) {
+    return {
+      success: false,
+      errors,
+      results: [],
+      message: errors.join(', '),
+      notFoundError: notFoundLimit.length > 0,
+    };
+  }
+
+  return {
+    success: true,
+    message: `Successfully updated ${successfulUpdates.length} property(ies)`,
+    features: successfulUpdates.map<FeatureResult>((property) => ({
+      id: [property.name], // Populate with actual property IDs if available
+      name: [property.name], // Wrap the string in an array
+      success: true, // Indicates success of the operation
+    })),
+    errors: [],
+    notFoundError: notFoundLimit.length > 0,
+    results: successfulUpdates.map<FeatureResult>((property) => ({
+      id: [property.name],  // Populate this with actual property IDs if available
+      name: [property.name],  // Wrap the string in an array
+      success: true,  // Indicates success of the operation
+    })),
+  };
+}
+
+/************************************************************************************
+Acknowledge user data collection for a Google Analytics 4 property done
+************************************************************************************/
+export async function acknowledgeUserDataCollection(
+  formData: { forms: FormSchemaType['forms'] }
+): Promise<FeatureResponse> {
+  const userId = await authenticateUser();
+  const token = await getOauthToken(userId);
+
+  let errors: string[] = [];
+  let successfulUpdates: { name: string; parent: string; data?: any }[] = [];
+  let featureLimitReached: string[] = [];
+  let notFoundLimit: { id: string | undefined; name: string }[] = [];
+
+  await ensureGARateLimit(userId);
+
+  // Process the form data and acknowledge user data collection for each property
+  await Promise.all(
+    formData.forms.map(async (data) => {
+      try {
+        // Validate the form data
+        const validatedData = await validateFormData(FormSchema, { forms: [data] });
 
         const url = `https://analyticsadmin.googleapis.com/v1beta/properties/${data.name}:acknowledgeUserDataCollection`;
         const headers = {
@@ -846,64 +997,59 @@ export async function acknowledgeUserDataCollection(
             'I acknowledge that I have the necessary privacy disclosures and rights from my end users for the collection and processing of their data, including the association of such data with the visitation information Google Analytics collects from my site and/or app property.',
         });
 
-        // Execute the API request with retry logic
-        const response = await executeApiRequest(url, {
+        // Execute the API request
+        await executeApiRequest(url, {
           method: 'POST',
           headers,
           body: payload,
         });
 
-        // Handle successful update
-        successfulUpdates.push(propertyData.name);
-        toUpdateProperties.delete(data);
-
-        // **Update Cache Selectively**:
-        try {
-          const cacheKey = `ga:properties:userId:${userId}`;
-          const cacheData = await redis.get(cacheKey);
-
-          if (cacheData) {
-            const parsedCacheData = JSON.parse(cacheData);
-            const updatedCacheData = parsedCacheData.map((property: any) =>
-              property.name === data.name
-                ? { ...property, acknowledged: true } // Assuming you want to add an acknowledged flag or similar update
-                : property
-            );
-
-            await redis.set(cacheKey, JSON.stringify(updatedCacheData), 'EX', 86400); // Cache for 24 hours
-          }
-        } catch (cacheError) {
-          console.error('Failed to update cache:', cacheError);
-        }
+        // Push successful updates
+        successfulUpdates.push({
+          name: data.name as string,
+          parent: data.parent,
+          data: validatedData.forms[0],
+        });
 
       } catch (error: any) {
-        // Handle different error scenarios
         if (error.message === 'Feature limit reached') {
-          featureLimitReached.push(propertyData.name);
+          featureLimitReached.push(data.name as string);
         } else if (error.message.includes('404')) {
-          notFoundLimit.push({ id: data.name, name: propertyData.displayName });
+          notFoundLimit.push({ id: data.name, name: data.displayName });
         } else {
-          errors.push(`Failed to update property ${propertyData.name}: ${error.message}`);
+          errors.push(`Failed to update property ${data.name}: ${error.message}`);
         }
-        toUpdateProperties.delete(data);
       }
     })
   );
 
-  // **Perform Selective Revalidation After All Updates**:
+  // **Perform Selective Revalidation After All Acknowledgements**:
   if (successfulUpdates.length > 0) {
     try {
-      await revalidate(
+      // Revalidate only the affected properties
+      const operations = successfulUpdates.map((update) => ({
+        type: "update" as const,
+        property: {
+          name: `properties/${update.name}`,
+          parent: update.parent,
+          acknowledged: true,  // Add the acknowledgment flag to Redis
+        },
+      }));
+
+      // Update Redis cache
+      await softRevalidateFeatureCache(
         [`ga:properties:userId:${userId}`],
         `/dashboard/ga/properties`,
-        userId
+        userId,
+        operations
       );
+
     } catch (err) {
       console.error('Error during revalidation:', err);
     }
   }
 
-  // Prepare response based on outcomes
+  // Prepare and return the response based on the outcomes
   if (notFoundLimit.length > 0) {
     return {
       success: false,
@@ -947,17 +1093,17 @@ export async function acknowledgeUserDataCollection(
 
   return {
     success: true,
-    message: `Successfully updated ${successfulUpdates.length} property(ies)`,
-    features: successfulUpdates.map<FeatureResult>((propertyName) => ({
-      id: [],
-      name: [propertyName],
+    message: `Successfully acknowledged data collection for ${successfulUpdates.length} property(ies)`,
+    features: successfulUpdates.map<FeatureResult>((property) => ({
+      id: [property.name],
+      name: [property.name],
       success: true,
     })),
     errors: [],
     notFoundError: false,
-    results: successfulUpdates.map<FeatureResult>((propertyName) => ({
-      id: [],
-      name: [propertyName],
+    results: successfulUpdates.map<FeatureResult>((property) => ({
+      id: [property.name],
+      name: [property.name],
       success: true,
     })),
   };
@@ -965,30 +1111,48 @@ export async function acknowledgeUserDataCollection(
 
 
 
+
 /************************************************************************************
-Returns metadata for dimensions and metrics available in reporting methods. Used to explore the dimensions and metrics. In this method, a Google Analytics GA4 Property data is specified in the request, and the metadata response includes Custom dimensions and metrics as well as Universal metadata.
+Returns metadata for dimensions and metrics available in reporting methods. Used to explore the dimensions and metrics. In this method, a Google Analytics GA4 Property data is specified in the request, and the metadata response includes Custom dimensions and metrics as well as Universal metadata. - DONE I THINK
 ************************************************************************************/
-export async function getMetadataProperties(skipCache = false): Promise<any[]> {
+export async function getMetadataProperties(skipCache = false): Promise<FeatureResponse> {
   const userId = await authenticateUser(); // Authenticate user and get userId
   const token = await getOauthToken(userId); // Get OAuth token for the user
   const cacheKey = `ga:metadataProperties:userId:${userId}`;
 
+  let errors: string[] = [];
+  let allData: any[] = []; // Initialize an array to store all metadata properties
+  let notFoundLimit: string[] = [];
+
+  // Fetch cached data if available
   if (!skipCache) {
-    const cachedData = await redis.get(cacheKey); // Attempt to retrieve cached data
-    if (cachedData) {
+    const cacheData = await redis.hgetall(cacheKey);
+    if (Object.keys(cacheData).length > 0) {
       try {
-        const parsedData = JSON.parse(cachedData);
-        return parsedData; // Return cached data if available
+        const parsedData = Object.values(cacheData).map((data) => JSON.parse(data));
+        return {
+          success: true,
+          message: "Successfully retrieved metadata properties from cache.",
+          features: parsedData.map((property) => ({
+            id: [property.name],
+            name: [property.name],
+            success: true,
+          })),
+          results: parsedData,
+          errors: [],
+          notFoundError: false,
+        };
       } catch (error) {
-        console.error("Failed to parse cached data:", error);
-        // Optionally handle or clear corrupted cache
+        console.error("Failed to parse cache data:", error);
         await redis.del(cacheKey);
       }
     }
   }
 
-  await fetchGASettings(userId); // Fetch Google Analytics settings
+  // Ensure Google Analytics settings are fetched
+  await fetchGASettings(userId);
 
+  // Fetch GA data from the database
   const gaData = await prisma.user.findFirst({
     where: { id: userId },
     include: { ga: true },
@@ -996,15 +1160,22 @@ export async function getMetadataProperties(skipCache = false): Promise<any[]> {
 
   if (!gaData) {
     console.error("Google Analytics data not found for user:", userId);
-    return [];
+    return {
+      success: false,
+      message: "Google Analytics data not found.",
+      features: [],
+      results: [],
+      errors: ["Google Analytics data not found for user."],
+      notFoundError: true,
+    };
   }
 
   const uniqueAccountIds = Array.from(new Set(gaData.ga.map((item) => item.accountId)));
 
-  await ensureGARateLimit(userId); // Ensure rate limit before processing
+  // Ensure rate limit before processing
+  await ensureGARateLimit(userId);
 
-  const allData: any[] = []; // Initialize an array to store all metadata properties
-
+  // Process GA properties for each unique account
   await Promise.all(
     uniqueAccountIds.map(async (accountId) => {
       const propertiesUrl = `https://analyticsadmin.googleapis.com/v1beta/properties?filter=parent:accounts/${accountId}`;
@@ -1018,6 +1189,7 @@ export async function getMetadataProperties(skipCache = false): Promise<any[]> {
         const propertiesResponse = await executeApiRequest(propertiesUrl, { headers });
         const properties = propertiesResponse.properties || [];
 
+        // For each property, fetch its metadata and store results
         await Promise.all(
           properties.map(async (property) => {
             const metadataUrl = `https://analyticsdata.googleapis.com/v1beta/${property.name}/metadata`;
@@ -1031,22 +1203,55 @@ export async function getMetadataProperties(skipCache = false): Promise<any[]> {
             } catch (error: any) {
               allData.push(property); // Push property without data retention settings in case of error
               console.error(`Error fetching data retention settings for ${property.name}: ${error.message}`);
+              errors.push(`Error fetching data retention settings for ${property.name}`);
             }
           })
         );
       } catch (error: any) {
         console.error(`Error fetching properties for account ${accountId}: ${error.message}`);
+        errors.push(`Error fetching properties for account ${accountId}`);
       }
     })
   );
 
   // Cache the results before returning
+  // Cache the results using hset instead of set
   try {
-    await redis.set(cacheKey, JSON.stringify(allData), 'EX', 86400); // Cache for 24 hours
+    const pipeline = redis.pipeline(); // Use Redis pipeline for multiple hset operations
+
+    allData.forEach((property: any) => {
+      pipeline.hset(cacheKey, property.name, JSON.stringify(property)); // Store each property under its name
+    });
+
+    pipeline.expire(cacheKey, 86400); // Set expiration for the entire hash (1 day)
+    await pipeline.exec(); // Execute the pipeline commands
   } catch (error) {
     console.error("Failed to cache metadata properties data:", error);
+    errors.push("Failed to cache metadata properties data.");
   }
 
-  return allData; // Return all the fetched metadata properties
+  if (errors.length > 0) {
+    return {
+      success: false,
+      message: "Errors occurred while fetching metadata properties.",
+      features: [],
+      results: allData,
+      errors,
+      notFoundError: notFoundLimit.length > 0,
+    };
+  }
+
+  return {
+    success: true,
+    message: "Successfully retrieved metadata properties.",
+    features: allData.map((property) => ({
+      id: [property.name],
+      name: [property.name],
+      success: true,
+    })),
+    results: allData,
+    errors: [],
+    notFoundError: false,
+  };
 }
 

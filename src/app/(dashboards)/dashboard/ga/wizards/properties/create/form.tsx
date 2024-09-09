@@ -154,11 +154,6 @@ const FormCreateProperty: React.FC<FormCreateProps> = React.memo(
         )}
       </div>
     );
-
-    console.log('Form values:', form.getValues());
-    console.log('Form errors:', form.formState.errors);
-
-
     return (
       <div className="flex items-center justify-center h-screen">
         {currentStep === 1 ? renderStepOne() : renderStepForms()}

@@ -518,7 +518,7 @@ export enum Role {
 }
 
 export interface AccessBinding {
-  account: string;
+  accountName: string;
   name?: string; // Output only. Format: accounts/{account}/accessBindings/{accessBinding} or properties/{property}/accessBindings/{accessBinding}
   roles: Role[]; // A list of roles to grant to the parent resource.
   user: string;

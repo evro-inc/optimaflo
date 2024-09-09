@@ -333,7 +333,7 @@ export async function hardRevalidateFeatureCache(
 
     // Iterate over each key and delete the entire key (set, hash, etc.)
     keys.forEach((key) => {
-      console.log(`Deleting Redis key: ${key}`);
+      //console.log(`Deleting Redis key: ${key}`);
       pipeline.del(key);  // Delete the entire Redis key
     });
 
@@ -369,7 +369,7 @@ export async function softRevalidateFeatureCache(
       notFound();
     }
 
-    console.log("Operations to process:", operations);
+    //console.log("Operations to process:", operations);
 
     // Fetch current cache data for each key (using HGETALL for hash data)
     const cacheDataArray = await Promise.all(keys.map((key) => redis.hgetall(key)));
@@ -382,24 +382,18 @@ export async function softRevalidateFeatureCache(
         operations.forEach((operation) => {
           const { type, property } = operation;
 
-          console.log('property 123', property);
-
-
           switch (type) {
             case "delete":
               // Remove property from cache
-              console.log('key', key);
-              console.log('p1', property);
 
 
 
-              pipeline.hdel(key, property.name); // Use HDEL to remove the field from the hash
+              pipeline.hdel(key, `properties/${property.name}`); // Use HDEL to remove the field from the hash
               break;
 
             case "update":
               // Update property in cache
-              console.log('key', key);
-              console.log('p2', property);
+
               pipeline.hset(key, property.name, JSON.stringify(property)); // Use HSET to update the field in the hash
               break;
 
@@ -598,7 +592,7 @@ export async function executeApiRequest(
   while (retries < maxRetries) {
     try {
       const response = await limiter.schedule(() => fetch(url, options));
-      console.log("response log", response);
+      //console.log("response log", response);
 
 
       // Parse the response once and store it

@@ -2,6 +2,13 @@ import prisma from '@/src/lib/prisma';
 import { fetchWithRetry } from '@/src/utils/server';
 import { currentUserOauthAccessToken } from '../../clerk';
 
+
+
+
+
+/* SHOULD fetchGA/GTM settings use the executeApiRequest function etc?  */
+
+
 export function isErrorWithStatus(error: unknown): error is { status: number } {
   return (error as { status: number }).status !== undefined;
 }
@@ -159,12 +166,7 @@ export async function fetchGASettings(userId: string) {
         for (const propertyId of propertyIds) {
           if (!existingCompositeKeySet.has(`${accountId}-${propertyId}`)) {
 
-
-            console.log("ga fetch property ID", propertyId);
-
             const stripAccountId = accountId.split('/')[1]
-
-            console.log("stripAccountId", stripAccountId);
 
             await prisma.ga.upsert({
               where: {

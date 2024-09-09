@@ -23,10 +23,18 @@ export default async function StreamPage({
   const accountData = await listGaAccounts();
   const accountAccess = await listGAAccessBindings();
 
+  console.log("accountAccess", accountAccess);
+
+
   const [accounts] = await Promise.all([accountData]);
 
   const flatAccounts = accounts.flat();
-  const flatAccess = accountAccess.map((item) => item.accessBindings);
+  const flatAccess = accountAccess
+    .filter((item) => item?.accessBindings && item.accessBindings.length > 0)
+    .map((item) => item.accessBindings);
+
+  console.log("flatAccess", flatAccess);
+
 
   const combinedData = flatAccess.flatMap((group) =>
     group.map((access) => {

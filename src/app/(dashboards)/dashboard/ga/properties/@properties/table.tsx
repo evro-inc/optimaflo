@@ -40,6 +40,7 @@ import { ButtonDelete } from '@/src/components/client/Button/Button';
 import { setIsLimitReached, setSelectedRows } from '@/src/redux/tableSlice';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -164,7 +165,28 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
         (row) => row.original as GA4PropertyType
       );
 
-      const res = await acknowledgeUserDataCollection(selectedRowData);
+      const formattedData = {
+        forms: selectedRowData.map((item) => ({
+          displayName: item.displayName,
+          timeZone: item.timeZone,
+          currencyCode: item.currencyCode,
+          industryCategory: item.industryCategory,
+          parent: item.parent,
+          propertyType: item.propertyType,
+          retention: item.retention,
+          resetOnNewActivity: item.resetOnNewActivity,
+          acknowledgment: item.acknowledgment,
+          name: item.name,
+        })),
+      };
+
+
+      const res = await acknowledgeUserDataCollection(formattedData);
+
+      console.log('res', res);
+      console.log('res results', res.results);
+
+
 
       if (res.success) {
         res.results.forEach((result) => {
@@ -274,9 +296,15 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
               </DialogHeader>
 
               <DialogFooter>
-                <Button type="submit" onClick={handleAcknowledgement}>
-                  Acknowledge
-                </Button>
+
+
+                <DialogClose asChild>
+                  <Button type="submit" onClick={handleAcknowledgement}>
+                    Acknowledge
+                  </Button>
+                </DialogClose>
+
+
               </DialogFooter>
             </DialogContent>
           </Dialog>

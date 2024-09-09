@@ -32,7 +32,7 @@ import {
 } from '@/src/components/ui/dropdown-menu';
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
-import { revalidate } from '@/src/utils/server';
+import { hardRevalidateFeatureCache, revalidate } from '@/src/utils/server';
 import { useDispatch } from 'react-redux';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
 import { setSelectedRows } from '@/src/redux/tableSlice';
@@ -132,8 +132,9 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
         onClick: () => toast.dismiss(),
       },
     });
-    const keys = [`ga:accounts:userId:${userId}`, `ga:propertyAccess:userId:${userId}`];
-    await revalidate(keys, '/dashboard/ga/access-permissions', userId);
+    const keys = [`ga:propertyAccess:userId:${userId}`];
+    await hardRevalidateFeatureCache(keys, '/dashboard/ga/access-permissions', userId);
+
   };
 
   dispatch(setSelectedRows(selectedRowData)); // Update the selected rows in Redux
