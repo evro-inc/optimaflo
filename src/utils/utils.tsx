@@ -46,6 +46,99 @@ export const handleAmountChange = (
 // Define a type constraint for forms that include the `parent` field
 
 // Make processForm generic to accept different types of forms
+/* export const processForm = async <TFormValues extends FormWithParent>(
+  apiCall: (data: { forms: TFormValues[] }) => Promise<FeatureResponse>,
+  data: TFormValues[],  // Use submitted data
+  resetForm: () => void,
+  dispatch: Dispatch,
+  router: ReturnType<typeof useRouter>,
+  redirectPath: string
+): Promise<FeatureResponse> => {
+  try {
+    dispatch(setLoading(true));
+    const res = await apiCall({ forms: data });  // Pass the actual form data
+
+    console.log('api call', res);
+
+
+    if (res.success) {
+      toast.success('Request successful!');
+      resetForm();
+      router.push(redirectPath);
+    } else {
+      handleErrors(res, dispatch);
+    }
+
+    return res;  // Return the API response
+  } catch (error) {
+    toast.error('An unexpected error occurred.');
+    throw error;
+  } finally {
+    dispatch(setLoading(false));
+  }
+};
+ */
+
+/* export const processForm = <TFormValues extends FormWithParent>(
+  apiCall: (data: { forms: TFormValues[] }) => Promise<FeatureResponse>,
+  formDataDefaults: TFormValues[],
+  resetForm: () => void,
+  dispatch: Dispatch,
+  router: ReturnType<typeof useRouter>,
+  redirectPath: string
+): SubmitHandler<{ forms: TFormValues[] }> => {
+  return async (data) => {
+    const { forms } = data;
+    dispatch(setLoading(true));
+
+    toast('Processing your request...', {
+      action: {
+        label: 'Close',
+        onClick: () => toast.dismiss(),
+      },
+    });
+
+    const uniqueFeatures = new Set(forms.map((form) => form.parent));
+
+    for (const form of forms) {
+      const identifier = `${form.parent} - ${form.name} - ${form.displayName}`;
+      if (uniqueFeatures.has(identifier)) {
+        toast.error(`Duplicate feature found for ${form.name} - ${form.displayName}`, {
+          action: {
+            label: 'Close',
+            onClick: () => toast.dismiss(),
+          },
+        });
+        dispatch(setLoading(false));
+        return;
+      }
+      uniqueFeatures.add(identifier);
+    }
+
+    try {
+      const res = await apiCall({ forms });
+
+      console.log('res 56', res);
+
+
+      if (res.success) {
+        router.push(redirectPath);
+        resetForm();
+      } else {
+        handleErrors(res, dispatch);
+      }
+
+      return res;  // Ensure that the API response is returned here
+    } catch (error) {
+      toast.error('An unexpected error occurred.');
+      throw error;
+    } finally {
+      dispatch(setLoading(false));
+    }
+  };
+};
+ */
+
 export const processForm = <TFormValues extends FormWithParent>(
   apiCall: (data: { forms: TFormValues[] }) => Promise<FeatureResponse>,
   formDataDefaults: TFormValues[], // Accepting an array of defaults
@@ -195,4 +288,3 @@ export const calculateRemainingLimit = (
     remaining,
   };
 };
-

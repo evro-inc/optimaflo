@@ -161,9 +161,9 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
         },
       });
 
-      const selectedRowData: GA4PropertyType[] = table.getSelectedRowModel().rows.map(
-        (row) => row.original as GA4PropertyType
-      );
+      const selectedRowData: GA4PropertyType[] = table
+        .getSelectedRowModel()
+        .rows.map((row) => row.original as GA4PropertyType);
 
       const formattedData = {
         forms: selectedRowData.map((item) => ({
@@ -180,13 +180,10 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
         })),
       };
 
-
       const res = await acknowledgeUserDataCollection(formattedData);
 
       console.log('res', res);
       console.log('res results', res.results);
-
-
 
       if (res.success) {
         res.results.forEach((result) => {
@@ -296,15 +293,11 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
               </DialogHeader>
 
               <DialogFooter>
-
-
                 <DialogClose asChild>
                   <Button type="submit" onClick={handleAcknowledgement}>
                     Acknowledge
                   </Button>
                 </DialogClose>
-
-
               </DialogFooter>
             </DialogContent>
           </Dialog>

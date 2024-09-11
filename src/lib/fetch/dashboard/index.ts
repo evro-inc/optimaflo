@@ -2,12 +2,7 @@ import prisma from '@/src/lib/prisma';
 import { fetchWithRetry } from '@/src/utils/server';
 import { currentUserOauthAccessToken } from '../../clerk';
 
-
-
-
-
 /* SHOULD fetchGA/GTM settings use the executeApiRequest function etc?  */
-
 
 export function isErrorWithStatus(error: unknown): error is { status: number } {
   return (error as { status: number }).status !== undefined;
@@ -32,7 +27,7 @@ export async function fetchGtmSettings(userId: string) {
   const headers = {
     Authorization: `Bearer ${tokenValue}`,
     'Content-Type': 'application/json',
-    'Accept-Encoding': 'gzip'
+    'Accept-Encoding': 'gzip',
   };
 
   const existingRecords = await prisma.gtm.findMany({ where: { userId } });
@@ -132,7 +127,7 @@ export async function fetchGASettings(userId: string) {
   const headers = {
     Authorization: `Bearer ${tokenValue}`,
     'Content-Type': 'application/json',
-    'Accept-Encoding': 'gzip'
+    'Accept-Encoding': 'gzip',
   };
   const existingRecords = await prisma.gtm.findMany({ where: { userId } });
   const existingCompositeKeySet = new Set(
@@ -165,8 +160,7 @@ export async function fetchGASettings(userId: string) {
 
         for (const propertyId of propertyIds) {
           if (!existingCompositeKeySet.has(`${accountId}-${propertyId}`)) {
-
-            const stripAccountId = accountId.split('/')[1]
+            const stripAccountId = accountId.split('/')[1];
 
             await prisma.ga.upsert({
               where: {

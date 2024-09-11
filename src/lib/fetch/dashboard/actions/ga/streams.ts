@@ -23,9 +23,7 @@ import {
 import { fetchGASettings } from '../..';
 import { DataStreamType, FormsSchema } from '@/src/lib/schemas/ga/streams';
 
-
 const featureType: string = 'GA4Streams';
-
 
 /************************************************************************************
   Function to list GA streams
@@ -37,7 +35,6 @@ export async function listGAPropertyStreams(skipCache = false): Promise<any[]> {
 
   console.log('running streams pull');
 
-
   if (skipCache === false) {
     const cacheData = await redis.get(cacheKey);
     if (cacheData) {
@@ -45,8 +42,8 @@ export async function listGAPropertyStreams(skipCache = false): Promise<any[]> {
         const parsedData = JSON.parse(cacheData);
         return parsedData;
       } catch (error) {
-        console.error("Failed to parse cache data:", error);
-        console.log("Cached data:", cacheData); // Log the cached data for inspection
+        console.error('Failed to parse cache data:', error);
+        console.log('Cached data:', cacheData); // Log the cached data for inspection
         await redis.del(cacheKey);
       }
     }
@@ -70,7 +67,6 @@ export async function listGAPropertyStreams(skipCache = false): Promise<any[]> {
 
   console.log('urls', urls);
 
-
   const headers = {
     Authorization: `Bearer ${token}`,
     'Content-Type': 'application/json',
@@ -79,8 +75,7 @@ export async function listGAPropertyStreams(skipCache = false): Promise<any[]> {
 
   const allData = await Promise.all(urls.map((url) => executeApiRequest(url, { headers })));
 
-  console.log("allData", allData);
-
+  console.log('allData', allData);
 
   // Before storing the data in Redis, ensure it is a valid JSON
   const flattenedData = allData.flat();
@@ -88,14 +83,11 @@ export async function listGAPropertyStreams(skipCache = false): Promise<any[]> {
     const jsonData = JSON.stringify(flattenedData);
     await redis.set(cacheKey, jsonData, 'EX', 86400);
   } catch (error) {
-    console.error("Failed to stringify or set cache data:", error);
+    console.error('Failed to stringify or set cache data:', error);
   }
 
   return flattenedData;
 }
-
-
-
 
 /************************************************************************************
   Delete a single property or multiple streams
@@ -106,14 +98,20 @@ export async function deleteGAPropertyStreams(
 ): Promise<FeatureResponse> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
-  const { tierLimitResponse, availableUsage } = await checkFeatureLimit(userId, featureType, 'delete');
+  const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
+    userId,
+    featureType,
+    'delete'
+  );
 
   if (tierLimitResponse.limitReached || selectedStreams.size > availableUsage) {
     return {
       success: false,
       limitReached: true,
       message: 'Feature limit reached or request exceeds available deletions.',
-      errors: [`Cannot delete more streams than available. You have ${availableUsage} deletions left.`],
+      errors: [
+        `Cannot delete more streams than available. You have ${availableUsage} deletions left.`,
+      ],
       results: [],
     };
   }
@@ -127,12 +125,11 @@ export async function deleteGAPropertyStreams(
 
   await Promise.all(
     Array.from(selectedStreams).map(async (data: any) => {
-
       const url = `https://analyticsadmin.googleapis.com/v1beta/properties/${data.name}`;
       const headers = {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
-        'Accept-Encoding': 'gzip'
+        'Accept-Encoding': 'gzip',
       };
       try {
         await executeApiRequest(url, { method: 'DELETE', headers }, 'streams', streamNames);
@@ -151,10 +148,11 @@ export async function deleteGAPropertyStreams(
           data: { deleteUsage: { increment: 1 } },
         });
 
-        await revalidate([`ga:streams:userId:${userId}`], `/dashboard/ga/properties`, userId).catch((err) => {
-          console.error('Error during revalidation:', err);
-        });
-
+        await revalidate([`ga:streams:userId:${userId}`], `/dashboard/ga/properties`, userId).catch(
+          (err) => {
+            console.error('Error during revalidation:', err);
+          }
+        );
       } catch (error: any) {
         if (error.message === 'Feature limit reached') {
           featureLimitReached.push(data.streamId);
@@ -173,8 +171,8 @@ export async function deleteGAPropertyStreams(
       success: false,
       limitReached: false,
       notFoundError: true,
-      message: `Could not delete stream. Please check your permissions. Stream Name: ${streamNames.find((name) =>
-        name.includes(name)
+      message: `Could not delete stream. Please check your permissions. Stream Name: ${streamNames.find(
+        (name) => name.includes(name)
       )}. All other streams were successfully deleted.`,
       results: notFoundLimit.map((streamId) => ({
         id: [streamId], // Ensure id is an array
@@ -215,22 +213,19 @@ export async function deleteGAPropertyStreams(
     success: true,
     message: `Successfully deleted ${successfulDeletions.length} stream(s)`,
     features: successfulDeletions.map<FeatureResult>((streamId) => ({
-      id: [streamId],  // Wrap streamId in an array to match FeatureResult type
-      name: [streamNames.find((name) => name.includes(streamId)) || 'Unknown'],  // Wrap name in an array to match FeatureResult type
-      success: true,  // Indicates success of the operation
+      id: [streamId], // Wrap streamId in an array to match FeatureResult type
+      name: [streamNames.find((name) => name.includes(streamId)) || 'Unknown'], // Wrap name in an array to match FeatureResult type
+      success: true, // Indicates success of the operation
     })),
     errors: [],
     notFoundError: notFoundLimit.length > 0,
     results: successfulDeletions.map<FeatureResult>((streamId) => ({
-      id: [streamId],  // FeatureResult.id is an array
-      name: [streamNames.find((name) => name.includes(streamId)) || 'Unknown'],  // FeatureResult.name is an array
-      success: true,  // FeatureResult.success indicates if the operation was successful
+      id: [streamId], // FeatureResult.id is an array
+      name: [streamNames.find((name) => name.includes(streamId)) || 'Unknown'], // FeatureResult.name is an array
+      success: true, // FeatureResult.success indicates if the operation was successful
     })),
   };
-
 }
-
-
 
 /* NOT REFACTORED YET */
 /************************************************************************************
@@ -919,5 +914,3 @@ export async function updateGAPropertyStreams(formData: DataStreamType) {
     notFoundError: false, // Set based on actual not found status
   };
 }
-
-

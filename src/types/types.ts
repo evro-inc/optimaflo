@@ -63,7 +63,7 @@ export interface Price {
   products?: Product;
 }
 
-export interface PriceWithProduct extends Price { }
+export interface PriceWithProduct extends Price {}
 
 export interface Subscription {
   id: string /* primary key */;
@@ -113,8 +113,6 @@ export type Form = {
   forms: FormElement[];
 };
 
-
-
 export interface BaseForm {
   parent?: string;
   name?: string;
@@ -123,7 +121,14 @@ export interface BaseForm {
 
 export type FormWithParent<T = {}> = BaseForm & T;
 
-export type UsageContextType = ("web" | "android" | "ios" | 'iosSdk5' | 'androidSdk5' | 'server' | 'amp');
+export type UsageContextType =
+  | 'web'
+  | 'android'
+  | 'ios'
+  | 'iosSdk5'
+  | 'androidSdk5'
+  | 'server'
+  | 'amp';
 
 export type ContainerType = BaseForm & {
   accountId: string;

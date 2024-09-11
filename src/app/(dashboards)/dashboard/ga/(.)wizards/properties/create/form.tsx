@@ -10,16 +10,17 @@ import { FormCreateProps, GA4PropertyType } from '@/src/types/types';
 import { selectTable } from '@/src/redux/tableSlice';
 import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
-import { createProperties } from '@/src/lib/fetch/dashboard/actions/ga/properties';
-import { calculateRemainingLimit, handleAmountChange, processForm } from '@/src/utils/utils';
 import {
-  useErrorHandling,
-  useFormInitialization,
-  useStepNavigation,
-} from '@/src/hooks/wizard';
+  createProperties,
+  listGAProperties,
+  updateDataRetentionSettings,
+} from '@/src/lib/fetch/dashboard/actions/ga/properties';
+import { calculateRemainingLimit, handleAmountChange, processForm } from '@/src/utils/utils';
+import { useErrorHandling, useFormInitialization, useStepNavigation } from '@/src/hooks/wizard';
 import dynamic from 'next/dynamic';
 import { gaFormFieldConfigs } from '@/src/utils/gaFormFields';
 import { setCurrentStep } from '@/src/redux/formSlice';
+import { toast } from 'sonner';
 const FormFieldComponent = dynamic(
   () => import('@/src/components/client/Utils/Form').then((mod) => mod.FormFieldComponent),
   { ssr: false }
@@ -77,6 +78,7 @@ const FormCreateProperty: React.FC<FormCreateProps> = React.memo(
       fieldsToValidate: ['displayName', 'parent', 'currencyCode', 'timeZone', 'industryCategory'],
     });
 
+    /// NEED TO ADD updateDataRetentionSettings condition after successful createProperties
     const onSubmit: SubmitHandler<FormSchemaType> = processForm(
       createProperties,
       formDataDefaults,
@@ -154,7 +156,6 @@ const FormCreateProperty: React.FC<FormCreateProps> = React.memo(
         )}
       </div>
     );
-
     return (
       <div className="flex items-center justify-center h-screen">
         {currentStep === 1 ? renderStepOne() : renderStepForms()}

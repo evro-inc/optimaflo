@@ -32,7 +32,9 @@ export default async function CustomMetricPage({
   ]);
 
   const flatAccounts = accounts.flat();
-  const flatProperties = properties.flatMap((propertyObj) => propertyObj.properties || []).filter(Boolean); // Ensures only valid entries
+  const flatProperties = properties
+    .flatMap((propertyObj) => propertyObj.properties || [])
+    .filter(Boolean); // Ensures only valid entries
   const flattenedConversionEvent = ce.flatMap((item) => item.conversionEvents || []);
 
   const combinedData = flattenedConversionEvent.map((ce) => {

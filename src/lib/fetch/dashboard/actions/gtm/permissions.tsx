@@ -246,7 +246,6 @@ export async function CreatePermissions(formData: FormValuesType) {
                   successfulCreations.push(validatedPermissionData.emailAddress);
                   toCreatePermissions.delete(identifier);
 
-
                   await prisma.gtmPermissions.create({
                     data: {
                       accountId: validatedPermissionData.accountId, // The accountId from the validated permission data
@@ -256,9 +255,6 @@ export async function CreatePermissions(formData: FormValuesType) {
                       userId: userId, // Associating the permission with the user
                     },
                   });
-
-
-
 
                   await prisma.tierLimit.update({
                     where: { id: tierLimitResponse.id },
@@ -419,11 +415,11 @@ export async function CreatePermissions(formData: FormValuesType) {
   const results: FeatureResult[] = formData.forms.flatMap((form) =>
     form.emailAddresses
       ? form.emailAddresses.map((emailObj) => ({
-        id: [], // Ensure id is an array of strings
-        name: [emailObj.emailAddress], // Wrap the string in an array
-        success: true, // or false, depending on the actual result
-        notFound: false, // Set this to the appropriate value based on your logic
-      }))
+          id: [], // Ensure id is an array of strings
+          name: [emailObj.emailAddress], // Wrap the string in an array
+          success: true, // or false, depending on the actual result
+          notFound: false, // Set this to the appropriate value based on your logic
+        }))
       : []
   );
 
@@ -584,7 +580,6 @@ export async function UpdatePermissions(formData: FormValuesType) {
                   successfulCreations.push(validatedPermissionData.emailAddress);
                   toUpdatePermissions.delete(identifier);
 
-
                   await prisma.gtmPermissions.upsert({
                     where: {
                       accountId_emailAddress: {
@@ -604,7 +599,6 @@ export async function UpdatePermissions(formData: FormValuesType) {
                       userId: userId, // Associating the permission with the user
                     },
                   });
-
 
                   await prisma.tierLimit.update({
                     where: { id: tierLimitResponse.id },
@@ -773,11 +767,11 @@ export async function UpdatePermissions(formData: FormValuesType) {
   const results: FeatureResult[] = formData.forms.flatMap((form) =>
     form.emailAddresses
       ? form.emailAddresses.map((emailObj) => ({
-        id: [], // Ensure id is an array of strings
-        name: [emailObj.emailAddress], // Wrap the string in an array
-        success: true, // or false, depending on the actual result
-        notFound: false, // Set this to the appropriate value based on your logic
-      }))
+          id: [], // Ensure id is an array of strings
+          name: [emailObj.emailAddress], // Wrap the string in an array
+          success: true, // or false, depending on the actual result
+          notFound: false, // Set this to the appropriate value based on your logic
+        }))
       : []
   );
 

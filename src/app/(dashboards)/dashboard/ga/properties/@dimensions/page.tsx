@@ -32,7 +32,9 @@ export default async function PropertyPage({
   ]);
 
   const flatAccounts = accounts.flat();
-  const flatProperties = properties.flatMap((propertyObj) => propertyObj.properties || []).filter(Boolean); // Filters out undefined or empty objects
+  const flatProperties = properties
+    .flatMap((propertyObj) => propertyObj.properties || [])
+    .filter(Boolean); // Filters out undefined or empty objects
   const flattenedCustomDimensions = cd
     .filter((item) => item.customDimensions) // Filter out objects without customDimensions
     .flatMap((item) => item.customDimensions);

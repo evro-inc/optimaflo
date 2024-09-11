@@ -5,18 +5,19 @@ import { useDispatch, useSelector } from 'react-redux';
 import { SubmitHandler } from 'react-hook-form';
 import { ContainerSchemaType, FormSchema } from '@/src/lib/schemas/gtm/containers';
 import { Button } from '@/src/components/ui/button';
-import {
-  Form,
-} from '@/src/components/ui/form';
+import { Form } from '@/src/components/ui/form';
 import { ContainerType, FormUpdateProps } from '@/src/types/types';
-import {
-  selectTable,
-} from '@/src/redux/tableSlice';
+import { selectTable } from '@/src/redux/tableSlice';
 import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import { updateContainers } from '@/src/lib/fetch/dashboard/actions/gtm/containers';
 import { calculateRemainingLimit, processForm } from '@/src/utils/utils';
-import { useErrorHandling, useErrorRedirect, useFormInitialization, useStepNavigation } from '@/src/hooks/wizard';
+import {
+  useErrorHandling,
+  useErrorRedirect,
+  useFormInitialization,
+  useStepNavigation,
+} from '@/src/hooks/wizard';
 import { gtmFormFieldConfigs } from '@/src/utils/gtmFormFields';
 import { FormFieldComponent } from '@/src/components/client/Utils/Form';
 import { setCurrentStep } from '@/src/redux/formSlice';
@@ -47,7 +48,9 @@ const FormUpdateContainer: React.FC<FormUpdateProps> = React.memo(({ tierLimits 
       key,
       {
         accountId: rowData.accountId,
-        usageContext: Array.isArray(rowData.usageContext) ? rowData.usageContext : [rowData.usageContext],
+        usageContext: Array.isArray(rowData.usageContext)
+          ? rowData.usageContext
+          : [rowData.usageContext],
         name: rowData.name,
         domainName: rowData.domainName || '',
         notes: rowData.notes || '',
@@ -57,11 +60,18 @@ const FormUpdateContainer: React.FC<FormUpdateProps> = React.memo(({ tierLimits 
     ])
   );
 
-  const configs = gtmFormFieldConfigs('GTMContainer', 'update', remainingUpdate, selectedRowDataTransformed);
+  const configs = gtmFormFieldConfigs(
+    'GTMContainer',
+    'update',
+    remainingUpdate,
+    selectedRowDataTransformed
+  );
 
   const formDataDefaults: ContainerType[] = Object.values(selectedRowData).map((rowData) => ({
     accountId: rowData.accountId,
-    usageContext: Array.isArray(rowData.usageContext) ? rowData.usageContext : [rowData.usageContext],
+    usageContext: Array.isArray(rowData.usageContext)
+      ? rowData.usageContext
+      : [rowData.usageContext],
     name: rowData.name,
     domainName: rowData.domainName || '',
     notes: rowData.notes || '',
@@ -122,7 +132,9 @@ const FormUpdateContainer: React.FC<FormUpdateProps> = React.memo(({ tierLimits 
                   className="space-y-6"
                 >
                   {Object.entries(configs)
-                    .filter(([key]) => key !== 'amount' && key !== 'accountId' && key !== 'usageContext')
+                    .filter(
+                      ([key]) => key !== 'amount' && key !== 'accountId' && key !== 'usageContext'
+                    )
                     .map(([key, config]) => (
                       <FormFieldComponent
                         key={key}
@@ -144,9 +156,7 @@ const FormUpdateContainer: React.FC<FormUpdateProps> = React.memo(({ tierLimits 
                         Next
                       </Button>
                     ) : (
-                      <Button type="submit">
-                        {loading ? 'Submitting...' : 'Submit'}
-                      </Button>
+                      <Button type="submit">{loading ? 'Submitting...' : 'Submit'}</Button>
                     )}
                   </div>
                 </form>
@@ -158,14 +168,7 @@ const FormUpdateContainer: React.FC<FormUpdateProps> = React.memo(({ tierLimits 
     );
   };
 
-
-
-  return (
-    <div className="flex items-center justify-center h-screen">
-      {renderForms()}
-    </div>
-
-  );
+  return <div className="flex items-center justify-center h-screen">{renderForms()}</div>;
 });
 
 FormUpdateContainer.displayName = 'FormUpdateContainer';

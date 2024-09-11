@@ -36,8 +36,8 @@ export async function listGAKeyEvents(skipCache = false): Promise<any[]> {
         const parsedData = JSON.parse(cacheData);
         return parsedData;
       } catch (error) {
-        console.error("Failed to parse cache data:", error);
-        console.log("Cached data:", cacheData); // Log the cached data for inspection
+        console.error('Failed to parse cache data:', error);
+        console.log('Cached data:', cacheData); // Log the cached data for inspection
         await redis.del(cacheKey);
       }
     }
@@ -73,7 +73,7 @@ export async function listGAKeyEvents(skipCache = false): Promise<any[]> {
     const jsonData = JSON.stringify(flattenedData);
     await redis.set(cacheKey, jsonData, 'EX', 86400);
   } catch (error) {
-    console.error("Failed to stringify or set cache data:", error);
+    console.error('Failed to stringify or set cache data:', error);
   }
 
   return flattenedData;

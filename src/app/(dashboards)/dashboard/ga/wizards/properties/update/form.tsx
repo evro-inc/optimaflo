@@ -11,7 +11,12 @@ import { selectTable } from '@/src/redux/tableSlice';
 import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import { calculateRemainingLimit, processForm } from '@/src/utils/utils';
-import { useErrorHandling, useErrorRedirect, useFormInitialization, useStepNavigation } from '@/src/hooks/wizard';
+import {
+  useErrorHandling,
+  useErrorRedirect,
+  useFormInitialization,
+  useStepNavigation,
+} from '@/src/hooks/wizard';
 import { FormFieldComponent } from '@/src/components/client/Utils/Form';
 import { Form } from '@/src/components/ui/form';
 import { gaFormFieldConfigs } from '@/src/utils/gaFormFields';
@@ -57,7 +62,12 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = React.memo(({ tierLimits }
     ])
   );
 
-  const configs = gaFormFieldConfigs('GA4Property', 'update', remainingUpdate, selectedRowDataTransformed);
+  const configs = gaFormFieldConfigs(
+    'GA4Property',
+    'update',
+    remainingUpdate,
+    selectedRowDataTransformed
+  );
 
   // Correct mapping of formDataDefaults to align each row data with the current step
   const formDataDefaults: GA4PropertyType[] = Object.values(selectedRowData).map((rowData) => ({
@@ -104,8 +114,8 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = React.memo(({ tierLimits }
     // Get the field for the current form step
     const field = fields[currentFormIndex];
 
-
-    const currentPropertyName = formDataDefaults[currentFormIndex]?.displayName || `Property ${currentFormIndex}`;
+    const currentPropertyName =
+      formDataDefaults[currentFormIndex]?.displayName || `Property ${currentFormIndex}`;
 
     return (
       <div className="w-full">
@@ -146,7 +156,9 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = React.memo(({ tierLimits }
                         Next
                       </Button>
                     ) : (
-                      <Button disabled={!form.formState.isValid} type="submit">{loading ? 'Submitting...' : 'Submit'}</Button>
+                      <Button disabled={!form.formState.isValid} type="submit">
+                        {loading ? 'Submitting...' : 'Submit'}
+                      </Button>
                     )}
                   </div>
                 </form>
@@ -158,11 +170,7 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = React.memo(({ tierLimits }
     );
   };
 
-  return (
-    <div className="flex items-center justify-center h-screen">
-      {renderForms()}
-    </div>
-  );
+  return <div className="flex items-center justify-center h-screen">{renderForms()}</div>;
 });
 
 FormUpdateProperty.displayName = 'FormUpdateProperty';

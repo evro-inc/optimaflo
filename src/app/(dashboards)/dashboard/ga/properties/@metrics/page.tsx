@@ -28,7 +28,9 @@ export default async function CustomMetricPage({
   const [accounts, properties, cm] = await Promise.all([accountData, propertyData, customMetrics]);
 
   const flatAccounts = accounts.flat();
-  const flatProperties = properties.flatMap((propertyObj) => propertyObj.properties || []).filter(Boolean); // Ensures only valid entries
+  const flatProperties = properties
+    .flatMap((propertyObj) => propertyObj.properties || [])
+    .filter(Boolean); // Ensures only valid entries
   const flattenedCustomMetrics = cm
     .filter((item) => item.customMetrics) // Filter out objects without customMetrics
     .flatMap((item) => item.customMetrics);

@@ -21,13 +21,12 @@ export default async function CreatePropertyPage() {
   const [accounts, properties] = await Promise.all([accountData, propertyData]);
 
   const flatAccounts = accounts.flat();
-  const flatProperties = properties.flatMap(item => item.properties);
-  const validProperties = flatProperties.filter(property => property != null);
+  const flatProperties = properties.flatMap((item) => item.properties);
+  const validProperties = flatProperties.filter((property) => property != null);
 
   const combinedData = validProperties
-    .filter((property) => property !== undefined)  // Filter out any undefined entries
+    .filter((property) => property !== undefined) // Filter out any undefined entries
     .map((property) => {
-
       // Find the matching account
       const account = flatAccounts.find((a) => a.name === property.parent);
 
@@ -56,11 +55,7 @@ export default async function CreatePropertyPage() {
   return (
     <>
       <div className="container mx-auto py-10">
-        <FormCreateProperty
-          tierLimits={tierLimits}
-          table={combinedData}
-          data={accounts}
-        />
+        <FormCreateProperty tierLimits={tierLimits} table={combinedData} data={accounts} />
       </div>
     </>
   );

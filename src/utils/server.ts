@@ -141,11 +141,7 @@ export const tierUpdateLimit = async (userId: string, featureName: string) => {
 };
 
 // Function to Handle API Errors
-export async function handleApiResponseError(
-  response: Response,
-  feature: string,
-  names: string[]
-) {
+export async function handleApiResponseError(response: Response, feature: string, names: string[]) {
   // Parse the response body if not already parsed
   const parsedResponse = await response.json().catch(() => null);
 
@@ -154,7 +150,9 @@ export async function handleApiResponseError(
       return {
         success: false,
         errorCode: 400,
-        message: `${feature} ${names} was not created. ${parsedResponse?.error?.message ?? 'Unknown error'}`,
+        message: `${feature} ${names} was not created. ${
+          parsedResponse?.error?.message ?? 'Unknown error'
+        }`,
       };
 
     case 404:
@@ -202,7 +200,6 @@ export async function handleApiResponseError(
       };
   }
 }
-
 
 export async function fetchFilteredRows<T>(
   allItems: T[],
@@ -285,7 +282,7 @@ export async function fetchPages<T>(
 
 /*************************************************************************
  * Global Hard Refresh Cache
-*************************************************************************/
+ *************************************************************************/
 export async function revalidateHardCacheGlobal(keys: string[], path: string, userId: string) {
   try {
     const pipeline = redis.pipeline();
@@ -313,11 +310,11 @@ export async function revalidateHardCacheGlobal(keys: string[], path: string, us
 
 /*************************************************************************
  * Local Hard Refresh Cache
-*************************************************************************/
+ *************************************************************************/
 export async function hardRevalidateFeatureCache(
-  keys: string[],  // Redis keys for cache entries
-  path: string,    // The path to revalidate
-  userId: string,  // User ID
+  keys: string[], // Redis keys for cache entries
+  path: string, // The path to revalidate
+  userId: string // User ID
 ) {
   try {
     const pipeline = redis.pipeline();
@@ -334,15 +331,14 @@ export async function hardRevalidateFeatureCache(
     // Iterate over each key and delete the entire key (set, hash, etc.)
     keys.forEach((key) => {
       //console.log(`Deleting Redis key: ${key}`);
-      pipeline.del(key);  // Delete the entire Redis key
+      pipeline.del(key); // Delete the entire Redis key
     });
 
     // Execute the pipeline commands
-    await pipeline.exec();  // Delete all keys in one batch
+    await pipeline.exec(); // Delete all keys in one batch
 
     // Trigger Incremental Static Regeneration (ISR) to revalidate the path
     await revalidatePath(path);
-
   } catch (error) {
     console.error('Error during hard revalidation:', error);
     throw new Error('Revalidation failed');
@@ -354,9 +350,12 @@ export async function hardRevalidateFeatureCache(
  *************************************************************************/
 export async function softRevalidateFeatureCache(
   keys: string[], // Redis keys for cache entries
-  path: string,   // The path to revalidate
+  path: string, // The path to revalidate
   userId: string, // User ID
-  operations: { type: "update" | "create" | "delete"; property: { name: string; parent: string;[key: string]: any } }[] // Array of operations
+  operations: {
+    type: 'update' | 'create' | 'delete';
+    property: { name: string; parent: string; [key: string]: any };
+  }[] // Array of operations
 ) {
   try {
     const pipeline = redis.pipeline();
@@ -383,21 +382,19 @@ export async function softRevalidateFeatureCache(
           const { type, property } = operation;
 
           switch (type) {
-            case "delete":
+            case 'delete':
               // Remove property from cache
-
-
 
               pipeline.hdel(key, `properties/${property.name}`); // Use HDEL to remove the field from the hash
               break;
 
-            case "update":
+            case 'update':
               // Update property in cache
 
               pipeline.hset(key, property.name, JSON.stringify(property)); // Use HSET to update the field in the hash
               break;
 
-            case "create":
+            case 'create':
               // Add new property to cache
               pipeline.hset(key, property.name, JSON.stringify(property)); // Use HSET to create a new field in the hash
               break;
@@ -408,7 +405,7 @@ export async function softRevalidateFeatureCache(
         });
       } else {
         // If no data exists in Redis, delete the key or initialize an empty hash depending on operation
-        if (operations.some((op) => op.type !== "delete")) {
+        if (operations.some((op) => op.type !== 'delete')) {
           // For create/update, initialize a new hash
           operations.forEach((op) => {
             pipeline.hset(key, op.property.name, JSON.stringify(op.property));
@@ -425,20 +422,11 @@ export async function softRevalidateFeatureCache(
 
     // Trigger ISR to revalidate the path
     await revalidatePath(path);
-
   } catch (error) {
     console.error('Error during revalidation:', error);
     throw new Error('Revalidation failed');
   }
 }
-
-
-
-
-
-
-
-
 
 export async function revalidate(
   currentData: string[], // List of property names to delete from Redis
@@ -475,9 +463,7 @@ export async function revalidate(
         const parsedData = JSON.parse(cacheData);
 
         // Filter out deleted properties from the parsed cache data
-        const updatedData = parsedData.filter(
-          (item: any) => !currentData.includes(item.name)
-        );
+        const updatedData = parsedData.filter((item: any) => !currentData.includes(item.name));
 
         // Update the cache with the new data that no longer includes the deleted properties
         pipeline.set(key, JSON.stringify(updatedData), 'EX', 86400); // Cache for 24 hours
@@ -494,9 +480,6 @@ export async function revalidate(
     throw new Error('Revalidation failed');
   }
 }
-
-
-
 
 export const fetchWithRetry = async (url: string, headers: any, retries = 0): Promise<any> => {
   const MAX_RETRIES = 20;
@@ -525,14 +508,6 @@ export const fetchWithRetry = async (url: string, headers: any, retries = 0): Pr
     }
   }
 };
-
-
-
-
-
-
-
-
 
 /************************************************************************************
   API Helper Functions for Modularity and Reusability
@@ -592,17 +567,15 @@ export async function executeApiRequest(
   while (retries < maxRetries) {
     try {
       const response = await limiter.schedule(() => fetch(url, options));
-      //console.log("response log", response);
-
+      console.log('response log', response);
 
       // Parse the response once and store it
       const responseData = await response.json();
 
       console.log('response data', responseData);
 
-
       if (response.ok) {
-        return responseData;  // Use the parsed data here
+        return responseData; // Use the parsed data here
       }
 
       if (response.status === 429) {
@@ -622,8 +595,6 @@ export async function executeApiRequest(
 
   throw new Error('Maximum retries reached without a successful response.');
 }
-
-
 
 /** Handles rate limit retry logic */
 export async function handleRateLimitRetry(retries: number, delay: number): Promise<void> {
@@ -646,7 +617,6 @@ export async function validateFormData(schema: any, formData: any): Promise<any>
   }
   return validationResult.data;
 }
-
 
 /* MISC */
 

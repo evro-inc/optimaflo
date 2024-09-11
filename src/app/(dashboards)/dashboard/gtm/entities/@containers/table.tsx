@@ -91,7 +91,16 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
         onClick: () => toast.dismiss(),
       },
     });
-    await revalidate([`gtm:containers:userId:${userId}`, `gtm:workspaces:userId:${userId}`, `gtm:versions:userId:${userId}`, `gtm:permissions:userId:${userId}`], `/dashboard/gtm/entities`, userId).catch((err) => {
+    await revalidate(
+      [
+        `gtm:containers:userId:${userId}`,
+        `gtm:workspaces:userId:${userId}`,
+        `gtm:versions:userId:${userId}`,
+        `gtm:permissions:userId:${userId}`,
+      ],
+      `/dashboard/gtm/entities`,
+      userId
+    ).catch((err) => {
       console.error('Error during revalidation:', err);
     });
   };

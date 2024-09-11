@@ -36,7 +36,7 @@ export async function listGAAccessBindings(skipCache = false): Promise<any[]> {
         const parsedData = Object.values(cacheData).map((data) => JSON.parse(data));
         return parsedData;
       } catch (error) {
-        console.error("Failed to parse cache data:", error);
+        console.error('Failed to parse cache data:', error);
         await redis.del(cacheKey);
       }
     }
@@ -65,7 +65,7 @@ export async function listGAAccessBindings(skipCache = false): Promise<any[]> {
 
   try {
     const allData = await Promise.all(urls.map((url) => executeApiRequest(url, { headers })));
-    const flattenedAccessBindings = allData.flatMap(item => item.accessBindings || []);
+    const flattenedAccessBindings = allData.flatMap((item) => item.accessBindings || []);
 
     const cleanedData = flattenedAccessBindings.filter((item) => Object.keys(item).length > 0);
 
@@ -88,14 +88,13 @@ export async function listGAAccessBindings(skipCache = false): Promise<any[]> {
 
       pipeline.expire(cacheKey, 7776000); // Set expiration for the entire hash - set to 3 months since this data doesn't change too often.
       await pipeline.exec(); // Execute the pipeline commands
-
     } catch (cacheError) {
-      console.error("Failed to set cache data with HSET:", cacheError);
+      console.error('Failed to set cache data with HSET:', cacheError);
     }
 
     return Object.values(groupedAccessBindings);
   } catch (apiError) {
-    console.error("Error fetching accounts from API:", apiError);
+    console.error('Error fetching accounts from API:', apiError);
     return []; // Return empty array or handle this more gracefully depending on your needs
   }
 }

@@ -509,7 +509,6 @@ export async function CreateWorkspaces(formData: FormCreateSchema) {
                   successfulCreations.push(workspaceName);
                   toCreateWorkspaces.delete(identifier);
 
-
                   await prisma.gtm.upsert({
                     where: {
                       accountId_containerId_name: {

@@ -591,8 +591,8 @@ export async function DeleteVersions(
               notFoundError: true, // Set the notFoundError flag
               message: `Could not delete version. Please check your permissions. Container Name: 
               ${notFoundLimit
-                  .map(({ name }) => name)
-                  .join(', ')}. All other variables were successfully deleted.`,
+                .map(({ name }) => name)
+                .join(', ')}. All other variables were successfully deleted.`,
               results: notFoundLimit.map(({ combinedId, name }) => {
                 const [accountId, containerId, containerVersionId] = combinedId.split('-');
                 return {

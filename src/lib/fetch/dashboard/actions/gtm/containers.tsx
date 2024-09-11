@@ -4,8 +4,15 @@ import { ContainerSchemaType, FormSchema } from '@/src/lib/schemas/gtm/container
 import { redis } from '@/src/lib/redis/cache';
 import prisma from '@/src/lib/prisma';
 import { FeatureResult, FeatureResponse } from '@/src/types/types';
-import { authenticateUser, checkFeatureLimit, ensureGARateLimit, executeApiRequest, getOauthToken, revalidate, validateFormData } from '@/src/utils/server';
-
+import {
+  authenticateUser,
+  checkFeatureLimit,
+  ensureGARateLimit,
+  executeApiRequest,
+  getOauthToken,
+  revalidate,
+  validateFormData,
+} from '@/src/utils/server';
 
 const featureType: string = 'GTMContainer';
 
@@ -24,8 +31,8 @@ export async function listGtmContainers(skipCache = false): Promise<any[]> {
         const parsedData = JSON.parse(cacheData);
         return parsedData;
       } catch (error) {
-        console.error("Failed to parse cache data:", error);
-        console.log("Cached data:", cacheData); // Log the cached data for inspection
+        console.error('Failed to parse cache data:', error);
+        console.log('Cached data:', cacheData); // Log the cached data for inspection
         await redis.del(cacheKey);
       }
     }
@@ -68,14 +75,20 @@ export async function deleteContainers(
 ): Promise<FeatureResponse> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
-  const { tierLimitResponse, availableUsage } = await checkFeatureLimit(userId, featureType, 'delete');
+  const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
+    userId,
+    featureType,
+    'delete'
+  );
 
   if (tierLimitResponse.limitReached || selectedContainers.size > availableUsage) {
     return {
       success: false,
       limitReached: true,
       message: 'Feature limit reached or request exceeds available deletions.',
-      errors: [`Cannot delete more containers than available. You have ${availableUsage} deletions left.`],
+      errors: [
+        `Cannot delete more containers than available. You have ${availableUsage} deletions left.`,
+      ],
       results: [],
     };
   }
@@ -89,12 +102,11 @@ export async function deleteContainers(
 
   await Promise.all(
     Array.from(selectedContainers).map(async (containerData: any) => {
-
       const url = `https://www.googleapis.com/tagmanager/v2/accounts/${containerData.accountId}/containers/${containerData.containerId}`;
       const headers = {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
-        'Accept-Encoding': 'gzip'
+        'Accept-Encoding': 'gzip',
       };
       try {
         await executeApiRequest(url, { method: 'DELETE', headers }, 'containers', containerNames);
@@ -105,7 +117,7 @@ export async function deleteContainers(
             accountId: containerData.accountId,
             containerId: containerData.containerId,
             workspaceId: containerData.workspaceId,
-            userId
+            userId,
           },
         });
 
@@ -113,7 +125,16 @@ export async function deleteContainers(
           where: { id: tierLimitResponse.id },
           data: { deleteUsage: { increment: 1 } },
         });
-        await revalidate([`gtm:containers:userId:${userId}`, `gtm:workspaces:userId:${userId}`, `gtm:versions:userId:${userId}`, `gtm:permissions:userId:${userId}`], `/dashboard/gtm/entities`, userId).catch((err) => {
+        await revalidate(
+          [
+            `gtm:containers:userId:${userId}`,
+            `gtm:workspaces:userId:${userId}`,
+            `gtm:versions:userId:${userId}`,
+            `gtm:permissions:userId:${userId}`,
+          ],
+          `/dashboard/gtm/entities`,
+          userId
+        ).catch((err) => {
           console.error('Error during revalidation:', err);
         });
       } catch (error: any) {
@@ -134,8 +155,8 @@ export async function deleteContainers(
       success: false,
       limitReached: false,
       notFoundError: true,
-      message: `Could not delete container. Please check your permissions. Container Name: ${containerNames.find((name) =>
-        name.includes(name)
+      message: `Could not delete container. Please check your permissions. Container Name: ${containerNames.find(
+        (name) => name.includes(name)
       )}. All other containers were successfully deleted.`,
       results: notFoundLimit.map((containerId) => ({
         id: [containerId], // Ensure id is an array
@@ -176,37 +197,42 @@ export async function deleteContainers(
     success: true,
     message: `Successfully deleted ${successfulDeletions.length} container(s)`,
     features: successfulDeletions.map<FeatureResult>((containerId) => ({
-      id: [containerId],  // Wrap containerId in an array to match FeatureResult type
-      name: [containerNames.find((name) => name.includes(containerId)) || 'Unknown'],  // Wrap name in an array to match FeatureResult type
-      success: true,  // Indicates success of the operation
+      id: [containerId], // Wrap containerId in an array to match FeatureResult type
+      name: [containerNames.find((name) => name.includes(containerId)) || 'Unknown'], // Wrap name in an array to match FeatureResult type
+      success: true, // Indicates success of the operation
     })),
     errors: [],
     notFoundError: notFoundLimit.length > 0,
     results: successfulDeletions.map<FeatureResult>((containerId) => ({
-      id: [containerId],  // FeatureResult.id is an array
-      name: [containerNames.find((name) => name.includes(containerId)) || 'Unknown'],  // FeatureResult.name is an array
-      success: true,  // FeatureResult.success indicates if the operation was successful
+      id: [containerId], // FeatureResult.id is an array
+      name: [containerNames.find((name) => name.includes(containerId)) || 'Unknown'], // FeatureResult.name is an array
+      success: true, // FeatureResult.success indicates if the operation was successful
     })),
   };
-
 }
 
 /************************************************************************************
   Creates GTM containers for the authenticated user 
 ************************************************************************************/
-export async function createContainers(
-  formData: { forms: ContainerSchemaType['forms'] }
-): Promise<FeatureResponse> {
+export async function createContainers(formData: {
+  forms: ContainerSchemaType['forms'];
+}): Promise<FeatureResponse> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
-  const { tierLimitResponse, availableUsage } = await checkFeatureLimit(userId, featureType, 'create');
+  const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
+    userId,
+    featureType,
+    'create'
+  );
 
   if (tierLimitResponse.limitReached || formData.forms.length > availableUsage) {
     return {
       success: false,
       limitReached: true,
       message: 'Feature limit reached or request exceeds available creations.',
-      errors: [`Cannot create more containers than available. You have ${availableUsage} creations left.`],
+      errors: [
+        `Cannot create more containers than available. You have ${availableUsage} creations left.`,
+      ],
       results: [],
     };
   }
@@ -250,7 +276,9 @@ export async function createContainers(
         }
 
         // Get the workspaceId from the fetched container details
-        const matchedWorkspace = listWS.workspace.find((workspace: any) => workspace.containerId === createdContainer.containerId);
+        const matchedWorkspace = listWS.workspace.find(
+          (workspace: any) => workspace.containerId === createdContainer.containerId
+        );
 
         const workspaceId = matchedWorkspace.workspaceId;
 
@@ -270,10 +298,18 @@ export async function createContainers(
           data: { createUsage: { increment: 1 } },
         });
 
-        await revalidate([`gtm:containers:userId:${userId}`, `gtm:workspaces:userId:${userId}`, `gtm:versions:userId:${userId}`, `gtm:permissions:userId:${userId}`], `/dashboard/gtm/entities`, userId).catch((err) => {
+        await revalidate(
+          [
+            `gtm:containers:userId:${userId}`,
+            `gtm:workspaces:userId:${userId}`,
+            `gtm:versions:userId:${userId}`,
+            `gtm:permissions:userId:${userId}`,
+          ],
+          `/dashboard/gtm/entities`,
+          userId
+        ).catch((err) => {
           console.error('Error during revalidation:', err);
         });
-
       } catch (error: any) {
         if (error.message === 'Feature limit reached') {
           featureLimitReached.push(containerData.name);
@@ -293,10 +329,12 @@ export async function createContainers(
       limitReached: false,
       notFoundError: true,
       features: [],
-      message: `Some containers could not be found: ${notFoundLimit.map(item => item.name).join(', ')}`,
+      message: `Some containers could not be found: ${notFoundLimit
+        .map((item) => item.name)
+        .join(', ')}`,
       results: notFoundLimit.map((item) => ({
-        id: item.id ? [item.id] : [],  // Ensure id is an array and filter out undefined
-        name: [item.name],  // Ensure name is an array to match FeatureResult type
+        id: item.id ? [item.id] : [], // Ensure id is an array and filter out undefined
+        name: [item.name], // Ensure name is an array to match FeatureResult type
         success: false,
         notFound: true,
       })),
@@ -311,8 +349,8 @@ export async function createContainers(
       notFoundError: false,
       message: `Feature limit reached for containers: ${featureLimitReached.join(', ')}`,
       results: featureLimitReached.map((containerName) => ({
-        id: [],  // Populate with actual container IDs if available
-        name: [containerName],  // Wrap the string in an array
+        id: [], // Populate with actual container IDs if available
+        name: [containerName], // Wrap the string in an array
         success: false,
         featureLimitReached: true,
       })),
@@ -341,30 +379,35 @@ export async function createContainers(
     errors: [],
     notFoundError: notFoundLimit.length > 0,
     results: successfulCreations.map<FeatureResult>((containerName) => ({
-      id: [],  // Populate this with actual container IDs if available
-      name: [containerName],  // Wrap the string in an array
-      success: true,  // Indicates success of the operation
+      id: [], // Populate this with actual container IDs if available
+      name: [containerName], // Wrap the string in an array
+      success: true, // Indicates success of the operation
     })),
   };
 }
 
-
 /************************************************************************************
   Updates GTM containers for the authenticated user
 ************************************************************************************/
-export async function updateContainers(
-  formData: { forms: ContainerSchemaType['forms'] }
-): Promise<FeatureResponse> {
+export async function updateContainers(formData: {
+  forms: ContainerSchemaType['forms'];
+}): Promise<FeatureResponse> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
-  const { tierLimitResponse, availableUsage } = await checkFeatureLimit(userId, featureType, 'update');
+  const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
+    userId,
+    featureType,
+    'update'
+  );
 
   if (tierLimitResponse.limitReached || formData.forms.length > availableUsage) {
     return {
       success: false,
       limitReached: true,
       message: 'Feature limit reached or request exceeds available updates.',
-      errors: [`Cannot update more containers than available. You have ${availableUsage} updates left.`],
+      errors: [
+        `Cannot update more containers than available. You have ${availableUsage} updates left.`,
+      ],
       results: [],
     };
   }
@@ -409,10 +452,13 @@ export async function updateContainers(
           data: { updateUsage: { increment: 1 } },
         });
 
-        await revalidate([`gtm:containers:userId:${userId}`], `/dashboard/gtm/entities`, userId).catch((err) => {
+        await revalidate(
+          [`gtm:containers:userId:${userId}`],
+          `/dashboard/gtm/entities`,
+          userId
+        ).catch((err) => {
           console.error('Error during revalidation:', err);
         });
-
       } catch (error: any) {
         if (error.message === 'Feature limit reached') {
           featureLimitReached.push(containerData.name);
@@ -432,10 +478,12 @@ export async function updateContainers(
       limitReached: false,
       notFoundError: true,
       features: [],
-      message: `Some containers could not be found: ${notFoundLimit.map(item => item.name).join(', ')}`,
+      message: `Some containers could not be found: ${notFoundLimit
+        .map((item) => item.name)
+        .join(', ')}`,
       results: notFoundLimit.map((item) => ({
-        id: item.id ? [item.id] : [],  // Ensure id is an array and filter out undefined
-        name: [item.name],  // Ensure name is an array to match FeatureResult type
+        id: item.id ? [item.id] : [], // Ensure id is an array and filter out undefined
+        name: [item.name], // Ensure name is an array to match FeatureResult type
         success: false,
         notFound: true,
       })),
@@ -450,8 +498,8 @@ export async function updateContainers(
       notFoundError: false,
       message: `Feature limit reached for containers: ${featureLimitReached.join(', ')}`,
       results: featureLimitReached.map((containerName) => ({
-        id: [],  // Populate with actual container IDs if available
-        name: [containerName],  // Wrap the string in an array
+        id: [], // Populate with actual container IDs if available
+        name: [containerName], // Wrap the string in an array
         success: false,
         featureLimitReached: true,
       })),
@@ -480,11 +528,9 @@ export async function updateContainers(
     errors: [],
     notFoundError: notFoundLimit.length > 0,
     results: successfulUpdates.map<FeatureResult>((containerName) => ({
-      id: [],  // Populate this with actual container IDs if available
-      name: [containerName],  // Wrap the string in an array
-      success: true,  // Indicates success of the operation
+      id: [], // Populate this with actual container IDs if available
+      name: [containerName], // Wrap the string in an array
+      success: true, // Indicates success of the operation
     })),
   };
-
-
 }

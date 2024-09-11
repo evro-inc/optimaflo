@@ -9,7 +9,6 @@ export default async function UpdateContainerPage() {
   const user = await currentUser();
   if (!user) return notFound();
 
-
   const subscription = await getSubscription(user.id);
 
   const subscriptionId = subscription.id;

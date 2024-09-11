@@ -25,7 +25,6 @@ import { PropertyPermissionsSchema, FormsSchema } from '@/src/lib/schemas/ga/pro
 
 const featureType: string = 'GA4PropertyAccess';
 
-
 /************************************************************************************
   Function to list GA accountAccess
 ************************************************************************************/
@@ -116,11 +115,6 @@ const featureType: string = 'GA4PropertyAccess';
 }
  */
 
-
-
-
-
-
 export async function listGAAccessBindings(skipCache = false): Promise<any[]> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
@@ -133,7 +127,7 @@ export async function listGAAccessBindings(skipCache = false): Promise<any[]> {
         const parsedData = Object.values(cacheData).map((data) => JSON.parse(data));
         return parsedData;
       } catch (error) {
-        console.error("Failed to parse cache data:", error);
+        console.error('Failed to parse cache data:', error);
         await redis.del(cacheKey); // Clear cache if parsing fails
       }
     }
@@ -166,13 +160,13 @@ export async function listGAAccessBindings(skipCache = false): Promise<any[]> {
 
   try {
     const allData = await Promise.all(urls.map((url) => executeApiRequest(url, { headers })));
-    console.log("alldata props", allData)
-    const flattenedAccessBindings = allData.flatMap(item => item.accessBindings || []);
-
-
+    console.log('alldata props', allData);
+    const flattenedAccessBindings = allData.flatMap((item) => item.accessBindings || []);
 
     // Filter out null/undefined/empty values
-    const cleanedData = flattenedAccessBindings.filter((item) => item && Object.keys(item).length > 0);
+    const cleanedData = flattenedAccessBindings.filter(
+      (item) => item && Object.keys(item).length > 0
+    );
 
     // Group access bindings by propertyId and ensure uniqueness
     const groupedAccessBindings = cleanedData.reduce((acc, accessBinding) => {
@@ -184,14 +178,15 @@ export async function listGAAccessBindings(skipCache = false): Promise<any[]> {
       return acc;
     }, {});
 
-    console.log("groupedAccessBindings", groupedAccessBindings);
-
+    console.log('groupedAccessBindings', groupedAccessBindings);
 
     // Convert sets back to arrays and prepare for Redis storage
     Object.keys(groupedAccessBindings).forEach((propertyId) => {
-      groupedAccessBindings[propertyId].accessBindings = Array.from(groupedAccessBindings[propertyId].accessBindings, (item: string) => JSON.parse(item));
+      groupedAccessBindings[propertyId].accessBindings = Array.from(
+        groupedAccessBindings[propertyId].accessBindings,
+        (item: string) => JSON.parse(item)
+      );
     });
-
 
     try {
       // Use HMSET to store each property's access bindings under a single field
@@ -205,22 +200,17 @@ export async function listGAAccessBindings(skipCache = false): Promise<any[]> {
       await pipeline.exec(); // Execute the pipeline commands
 
       // Log the updated cache for debugging
-      console.log("Updated Redis cache for key:", cacheKey, await redis.hgetall(cacheKey));
-
+      console.log('Updated Redis cache for key:', cacheKey, await redis.hgetall(cacheKey));
     } catch (cacheError) {
-      console.error("Failed to set cache data with HSET:", cacheError);
+      console.error('Failed to set cache data with HSET:', cacheError);
     }
 
     return Object.values(groupedAccessBindings);
   } catch (apiError) {
-    console.error("Error fetching properties from API:", apiError);
+    console.error('Error fetching properties from API:', apiError);
     return []; // Return empty array or handle this more gracefully depending on your needs
   }
 }
-
-
-
-
 
 /************************************************************************************
   Create a single property or multiple accountAccess
@@ -1083,24 +1073,26 @@ export async function updateGAAccessBindings(formData: PropertyPermissionsSchema
 }
  */
 
-
-
-
-
 export async function deleteGAAccessBindings(
   selected: Set<AccessBinding>,
   names: string[]
 ): Promise<FeatureResponse> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
-  const { tierLimitResponse, availableUsage } = await checkFeatureLimit(userId, featureType, 'delete');
+  const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
+    userId,
+    featureType,
+    'delete'
+  );
 
   if (tierLimitResponse.limitReached || selected.size > availableUsage) {
     return {
       success: false,
       limitReached: true,
       message: 'Feature limit reached or request exceeds available deletions.',
-      errors: [`Cannot delete more permissions than available. You have ${availableUsage} deletions left.`],
+      errors: [
+        `Cannot delete more permissions than available. You have ${availableUsage} deletions left.`,
+      ],
       results: [],
     };
   }
@@ -1116,8 +1108,6 @@ export async function deleteGAAccessBindings(
     Array.from(selected).map(async (data: AccessBinding) => {
       console.log('data delete', data);
 
-
-
       const propertyId = data?.name?.split('/')[1]; // Extract the property ID from 'name'
       console.log('Extracted propertyId:', propertyId);
 
@@ -1128,13 +1118,10 @@ export async function deleteGAAccessBindings(
 
       console.log('test a', account.accountId);
 
-
       if (!account) {
         errors.push(`Account not found for property ID: ${propertyId}`);
         return;
       }
-
-
 
       const url = `https://analyticsadmin.googleapis.com/v1alpha/${data.name}`;
 
@@ -1143,15 +1130,17 @@ export async function deleteGAAccessBindings(
       const headers = {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
-        'Accept-Encoding': 'gzip'
+        'Accept-Encoding': 'gzip',
       };
 
       try {
         await executeApiRequest(url, { method: 'DELETE', headers }, 'properties', names);
-        successfulDeletions.push({ name: data.name as string, accountName: data.accountName as string });
+        successfulDeletions.push({
+          name: data.name as string,
+          accountName: data.accountName as string,
+        });
 
-        console.log("successfulDeletions", successfulDeletions);
-
+        console.log('successfulDeletions', successfulDeletions);
 
         await prisma.ga.deleteMany({
           where: {
@@ -1165,7 +1154,6 @@ export async function deleteGAAccessBindings(
           where: { id: tierLimitResponse.id },
           data: { deleteUsage: { increment: 1 } },
         });
-
       } catch (error: any) {
         if (error.message === 'Feature limit reached') {
           featureLimitReached.push(data.name as string);
@@ -1183,11 +1171,11 @@ export async function deleteGAAccessBindings(
     try {
       // Explicitly type the operations array
       const operations = successfulDeletions.map((deletion) => ({
-        type: "delete" as const,  // Explicitly set the type as "delete"
+        type: 'delete' as const, // Explicitly set the type as "delete"
         property: {
           name: deletion.name,
           parent: deletion.accountName,
-        }
+        },
       }));
 
       // Call softRevalidateFeatureCache for deletions
@@ -1197,12 +1185,10 @@ export async function deleteGAAccessBindings(
         userId,
         operations // Pass the operations array for deletions
       );
-
     } catch (err) {
       console.error('Error during revalidation:', err);
     }
   }
-
 
   // Check for not found property and return response if applicable
   if (notFoundLimit.length > 0) {
@@ -1210,8 +1196,8 @@ export async function deleteGAAccessBindings(
       success: false,
       limitReached: false,
       notFoundError: true,
-      message: `Could not delete property. Please check your permissions. Property Name: ${names.find((name) =>
-        name.includes(name)
+      message: `Could not delete property. Please check your permissions. Property Name: ${names.find(
+        (name) => name.includes(name)
       )}. All other properties were successfully deleted.`,
       results: notFoundLimit.map((data) => ({
         id: [data], // Ensure id is an array
@@ -1252,16 +1238,16 @@ export async function deleteGAAccessBindings(
     success: true,
     message: `Successfully deleted ${successfulDeletions.length} property(ies)`,
     features: successfulDeletions.map<FeatureResult>((data) => ({
-      id: [data.name],  // Wrap propertyId in an array to match FeatureResult type
-      name: [names.find((name) => name.includes(data.name)) || 'Unknown'],  // Wrap name in an array to match FeatureResult type
-      success: true,  // Indicates success of the operation
+      id: [data.name], // Wrap propertyId in an array to match FeatureResult type
+      name: [names.find((name) => name.includes(data.name)) || 'Unknown'], // Wrap name in an array to match FeatureResult type
+      success: true, // Indicates success of the operation
     })),
     errors: [],
     notFoundError: notFoundLimit.length > 0,
     results: successfulDeletions.map<FeatureResult>((data) => ({
-      id: [data.name],  // FeatureResult.id is an array
-      name: [names.find((name) => name.includes(data.name)) || 'Unknown'],  // FeatureResult.name is an array
-      success: true,  // FeatureResult.success indicates if the operation was successful
+      id: [data.name], // FeatureResult.id is an array
+      name: [names.find((name) => name.includes(data.name)) || 'Unknown'], // FeatureResult.name is an array
+      success: true, // FeatureResult.success indicates if the operation was successful
     })),
   };
 }

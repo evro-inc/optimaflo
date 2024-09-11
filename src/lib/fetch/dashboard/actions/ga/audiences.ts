@@ -36,7 +36,7 @@ export async function listGAAudiences(skipCache = false): Promise<any[]> {
         const parsedData = JSON.parse(cacheData);
         return parsedData;
       } catch (error) {
-        console.error("Failed to parse cache data:", error);
+        console.error('Failed to parse cache data:', error);
         await redis.del(cacheKey);
       }
     }
@@ -72,7 +72,7 @@ export async function listGAAudiences(skipCache = false): Promise<any[]> {
     const jsonData = JSON.stringify(flattenedData);
     await redis.set(cacheKey, jsonData, 'EX', 86400);
   } catch (error) {
-    console.error("Failed to stringify or set cache data:", error);
+    console.error('Failed to stringify or set cache data:', error);
   }
 
   return flattenedData;
@@ -253,9 +253,9 @@ export async function createGAAudiences(formData: Audience) {
                   adsPersonalizationEnabled: validatedData.adsPersonalizationEnabled,
                   eventTrigger: validatedData.eventTrigger
                     ? {
-                      eventName: validatedData.eventTrigger.eventName,
-                      logCondition: validatedData.eventTrigger.logCondition,
-                    }
+                        eventName: validatedData.eventTrigger.eventName,
+                        logCondition: validatedData.eventTrigger.logCondition,
+                      }
                     : undefined, // Include eventTrigger only if present
                   exclusionDurationMode: validatedData.exclusionDurationMode,
                   filterClauses: buildFilterClauses(validatedData.filterClauses),

@@ -7,7 +7,7 @@ import FormCreateProperty from './form';
 import { getTierLimit } from '@/src/lib/fetch/tierLimit';
 import { getSubscription } from '@/src/lib/fetch/subscriptions';
 
-export default async function CreateStreamPage() {
+export default async function CreatePropertyPage() {
   const user = await currentUser();
   if (!user) return notFound();
 
@@ -20,18 +20,13 @@ export default async function CreateStreamPage() {
 
   const [accounts, properties] = await Promise.all([accountData, propertyData]);
 
-  console.log('accounts 5', accounts);
-
-
   const flatAccounts = accounts.flat();
-  const flatProperties = properties.flatMap(item => item.properties);
-  const validProperties = flatProperties.filter(property => property != null);
+  const flatProperties = properties.flatMap((item) => item.properties);
+  const validProperties = flatProperties.filter((property) => property != null);
 
   const combinedData = validProperties
-    .filter((property) => property !== undefined)  // Filter out any undefined entries
+    .filter((property) => property !== undefined) // Filter out any undefined entries
     .map((property) => {
-      console.log("property test", property);
-
       // Find the matching account
       const account = flatAccounts.find((a) => a.name === property.parent);
 
@@ -60,11 +55,7 @@ export default async function CreateStreamPage() {
   return (
     <>
       <div className="container mx-auto py-10">
-        <FormCreateProperty
-          tierLimits={tierLimits}
-          table={combinedData}
-          data={accounts}
-        />
+        <FormCreateProperty tierLimits={tierLimits} table={combinedData} data={accounts} />
       </div>
     </>
   );

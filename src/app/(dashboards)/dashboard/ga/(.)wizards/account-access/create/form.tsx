@@ -25,9 +25,7 @@ import {
 } from '@/src/components/ui/select';
 import { Input } from '@/src/components/ui/input';
 import { AccessBinding, FeatureResponse, FormCreateProps, Role } from '@/src/types/types';
-import {
-  selectTable,
-} from '@/src/redux/tableSlice';
+import { selectTable } from '@/src/redux/tableSlice';
 import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import { createGAAccessBindings } from '@/src/lib/fetch/dashboard/actions/ga/accountPermissions';
@@ -50,7 +48,6 @@ const FormCreateAccountAccess: React.FC<FormCreateProps> = React.memo(
     const notFoundError = useSelector(selectTable).notFoundError;
     const router = useRouter();
 
-
     const errorModal = useErrorHandling(error, notFoundError);
 
     const remainingCreateData = calculateRemainingLimit(
@@ -62,19 +59,18 @@ const FormCreateAccountAccess: React.FC<FormCreateProps> = React.memo(
 
     const configs = formFieldConfigs('create', remainingCreate);
 
-    const formDataDefaults: AccessBinding[] = [{
-      name: '',
-      roles: [Role.VIEWER],
-      account: '',
-      user: '',
-      property: '',
-    }];
+    const formDataDefaults: AccessBinding[] = [
+      {
+        name: '',
+        roles: [Role.VIEWER],
+        account: '',
+        user: '',
+        property: '',
+      },
+    ];
 
-
-    const { formAmount, form, fields, addForm, propertyCount } = useFormInitialization<AccessBinding>(
-      formDataDefaults,
-      FormsSchema
-    );
+    const { formAmount, form, fields, addForm, propertyCount } =
+      useFormInitialization<AccessBinding>(formDataDefaults, FormsSchema);
 
     // Use the custom hook
     const { handleNext, handlePrevious } = useStepNavigation({
@@ -93,7 +89,6 @@ const FormCreateAccountAccess: React.FC<FormCreateProps> = React.memo(
     );
 
     if (errorModal) return errorModal;
-
 
     return (
       <div className="flex items-center justify-center h-screen overflow-auto">
@@ -164,7 +159,10 @@ const FormCreateAccountAccess: React.FC<FormCreateProps> = React.memo(
                                               <SelectGroup>
                                                 <SelectLabel>Account</SelectLabel>
                                                 {accounts.map((account) => (
-                                                  <SelectItem key={account.name} value={account.name}>
+                                                  <SelectItem
+                                                    key={account.name}
+                                                    value={account.name}
+                                                  >
                                                     {account.displayName}
                                                   </SelectItem>
                                                 ))}
@@ -269,18 +267,20 @@ const FormCreateAccountAccess: React.FC<FormCreateProps> = React.memo(
                                                 >
                                                   <FormControl>
                                                     <Checkbox
-                                                      checked={field.value?.includes(item.id as Role)}
+                                                      checked={field.value?.includes(
+                                                        item.id as Role
+                                                      )}
                                                       onCheckedChange={(checked) => {
                                                         return checked
                                                           ? field.onChange([
-                                                            ...(field.value ?? []),
-                                                            item.id as Role,
-                                                          ])
+                                                              ...(field.value ?? []),
+                                                              item.id as Role,
+                                                            ])
                                                           : field.onChange(
-                                                            (field.value ?? []).filter(
-                                                              (value) => value !== item.id
-                                                            )
-                                                          );
+                                                              (field.value ?? []).filter(
+                                                                (value) => value !== item.id
+                                                              )
+                                                            );
                                                       }}
                                                     />
                                                   </FormControl>
@@ -326,6 +326,7 @@ const FormCreateAccountAccess: React.FC<FormCreateProps> = React.memo(
         )}
       </div>
     );
-  });
+  }
+);
 
 export default FormCreateAccountAccess;

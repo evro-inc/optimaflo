@@ -78,7 +78,7 @@ export const columns: ColumnDef<Property>[] = [
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Retention Setting
+          Event Retention Setting
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );

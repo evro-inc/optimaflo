@@ -33,7 +33,9 @@ export default async function PropertyPage({
   ]);
 
   const flatAccounts = accounts.flat();
-  const flatProperties = properties.flatMap((propertyObj) => propertyObj.properties || []).filter(Boolean); // Filter out undefined or empty objects
+  const flatProperties = properties
+    .flatMap((propertyObj) => propertyObj.properties || [])
+    .filter(Boolean); // Filter out undefined or empty objects
   const dataStreamsArray = streams
     .filter((stream) => stream.dataStreams)
     .flatMap((stream) => stream.dataStreams)

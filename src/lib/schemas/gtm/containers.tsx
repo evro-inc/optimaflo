@@ -1,13 +1,20 @@
 import { z } from 'zod';
 
-const UsageContextType = z.enum(['web', 'android', 'ios', 'iosSdk5', 'androidSdk5', 'server', 'amp']);
+const UsageContextType = z.enum([
+  'web',
+  'android',
+  'ios',
+  'iosSdk5',
+  'androidSdk5',
+  'server',
+  'amp',
+]);
 
 // Helper function to validate domain name (simplified example)
 const isValidDomainName = (domain: string) => {
   const domainRegex = /^(?:[a-zA-Z0-9-]{1,63}\.){1,125}[a-zA-Z]{2,63}$/;
   return domainRegex.test(domain);
 };
-
 
 export const FormCreateAmountSchema = z.object({
   amount: z.number(),

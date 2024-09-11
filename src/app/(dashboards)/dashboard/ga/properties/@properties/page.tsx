@@ -4,7 +4,10 @@ import { auth } from '@clerk/nextjs/server';
 import { Skeleton } from '@/src/components/ui/skeleton';
 import { DataTable } from './table';
 import { columns } from './columns';
-import { listGAProperties } from '@/src/lib/fetch/dashboard/actions/ga/properties';
+import {
+  getDataRetentionSettings,
+  listGAProperties,
+} from '@/src/lib/fetch/dashboard/actions/ga/properties';
 import { listGaAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
 
 export default async function PropertiesPage({
@@ -22,23 +25,26 @@ export default async function PropertiesPage({
 
   const accountData = await listGaAccounts();
   const propertyData = await listGAProperties();
+  const dataRetention = await getDataRetentionSettings();
 
-  console.log("propertyData", propertyData);
-
-
-  const [accounts, properties] = await Promise.all([accountData, propertyData]);
+  const [accounts, properties, retention] = await Promise.all([
+    accountData,
+    propertyData,
+    dataRetention,
+  ]);
 
   const flatAccounts = accounts.flat();
   const flatProperties = properties.map((propertyObj) => propertyObj);
-  const validProperties = flatProperties.filter(property => property !== undefined);
-
-  console.log('flatAccounts perm', flatAccounts);
-  console.log('flatProperties perm', flatProperties);
-  console.log("validProperties", validProperties);
-
+  const validProperties = flatProperties.filter((property) => property !== undefined);
 
   const combinedData = validProperties.map((property) => {
     const account = flatAccounts.find((a) => a.name === property.parent);
+
+    // Match property retention data based on the property ID
+    const propertyDataRetention = retention.find(
+      (a) => a.name.split('/')[1] === property.name.split('/')[1]
+    );
+
     const extractId = (path) => path.split('/')[1];
     const formatType = (propertyType) => {
       if (!propertyType) return 'Unknown';
@@ -49,19 +55,17 @@ export default async function PropertiesPage({
 
     return {
       ...property,
-      name: extractId(property.name),
-      parent: property.parent ? extractId(property.parent) : 'Unknown',
+      name: extractId(property.name), // Extract property ID
+      parent: property.parent ? extractId(property.parent) : 'Unknown', // Extract account ID
       serviceLevel: formatType(property.serviceLevel),
       propertyType: formatType(property.propertyType),
       accountName: account ? account.displayName : 'Unknown Account',
-      retention: property.dataRetentionSettings ? property.dataRetentionSettings.eventDataRetention : 'Unknown',
-      resetOnNewActivity: property.dataRetentionSettings ? property.dataRetentionSettings.resetUserDataOnNewActivity : false,
+      retention: propertyDataRetention ? propertyDataRetention.eventDataRetention : 'Unknown', // Add retention data
+      resetOnNewActivity: propertyDataRetention
+        ? propertyDataRetention.resetUserDataOnNewActivity
+        : false, // Add reset flag
     };
   });
-
-  console.log("combinedData", combinedData);
-
-
 
   return (
     <>

@@ -165,7 +165,10 @@ export async function POST(req: Request) {
             await fetchGtmSettings(clerkSession.user_id);
             await fetchGASettings(clerkSession.user_id);
           } catch (error) {
-            console.error(`Failed to fetch GTM settings for user ID: ${clerkSession.user_id}`, error);
+            console.error(
+              `Failed to fetch GTM settings for user ID: ${clerkSession.user_id}`,
+              error
+            );
           }
         }
       } else {

@@ -134,7 +134,6 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     });
     const keys = [`ga:propertyAccess:userId:${userId}`];
     await hardRevalidateFeatureCache(keys, '/dashboard/ga/access-permissions', userId);
-
   };
 
   dispatch(setSelectedRows(selectedRowData)); // Update the selected rows in Redux
