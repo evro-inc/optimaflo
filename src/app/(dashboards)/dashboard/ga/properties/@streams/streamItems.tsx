@@ -5,7 +5,6 @@ export const streamType = {
 };
 
 export const dataStreamTypeMapping = {
-  DATA_STREAM_TYPE_UNSPECIFIED: 'Unspecified Data Stream',
   WEB_DATA_STREAM: 'Web',
   ANDROID_APP_DATA_STREAM: 'Android',
   IOS_APP_DATA_STREAM: 'iOS',

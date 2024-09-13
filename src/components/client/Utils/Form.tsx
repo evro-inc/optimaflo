@@ -28,7 +28,8 @@ type FieldProps = {
   placeholder?: string;
   options?: { label: string; value: string }[];
   type?: 'text' | 'select' | 'switch';
-  onChange?: (value: string | string[]) => void; // Update to handle array as well
+  onChange?: (value: string | string[]) => void;
+  disabled?: boolean; // Update to handle array as well
 };
 
 export const FormFieldComponent: React.FC<FieldProps> = ({
@@ -39,6 +40,7 @@ export const FormFieldComponent: React.FC<FieldProps> = ({
   options = [],
   type = 'text',
   onChange,
+  disabled = false,
 }) => {
   const { control, register } = useFormContext();
 
@@ -52,7 +54,7 @@ export const FormFieldComponent: React.FC<FieldProps> = ({
             <FormLabel>{label}</FormLabel>
             {description && <FormDescription>{description}</FormDescription>}
             <FormControl>
-              <Input placeholder={placeholder} {...register(name)} {...field} />
+              <Input placeholder={placeholder} {...register(name)} {...field} disabled={disabled} />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -89,6 +91,7 @@ export const FormFieldComponent: React.FC<FieldProps> = ({
                     onChange?.(value); // Call custom onChange if provided
                   }
                 }}
+                disabled={disabled}
               >
                 <SelectTrigger>
                   <SelectValue placeholder={placeholder} />

@@ -14,7 +14,6 @@ export default async function CreateStreamPage() {
   if (!user) return notFound();
 
   const subscription = await getSubscription(user.id);
-
   const subscriptionId = subscription.id;
 
   const tierLimits = await getTierLimit(subscriptionId);
@@ -30,12 +29,8 @@ export default async function CreateStreamPage() {
 
   const flatAccounts = accounts.flat();
   const flatProperties = properties.flat();
-  const dataStreamsArray = streams
-    .filter((stream) => stream.dataStreams)
-    .flatMap((stream) => stream.dataStreams)
-    .flat();
 
-  const combinedData = dataStreamsArray.map((stream) => {
+  const combinedData = streams.map((stream) => {
     const propertyId = stream.name.split('/')[1];
     const property = flatProperties.find((p) => p.name.includes(propertyId));
     const accounts = flatAccounts.filter((a) => a.name === property?.parent);
@@ -45,13 +40,13 @@ export default async function CreateStreamPage() {
       name: stream.name,
       type: stream.type,
       typeDisplayName: dataStreamTypeMapping[stream.type],
-      parent: property.name,
+      parent: property ? property.name : 'Unknown Property',
       createTime: stream.createTime,
       updateTime: stream.updateTime,
       displayName: stream.displayName,
-      property: property.displayName,
-      accountId: accounts ? accounts[0].name : 'Unknown Account ID',
-      accountName: accounts ? accounts[0].displayName : 'Unknown Account Name',
+      property: property ? property.displayName : 'Unknown Property Name',
+      accountId: accounts ? accounts.name : 'Unknown Account ID',
+      accountName: accounts ? accounts.displayName : 'Unknown Account Name',
     };
   });
 

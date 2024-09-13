@@ -353,10 +353,13 @@ export async function softRevalidateFeatureCache(
   path: string, // The path to revalidate
   userId: string, // User ID
   operations: {
-    type: 'update' | 'create' | 'delete';
-    property: { name: string; parent: string; [key: string]: any };
-  }[] // Array of operations
+    crudType: 'update' | 'create' | 'delete';
+    data: any;
+  }[], // Array of operations with dynamic URL paths
+  cacheField
 ) {
+  console.log('cacheField', cacheField);
+
   try {
     const pipeline = redis.pipeline();
 
@@ -368,53 +371,35 @@ export async function softRevalidateFeatureCache(
       notFound();
     }
 
-    //console.log("Operations to process:", operations);
-
     // Fetch current cache data for each key (using HGETALL for hash data)
     const cacheDataArray = await Promise.all(keys.map((key) => redis.hgetall(key)));
 
     keys.forEach((key, index) => {
       const cacheData = cacheDataArray[index];
 
-      // If the key has data (hash fields), proceed with revalidation
-      if (Object.keys(cacheData).length > 0) {
-        operations.forEach((operation) => {
-          const { type, property } = operation;
+      operations.forEach((operation) => {
+        const { crudType, data } = operation;
 
-          switch (type) {
-            case 'delete':
-              // Remove property from cache
+        switch (crudType) {
+          case 'delete':
+            if (Object.keys(cacheData).length > 0) {
+              // If cache exists, remove specific entry
+              pipeline.hdel(key, cacheField); // Remove the specific entry
+            } else {
+              pipeline.del(key); // Remove the entire cache if no data found
+            }
+            break;
 
-              pipeline.hdel(key, `properties/${property.name}`); // Use HDEL to remove the field from the hash
-              break;
+          case 'update':
+          case 'create':
+            // Add or update property in cache
+            pipeline.hset(key, cacheField, JSON.stringify(data)); // Use HSET to update or create field
+            break;
 
-            case 'update':
-              // Update property in cache
-
-              pipeline.hset(key, property.name, JSON.stringify(property)); // Use HSET to update the field in the hash
-              break;
-
-            case 'create':
-              // Add new property to cache
-              pipeline.hset(key, property.name, JSON.stringify(property)); // Use HSET to create a new field in the hash
-              break;
-
-            default:
-              console.warn(`Unknown operation type: ${type}`);
-          }
-        });
-      } else {
-        // If no data exists in Redis, delete the key or initialize an empty hash depending on operation
-        if (operations.some((op) => op.type !== 'delete')) {
-          // For create/update, initialize a new hash
-          operations.forEach((op) => {
-            pipeline.hset(key, op.property.name, JSON.stringify(op.property));
-          });
-        } else {
-          // For delete, remove the key entirely
-          pipeline.del(key);
+          default:
+            console.warn(`Unknown operation type: ${crudType}`);
         }
-      }
+      });
     });
 
     // Execute the Redis pipeline

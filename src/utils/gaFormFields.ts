@@ -4,13 +4,13 @@ import {
   CurrencyCodes,
   IndustryCategories,
   /*     retentionSettings360,
-        retentionSettingsStandard, */
+          retentionSettingsStandard, */
   TimeZones,
 } from '../app/(dashboards)/dashboard/ga/properties/@properties/propertyItems';
 
 // Define the possible field types for the form
 type FieldType = 'select' | 'text' | 'switch';
-type entityType = 'GA4Property' | 'GAEvent';
+type entityType = 'GA4Property' | 'GAEvent' | 'GA4Streams';
 type formType = 'create' | 'update' | 'switch';
 
 // Define the structure of your field configuration
@@ -26,7 +26,7 @@ interface FieldConfig {
 type DataSourceType = Record<string, any> | Record<string, any>[];
 
 // Utility function to get common fields
-const getCommonFields = (
+const getCommonPropertyFields = (
   accountsWithProperties: { displayName: string; name: string }[]
 ): Record<string, FieldConfig> => ({
   displayName: {
@@ -73,6 +73,50 @@ const getCommonFields = (
     options: Object.entries(IndustryCategories).map(([label, value]) => ({
       label,
       value,
+    })),
+  },
+});
+
+const getCommonStreamsFields = (
+  accountsWithProperties: { displayName: string; name: string }[],
+  filteredProperties: { displayName: string; name: string }[],
+  streamType: Record<string, string> // Stream type options, e.g., { Web: 'WEB', Android: 'ANDROID', iOS: 'IOS' }
+): Record<string, FieldConfig> => ({
+  displayName: {
+    label: 'Stream Name',
+    description: 'This is the stream name you want to create.',
+    placeholder: 'Name of the stream.',
+    type: 'text',
+  },
+  account: {
+    label: 'Account',
+    description: 'This is the account you want to associate with the property.',
+    placeholder: 'Select an account.',
+    type: 'select',
+    options: accountsWithProperties.map((account) => ({
+      label: account.displayName,
+      value: account.name,
+    })),
+  },
+  property: {
+    label: 'Property',
+    description: 'Which property do you want to create the stream in?',
+    placeholder: 'Select a property.',
+    type: 'select',
+    options: filteredProperties.map((property) => ({
+      label: property.displayName,
+      value: property.name,
+    })),
+  },
+
+  type: {
+    label: 'Stream Type',
+    description: 'Select the type of stream you want to create.',
+    placeholder: 'Select a stream type.',
+    type: 'select',
+    options: Object.entries(streamType).map(([value, label]) => ({
+      label, // The display name (e.g., 'Web', 'Android', etc.)
+      value, // The key (e.g., 'WEB_DATA_STREAM', 'ANDROID_APP_DATA_STREAM', etc.)
     })),
   },
 });
@@ -151,7 +195,7 @@ export const gaFormFieldConfigs = (
 
   switch (entityType) {
     case 'GA4Property': {
-      const commonFields = getCommonFields(accountsWithProperties);
+      const commonFields = getCommonPropertyFields(accountsWithProperties);
       //const retentionFields = getCreateFields();
 
       if (isUpdate) {
@@ -178,7 +222,40 @@ export const gaFormFieldConfigs = (
         };
       }
     }
-    // Add more GA entity cases as needed
+    case 'GA4Streams': {
+      // Log to ensure dataSource is correctly passed
+      console.log('dataSource 4', dataSource);
+
+      const accountsWithProperties = dataSource?.accountsWithProperties || [];
+      const filteredProperties = dataSource?.filteredProperties || [];
+      const streamType = dataSource?.type || {};
+
+      const commonFields = getCommonStreamsFields(
+        accountsWithProperties,
+        filteredProperties, // Use filteredProperties in the field config
+        streamType
+      );
+
+      if (isUpdate) {
+        return {
+          ...commonFields,
+        };
+      } else {
+        return {
+          ...commonFields,
+          amount: {
+            label: 'How many streams do you want to add?',
+            description: 'This is the number of streams you want to create.',
+            placeholder: 'Select the number of streams you want to create.',
+            type: 'select',
+            options: Array.from({ length: maxProperties }, (_, i) => ({
+              label: `${i + 1}`,
+              value: `${i + 1}`,
+            })),
+          },
+        };
+      }
+    }
 
     default: {
       throw new Error(`Unsupported GA entity type: ${entityType}`);

@@ -182,9 +182,6 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
 
       const res = await acknowledgeUserDataCollection(formattedData);
 
-      console.log('res', res);
-      console.log('res results', res.results);
-
       if (res.success) {
         res.results.forEach((result) => {
           if (result.success) {

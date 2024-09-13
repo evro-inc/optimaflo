@@ -1178,12 +1178,15 @@ export async function deleteGAAccessBindings(
         },
       }));
 
+      const cacheFields = successfulDeletions.map((update) => `${update.name}`);
+
       // Call softRevalidateFeatureCache for deletions
       await softRevalidateFeatureCache(
         [`ga:properties:userId:${userId}`],
         `/dashboard/ga/properties`,
         userId,
-        operations // Pass the operations array for deletions
+        operations,
+        cacheFields
       );
     } catch (err) {
       console.error('Error during revalidation:', err);

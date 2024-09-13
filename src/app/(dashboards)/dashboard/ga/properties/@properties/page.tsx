@@ -24,7 +24,7 @@ export default async function PropertiesPage({
   if (!userId) return notFound();
 
   const accountData = await listGaAccounts();
-  const propertyData = await listGAProperties();
+  const propertyData = await listGAProperties(true);
   const dataRetention = await getDataRetentionSettings();
 
   const [accounts, properties, retention] = await Promise.all([
@@ -57,8 +57,12 @@ export default async function PropertiesPage({
       ...property,
       name: extractId(property.name), // Extract property ID
       parent: property.parent ? extractId(property.parent) : 'Unknown', // Extract account ID
-      serviceLevel: formatType(property.serviceLevel),
-      propertyType: formatType(property.propertyType),
+      serviceLevel: property.serviceLevel
+        ? formatType(property.serviceLevel)
+        : 'Unknown Service Level',
+      propertyType: property.propertyType
+        ? formatType(property.propertyType)
+        : 'Unknown Property Type',
       accountName: account ? account.displayName : 'Unknown Account',
       retention: propertyDataRetention ? propertyDataRetention.eventDataRetention : 'Unknown', // Add retention data
       resetOnNewActivity: propertyDataRetention

@@ -10,17 +10,13 @@ import { FormCreateProps, GA4PropertyType } from '@/src/types/types';
 import { selectTable } from '@/src/redux/tableSlice';
 import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
-import {
-  createProperties,
-  listGAProperties,
-  updateDataRetentionSettings,
-} from '@/src/lib/fetch/dashboard/actions/ga/properties';
+import { createProperties } from '@/src/lib/fetch/dashboard/actions/ga/properties';
 import { calculateRemainingLimit, handleAmountChange, processForm } from '@/src/utils/utils';
 import { useErrorHandling, useFormInitialization, useStepNavigation } from '@/src/hooks/wizard';
 import dynamic from 'next/dynamic';
 import { gaFormFieldConfigs } from '@/src/utils/gaFormFields';
 import { setCurrentStep } from '@/src/redux/formSlice';
-import { toast } from 'sonner';
+
 const FormFieldComponent = dynamic(
   () => import('@/src/components/client/Utils/Form').then((mod) => mod.FormFieldComponent),
   { ssr: false }
