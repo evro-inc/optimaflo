@@ -8,7 +8,7 @@ import { listGACustomDimensions } from '@/src/lib/fetch/dashboard/actions/ga/dim
 import { DataTable } from './table';
 import { listGaAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
 
-export default async function PropertyPage({
+export default async function DimensionPage({
   searchParams,
 }: {
   searchParams?: {
@@ -32,14 +32,15 @@ export default async function PropertyPage({
   ]);
 
   const flatAccounts = accounts.flat();
-  const flatProperties = properties
-    .flatMap((propertyObj) => propertyObj.properties || [])
-    .filter(Boolean); // Filters out undefined or empty objects
-  const flattenedCustomDimensions = cd
-    .filter((item) => item.customDimensions) // Filter out objects without customDimensions
-    .flatMap((item) => item.customDimensions);
+  const flatProperties = properties.map((propertyObj) => propertyObj);
 
-  const combinedData = flattenedCustomDimensions.map((cd) => {
+  console.log('flatAccounts', flatAccounts);
+
+  console.log('flatProperties', flatProperties);
+
+  console.log('cd', cd);
+
+  const combinedData = cd.map((cd) => {
     const propertyId = cd.name.split('/')[1];
     // Ensure 'p' and 'p.name' are defined before calling 'includes'
     const property = flatProperties.find((p) => p && p.name && p.name.includes(propertyId));

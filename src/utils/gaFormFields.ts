@@ -1,16 +1,17 @@
 /* import { GA4PropertyType } from '@/src/types/types';
  */
+import { DimensionScopeType } from '../app/(dashboards)/dashboard/ga/properties/@dimensions/dimensionItems';
 import {
   CurrencyCodes,
   IndustryCategories,
   /*     retentionSettings360,
-          retentionSettingsStandard, */
+            retentionSettingsStandard, */
   TimeZones,
 } from '../app/(dashboards)/dashboard/ga/properties/@properties/propertyItems';
 
 // Define the possible field types for the form
 type FieldType = 'select' | 'text' | 'switch';
-type entityType = 'GA4Property' | 'GAEvent' | 'GA4Streams';
+type entityType = 'GA4Property' | 'GAEvent' | 'GA4Streams' | 'GA4CustomDimensions';
 type formType = 'create' | 'update' | 'switch';
 
 // Define the structure of your field configuration
@@ -121,65 +122,66 @@ const getCommonStreamsFields = (
   },
 });
 
-/* const getCreateFields = (): Record<string, FieldConfig> => {
-    const retentionOptions = Object.entries(retentionSettingsStandard).map(([label, value]) => ({
-        label,
-        value,
-    }));
-
-    return {
-        retention: {
-            label: 'User Retention Setting',
-            description: 'Set the retention setting for the property. Only event retention is shown in the table.',
-            placeholder: 'Select a retention setting.',
-            type: 'select',
-            options: retentionOptions,
-        },
-        resetOnNewActivity: {
-            label: 'Reset user data on new activity',
-            description: 'Reset the retention period for user identifiers with every event from the user.',
-            type: 'switch',
-            placeholder: '',
-        },
-    };
-};
- */
-
-// Utility function to get the update-specific fields
-/* const getUpdateFields = (
-    selectedRowData: Record<string, GA4PropertyType>
-): Record<string, FieldConfig> => {
-    const uniqueRetentionOptions = new Set<string>();
-
-    Object.entries(selectedRowData).forEach(([, rowData]) => {
-        const retentionSettings =
-            rowData.serviceLevel === 'Standard' ? retentionSettingsStandard : retentionSettings360;
-        Object.entries(retentionSettings || {}).forEach(([label, value]) => {
-            uniqueRetentionOptions.add(JSON.stringify({ label, value }));
-        });
-    });
-
-    const retentionOptions = Array.from(uniqueRetentionOptions).map((item) =>
-        JSON.parse(item)
-    );
-
-    return {
-        retention: {
-            label: 'User Retention Setting',
-            description: 'Set the retention setting for the property. User retention will not be shown on table; only event retention will be shown.',
-            placeholder: 'Select a user retention setting.',
-            type: 'select',
-            options: retentionOptions,
-        },
-        resetOnNewActivity: {
-            label: 'Reset user data on new activity',
-            description:
-                'If enabled, reset the retention period for the user identifier with every event from that user.',
-            type: 'switch',
-            placeholder: '',
-        },
-    };
-}; */
+// Old form fields integration for GA4CustomDimensions
+const getGA4CustomDimensionsFields = (
+  accountsWithProperties: { displayName: string; name: string }[],
+  filteredProperties: { displayName: string; name: string }[]
+): Record<string, FieldConfig> => ({
+  account: {
+    label: 'Account',
+    description: 'This is the account you want to create the property in.',
+    placeholder: 'Select an account.',
+    type: 'select',
+    options: accountsWithProperties.map((account) => ({
+      label: account.displayName,
+      value: account.name,
+    })),
+  },
+  property: {
+    label: 'Property',
+    description: 'Which property do you want to create the custom dimension in?',
+    placeholder: 'Select a property.',
+    type: 'select',
+    options: filteredProperties.map((property) => ({
+      label: property.displayName,
+      value: property.name,
+    })),
+  },
+  displayName: {
+    label: 'New Custom Dimension Name',
+    description: 'This is the custom dimension name you want to create.',
+    placeholder: 'Name of the custom dimension.',
+    type: 'text',
+  },
+  parameterName: {
+    label: 'Parameter Name',
+    description: 'Tagging parameter name for this custom dimension.',
+    placeholder: 'Name of the parameter.',
+    type: 'text',
+  },
+  scope: {
+    label: 'Scope',
+    description: 'The scope of this dimension.',
+    placeholder: 'Select a custom dimension type.',
+    type: 'select',
+    options: Object.entries(DimensionScopeType).map(([label, value]) => ({
+      label,
+      value,
+    })),
+  },
+  description: {
+    label: 'Description Name',
+    description: 'Max length of 150 characters.',
+    placeholder: 'Description of the custom dimension.',
+    type: 'text',
+  },
+  disallowAdsPersonalization: {
+    label: 'Disallow Ads Personalization',
+    description: 'If true, sets this dimension as NPA and excludes it from ads personalization.',
+    type: 'switch',
+    placeholder: 'Disallow Ads Personalization',
+  },
+});
 
 export const gaFormFieldConfigs = (
   entityType: entityType, // Add more GA entity types as needed
@@ -191,7 +193,7 @@ export const gaFormFieldConfigs = (
   const accountsWithProperties = !isUpdate && Array.isArray(dataSource) ? dataSource : [];
   //const selectedRowData = isUpdate && !Array.isArray(dataSource) ? (dataSource as Record<string, any>) : {};
 
-  const maxProperties = Math.min(remaining, 20);
+  const maxOptions = Math.min(remaining, 20);
 
   switch (entityType) {
     case 'GA4Property': {
@@ -214,7 +216,7 @@ export const gaFormFieldConfigs = (
             description: 'This is the number of properties you want to create.',
             placeholder: 'Select the number of properties you want to create.',
             type: 'select',
-            options: Array.from({ length: maxProperties }, (_, i) => ({
+            options: Array.from({ length: maxOptions }, (_, i) => ({
               label: `${i + 1}`,
               value: `${i + 1}`,
             })),
@@ -248,7 +250,38 @@ export const gaFormFieldConfigs = (
             description: 'This is the number of streams you want to create.',
             placeholder: 'Select the number of streams you want to create.',
             type: 'select',
-            options: Array.from({ length: maxProperties }, (_, i) => ({
+            options: Array.from({ length: maxOptions }, (_, i) => ({
+              label: `${i + 1}`,
+              value: `${i + 1}`,
+            })),
+          },
+        };
+      }
+    }
+
+    case 'GA4CustomDimensions': {
+      // Extract accountsWithProperties from dataSource if it exists
+      const accountsWithProperties = dataSource?.accountsWithProperties || [];
+
+      // Extract filteredProperties from dataSource if it exists
+      const filteredProperties = dataSource?.filteredProperties || [];
+
+      // Use the helper function to define fields for GA4CustomDimensions
+      const commonFields = getGA4CustomDimensionsFields(accountsWithProperties, filteredProperties);
+
+      if (isUpdate) {
+        return {
+          ...commonFields, // Return only the common fields in case of update
+        };
+      } else {
+        return {
+          ...commonFields, // Return common fields and an additional 'amount' field for creation
+          amount: {
+            label: 'How many custom dimensions do you want to add?',
+            description: 'This is the number of custom dimensions you want to create.',
+            placeholder: 'Select the number of custom dimensions.',
+            type: 'select',
+            options: Array.from({ length: maxOptions }, (_, i) => ({
               label: `${i + 1}`,
               value: `${i + 1}`,
             })),

@@ -64,6 +64,8 @@ export const FormFieldComponent: React.FC<FieldProps> = ({
   }
 
   if (type === 'select' && options.length > 0) {
+    console.log('options', options);
+
     const Row = useCallback(
       ({ index, style }) => (
         <div style={style}>

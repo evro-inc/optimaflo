@@ -104,7 +104,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
     '/dashboard/ga/properties'
   );
 
-  const currentIndex = currentStep - 2; // Adjust for zero-based index
+  const currentIndex = Math.max(0, currentStep - 2);
   const selectedAccountId = form.watch(`forms.${currentIndex}.account`);
   const filteredProperties = properties.filter((property) => property.parent === selectedAccountId);
   const configs = gaFormFieldConfigs('GA4Streams', 'create', remainingCreate, {

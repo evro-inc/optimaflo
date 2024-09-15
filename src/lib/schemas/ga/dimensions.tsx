@@ -19,9 +19,9 @@ export const FormCreateAmountSchema = z.object({
   amount: z.number(),
 });
 
-export const FormsSchema = z.object({
+export const FormSchema = z.object({
   forms: z.array(SingleFormSchema),
 });
 
 // Export the type inferred from FormsSchema for type safety in your form handling
-export type CustomDimensionSchemaType = z.infer<typeof FormsSchema>;
+export type CustomDimensionSchemaType = z.infer<typeof FormSchema>;

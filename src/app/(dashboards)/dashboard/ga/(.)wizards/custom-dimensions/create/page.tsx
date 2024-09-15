@@ -13,7 +13,6 @@ export default async function CreateCustomDimensionPage() {
   if (!user) return notFound();
 
   const subscription = await getSubscription(user.id);
-
   const subscriptionId = subscription.id;
 
   const tierLimits = await getTierLimit(subscriptionId);
@@ -29,11 +28,8 @@ export default async function CreateCustomDimensionPage() {
 
   const flatAccounts = accounts.flat();
   const flatProperties = properties.flat();
-  const flattenedCustomDimensions = cd
-    .filter((item) => item.customDimensions) // Filter out objects without customDimensions
-    .flatMap((item) => item.customDimensions);
 
-  const combinedData = flattenedCustomDimensions.map((cd) => {
+  const combinedData = cd.map((cd) => {
     const propertyId = cd.name.split('/')[1];
     const property = flatProperties.find((p) => p.name.includes(propertyId));
     const accounts = flatAccounts.filter((a) => a.name === property?.parent);

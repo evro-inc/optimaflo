@@ -104,7 +104,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
     '/dashboard/ga/properties'
   );
 
-  const currentIndex = currentStep - 2; // Adjust for zero-based index
+  const currentIndex = Math.max(0, currentStep - 2);
   const selectedAccountId = form.watch(`forms.${currentIndex}.account`);
   const filteredProperties = properties.filter((property) => property.parent === selectedAccountId);
   const configs = gaFormFieldConfigs('GA4Streams', 'create', remainingCreate, {
@@ -136,7 +136,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
     <div className="w-full">
       {fields.length >= currentStep - 1 && (
         <div
-          key={fields[currentStep - 2].id}
+          key={fields[currentIndex].id}
           className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
         >
           <div className="max-w-xl mx-auto">
@@ -153,7 +153,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                     .map(([key, config]) => (
                       <FormFieldComponent
                         key={key}
-                        name={`forms.${currentStep - 2}.${key}`}
+                        name={`forms.${currentIndex}.${key}`}
                         label={config.label}
                         description={config.description}
                         placeholder={config.placeholder}
@@ -164,14 +164,14 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
 
                   {/* Dynamic fields based on stream type */}
                   {Object.keys(dataStreamTypeMapping).map((type) => {
-                    const streamTypeValue = form.watch(`forms.${currentStep - 2}.type`);
+                    const streamTypeValue = form.watch(`forms.${currentIndex}.type`);
                     if (streamTypeValue === type) {
                       // Compare with the key, not the value
                       return (
                         <FormField
                           key={type}
                           control={form.control}
-                          name={`forms.${currentStep - 2}.${
+                          name={`forms.${currentIndex}.${
                             type === 'WEB_DATA_STREAM'
                               ? 'webStreamData.defaultUri'
                               : type === 'ANDROID_APP_DATA_STREAM'
@@ -188,7 +188,7 @@ const FormCreateStream: React.FC<FormCreateProps> = ({
                                 <Input
                                   placeholder={`Enter ${dataStreamTypeMapping[type]} input`}
                                   {...form.register(
-                                    `forms.${currentStep - 2}.${
+                                    `forms.${currentIndex}.${
                                       type === 'WEB_DATA_STREAM'
                                         ? 'webStreamData.defaultUri'
                                         : type === 'ANDROID_APP_DATA_STREAM'
