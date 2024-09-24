@@ -1,10 +1,9 @@
 import React from 'react';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { currentUser } from '@clerk/nextjs/server';
 import FormUpdateProperty from './form';
 import { getSubscription } from '@/src/lib/fetch/subscriptions';
 import { getTierLimit } from '@/src/lib/fetch/tierLimit';
-import { redirect } from 'next/navigation';
 
 export default async function UpdatePropertyPage() {
   const user = await currentUser();

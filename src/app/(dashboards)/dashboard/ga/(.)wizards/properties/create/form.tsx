@@ -44,6 +44,8 @@ const FormCreateProperty: React.FC<FormCreateProps> = React.memo(
     );
     const remainingCreate = remainingCreateData.remaining;
 
+    const currentIndex = Math.max(0, currentStep - 2);
+
     const configs = gaFormFieldConfigs('GA4Property', 'create', remainingCreate, data);
 
     // Add a fallback in case `accountsWithProperties` is empty
@@ -77,7 +79,7 @@ const FormCreateProperty: React.FC<FormCreateProps> = React.memo(
     /// NEED TO ADD updateDataRetentionSettings condition after successful createProperties
     const onSubmit: SubmitHandler<FormSchemaType> = processForm(
       createProperties,
-      formDataDefaults,
+      form.getValues(),
       () => form.reset({ forms: [formDataDefaults] }),
       dispatch,
       router,
@@ -107,7 +109,7 @@ const FormCreateProperty: React.FC<FormCreateProps> = React.memo(
       <div className="w-full">
         {fields.length >= currentStep - 1 && (
           <div
-            key={fields[currentStep - 2].id}
+            key={fields[currentIndex].id}
             className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
           >
             <div className="max-w-xl mx-auto">
@@ -124,7 +126,7 @@ const FormCreateProperty: React.FC<FormCreateProps> = React.memo(
                       .map(([key, config]) => (
                         <FormFieldComponent
                           key={key}
-                          name={`forms.${currentStep - 2}.${key}`}
+                          name={`forms.${currentIndex}.${key}`}
                           label={config.label}
                           description={config.description}
                           placeholder={config.placeholder}

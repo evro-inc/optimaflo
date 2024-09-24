@@ -458,7 +458,6 @@ export enum MetricScope {
 }
 
 export enum RestrictedMetricType {
-  RESTRICTED_METRIC_TYPE_UNSPECIFIED = 'RESTRICTED_METRIC_TYPE_UNSPECIFIED',
   COST_DATA = 'COST_DATA',
   REVENUE_DATA = 'REVENUE_DATA',
 }
@@ -682,7 +681,6 @@ interface AudienceEventFilter {
  Key Events
  *********************************************************/
 export enum CountingMethod {
-  UNSPECIFIED = 'COUNTING_METHOD_UNSPECIFIED',
   ONCE_PER_EVENT = 'ONCE_PER_EVENT',
   ONCE_PER_SESSION = 'ONCE_PER_SESSION',
 }
@@ -695,15 +693,15 @@ interface DefaultValue {
 
 // Key Event type
 export interface KeyEventType {
-  accountProperty: string[];
+  accountProperty?: string[];
   property?: string;
   eventName: string;
   custom?: boolean;
-  countingMethod: CountingMethod;
+  countingMethod?: CountingMethod;
   defaultValue?: DefaultValue;
   deletable?: boolean;
   name?: string;
-  includeDefaultValue: boolean;
+  includeDefaultValue?: string;
 }
 
 /*********************************************************

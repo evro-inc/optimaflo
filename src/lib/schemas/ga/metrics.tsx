@@ -43,16 +43,16 @@ const SingleFormSchema = z.object({
   description: z.string().max(150).optional(),
   measurementUnit: MeasurementUnitSchema,
   scope: MetricScopeSchema,
-  restrictedMetricType: z.array(RestrictedMetricTypeSchema).optional(),
+  restrictedMetricType: z.string(RestrictedMetricTypeSchema).optional(),
 });
 
 export const FormCreateAmountSchema = z.object({
   amount: z.number(),
 });
-// If you need to validate an array of CustomMetric objects like in your original FormsSchema
-export const FormsSchema = z.object({
+// If you need to validate an array of CustomMetric objects like in your original FormSchema
+export const FormSchema = z.object({
   forms: z.array(SingleFormSchema),
 });
 
 // Export the type inferred from CustomMetricsSchema for type safety
-export type CustomMetricSchemaType = z.infer<typeof FormsSchema>;
+export type CustomMetricSchemaType = z.infer<typeof FormSchema>;

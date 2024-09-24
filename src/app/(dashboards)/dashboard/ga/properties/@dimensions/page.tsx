@@ -34,12 +34,6 @@ export default async function DimensionPage({
   const flatAccounts = accounts.flat();
   const flatProperties = properties.map((propertyObj) => propertyObj);
 
-  console.log('flatAccounts', flatAccounts);
-
-  console.log('flatProperties', flatProperties);
-
-  console.log('cd', cd);
-
   const combinedData = cd.map((cd) => {
     const propertyId = cd.name.split('/')[1];
     // Ensure 'p' and 'p.name' are defined before calling 'includes'

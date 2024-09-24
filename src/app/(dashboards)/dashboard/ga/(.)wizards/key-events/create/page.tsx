@@ -13,24 +13,19 @@ export default async function CreateKeyEventsPage() {
   if (!user) return notFound();
 
   const subscription = await getSubscription(user.id);
-
   const subscriptionId = subscription.id;
 
   const tierLimits = await getTierLimit(subscriptionId);
-
   const accountData = await listGaAccounts();
   const propertyData = await listGAProperties();
   const keyEventsData = await listGAKeyEvents();
 
-  const [accounts, properties] = await Promise.all([accountData, propertyData, keyEventsData]);
+  const [accounts, properties, ke] = await Promise.all([accountData, propertyData, keyEventsData]);
 
   const flatAccounts = accounts.flat();
   const flatProperties = properties.flat();
-  const flattenedkeyEvents = keyEventsData
-    .flatMap((item) => item.keyEvents)
-    .filter((keyEvent) => keyEvent !== undefined);
 
-  const combinedData = flattenedkeyEvents.map((keyEvents) => {
+  const combinedData = ke.map((keyEvents) => {
     const propertyId = keyEvents.name.split('/')[1];
     const property = flatProperties.find((p) => p.name.includes(propertyId));
 
@@ -51,16 +46,6 @@ export default async function CreateKeyEventsPage() {
       propertyId: property ? property?.name : 'Unknown Property Id',
     };
   });
-  const foundTierLimit = tierLimits.find(
-    (subscription) => subscription.Feature?.name === 'GA4KeyEvents'
-  );
-  const createLimit = foundTierLimit?.createLimit || 0;
-  const createUsage = foundTierLimit?.createUsage || 0;
-  const remainingCreate = createLimit - createUsage;
-
-  if (remainingCreate <= 0) {
-    redirect('/dashboard/ga/properties'); // Replace with the actual path you want to redirect to
-  }
 
   return (
     <>

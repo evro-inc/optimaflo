@@ -3,19 +3,10 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setCurrentStep } from '@/redux/formSlice';
-import { SubmitHandler } from 'react-hook-form';
+import { SubmitHandler, useWatch } from 'react-hook-form';
 import { Button } from '@/src/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/src/components/ui/form';
-import { Input } from '@/src/components/ui/input';
-import { GA4StreamType } from '@/src/types/types';
+import { Form } from '@/src/components/ui/form';
+import { FormUpdateProps, GA4StreamType } from '@/src/types/types';
 import { updateGAPropertyStreams } from '@/src/lib/fetch/dashboard/actions/ga/streams';
 import { selectTable } from '@/src/redux/tableSlice';
 import { RootState } from '@/src/redux/store';
@@ -31,7 +22,7 @@ import { DataStreamType, FormSchema } from '@/src/lib/schemas/ga/streams';
 import { gaFormFieldConfigs } from '@/src/utils/gaFormFields';
 import { FormFieldComponent } from '@/src/components/client/Utils/Form';
 
-const FormUpdateStream = ({ tierLimits }) => {
+const FormUpdateStream: React.FC<FormUpdateProps> = React.memo(({ tierLimits }) => {
   const dispatch = useDispatch();
   const loading = useSelector((state: RootState) => state.form.loading);
   const error = useSelector((state: RootState) => state.form.error);
@@ -79,15 +70,6 @@ const FormUpdateStream = ({ tierLimits }) => {
     ])
   );
 
-  const configs = gaFormFieldConfigs(
-    'GA4Streams',
-    'update',
-    remainingUpdate,
-    selectedRowDataTransformed
-  );
-
-  console.log('configs', configs);
-
   const formDataDefaults: GA4StreamType[] = Object.values(selectedRowData).map((row) => ({
     account: row.accountName,
     property: row.parent,
@@ -110,6 +92,22 @@ const FormUpdateStream = ({ tierLimits }) => {
 
   const { form, fields } = useFormInitialization<GA4StreamType>(formDataDefaults, FormSchema);
 
+  const currentIndex = Math.max(0, currentStep - 2);
+  const selectedStreamType = useWatch({
+    control: form.control,
+    name: `forms.${currentIndex}.type`,
+  });
+
+  const configs = gaFormFieldConfigs(
+    'GA4Streams',
+    'update',
+    remainingUpdate,
+    selectedRowDataTransformed,
+    selectedStreamType
+  );
+
+  console.log('configs', configs);
+
   const { handleNext, handlePrevious } = useStepNavigation({
     form,
     currentStep,
@@ -123,7 +121,7 @@ const FormUpdateStream = ({ tierLimits }) => {
 
   const onSubmit: SubmitHandler<DataStreamType> = processForm(
     updateGAPropertyStreams,
-    formDataDefaults,
+    form.getValues(),
     () => form.reset({ forms: formDataDefaults }),
     dispatch,
     router,
@@ -174,81 +172,6 @@ const FormUpdateStream = ({ tierLimits }) => {
                         options={config.options}
                       />
                     ))}
-
-                  {formDataDefaults[currentFormIndex]?.type === 'WEB_DATA_STREAM' && (
-                    <FormField
-                      control={form.control}
-                      name={`forms.${currentFormIndex}.webStreamData.defaultUri`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Default URI</FormLabel>
-                          <FormDescription>
-                            This is the default URI for the web stream.
-                          </FormDescription>
-                          <FormControl>
-                            <Input
-                              placeholder="Enter default URI"
-                              {...form.register(
-                                `forms.${currentFormIndex}.webStreamData.defaultUri`
-                              )}
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  )}
-                  {formDataDefaults[currentFormIndex]?.type === 'ANDROID_APP_DATA_STREAM' && (
-                    <FormField
-                      control={form.control}
-                      name={`forms.${currentFormIndex}.androidAppStreamData.packageName`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Package Name</FormLabel>
-                          <FormDescription>
-                            This is the package name for the Android app stream.
-                          </FormDescription>
-                          <FormControl>
-                            <Input
-                              placeholder="Enter Package Name"
-                              {...form.register(
-                                `forms.${currentFormIndex}.androidAppStreamData.packageName`
-                              )}
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  )}
-
-                  {formDataDefaults[currentFormIndex]?.type === 'IOS_APP_DATA_STREAM' && (
-                    <FormField
-                      control={form.control}
-                      name={`forms.${currentFormIndex}.iosAppStreamData.bundleId`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Bundle ID</FormLabel>
-                          <FormDescription>
-                            This is the bundle ID for the iOS app stream.
-                          </FormDescription>
-                          <FormControl>
-                            <Input
-                              placeholder="Enter Bundle ID"
-                              {...form.register(
-                                `forms.${currentFormIndex}.iosAppStreamData.bundleId`
-                              )}
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  )}
-
                   <div className="flex justify-between">
                     <Button type="button" onClick={handlePrevious} disabled={currentStep === 1}>
                       Previous
@@ -274,7 +197,7 @@ const FormUpdateStream = ({ tierLimits }) => {
   };
 
   return <div className="flex items-center justify-center h-screen">{renderForms()}</div>;
-};
+});
 
 FormUpdateStream.displayName = 'FormUpdateStream';
 

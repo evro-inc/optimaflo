@@ -1,32 +1,40 @@
 /* import { GA4PropertyType } from '@/src/types/types';
  */
 import { DimensionScopeType } from '../app/(dashboards)/dashboard/ga/properties/@dimensions/dimensionItems';
+import { CountMethodData } from '../app/(dashboards)/dashboard/ga/properties/@keyEvents/items';
+import {
+  measurementUnit,
+  RestrictedMetric,
+} from '../app/(dashboards)/dashboard/ga/properties/@metrics/items';
 import {
   CurrencyCodes,
   IndustryCategories,
   /*     retentionSettings360,
-            retentionSettingsStandard, */
+                retentionSettingsStandard, */
   TimeZones,
 } from '../app/(dashboards)/dashboard/ga/properties/@properties/propertyItems';
 
-// Define the possible field types for the form
-type FieldType = 'select' | 'text' | 'switch';
-type entityType = 'GA4Property' | 'GAEvent' | 'GA4Streams' | 'GA4CustomDimensions';
+type FieldType = 'select' | 'text' | 'switch' | 'radio';
+type entityType =
+  | 'GA4Property'
+  | 'GAEvent'
+  | 'GA4Streams'
+  | 'GA4CustomDimensions'
+  | 'GA4CustomMetrics'
+  | 'GA4KeyEvents';
 type formType = 'create' | 'update' | 'switch';
 
-// Define the structure of your field configuration
 interface FieldConfig {
   label: string;
   description: string;
   placeholder: string;
   type?: FieldType;
   options?: { label: string; value: string }[];
+  disabled?: boolean;
 }
 
-// Define a generic type for data source, allowing flexibility
-type DataSourceType = Record<string, any> | Record<string, any>[];
+type DataSourceType = any;
 
-// Utility function to get common fields
 const getCommonPropertyFields = (
   accountsWithProperties: { displayName: string; name: string }[]
 ): Record<string, FieldConfig> => ({
@@ -81,48 +89,75 @@ const getCommonPropertyFields = (
 const getCommonStreamsFields = (
   accountsWithProperties: { displayName: string; name: string }[],
   filteredProperties: { displayName: string; name: string }[],
-  streamType: Record<string, string> // Stream type options, e.g., { Web: 'WEB', Android: 'ANDROID', iOS: 'IOS' }
-): Record<string, FieldConfig> => ({
-  displayName: {
-    label: 'Stream Name',
-    description: 'This is the stream name you want to create.',
-    placeholder: 'Name of the stream.',
-    type: 'text',
-  },
-  account: {
-    label: 'Account',
-    description: 'This is the account you want to associate with the property.',
-    placeholder: 'Select an account.',
-    type: 'select',
-    options: accountsWithProperties.map((account) => ({
-      label: account.displayName,
-      value: account.name,
-    })),
-  },
-  property: {
-    label: 'Property',
-    description: 'Which property do you want to create the stream in?',
-    placeholder: 'Select a property.',
-    type: 'select',
-    options: filteredProperties.map((property) => ({
-      label: property.displayName,
-      value: property.name,
-    })),
-  },
+  streamType: Record<string, string>,
+  watchedValue?: string
+): Record<string, FieldConfig> => {
+  const fields: Record<string, FieldConfig> = {
+    displayName: {
+      label: 'Stream Name',
+      description: 'This is the stream name you want to create.',
+      placeholder: 'Name of the stream.',
+      type: 'text',
+    },
+    account: {
+      label: 'Account',
+      description: 'This is the account you want to associate with the property.',
+      placeholder: 'Select an account.',
+      type: 'select',
+      options: accountsWithProperties.map((account) => ({
+        label: account.displayName,
+        value: account.name,
+      })),
+    },
+    property: {
+      label: 'Property',
+      description: 'Which property do you want to create the stream in?',
+      placeholder: 'Select a property.',
+      type: 'select',
+      options: filteredProperties.map((property) => ({
+        label: property.displayName,
+        value: property.name,
+      })),
+    },
 
-  type: {
-    label: 'Stream Type',
-    description: 'Select the type of stream you want to create.',
-    placeholder: 'Select a stream type.',
-    type: 'select',
-    options: Object.entries(streamType).map(([value, label]) => ({
-      label, // The display name (e.g., 'Web', 'Android', etc.)
-      value, // The key (e.g., 'WEB_DATA_STREAM', 'ANDROID_APP_DATA_STREAM', etc.)
-    })),
-  },
-});
+    type: {
+      label: 'Stream Type',
+      description: 'Select the type of stream you want to create.',
+      placeholder: 'Select a stream type.',
+      type: 'select',
+      options: Object.entries(streamType).map(([value, label]) => ({
+        label, // The display name (e.g., 'Web', 'Android', etc.)
+        value, // The key (e.g., 'WEB_DATA_STREAM', 'ANDROID_APP_DATA_STREAM', etc.)
+      })),
+    },
+  };
+  if (watchedValue) {
+    if (watchedValue === 'WEB_DATA_STREAM') {
+      fields['webStreamData.defaultUri'] = {
+        label: 'Default URI',
+        description: 'This is the default URI for the web stream.',
+        placeholder: 'Enter default URI',
+        type: 'text',
+      };
+    } else if (watchedValue === 'ANDROID_APP_DATA_STREAM') {
+      fields['androidAppStreamData.packageName'] = {
+        label: 'Package Name',
+        description: 'This is the package name for the Android app stream.',
+        placeholder: 'Enter Package Name',
+        type: 'text',
+      };
+    } else if (watchedValue === 'IOS_APP_DATA_STREAM') {
+      fields['iosAppStreamData.bundleId'] = {
+        label: 'Bundle ID',
+        description: 'This is the bundle ID for the iOS app stream.',
+        placeholder: 'Enter Bundle ID',
+        type: 'text',
+      };
+    }
+  }
+  return fields;
+};
 
-// Old form fields integration for GA4CustomDimensions
 const getGA4CustomDimensionsFields = (
   accountsWithProperties: { displayName: string; name: string }[],
   filteredProperties: { displayName: string; name: string }[]
@@ -183,11 +218,143 @@ const getGA4CustomDimensionsFields = (
   },
 });
 
+const getGA4CustomMetricsFields = (
+  watchedValue?: string,
+  formType?: string
+): Record<string, FieldConfig> => {
+  const fields: Record<string, FieldConfig> = {
+    displayName: {
+      label: 'New Custom Metric Name',
+      description: 'This is the custom metric name you want to create.',
+      placeholder: 'Name of the custom metric.',
+      type: 'text',
+    },
+    parameterName: {
+      label: 'Parameter Name',
+      description: 'Tagging parameter name for this custom metric.',
+      placeholder: 'Name of the parameter.',
+      type: 'text',
+    },
+    measurementUnit: {
+      label: 'Measurement Unit',
+      description: 'The type of this measurement.',
+      placeholder: 'Select a measurement type.',
+      type: 'select',
+      options: Object.entries(measurementUnit)
+        .filter(([label, value]) => formType !== 'update' || value !== 'CURRENCY') // Only filter 'CURRENCY' during updates
+        .map(([label, value]) => ({
+          label,
+          value,
+        })),
+    },
+
+    description: {
+      label: 'Description Name',
+      description: 'Max length of 150 characters.',
+      placeholder: 'Description of the custom metric.',
+      type: 'text',
+    },
+  };
+  if (watchedValue === 'CURRENCY') {
+    fields.restrictedMetricType = {
+      label: 'Restricted Metric Type',
+      description:
+        'Optional. Types of restricted data that this metric may contain.Required for metrics with CURRENCY measurement unit.Must be empty for metrics with a non- CURRENCY measurement unit.',
+      placeholder: 'Select a custom metric type.',
+      type: 'select',
+      options: Object.entries(RestrictedMetric).map(([label, value]) => ({
+        label,
+        value,
+      })),
+    };
+  }
+
+  return fields;
+};
+
+const getCommonKeyEventFields = (
+  accountsWithProperties: { displayName: string; name: string }[],
+  filteredProperties: { displayName: string; name: string }[],
+  includeDefaultValue?: string
+): Record<string, FieldConfig> => {
+  const fields: Record<string, FieldConfig> = {
+    account: {
+      label: 'Account',
+      description: 'This is the account you want to create the property in.',
+      placeholder: 'Select an account.',
+      type: 'select',
+      options: accountsWithProperties.map((account) => ({
+        label: account.displayName,
+        value: account.name,
+      })),
+    },
+    property: {
+      label: 'Property',
+      description: 'Select a property for this key event.',
+      placeholder: 'Select a property.',
+      type: 'select',
+      options: filteredProperties.map((property) => ({
+        label: property.displayName,
+        value: property.name,
+      })),
+    },
+    eventName: {
+      label: 'Key Event Name',
+      description: 'This is the key event name you want to create.',
+      placeholder: 'Enter the key event name.',
+      type: 'text',
+    },
+    countingMethod: {
+      label: 'Counting Method',
+      description: 'The method for counting key events within a session.',
+      placeholder: 'Select counting method.',
+      type: 'select',
+      options: Object.entries(CountMethodData).map(([label, value]) => ({
+        label,
+        value,
+      })),
+    },
+    includeDefaultValue: {
+      label: 'Default Conversion Value',
+      description: 'Set a default conversion value for the key event.',
+      placeholder: 'Select default value option.',
+      type: 'radio',
+      options: [
+        { label: 'No Default Value', value: 'false' },
+        { label: 'Set Default Value', value: 'true' },
+      ],
+    },
+  };
+
+  // Conditionally add numeric value and currency code fields
+  if (includeDefaultValue === 'true') {
+    fields['defaultValue.numericValue'] = {
+      label: 'Default Numeric Value',
+      description: 'Enter the default numeric value for this event.',
+      placeholder: 'Enter value',
+      type: 'text',
+    };
+    fields['defaultValue.currencyCode'] = {
+      label: 'Currency Code',
+      description: 'Select the currency for the default value.',
+      placeholder: 'Select currency',
+      type: 'select',
+      options: CurrencyCodes.map((code) => ({
+        label: code,
+        value: code,
+      })),
+    };
+  }
+
+  return fields;
+};
+
 export const gaFormFieldConfigs = (
   entityType: entityType, // Add more GA entity types as needed
   formType: formType,
   remaining: number,
-  dataSource?: DataSourceType
+  dataSource?: DataSourceType,
+  watched?: string
 ): Record<string, FieldConfig> => {
   const isUpdate = formType === 'update';
   const accountsWithProperties = !isUpdate && Array.isArray(dataSource) ? dataSource : [];
@@ -235,7 +402,8 @@ export const gaFormFieldConfigs = (
       const commonFields = getCommonStreamsFields(
         accountsWithProperties,
         filteredProperties, // Use filteredProperties in the field config
-        streamType
+        streamType,
+        watched
       );
 
       if (isUpdate) {
@@ -260,18 +428,14 @@ export const gaFormFieldConfigs = (
     }
 
     case 'GA4CustomDimensions': {
-      // Extract accountsWithProperties from dataSource if it exists
       const accountsWithProperties = dataSource?.accountsWithProperties || [];
-
-      // Extract filteredProperties from dataSource if it exists
       const filteredProperties = dataSource?.filteredProperties || [];
-
-      // Use the helper function to define fields for GA4CustomDimensions
       const commonFields = getGA4CustomDimensionsFields(accountsWithProperties, filteredProperties);
 
       if (isUpdate) {
         return {
-          ...commonFields, // Return only the common fields in case of update
+          displayName: commonFields.displayName,
+          description: commonFields.description,
         };
       } else {
         return {
@@ -280,6 +444,62 @@ export const gaFormFieldConfigs = (
             label: 'How many custom dimensions do you want to add?',
             description: 'This is the number of custom dimensions you want to create.',
             placeholder: 'Select the number of custom dimensions.',
+            type: 'select',
+            options: Array.from({ length: maxOptions }, (_, i) => ({
+              label: `${i + 1}`,
+              value: `${i + 1}`,
+            })),
+          },
+        };
+      }
+    }
+
+    case 'GA4CustomMetrics': {
+      console.log('datasource', dataSource);
+
+      const commonFields = getGA4CustomMetricsFields(watched, formType);
+
+      if (isUpdate) {
+        console.log('commonFields', commonFields);
+
+        return { ...commonFields };
+      } else {
+        return {
+          ...commonFields, // Return common fields and an additional 'amount' field for creation
+          amount: {
+            label: 'How many custom metrics do you want to add?',
+            description: 'This is the number of custom metrics you want to create.',
+            placeholder: 'Select the number of custom metrics.',
+            type: 'select',
+            options: Array.from({ length: maxOptions }, (_, i) => ({
+              label: `${i + 1}`,
+              value: `${i + 1}`,
+            })),
+          },
+        };
+      }
+    }
+
+    case 'GA4KeyEvents': {
+      const accountsWithProperties = dataSource?.accountsWithProperties || [];
+      const filteredProperties = dataSource?.filteredProperties || [];
+      const commonFields = getCommonKeyEventFields(
+        accountsWithProperties,
+        filteredProperties,
+        watched
+      );
+
+      if (isUpdate) {
+        console.log('commonFields', commonFields);
+
+        return { ...commonFields };
+      } else {
+        return {
+          ...commonFields, // Return common fields and an additional 'amount' field for creation
+          amount: {
+            label: 'How many custom metrics do you want to add?',
+            description: 'This is the number of custom metrics you want to create.',
+            placeholder: 'Select the number of custom metrics.',
             type: 'select',
             options: Array.from({ length: maxOptions }, (_, i) => ({
               label: `${i + 1}`,

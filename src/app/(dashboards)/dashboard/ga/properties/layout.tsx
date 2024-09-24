@@ -14,7 +14,6 @@ export default async function PropertiesLayout({
   properties,
   dimensions,
   metrics,
-  conversions,
   keyEvents,
 }: {
   children: React.ReactNode;
@@ -22,7 +21,6 @@ export default async function PropertiesLayout({
   properties: React.ReactNode;
   dimensions: React.ReactNode;
   metrics: React.ReactNode;
-  conversions: React.ReactNode;
   keyEvents: React.ReactNode;
 }) {
   const user = await currentUser();
@@ -42,7 +40,6 @@ export default async function PropertiesLayout({
         {streams}
         {dimensions}
         {metrics}
-        {conversions}
         {keyEvents}
       </div>
     </>

@@ -79,7 +79,7 @@ const FormCreateProperty: React.FC<FormCreateProps> = React.memo(
     /// NEED TO ADD updateDataRetentionSettings condition after successful createProperties
     const onSubmit: SubmitHandler<FormSchemaType> = processForm(
       createProperties,
-      formDataDefaults,
+      form.getValues(),
       () => form.reset({ forms: [formDataDefaults] }),
       dispatch,
       router,

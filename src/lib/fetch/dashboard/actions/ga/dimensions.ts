@@ -466,7 +466,7 @@ export async function updateGACustomDimensions(formData: CustomDimensionSchemaTy
     const attemptedCreations = Array.from(toUpdateCustomDimensions).map((identifier) => {
       const displayName = identifier.displayName;
       return {
-        id: [], // No property ID since creation did not happen
+        id: [displayName], // No property ID since creation did not happen
         name: displayName, // Include the property name from the identifier
         success: false,
         message: `Creation limit reached. Cannot update custom dimension "${displayName}".`,
@@ -517,7 +517,7 @@ export async function updateGACustomDimensions(formData: CustomDimensionSchemaTy
               try {
                 const formDataToValidate = { forms: [identifier] };
 
-                const validationResult = FormsSchema.safeParse(formDataToValidate);
+                const validationResult = FormSchema.safeParse(formDataToValidate);
 
                 if (!validationResult.success) {
                   let errorMessage = validationResult.error.issues
@@ -625,8 +625,8 @@ export async function updateGACustomDimensions(formData: CustomDimensionSchemaTy
               features: [],
 
               results: notFoundLimit.map((item) => ({
-                id: item.id,
-                name: item.name,
+                id: [item.id],
+                name: [item.name],
                 success: false,
                 notFound: true,
               })),
@@ -693,7 +693,8 @@ export async function updateGACustomDimensions(formData: CustomDimensionSchemaTy
       features: successfulCreations,
       errors: errors,
       results: successfulCreations.map((customDimensionName) => ({
-        customDimensionName,
+        id: [customDimensionName], // Wrap in an array
+        name: [customDimensionName], // Wrap in an array
         success: true,
       })),
       message: errors.join(', '),
@@ -710,13 +711,13 @@ export async function updateGACustomDimensions(formData: CustomDimensionSchemaTy
   // Map over formData.forms to update the results array
   const results: FeatureResult[] = formData.forms.map((form) => {
     // Ensure that form.propertyId is defined before adding it to the array
-    const customDimensionId = form.displayName ? [form.displayName] : []; // Provide an empty array as a fallback
     return {
-      id: customDimensionId, // Ensure id is an array of strings
+      id: [form.displayName], // Ensure id is an array of strings
       name: [form.displayName], // Wrap the string in an array
       success: true, // or false, depending on the actual result
       // Include `notFound` if applicable
-      notFound: false, // Set this to the appropriate value based on your logic
+      notFound: false, // Set this to the appropriate value based on your
+      message: 'Update successful',
     };
   });
 

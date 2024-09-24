@@ -11,8 +11,6 @@ import {
   Select,
   SelectTrigger,
   SelectContent,
-  SelectGroup,
-  SelectLabel,
   SelectItem,
   SelectValue,
 } from '@/src/components/ui/select';
@@ -20,6 +18,7 @@ import { Input } from '@/src/components/ui/input';
 import { useFormContext } from 'react-hook-form';
 import { Switch } from '../../ui/switch';
 import { FixedSizeList as List } from 'react-window';
+import { RadioGroup, RadioGroupItem } from '../../ui/radio-group';
 
 type FieldProps = {
   name: string;
@@ -27,9 +26,12 @@ type FieldProps = {
   description?: string;
   placeholder?: string;
   options?: { label: string; value: string }[];
-  type?: 'text' | 'select' | 'switch';
+  type?: 'text' | 'select' | 'switch' | 'radio';
   onChange?: (value: string | string[]) => void;
-  disabled?: boolean; // Update to handle array as well
+  disabled?: boolean;
+  conditionalFields?: {
+    [key: string]: React.ReactNode;
+  };
 };
 
 export const FormFieldComponent: React.FC<FieldProps> = ({
@@ -54,7 +56,27 @@ export const FormFieldComponent: React.FC<FieldProps> = ({
             <FormLabel>{label}</FormLabel>
             {description && <FormDescription>{description}</FormDescription>}
             <FormControl>
-              <Input placeholder={placeholder} {...register(name)} {...field} disabled={disabled} />
+              <Input
+                placeholder={placeholder}
+                {...register(name)}
+                {...field}
+                disabled={disabled}
+                onChange={(e) => {
+                  const value = e.target.value;
+
+                  // If this is a numeric field, apply specific parsing logic
+                  if (name.includes('defaultValue.numericValue')) {
+                    const parsedValue = parseFloat(value);
+                    field.onChange(isNaN(parsedValue) ? undefined : parsedValue);
+                  } else {
+                    // For all other fields, use the value directly
+                    field.onChange(value);
+                  }
+
+                  // Call custom onChange handler if provided
+                  onChange?.(value);
+                }}
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -64,8 +86,6 @@ export const FormFieldComponent: React.FC<FieldProps> = ({
   }
 
   if (type === 'select' && options.length > 0) {
-    console.log('options', options);
-
     const Row = useCallback(
       ({ index, style }) => (
         <div style={style}>
@@ -132,6 +152,44 @@ export const FormFieldComponent: React.FC<FieldProps> = ({
             <FormMessage />
           </FormItem>
         )}
+      />
+    );
+  }
+
+  if (type === 'radio') {
+    return (
+      <FormField
+        control={control}
+        name={name}
+        render={({ field }) => {
+          return (
+            <FormItem>
+              <FormLabel>{label}</FormLabel>
+              {description && <FormDescription>{description}</FormDescription>}
+              <FormControl>
+                <RadioGroup
+                  {...field}
+                  onValueChange={(value) => {
+                    field.onChange(value);
+                    onChange?.(value);
+                  }}
+                  disabled={disabled}
+                  className="flex flex-col space-y-1"
+                >
+                  {options.map((option) => (
+                    <FormItem key={option.value} className="flex items-center space-x-3 space-y-0">
+                      <FormControl>
+                        <RadioGroupItem value={option.value} />
+                      </FormControl>
+                      <FormLabel className="font-normal">{option.label}</FormLabel>
+                    </FormItem>
+                  ))}
+                </RadioGroup>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          );
+        }}
       />
     );
   }

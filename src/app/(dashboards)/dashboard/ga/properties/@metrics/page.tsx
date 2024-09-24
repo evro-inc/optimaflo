@@ -28,14 +28,9 @@ export default async function CustomMetricPage({
   const [accounts, properties, cm] = await Promise.all([accountData, propertyData, customMetrics]);
 
   const flatAccounts = accounts.flat();
-  const flatProperties = properties
-    .flatMap((propertyObj) => propertyObj.properties || [])
-    .filter(Boolean); // Ensures only valid entries
-  const flattenedCustomMetrics = cm
-    .filter((item) => item.customMetrics) // Filter out objects without customMetrics
-    .flatMap((item) => item.customMetrics);
+  const flatProperties = properties.map((propertyObj) => propertyObj);
 
-  const combinedData = flattenedCustomMetrics.map((cm) => {
+  const combinedData = cm.map((cm) => {
     const propertyId = cm.name.split('/')[1];
     // Check both 'p' and 'p.name' are defined before using '.includes'
     const property = flatProperties.find((p) => p && p.name && p.name.includes(propertyId));

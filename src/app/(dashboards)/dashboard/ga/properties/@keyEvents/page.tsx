@@ -25,6 +25,8 @@ export default async function KeyEventsPage({
   const propertyData = await listGAProperties();
   const keyEventsData = await listGAKeyEvents();
 
+  console.log('keyEventsData', keyEventsData);
+
   const [accounts, properties, keyEvents] = await Promise.all([
     accountData,
     propertyData,
@@ -32,36 +34,33 @@ export default async function KeyEventsPage({
   ]);
 
   const flatAccounts = accounts.flat();
-  // Ensure 'flatProperties' only contains valid entries
-  const flatProperties = properties
-    .flatMap((propertyObj) => propertyObj.properties || [])
-    .filter(Boolean);
-  const flattenedkeyEvents = keyEvents.flatMap((item) => item.keyEvents || []).filter(Boolean); // Further filter out undefined entries
+  const flatProperties = properties.map((propertyObj) => propertyObj);
 
-  const combinedData = flattenedkeyEvents.map((keyEvents) => {
-    const propertyId = keyEvents.name.split('/')[1];
-    // Add a check to ensure 'p' and 'p.name' are defined
-    const property = flatProperties.find((p) => p && p.name && p.name.includes(propertyId));
+  const combinedData = keyEvents
+    .filter((event) => event.deletable)
+    .map((keyEvent) => {
+      const propertyId = keyEvent.name.split('/')[1];
+      const property = flatProperties.find((p) => p && p.name && p.name.includes(propertyId));
 
-    const accounts = flatAccounts.find(
-      (acc) =>
-        acc.name ===
-        flatProperties.find(
-          (property) => property && property.name && property.name.split('/')[1] === propertyId
-        )?.parent
-    );
+      const account = flatAccounts.find(
+        (acc) =>
+          acc.name ===
+          flatProperties.find(
+            (property) => property && property.name && property.name.split('/')[1] === propertyId
+          )?.parent
+      );
 
-    const accountName = accounts ? accounts.displayName : 'Account Name Unknown';
-    const account = accounts ? accounts.name : 'Account Id Unknown';
+      const accountName = account ? account.displayName : 'Account Name Unknown';
+      const accountId = account ? account.name : 'Account Id Unknown';
 
-    return {
-      ...keyEvents,
-      account,
-      accountName,
-      propertyName: property ? property.displayName : 'Unknown Property Name',
-      property: property ? property.name : 'Unknown Property Id',
-    };
-  });
+      return {
+        ...keyEvent,
+        account: accountId,
+        accountName,
+        propertyName: property ? property.displayName : 'Unknown Property Name',
+        property: property ? property.name : 'Unknown Property Id',
+      };
+    });
 
   return (
     <>

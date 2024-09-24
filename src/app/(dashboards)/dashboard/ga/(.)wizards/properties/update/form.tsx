@@ -93,7 +93,7 @@ const FormUpdateProperty: React.FC<FormUpdateProps> = React.memo(({ tierLimits }
 
   const onSubmit: SubmitHandler<FormSchemaType> = processForm(
     updateProperties,
-    formDataDefaults,
+    form.getValues(),
     () => form.reset({ forms: formDataDefaults }),
     dispatch,
     router,
