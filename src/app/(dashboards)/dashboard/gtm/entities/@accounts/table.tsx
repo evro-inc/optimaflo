@@ -32,7 +32,7 @@ import {
 } from '@/src/components/ui/dropdown-menu';
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
-import { revalidate } from '@/src/utils/server';
+import { hardRevalidateFeatureCache, revalidate } from '@/src/utils/server';
 import { useDispatch } from 'react-redux';
 import { useTransition } from 'react';
 import { useUpdateHookForm } from '@/src/hooks/useCRUD';
@@ -105,7 +105,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
       },
     });
     const keys = [`gtm:accounts:userId:${userId}`];
-    await revalidate(keys, '/dashboard/gtm/entities', userId);
+    await hardRevalidateFeatureCache(keys, '/dashboard/ga/properties', userId);
   };
 
   dispatch(setSelectedRows(selectedRowData));

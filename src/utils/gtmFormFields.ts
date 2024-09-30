@@ -2,7 +2,7 @@
 
 // Define the possible field types for the form
 type FieldType = 'select' | 'text' | 'switch';
-type EntityType = 'GTMContainer' | 'GTMWorkspace';
+type EntityType = 'GTMAccount' | 'GTMContainer' | 'GTMWorkspace';
 type FormType = 'create' | 'update' | 'switch';
 
 // Define the structure of your field configuration
@@ -17,6 +17,18 @@ interface FieldConfig {
 // Define a generic type for data source, allowing flexibility
 type DataSourceType = Record<string, any> | Record<string, any>[];
 
+
+
+const getCommonAccountFields = (): Record<string, FieldConfig> => ({
+  name: {
+    label: 'Account Name',
+    description: 'This is the account name you want to update.',
+    placeholder: 'Name of the account.',
+    type: 'text',
+  }
+});
+
+
 // Refactored GTM Form Field Configs Function
 export const gtmFormFieldConfigs = (
   entityType: EntityType,
@@ -28,7 +40,14 @@ export const gtmFormFieldConfigs = (
   const data = !isUpdate && Array.isArray(dataSource) ? dataSource : [];
 
   switch (entityType) {
-    case 'GTMContainer':
+    case 'GTMAccount': {
+      const commonFields = getCommonAccountFields();
+
+      return {
+        ...commonFields,
+      };
+    }
+    case 'GTMContainer': {
       if (isUpdate) {
         // For update, include fields specific to updating GTM containers
         return {
@@ -130,6 +149,7 @@ export const gtmFormFieldConfigs = (
           } as FieldConfig,
         };
       }
+    }
 
     // Add more GTM entity cases as needed
 

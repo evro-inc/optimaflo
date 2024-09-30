@@ -150,9 +150,8 @@ export async function handleApiResponseError(response: Response, feature: string
       return {
         success: false,
         errorCode: 400,
-        message: `${feature} ${names} was not created. ${
-          parsedResponse?.error?.message ?? 'Unknown error'
-        }`,
+        message: `${feature} ${names} was not created. ${parsedResponse?.error?.message ?? 'Unknown error'
+          }`,
       };
 
     case 404:
@@ -358,8 +357,6 @@ export async function softRevalidateFeatureCache(
   }[], // Array of operations with dynamic URL paths
   cacheField
 ) {
-  console.log('cacheField', cacheField);
-
   try {
     const pipeline = redis.pipeline();
 

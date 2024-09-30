@@ -18,7 +18,10 @@ export default async function AccountPage({
   const currentPage = Number(searchParams?.page) || 1;
   const { userId } = auth();
   if (!userId) return notFound();
-  const accounts = await listGtmAccounts();
+
+  const accountData = await listGtmAccounts();
+
+  const [accounts] = await Promise.all([accountData]);
 
   return (
     <>
