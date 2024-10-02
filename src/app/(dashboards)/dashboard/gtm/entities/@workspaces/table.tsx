@@ -32,7 +32,7 @@ import {
 } from '@/src/components/ui/dropdown-menu';
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
-import { revalidate } from '@/src/utils/server';
+import { hardRevalidateFeatureCache } from '@/src/utils/server';
 import { useDispatch } from 'react-redux';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
 import {
@@ -46,7 +46,7 @@ import { setSelectedRows } from '@/src/redux/tableSlice';
 import { LimitReached } from '@/src/components/client/modals/limitReached';
 import { WorkspaceType } from '@/src/types/types';
 
-import { DeleteWorkspaces } from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
+import { deleteWorkspaces } from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -97,7 +97,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
       },
     });
     const keys = [`gtm:workspaces:userId:${userId}`];
-    await revalidate(keys, '/dashboard/gtm/workspaces', userId);
+    await hardRevalidateFeatureCache(keys, '/dashboard/gtm/entities', userId);
   };
 
   const selectedRowData = table.getSelectedRowModel().rows.reduce((acc, row) => {
@@ -137,11 +137,11 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
 
   const getDisplayNames = (items) => items.map((item: WorkspaceType) => item.name);
   const handleDelete = useDeleteHook(
-    DeleteWorkspaces,
+    deleteWorkspaces,
     selectedRowData,
     table,
     getDisplayNames,
-    'version'
+    'workspace'
   );
 
   const handleCreateVersion = useCreateVersionHook(selectedRowData, table);

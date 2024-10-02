@@ -13,7 +13,6 @@ export default async function CreateStreamPage() {
   if (!user) return notFound();
 
   const subscription = await getSubscription(user.id);
-
   const subscriptionId = subscription.id;
 
   const tierLimits = await getTierLimit(subscriptionId);
@@ -50,7 +49,12 @@ export default async function CreateStreamPage() {
   return (
     <>
       <div className="container mx-auto py-10">
-        <FormCreateWorkspace tierLimits={tierLimits} table={combinedData} accounts={accounts} />
+        <FormCreateWorkspace
+          tierLimits={tierLimits}
+          table={combinedData}
+          accounts={accounts}
+          containers={containers}
+        />
       </div>
     </>
   );

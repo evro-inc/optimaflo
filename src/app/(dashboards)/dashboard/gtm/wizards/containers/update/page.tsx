@@ -10,19 +10,18 @@ export default async function UpdateContainerPage() {
   if (!user) return notFound();
 
   const subscription = await getSubscription(user.id);
-
   const subscriptionId = subscription.id;
 
   const tierLimits = await getTierLimit(subscriptionId);
 
-  const ga4PropertiesTier = tierLimits.find((tier) => tier.Feature.name === 'GA4Properties');
+  const ga4PropertiesTier = tierLimits.find((tier) => tier.Feature.name === 'GTMContainer');
 
   const updateLimit = ga4PropertiesTier.updateLimit;
   const updateUsage = ga4PropertiesTier.updateUsage;
   const remaining = updateLimit - updateUsage;
 
   if (remaining <= 0) {
-    redirect('/dashboard/ga/properties');
+    redirect('/dashboard/gtm/entities');
   }
 
   return (

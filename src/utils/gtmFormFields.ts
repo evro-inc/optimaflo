@@ -15,9 +15,7 @@ interface FieldConfig {
 }
 
 // Define a generic type for data source, allowing flexibility
-type DataSourceType = Record<string, any> | Record<string, any>[];
-
-
+type DataSourceType = any;
 
 const getCommonAccountFields = (): Record<string, FieldConfig> => ({
   name: {
@@ -25,9 +23,46 @@ const getCommonAccountFields = (): Record<string, FieldConfig> => ({
     description: 'This is the account name you want to update.',
     placeholder: 'Name of the account.',
     type: 'text',
-  }
+  },
 });
 
+const getCommonWorkspaceFields = (
+  accountsWithContainers: { name: string; accountId: string }[],
+  filteredContainers: { name: string; containerId: string }[]
+): Record<string, FieldConfig> => ({
+  name: {
+    label: 'Workspace Name',
+    description: 'This is the workspace name you want to create.',
+    placeholder: 'Name of the workspace.',
+    type: 'text',
+  },
+  accountId: {
+    label: 'Account',
+    description: 'This is the account you want to associate with the property.',
+    placeholder: 'Select an account.',
+    type: 'select',
+    options: accountsWithContainers.map((account) => ({
+      label: account.name,
+      value: account.accountId,
+    })),
+  },
+  containerId: {
+    label: 'Container',
+    description: 'This is the container you want to associate with the workspace.',
+    placeholder: 'Select an container.',
+    type: 'select',
+    options: filteredContainers.map((con) => ({
+      label: con.name,
+      value: con.containerId,
+    })),
+  },
+  description: {
+    label: 'Description',
+    description: 'This is the description you want to add.',
+    placeholder: 'Description.',
+    type: 'text',
+  },
+});
 
 // Refactored GTM Form Field Configs Function
 export const gtmFormFieldConfigs = (
@@ -38,6 +73,8 @@ export const gtmFormFieldConfigs = (
 ): Record<string, FieldConfig> => {
   const isUpdate = formType === 'update';
   const data = !isUpdate && Array.isArray(dataSource) ? dataSource : [];
+
+  const maxOptions = Math.min(remaining, 20);
 
   switch (entityType) {
     case 'GTMAccount': {
@@ -151,8 +188,32 @@ export const gtmFormFieldConfigs = (
       }
     }
 
-    // Add more GTM entity cases as needed
+    case 'GTMWorkspace': {
+      const accountsWithContainers = dataSource?.accountsWithContainers || [];
+      const filteredContainers = dataSource?.filteredContainers || [];
+      const commonFields = getCommonWorkspaceFields(accountsWithContainers, filteredContainers);
 
+      if (isUpdate) {
+        return {
+          name: commonFields.name,
+          description: commonFields.description,
+        };
+      }
+
+      return {
+        ...commonFields,
+        amount: {
+          label: 'How many custom dimensions do you want to add?',
+          description: 'This is the number of custom dimensions you want to create.',
+          placeholder: 'Select the number of custom dimensions.',
+          type: 'select',
+          options: Array.from({ length: maxOptions }, (_, i) => ({
+            label: `${i + 1}`,
+            value: `${i + 1}`,
+          })),
+        },
+      };
+    }
     default:
       throw new Error(`Unsupported GTM entity type: ${entityType}`);
   }

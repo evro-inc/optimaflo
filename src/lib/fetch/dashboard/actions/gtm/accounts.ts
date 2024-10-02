@@ -2,7 +2,15 @@
 
 import { FormSchema, FormSchemaType } from '../../../../schemas/gtm/accounts';
 import { redis } from '@/src/lib/redis/cache';
-import { authenticateUser, checkFeatureLimit, ensureGARateLimit, executeApiRequest, getOauthToken, softRevalidateFeatureCache, validateFormData } from '@/src/utils/server';
+import {
+  authenticateUser,
+  checkFeatureLimit,
+  ensureGARateLimit,
+  executeApiRequest,
+  getOauthToken,
+  softRevalidateFeatureCache,
+  validateFormData,
+} from '@/src/utils/server';
 import prisma from '@/src/lib/prisma';
 import { FeatureResponse, FeatureResult } from '@/src/types/types';
 
@@ -79,8 +87,6 @@ export async function listGtmAccounts(skipCache = false): Promise<any[]> {
     return []; // Return empty array or handle this more gracefully depending on your needs
   }
 }
-
-
 
 /* export async function listGtmAccounts(skipCache = false) {
   // Initialization of retry mechanism
@@ -160,7 +166,6 @@ export async function listGtmAccounts(skipCache = false): Promise<any[]> {
   throw new Error('Maximum retries reached without a successful response.');
 } */
 
-
 /************************************************************************************
  * Update Google Tag Manager Accounts
  ************************************************************************************/
@@ -194,15 +199,13 @@ export async function updateAccounts(formData: {
 
   await ensureGARateLimit(userId);
 
-  console.log("formData", formData);
-
+  console.log('formData', formData);
 
   await Promise.all(
     formData.forms.map(async (data) => {
       const validatedData = await validateFormData(FormSchema, { forms: [data] });
 
-      console.log("val data", validatedData);
-
+      console.log('val data', validatedData);
 
       const cleanedData = validatedData.forms[0];
       const headers = {
@@ -215,7 +218,6 @@ export async function updateAccounts(formData: {
 
       console.log('url', url);
       console.log('cleanedData', cleanedData);
-
 
       const requestBody: any = {
         accountId: cleanedData.accountId,

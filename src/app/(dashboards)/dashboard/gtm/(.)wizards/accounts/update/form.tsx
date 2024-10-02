@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setCurrentStep } from '@/redux/formSlice';
-import { SubmitHandler, useForm } from 'react-hook-form';
+import { SubmitHandler } from 'react-hook-form';
 import { FormSchema, FormSchemaType } from '@/src/lib/schemas/gtm/accounts';
 import { Button } from '@/src/components/ui/button';
 import { Form } from '@/src/components/ui/form';
@@ -12,7 +12,12 @@ import { selectTable } from '@/src/redux/tableSlice';
 import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import { updateAccounts } from '@/src/lib/fetch/dashboard/actions/gtm/accounts';
-import { useErrorHandling, useErrorRedirect, useFormInitialization, useStepNavigation } from '@/src/hooks/wizard';
+import {
+  useErrorHandling,
+  useErrorRedirect,
+  useFormInitialization,
+  useStepNavigation,
+} from '@/src/hooks/wizard';
 import { processForm } from '@/src/utils/utils';
 import { FormFieldComponent } from '@/src/components/client/Utils/Form';
 import { gtmFormFieldConfigs } from '@/src/utils/gtmFormFields';
@@ -45,12 +50,7 @@ const FormUpdateAccount: React.FC<FormUpdateProps> = React.memo(() => {
     ])
   );
 
-  const configs = gtmFormFieldConfigs(
-    'GTMAccount',
-    'update',
-    10000,
-    selectedRowDataTransformed
-  );
+  const configs = gtmFormFieldConfigs('GTMAccount', 'update', 10000, selectedRowDataTransformed);
 
   const formDataDefaults: GTMAccountType[] = Object.values(selectedRowData).map((rowData) => ({
     name: rowData.name,
@@ -65,8 +65,7 @@ const FormUpdateAccount: React.FC<FormUpdateProps> = React.memo(() => {
     fieldsToValidate: ['name'],
   });
 
-  console.log("form.getValues()", form.getValues());
-
+  console.log('form.getValues()', form.getValues());
 
   const onSubmit: SubmitHandler<FormSchemaType> = processForm(
     updateAccounts,
@@ -76,11 +75,8 @@ const FormUpdateAccount: React.FC<FormUpdateProps> = React.memo(() => {
     router,
     '/dashboard/gtm/entities'
   );
-  const { watch } = useForm();
-  console.log(watch()); // logs the entire form state
+
   if (errorModal) return errorModal;
-
-
 
   const renderForms = () => {
     const currentFormIndex = currentStep - 1; // Adjust for zero-based indexing

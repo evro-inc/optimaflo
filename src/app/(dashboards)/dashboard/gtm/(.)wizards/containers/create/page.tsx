@@ -7,12 +7,11 @@ import FormCreateContainer from './form';
 import { listGtmAccounts } from '@/src/lib/fetch/dashboard/actions/gtm/accounts';
 import { listGtmContainers } from '@/src/lib/fetch/dashboard/actions/gtm/containers';
 
-export default async function CreateStreamPage() {
+export default async function CreateContainerPage() {
   const user = await currentUser();
   if (!user) return notFound();
 
   const subscription = await getSubscription(user.id);
-
   const subscriptionId = subscription.id;
 
   const tierLimits = await getTierLimit(subscriptionId);

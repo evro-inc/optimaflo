@@ -32,7 +32,7 @@ import {
 } from '@/src/components/ui/dropdown-menu';
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
-import { revalidate } from '@/src/utils/server';
+import { hardRevalidateFeatureCache, revalidate } from '@/src/utils/server';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
 import { useCreateHookForm, useUpdateHookForm, useDeleteHook } from '@/src/hooks/useCRUD';
 
@@ -91,18 +91,8 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
         onClick: () => toast.dismiss(),
       },
     });
-    await revalidate(
-      [
-        `gtm:containers:userId:${userId}`,
-        `gtm:workspaces:userId:${userId}`,
-        `gtm:versions:userId:${userId}`,
-        `gtm:permissions:userId:${userId}`,
-      ],
-      `/dashboard/gtm/entities`,
-      userId
-    ).catch((err) => {
-      console.error('Error during revalidation:', err);
-    });
+    const keys = [`gtm:containers:userId:${userId}`];
+    await hardRevalidateFeatureCache(keys, '/dashboard/gtm/entities', userId);
   };
 
   const selectedRowData = table.getSelectedRowModel().rows.reduce((acc, row) => {
