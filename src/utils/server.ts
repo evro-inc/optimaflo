@@ -147,10 +147,18 @@ export async function handleApiResponseError(response: Response, feature: string
 
   switch (response.status) {
     case 400:
+      if (feature == 'versions') {
+        return {
+          success: false,
+          errorCode: 400,
+          message: `${feature} ${names} was unsuccessful. Make sure you're not deleting the latest or live version of your container.`,
+        };
+      }
+
       return {
         success: false,
         errorCode: 400,
-        message: `${feature} ${names} was not created. ${
+        message: `${feature} ${names} was unsuccessful. ${
           parsedResponse?.error?.message ?? 'Unknown error'
         }`,
       };

@@ -32,7 +32,7 @@ import {
 } from '@/src/components/ui/dropdown-menu';
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
-import { revalidate } from '@/src/utils/server';
+import { hardRevalidateFeatureCache } from '@/src/utils/server';
 import { useDispatch } from 'react-redux';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
 import { useDeleteHook, useUpdateHookForm } from '@/src/hooks/useCRUD';
@@ -40,8 +40,8 @@ import { useTransition } from 'react';
 import { setSelectedRows } from '@/src/redux/tableSlice';
 import { LimitReached } from '@/src/components/client/modals/limitReached';
 
-import { DeleteVersions } from '@/src/lib/fetch/dashboard/actions/gtm/versions';
 import { GTMContainerVersion } from '@/src/types/types';
+import { deleteVersions } from '@/src/lib/fetch/dashboard/actions/gtm/versions';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -89,8 +89,12 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
         onClick: () => toast.dismiss(),
       },
     });
-    const keys = [`gtm:versions:userId:${userId}`];
-    await revalidate(keys, '/dashboard/gtm/entities', userId);
+    const keys = [
+      `gtm:versions:userId:${userId}`,
+      `gtm:liveVersions:userId:${userId}`,
+      `gtm:latestVersions:userId:${userId}`,
+    ];
+    await hardRevalidateFeatureCache(keys, '/dashboard/gtm/entities', userId);
   };
 
   const selectedRowData = table.getSelectedRowModel().rows.reduce((acc, row) => {
@@ -114,9 +118,9 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     });
   };
 
-  const getDisplayNames = (items) => items.map((item: GTMContainerVersion) => item.name);
+  const getDisplayNames = (items) => items.map((item: GTMContainerVersion) => item.path);
   const handleDelete = useDeleteHook(
-    DeleteVersions,
+    deleteVersions,
     selectedRowData,
     table,
     getDisplayNames,
@@ -150,6 +154,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
             disabled={Object.keys(table.getState().rowSelection).length === 0}
             onDelete={handleDelete}
             action={''}
+            type="GTMVersion"
           />
 
           <DropdownMenu>

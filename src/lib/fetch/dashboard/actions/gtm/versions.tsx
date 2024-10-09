@@ -1,120 +1,499 @@
 'use server';
-import { revalidatePath } from 'next/cache';
-import { auth } from '@clerk/nextjs/server';
-import { gaRateLimit, gtmRateLimit } from '../../../../redis/rateLimits';
-import { limiter } from '../../../../bottleneck';
+
 import { redis } from '@/src/lib/redis/cache';
-import { notFound } from 'next/navigation';
-import { currentUserOauthAccessToken } from '@/src/lib/clerk';
 import prisma from '@/src/lib/prisma';
 import { FeatureResult, FeatureResponse, GTMContainerVersion } from '@/src/types/types';
 import {
-  handleApiResponseError,
-  tierCreateLimit,
-  tierDeleteLimit,
-  tierUpdateLimit,
+  authenticateUser,
+  checkFeatureLimit,
+  ensureGARateLimit,
+  executeApiRequest,
+  getOauthToken,
+  softRevalidateFeatureCache,
 } from '@/src/utils/server';
-import { fetchGASettings, fetchGtmSettings } from '../..';
-import { ContainerVersionType, UpdateVersionSchemaType } from '@/src/lib/schemas/gtm/versions';
-import { UpdateVersionFormSchema } from '@/src/lib/schemas/gtm/versions';
+
+const featureType: string = 'GTMVersions';
 
 /************************************************************************************
-  Function to list GA Versions
+  Function to list GTM Versions
 ************************************************************************************/
-export async function listGTMVersionHeaders() {
-  let retries = 0;
-  const MAX_RETRIES = 3;
-  let delay = 1000;
-
-  // Authenticating the user and getting the user ID
-  const { userId } = await auth();
-  if (!userId) return notFound();
-
-  const token = await currentUserOauthAccessToken(userId);
-
+export async function listGTMVersionHeaders(skipCache = false): Promise<any[]> {
+  const userId = await authenticateUser();
+  const token = await getOauthToken(userId);
   const cacheKey = `gtm:versions:userId:${userId}`;
-  const cachedValue = await redis.get(cacheKey);
 
-  if (cachedValue) {
-    return JSON.parse(cachedValue);
-  }
+  if (!skipCache) {
+    const cacheData = await redis.hgetall(cacheKey);
 
-  await fetchGASettings(userId);
+    if (Object.keys(cacheData).length > 0) {
+      try {
+        const parsedData = Object.values(cacheData).map((data) => JSON.parse(data));
 
-  const gtmData = await prisma.user.findFirst({
-    where: {
-      id: userId,
-    },
-    include: {
-      gtm: true,
-    },
-  });
-
-  while (retries < MAX_RETRIES) {
-    try {
-      const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
-      if (remaining > 0) {
-        let allData: any[] = [];
-
-        await limiter.schedule(async () => {
-          const uniquePairs = new Set(
-            gtmData.gtm.map((data) => `${data.accountId}-${data.containerId}`)
-          );
-
-          const urls = Array.from(uniquePairs).map((pair: any) => {
-            const [accountId, containerId] = pair.split('-');
-            return `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/version_headers`;
-          });
-
-          const headers = {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'Accept-Encoding': 'gzip',
-          };
-
-          for (const url of urls) {
-            try {
-              const response = await fetch(url, { headers });
-
-              if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
-              }
-
-              const responseBody = await response.json();
-
-              if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
-              }
-              allData.push(responseBody);
-            } catch (error: any) {
-              throw new Error(`Error fetching data: ${error.message}`);
-            }
-          }
-        });
-
-        redis.set(cacheKey, JSON.stringify(allData), 'EX', 3600);
-
-        return allData;
-      }
-    } catch (error: any) {
-      if (error.code === 429 || error.status === 429) {
-        const jitter = Math.random() * 200;
-        await new Promise((resolve) => setTimeout(resolve, delay + jitter));
-        delay *= 2;
-        retries++;
-      } else {
-        throw error;
+        return parsedData;
+      } catch (error) {
+        console.error('Failed to parse cache data:', error);
+        await redis.del(cacheKey);
       }
     }
   }
-  throw new Error('Maximum retries reached without a successful response.');
+
+  const data = await prisma.user.findFirst({
+    where: { id: userId },
+    include: { gtm: true },
+  });
+
+  if (!data) return [];
+
+  await ensureGARateLimit(userId);
+
+  const uniqueItems = Array.from(
+    new Set(
+      data.gtm.map((item) =>
+        JSON.stringify({
+          accountId: item.accountId,
+          containerId: item.containerId,
+        })
+      )
+    )
+  ).map((str: any) => JSON.parse(str));
+
+  const urls = uniqueItems.map(
+    ({ accountId, containerId }) =>
+      `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/version_headers`
+  );
+
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+    'Accept-Encoding': 'gzip',
+  };
+
+  try {
+    const allData = await Promise.all(urls.map((url) => executeApiRequest(url, { headers })));
+    const flattenedData = allData.flat();
+    const cleanedData = flattenedData.filter((item) => Object.keys(item).length > 0);
+    const data = cleanedData.flatMap((item) => item.containerVersionHeader || []); // Flatten to get all workspaces directly
+
+    console.log('versoin data', data);
+
+    try {
+      // Use HSET to store each property under a unique field
+      const pipeline = redis.pipeline();
+
+      data.forEach((data: any) => {
+        const fieldKey = data.accountId + '/' + data.containerId + '/' + data.containerVersionId; // Access 'name' directly from the property object
+
+        if (fieldKey) {
+          // Ensure fieldKey is defined
+          pipeline.hset(cacheKey, fieldKey, JSON.stringify(data));
+        } else {
+          console.warn('Skipping workspace with undefined name:', data);
+        }
+      });
+
+      pipeline.expire(cacheKey, 86400); // Set expiration for the entire hash
+      await pipeline.exec(); // Execute the pipeline commands
+    } catch (cacheError) {
+      console.error('Failed to set cache data with HSET:', cacheError);
+    }
+
+    return data; // Return only the data array
+  } catch (apiError) {
+    console.error('Error fetching data from API:', apiError);
+    return []; // Return empty array or handle this more gracefully depending on your needs
+  }
+}
+
+/************************************************************************************
+  Function to get GTM lastest versions
+************************************************************************************/
+export async function getGTMLatestVersion(skipCache = false): Promise<any> {
+  const userId = await authenticateUser();
+  const token = await getOauthToken(userId);
+  const cacheKey = `gtm:latestVersions:userId:${userId}`;
+  const pipeline = redis.pipeline();
+
+  // Step 1: Check Redis cache for the specific propertyId
+  if (!skipCache) {
+    const cacheData = await redis.hgetall(cacheKey);
+
+    if (Object.keys(cacheData).length > 0) {
+      try {
+        const parsedData = Object.values(cacheData).map((data) => JSON.parse(data));
+
+        return parsedData;
+      } catch (error) {
+        console.error('Failed to parse cache data:', error);
+        await redis.del(cacheKey);
+      }
+    }
+  }
+
+  // Step 2: Fetch user data from the database
+  const data = await prisma.user.findFirst({
+    where: { id: userId },
+    include: { gtm: true },
+  });
+
+  if (!data) return null; // Return null if no user data found
+
+  await ensureGARateLimit(userId);
+
+  // Step 3: Fetch property data from the API
+
+  const uniqueItems = Array.from(
+    new Set(
+      data.gtm.map((item) =>
+        JSON.stringify({
+          accountId: item.accountId,
+          containerId: item.containerId,
+        })
+      )
+    )
+  ).map((str: any) => JSON.parse(str));
+
+  if (!uniqueItems) return null; // Return null if no matching accountId is found
+
+  const urls = uniqueItems.map(
+    ({ accountId, containerId }) =>
+      `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/version_headers:latest`
+  );
+
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+    'Accept-Encoding': 'gzip',
+  };
+
+  try {
+    // Fetch the property from the API
+    const allData = await Promise.all(urls.map((url) => executeApiRequest(url, { headers })));
+    const flattenedData = allData.flat();
+    const cleanedData = flattenedData.filter((item) => Object.keys(item).length > 0);
+    console.log('latest cleanedData', cleanedData);
+
+    const data = cleanedData.flatMap((item) => item || []); // Flatten to get all workspaces directly
+
+    data.forEach((data: any) => {
+      const fieldKey = data.accountId + '/' + data.containerId + '/' + data.containerVersionId; // Access 'name' directly from the property object
+
+      if (fieldKey) {
+        // Ensure fieldKey is defined
+        pipeline.hset(cacheKey, fieldKey, JSON.stringify(data));
+      } else {
+        console.warn('Skipping workspace with undefined name:', data);
+      }
+    });
+    pipeline.expire(cacheKey, 86400); // Set expiration for the entire hash
+    await pipeline.exec(); // Execute the pipeline commands
+
+    return data; // Return the fetched property
+  } catch (apiError) {
+    console.error('Error fetching property from API:', apiError);
+    return null; // Return null if API call fails
+  }
+}
+
+/************************************************************************************
+  Function to get GTM live versions
+************************************************************************************/
+export async function getGTMLiveVersion(skipCache = false): Promise<any> {
+  const userId = await authenticateUser();
+  const token = await getOauthToken(userId);
+  const cacheKey = `gtm:liveVersions:userId:${userId}`;
+  const pipeline = redis.pipeline();
+
+  // Step 1: Check Redis cache for the specific propertyId
+  if (!skipCache) {
+    const cacheData = await redis.hgetall(cacheKey);
+
+    if (Object.keys(cacheData).length > 0) {
+      try {
+        const parsedData = Object.values(cacheData).map((data) => JSON.parse(data));
+
+        return parsedData;
+      } catch (error) {
+        console.error('Failed to parse cache data:', error);
+        await redis.del(cacheKey);
+      }
+    }
+  }
+
+  // Step 2: Fetch user data from the database
+  const data = await prisma.user.findFirst({
+    where: { id: userId },
+    include: { gtm: true },
+  });
+
+  if (!data) return null; // Return null if no user data found
+
+  await ensureGARateLimit(userId);
+
+  // Step 3: Fetch property data from the API
+
+  const uniqueItems = Array.from(
+    new Set(
+      data.gtm.map((item) =>
+        JSON.stringify({
+          accountId: item.accountId,
+          containerId: item.containerId,
+        })
+      )
+    )
+  ).map((str: any) => JSON.parse(str));
+
+  if (!uniqueItems) return null; // Return null if no matching accountId is found
+
+  const urls = uniqueItems.map(
+    ({ accountId, containerId }) =>
+      `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/versions:live`
+  );
+
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+    'Accept-Encoding': 'gzip',
+  };
+
+  try {
+    // Fetch the property from the API
+    const allData = await Promise.all(urls.map((url) => executeApiRequest(url, { headers })));
+    const flattenedData = allData.flat();
+    const cleanedData = flattenedData.filter((item) => Object.keys(item).length > 0);
+    const data = cleanedData.flatMap((item) => item || []); // Flatten to get all workspaces directly
+
+    data.forEach((data: any) => {
+      const fieldKey = data.accountId + '/' + data.containerId + '/' + data.containerVersionId; // Access 'name' directly from the property object
+
+      if (fieldKey) {
+        // Ensure fieldKey is defined
+        pipeline.hset(cacheKey, fieldKey, JSON.stringify(data));
+      } else {
+        console.warn('Skipping workspace with undefined name:', data);
+      }
+    });
+    pipeline.expire(cacheKey, 86400); // Set expiration for the entire hash
+    await pipeline.exec(); // Execute the pipeline commands
+
+    return data; // Return the fetched property
+  } catch (apiError) {
+    console.error('Error fetching property from API:', apiError);
+    return null; // Return null if API call fails
+  }
+}
+
+/************************************************************************************
+  Delete a single or multiple versions
+************************************************************************************/
+export async function deleteVersions(
+  selected: Set<GTMContainerVersion>,
+  names: string[]
+): Promise<FeatureResponse> {
+  const userId = await authenticateUser();
+  const token = await getOauthToken(userId);
+  const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
+    userId,
+    featureType,
+    'delete'
+  );
+
+  console.log('seelected', selected);
+
+  if (tierLimitResponse.limitReached || selected.size > availableUsage) {
+    return {
+      success: false,
+      limitReached: true,
+      message: 'Feature limit reached or request exceeds available deletions.',
+      errors: [
+        `Cannot delete more versions than available. You have ${availableUsage} deletions left.`,
+      ],
+      results: [],
+    };
+  }
+
+  let errors: string[] = [];
+  let successfulDeletions: GTMContainerVersion[] = [];
+  let featureLimitReached: string[] = [];
+  let notFoundLimit: string[] = [];
+
+  // Step 1: Fetch live and latest versions for each GTM container in the selected set
+  const liveVersions = new Set<string>(); // To store live version IDs
+  const latestVersions = new Set<string>(); // To store latest version IDs
+
+  await Promise.all(
+    Array.from(selected).map(async (version) => {
+      const { accountId, containerId } = version;
+
+      // Fetch live version
+      const liveUrl = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/versions:live`;
+      const latestUrl = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/version_headers:latest`;
+
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept-Encoding': 'gzip',
+      };
+
+      try {
+        // Fetch live and latest versions concurrently
+        const [liveVersionResponse, latestVersionResponse] = await Promise.all([
+          executeApiRequest(liveUrl, { headers }),
+          executeApiRequest(latestUrl, { headers }),
+        ]);
+
+        // Add live and latest version IDs to the sets
+        liveVersions.add(liveVersionResponse.containerVersionId);
+        latestVersions.add(latestVersionResponse.containerVersionId);
+      } catch (error) {
+        console.error('Error fetching live/latest versions:', error);
+      }
+    })
+  );
+
+  // Step 2: Filter the selected versions to exclude live and latest ones
+  const nonLiveAndNonLatest = Array.from(selected).filter(
+    (version) =>
+      !liveVersions.has(version.containerVersionId) &&
+      !latestVersions.has(version.containerVersionId)
+  );
+
+  if (nonLiveAndNonLatest.length === 0) {
+    return {
+      success: false,
+      message: 'No non-live or non-latest versions to delete.',
+      errors: [],
+      results: [],
+    };
+  }
+
+  // Step 3: Proceed with deleting the filtered non-live, non-latest versions
+  await ensureGARateLimit(userId);
+
+  await Promise.all(
+    nonLiveAndNonLatest.map(async (data: GTMContainerVersion) => {
+      const url = `https://www.googleapis.com/tagmanager/v2/${data.path}`;
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept-Encoding': 'gzip',
+      };
+
+      try {
+        await executeApiRequest(url, { method: 'DELETE', headers }, 'versions', names);
+        successfulDeletions.push(data);
+
+        await prisma.tierLimit.update({
+          where: { id: tierLimitResponse.id },
+          data: { deleteUsage: { increment: 1 } },
+        });
+      } catch (error: any) {
+        if (error.message === 'Feature limit reached') {
+          featureLimitReached.push(data.name);
+        } else if (error.message.includes('404')) {
+          notFoundLimit.push(data.name);
+        } else {
+          errors.push(error.message);
+        }
+      }
+    })
+  );
+
+  console.log('successfulDeletions', successfulDeletions);
+
+  if (successfulDeletions.length > 0) {
+    // **Perform Selective Revalidation After All Deletions**:
+    try {
+      // Explicitly type the operations array
+      const operations = successfulDeletions.map((deletion) => ({
+        crudType: 'delete' as const, // Explicitly set the type as "delete"
+        data: deletion, // Include the full version data as `data`
+      }));
+
+      const cacheFields = successfulDeletions.map(
+        (del) => `${del.accountId}/${del.containerId}/${del.containerVersionId}`
+      );
+
+      await softRevalidateFeatureCache(
+        [`gtm:versions:userId:${userId}`],
+        `/dashboard/gtm/entities`,
+        userId,
+        operations,
+        cacheFields
+      );
+    } catch (err) {
+      console.error('Error during revalidation:', err);
+    }
+  }
+
+  // Check for not found property and return response if applicable
+  if (notFoundLimit.length > 0) {
+    return {
+      success: false,
+      limitReached: false,
+      notFoundError: true,
+      message: `Could not delete version. Please check your permissions. Version Name: ${names.find(
+        (name) => name.includes(name)
+      )}. All other versions were successfully deleted.`,
+      results: notFoundLimit.map((data) => ({
+        id: [data], // Ensure id is an array
+        name: [names.find((name) => name.includes(data)) || 'Unknown'], // Ensure name is an array
+        success: false,
+        notFound: true,
+      })),
+    };
+  }
+
+  // Check if feature limit is reached and return response if applicable
+  if (featureLimitReached.length > 0) {
+    return {
+      success: false,
+      limitReached: true,
+      notFoundError: false,
+      message: `Feature limit reached for versions: ${featureLimitReached.join(', ')}`,
+      results: featureLimitReached.map((data) => ({
+        id: [data], // Ensure id is an array
+        name: [names.find((name) => name.includes(data)) || 'Unknown'], // Ensure name is an array
+        success: false,
+        featureLimitReached: true,
+      })),
+    };
+  }
+
+  console.log('errors', errors);
+
+  if (errors.length > 0) {
+    return {
+      success: false,
+      errors,
+      results: [],
+      message: errors.join(', '),
+      notFoundError: notFoundLimit.length > 0,
+    };
+  }
+
+  return {
+    success: true,
+    message: `Successfully deleted ${successfulDeletions.length} version(s)`,
+    features: successfulDeletions.map<FeatureResult>((data) => ({
+      id: [data.name], // Wrap propertyId in an array to match FeatureResult type
+      name: [names.find((name) => name.includes(data.name)) || 'Unknown'], // Wrap name in an array to match FeatureResult type
+      success: true, // Indicates success of the operation
+    })),
+    errors: [],
+    notFoundError: notFoundLimit.length > 0,
+    results: successfulDeletions.map<FeatureResult>((data) => ({
+      id: [data.name], // FeatureResult.id is an array
+      name: [names.find((name) => name.includes(data.name)) || 'Unknown'], // FeatureResult.name is an array
+      success: true, // FeatureResult.success indicates if the operation was successful
+    })),
+  };
 }
 
 /************************************************************************************
   Create a single GTM version or multiple GTM versions
 ************************************************************************************/
 
-export async function publishGTM(formData: ContainerVersionType) {
+/* export async function publishGTM(formData: ContainerVersionType) {
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
@@ -412,304 +791,12 @@ export async function publishGTM(formData: ContainerVersionType) {
     results: results, // Use the correctly typed results
     notFoundError: false, // Set based on actual not found status
   };
-}
-
-/************************************************************************************
-  Delete a single or multiple versions
-************************************************************************************/
-export async function DeleteVersions(
-  versionsToDelete: GTMContainerVersion[]
-): Promise<FeatureResponse> {
-  // Initialization of retry mechanism
-  let retries = 0;
-  const MAX_RETRIES = 3;
-  let delay = 1000;
-
-  // Arrays to track various outcomes
-  const errors: string[] = [];
-  const successfulDeletions: Array<{
-    combinedId: string;
-    name: string;
-  }> = [];
-  const featureLimitReached: {
-    combinedId: string;
-    name: string;
-  }[] = [];
-  const notFoundLimit: Array<{
-    combinedId: string;
-    name: string;
-  }> = [];
-
-  const versionsToDeleteMappedData = new Set(
-    versionsToDelete.map(
-      (prop) => `${prop.accountId}-${prop.containerId}-${prop.containerVersionId}`
-    )
-  );
-
-  // Authenticating user and getting user ID
-  const { userId } = await auth();
-  // If user ID is not found, return a 'not found' error
-  if (!userId) return notFound();
-  const token = await currentUserOauthAccessToken(userId);
-
-  // Check for feature limit using Prisma ORM
-  const tierLimitResponse: any = await tierDeleteLimit(userId, 'GTMVersions');
-  const limit = Number(tierLimitResponse.deleteLimit);
-  const deleteUsage = Number(tierLimitResponse.deleteUsage);
-  const availableDeleteUsage = limit - deleteUsage;
-  const containerIdsProcessed = new Set<string>();
-
-  // Handling feature limit
-  if (tierLimitResponse && tierLimitResponse.limitReached) {
-    return {
-      success: false,
-      limitReached: true,
-      errors: [],
-      message: 'Feature limit reached for deleting versions',
-      results: [],
-    };
-  }
-
-  if (versionsToDeleteMappedData.size > availableDeleteUsage) {
-    // If the deletion request exceeds the available limit
-    return {
-      success: false,
-      features: [],
-      errors: [
-        `Cannot delete ${versionsToDeleteMappedData.size} versions as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
-      ],
-      results: [],
-      limitReached: true,
-      message: `Cannot delete ${versionsToDeleteMappedData.size} versions as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
-    };
-  }
-  let permissionDenied = false;
-
-  if (versionsToDeleteMappedData.size <= availableDeleteUsage) {
-    // Retry loop for deletion requests
-    while (retries < MAX_RETRIES && versionsToDeleteMappedData.size > 0 && !permissionDenied) {
-      try {
-        // Enforcing rate limit
-        const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
-
-        if (remaining > 0) {
-          await limiter.schedule(async () => {
-            const deletePromises = Array.from(versionsToDelete).map(async (prop) => {
-              const { accountId, containerId, containerVersionId } = prop;
-
-              let url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/versions/${containerVersionId}?`;
-
-              const headers = {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json',
-                'Accept-Encoding': 'gzip',
-              };
-
-              try {
-                const response = await fetch(url, {
-                  method: 'DELETE',
-                  headers: headers,
-                });
-
-                const parsedResponse = await response.json();
-
-                if (response.ok) {
-                  containerIdsProcessed.add(containerId);
-                  successfulDeletions.push({
-                    combinedId: `${accountId}-${containerId}-${containerVersionId}`,
-                    name: prop.name,
-                  });
-
-                  await prisma.tierLimit.update({
-                    where: { id: tierLimitResponse.id },
-                    data: { deleteUsage: { increment: 1 } },
-                  });
-
-                  versionsToDeleteMappedData.delete(
-                    `${accountId}-${containerId}-${containerVersionId}`
-                  );
-                  fetchGtmSettings(userId);
-
-                  return {
-                    combinedId: `${accountId}-${containerId}-${containerVersionId}`,
-                    success: true,
-                  };
-                } else {
-                  const errorResult = await handleApiResponseError(
-                    response,
-                    parsedResponse,
-                    'version',
-                    [prop.name]
-                  );
-
-                  if (errorResult) {
-                    errors.push(`${errorResult.message}`);
-                    if (
-                      errorResult.errorCode === 403 &&
-                      parsedResponse.message === 'Feature limit reached'
-                    ) {
-                      featureLimitReached.push({
-                        combinedId: `${accountId}-${containerId}-${containerVersionId}`,
-                        name: prop.name,
-                      });
-                    } else if (errorResult.errorCode === 404) {
-                      notFoundLimit.push({
-                        combinedId: `${accountId}-${containerId}-${containerVersionId}`,
-                        name: prop.name,
-                      });
-                    }
-                  } else {
-                    errors.push(`An unknown error occurred for versions.`);
-                  }
-
-                  versionsToDeleteMappedData.delete(
-                    `${accountId}-${containerId}-${containerVersionId}`
-                  );
-                  permissionDenied = errorResult ? true : permissionDenied;
-                }
-              } catch (error: any) {
-                // Handling exceptions during fetch
-                errors.push(
-                  `Error deleting version ${accountId}-${containerId}-${containerVersionId}: ${error.message}`
-                );
-              }
-              containerIdsProcessed.add(containerId);
-              versionsToDeleteMappedData.delete(
-                `${accountId}-${containerId}-${containerVersionId}`
-              );
-              return { containerId, success: false };
-            });
-
-            // Awaiting all deletion promises
-            await Promise.all(deletePromises);
-          });
-
-          if (notFoundLimit.length > 0) {
-            return {
-              success: false,
-              limitReached: false,
-              notFoundError: true, // Set the notFoundError flag
-              message: `Could not delete version. Please check your permissions. Container Name: 
-              ${notFoundLimit
-                .map(({ name }) => name)
-                .join(', ')}. All other variables were successfully deleted.`,
-              results: notFoundLimit.map(({ combinedId, name }) => {
-                const [accountId, containerId, containerVersionId] = combinedId.split('-');
-                return {
-                  id: [accountId, containerId, containerVersionId], // Ensure id is an array
-                  name: [name],
-                  success: false,
-                  notFound: true,
-                };
-              }),
-            };
-          }
-          if (featureLimitReached.length > 0) {
-            return {
-              success: false,
-              limitReached: true,
-              notFoundError: false,
-              message: `Feature limit reached for version: ${featureLimitReached
-                .map(({ combinedId }) => combinedId)
-                .join(', ')}`,
-              results: featureLimitReached.map(({ combinedId, name }) => {
-                const [accountId, containerId, containerVersionId] = combinedId.split('-');
-                return {
-                  id: [accountId, containerId, containerVersionId], // Ensure id is an array
-                  name: [name], // Ensure name is an array, use the name from featureLimitReached
-                  success: false,
-                  featureLimitReached: true,
-                };
-              }),
-            };
-          }
-          // Update tier limit usage as before (not shown in code snippet)
-          if (successfulDeletions.length === versionsToDelete.length) {
-            break; // Exit loop if all containers are processed successfully
-          }
-          if (permissionDenied) {
-            break; // Exit the loop if a permission error was encountered
-          }
-        } else {
-          throw new Error('Rate limit exceeded');
-        }
-      } catch (error: any) {
-        // Handling rate limit exceeded error
-        if (error.code === 429 || error.status === 429) {
-          const jitter = Math.random() * 200;
-          await new Promise((resolve) => setTimeout(resolve, delay + jitter));
-          delay *= 2;
-          retries++;
-        } else {
-          break;
-        }
-      } finally {
-        const cacheKey = `gtm:versions:userId:${userId}`;
-        await redis.del(cacheKey);
-
-        await revalidatePath(`/dashboard/gtm/entities`);
-      }
-    }
-  }
-  if (permissionDenied) {
-    return {
-      success: false,
-      errors: errors,
-      results: [],
-      message: errors.join(', '),
-    };
-  }
-
-  if (errors.length > 0) {
-    return {
-      success: false,
-      features: successfulDeletions.map(({ combinedId }) => combinedId),
-      errors: errors,
-      results: successfulDeletions.map(({ combinedId, name }) => {
-        const [accountId, containerId, containerVersionId] = combinedId.split('-');
-        return {
-          id: [accountId, containerId, containerVersionId], // Ensure id is an array
-          name: [name], // Ensure name is an array and provide a default value
-          success: true,
-        };
-      }),
-      // Add a general message if needed
-      message: errors.join(', '),
-    };
-  }
-  // If there are successful deletions, update the deleteUsage
-  if (successfulDeletions.length > 0) {
-    const specificCacheKey = `gtm:versions:userId:${userId}`;
-    await redis.del(specificCacheKey);
-
-    // Revalidate paths if needed
-    revalidatePath(`/dashboard/gtm/entities`);
-  }
-
-  const totalDeletedVariables = successfulDeletions.length;
-
-  // Returning the result of the deletion process
-  return {
-    success: errors.length === 0,
-    message: `Successfully deleted ${totalDeletedVariables} versions(s)`,
-    features: successfulDeletions.map(({ combinedId }) => combinedId),
-    errors: errors,
-    notFoundError: notFoundLimit.length > 0,
-    results: successfulDeletions.map(({ combinedId, name }) => {
-      const [accountId, containerId, containerVersionId] = combinedId.split('-');
-      return {
-        id: [accountId, containerId, containerVersionId], // Ensure id is an array
-        name: [name], // Ensure name is an array
-        success: true,
-      };
-    }),
-  };
-}
+} */
 
 /************************************************************************************
   Udpate a single multiple versions
 ************************************************************************************/
-export async function UpdateVersions(formData: UpdateVersionSchemaType) {
+/* export async function UpdateVersions(formData: UpdateVersionSchemaType) {
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
@@ -1062,3 +1149,4 @@ export async function UpdateVersions(formData: UpdateVersionSchemaType) {
     notFoundError: false, // Set based on actual not found status
   };
 }
+ */

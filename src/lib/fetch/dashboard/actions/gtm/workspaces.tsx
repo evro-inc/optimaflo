@@ -649,7 +649,9 @@ export async function updateWorkspaces(formData: {
 /************************************************************************************
   Create a single GTM version or multiple GTM versions
 ************************************************************************************/
-export async function createGTMVersion(formData: { forms: WorkspaceSchemaType['forms'] }): Promise<FeatureResponse> {
+export async function createGTMVersion(formData: {
+  forms: WorkspaceSchemaType['forms'];
+}): Promise<FeatureResponse> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
 
@@ -665,7 +667,11 @@ export async function createGTMVersion(formData: { forms: WorkspaceSchemaType['f
       )
   );
 
-  const { tierLimitResponse, availableUsage } = await checkFeatureLimit(userId, 'GTMWorkspaces', 'create');
+  const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
+    userId,
+    'GTMWorkspaces',
+    'create'
+  );
 
   if (tierLimitResponse.limitReached || uniqueForms.length > availableUsage) {
     return {
@@ -745,7 +751,7 @@ export async function createGTMVersion(formData: { forms: WorkspaceSchemaType['f
   );
 
   if (successfulCreations.length > 0) {
-    console.log("successfulCreations", successfulCreations);
+    console.log('successfulCreations', successfulCreations);
 
     try {
       const operations = successfulCreations.map((creation) => ({
@@ -760,8 +766,7 @@ export async function createGTMVersion(formData: { forms: WorkspaceSchemaType['f
         return `${accountId}/${containerId}/${workspaceId}`;
       });
 
-      console.log("cacheFields", cacheFields);
-
+      console.log('cacheFields', cacheFields);
 
       await softRevalidateFeatureCache(
         [`gtm:workspaces:userId:${userId}`],
@@ -781,7 +786,9 @@ export async function createGTMVersion(formData: { forms: WorkspaceSchemaType['f
       limitReached: false,
       notFoundError: true,
       features: [],
-      message: `Some workspaces could not be found: ${notFoundLimit.map((item) => item.name).join(', ')}`,
+      message: `Some workspaces could not be found: ${notFoundLimit
+        .map((item) => item.name)
+        .join(', ')}`,
       results: notFoundLimit.map((item) => ({
         id: item.id ? [item.id] : [],
         name: [item.name],

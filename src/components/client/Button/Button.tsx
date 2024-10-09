@@ -291,7 +291,7 @@ export const ButtonCustomerPortal = ({ variant = 'primary', text, ...props }) =>
 
 /* SHADUI */
 
-export const ButtonDelete = ({ onDelete, disabled, action }) => {
+export const ButtonDelete = ({ onDelete, disabled, action, type }) => {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
@@ -321,7 +321,9 @@ export const ButtonDelete = ({ onDelete, disabled, action }) => {
         <AlertDialogHeader>
           <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. This will permanently be deleted.
+            {type === 'GTMVersion'
+              ? 'This action cannot be undone. Deleting this version will affect your current GTM settings. Live or latest containers can not be deleted.'
+              : 'This action cannot be undone. This will permanently delete the selected item.'}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

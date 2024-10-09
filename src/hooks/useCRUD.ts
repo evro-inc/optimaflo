@@ -87,7 +87,6 @@ export const useDeleteHook = (
 
     // Use Object.values to get the values from the selectedRows object and map them as needed
     const itemsToDelete = Object.values(selectedRows).map((item) => item);
-
     const displayNames = getDisplayNames(itemsToDelete);
 
     // Call the dynamic delete action with the selected items and their display names
