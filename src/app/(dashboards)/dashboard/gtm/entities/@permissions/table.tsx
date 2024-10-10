@@ -32,7 +32,7 @@ import {
 } from '@/src/components/ui/dropdown-menu';
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
-import { hardRevalidateFeatureCache, revalidate } from '@/src/utils/server';
+import { hardRevalidateFeatureCache } from '@/src/utils/server';
 import { useDispatch } from 'react-redux';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
 import { useCreateHookForm, useUpdateHookForm, useDeleteHook } from '@/src/hooks/useCRUD';
@@ -42,7 +42,7 @@ import { setSelectedRows } from '@/src/redux/tableSlice';
 import { LimitReached } from '@/src/components/client/modals/limitReached';
 
 import { UserPermission } from '@/src/types/types';
-import { DeletePermissions } from '@/src/lib/fetch/dashboard/actions/gtm/permissions';
+import { deletePermissions } from '@/src/lib/fetch/dashboard/actions/gtm/permissions';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -132,7 +132,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
 
   const getDisplayNames = (items) => items.map((item: UserPermission) => item.emailAddress);
   const handleDelete = useDeleteHook(
-    DeletePermissions,
+    deletePermissions,
     selectedRowData,
     table,
     getDisplayNames,

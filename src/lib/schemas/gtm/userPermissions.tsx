@@ -19,7 +19,6 @@ export const UserPermissionSchema = z.object({
   containerAccess: z
     .array(ContainerAccessSchema)
     .min(1, { message: 'At least one container access is required' }),
-
 });
 
 export const EmailAddressSchema = z.object({

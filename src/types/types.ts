@@ -64,7 +64,7 @@ export interface Price {
   products?: Product;
 }
 
-export interface PriceWithProduct extends Price { }
+export interface PriceWithProduct extends Price {}
 
 export interface Subscription {
   id: string /* primary key */;
@@ -1376,6 +1376,5 @@ export interface FormValues {
 export interface Permissions {
   permissions: UserPermissionType[];
 }
-
 
 export type FeatureUnion = BuiltInVariable | Variable | WorkspaceType /* other types as needed */;

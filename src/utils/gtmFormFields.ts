@@ -64,7 +64,6 @@ const getCommonWorkspaceFields = (
   },
 });
 
-
 const getCommonPermissionFields = (
   accountsWithContainers: { name: string; accountId: string }[],
   filteredContainers: { name: string; containerId: string }[]
@@ -271,8 +270,6 @@ export const gtmFormFieldConfigs = (
     }
 
     case 'GTMPermissions': {
-
-
       return {
         ...getEmailFields(),
         ...getEntityFields(),

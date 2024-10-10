@@ -1,25 +1,16 @@
 'use server';
-import { revalidatePath } from 'next/cache';
-import { FormSchema, FormValuesType, TransformedDataSchemaType, TransformedFormSchema } from '@/src/lib/schemas/gtm/userPermissions';
-import { auth } from '@clerk/nextjs/server';
-import { notFound } from 'next/navigation';
-import { limiter } from '../../../../bottleneck';
-import { gtmRateLimit } from '../../../../redis/rateLimits';
+
+import { FormSchema, TransformedDataSchemaType } from '@/src/lib/schemas/gtm/userPermissions';
 import { redis } from '../../../../redis/cache';
-import { currentUserOauthAccessToken } from '../../../../clerk';
 import prisma from '@/src/lib/prisma';
-import { FeatureResponse, FeatureResult, UserPermission } from '@/src/types/types';
+import { FeatureResponse, FeatureResult, Permissions } from '@/src/types/types';
 import {
   authenticateUser,
   checkFeatureLimit,
   ensureGARateLimit,
   executeApiRequest,
   getOauthToken,
-  handleApiResponseError,
   softRevalidateFeatureCache,
-  tierCreateLimit,
-  tierDeleteLimit,
-  tierUpdateLimit,
   validateFormData,
 } from '@/src/utils/server';
 
@@ -61,12 +52,11 @@ export async function listGtmPermissions(skipCache = false): Promise<any[]> {
     new Set(
       data.gtm.map((item) =>
         JSON.stringify({
-          accountId: item.accountId
+          accountId: item.accountId,
         })
       )
     )
   ).map((str: any) => JSON.parse(str));
-
 
   const urls = uniqueItems.map(
     ({ accountId }) =>
@@ -86,7 +76,6 @@ export async function listGtmPermissions(skipCache = false): Promise<any[]> {
     const ws = cleanedData.flatMap((item) => item.userPermission || []); // Flatten to get all workspaces directly
 
     console.log('ws one', ws);
-
 
     try {
       // Use HSET to store each property under a unique field
@@ -119,334 +108,6 @@ export async function listGtmPermissions(skipCache = false): Promise<any[]> {
 /************************************************************************************
   Create a single permission or multiple permissions
 ************************************************************************************/
-/* export async function CreatePermissions(formData: FormValuesType) {
-  const { userId } = await auth();
-  if (!userId) return notFound();
-  const token = await currentUserOauthAccessToken(userId);
-
-  const MAX_RETRIES = 3;
-  let delay = 1000;
-  const errors: string[] = [];
-  const successfulCreations: string[] = [];
-  const featureLimitReached: string[] = [];
-  const notFoundLimit: { id: string; name: string; message?: string }[] = [];
-
-  const toCreatePermissions = new Set(formData.forms);
-
-  const tierLimitResponse: any = await tierCreateLimit(userId, 'GTMPermissions');
-  const limit = Number(tierLimitResponse.createLimit);
-  const createUsage = Number(tierLimitResponse.createUsage);
-  const availableCreateUsage = limit - createUsage;
-
-  const creationResults: {
-    permissionName: string;
-    success: boolean;
-    message?: string;
-  }[] = [];
-
-  // Handling feature limit
-  if (tierLimitResponse && tierLimitResponse.limitReached) {
-    return {
-      success: false,
-      limitReached: true,
-      message: 'Feature limit reached for Creating Permissions',
-      results: [],
-    };
-  }
-
-  // refactor and verify
-  if (toCreatePermissions.size > availableCreateUsage) {
-    const attemptedCreations = Array.from(toCreatePermissions).map((identifier: any) => {
-      const { name: permissionName } = identifier;
-      return {
-        id: [], // No permission ID since creation did not happen
-        name: permissionName, // Include the permission name from the identifier
-        success: false,
-        message: `Creation limit reached. Cannot create permission "${permissionName}".`,
-        // remaining creation limit
-        remaining: availableCreateUsage,
-        limitReached: true,
-      };
-    });
-    return {
-      success: false,
-      features: [],
-      message: `Cannot create ${toCreatePermissions.size} permissions as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
-      errors: [
-        `Cannot create ${toCreatePermissions.size} permissions as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
-      ],
-      results: attemptedCreations,
-      limitReached: true,
-    };
-  }
-
-  let permissionDenied = false;
-  const permissionNames = formData.forms.flatMap((form) =>
-    form.permissions ? form.permissions.map((permission) => permission.accountId) : []
-  );
-
-  if (toCreatePermissions.size <= availableCreateUsage) {
-    // Initialize retries variable to ensure proper loop execution
-    let retries = 0;
-    while (retries < MAX_RETRIES && toCreatePermissions.size > 0 && !permissionDenied) {
-      try {
-        const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
-        if (remaining > 0) {
-          await limiter.schedule(async () => {
-            const createPromises = Array.from(toCreatePermissions).map(async (identifier: any) => {
-              const { accountId, emailAddress, accountAccess, containerAccess } = identifier;
-
-              const permissionData = {
-                accountId: accountId,
-                emailAddress: emailAddress,
-                accountAccess: accountAccess,
-                containerAccess: containerAccess,
-              };
-
-              if (!permissionData) {
-                errors.push(`Container data not found for ${identifier}`);
-                toCreatePermissions.delete(identifier);
-                return;
-              }
-
-              const url = `https://www.googleapis.com/tagmanager/v2/accounts/${permissionData.accountId}/user_permissions`;
-              const headers = {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json',
-                'Accept-Encoding': 'gzip',
-              };
-
-              let validatedPermissionData;
-
-              try {
-                const formDataToValidate = {
-                  forms: [permissionData],
-                };
-
-                const validationResult = TransformedFormSchema.safeParse(formDataToValidate);
-
-                if (!validationResult.success) {
-                  let errorMessage = validationResult.error.issues
-                    .map((issue) => `${issue.path[0]}: ${issue.message}`)
-                    .join('. ');
-                  errors.push(errorMessage);
-                  toCreatePermissions.delete(identifier);
-                  return {
-                    permissionData,
-                    success: false,
-                    error: errorMessage,
-                  };
-                }
-
-                // Accessing the validated permission data
-                validatedPermissionData = validationResult.data.forms[0];
-
-                const response = await fetch(url, {
-                  method: 'POST',
-                  headers: headers,
-                  body: JSON.stringify({
-                    accountId: validatedPermissionData.accountId,
-                    emailAddress: validatedPermissionData.emailAddress,
-                    accountAccess: validatedPermissionData.accountAccess,
-                    containerAccess: validatedPermissionData.containerAccess,
-                  }),
-                });
-
-                const parsedResponse = await response.json();
-
-                if (response.ok) {
-                  successfulCreations.push(validatedPermissionData.emailAddress);
-                  toCreatePermissions.delete(identifier);
-
-                  await prisma.gtmPermissions.create({
-                    data: {
-                      accountId: validatedPermissionData.accountId, // The accountId from the validated permission data
-                      emailAddress: validatedPermissionData.emailAddress, // The email address associated with the permission
-                      accountAccess: JSON.stringify(validatedPermissionData.accountAccess), // Assuming accountAccess needs to be stored as JSON
-                      containerAccess: JSON.stringify(validatedPermissionData.containerAccess), // Assuming containerAccess needs to be stored as JSON
-                      userId: userId, // Associating the permission with the user
-                    },
-                  });
-
-                  await prisma.tierLimit.update({
-                    where: { id: tierLimitResponse.id },
-                    data: { createUsage: { increment: 1 } },
-                  });
-                  creationResults.push({
-                    permissionName: validatedPermissionData.emailAddress,
-                    success: true,
-                    message: `Successfully created permission for ${validatedPermissionData.emailAddress}`,
-                  });
-                } else {
-                  const errorResult = await handleApiResponseError(
-                    response,
-                    parsedResponse,
-                    'permission',
-                    [validatedPermissionData.emailAddress]
-                  );
-
-                  if (errorResult) {
-                    errors.push(`${errorResult.message}`);
-                    if (
-                      errorResult.errorCode === 403 &&
-                      parsedResponse.message === 'Feature limit reached'
-                    ) {
-                      featureLimitReached.push(validatedPermissionData.emailAddress);
-                    } else if (errorResult.errorCode === 404) {
-                      const permissionName =
-                        permissionNames.find((name) => name.includes(identifier.name)) || 'Unknown';
-                      notFoundLimit.push({
-                        id: identifier.containerId,
-                        name: permissionName,
-                      });
-                    }
-                  } else {
-                    errors.push(
-                      `An unknown error occurred for permission ${validatedPermissionData.emailAddress}.`
-                    );
-                  }
-
-                  toCreatePermissions.delete(identifier);
-                  permissionDenied = errorResult ? true : permissionDenied;
-                  creationResults.push({
-                    permissionName: validatedPermissionData.emailAddress,
-                    success: false,
-                    message: errorResult?.message,
-                  });
-                }
-              } catch (error: any) {
-                errors.push(
-                  `Exception creating permission ${validatedPermissionData.emailAddress}: ${error.message}`
-                );
-                toCreatePermissions.delete(identifier);
-                creationResults.push({
-                  permissionName: validatedPermissionData.emailAddress,
-                  success: false,
-                  message: error.message,
-                });
-              }
-            });
-
-            await Promise.all(createPromises);
-          });
-
-          if (notFoundLimit.length > 0) {
-            return {
-              success: false,
-              limitReached: false,
-              notFoundError: true, // Set the notFoundError flag
-              features: [],
-
-              results: notFoundLimit.map((item) => ({
-                id: item.id,
-                name: item.name,
-                success: false,
-                notFound: true,
-              })),
-            };
-          }
-
-          if (featureLimitReached.length > 0) {
-            return {
-              success: false,
-              limitReached: true,
-              notFoundError: false,
-              message: `Feature limit reached for permissions: ${featureLimitReached.join(', ')}`,
-              results: featureLimitReached.map((permissionId) => {
-                // Find the name associated with the permissionId
-                const permissionName =
-                  permissionNames.find((name) => name.includes(permissionId)) || 'Unknown';
-                return {
-                  id: [permissionId], // Ensure id is an array
-                  name: [permissionName], // Ensure name is an array, match by permissionId or default to 'Unknown'
-                  success: false,
-                  featureLimitReached: true,
-                };
-              }),
-            };
-          }
-
-          if (successfulCreations.length === formData.forms.length) {
-            break;
-          }
-
-          if (toCreatePermissions.size === 0) {
-            break;
-          }
-        } else {
-          throw new Error('Rate limit exceeded');
-        }
-      } catch (error: any) {
-        if (error.code === 429 || error.status === 429) {
-          await new Promise((resolve) => setTimeout(resolve, delay + Math.random() * 200));
-          delay *= 2;
-          retries++;
-        } else {
-          break;
-        }
-      } finally {
-        // This block will run regardless of the outcome of the try...catch
-        if (userId) {
-          const cacheKey = `gtm:permissions:userId:${userId}`;
-          await redis.del(cacheKey);
-          await revalidatePath(`/dashboard/gtm/entities`);
-        }
-      }
-    }
-  }
-
-  if (permissionDenied) {
-    return {
-      success: false,
-      errors: errors,
-      results: [],
-      message: errors.join(', '),
-    };
-  }
-
-  if (errors.length > 0) {
-    return {
-      success: false,
-      features: successfulCreations,
-      errors: errors,
-      results: successfulCreations.map((permissionName) => ({
-        permissionName,
-        success: true,
-      })),
-      message: errors.join(', '),
-    };
-  }
-
-  if (successfulCreations.length > 0) {
-    const cacheKey = `gtm:permissions:userId:${userId}`;
-    await redis.del(cacheKey);
-    revalidatePath(`/dashboard/gtm/entities`);
-  }
-
-  // Map over formData.forms to create the results array
-  const results: FeatureResult[] = formData.forms.flatMap((form) =>
-    form.emailAddresses
-      ? form.emailAddresses.map((emailObj) => ({
-          id: [], // Ensure id is an array of strings
-          name: [emailObj.emailAddress], // Wrap the string in an array
-          success: true, // or false, depending on the actual result
-          notFound: false, // Set this to the appropriate value based on your logic
-        }))
-      : []
-  );
-
-  // Return the response with the correctly typed results
-  return {
-    success: true, // or false, depending on the actual results
-    features: [], // Populate with actual permission IDs if applicable
-    errors: [], // Populate with actual error messages if applicable
-    limitReached: false, // Set based on actual limit status
-    message: 'Containers created successfully', // Customize the message as needed
-    results: results, // Use the correctly typed results
-    notFoundError: false, // Set based on actual not found status
-  };
-}
- */
 export async function createPermissions(formData: {
   forms: TransformedDataSchemaType['forms'];
 }): Promise<FeatureResponse> {
@@ -458,8 +119,7 @@ export async function createPermissions(formData: {
     'create'
   );
 
-  console.log("formData", formData);
-
+  console.log('formData', formData);
 
   if (tierLimitResponse.limitReached || formData.forms.length > availableUsage) {
     return {
@@ -536,7 +196,6 @@ export async function createPermissions(formData: {
       }
     })
   );
-
 
   // **Perform Selective Revalidation After All Creations**:
   if (successfulCreations.length > 0) {
@@ -982,6 +641,151 @@ export async function createPermissions(formData: {
 /************************************************************************************
   Delete a single or multiple permissions
 ************************************************************************************/
+export async function deletePermissions(
+  selected: Set<Permissions>,
+  names: string[]
+): Promise<FeatureResponse> {
+  const userId = await authenticateUser();
+  const token = await getOauthToken(userId);
+  const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
+    userId,
+    featureType,
+    'delete'
+  );
+
+  if (tierLimitResponse.limitReached || selected.size > availableUsage) {
+    return {
+      success: false,
+      limitReached: true,
+      message: 'Feature limit reached or request exceeds available deletions.',
+      errors: [
+        `Cannot delete more permissions than available. You have ${availableUsage} deletions left.`,
+      ],
+      results: [],
+    };
+  }
+
+  let errors: string[] = [];
+  let successfulDeletions: any[] = [];
+  let featureLimitReached: string[] = [];
+  let notFoundLimit: string[] = [];
+
+  await ensureGARateLimit(userId);
+
+  await Promise.all(
+    Array.from(selected).map(async (data: Permissions) => {
+      const url = `https://www.googleapis.com/tagmanager/v2/${data.path}`;
+
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept-Encoding': 'gzip',
+      };
+
+      try {
+        await executeApiRequest(url, { method: 'DELETE', headers }, 'containers', names);
+        successfulDeletions.push(data);
+
+        await prisma.tierLimit.update({
+          where: { id: tierLimitResponse.id },
+          data: { deleteUsage: { increment: 1 } },
+        });
+      } catch (error: any) {
+        if (error.message === 'Feature limit reached') {
+          featureLimitReached.push(data.path);
+        } else if (error.message.includes('404')) {
+          notFoundLimit.push(data.path);
+        } else {
+          errors.push(error.message);
+        }
+      }
+    })
+  );
+
+  // **Perform Selective Revalidation After All Deletions**:
+  if (successfulDeletions.length > 0) {
+    try {
+      // Explicitly type the operations array
+      const operations = successfulDeletions.map((deletion) => ({
+        crudType: 'delete' as const, // Explicitly set the type as "delete"
+        ...deletion,
+      }));
+      const cacheFields = successfulDeletions.map((del) => `${del.path}`);
+
+      await softRevalidateFeatureCache(
+        [`gtm:permissions:userId:${userId}`],
+        `/dashboard/gtm/entities`,
+        userId,
+        operations,
+        cacheFields
+      );
+    } catch (err) {
+      console.error('Error during revalidation:', err);
+    }
+  }
+
+  // Check for not found property and return response if applicable
+  if (notFoundLimit.length > 0) {
+    return {
+      success: false,
+      limitReached: false,
+      notFoundError: true,
+      message: `Could not delete permission. Please check your permissions. Permission Name: ${names.find(
+        (name) => name.includes(name)
+      )}. All other permissions were successfully deleted.`,
+      results: notFoundLimit.map((data) => ({
+        id: [data], // Ensure id is an array
+        name: [names.find((name) => name.includes(data)) || 'Unknown'], // Ensure name is an array
+        success: false,
+        notFound: true,
+      })),
+    };
+  }
+
+  // Check if feature limit is reached and return response if applicable
+  if (featureLimitReached.length > 0) {
+    return {
+      success: false,
+      limitReached: true,
+      notFoundError: false,
+      message: `Feature limit reached for permissions: ${featureLimitReached.join(', ')}`,
+      results: featureLimitReached.map((data) => ({
+        id: [data], // Ensure id is an array
+        name: [names.find((name) => name.includes(data)) || 'Unknown'], // Ensure name is an array
+        success: false,
+        featureLimitReached: true,
+      })),
+    };
+  }
+
+  if (errors.length > 0) {
+    return {
+      success: false,
+      errors,
+      results: [],
+      message: errors.join(', '),
+      notFoundError: notFoundLimit.length > 0,
+    };
+  }
+
+  return {
+    success: true,
+    message: `Successfully deleted ${successfulDeletions.length} permission(s)`,
+    features: successfulDeletions.map<FeatureResult>((data) => ({
+      id: [data.name], // Wrap propertyId in an array to match FeatureResult type
+      name: [names.find((name) => name.includes(data.name)) || 'Unknown'], // Wrap name in an array to match FeatureResult type
+      success: true, // Indicates success of the operation
+    })),
+    errors: [],
+    notFoundError: notFoundLimit.length > 0,
+    results: successfulDeletions.map<FeatureResult>((data) => ({
+      id: [data.name], // FeatureResult.id is an array
+      name: [names.find((name) => name.includes(data.name)) || 'Unknown'], // FeatureResult.name is an array
+      success: true, // FeatureResult.success indicates if the operation was successful
+    })),
+  };
+}
+
 /* export async function DeletePermissions(
   selectedPermissions: UserPermission[],
   permissionNames: string[]

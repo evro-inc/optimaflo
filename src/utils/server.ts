@@ -158,8 +158,9 @@ export async function handleApiResponseError(response: Response, feature: string
       return {
         success: false,
         errorCode: 400,
-        message: `${feature} ${names} was unsuccessful. ${parsedResponse?.error?.message ?? 'Unknown error'
-          }`,
+        message: `${feature} ${names} was unsuccessful. ${
+          parsedResponse?.error?.message ?? 'Unknown error'
+        }`,
       };
 
     case 404:
@@ -557,7 +558,6 @@ export async function checkFeatureLimit(
 
   return { tierLimitResponse, availableUsage };
 }
-
 
 /** Executes an API request with retry logic */
 export async function executeApiRequest(

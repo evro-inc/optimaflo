@@ -528,8 +528,6 @@ export async function publishGTM(formData: {
   await Promise.all(
     formData.forms.map(async (data) => {
       try {
-
-
         const url = `https://www.googleapis.com/tagmanager/v2/accounts/${data.accountId}/containers/${data.containerId}/versions/${data.containerVersionId}:publish`;
 
         const headers = {
@@ -555,13 +553,14 @@ export async function publishGTM(formData: {
           where: { id: tierLimitResponse.id },
           data: { createUsage: { increment: 1 } },
         });
-
-
       } catch (error: any) {
         if (error.message === 'Feature limit reached') {
           featureLimitReached.push(data.name ?? 'Unknown');
         } else if (error.message.includes('404')) {
-          notFoundLimit.push({ id: data.containerVersionId ?? 'Unknown', name: data.name ?? 'Unknown' });
+          notFoundLimit.push({
+            id: data.containerVersionId ?? 'Unknown',
+            name: data.name ?? 'Unknown',
+          });
         } else {
           errors.push(error.message);
         }
@@ -570,7 +569,6 @@ export async function publishGTM(formData: {
   );
 
   if (successfulCreations.length > 0) {
-
     try {
       const operations = successfulCreations.map((creation) => ({
         crudType: 'delete' as const,
