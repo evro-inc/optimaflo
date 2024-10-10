@@ -2,7 +2,7 @@
 
 // Define the possible field types for the form
 type FieldType = 'select' | 'text' | 'switch';
-type EntityType = 'GTMAccount' | 'GTMContainer' | 'GTMWorkspace';
+type EntityType = 'GTMAccount' | 'GTMContainer' | 'GTMWorkspace' | 'GTMPermissions';
 type FormType = 'create' | 'update' | 'switch';
 
 // Define the structure of your field configuration
@@ -61,6 +61,61 @@ const getCommonWorkspaceFields = (
     description: 'This is the description you want to add.',
     placeholder: 'Description.',
     type: 'text',
+  },
+});
+
+
+const getCommonPermissionFields = (
+  accountsWithContainers: { name: string; accountId: string }[],
+  filteredContainers: { name: string; containerId: string }[]
+): Record<string, FieldConfig> => ({
+  name: {
+    label: 'Workspace Name',
+    description: 'This is the workspace name you want to create.',
+    placeholder: 'Name of the workspace.',
+    type: 'text',
+  },
+  accountId: {
+    label: 'Account',
+    description: 'This is the account you want to associate with the property.',
+    placeholder: 'Select an account.',
+    type: 'select',
+    options: accountsWithContainers.map((account) => ({
+      label: account.name,
+      value: account.accountId,
+    })),
+  },
+  containerId: {
+    label: 'Container',
+    description: 'This is the container you want to associate with the workspace.',
+    placeholder: 'Select an container.',
+    type: 'select',
+    options: filteredContainers.map((con) => ({
+      label: con.name,
+      value: con.containerId,
+    })),
+  },
+  description: {
+    label: 'Description',
+    description: 'This is the description you want to add.',
+    placeholder: 'Description.',
+    type: 'text',
+  },
+});
+
+const getEmailFields = (): Record<string, FieldConfig> => ({
+  emailAddresses: {
+    label: 'Email Addresses',
+    description: 'Add the email addresses that you want to include in permissions.',
+    type: 'custom',
+  },
+});
+
+const getEntityFields = (): Record<string, FieldConfig> => ({
+  entitySelection: {
+    label: 'Entity Selection',
+    description: 'Select the accounts and containers to provide access to.',
+    type: 'custom',
   },
 });
 
@@ -206,6 +261,25 @@ export const gtmFormFieldConfigs = (
           label: 'How many custom dimensions do you want to add?',
           description: 'This is the number of custom dimensions you want to create.',
           placeholder: 'Select the number of custom dimensions.',
+          type: 'select',
+          options: Array.from({ length: maxOptions }, (_, i) => ({
+            label: `${i + 1}`,
+            value: `${i + 1}`,
+          })),
+        },
+      };
+    }
+
+    case 'GTMPermissions': {
+
+
+      return {
+        ...getEmailFields(),
+        ...getEntityFields(),
+        amount: {
+          label: 'How many permissions do you want to create?',
+          description: 'This is the number of permissions you want to create.',
+          placeholder: 'Select the number of permissions.',
           type: 'select',
           options: Array.from({ length: maxOptions }, (_, i) => ({
             label: `${i + 1}`,

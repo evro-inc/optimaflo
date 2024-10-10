@@ -291,7 +291,7 @@ export const ButtonCustomerPortal = ({ variant = 'primary', text, ...props }) =>
 
 /* SHADUI */
 
-export const ButtonDelete = ({ onDelete, disabled, action, type }) => {
+export const ButtonDelete = ({ onDelete, disabled, action, type = undefined }) => {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>

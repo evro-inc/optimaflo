@@ -158,9 +158,8 @@ export async function handleApiResponseError(response: Response, feature: string
       return {
         success: false,
         errorCode: 400,
-        message: `${feature} ${names} was unsuccessful. ${
-          parsedResponse?.error?.message ?? 'Unknown error'
-        }`,
+        message: `${feature} ${names} was unsuccessful. ${parsedResponse?.error?.message ?? 'Unknown error'
+          }`,
       };
 
     case 404:
@@ -526,15 +525,30 @@ export async function ensureGARateLimit(userId: string): Promise<void> {
 export async function checkFeatureLimit(
   userId: string,
   feature: string,
-  limitType: 'create' | 'delete' | 'update'
+  limitType: 'create' | 'delete' | 'update' | 'publish'
 ): Promise<{ tierLimitResponse: any; availableUsage: number }> {
   let tierLimitResponse;
-  if (limitType === 'create') {
-    tierLimitResponse = await tierCreateLimit(userId, feature);
-  } else if (limitType === 'delete') {
-    tierLimitResponse = await tierDeleteLimit(userId, feature);
-  } else {
-    tierLimitResponse = await tierUpdateLimit(userId, feature);
+
+  switch (limitType) {
+    case 'create':
+      tierLimitResponse = await tierCreateLimit(userId, feature);
+      break;
+    case 'delete':
+      tierLimitResponse = await tierDeleteLimit(userId, feature);
+      break;
+    case 'update':
+      tierLimitResponse = await tierUpdateLimit(userId, feature);
+      break;
+    case 'publish':
+      // Handle publish case if necessary
+      tierLimitResponse = null;
+      break;
+    default:
+      throw new Error(`Unknown limitType: ${limitType}`);
+  }
+
+  if (!tierLimitResponse) {
+    return { tierLimitResponse: null, availableUsage: 0 }; // Handle the case where tierLimitResponse is null
   }
 
   const limit = Number(tierLimitResponse[`${limitType}Limit`]);
@@ -543,6 +557,7 @@ export async function checkFeatureLimit(
 
   return { tierLimitResponse, availableUsage };
 }
+
 
 /** Executes an API request with retry logic */
 export async function executeApiRequest(

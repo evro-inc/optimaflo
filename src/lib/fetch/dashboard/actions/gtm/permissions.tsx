@@ -1,6 +1,6 @@
 'use server';
 import { revalidatePath } from 'next/cache';
-import { FormValuesType, TransformedFormSchema } from '@/src/lib/schemas/gtm/userPermissions';
+import { FormSchema, FormValuesType, TransformedDataSchemaType, TransformedFormSchema } from '@/src/lib/schemas/gtm/userPermissions';
 import { auth } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 import { limiter } from '../../../../bottleneck';
@@ -10,104 +10,116 @@ import { currentUserOauthAccessToken } from '../../../../clerk';
 import prisma from '@/src/lib/prisma';
 import { FeatureResponse, FeatureResult, UserPermission } from '@/src/types/types';
 import {
+  authenticateUser,
+  checkFeatureLimit,
+  ensureGARateLimit,
+  executeApiRequest,
+  getOauthToken,
   handleApiResponseError,
+  softRevalidateFeatureCache,
   tierCreateLimit,
   tierDeleteLimit,
   tierUpdateLimit,
+  validateFormData,
 } from '@/src/utils/server';
+
+const featureType: string = 'GTMPermissions';
 
 /************************************************************************************
   Function to list or get one GTM permissions
 ************************************************************************************/
-export async function listGtmPermissions(skipCache = false) {
-  let retries = 0;
-  const MAX_RETRIES = 3;
-  let delay = 1000;
-
-  // Authenticating the user and getting the user ID
-  const { userId } = await auth();
-  // If user ID is not found, return a 'not found' error
-  if (!userId) return notFound();
-
-  const token = await currentUserOauthAccessToken(userId);
-
-  let responseBody: any;
-
+export async function listGtmPermissions(skipCache = false): Promise<any[]> {
+  const userId = await authenticateUser();
+  const token = await getOauthToken(userId);
   const cacheKey = `gtm:permissions:userId:${userId}`;
 
-  if (skipCache == false) {
-    const cachedValue = await redis.get(cacheKey);
-    if (cachedValue) {
-      return JSON.parse(cachedValue);
+  if (!skipCache) {
+    const cacheData = await redis.hgetall(cacheKey);
+
+    if (Object.keys(cacheData).length > 0) {
+      try {
+        const parsedData = Object.values(cacheData).map((data) => JSON.parse(data));
+
+        return parsedData;
+      } catch (error) {
+        console.error('Failed to parse cache data:', error);
+        await redis.del(cacheKey);
+      }
     }
   }
 
-  const gtmData = await prisma.user.findFirst({
-    where: {
-      id: userId,
-    },
-    include: {
-      gtm: true,
-    },
+  const data = await prisma.user.findFirst({
+    where: { id: userId },
+    include: { gtm: true },
   });
 
-  while (retries < MAX_RETRIES) {
+  if (!data) return [];
+
+  await ensureGARateLimit(userId);
+
+  const uniqueItems = Array.from(
+    new Set(
+      data.gtm.map((item) =>
+        JSON.stringify({
+          accountId: item.accountId
+        })
+      )
+    )
+  ).map((str: any) => JSON.parse(str));
+
+
+  const urls = uniqueItems.map(
+    ({ accountId }) =>
+      `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/user_permissions`
+  );
+
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+    'Accept-Encoding': 'gzip',
+  };
+
+  try {
+    const allData = await Promise.all(urls.map((url) => executeApiRequest(url, { headers })));
+    const flattenedData = allData.flat();
+    const cleanedData = flattenedData.filter((item) => Object.keys(item).length > 0);
+    const ws = cleanedData.flatMap((item) => item.userPermission || []); // Flatten to get all workspaces directly
+
+    console.log('ws one', ws);
+
+
     try {
-      const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
+      // Use HSET to store each property under a unique field
+      const pipeline = redis.pipeline();
 
-      if (remaining > 0) {
-        let allData: any[] = [];
+      ws.forEach((ws: any) => {
+        const fieldKey = ws.path; // Access 'name' directly from the property object
 
-        await limiter.schedule(async () => {
-          const uniquePairs = new Set(gtmData.gtm.map((data) => `${data.accountId}`));
+        if (fieldKey) {
+          // Ensure fieldKey is defined
+          pipeline.hset(cacheKey, fieldKey, JSON.stringify(ws));
+        } else {
+          console.warn('Skipping workspace with undefined name:', ws);
+        }
+      });
 
-          const urls = Array.from(uniquePairs).map((pair: any) => {
-            const [accountId] = pair.split('-');
-            return `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/user_permissions`;
-          });
-
-          const headers = {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'Accept-Encoding': 'gzip',
-          };
-
-          for (const url of urls) {
-            try {
-              const response = await fetch(url, { headers });
-              if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
-              }
-              responseBody = await response.json();
-
-              allData.push(responseBody.userPermission || []);
-            } catch (error: any) {
-              throw new Error(`Error fetching data: ${error.message}`);
-            }
-          }
-        });
-        redis.set(cacheKey, JSON.stringify(allData.flat()));
-
-        return allData;
-      }
-    } catch (error: any) {
-      if (error.code === 429 || error.status === 429) {
-        const jitter = Math.random() * 200;
-        await new Promise((resolve) => setTimeout(resolve, delay + jitter));
-        delay *= 2;
-        retries++;
-      } else {
-        throw error;
-      }
+      pipeline.expire(cacheKey, 86400); // Set expiration for the entire hash
+      await pipeline.exec(); // Execute the pipeline commands
+    } catch (cacheError) {
+      console.error('Failed to set cache data with HSET:', cacheError);
     }
+
+    return ws; // Return only the ws array
+  } catch (apiError) {
+    console.error('Error fetching ws from API:', apiError);
+    return []; // Return empty array or handle this more gracefully depending on your needs
   }
-  throw new Error('Maximum retries reached without a successful response.');
 }
 
 /************************************************************************************
   Create a single permission or multiple permissions
 ************************************************************************************/
-export async function CreatePermissions(formData: FormValuesType) {
+/* export async function CreatePermissions(formData: FormValuesType) {
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
@@ -434,11 +446,190 @@ export async function CreatePermissions(formData: FormValuesType) {
     notFoundError: false, // Set based on actual not found status
   };
 }
+ */
+export async function createPermissions(formData: {
+  forms: TransformedDataSchemaType['forms'];
+}): Promise<FeatureResponse> {
+  const userId = await authenticateUser();
+  const token = await getOauthToken(userId);
+  const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
+    userId,
+    featureType,
+    'create'
+  );
+
+  console.log("formData", formData);
+
+
+  if (tierLimitResponse.limitReached || formData.forms.length > availableUsage) {
+    return {
+      success: false,
+      limitReached: true,
+      message: 'Feature limit reached or request exceeds available creations.',
+      errors: [
+        `Cannot create more workspaces than available. You have ${availableUsage} creations left.`,
+      ],
+      results: [],
+    };
+  }
+
+  let errors: string[] = [];
+  let successfulCreations: any[] = [];
+  let featureLimitReached: string[] = [];
+  let notFoundLimit: { id: string | undefined; name: string }[] = [];
+
+  await ensureGARateLimit(userId);
+
+  await Promise.all(
+    formData.forms.map(async (data) => {
+      // Validate the form data
+      const validatedData = await validateFormData(FormSchema, { forms: [data] });
+
+      // Extract emailAddresses and permissions from validatedData
+      const emailAddresses = validatedData.forms[0].emailAddresses;
+      const permissions = validatedData.forms[0].permissions;
+
+      // Iterate over each email address
+      for (const emailObj of emailAddresses) {
+        const emailAddress = emailObj.emailAddress;
+
+        // Iterate over each permission
+        for (const permission of permissions) {
+          const accountId = permission.accountId;
+          const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/user_permissions`;
+          const headers = {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept-Encoding': 'gzip',
+          };
+
+          try {
+            const res = await executeApiRequest(url, {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({
+                accountId: accountId,
+                emailAddress: emailAddress,
+                accountAccess: permission.accountAccess,
+                containerAccess: permission.containerAccess,
+              }),
+            });
+
+            // Add the created permission to successful creations
+            successfulCreations.push(res);
+
+            // Update the usage limit
+            await prisma.tierLimit.update({
+              where: { id: tierLimitResponse.id },
+              data: { createUsage: { increment: 1 } },
+            });
+          } catch (error: any) {
+            if (error.message === 'Feature limit reached') {
+              featureLimitReached.push(emailAddress ?? 'Unknown');
+            } else if (error.message.includes('404')) {
+              notFoundLimit.push({ id: accountId ?? 'Unknown', name: emailAddress ?? 'Unknown' });
+            } else {
+              errors.push(error.message);
+            }
+          }
+        }
+      }
+    })
+  );
+
+
+  // **Perform Selective Revalidation After All Creations**:
+  if (successfulCreations.length > 0) {
+    try {
+      // Map successful creations to the appropriate structure for Redis
+      const operations = successfulCreations.map((creation) => ({
+        crudType: 'create' as const, // Explicitly set the type as "create"
+        ...creation,
+      }));
+      const cacheFields = successfulCreations.map(
+        (del) => `${del.accountId}/${del.containerId}/${del.workspaceId}`
+      );
+
+      await softRevalidateFeatureCache(
+        [`gtm:permissions:userId:${userId}`],
+        `/dashboard/gtm/entities`,
+        userId,
+        operations,
+        cacheFields
+      );
+    } catch (err) {
+      console.error('Error during revalidation:', err);
+    }
+  }
+
+  // Check for not found errors and return if any
+  if (notFoundLimit.length > 0) {
+    return {
+      success: false,
+      limitReached: false,
+      notFoundError: true,
+      features: [],
+      message: `Some permissions could not be found: ${notFoundLimit
+        .map((item) => item.name)
+        .join(', ')}`,
+      results: notFoundLimit.map((item) => ({
+        id: item.id ? [item.id] : [],
+        name: [item.name],
+        success: false,
+        notFound: true,
+      })),
+    };
+  }
+
+  // Check if feature limit is reached and return response if applicable
+  if (featureLimitReached.length > 0) {
+    return {
+      success: false,
+      limitReached: true,
+      notFoundError: false,
+      message: `Feature limit reached for permissions: ${featureLimitReached.join(', ')}`,
+      results: featureLimitReached.map((propertyName) => ({
+        id: [],
+        name: [propertyName],
+        success: false,
+        featureLimitReached: true,
+      })),
+    };
+  }
+
+  // Proceed with general error handling if needed
+  if (errors.length > 0) {
+    return {
+      success: false,
+      errors,
+      results: [],
+      message: errors.join(', '),
+      notFoundError: notFoundLimit.length > 0,
+    };
+  }
+
+  return {
+    success: true,
+    message: `Successfully created ${successfulCreations.length} permission(s)`,
+    features: successfulCreations.map<FeatureResult>((property) => ({
+      id: [],
+      name: [property.name],
+      success: true,
+    })),
+    errors: [],
+    notFoundError: notFoundLimit.length > 0,
+    results: successfulCreations.map<FeatureResult>((property) => ({
+      id: [],
+      name: [property.name],
+      success: true,
+    })),
+  };
+}
 
 /************************************************************************************
   Udpate a single permission or multiple permissions
 ************************************************************************************/
-export async function UpdatePermissions(formData: FormValuesType) {
+/* export async function UpdatePermissions(formData: FormValuesType) {
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
@@ -785,13 +976,13 @@ export async function UpdatePermissions(formData: FormValuesType) {
     results: results, // Use the correctly typed results
     notFoundError: false, // Set based on actual not found status
   };
-}
+} */
 
 // NOT GETTING PATHS FOR URL.
 /************************************************************************************
   Delete a single or multiple permissions
 ************************************************************************************/
-export async function DeletePermissions(
+/* export async function DeletePermissions(
   selectedPermissions: UserPermission[],
   permissionNames: string[]
 ): Promise<FeatureResponse> {
@@ -1053,3 +1244,4 @@ export async function DeletePermissions(
     })),
   };
 }
+ */

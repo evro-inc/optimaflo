@@ -32,7 +32,7 @@ import {
 } from '@/src/components/ui/dropdown-menu';
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
-import { revalidate } from '@/src/utils/server';
+import { hardRevalidateFeatureCache, revalidate } from '@/src/utils/server';
 import { useDispatch } from 'react-redux';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
 import { useCreateHookForm, useUpdateHookForm, useDeleteHook } from '@/src/hooks/useCRUD';
@@ -92,7 +92,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
       },
     });
     const keys = [`gtm:permissions:userId:${userId}`];
-    await revalidate(keys, '/dashboard/gtm/entities', userId);
+    await hardRevalidateFeatureCache(keys, '/dashboard/gtm/entities', userId);
   };
 
   const selectedRowData = table.getSelectedRowModel().rows.reduce((acc, row) => {

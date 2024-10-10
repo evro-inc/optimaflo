@@ -2,6 +2,7 @@
 import { PortableTextBlock } from 'sanity';
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager';
 import Stripe from 'stripe';
+import { UserPermissionType } from '../lib/schemas/gtm/userPermissions';
 
 // Sanity CMS Type
 export type Page = {
@@ -63,7 +64,7 @@ export interface Price {
   products?: Product;
 }
 
-export interface PriceWithProduct extends Price {}
+export interface PriceWithProduct extends Price { }
 
 export interface Subscription {
   id: string /* primary key */;
@@ -1364,8 +1365,17 @@ export interface UserPermission {
   path?: string;
 }
 
+interface EmailAddress {
+  emailAddress: string;
+}
+
 export interface FormValues {
   permissions: UserPermission[];
 }
+
+export interface Permissions {
+  permissions: UserPermissionType[];
+}
+
 
 export type FeatureUnion = BuiltInVariable | Variable | WorkspaceType /* other types as needed */;
