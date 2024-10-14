@@ -393,7 +393,6 @@ export const gaFormFieldConfigs = (
     }
     case 'GA4Streams': {
       // Log to ensure dataSource is correctly passed
-      console.log('dataSource 4', dataSource);
 
       const accountsWithProperties = dataSource?.accountsWithProperties || [];
       const filteredProperties = dataSource?.filteredProperties || [];
@@ -455,13 +454,9 @@ export const gaFormFieldConfigs = (
     }
 
     case 'GA4CustomMetrics': {
-      console.log('datasource', dataSource);
-
       const commonFields = getGA4CustomMetricsFields(watched, formType);
 
       if (isUpdate) {
-        console.log('commonFields', commonFields);
-
         return { ...commonFields };
       } else {
         return {
@@ -490,8 +485,6 @@ export const gaFormFieldConfigs = (
       );
 
       if (isUpdate) {
-        console.log('commonFields', commonFields);
-
         return { ...commonFields };
       } else {
         return {

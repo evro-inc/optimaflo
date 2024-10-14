@@ -139,9 +139,6 @@ export async function deleteGACustomDimensions(
   await Promise.all(
     Array.from(selected).map(async (data: CustomDimensionType) => {
       const url = `https://analyticsadmin.googleapis.com/v1beta/${data.name}:archive`;
-
-      console.log('url', url);
-
       const headers = {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
@@ -151,8 +148,6 @@ export async function deleteGACustomDimensions(
       try {
         await executeApiRequest(url, { method: 'POST', headers }, 'dimensions', names);
         successfulDeletions.push(data);
-
-        console.log('successfulDeletions', successfulDeletions);
 
         await prisma.tierLimit.update({
           where: { id: tierLimitResponse.id },
@@ -292,16 +287,12 @@ export async function createGACustomDimensions(formData: {
       const validatedData = await validateFormData(FormSchema, { forms: [data] });
       const cleanedData = validatedData.forms[0];
 
-      console.log('validatedData', validatedData);
-
       const url = `https://analyticsadmin.googleapis.com/v1beta/${cleanedData.property}/customDimensions`;
       const headers = {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
         'Accept-Encoding': 'gzip',
       };
-
-      console.log('url 45', url);
 
       try {
         const res = await executeApiRequest(url, {
@@ -316,8 +307,6 @@ export async function createGACustomDimensions(formData: {
             disallowAdsPersonalization: cleanedData.disallowAdsPersonalization,
           }),
         });
-
-        console.log('res', res);
 
         successfulCreations.push(res);
 

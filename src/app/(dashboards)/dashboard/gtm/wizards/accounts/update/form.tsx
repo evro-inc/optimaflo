@@ -65,8 +65,6 @@ const FormUpdateAccount: React.FC<FormUpdateProps> = React.memo(() => {
     fieldsToValidate: ['name'],
   });
 
-  console.log('form.getValues()', form.getValues());
-
   const onSubmit: SubmitHandler<FormSchemaType> = processForm(
     updateAccounts,
     form.getValues(),

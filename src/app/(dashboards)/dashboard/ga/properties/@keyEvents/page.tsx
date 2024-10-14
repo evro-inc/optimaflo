@@ -25,8 +25,6 @@ export default async function KeyEventsPage({
   const propertyData = await listGAProperties();
   const keyEventsData = await listGAKeyEvents();
 
-  console.log('keyEventsData', keyEventsData);
-
   const [accounts, properties, keyEvents] = await Promise.all([
     accountData,
     propertyData,

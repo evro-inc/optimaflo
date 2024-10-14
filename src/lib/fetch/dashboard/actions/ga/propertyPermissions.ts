@@ -150,8 +150,6 @@ export async function listGAAccessBindings(skipCache = false): Promise<any[]> {
       `https://analyticsadmin.googleapis.com/v1alpha/properties/${propertyId}/accessBindings`
   );
 
-  console.log('urls', urls);
-
   const headers = {
     Authorization: `Bearer ${token}`,
     'Content-Type': 'application/json',
@@ -160,7 +158,6 @@ export async function listGAAccessBindings(skipCache = false): Promise<any[]> {
 
   try {
     const allData = await Promise.all(urls.map((url) => executeApiRequest(url, { headers })));
-    console.log('alldata props', allData);
     const flattenedAccessBindings = allData.flatMap((item) => item.accessBindings || []);
 
     // Filter out null/undefined/empty values
@@ -177,8 +174,6 @@ export async function listGAAccessBindings(skipCache = false): Promise<any[]> {
       acc[propertyId].accessBindings.add(JSON.stringify(accessBinding)); // Add unique accessBinding
       return acc;
     }, {});
-
-    console.log('groupedAccessBindings', groupedAccessBindings);
 
     // Convert sets back to arrays and prepare for Redis storage
     Object.keys(groupedAccessBindings).forEach((propertyId) => {
@@ -198,9 +193,6 @@ export async function listGAAccessBindings(skipCache = false): Promise<any[]> {
 
       pipeline.expire(cacheKey, 7776000); // Set expiration for 3 months since this data doesn't change too often
       await pipeline.exec(); // Execute the pipeline commands
-
-      // Log the updated cache for debugging
-      console.log('Updated Redis cache for key:', cacheKey, await redis.hgetall(cacheKey));
     } catch (cacheError) {
       console.error('Failed to set cache data with HSET:', cacheError);
     }
@@ -1106,17 +1098,12 @@ export async function deleteGAAccessBindings(
 
   await Promise.all(
     Array.from(selected).map(async (data: AccessBinding) => {
-      console.log('data delete', data);
-
       const propertyId = data?.name?.split('/')[1]; // Extract the property ID from 'name'
-      console.log('Extracted propertyId:', propertyId);
 
       const account = await prisma.ga.findFirst({
         where: { propertyId: propertyId, userId }, // Query the account info by propertyId
         select: { accountId: true }, // Only select the accountId
       });
-
-      console.log('test a', account.accountId);
 
       if (!account) {
         errors.push(`Account not found for property ID: ${propertyId}`);
@@ -1124,8 +1111,6 @@ export async function deleteGAAccessBindings(
       }
 
       const url = `https://analyticsadmin.googleapis.com/v1alpha/${data.name}`;
-
-      console.log('url del', url);
 
       const headers = {
         Authorization: `Bearer ${token}`,
@@ -1139,8 +1124,6 @@ export async function deleteGAAccessBindings(
           name: data.name as string,
           accountName: data.accountName as string,
         });
-
-        console.log('successfulDeletions', successfulDeletions);
 
         await prisma.ga.deleteMany({
           where: {

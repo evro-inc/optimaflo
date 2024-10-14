@@ -31,8 +31,6 @@ export default async function ContainerPage({
 
   // Combine account data with container data based on matching accountId
   const combinedData = flatContainers.map((container) => {
-    console.log('cry', container);
-
     const account = flatAccounts.find((a) => a.accountId === container.accountId);
     if (account) {
       return {

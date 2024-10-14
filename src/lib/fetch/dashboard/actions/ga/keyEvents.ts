@@ -279,10 +279,7 @@ export async function createGAKeyEvents(formData: {
     formData.forms.map(async (data) => {
       const validatedData = await validateFormData(FormSchema, { forms: [data] });
       const cleanedData = validatedData.forms[0];
-      console.log('cleaned data', cleanedData);
-
       const url = `https://analyticsadmin.googleapis.com/v1alpha/${cleanedData.property}/keyEvents`;
-      console.log('url', url);
 
       const headers = {
         Authorization: `Bearer ${token}`,
@@ -466,10 +463,6 @@ export async function updateGAKeyEvents(formData: {
       const updateMask = updateFields.join(',');
       const url = `https://analyticsadmin.googleapis.com/v1beta/${cleanedData.name}?updateMask=${updateMask}`;
 
-      console.log('cleaned 1', cleanedData);
-
-      console.log('url 1', url);
-
       let requestBody: any = {
         countingMethod: cleanedData.countingMethod,
       };
@@ -484,8 +477,6 @@ export async function updateGAKeyEvents(formData: {
           headers,
           body: JSON.stringify(requestBody),
         });
-
-        console.log('res', res);
 
         successfulUpdates.push(res);
 

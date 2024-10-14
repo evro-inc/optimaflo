@@ -54,7 +54,6 @@ export default async function PropertyPage({
       accountName: accounts.length > 0 ? accounts[0].displayName : 'Unknown Account Name',
     };
   });
-  console.log('combined data', combinedData);
 
   return (
     <>

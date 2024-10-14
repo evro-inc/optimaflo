@@ -65,14 +65,10 @@ export async function listGtmWorkspaces(skipCache = false): Promise<any[]> {
     )
   ).map((str: any) => JSON.parse(str));
 
-  console.log('uniqueItems', uniqueItems);
-
   const urls = uniqueItems.map(
     ({ accountId, containerId }) =>
       `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces?fields=workspace(accountId,containerId,name,workspaceId)`
   );
-
-  console.log('urls', urls);
 
   const headers = {
     Authorization: `Bearer ${token}`,
@@ -84,13 +80,8 @@ export async function listGtmWorkspaces(skipCache = false): Promise<any[]> {
     const allData = await Promise.all(urls.map((url) => executeApiRequest(url, { headers })));
     const flattenedData = allData.flat();
     const cleanedData = flattenedData.filter((item) => Object.keys(item).length > 0);
-    console.log('flattenedData', flattenedData);
-
-    console.log('cleanedUp', cleanedData);
 
     const ws = cleanedData.flatMap((item) => item.workspace || []); // Flatten to get all workspaces directly
-
-    console.log('ws', ws);
 
     try {
       // Use HSET to store each property under a unique field
@@ -292,8 +283,6 @@ export async function createWorkspaces(formData: {
     'create'
   );
 
-  console.log('formData', formData);
-
   if (tierLimitResponse.limitReached || formData.forms.length > availableUsage) {
     return {
       success: false,
@@ -316,12 +305,7 @@ export async function createWorkspaces(formData: {
   await Promise.all(
     formData.forms.map(async (data) => {
       const validatedData = await validateFormData(FormSchema, { forms: [data] });
-
-      console.log('value data', validatedData);
-
       const url = `https://www.googleapis.com/tagmanager/v2/accounts/${data.accountId}/containers/${data.containerId}/workspaces`;
-
-      console.log('create url', url);
 
       const headers = {
         Authorization: `Bearer ${token}`,
@@ -340,8 +324,6 @@ export async function createWorkspaces(formData: {
             containerId: validatedData.forms[0].containerId,
           }),
         });
-
-        console.log('create res', res);
 
         // Add the created property to successful creations
         successfulCreations.push(res);
@@ -510,11 +492,7 @@ export async function updateWorkspaces(formData: {
     formData.forms.map(async (data) => {
       const validatedData = await validateFormData(FormSchema, { forms: [data] });
 
-      console.log('validatedData', validatedData);
-
       const url = `https://www.googleapis.com/tagmanager/v2/accounts/${data.accountId}/containers/${data.containerId}/workspaces/${data.workspaceId}`;
-
-      console.log('url', url);
 
       const headers = {
         Authorization: `Bearer ${token}`,
@@ -751,8 +729,6 @@ export async function createGTMVersion(formData: {
   );
 
   if (successfulCreations.length > 0) {
-    console.log('successfulCreations', successfulCreations);
-
     try {
       const operations = successfulCreations.map((creation) => ({
         crudType: 'delete' as const,
@@ -765,8 +741,6 @@ export async function createGTMVersion(formData: {
 
         return `${accountId}/${containerId}/${workspaceId}`;
       });
-
-      console.log('cacheFields', cacheFields);
 
       await softRevalidateFeatureCache(
         [`gtm:workspaces:userId:${userId}`],

@@ -76,8 +76,6 @@ export async function listGTMVersionHeaders(skipCache = false): Promise<any[]> {
     const cleanedData = flattenedData.filter((item) => Object.keys(item).length > 0);
     const data = cleanedData.flatMap((item) => item.containerVersionHeader || []); // Flatten to get all workspaces directly
 
-    console.log('versoin data', data);
-
     try {
       // Use HSET to store each property under a unique field
       const pipeline = redis.pipeline();
@@ -172,8 +170,6 @@ export async function getGTMLatestVersion(skipCache = false): Promise<any> {
     const allData = await Promise.all(urls.map((url) => executeApiRequest(url, { headers })));
     const flattenedData = allData.flat();
     const cleanedData = flattenedData.filter((item) => Object.keys(item).length > 0);
-    console.log('latest cleanedData', cleanedData);
-
     const data = cleanedData.flatMap((item) => item || []); // Flatten to get all workspaces directly
 
     data.forEach((data: any) => {
@@ -299,8 +295,6 @@ export async function deleteVersions(
     'delete'
   );
 
-  console.log('seelected', selected);
-
   if (tierLimitResponse.limitReached || selected.size > availableUsage) {
     return {
       success: false,
@@ -400,8 +394,6 @@ export async function deleteVersions(
     })
   );
 
-  console.log('successfulDeletions', successfulDeletions);
-
   if (successfulDeletions.length > 0) {
     // **Perform Selective Revalidation After All Deletions**:
     try {
@@ -460,8 +452,6 @@ export async function deleteVersions(
       })),
     };
   }
-
-  console.log('errors', errors);
 
   if (errors.length > 0) {
     return {

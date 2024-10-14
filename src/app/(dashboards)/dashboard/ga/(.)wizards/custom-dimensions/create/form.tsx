@@ -98,8 +98,6 @@ const FormCreateCustomDimension: React.FC<FormCreateProps> = React.memo(
       '/dashboard/ga/properties'
     );
 
-    console.log('forms err', form.formState.errors);
-
     if (errorModal) return errorModal;
 
     const renderStepOne = () => (

@@ -338,7 +338,6 @@ export async function hardRevalidateFeatureCache(
 
     // Iterate over each key and delete the entire key (set, hash, etc.)
     keys.forEach((key) => {
-      //console.log(`Deleting Redis key: ${key}`);
       pipeline.del(key); // Delete the entire Redis key
     });
 
@@ -573,13 +572,8 @@ export async function executeApiRequest(
   while (retries < maxRetries) {
     try {
       const response = await limiter.schedule(() => fetch(url, options));
-      console.log('response log', response);
-
       // Parse the response once and store it
       const responseData = await response.json();
-
-      console.log('response data', responseData);
-
       if (response.ok) {
         return responseData; // Use the parsed data here
       }

@@ -46,8 +46,6 @@ const FormUpdatePermission: React.FC<FormUpdateProps> = React.memo(
 
     const selectedRowData = useSelector((state: RootState) => state.table.selectedRows);
 
-    console.log('selectedRowData', selectedRowData);
-
     const remainingUpdateData = calculateRemainingLimit(
       tierLimits || [],
       'GTMPermissions',
@@ -90,8 +88,6 @@ const FormUpdatePermission: React.FC<FormUpdateProps> = React.memo(
         };
       }
     );
-
-    console.log('selectedRowDataTransformed', selectedRowDataTransformed);
 
     const configs = gtmFormFieldConfigs(
       'GTMPermissions',
@@ -190,8 +186,6 @@ const FormUpdatePermission: React.FC<FormUpdateProps> = React.memo(
       const emailAddress = Array.isArray(rowData.emailAddress)
         ? rowData.emailAddress
         : [rowData.emailAddress];
-
-      console.log('err0', form);
 
       return (
         <div className="w-full">

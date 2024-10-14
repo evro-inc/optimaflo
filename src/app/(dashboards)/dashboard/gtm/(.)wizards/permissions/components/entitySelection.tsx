@@ -123,10 +123,6 @@ export default function EntitySelect({
             `forms.${formIndex}.permissions.${permissionIndex}.accountId`
           );
 
-          const idVal = getValues(`forms.${formIndex}.permissions.${permissionIndex}.accountId`);
-
-          console.log('idVale', idVal);
-
           return (
             <div className="space-y-2" key={item.id}>
               <div className="flex items-center space-x-4 pb-5">

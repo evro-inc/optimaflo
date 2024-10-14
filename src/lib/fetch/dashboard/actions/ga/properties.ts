@@ -684,25 +684,16 @@ export async function updateDataRetentionSettings(formData: {
     }))
   );
 
-  console.log('toUpdateProperties', toUpdateProperties);
-
   await ensureGARateLimit(userId);
 
   await Promise.all(
     Array.from(toUpdateProperties).map(async (data) => {
       const validatedData = await validateFormData(FormSchema, { forms: [data] });
-
-      console.log('validatedData', validatedData);
-
       const updateFields = ['eventDataRetention', 'resetUserDataOnNewActivity'];
       const updateMask = updateFields.join(',');
-
       // Ensure validatedData has the correct property ID format for URL
       const propertyId = validatedData.forms[0].name;
       const url = `https://analyticsadmin.googleapis.com/v1beta/${propertyId}/dataRetentionSettings?updateMask=${updateMask}`;
-
-      console.log('url', url);
-
       const headers = {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
@@ -720,15 +711,11 @@ export async function updateDataRetentionSettings(formData: {
           }),
         });
 
-        console.log('res', res);
-
         successfulUpdates.push({
           name: res.name,
           parent: res.parent,
           data: validatedData.forms[0], // Add additional data as needed for Redis
         });
-
-        console.log('successfulUpdates', successfulUpdates);
 
         // Immediate revalidation per each update is not needed, aggregate revalidation is better
       } catch (error: any) {
@@ -764,9 +751,7 @@ export async function updateDataRetentionSettings(formData: {
         },
       }));
 
-      console.log('ops', operations);
       const cacheFields = successfulUpdates.map((update) => `properties/${update.name}`);
-      console.log('cacheFields del', cacheFields);
 
       // Call softRevalidateFeatureCache for updates
       await softRevalidateFeatureCache(
@@ -894,12 +879,7 @@ export async function getDataRetentionSettings(skipCache = false): Promise<any[]
     const flattenedData = allData.flat();
     const cleanedData = flattenedData.filter((item) => Object.keys(item).length > 0);
 
-    console.log('allData d', allData);
-    console.log('flattenedData d', flattenedData);
-    console.log('cleaned d', cleanedData);
-
     // Flatten properties from the structure
-
     try {
       // Use HSET to store each property under a unique field
       const pipeline = redis.pipeline();

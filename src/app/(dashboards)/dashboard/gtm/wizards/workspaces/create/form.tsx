@@ -27,8 +27,6 @@ const FormCreateWorkspace: React.FC<FormCreateProps> = React.memo(
     const router = useRouter();
     const errorModal = useErrorHandling(error, notFoundError);
 
-    console.log('containers', containers);
-
     useEffect(() => {
       // Ensure that we reset to the first step when the component mounts
       dispatch(setCurrentStep(1));
@@ -49,8 +47,6 @@ const FormCreateWorkspace: React.FC<FormCreateProps> = React.memo(
         };
       })
       .filter((account) => account.containers.length > 0);
-
-    console.log('accountsWithContainers', accountsWithContainers);
 
     const formDataDefaults: WorkspaceType[] = [
       {
@@ -77,8 +73,6 @@ const FormCreateWorkspace: React.FC<FormCreateProps> = React.memo(
     const filteredContainers = containers.filter(
       (property) => property.parent === selectedAccountId
     );
-
-    console.log('filteredContainers', filteredContainers);
 
     const configs = gtmFormFieldConfigs('GTMWorkspace', 'create', remainingCreate, {
       accountsWithContainers,

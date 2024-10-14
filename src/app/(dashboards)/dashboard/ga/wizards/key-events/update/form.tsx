@@ -37,11 +37,6 @@ const FormUpdateKeyEvents: React.FC<FormUpdateProps> = React.memo(({ tierLimits 
   }, [dispatch]);
 
   const selectedRowData = useSelector((state: RootState) => state.table.selectedRows);
-
-  console.log('selectedRowData', selectedRowData);
-
-  //// defaultvalue not in selectedRowData
-
   const remainingUpdateData = calculateRemainingLimit(tierLimits || [], 'GA4KeyEvents', 'update');
   const remainingUpdate = remainingUpdateData.remaining;
   useErrorRedirect(selectedRowData, router, '/dashboard/ga/properties');
@@ -80,8 +75,6 @@ const FormUpdateKeyEvents: React.FC<FormUpdateProps> = React.memo(({ tierLimits 
       : undefined,
     includeDefaultValue: row.defaultValue ? 'true' : 'false',
   }));
-
-  console.log('formDataDefaults', formDataDefaults);
 
   const { form, fields } = useFormInitialization<KeyEventType>(formDataDefaults, FormSchema);
 
@@ -127,8 +120,6 @@ const FormUpdateKeyEvents: React.FC<FormUpdateProps> = React.memo(({ tierLimits 
   );
 
   if (errorModal) return errorModal;
-
-  console.log('form er', form.formState.errors);
 
   const renderForms = () => {
     // Check if the current form index is within the bounds of the fields array

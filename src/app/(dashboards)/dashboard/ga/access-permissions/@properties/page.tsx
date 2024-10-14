@@ -26,22 +26,13 @@ export default async function PropertyAccessPage({
   const access = await listGAAccessBindings();
 
   const [accounts, properties] = await Promise.all([accountData, propertyData]);
-
-  console.log('tprps', properties);
-
   const flatAccounts = accounts.flat();
   const flatProperties = properties.flat();
   const flatAccess = access.map((item) => item.accessBindings);
 
-  console.log('flatAccounts perm', flatAccounts);
-  console.log('flatProperties perm', flatProperties);
-
   const combinedData = flatAccess.flatMap((group) =>
     group.map((access) => {
       const propertyId = access.name.split('/')[1];
-
-      console.log('propertyId perm', propertyId);
-
       const parts = access.name.split('/');
       const accessBindingId = parts[3];
 
@@ -49,8 +40,6 @@ export default async function PropertyAccessPage({
       const property = flatProperties.find(
         (property) => property?.name?.split('/')[1] === propertyId
       );
-
-      console.log('property 3', property);
 
       // Find the account using the property parent, ensuring property is defined
       const account = flatAccounts.find((acc) => acc.name === property?.parent);

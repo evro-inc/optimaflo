@@ -199,14 +199,9 @@ export async function updateAccounts(formData: {
 
   await ensureGARateLimit(userId);
 
-  console.log('formData', formData);
-
   await Promise.all(
     formData.forms.map(async (data) => {
       const validatedData = await validateFormData(FormSchema, { forms: [data] });
-
-      console.log('val data', validatedData);
-
       const cleanedData = validatedData.forms[0];
       const headers = {
         Authorization: `Bearer ${token}`,
@@ -215,9 +210,6 @@ export async function updateAccounts(formData: {
       };
 
       const url = `https://www.googleapis.com/tagmanager/v2/accounts/${cleanedData.accountId}`;
-
-      console.log('url', url);
-      console.log('cleanedData', cleanedData);
 
       const requestBody: any = {
         accountId: cleanedData.accountId,
@@ -230,8 +222,6 @@ export async function updateAccounts(formData: {
           headers,
           body: JSON.stringify(requestBody),
         });
-
-        console.log('res tt', res);
 
         successfulUpdates.push(res);
 

@@ -171,8 +171,6 @@ const FormCreatePermission: React.FC<FormCreateProps> = React.memo(
       );
     };
 
-    console.log('errors', form.formState.errors);
-
     return (
       <div className="flex items-center justify-center h-screen">
         {currentStep === 1 ? renderStepOne() : renderStepForms()}

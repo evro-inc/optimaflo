@@ -46,8 +46,6 @@ const EmailForm = ({ formIndex, type, table = [] }: Props) => {
     append({ emailAddress: '' });
   };
 
-  console.log('table xx', table);
-
   const uniqueEmails = useMemo(() => {
     if (type === 'update') {
       return [...new Set(table)];

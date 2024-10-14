@@ -287,9 +287,6 @@ export async function createContainers(formData: {
   await Promise.all(
     formData.forms.map(async (data) => {
       const validatedData = await validateFormData(FormSchema, { forms: [data] });
-
-      console.log('validated', validatedData);
-
       const url = `https://www.googleapis.com/tagmanager/v2/accounts/${data.accountId}/containers/`;
       const headers = {
         Authorization: `Bearer ${token}`,

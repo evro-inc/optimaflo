@@ -61,12 +61,6 @@ export const ContainerPermissions: React.FC<{
             container.containerId === currentContainerId
         );
 
-        const idVal = getValues(
-          `forms.${formIndex}.permissions.${permissionIndex}.containerAccess.${containerIndex}.containerId`
-        );
-
-        console.log('idVale', idVal);
-
         return (
           <div key={field.id} className="flex space-x-4 mb-3">
             {type === 'update' ? (

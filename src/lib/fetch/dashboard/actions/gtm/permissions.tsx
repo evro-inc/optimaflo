@@ -75,8 +75,6 @@ export async function listGtmPermissions(skipCache = false): Promise<any[]> {
     const cleanedData = flattenedData.filter((item) => Object.keys(item).length > 0);
     const ws = cleanedData.flatMap((item) => item.userPermission || []); // Flatten to get all workspaces directly
 
-    console.log('ws one', ws);
-
     try {
       // Use HSET to store each property under a unique field
       const pipeline = redis.pipeline();
@@ -118,8 +116,6 @@ export async function createPermissions(formData: {
     featureType,
     'create'
   );
-
-  console.log('formData', formData);
 
   if (tierLimitResponse.limitReached || formData.forms.length > availableUsage) {
     return {
@@ -321,12 +317,7 @@ export async function updatePermissions(formData: {
   await Promise.all(
     formData.forms.map(async (data) => {
       const validatedData = await validateFormData(FormSchema, { forms: [data] });
-
-      console.log('validate f', JSON.stringify(validatedData, null, 2));
-
       const url = `https://www.googleapis.com/tagmanager/v2/${validatedData.forms[0].permissions[0].path}`;
-
-      console.log('url', url);
 
       const headers = {
         Authorization: `Bearer ${token}`,
@@ -340,8 +331,6 @@ export async function updatePermissions(formData: {
         accountAccess: validatedData.forms[0].permissions[0].accountAccess,
         containerAccess: validatedData.forms[0].permissions[0].containerAccess,
       });
-
-      console.log('body res', body);
 
       try {
         const res = await executeApiRequest(url, {

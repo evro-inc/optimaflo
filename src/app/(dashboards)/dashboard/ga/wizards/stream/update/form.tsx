@@ -37,9 +37,6 @@ const FormUpdateStream: React.FC<FormUpdateProps> = React.memo(({ tierLimits }) 
   }, [dispatch]);
 
   const selectedRowData = useSelector((state: RootState) => state.table.selectedRows);
-
-  console.log('selectedRowData', selectedRowData);
-
   const remainingUpdateData = calculateRemainingLimit(tierLimits || [], 'GA4Streams', 'update');
   const remainingUpdate = remainingUpdateData.remaining;
 
@@ -105,8 +102,6 @@ const FormUpdateStream: React.FC<FormUpdateProps> = React.memo(({ tierLimits }) 
     selectedRowDataTransformed,
     selectedStreamType
   );
-
-  console.log('configs', configs);
 
   const { handleNext, handlePrevious } = useStepNavigation({
     form,
