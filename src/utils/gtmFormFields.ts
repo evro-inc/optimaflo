@@ -106,7 +106,8 @@ const getEmailFields = (): Record<string, FieldConfig> => ({
   emailAddresses: {
     label: 'Email Addresses',
     description: 'Add the email addresses that you want to include in permissions.',
-    type: 'custom',
+    type: 'text',
+    placeholder: '',
   },
 });
 
@@ -114,7 +115,8 @@ const getEntityFields = (): Record<string, FieldConfig> => ({
   entitySelection: {
     label: 'Entity Selection',
     description: 'Select the accounts and containers to provide access to.',
-    type: 'custom',
+    type: 'text',
+    placeholder: '',
   },
 });
 
@@ -270,6 +272,13 @@ export const gtmFormFieldConfigs = (
     }
 
     case 'GTMPermissions': {
+      if (isUpdate) {
+        return {
+          ...getEmailFields(),
+          ...getEntityFields(),
+        };
+      }
+
       return {
         ...getEmailFields(),
         ...getEntityFields(),

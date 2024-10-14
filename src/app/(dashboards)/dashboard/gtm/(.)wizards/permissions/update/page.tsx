@@ -62,13 +62,14 @@ export default async function PermissionsFormPage() {
     accountIdsWithContainers.has(account.accountId)
   );
 
+  console.log('combinedData 5', combinedData);
+
   return (
     <>
       <div className="container">
         <FormUpdatePermissions
           tierLimits={tierLimits}
           table={combinedData}
-          accounts={accountsWithContainers}
           containers={flatContainers}
         />
       </div>

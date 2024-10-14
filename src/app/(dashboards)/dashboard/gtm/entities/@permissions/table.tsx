@@ -167,6 +167,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
             disabled={Object.keys(table.getState().rowSelection).length === 0}
             onDelete={handleDelete}
             action={''}
+            type="GTMPermission"
           />
 
           <DropdownMenu>

@@ -46,10 +46,16 @@ const EmailForm = ({ formIndex, type, table = [] }: Props) => {
     append({ emailAddress: '' });
   };
 
+  console.log('table xx', table);
+
   const uniqueEmails = useMemo(() => {
-    const emails = table.map((item) => item.emailAddress);
-    return [...new Set(emails)];
-  }, [table]);
+    if (type === 'update') {
+      return [...new Set(table)];
+    } else {
+      const emails = table.map((item) => item.emailAddress);
+      return [...new Set(emails)];
+    }
+  }, [table, type]);
 
   const selectedEmail = watch(`forms.${formIndex}.emailAddresses`);
 

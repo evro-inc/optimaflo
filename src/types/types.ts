@@ -187,6 +187,8 @@ export type FormUpdateWorkspaceProps = {
 };
 export type FormUpdateProps = {
   tierLimits?: TierLimit[];
+  containers?: any;
+  table?: any;
 };
 
 export type ResultType = {
@@ -240,7 +242,7 @@ export type FormCreateProps = {
   tierLimits?: TierLimit[];
   dimensions?: any;
   metrics?: any;
-
+  type?: string;
   data?: any;
 };
 

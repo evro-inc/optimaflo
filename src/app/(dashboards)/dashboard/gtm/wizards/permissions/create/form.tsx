@@ -2,53 +2,21 @@
 
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import {
-  setLoading,
-  incrementStep,
-  decrementStep,
-  setCount,
-  setCurrentStep,
-} from '@/redux/formSlice';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
-import {
-  FormCreateAmountSchema,
-  FormSchema,
-  FormSetType,
-  FormValuesType,
-  TransformedFormSchema,
-  UserPermissionType,
-} from '@/src/lib/schemas/gtm/userPermissions';
+import { setCurrentStep } from '@/redux/formSlice';
+import { SubmitHandler } from 'react-hook-form';
+import { FormSchema, FormSetType, UserPermissionType } from '@/src/lib/schemas/gtm/userPermissions';
 import { Button } from '@/src/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel } from '@/src/components/ui/form';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/src/components/ui/select';
+import { Form } from '@/src/components/ui/form';
 import {
   AccountPermission,
   ContainerPermission,
-  FeatureResponse,
   FormCreateProps,
   Permissions,
 } from '@/src/types/types';
-import { toast } from 'sonner';
-import {
-  selectTable,
-  setErrorDetails,
-  setIsLimitReached,
-  setNotFoundError,
-} from '@/src/redux/tableSlice';
+import { selectTable } from '@/src/redux/tableSlice';
 import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
-import dynamic from 'next/dynamic';
 import { createPermissions } from '@/src/lib/fetch/dashboard/actions/gtm/permissions';
-import EmailAddressField from '../components/email';
-import EntitySelection from '../components/entitySelection';
-import { addForm } from '@/src/redux/gtm/userPermissionSlice';
 import { useErrorHandling, useFormInitialization, useStepNavigation } from '@/src/hooks/wizard';
 import { calculateRemainingLimit, handleAmountChange, processForm } from '@/src/utils/utils';
 import { gtmFormFieldConfigs } from '@/src/utils/gtmFormFields';
@@ -56,29 +24,14 @@ import { FormFieldComponent } from '@/src/components/client/Utils/Form';
 import EmailForm from '../components/email';
 import EntitySelect from '../components/entitySelection';
 
-const NotFoundErrorModal = dynamic(
-  () =>
-    import('../../../../../../../components/client/modals/notFoundError').then(
-      (mod) => mod.NotFoundError
-    ),
-  { ssr: false }
-);
-
-const ErrorModal = dynamic(
-  () =>
-    import('../../../../../../../components/client/modals/Error').then((mod) => mod.ErrorMessage),
-  { ssr: false }
-);
-
 const defaultUserPermission: UserPermissionType = {
   accountId: '',
-  emailAddress: '',
   accountAccess: { permission: AccountPermission.UNSPECIFIED },
   containerAccess: [{ containerId: '', permission: ContainerPermission.UNSPECIFIED }],
 };
 
 const FormCreatePermission: React.FC<FormCreateProps> = React.memo(
-  ({ tierLimits, containers = [], table = [] }) => {
+  ({ tierLimits, containers = [], table = [], type }) => {
     const dispatch = useDispatch();
     const loading = useSelector((state: RootState) => state.form.loading);
     const error = useSelector((state: RootState) => state.form.error);
