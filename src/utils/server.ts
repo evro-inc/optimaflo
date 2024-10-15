@@ -382,6 +382,8 @@ export async function softRevalidateFeatureCache(
     keys.forEach((key, index) => {
       const cacheData = cacheDataArray[index];
 
+      console.log('cacheData', cacheData);
+
       operations.forEach((operation) => {
         const { crudType, data } = operation;
 
@@ -456,7 +458,7 @@ export async function revalidate(
         const updatedData = parsedData.filter((item: any) => !currentData.includes(item.name));
 
         // Update the cache with the new data that no longer includes the deleted properties
-        pipeline.set(key, JSON.stringify(updatedData), 'EX', 86400); // Cache for 24 hours
+        pipeline.set(key, JSON.stringify(updatedData), 'EX', 2592000); // Cache for 24 hours
       } else if (global) {
         // Clear the cache if global flag is true and no cache data found
         pipeline.del(key);

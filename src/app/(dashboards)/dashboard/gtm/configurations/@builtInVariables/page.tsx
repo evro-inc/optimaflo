@@ -45,44 +45,78 @@ export default async function BuiltInVarPage({
   const flatBuiltInVars = builtInVar.flat();
   const flatStatus = status.flat();
 
-  const statusDataFlat = flatStatus.flatMap((changeSet, index) =>
-    (changeSet.workspaceChange || []).map((change, itemIndex) => ({
-      setId: index + 1,
-      changeId: itemIndex + 1,
-      ...change,
-    }))
-  );
+  console.log('flatBuiltInVars', flatBuiltInVars);
 
-  const combinedData = flatBuiltInVars.map((vars) => {
-    const accountId = vars.accountId;
-    const containerId = vars.containerId;
-    const workspaceId = vars.workspaceId;
-    const accounts = flatAccounts.find((p) => p.accountId === accountId);
-    const containers = flatContainers.find((p) => p.containerId === containerId);
-    const workspaces = flatWorkspaces.find((p) => p.workspaceId === workspaceId);
-    const accountName = accounts ? accounts.name : 'Account Name Unknown';
-    const containerName = containers ? containers.name : 'Container Name Unknown';
-    const workspaceName = workspaces ? workspaces.name : 'Workspace Name Unknown';
+  const combinedData = flatBuiltInVars.flatMap((builtInVarEntry) => {
+    // Extract individual details
+    const { accountId, containerId, workspaceId, type, name } = builtInVarEntry;
 
-    const isPublished = statusDataFlat.find(
-      (p) =>
-        p.variable &&
-        p.variable.name === vars.name &&
-        p.variable.accountId === vars.accountId &&
-        p.variable.containerId === vars.containerId &&
-        p.variable.workspaceId === vars.workspaceId
+    // Find corresponding account, container, and workspace details
+    const accountDetails = flatAccounts.find((p) => p.accountId === accountId);
+    const containerDetails = flatContainers.find((p) => p.containerId === containerId);
+    const workspaceDetails = flatWorkspaces.find((p) => p.workspaceId === workspaceId);
+
+    const accountName = accountDetails ? accountDetails.name : 'Account Name Unknown';
+    const containerName = containerDetails ? containerDetails.name : 'Container Name Unknown';
+    const workspaceName = workspaceDetails ? workspaceDetails.name : 'Workspace Name Unknown';
+
+    const isPublished = flatStatus.find(
+      (status) =>
+        status.variable &&
+        status.variable.name === name &&
+        status.variable.accountId === accountId &&
+        status.variable.containerId === containerId &&
+        status.variable.workspaceId === workspaceId
     )
       ? 'Unpublished'
       : 'Published';
 
+    // Return the formatted data for DataTable
     return {
-      ...vars,
+      name: name || 'Unknown Variable',
+      type: type || 'Unknown Type',
+      isPublished,
       accountName,
       containerName,
       workspaceName,
-      isPublished,
+      accountId,
+      containerId,
+      workspaceId,
     };
   });
+
+  /*   const combinedData = flatBuiltInVars.map((vars) => {
+      const accountId = vars.accountId;
+      const containerId = vars.containerId;
+      const workspaceId = vars.workspaceId;
+      const accounts = flatAccounts.find((p) => p.accountId === accountId);
+      const containers = flatContainers.find((p) => p.containerId === containerId);
+      const workspaces = flatWorkspaces.find((p) => p.workspaceId === workspaceId);
+      const accountName = accounts ? accounts.name : 'Account Name Unknown';
+      const containerName = containers ? containers.name : 'Container Name Unknown';
+      const workspaceName = workspaces ? workspaces.name : 'Workspace Name Unknown';
+  
+      const isPublished = statusDataFlat.find(
+        (p) =>
+          p.variable &&
+          p.variable.name === vars.name &&
+          p.variable.accountId === vars.accountId &&
+          p.variable.containerId === vars.containerId &&
+          p.variable.workspaceId === vars.workspaceId
+      )
+        ? 'Unpublished'
+        : 'Published';
+  
+      return {
+        ...vars,
+        accountName,
+        containerName,
+        workspaceName,
+        isPublished,
+      };
+    }); */
+
+  console.log('combineData', combinedData);
 
   return (
     <>

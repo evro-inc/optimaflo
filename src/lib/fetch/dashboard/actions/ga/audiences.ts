@@ -70,7 +70,7 @@ export async function listGAAudiences(skipCache = false): Promise<any[]> {
   const flattenedData = allData.flat();
   try {
     const jsonData = JSON.stringify(flattenedData);
-    await redis.set(cacheKey, jsonData, 'EX', 86400);
+    await redis.set(cacheKey, jsonData, 'EX', 2592000);
   } catch (error) {
     console.error('Failed to stringify or set cache data:', error);
   }

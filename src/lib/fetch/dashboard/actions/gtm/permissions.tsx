@@ -58,6 +58,8 @@ export async function listGtmPermissions(skipCache = false): Promise<any[]> {
     )
   ).map((str: any) => JSON.parse(str));
 
+  console.log('uniqueItems', uniqueItems);
+
   const urls = uniqueItems.map(
     ({ accountId }) =>
       `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/user_permissions`
@@ -90,7 +92,7 @@ export async function listGtmPermissions(skipCache = false): Promise<any[]> {
         }
       });
 
-      pipeline.expire(cacheKey, 86400); // Set expiration for the entire hash
+      pipeline.expire(cacheKey, 2592000); // Set expiration for the entire hash
       await pipeline.exec(); // Execute the pipeline commands
     } catch (cacheError) {
       console.error('Failed to set cache data with HSET:', cacheError);

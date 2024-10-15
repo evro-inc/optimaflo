@@ -32,7 +32,7 @@ import {
 } from '@/src/components/ui/dropdown-menu';
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
-import { revalidate } from '@/src/utils/server';
+import { hardRevalidateFeatureCache, revalidate } from '@/src/utils/server';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
 import { useCreateHookForm, useDeleteHook } from '@/src/hooks/useCRUD';
 import { setSelectedRows } from '@/src/redux/tableSlice';
@@ -41,7 +41,7 @@ import { useTransition } from 'react';
 import { LimitReached } from '@/src/components/client/modals/limitReached';
 
 import { BuiltInVariable } from '@/src/types/types';
-import { DeleteBuiltInVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variablesBuiltIn';
+import { deleteBuiltInVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variablesBuiltIn';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -99,7 +99,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
 
   const getDisplayNames = (items) => items.map((item: BuiltInVariable) => item.name);
   const handleDelete = useDeleteHook(
-    DeleteBuiltInVariables,
+    deleteBuiltInVariables,
     selectedRowData,
     table,
     getDisplayNames,
@@ -114,7 +114,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
       },
     });
     const keys = [`gtm:builtInVariables:userId:${userId}`];
-    await revalidate(keys, '/dashboard/gtm/configurations', userId);
+    await hardRevalidateFeatureCache(keys, '/dashboard/gtm/configurations', userId);
   };
 
   dispatch(setSelectedRows(selectedRowData)); // Update the selected rows in Redux

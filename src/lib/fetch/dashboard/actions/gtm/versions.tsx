@@ -91,7 +91,7 @@ export async function listGTMVersionHeaders(skipCache = false): Promise<any[]> {
         }
       });
 
-      pipeline.expire(cacheKey, 86400); // Set expiration for the entire hash
+      pipeline.expire(cacheKey, 2592000); // Set expiration for the entire hash
       await pipeline.exec(); // Execute the pipeline commands
     } catch (cacheError) {
       console.error('Failed to set cache data with HSET:', cacheError);
@@ -182,7 +182,7 @@ export async function getGTMLatestVersion(skipCache = false): Promise<any> {
         console.warn('Skipping workspace with undefined name:', data);
       }
     });
-    pipeline.expire(cacheKey, 86400); // Set expiration for the entire hash
+    pipeline.expire(cacheKey, 2592000); // Set expiration for the entire hash
     await pipeline.exec(); // Execute the pipeline commands
 
     return data; // Return the fetched property
@@ -270,7 +270,7 @@ export async function getGTMLiveVersion(skipCache = false): Promise<any> {
         console.warn('Skipping workspace with undefined name:', data);
       }
     });
-    pipeline.expire(cacheKey, 86400); // Set expiration for the entire hash
+    pipeline.expire(cacheKey, 2592000); // Set expiration for the entire hash
     await pipeline.exec(); // Execute the pipeline commands
 
     return data; // Return the fetched property

@@ -10,104 +10,312 @@ import { redis } from '../../../../redis/cache';
 import { currentUserOauthAccessToken } from '../../../../clerk';
 import prisma from '@/src/lib/prisma';
 import { BuiltInVariable, FeatureResponse, FeatureResult } from '@/src/types/types';
-import { handleApiResponseError, tierCreateLimit, tierDeleteLimit } from '@/src/utils/server';
+import {
+  authenticateUser,
+  checkFeatureLimit,
+  ensureGARateLimit,
+  executeApiRequest,
+  getOauthToken,
+  handleApiResponseError,
+  softRevalidateFeatureCache,
+  tierCreateLimit,
+  tierDeleteLimit,
+} from '@/src/utils/server';
 import { fetchGtmSettings } from '../..';
 
 // Define the types for the form data
 type FormCreateSchema = z.infer<typeof FormsSchema>;
 
+function createErrorResponse(
+  errors: any,
+  notFoundError = false,
+  limitReached = false,
+  successfulDeletions = []
+) {
+  return {
+    success: false,
+    features: successfulDeletions.map(({ combinedId }) => combinedId),
+    errors: errors,
+    results: successfulDeletions.map(({ combinedId, name }) => {
+      const [accountId, containerId, workspaceId] = combinedId.split('-');
+      return {
+        id: [accountId, containerId, workspaceId],
+        name: [name],
+        success: true,
+      };
+    }),
+    message: errors.join(', '),
+    notFoundError,
+    limitReached,
+  };
+}
+
+function createSuccessResponse(successfulDeletions: Array<{ combinedId: string; name: string }>) {
+  return {
+    success: true,
+    message: `Successfully deleted ${successfulDeletions.length} built-in variable(s)`,
+    features: successfulDeletions.map(({ combinedId }) => combinedId),
+    errors: [],
+    notFoundError: false,
+    results: successfulDeletions.map(({ combinedId, name }) => {
+      const [accountId, containerId, workspaceId] = combinedId.split('-');
+      return {
+        id: [accountId, containerId, workspaceId],
+        name: [name],
+        success: true,
+      };
+    }),
+  };
+}
+
+const featureType: string = 'GTMBuiltInVariables';
+
 /************************************************************************************
   Function to list or get one GTM builtInVariables
 ************************************************************************************/
-export async function listGtmBuiltInVariables(skipCache = false) {
-  let retries = 0;
-  const MAX_RETRIES = 3;
-  let delay = 1000;
-
-  const { userId } = await auth();
-  if (!userId) return notFound();
-
-  const token = await currentUserOauthAccessToken(userId);
-
+export async function listGtmBuiltInVariables(skipCache = false): Promise<any[]> {
+  const userId = await authenticateUser();
+  const token = await getOauthToken(userId);
   const cacheKey = `gtm:builtInVariables:userId:${userId}`;
+
   if (!skipCache) {
-    const cachedValue = await redis.get(cacheKey);
-    if (cachedValue) {
-      return JSON.parse(cachedValue);
+    const cacheData = await redis.hgetall(cacheKey);
+
+    if (Object.keys(cacheData).length > 0) {
+      try {
+        const parsedData = Object.values(cacheData).map((data) => JSON.parse(data));
+
+        return parsedData;
+      } catch (error) {
+        console.error('Failed to parse cache data:', error);
+        await redis.del(cacheKey);
+      }
     }
   }
 
-  await fetchGtmSettings(userId);
-
-  const gtmData = await prisma.user.findFirst({
-    where: {
-      id: userId,
-    },
-    include: {
-      gtm: true,
-    },
+  const data = await prisma.user.findFirst({
+    where: { id: userId },
+    include: { gtm: true },
   });
 
-  while (retries < MAX_RETRIES) {
+  if (!data) return [];
+
+  await ensureGARateLimit(userId);
+
+  const uniqueItems = Array.from(
+    new Set(
+      data.gtm.map((item) =>
+        JSON.stringify({
+          accountId: item.accountId,
+          containerId: item.containerId,
+          workspaceId: item.workspaceId,
+        })
+      )
+    )
+  ).map((str: any) => JSON.parse(str));
+
+  const urls = uniqueItems.map(
+    ({ accountId, containerId, workspaceId }) =>
+      `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/built_in_variables`
+  );
+
+  console.log('list urls', urls);
+
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+    'Accept-Encoding': 'gzip',
+  };
+
+  try {
+    const allData = await Promise.all(urls.map((url) => executeApiRequest(url, { headers })));
+    const flattenedData = allData.flat();
+    const cleanedData = flattenedData.filter((item) => Object.keys(item).length > 0);
+    const ws = cleanedData.flatMap((item) => item.builtInVariable || []); // Flatten to get all workspaces directly
+
+    console.log('cleanedData', cleanedData);
+
+    console.log('var', ws);
+
     try {
-      const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
+      const pipeline = redis.pipeline();
 
-      if (remaining > 0) {
-        let allData: any[] = [];
+      ws.forEach((w: any) => {
+        const fieldKey = w.accountId + '/' + w.containerId + '/' + w.workspaceId + '/' + w.type;
 
-        await limiter.schedule(async () => {
-          const uniquePairs = new Set(
-            gtmData.gtm.map((data) => `${data.accountId}-${data.containerId}-${data.workspaceId}`)
-          );
+        if (fieldKey) {
+          // Ensure fieldKey is defined
+          pipeline.hset(cacheKey, fieldKey, JSON.stringify(w));
+        } else {
+          console.warn('Skipping property with undefined name:', w);
+        }
+      });
 
-          const urls = Array.from(uniquePairs).map((pair: any) => {
-            const [accountId, containerId, workspaceId] = pair.split('-');
-            return `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/built_in_variables`;
-          });
-
-          const headers = {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'Accept-Encoding': 'gzip',
-          };
-
-          for (const url of urls) {
-            try {
-              const response = await fetch(url, { headers });
-
-              if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
-              }
-              const responseBody = await response.json();
-
-              allData.push(responseBody.builtInVariable || []);
-            } catch (error: any) {
-              throw new Error(`Error fetching data: ${error.message}`);
-            }
-          }
-        });
-        redis.set(cacheKey, JSON.stringify(allData.flat()));
-
-        return allData;
-      }
-    } catch (error: any) {
-      if (error.code === 429 || error.status === 429) {
-        const jitter = Math.random() * 200;
-        await new Promise((resolve) => setTimeout(resolve, delay + jitter));
-        delay *= 2;
-        retries++;
-      } else {
-        throw error;
-      }
+      pipeline.expire(cacheKey, 2592000); // Set expiration for the entire hash
+      await pipeline.exec(); // Execute the pipeline commands
+    } catch (cacheError) {
+      console.error('Failed to set cache data with HSET:', cacheError);
     }
+
+    return ws; // Return only the ws array
+  } catch (apiError) {
+    console.error('Error fetching ws from API:', apiError);
+    return []; // Return empty array or handle this more gracefully depending on your needs
   }
-  throw new Error('Maximum retries reached without a successful response.');
 }
 
 /************************************************************************************
   Delete a single or multiple builtInVariables
 ************************************************************************************/
-export async function DeleteBuiltInVariables(
+export async function deleteBuiltInVariables(
+  selected: Set<BuiltInVariable>,
+  names: string[]
+): Promise<FeatureResponse> {
+  const userId = await authenticateUser();
+  const token = await getOauthToken(userId);
+  const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
+    userId,
+    featureType,
+    'delete'
+  );
+
+  if (tierLimitResponse.limitReached || selected.size > availableUsage) {
+    return {
+      success: false,
+      limitReached: true,
+      message: 'Feature limit reached or request exceeds available deletions.',
+      errors: [
+        `Cannot delete more built-in variables than available. You have ${availableUsage} deletions left.`,
+      ],
+      results: [],
+    };
+  }
+
+  let errors: string[] = [];
+  let successfulDeletions: BuiltInVariable[] = [];
+  let featureLimitReached: string[] = [];
+  let notFoundLimit: string[] = [];
+
+  await ensureGARateLimit(userId);
+
+  await Promise.all(
+    Array.from(selected).map(async (data: BuiltInVariable) => {
+      const url = `https://www.googleapis.com/tagmanager/v2/accounts/${data.accountId}/containers/${data.containerId}/workspaces/${data.workspaceId}/built_in_variables?type=${data.type}`;
+
+      console.log('data type', data);
+
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept-Encoding': 'gzip',
+      };
+
+      try {
+        await executeApiRequest(url, { method: 'DELETE', headers }, 'builtInVariables', names);
+        successfulDeletions.push(data);
+
+        await prisma.tierLimit.update({
+          where: { id: tierLimitResponse.id },
+          data: { deleteUsage: { increment: 1 } },
+        });
+      } catch (error: any) {
+        if (error.message === 'Feature limit reached') {
+          featureLimitReached.push(data.name);
+        } else if (error.message.includes('404')) {
+          notFoundLimit.push(data.name);
+        } else {
+          errors.push(error.message);
+        }
+      }
+    })
+  );
+
+  // **Perform Selective Revalidation After All Deletions**:
+  if (successfulDeletions.length > 0) {
+    try {
+      // Explicitly type the operations array
+      const operations = successfulDeletions.map((deletion) => ({
+        crudType: 'delete' as const, // Explicitly set the type as "delete"
+        ...deletion,
+      }));
+      const cacheFields = successfulDeletions.map(
+        (del) => `${del.accountId}/${del.containerId}/${del.workspaceId}/${del.type}`
+      );
+
+      await softRevalidateFeatureCache(
+        [`gtm:builtInVariables:userId:${userId}`],
+        `/dashboard/gtm/configurations`,
+        userId,
+        operations,
+        cacheFields
+      );
+    } catch (err) {
+      console.error('Error during revalidation:', err);
+    }
+  }
+
+  // Handling responses for various scenarios like feature limit reached or not found errors
+  if (notFoundLimit.length > 0) {
+    return {
+      success: false,
+      limitReached: false,
+      notFoundError: true,
+      message: `Could not delete built-in variable. Please check your permissions. Built-in variable : ${names.find(
+        (name) => name.includes(name)
+      )}. All other built-in variables were successfully deleted.`,
+      results: notFoundLimit.map((data) => ({
+        id: [data],
+        name: [names.find((name) => name.includes(data)) || 'Unknown'],
+        success: false,
+        notFound: true,
+      })),
+    };
+  }
+
+  if (featureLimitReached.length > 0) {
+    return {
+      success: false,
+      limitReached: true,
+      notFoundError: false,
+      message: `Feature limit reached for built-in variable: ${featureLimitReached.join(', ')}`,
+      results: featureLimitReached.map((data) => ({
+        id: [data],
+        name: [names.find((name) => name.includes(data)) || 'Unknown'],
+        success: false,
+        featureLimitReached: true,
+      })),
+    };
+  }
+
+  if (errors.length > 0) {
+    return {
+      success: false,
+      errors,
+      results: [],
+      message: errors.join(', '),
+      notFoundError: notFoundLimit.length > 0,
+    };
+  }
+
+  return {
+    success: true,
+    message: `Successfully deleted ${successfulDeletions.length} built-in variable(s)`,
+    features: successfulDeletions.map<FeatureResult>((data) => ({
+      id: [data.name],
+      name: [names.find((name) => name.includes(data.name)) || 'Unknown'],
+      success: true,
+    })),
+    errors: [],
+    notFoundError: notFoundLimit.length > 0,
+    results: successfulDeletions.map<FeatureResult>((data) => ({
+      id: [data.name],
+      name: [names.find((name) => name.includes(data.name)) || 'Unknown'],
+      success: true,
+    })),
+  };
+}
+
+/* export async function deleteBuiltInVariables(
   ga4BuiltInVarToDelete: BuiltInVariable[]
 ): Promise<FeatureResponse> {
   // Constants for retry mechanism
@@ -301,54 +509,12 @@ export async function DeleteBuiltInVariables(
   }
 
   return createSuccessResponse(successfulDeletions);
-}
-
-function createErrorResponse(
-  errors: any,
-  notFoundError = false,
-  limitReached = false,
-  successfulDeletions = []
-) {
-  return {
-    success: false,
-    features: successfulDeletions.map(({ combinedId }) => combinedId),
-    errors: errors,
-    results: successfulDeletions.map(({ combinedId, name }) => {
-      const [accountId, containerId, workspaceId] = combinedId.split('-');
-      return {
-        id: [accountId, containerId, workspaceId],
-        name: [name],
-        success: true,
-      };
-    }),
-    message: errors.join(', '),
-    notFoundError,
-    limitReached,
-  };
-}
-
-function createSuccessResponse(successfulDeletions: Array<{ combinedId: string; name: string }>) {
-  return {
-    success: true,
-    message: `Successfully deleted ${successfulDeletions.length} built-in variable(s)`,
-    features: successfulDeletions.map(({ combinedId }) => combinedId),
-    errors: [],
-    notFoundError: false,
-    results: successfulDeletions.map(({ combinedId, name }) => {
-      const [accountId, containerId, workspaceId] = combinedId.split('-');
-      return {
-        id: [accountId, containerId, workspaceId],
-        name: [name],
-        success: true,
-      };
-    }),
-  };
-}
+} */
 
 /************************************************************************************
   Create a single container or multiple containers
 ************************************************************************************/
-export async function CreateBuiltInVariables(formData: FormCreateSchema) {
+/* export async function CreateBuiltInVariables(formData: FormCreateSchema) {
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
@@ -365,9 +531,9 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
     formData.forms.flatMap((form) =>
       Array.isArray(form.entity)
         ? form.entity.map((entity) => ({
-            entity,
-            type: form.type,
-          }))
+          entity,
+          type: form.type,
+        }))
         : [{ entity: form.entity, type: form.type }]
     )
   );
@@ -650,12 +816,12 @@ export async function CreateBuiltInVariables(formData: FormCreateSchema) {
     results: results, // Use the correctly typed results
     notFoundError: false, // Set based on actual not found status
   };
-}
+} */
 
 /************************************************************************************
   Revert a single or multiple builtInVariables - Remove limits from revert. Users shouldn't be limited when reverting changes.
 ************************************************************************************/
-export async function RevertBuiltInVariables(
+/* export async function RevertBuiltInVariables(
   ga4BuiltInVarToRevert: Set<BuiltInVariable>
 ): Promise<FeatureResponse> {
   let retries = 0;
@@ -667,10 +833,10 @@ export async function RevertBuiltInVariables(
   const featureLimitReached: Array<{ combinedId: string; name: string }> = [];
   const notFoundLimit: Array<{ combinedId: string; name: string }> = [];
 
-  const toDeleteBuiltInVariables = new Set<BuiltInVariable>(ga4BuiltInVarToRevert);
+  const todeleteBuiltInVariables = new Set<BuiltInVariable>(ga4BuiltInVarToRevert);
 
   // Correctly group by path
-  const groupedByPath = Array.from(toDeleteBuiltInVariables).reduce((acc: any, variable: any) => {
+  const groupedByPath = Array.from(todeleteBuiltInVariables).reduce((acc: any, variable: any) => {
     const { path, accountId, containerId, workspaceId, type, name } = variable.builtInVariable;
 
     if (!acc[path]) {
@@ -705,7 +871,7 @@ export async function RevertBuiltInVariables(
   const containerIdsProcessed = new Set<string>();
   let permissionDenied = false;
 
-  while (retries < MAX_RETRIES && toDeleteBuiltInVariables.size > 0 && !permissionDenied) {
+  while (retries < MAX_RETRIES && todeleteBuiltInVariables.size > 0 && !permissionDenied) {
     try {
       const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
 
@@ -738,12 +904,12 @@ export async function RevertBuiltInVariables(
                     name: type,
                   });
 
-                  toDeleteBuiltInVariables.forEach((variable: any) => {
+                  todeleteBuiltInVariables.forEach((variable: any) => {
                     if (
                       variable.builtInVariable.path === data.path &&
                       variable.builtInVariable.type === type
                     ) {
-                      toDeleteBuiltInVariables.delete(variable);
+                      todeleteBuiltInVariables.delete(variable);
                     }
                   });
 
@@ -830,7 +996,7 @@ export async function RevertBuiltInVariables(
             }),
           };
         }
-        if (successfulDeletions.length === toDeleteBuiltInVariables.size) {
+        if (successfulDeletions.length === todeleteBuiltInVariables.size) {
           break;
         }
         if (permissionDenied) {
@@ -906,4 +1072,4 @@ export async function RevertBuiltInVariables(
       };
     }),
   };
-}
+} */

@@ -98,7 +98,7 @@ export async function listGtmWorkspaces(skipCache = false): Promise<any[]> {
         }
       });
 
-      pipeline.expire(cacheKey, 86400); // Set expiration for the entire hash
+      pipeline.expire(cacheKey, 2592000); // Set expiration for the entire hash
       await pipeline.exec(); // Execute the pipeline commands
     } catch (cacheError) {
       console.error('Failed to set cache data with HSET:', cacheError);

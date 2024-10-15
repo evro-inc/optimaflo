@@ -82,7 +82,7 @@ export async function listGAProperties(skipCache = false): Promise<any[]> {
         }
       });
 
-      pipeline.expire(cacheKey, 86400); // Set expiration for the entire hash
+      pipeline.expire(cacheKey, 2592000); // Set expiration for the entire hash
       await pipeline.exec(); // Execute the pipeline commands
     } catch (cacheError) {
       console.error('Failed to set cache data with HSET:', cacheError);
@@ -144,7 +144,7 @@ export async function getGAProperty(propertyId: string, skipCache = false): Prom
     // Cache the property in Redis
     if (property && property.name) {
       await redis.hset(cacheKey, propertyId, JSON.stringify(property));
-      await redis.expire(cacheKey, 86400); // Set expiration for cache
+      await redis.expire(cacheKey, 2592000); // Set expiration for cache
     }
 
     return property; // Return the fetched property
@@ -895,7 +895,7 @@ export async function getDataRetentionSettings(skipCache = false): Promise<any[]
         }
       });
 
-      pipeline.expire(cacheKey, 86400); // Set expiration for the entire hash
+      pipeline.expire(cacheKey, 2592000); // Set expiration for the entire hash
       await pipeline.exec(); // Execute the pipeline commands
     } catch (cacheError) {
       console.error('Failed to set cache data with HSET:', cacheError);
@@ -1142,7 +1142,7 @@ export async function getMetadataProperties(skipCache = false): Promise<FeatureR
       pipeline.hset(cacheKey, property.name, JSON.stringify(property)); // Store each property under its name
     });
 
-    pipeline.expire(cacheKey, 86400); // Set expiration for the entire hash (1 day)
+    pipeline.expire(cacheKey, 2592000); // Set expiration for the entire hash (1 day)
     await pipeline.exec(); // Execute the pipeline commands
   } catch (error) {
     console.error('Failed to cache metadata properties data:', error);
