@@ -34,35 +34,31 @@ export default async function BuiltInVariablePage() {
   const flatWorkspaces = workspaces.flat();
   const flatBuiltInVars = builtInVar.flat();
 
-  const combinedData = flatBuiltInVars.map((vars) => {
-    const accountId = vars.accountId;
-    const containerId = vars.containerId;
-    const workspaceId = vars.workspaceId;
-    const accounts = flatAccounts.find((p) => p.accountId === accountId);
-    const containers = flatContainers.find((p) => p.containerId === containerId);
-    const workspaces = flatWorkspaces.find((p) => p.workspaceId === workspaceId);
-    const accountName = accounts ? accounts.name : 'Account Name Unknown';
-    const containerName = containers ? containers.name : 'Container Name Unknown';
-    const workspaceName = workspaces ? workspaces.name : 'Workspace Name Unknown';
+  const combinedData = flatBuiltInVars.flatMap((builtInVarEntry) => {
+    // Extract individual details
+    const { accountId, containerId, workspaceId, type, name } = builtInVarEntry;
 
+    // Find corresponding account, container, and workspace details
+    const accountDetails = flatAccounts.find((p) => p.accountId === accountId);
+    const containerDetails = flatContainers.find((p) => p.containerId === containerId);
+    const workspaceDetails = flatWorkspaces.find((p) => p.workspaceId === workspaceId);
+
+    const accountName = accountDetails ? accountDetails.name : 'Account Name Unknown';
+    const containerName = containerDetails ? containerDetails.name : 'Container Name Unknown';
+    const workspaceName = workspaceDetails ? workspaceDetails.name : 'Workspace Name Unknown';
+
+    // Return the formatted data for DataTable
     return {
-      ...vars,
+      name: name,
+      type: type,
       accountName,
       containerName,
       workspaceName,
+      accountId,
+      containerId,
+      workspaceId,
     };
   });
-
-  const foundTierLimit = tierLimits.find(
-    (subscription) => subscription.Feature?.name === 'GTMBuiltInVariables'
-  );
-  const createLimit = foundTierLimit?.createLimit || 0;
-  const createUsage = foundTierLimit?.createUsage || 0;
-  const remainingCreate = createLimit - createUsage;
-
-  if (remainingCreate <= 0) {
-    redirect('/dashboard/gtm/configurations'); // Replace with the actual path you want to redirect to
-  }
 
   return (
     <>

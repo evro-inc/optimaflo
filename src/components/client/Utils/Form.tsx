@@ -15,22 +15,23 @@ import {
   SelectValue,
 } from '@/src/components/ui/select';
 import { Input } from '@/src/components/ui/input';
-import { useFormContext } from 'react-hook-form';
+import { useFormContext, useWatch } from 'react-hook-form';
 import { Switch } from '../../ui/switch';
 import { FixedSizeList as List } from 'react-window';
 import { RadioGroup, RadioGroupItem } from '../../ui/radio-group';
+import MultipleSelector, { Option } from '../../ui/multi-select';
 
 type FieldProps = {
   name: string;
   label: string;
   description?: string;
   placeholder?: string;
-  options?: { label: string; value: string }[];
-  type?: 'text' | 'select' | 'switch' | 'radio';
+  options?: Option[];
+  type?: 'text' | 'select' | 'switch' | 'radio' | 'multiSelect';
   onChange?: (value: string | string[]) => void;
   disabled?: boolean;
   conditionalFields?: {
-    [key: string]: React.ReactNode;
+    dependsOn: string; // Name of the field it depends on
   };
 };
 
@@ -43,8 +44,16 @@ export const FormFieldComponent: React.FC<FieldProps> = ({
   type = 'text',
   onChange,
   disabled = false,
+  conditionalFields,
 }) => {
-  const { control, register } = useFormContext();
+  const { control, register, setValue } = useFormContext();
+
+  // Use useWatch to track dependency if provided
+  const dependsOnValue = conditionalFields?.dependsOn
+    ? useWatch({ control, name: conditionalFields.dependsOn })
+    : undefined;
+
+  const computedDisabled = disabled || (conditionalFields?.dependsOn && !dependsOnValue);
 
   if (type === 'text') {
     return (
@@ -60,7 +69,7 @@ export const FormFieldComponent: React.FC<FieldProps> = ({
                 placeholder={placeholder}
                 {...register(name)}
                 {...field}
-                disabled={disabled}
+                disabled={computedDisabled}
                 onChange={(e) => {
                   const value = e.target.value;
 
@@ -85,7 +94,7 @@ export const FormFieldComponent: React.FC<FieldProps> = ({
     );
   }
 
-  if (type === 'select' && options.length > 0) {
+  if (type === 'select') {
     const Row = useCallback(
       ({ index, style }) => (
         <div style={style}>
@@ -94,7 +103,7 @@ export const FormFieldComponent: React.FC<FieldProps> = ({
       ),
       [options]
     );
-    const listHeight = Math.min(options.length * 35); // Adjust 35 and 200 as needed
+    const listHeight = Math.min(options.length * 35); // Adjust as needed
 
     return (
       <FormField
@@ -110,10 +119,11 @@ export const FormFieldComponent: React.FC<FieldProps> = ({
                 onValueChange={(value) => {
                   if (field.value !== value) {
                     field.onChange(value);
+                    setValue(name, value);
                     onChange?.(value); // Call custom onChange if provided
                   }
                 }}
-                disabled={disabled}
+                disabled={computedDisabled}
               >
                 <SelectTrigger>
                   <SelectValue placeholder={placeholder} />
@@ -122,7 +132,7 @@ export const FormFieldComponent: React.FC<FieldProps> = ({
                   <List
                     height={listHeight}
                     itemCount={options.length}
-                    itemSize={35} // Adjust this based on your option item height
+                    itemSize={35} // Adjust based on your option item height
                     width="100%"
                   >
                     {Row}
@@ -161,30 +171,71 @@ export const FormFieldComponent: React.FC<FieldProps> = ({
       <FormField
         control={control}
         name={name}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>{label}</FormLabel>
+            {description && <FormDescription>{description}</FormDescription>}
+            <FormControl>
+              <RadioGroup
+                {...field}
+                onValueChange={(value) => {
+                  field.onChange(value);
+                  onChange?.(value);
+                }}
+                disabled={computedDisabled}
+                className="flex flex-col space-y-1"
+              >
+                {options.map((option) => (
+                  <FormItem key={option.value} className="flex items-center space-x-3 space-y-0">
+                    <FormControl>
+                      <RadioGroupItem value={option.value} />
+                    </FormControl>
+                    <FormLabel className="font-normal">{option.label}</FormLabel>
+                  </FormItem>
+                ))}
+              </RadioGroup>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    );
+  }
+
+  if (type === 'multiSelect') {
+    return (
+      <FormField
+        control={control}
+        name={name}
         render={({ field }) => {
+          const handleChange = (selectedOptions: Option[]) => {
+            // Extract the values from the selected options
+            const values = selectedOptions.map((option) => option.value);
+            field.onChange(values);
+            onChange?.(values);
+          };
+
           return (
             <FormItem>
               <FormLabel>{label}</FormLabel>
               {description && <FormDescription>{description}</FormDescription>}
               <FormControl>
-                <RadioGroup
+                <MultipleSelector
                   {...field}
-                  onValueChange={(value) => {
-                    field.onChange(value);
-                    onChange?.(value);
-                  }}
-                  disabled={disabled}
-                  className="flex flex-col space-y-1"
-                >
-                  {options.map((option) => (
-                    <FormItem key={option.value} className="flex items-center space-x-3 space-y-0">
-                      <FormControl>
-                        <RadioGroupItem value={option.value} />
-                      </FormControl>
-                      <FormLabel className="font-normal">{option.label}</FormLabel>
-                    </FormItem>
-                  ))}
-                </RadioGroup>
+                  value={
+                    Array.isArray(field.value) && field.value.length > 0
+                      ? options.filter((opt) => field.value.includes(opt.value))
+                      : [] // Ensure the selected options are being displayed properly
+                  }
+                  onChange={handleChange} // Handle change and update form state
+                  defaultOptions={options}
+                  placeholder="Select variables."
+                  emptyIndicator={
+                    <p className="text-center text-lg leading-10 text-gray-600 dark:text-gray-400">
+                      No results found.
+                    </p>
+                  }
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

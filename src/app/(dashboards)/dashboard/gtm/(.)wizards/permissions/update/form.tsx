@@ -115,48 +115,6 @@ const FormUpdatePermission: React.FC<FormUpdateProps> = React.memo(
       router,
       '/dashboard/gtm/entities'
     );
-    /* 
-    const onSubmit: SubmitHandler<FormSetType> = () => {
-      console.log('submitting now');
-  
-      // Get the current form values
-      const formValues = form.getValues();
-  
-      // Combine form data with the `path` value from `table`
-      const combinedData = formValues.forms.map((formData, index) => {
-        const matchingPath = table[index]?.path || '';
-  
-        // Ensure that permissions align with `UserPermissionSchema`
-        const updatedPermissions = formData.permissions.map((permission) => ({
-          ...permission,
-          path: matchingPath,
-          containerAccess: Array.isArray(permission.containerAccess)
-            ? permission.containerAccess.map((container) => ({
-              containerId: container.containerId || '',
-              permission: container.permission || ContainerPermission.UNSPECIFIED,
-            }))
-            : [],
-        }));
-  
-        return {
-          ...formData,
-          permissions: updatedPermissions,
-        };
-      });
-  
-      console.log('FormSetType', combinedData);
-  
-  
-      // Call `processForm` with the combined data
-      processForm(
-        updatePermissions,
-        { forms: combinedData }, // Wrap combined data as `forms` for submission
-        () => form.reset({ forms: selectedRowDataTransformed }),
-        dispatch,
-        router,
-        '/dashboard/gtm/entities'
-      );
-    }; */
 
     if (Object.keys(selectedRowData).length === 0) {
       // Redirect to the entities page

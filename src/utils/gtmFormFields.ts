@@ -1,8 +1,15 @@
 // GTM-specific field configurations
 
+import { groupBuiltInVariables } from '../app/(dashboards)/dashboard/gtm/configurations/@builtInVariables/items';
+
 // Define the possible field types for the form
-type FieldType = 'select' | 'text' | 'switch';
-type EntityType = 'GTMAccount' | 'GTMContainer' | 'GTMWorkspace' | 'GTMPermissions';
+type FieldType = 'select' | 'text' | 'switch' | 'multiSelect';
+type EntityType =
+  | 'GTMAccount'
+  | 'GTMContainer'
+  | 'GTMWorkspace'
+  | 'GTMPermissions'
+  | 'GTMBuiltInVariables';
 type FormType = 'create' | 'update' | 'switch';
 
 // Define the structure of your field configuration
@@ -64,44 +71,6 @@ const getCommonWorkspaceFields = (
   },
 });
 
-const getCommonPermissionFields = (
-  accountsWithContainers: { name: string; accountId: string }[],
-  filteredContainers: { name: string; containerId: string }[]
-): Record<string, FieldConfig> => ({
-  name: {
-    label: 'Workspace Name',
-    description: 'This is the workspace name you want to create.',
-    placeholder: 'Name of the workspace.',
-    type: 'text',
-  },
-  accountId: {
-    label: 'Account',
-    description: 'This is the account you want to associate with the property.',
-    placeholder: 'Select an account.',
-    type: 'select',
-    options: accountsWithContainers.map((account) => ({
-      label: account.name,
-      value: account.accountId,
-    })),
-  },
-  containerId: {
-    label: 'Container',
-    description: 'This is the container you want to associate with the workspace.',
-    placeholder: 'Select an container.',
-    type: 'select',
-    options: filteredContainers.map((con) => ({
-      label: con.name,
-      value: con.containerId,
-    })),
-  },
-  description: {
-    label: 'Description',
-    description: 'This is the description you want to add.',
-    placeholder: 'Description.',
-    type: 'text',
-  },
-});
-
 const getEmailFields = (): Record<string, FieldConfig> => ({
   emailAddresses: {
     label: 'Email Addresses',
@@ -117,6 +86,55 @@ const getEntityFields = (): Record<string, FieldConfig> => ({
     description: 'Select the accounts and containers to provide access to.',
     type: 'text',
     placeholder: '',
+  },
+});
+
+const getCommonBuiltinVariableFields = (
+  gtmAccountContainerWorkspacesPairs: {
+    accountId: string;
+    accountName: string;
+    containerId: string;
+    containerName: string;
+    workspaceId: string;
+    workspaceName: string;
+  }[]
+): Record<string, FieldConfig> => ({
+  type: {
+    label: 'Variable Type',
+    description: 'Select the type of the built-in variable to add.',
+    placeholder: 'Select a built-in variable type.',
+    type: 'multiSelect',
+    options: groupBuiltInVariables,
+  },
+  accountId: {
+    label: 'Account',
+    description: 'Select the account associated with the built-in variable.',
+    placeholder: 'Select an account.',
+    type: 'select',
+    options: gtmAccountContainerWorkspacesPairs.map((pair) => ({
+      label: pair.accountName,
+      value: pair.accountId,
+    })),
+  },
+  containerId: {
+    label: 'Container',
+    description: 'Select the container associated with the built-in variable.',
+    placeholder: 'Select a container.',
+    type: 'select',
+    options: gtmAccountContainerWorkspacesPairs.map((pair) => ({
+      label: pair.containerName,
+      value: pair.containerId,
+    })),
+  },
+  workspaceId: {
+    label: 'Workspace',
+    description: 'Select the workspace associated with the built-in variable.',
+    placeholder: 'Select a workspace.',
+    type: 'select',
+    options: gtmAccountContainerWorkspacesPairs.map((pair) => ({
+      label: pair.workspaceName,
+      value: pair.workspaceId,
+    })),
   },
 });
 
@@ -286,6 +304,31 @@ export const gtmFormFieldConfigs = (
           label: 'How many permissions do you want to create?',
           description: 'This is the number of permissions you want to create.',
           placeholder: 'Select the number of permissions.',
+          type: 'select',
+          options: Array.from({ length: maxOptions }, (_, i) => ({
+            label: `${i + 1}`,
+            value: `${i + 1}`,
+          })),
+        },
+      };
+    }
+    case 'GTMBuiltInVariables': {
+      const gtmAccountContainerWorkspacesPairs =
+        dataSource?.gtmAccountContainerWorkspacesPairs || [];
+      const commonFields = getCommonBuiltinVariableFields(gtmAccountContainerWorkspacesPairs);
+
+      if (isUpdate) {
+        return {
+          ...commonFields,
+        };
+      }
+
+      return {
+        ...commonFields,
+        amount: {
+          label: 'How many built-in variables do you want to add?',
+          description: 'Specify the number of built-in variables to create.',
+          placeholder: 'Select the number of variables to create.',
           type: 'select',
           options: Array.from({ length: maxOptions }, (_, i) => ({
             label: `${i + 1}`,

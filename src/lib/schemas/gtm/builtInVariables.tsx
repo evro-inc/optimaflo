@@ -118,18 +118,28 @@ export const BuiltInVariableType = z.enum([
   'visitorRegion',
 ]);
 
+// Update the schema for Built-In Variable Form
+const AccountContainerWorkspaceSchema = z.object({
+  accountId: z.string().min(1, 'Account ID is required'),
+  containerId: z.string().min(1, 'Container ID is required'),
+  workspaceId: z.string().min(1, 'Workspace ID is required'),
+});
+
+// Update the schema for Built-In Variable Form
 const BuiltInVariableSchema = z.object({
-  entity: z.array(z.string().min(1, 'Account, container, workspace are required')),
   type: BuiltInVariableType.array().nonempty('At least one type is required'),
+  accountContainerWorkspace: z
+    .array(AccountContainerWorkspaceSchema)
+    .min(1, 'At least one Account-Container-Workspace entry is required'),
 });
 
 export const FormCreateAmountSchema = z.object({
-  amount: z.number(),
+  amount: z.number().min(1, 'At least one built-in variable is required'),
 });
 
-export const FormsSchema = z.object({
+export const FormSchema = z.object({
   forms: z.array(BuiltInVariableSchema),
 });
 
 // Export the type inferred from BuiltInVariableFormSchema for type safety
-export type BuiltInVariableFormType = z.infer<typeof FormsSchema>;
+export type BuiltInVariableFormType = z.infer<typeof FormSchema>;
