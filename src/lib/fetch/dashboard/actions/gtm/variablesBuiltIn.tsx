@@ -124,8 +124,6 @@ export async function listGtmBuiltInVariables(skipCache = false): Promise<any[]>
       `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/built_in_variables`
   );
 
-  console.log('list urls', urls);
-
   const headers = {
     Authorization: `Bearer ${token}`,
     'Content-Type': 'application/json',
@@ -137,10 +135,6 @@ export async function listGtmBuiltInVariables(skipCache = false): Promise<any[]>
     const flattenedData = allData.flat();
     const cleanedData = flattenedData.filter((item) => Object.keys(item).length > 0);
     const ws = cleanedData.flatMap((item) => item.builtInVariable || []); // Flatten to get all workspaces directly
-
-    console.log('cleanedData', cleanedData);
-
-    console.log('var', ws);
 
     try {
       const pipeline = redis.pipeline();
@@ -334,8 +328,6 @@ export async function createBuiltInVariables(formData: {
     'create'
   );
 
-  console.log(JSON.stringify(formData, null, 2));
-
   if (tierLimitResponse.limitReached || formData.forms.length > availableUsage) {
     return {
       success: false,
@@ -358,9 +350,6 @@ export async function createBuiltInVariables(formData: {
   await Promise.all(
     formData.forms.map(async (data) => {
       const validatedData = await validateFormData(FormSchema, { forms: [data] });
-
-      console.log('validatedData', validatedData);
-
       const builtInVariableData: any = formData.forms.find((form) => {
         // Check if `type` in form matches the validatedData type
         const hasMatchingType = form.type.some((t) => validatedData.forms[0].type.includes(t));

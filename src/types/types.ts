@@ -889,12 +889,16 @@ export interface QueryParameters {
 
 // Built-In Variable
 export interface BuiltInVariable {
-  path: string; // GTM BuiltInVariable's API relative path
-  accountId: string; // GTM Account ID
-  containerId: string; // GTM Container ID
-  workspaceId: string; // GTM Workspace ID
-  type: BuiltInVariableType; // Type of built-in variable
-  name: string; // Name of the built-in variable
+  path: string;
+  type: BuiltInVariableType;
+  name: string;
+  accountContainerWorkspace: [
+    {
+      accountId: string;
+      containerId: string;
+      workspaceId: string;
+    }
+  ];
 }
 
 /*********************************************************

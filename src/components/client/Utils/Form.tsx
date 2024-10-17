@@ -120,7 +120,7 @@ export const FormFieldComponent: React.FC<FieldProps> = ({
                   if (field.value !== value) {
                     field.onChange(value);
                     setValue(name, value);
-                    onChange?.(value); // Call custom onChange if provided
+                    onChange?.(value);
                   }
                 }}
                 disabled={computedDisabled}

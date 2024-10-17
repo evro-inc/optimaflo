@@ -580,6 +580,8 @@ export async function executeApiRequest(
         return responseData; // Use the parsed data here
       }
 
+      console.log('responseData', responseData);
+
       if (response.status === 429) {
         await handleRateLimitRetry(retries, delay);
         delay *= 2;
