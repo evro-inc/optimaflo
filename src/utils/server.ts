@@ -382,8 +382,6 @@ export async function softRevalidateFeatureCache(
     keys.forEach((key, index) => {
       const cacheData = cacheDataArray[index];
 
-      console.log('cacheData', cacheData);
-
       operations.forEach((operation) => {
         const { crudType, data } = operation;
 
@@ -399,7 +397,6 @@ export async function softRevalidateFeatureCache(
 
           case 'update':
           case 'create':
-            // Add or update property in cache
             pipeline.hset(key, cacheField, JSON.stringify(data)); // Use HSET to update or create field
             break;
 
@@ -574,6 +571,7 @@ export async function executeApiRequest(
   while (retries < maxRetries) {
     try {
       const response = await limiter.schedule(() => fetch(url, options));
+
       // Parse the response once and store it
       const responseData = await response.json();
       if (response.ok) {

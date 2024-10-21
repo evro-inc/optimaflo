@@ -118,6 +118,12 @@ export interface BaseForm {
   parent?: string;
   name?: string;
   displayName?: string;
+  accountContainerWorkspace?: {
+    accountId: string;
+    containerId: string;
+    workspaceId: string;
+  }[];
+  type?: string[];
 }
 
 export type FormWithParent<T = {}> = BaseForm & T;

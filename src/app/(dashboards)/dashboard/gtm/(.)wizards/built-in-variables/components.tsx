@@ -5,6 +5,7 @@ import { FormFieldComponent } from '@/src/components/client/Utils/Form';
 import { PlusIcon, MinusIcon } from '@radix-ui/react-icons';
 import React, { useEffect } from 'react';
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
+import { FormDescription, FormLabel } from '@/src/components/ui/form';
 
 export default function AccountContainerWorkspaceRow({
   accounts,
@@ -14,12 +15,14 @@ export default function AccountContainerWorkspaceRow({
 }) {
   const { control, setValue, getValues } = useFormContext();
 
-  console.log('accounts', accounts);
-  console.log('containers', containers);
-  console.log('workspaces', workspaces);
-
   // Use useFieldArray for dynamic accountContainerWorkspace rows
   const { fields, append, remove } = useFieldArray({
+    control,
+    name: `forms.${formIndex}.accountContainerWorkspace`,
+  });
+
+  // Watching changes to dynamically reset related fields
+  const watchedAccounts = useWatch({
     control,
     name: `forms.${formIndex}.accountContainerWorkspace`,
   });
@@ -31,10 +34,45 @@ export default function AccountContainerWorkspaceRow({
     }
   }, [fields, append]);
 
+  // This effect will reset container and workspace when account changes
+  useEffect(() => {
+    if (Array.isArray(watchedAccounts) && watchedAccounts.length > 0) {
+      watchedAccounts.forEach((watchedEntity, entityIndex) => {
+        if (watchedEntity.accountId !== '') {
+          const currentAccountId = getValues(
+            `forms.${formIndex}.accountContainerWorkspace.${entityIndex}.accountId`
+          );
+
+          if (currentAccountId && currentAccountId !== watchedEntity.accountId) {
+            // Reset containerId and workspaceId if accountId changes
+            setValue(`forms.${formIndex}.accountContainerWorkspace.${entityIndex}.containerId`, '');
+            setValue(`forms.${formIndex}.accountContainerWorkspace.${entityIndex}.workspaceId`, '');
+          }
+        }
+      });
+    }
+  }, [watchedAccounts, formIndex, setValue, getValues]);
+
+  const accountsWithContainers = accounts.filter((account) =>
+    containers.some((container) => container.accountId === account.accountId)
+  );
+
   return (
-    <div className="flex flex-col space-y-4">
-      <div>
-        <h3 className="text-lg font-semibold">Account, Container, and Workspace Selection</h3>
+    <div className="flex flex-col">
+      {/* Headings Row */}
+      <div className="flex items-center space-x-4 pb-2 font-semibold">
+        <div className="w-48">
+          <FormLabel>Account</FormLabel>
+          <FormDescription>Select an account</FormDescription>
+        </div>
+        <div className="w-48">
+          <FormLabel>Container</FormLabel>
+          <FormDescription>Select an container</FormDescription>
+        </div>
+        <div className="w-48">
+          <FormLabel>Workspace</FormLabel>
+          <FormDescription>Select an workspace</FormDescription>
+        </div>
       </div>
       {fields.map((item, entityIndex) => {
         // Fetching current values to filter options
@@ -54,82 +92,89 @@ export default function AccountContainerWorkspaceRow({
         );
 
         return (
-          <div className="flex items-center space-x-4 pb-5" key={item.id}>
+          <div className="flex items-center space-x-4" key={item.id}>
             {/* Account ID Select */}
-            <FormFieldComponent
-              name={`forms.${formIndex}.accountContainerWorkspace.${entityIndex}.accountId`}
-              label="Account"
-              description="Select an account"
-              placeholder="Account ID"
-              type="select"
-              options={accounts.map((account) => ({
-                label: account.name,
-                value: account.accountId,
-              }))}
-              onChange={(value) => {
-                setValue(
-                  `forms.${formIndex}.accountContainerWorkspace.${entityIndex}.accountId`,
-                  value
-                );
-                setValue(
-                  `forms.${formIndex}.accountContainerWorkspace.${entityIndex}.containerId`,
-                  ''
-                );
-                setValue(
-                  `forms.${formIndex}.accountContainerWorkspace.${entityIndex}.workspaceId`,
-                  ''
-                );
-              }}
-            />
+            <div className="w-48">
+              <FormFieldComponent
+                name={`forms.${formIndex}.accountContainerWorkspace.${entityIndex}.accountId`}
+                label=""
+                description=""
+                placeholder="Account ID"
+                type="select"
+                options={accountsWithContainers.map((account) => ({
+                  label: account.name,
+                  value: account.accountId,
+                }))}
+                onChange={(value) => {
+                  setValue(
+                    `forms.${formIndex}.accountContainerWorkspace.${entityIndex}.accountId`,
+                    value
+                  );
+                  setValue(
+                    `forms.${formIndex}.accountContainerWorkspace.${entityIndex}.containerId`,
+                    ''
+                  );
+                  setValue(
+                    `forms.${formIndex}.accountContainerWorkspace.${entityIndex}.workspaceId`,
+                    ''
+                  );
+                }}
+              />
+            </div>
 
             {/* Container ID Select */}
-            <FormFieldComponent
-              name={`forms.${formIndex}.accountContainerWorkspace.${entityIndex}.containerId`}
-              label="Container"
-              description="Select a container"
-              placeholder="Container ID"
-              type="select"
-              options={availableContainers.map((container) => ({
-                label: container.name,
-                value: container.containerId,
-              }))}
-              disabled={!currentAccountId}
-              onChange={(value) => {
-                setValue(
-                  `forms.${formIndex}.accountContainerWorkspace.${entityIndex}.containerId`,
-                  value
-                );
-                setValue(
-                  `forms.${formIndex}.accountContainerWorkspace.${entityIndex}.workspaceId`,
-                  ''
-                );
-              }}
-            />
+            <div className="w-48">
+              <FormFieldComponent
+                name={`forms.${formIndex}.accountContainerWorkspace.${entityIndex}.containerId`}
+                label=""
+                description=""
+                placeholder="Container ID"
+                type="select"
+                options={availableContainers.map((container) => ({
+                  label: container.name,
+                  value: container.containerId,
+                }))}
+                disabled={!currentAccountId}
+                onChange={(value) => {
+                  setValue(
+                    `forms.${formIndex}.accountContainerWorkspace.${entityIndex}.containerId`,
+                    value
+                  );
+                  setValue(
+                    `forms.${formIndex}.accountContainerWorkspace.${entityIndex}.workspaceId`,
+                    ''
+                  );
+                }}
+              />
+            </div>
 
             {/* Workspace ID Select */}
-            <FormFieldComponent
-              name={`forms.${formIndex}.accountContainerWorkspace.${entityIndex}.workspaceId`}
-              label="Workspace"
-              description="Select a workspace"
-              placeholder="Workspace ID"
-              type="select"
-              options={availableWorkspaces.map((workspace) => ({
-                label: workspace.name,
-                value: workspace.workspaceId,
-              }))}
-              disabled={!currentContainerId}
-              onChange={(value) => {
-                setValue(
-                  `forms.${formIndex}.accountContainerWorkspace.${entityIndex}.workspaceId`,
-                  value
-                );
-              }}
-            />
+            <div className="w-48">
+              <FormFieldComponent
+                name={`forms.${formIndex}.accountContainerWorkspace.${entityIndex}.workspaceId`}
+                label=""
+                description=""
+                placeholder="Workspace ID"
+                type="select"
+                options={availableWorkspaces.map((workspace) => ({
+                  label: workspace.name,
+                  value: workspace.workspaceId,
+                }))}
+                disabled={!currentContainerId}
+                onChange={(value) => {
+                  setValue(
+                    `forms.${formIndex}.accountContainerWorkspace.${entityIndex}.workspaceId`,
+                    value
+                  );
+                }}
+              />
+            </div>
 
-            {/* Remove Button */}
-            <Button type="button" onClick={() => remove(entityIndex)}>
-              <MinusIcon />
-            </Button>
+            <div className="pt-2">
+              <Button type="button" onClick={() => remove(entityIndex)}>
+                <MinusIcon />
+              </Button>
+            </div>
           </div>
         );
       })}
