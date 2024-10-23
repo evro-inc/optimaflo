@@ -25,7 +25,7 @@ const FirstPartyCookie = ({ formIndex }: Props) => {
   // Append default fields if fields are empty
   useEffect(() => {
     if (fields.length === 0) {
-      append({ type: 'template', key: 'name', value: 'test' });
+      append({ type: 'template', key: 'name', value: '' });
       append({ type: 'boolean', key: 'decodeCookie', value: 'false' });
     } else if (fields.length > 2) {
       remove(2); // Ensure only two fields are appended
@@ -36,7 +36,7 @@ const FirstPartyCookie = ({ formIndex }: Props) => {
     if (variableType === 'k') {
       // Update parameters for 'k' type
       setValue(`forms.${formIndex}.parameter`, [
-        { type: 'template', key: 'name', value: 'test' },
+        { type: 'template', key: 'name', value: '' },
         { type: 'boolean', key: 'decodeCookie', value: 'false' },
       ]);
     }

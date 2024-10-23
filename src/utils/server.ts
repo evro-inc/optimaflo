@@ -363,7 +363,7 @@ export async function softRevalidateFeatureCache(
     crudType: 'update' | 'create' | 'delete';
     data: any;
   }[], // Array of operations with dynamic URL paths
-  cacheField
+  cacheFields
 ) {
   try {
     const pipeline = redis.pipeline();
@@ -382,22 +382,25 @@ export async function softRevalidateFeatureCache(
     keys.forEach((key, index) => {
       const cacheData = cacheDataArray[index];
 
-      operations.forEach((operation) => {
+      operations.forEach((operation, opIndex) => {
         const { crudType, data } = operation;
+        const cacheField = cacheFields[opIndex]; // Ensure each operation has a distinct cache field
 
         switch (crudType) {
           case 'delete':
-            if (Object.keys(cacheData).length > 0) {
-              // If cache exists, remove specific entry
-              pipeline.hdel(key, cacheField); // Remove the specific entry
-            } else {
-              pipeline.del(key); // Remove the entire cache if no data found
+            if (cacheData[cacheField]) {
+              console.log(`Deleting cache field ${cacheField} for key ${key}`);
+              pipeline.hdel(key, cacheField);
             }
             break;
 
           case 'update':
           case 'create':
-            pipeline.hset(key, cacheField, JSON.stringify(data)); // Use HSET to update or create field
+            console.log(
+              `Updating or creating cache field ${cacheField} for key ${key} with data:`,
+              data
+            );
+            pipeline.hset(key, cacheField, JSON.stringify(data));
             break;
 
           default:
@@ -566,7 +569,7 @@ export async function executeApiRequest(
   maxRetries = 5
 ): Promise<any> {
   let retries = 0;
-  let delay = 1000;
+  let delay = 5000;
 
   while (retries < maxRetries) {
     try {
@@ -582,7 +585,7 @@ export async function executeApiRequest(
 
       if (response.status === 429) {
         await handleRateLimitRetry(retries, delay);
-        delay *= 2;
+        delay *= 3.5;
       } else {
         const error = await handleApiResponseError(response, feature, names); // Pass all required arguments
         throw error;
@@ -601,7 +604,7 @@ export async function executeApiRequest(
 /** Handles rate limit retry logic */
 export async function handleRateLimitRetry(retries: number, delay: number): Promise<void> {
   if (retries < 3) {
-    const jitter = Math.random() * 200;
+    const jitter = Math.random() * 1000;
     await new Promise((resolve) => setTimeout(resolve, delay + jitter));
   } else {
     throw new Error('Rate limit exceeded');

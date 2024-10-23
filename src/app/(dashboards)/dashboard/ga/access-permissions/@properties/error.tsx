@@ -1,7 +1,9 @@
 'use client';
 
-import ErrorComponent from '@/src/components/client/Utils/Error';
+import { ErrorComponent } from '@/src/components/client/Utils/Error';
 
 export default function Error() {
-  return <ErrorComponent feature="propertyAccess" path="dashboard/ga/access-permissions" />;
+  return (
+    <ErrorComponent platform="ga" feature="propertyAccess" path="dashboard/ga/access-permissions" />
+  );
 }

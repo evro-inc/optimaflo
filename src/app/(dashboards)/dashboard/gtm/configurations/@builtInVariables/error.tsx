@@ -1,7 +1,9 @@
 'use client';
 
-import ErrorComponent from '@/src/components/client/Utils/Error';
+import { ErrorComponent } from '@/src/components/client/Utils/Error';
 
 export default function Error() {
-  return <ErrorComponent feature="builtInVariables" path="dashboard/gtm/configurations" />;
+  return (
+    <ErrorComponent platform="gtm" feature="builtInVariables" path="dashboard/gtm/configurations" />
+  );
 }

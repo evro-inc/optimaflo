@@ -162,15 +162,21 @@ export const processForm = <TFormValues extends FormWithParent>(
 
     for (const form of forms) {
       console.log('form', form);
+      let identifier;
 
-      const identifier = `${form.parent ?? 'unknown-parent'} - ${form.name ?? 'unknown-name'} - ${
+      identifier = `${form.parent ?? 'unknown-parent'} - ${form.name ?? 'unknown-name'} - ${
         form.displayName ?? 'unknown-displayName'
-      } - ${form.accountContainerWorkspace
-        .map(
-          (workspace) =>
-            `Account: ${workspace.accountId}, Container: ${workspace.containerId}, Workspace: ${workspace.workspaceId}`
-        )
-        .join(' | ')} - Types: ${form.type.join(', ')}`;
+      } - ${
+        Array.isArray(form.accountContainerWorkspace)
+          ? form.accountContainerWorkspace
+              .map(
+                (workspace) =>
+                  `Account: ${workspace.accountId}, Container: ${workspace.containerId}, Workspace: ${workspace.workspaceId}`
+              )
+              .join(' | ')
+          : 'unknown-account-container-workspace'
+      } - Types: ${Array.isArray(form.type) ? form.type.join(', ') : 'unknown-type'}`;
+
       if (uniqueFeatures.has(identifier)) {
         toast.error(`Duplicate feature found for ${form.name} - ${form.displayName}`, {
           action: {

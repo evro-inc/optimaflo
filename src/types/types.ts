@@ -193,8 +193,11 @@ export type FormUpdateWorkspaceProps = {
 };
 export type FormUpdateProps = {
   tierLimits?: TierLimit[];
-  containers?: any;
   table?: any;
+  accounts?: any;
+  properties?: any;
+  containers?: any;
+  workspaces?: any;
 };
 
 export type ResultType = {
@@ -1139,10 +1142,14 @@ interface FormatValue {
 
 export interface Variable {
   path?: string;
-  accountId: string;
-  containerId: string;
-  workspaceId: string;
-  variableId: string;
+  accountContainerWorkspace: [
+    {
+      accountId: string;
+      containerId: string;
+      workspaceId: string;
+      variableId?: string;
+    }
+  ];
   name: string;
   type: VariableType;
   notes?: string;

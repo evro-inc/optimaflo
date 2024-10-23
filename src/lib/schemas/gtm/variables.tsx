@@ -31,11 +31,17 @@ const FormatValueSchema = z.object({
   convertUndefinedToValue: ParameterSchema.optional(),
 });
 
+const EntitySchema = z.object({
+  accountId: z.string().min(1, 'Account ID is required'),
+  containerId: z.string().min(1, 'Container ID is required'),
+  workspaceId: z.string().min(1, 'Workspace ID is required'),
+  variableId: z.string().min(1, 'Variable ID is required').optional(),
+});
+
 export const VariableSchema = z.object({
-  accountId: z.string(),
-  containerId: z.string(),
-  workspaceId: z.string(),
-  variableId: z.string(),
+  accountContainerWorkspace: z
+    .array(EntitySchema)
+    .min(1, 'At least one Account-Container-Workspace entry is required'),
   name: z.string(),
   type: z.string(),
   notes: z.string().optional(),
@@ -48,21 +54,16 @@ export const VariableSchema = z.object({
   parentFolderId: z.string().optional(),
   tagManagerUrl: z.string().optional(),
   formatValue: FormatValueSchema.optional(),
-});
-
-export const AccountContainerWorkspaceSchema = z.object({
-  accountId: z.string(),
-  containerId: z.string(),
-  workspaceId: z.string(),
+  path: z.string().optional(),
 });
 
 export const FormCreateAmountSchema = z.object({
   amount: z.number(),
 });
 
-export const FormsSchema = z.object({
+export const FormSchema = z.object({
   forms: z.array(VariableSchema),
 });
 
 // Export the type inferred from VariableSchema for type safety
-export type VariableSchemaType = z.infer<typeof FormsSchema>;
+export type VariableSchemaType = z.infer<typeof FormSchema>;

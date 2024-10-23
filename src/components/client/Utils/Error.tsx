@@ -1,11 +1,18 @@
 'use client';
 
 import { Button } from '@/src/components/ui/button';
-import { revalidate } from '@/src/utils/server';
+import { hardRevalidateFeatureCache } from '@/src/utils/server';
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
+import React from 'react';
 
-export default function ErrorComponent(feature, path) {
+interface ErrorComponentProps {
+  platform: string;
+  feature: string;
+  path: string;
+}
+
+export const ErrorComponent: React.FC<ErrorComponentProps> = ({ platform, feature, path }) => {
   const { user } = useUser();
   const userId = user?.id as string;
   const refreshCache = async () => {
@@ -15,8 +22,10 @@ export default function ErrorComponent(feature, path) {
         onClick: () => toast.dismiss(),
       },
     });
-    const keys = [`ga:${feature}:userId:${userId}`];
-    await revalidate(keys, `${path}`, userId);
+    const keys = [`${platform}:${feature}:userId:${userId}`];
+    console.log('keys', keys);
+
+    await hardRevalidateFeatureCache(keys, `${path}`, userId);
   };
 
   return (
@@ -38,7 +47,7 @@ export default function ErrorComponent(feature, path) {
       </div>
     </div>
   );
-}
+};
 
 function BugIcon(props) {
   return (

@@ -31,7 +31,7 @@ import {
   DropdownMenuTrigger,
 } from '@/src/components/ui/dropdown-menu';
 import { LimitReached } from '@/src/components/client/modals/limitReached';
-import { RevertVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variables';
+import { revertVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variables';
 import { useRevertHook } from '@/src/hooks/useCRUD';
 import { ButtonDelete } from '../../Button/Button';
 
@@ -77,7 +77,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
   const variables = selectedRowArray.filter((row: any) => row.variable);
 
   const handleRevertVar = useRevertHook(
-    RevertVariables, // Pass the specific revert function
+    revertVariables, // Pass the specific revert function
     selectedRowData, // Pass selected rows
     table, // Pass the table instance
     'version' // Optionally pass a custom name for the type being reverted

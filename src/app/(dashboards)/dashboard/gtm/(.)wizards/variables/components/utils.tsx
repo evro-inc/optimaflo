@@ -48,16 +48,16 @@ export function processEntityData(accountData, containerData, workspaceData) {
   const flatContainers = containerData.flat();
   const flatWorkspaces = workspaceData.flat();
 
-  const combinedData = flatWorkspaces.map((ws) => {
-    const accountId = ws.accountId;
-    const containerId = ws.containerId;
+  const combinedData = flatWorkspaces.map((v) => {
+    const accountId = v.accountId;
+    const containerId = v.containerId;
     const accounts = flatAccounts.find((p) => p.accountId === accountId);
     const containers = flatContainers.find((p) => p.containerId === containerId);
     const accountName = accounts ? accounts.name : 'Account Name Unknown';
     const containerName = containers ? containers.name : 'Container Name Unknown';
 
     return {
-      ...ws,
+      ...v,
       accountName,
       containerName,
     };

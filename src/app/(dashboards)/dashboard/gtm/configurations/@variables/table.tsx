@@ -32,8 +32,8 @@ import {
 } from '@/src/components/ui/dropdown-menu';
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
-import { revalidate } from '@/src/utils/server';
-import { ButtonDelete } from '@/src/components/client/Button/Button';
+import { hardRevalidateFeatureCache } from '@/src/utils/server';
+import { ButtonDelete, ButtonLoad } from '@/src/components/client/Button/Button';
 import { useCreateHookForm, useUpdateHookForm, useDeleteHook } from '@/src/hooks/useCRUD';
 
 import { setSelectedRows } from '@/src/redux/tableSlice';
@@ -42,7 +42,7 @@ import { useTransition } from 'react';
 import { LimitReached } from '@/src/components/client/modals/limitReached';
 import { Variable } from '@/src/types/types';
 
-import { DeleteVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variables';
+import { deleteVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variables';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -59,6 +59,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
   const [isUpdatePending, startUpdateTransition] = useTransition();
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
+  const [loading, setLoading] = React.useState(false);
 
   const table = useReactTable({
     data,
@@ -118,7 +119,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
 
   const getDisplayNames = (items) => items.map((item: Variable) => item.name);
   const handleDelete = useDeleteHook(
-    DeleteVariables,
+    deleteVariables,
     selectedRowData,
     table,
     getDisplayNames,
@@ -126,14 +127,22 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
   );
 
   const refreshAllCache = async () => {
-    toast.info('Updating our systems. This may take a minute or two to update on screen.', {
-      action: {
-        label: 'Close',
-        onClick: () => toast.dismiss(),
-      },
-    });
-    const keys = [`gtm:variables:userId:${userId}`];
-    await revalidate(keys, '/dashboard/gtm/configurations', userId);
+    setLoading(true);
+
+    try {
+      toast.info('Updating our systems. This may take a minute or two to update on screen.', {
+        action: {
+          label: 'Close',
+          onClick: () => toast.dismiss(),
+        },
+      });
+      const keys = [`gtm:variables:userId:${userId}`];
+      await hardRevalidateFeatureCache(keys, '/dashboard/gtm/configurations', userId);
+    } catch (error) {
+      toast.error('Cached failed. Try again or reload the page.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   dispatch(setSelectedRows(selectedRowData)); // Update the selected rows in Redux
@@ -150,7 +159,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
         />
 
         <div className="flex space-x-2">
-          <Button onClick={refreshAllCache}>Refresh</Button>
+          <ButtonLoad onClick={refreshAllCache} text="Refresh" loading={loading} />
 
           <Button disabled={isCreatePending} onClick={onCreateButtonClick}>
             {isCreatePending ? 'Loading...' : 'Create'}

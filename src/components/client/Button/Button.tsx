@@ -18,6 +18,8 @@ import {
 import { setLoading } from '@/src/redux/globalSlice';
 import { useDispatch } from 'react-redux';
 import { SignInButton } from '@clerk/nextjs';
+import { LoadingButton } from '../../ui/button-load';
+import React from 'react';
 
 const getModeClasses = (variant, billingInterval?) => {
   let baseClasses = '';
@@ -363,5 +365,13 @@ export const ButtonSubmitAlert = ({ text, form }: { text: string; form: string }
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  );
+};
+
+export const ButtonLoad = ({ text, onClick, loading, ...props }) => {
+  return (
+    <LoadingButton loading={loading} onClick={onClick} {...props}>
+      {text}
+    </LoadingButton>
   );
 };

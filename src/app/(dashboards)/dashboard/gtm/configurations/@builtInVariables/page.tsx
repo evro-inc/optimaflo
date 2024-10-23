@@ -45,8 +45,6 @@ export default async function BuiltInVarPage({
   const flatBuiltInVars = builtInVar.flat();
   const flatStatus = status.flat();
 
-  console.log('flatBuiltInVars', flatBuiltInVars);
-
   const combinedData = flatBuiltInVars.flatMap((builtInVarEntry) => {
     // Extract individual details
     const { accountId, containerId, workspaceId, type, name } = builtInVarEntry;
@@ -84,39 +82,6 @@ export default async function BuiltInVarPage({
       workspaceId,
     };
   });
-
-  /*   const combinedData = flatBuiltInVars.map((vars) => {
-      const accountId = vars.accountId;
-      const containerId = vars.containerId;
-      const workspaceId = vars.workspaceId;
-      const accounts = flatAccounts.find((p) => p.accountId === accountId);
-      const containers = flatContainers.find((p) => p.containerId === containerId);
-      const workspaces = flatWorkspaces.find((p) => p.workspaceId === workspaceId);
-      const accountName = accounts ? accounts.name : 'Account Name Unknown';
-      const containerName = containers ? containers.name : 'Container Name Unknown';
-      const workspaceName = workspaces ? workspaces.name : 'Workspace Name Unknown';
-  
-      const isPublished = statusDataFlat.find(
-        (p) =>
-          p.variable &&
-          p.variable.name === vars.name &&
-          p.variable.accountId === vars.accountId &&
-          p.variable.containerId === vars.containerId &&
-          p.variable.workspaceId === vars.workspaceId
-      )
-        ? 'Unpublished'
-        : 'Published';
-  
-      return {
-        ...vars,
-        accountName,
-        containerName,
-        workspaceName,
-        isPublished,
-      };
-    }); */
-
-  console.log('combineData', combinedData);
 
   return (
     <>
