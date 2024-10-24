@@ -288,6 +288,8 @@ export async function createBuiltInVariables(formData: {
 
   await ensureGARateLimit(userId);
 
+  let totalCreatedVariables = 0;
+
   await Promise.all(
     formData.forms.map(async (data) => {
       const validatedData = await validateFormData(FormSchema, { forms: [data] });
@@ -316,13 +318,12 @@ export async function createBuiltInVariables(formData: {
           });
 
           // Add the created property to successful creations
-          successfulCreations.push(res);
+          successfulCreations.push(res.builtInVariable);
 
-          // Update the usage limit
-          await prisma.tierLimit.update({
-            where: { id: tierLimitResponse.id },
-            data: { createUsage: { increment: 1 } },
-          });
+          // Track total created variables
+          totalCreatedVariables += res.builtInVariable.length;
+
+          console.log('successfulCreations', successfulCreations);
         } catch (error: any) {
           if (error.message === 'Feature limit reached') {
             featureLimitReached.push(validatedData.name ?? 'Unknown');
@@ -339,16 +340,27 @@ export async function createBuiltInVariables(formData: {
     })
   );
 
+  await prisma.tierLimit.update({
+    where: { id: tierLimitResponse.id },
+    data: { createUsage: { increment: totalCreatedVariables } },
+  });
+
   // **Perform Selective Revalidation After All Creations**:
   if (successfulCreations.length > 0) {
     try {
       // Map successful creations to the appropriate structure for Redis
-      const operations = successfulCreations.map((creation) => ({
-        crudType: 'create' as const, // Explicitly set the type as "create"
-        ...creation,
-      }));
-      const cacheFields = successfulCreations.map(
-        (c) => `${c.accountId}/${c.containerId}/${c.workspaceId}/${c.type}`
+      const operations = successfulCreations.flatMap((creationArray) =>
+        creationArray.map((creation) => ({
+          crudType: 'create' as const,
+          data: { ...creation },
+        }))
+      );
+
+      const cacheFields = successfulCreations.flatMap((creationArray) =>
+        creationArray.map(
+          ({ accountId, containerId, workspaceId, type }) =>
+            `${accountId}/${containerId}/${workspaceId}/${type}`
+        )
       );
 
       await softRevalidateFeatureCache(

@@ -71,6 +71,8 @@ const FormCreateFBLink: React.FC<FormCreateProps> = ({
   const notFoundError = useSelector(selectTable).notFoundError;
   const router = useRouter();
 
+  console.log('table', table);
+
   const foundTierLimit = tierLimits.find(
     (subscription) => subscription.Feature?.name === 'GA4FBLinks'
   );
@@ -92,7 +94,7 @@ const FormCreateFBLink: React.FC<FormCreateProps> = ({
 
   const formDataDefaults: FirebaseLink = {
     account: accountsWithProperties[0].name,
-    property: table[0].parent,
+    property: '',
     project: '',
     name: '',
   };

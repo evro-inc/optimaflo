@@ -38,17 +38,13 @@ const FormUpdateWorkspace: React.FC<FormUpdateProps> = React.memo(({ tierLimits 
 
   const selectedRowData = useSelector((state: RootState) => state.table.selectedRows);
 
-  const selectedRowDataFiltered = Object.fromEntries(
-    Object.entries(selectedRowData).filter(([, rowData]) => rowData.name !== 'Default Workspace')
-  );
-
-  const remainingUpdateData = calculateRemainingLimit(tierLimits || [], 'GTMContainer', 'update');
+  const remainingUpdateData = calculateRemainingLimit(tierLimits || [], 'GTMWorkspaces', 'update');
   const remainingUpdate = remainingUpdateData.remaining;
 
-  useErrorRedirect(selectedRowDataFiltered, router, '/dashboard/gtm/entities');
+  useErrorRedirect(selectedRowData, router, '/dashboard/gtm/entities');
 
   const selectedRowDataTransformed: Record<string, WorkspaceType> = Object.fromEntries(
-    Object.entries(selectedRowDataFiltered).map(([key, rowData]) => [
+    Object.entries(selectedRowData).map(([key, rowData]) => [
       key,
       {
         accountId: rowData.accountId,
@@ -68,16 +64,14 @@ const FormUpdateWorkspace: React.FC<FormUpdateProps> = React.memo(({ tierLimits 
     selectedRowDataTransformed
   );
 
-  const formDataDefaults: WorkspaceType[] = Object.values(selectedRowDataFiltered).map(
-    (rowData) => ({
-      accountId: rowData.accountId,
-      workspaceId: rowData.workspaceId,
-      name: rowData.name,
-      description: rowData.description,
-      containerId: rowData.containerId,
-      containerName: rowData.containerName,
-    })
-  );
+  const formDataDefaults: WorkspaceType[] = Object.values(selectedRowData).map((rowData) => ({
+    accountId: rowData.accountId,
+    workspaceId: rowData.workspaceId,
+    name: rowData.name,
+    description: rowData.description,
+    containerId: rowData.containerId,
+    containerName: rowData.containerName,
+  }));
 
   const { form, fields } = useFormInitialization<WorkspaceType>(formDataDefaults, FormSchema);
 
@@ -96,7 +90,7 @@ const FormUpdateWorkspace: React.FC<FormUpdateProps> = React.memo(({ tierLimits 
     '/dashboard/gtm/entities'
   );
 
-  if (Object.keys(selectedRowDataFiltered).length === 0) {
+  if (Object.keys(selectedRowData).length === 0) {
     // Redirect to the entities page
     router.push('/dashboard/gtm/entities');
     return null;
@@ -133,7 +127,7 @@ const FormUpdateWorkspace: React.FC<FormUpdateProps> = React.memo(({ tierLimits 
               <Form {...form}>
                 <form
                   onSubmit={form.handleSubmit(onSubmit)}
-                  id="updateProperty"
+                  id="updateWorkspace"
                   className="space-y-6"
                 >
                   {Object.entries(configs)

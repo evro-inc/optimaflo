@@ -604,7 +604,7 @@ export async function executeApiRequest(
 /** Handles rate limit retry logic */
 export async function handleRateLimitRetry(retries: number, delay: number): Promise<void> {
   if (retries < 3) {
-    const jitter = Math.random() * 1000;
+    const jitter = Math.random() * 1000; // Add randomness to the delay
     await new Promise((resolve) => setTimeout(resolve, delay + jitter));
   } else {
     throw new Error('Rate limit exceeded');

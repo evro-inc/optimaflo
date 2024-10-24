@@ -32,12 +32,14 @@ import {
 } from '@/src/components/ui/dropdown-menu';
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
-import { hardRevalidateFeatureCache, revalidate } from '@/src/utils/server';
+import { hardRevalidateFeatureCache } from '@/src/utils/server';
 import { useDispatch } from 'react-redux';
 import { useTransition } from 'react';
 import { useUpdateHookForm } from '@/src/hooks/useCRUD';
 import { setSelectedRows } from '@/src/redux/tableSlice';
 import { LimitReached } from '@/src/components/client/modals/limitReached';
+import { RefreshLoading } from '@/src/components/client/Utils/TableLoad';
+import { ButtonLoad } from '@/src/components/client/Button/Button';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -46,14 +48,14 @@ interface DataTableProps<TData, TValue> {
 
 export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData, TValue>) {
   const dispatch = useDispatch();
-  const [, startUpdateTransition] = useTransition();
   const { user } = useUser();
   const userId = user?.id as string;
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-
+  const [isRefreshPending, startRefreshTransition] = useTransition();
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
+  const [isUpdatePending, startUpdateTransition] = useTransition();
 
   const table = useReactTable({
     data,
@@ -97,15 +99,21 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     });
   };
 
-  const refreshAllCache = async () => {
-    toast.info('Updating our systems. This may take a minute or two to update on screen.', {
-      action: {
-        label: 'Close',
-        onClick: () => toast.dismiss(),
-      },
+  const refreshAllCache = () => {
+    startRefreshTransition(async () => {
+      try {
+        toast.info('Updating our systems. This may take a minute or two to update on screen.', {
+          action: {
+            label: 'Close',
+            onClick: () => toast.dismiss(),
+          },
+        });
+        const keys = [`gtm:accounts:userId:${userId}`];
+        await hardRevalidateFeatureCache(keys, '/dashboard/ga/properties', userId);
+      } catch (error) {
+        toast.error('Cache update failed. Try again or reload the page.');
+      }
     });
-    const keys = [`gtm:accounts:userId:${userId}`];
-    await hardRevalidateFeatureCache(keys, '/dashboard/ga/properties', userId);
   };
 
   dispatch(setSelectedRows(selectedRowData));
@@ -123,14 +131,12 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
 
         <div className="flex space-x-2">
           <Button onClick={refreshAllCache}>Refresh</Button>
-
-          {/* <ButtonUpdate selectedRows={table.getState().rowSelection} /> */}
-          <Button
-            disabled={Object.keys(table.getState().rowSelection).length === 0}
+          <ButtonLoad
             onClick={onUpdateButtonClick}
-          >
-            Update
-          </Button>
+            text="Update"
+            loading={isUpdatePending}
+            disabled={Object.keys(table.getState().rowSelection).length === 0 || isUpdatePending}
+          />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -156,44 +162,49 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
           </DropdownMenu>
         </div>
       </div>
-      <div className="rounded-md border overflow-x-auto">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
+      {isRefreshPending ? (
+        <RefreshLoading /> // Loading indicator when transition is pending
+      ) : (
+        <div className="rounded-md border overflow-x-auto">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => {
+                    return (
+                      <TableHead key={header.id}>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(header.column.columnDef.header, header.getContext())}
+                      </TableHead>
+                    );
+                  })}
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={columns.length} className="h-24 text-center">
+                    No results.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
       <div className="flex items-center justify-end space-x-2 py-4">
         <div className="flex-1 text-sm text-muted-foreground">
           {table.getFilteredSelectedRowModel().rows.length} of{' '}

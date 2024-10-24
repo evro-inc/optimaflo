@@ -1071,10 +1071,14 @@ interface Selector {
 }
 
 export interface Trigger {
-  accountId: string;
-  containerId: string;
-  workspaceId: string;
-  triggerId: string;
+  accountContainerWorkspace: [
+    {
+      accountId: string;
+      containerId: string;
+      workspaceId: string;
+      triggerId?: string;
+    }
+  ];
   name: string;
   type: string;
   customEventFilter?: Filter[];

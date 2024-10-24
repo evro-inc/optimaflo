@@ -1,6 +1,7 @@
 // GTM-specific field configurations
 
 import { groupBuiltInVariables } from '../app/(dashboards)/dashboard/gtm/configurations/@builtInVariables/items';
+import { triggerTypeArray } from '../app/(dashboards)/dashboard/gtm/configurations/@triggers/items';
 import { variableTypeArray } from '../app/(dashboards)/dashboard/gtm/configurations/@variables/items';
 
 // Define the possible field types for the form
@@ -11,7 +12,8 @@ type EntityType =
   | 'GTMWorkspace'
   | 'GTMPermissions'
   | 'GTMBuiltInVariables'
-  | 'GTMVariables';
+  | 'GTMVariables'
+  | 'GTMTriggers';
 type FormType = 'create' | 'update' | 'switch';
 
 // Define the structure of your field configuration
@@ -195,6 +197,61 @@ const getCommonVariableFields = (
   },
 });
 
+const getCommonTriggerFields = (
+  gtmAccountContainerWorkspacesPairs: {
+    accountId: string;
+    accountName: string;
+    containerId: string;
+    containerName: string;
+    workspaceId: string;
+    workspaceName: string;
+  }[]
+): Record<string, FieldConfig> => ({
+  name: {
+    label: 'Trigger Name',
+    description: 'Name of Trigger.',
+    placeholder: 'Name of Trigger',
+    type: 'text',
+  },
+  type: {
+    label: 'Trigger Type',
+    description: 'Select the type of trigger to add.',
+    placeholder: 'Select a trigger type.',
+    type: 'select',
+    options: triggerTypeArray.map((item) => ({ label: item.name, value: item.type })),
+  },
+  accountId: {
+    label: 'Account',
+    description: 'Select the account associated with the trigger.',
+    placeholder: 'Select an account.',
+    type: 'select',
+    options: gtmAccountContainerWorkspacesPairs.map((pair) => ({
+      label: pair.accountName,
+      value: pair.accountId,
+    })),
+  },
+  containerId: {
+    label: 'Container',
+    description: 'Select the container associated with the trigger.',
+    placeholder: 'Select a container.',
+    type: 'select',
+    options: gtmAccountContainerWorkspacesPairs.map((pair) => ({
+      label: pair.containerName,
+      value: pair.containerId,
+    })),
+  },
+  workspaceId: {
+    label: 'Workspace',
+    description: 'Select the workspace associated with the trigger.',
+    placeholder: 'Select a workspace.',
+    type: 'select',
+    options: gtmAccountContainerWorkspacesPairs.map((pair) => ({
+      label: pair.workspaceName,
+      value: pair.workspaceId,
+    })),
+  },
+});
+
 // Refactored GTM Form Field Configs Function
 export const gtmFormFieldConfigs = (
   entityType: EntityType,
@@ -326,7 +383,6 @@ export const gtmFormFieldConfigs = (
 
       if (isUpdate) {
         return {
-          name: commonFields.name,
           description: commonFields.description,
         };
       }
@@ -400,6 +456,33 @@ export const gtmFormFieldConfigs = (
       const gtmAccountContainerWorkspacesPairs =
         dataSource?.gtmAccountContainerWorkspacesPairs || [];
       const commonFields = getCommonVariableFields(gtmAccountContainerWorkspacesPairs);
+
+      if (isUpdate) {
+        return {
+          ...commonFields,
+        };
+      }
+
+      return {
+        ...commonFields,
+        amount: {
+          label: 'How many built-in variables do you want to add?',
+          description: 'Specify the number of built-in variables to create.',
+          placeholder: 'Select the number of variables to create.',
+          type: 'select',
+          options: Array.from({ length: maxOptions }, (_, i) => ({
+            label: `${i + 1}`,
+            value: `${i + 1}`,
+          })),
+        },
+      };
+    }
+    case 'GTMTriggers': {
+      console.log('dataSource', dataSource);
+
+      const gtmAccountContainerWorkspacesPairs =
+        dataSource?.gtmAccountContainerWorkspacesPairs || [];
+      const commonFields = getCommonTriggerFields(gtmAccountContainerWorkspacesPairs);
 
       if (isUpdate) {
         return {

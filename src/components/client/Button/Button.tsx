@@ -293,11 +293,15 @@ export const ButtonCustomerPortal = ({ variant = 'primary', text, ...props }) =>
 
 /* SHADUI */
 
-export const ButtonDelete = ({ onDelete, disabled, action, type = '' }) => {
+export const ButtonDelete = ({ onDelete, disabled, action, type = '', loading }) => {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button
+        <LoadingButton variant="destructive" disabled={disabled} loading={loading}>
+          {action}
+        </LoadingButton>
+
+        {/*         <Button
           variant="destructive"
           disabled={disabled}
           className="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm"
@@ -317,7 +321,7 @@ export const ButtonDelete = ({ onDelete, disabled, action, type = '' }) => {
             />
           </svg>
           {action}
-        </Button>
+        </Button> */}
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>

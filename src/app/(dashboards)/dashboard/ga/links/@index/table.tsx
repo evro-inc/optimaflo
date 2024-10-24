@@ -32,10 +32,10 @@ import {
 } from '@/src/components/ui/dropdown-menu';
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
-import { revalidate } from '@/src/utils/server';
+import { hardRevalidateFeatureCache, revalidate } from '@/src/utils/server';
 
 import { useDispatch } from 'react-redux';
-import { ButtonDelete } from '@/src/components/client/Button/Button';
+import { ButtonDelete, ButtonLoad } from '@/src/components/client/Button/Button';
 import { setIsLimitReached, setSelectedRows } from '@/src/redux/tableSlice';
 import {
   Dialog,
@@ -53,6 +53,7 @@ import { LimitReached } from '@/src/components/client/modals/limitReached';
 
 import { FirebaseLink } from '@/src/types/types';
 import { deleteGAFirebaseLinks } from '@/src/lib/fetch/dashboard/actions/ga/links';
+import { RefreshLoading } from '@/src/components/client/Utils/TableLoad';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -67,6 +68,9 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
   const userId = user?.id as string;
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+  const [isRefreshPending, startRefreshTransition] = useTransition();
+  const [isDeletePending, startDeleteTransition] = useTransition();
+  const [isDataAck, startDataAckTransition] = useTransition();
 
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
@@ -118,16 +122,29 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     getDisplayNames,
     'ad link'
   );
-
-  const refreshAllCache = async () => {
-    toast.info('Updating our systems. This may take a minute or two to update on screen.', {
-      action: {
-        label: 'Close',
-        onClick: () => toast.dismiss(),
-      },
+  const onDeleteButtonClick = () => {
+    startDeleteTransition(async () => {
+      await handleDelete().catch((error) => {
+        throw new Error(error);
+      });
     });
-    const keys = [`ga:accounts:userId:${userId}`, `ga:properties:userId:${userId}`];
-    await revalidate(keys, '/dashboard/ga/properties', userId);
+  };
+
+  const refreshAllCache = () => {
+    startRefreshTransition(async () => {
+      try {
+        toast.info('Updating our systems. This may take a minute or two to update on screen.', {
+          action: {
+            label: 'Close',
+            onClick: () => toast.dismiss(),
+          },
+        });
+        const keys = [`ga:accounts:userId:${userId}`, `ga:properties:userId:${userId}`];
+        await hardRevalidateFeatureCache(keys, '/dashboard/ga/properties', userId);
+      } catch (error) {
+        toast.error('Cache update failed. Try again or reload the page.');
+      }
+    });
   };
 
   const handleAcknowledgement = async () => {
@@ -190,6 +207,14 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     }
   };
 
+  const onDataAckButtonClick = () => {
+    startDataAckTransition(() => {
+      handleAcknowledgement().catch((error) => {
+        throw new Error(error);
+      });
+    });
+  };
+
   dispatch(setSelectedRows(selectedRowData)); // Update the selected rows in Redux
 
   return (
@@ -204,26 +229,25 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
         />
 
         <div className="flex space-x-2">
-          <Button onClick={refreshAllCache}>Refresh</Button>
-
-          <Button disabled={isCreatePending} onClick={onCreateButtonClick}>
-            {isCreatePending ? 'Loading...' : 'Create'}
-          </Button>
+          <ButtonLoad onClick={refreshAllCache} text="Refresh" loading={isRefreshPending} />
+          <ButtonLoad onClick={onCreateButtonClick} text="Create" loading={isCreatePending} />
 
           <ButtonDelete
             disabled={Object.keys(table.getState().rowSelection).length === 0}
-            onDelete={handleDelete}
-            action={undefined}
+            onDelete={onDeleteButtonClick}
+            action={'Delete'}
+            loading={isDeletePending}
           />
 
           <Dialog>
             <DialogTrigger asChild>
-              <Button
-                disabled={Object.keys(table.getState().rowSelection).length === 0}
+              <ButtonLoad
                 variant="outline"
-              >
-                Data Acknowledgement
-              </Button>
+                disabled={Object.keys(table.getState().rowSelection).length === 0}
+                onClick={null}
+                text="Data Acknowledgement"
+                loading={isDataAck}
+              />
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
@@ -238,7 +262,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
               </DialogHeader>
 
               <DialogFooter>
-                <Button type="submit" onClick={handleAcknowledgement}>
+                <Button type="submit" onClick={onDataAckButtonClick}>
                   Acknowledge
                 </Button>
               </DialogFooter>
@@ -269,44 +293,48 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
           </DropdownMenu>
         </div>
       </div>
-      <div className="rounded-md border overflow-x-auto">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
+      {isRefreshPending || isDeletePending ? (
+        <RefreshLoading /> // Loading indicator when transition is pending
+      ) : (
+        <div className="rounded-md border overflow-x-auto">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => {
+                    return (
+                      <TableHead key={header.id}>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(header.column.columnDef.header, header.getContext())}
+                      </TableHead>
+                    );
+                  })}
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={columns.length} className="h-24 text-center">
+                    No results.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
       <div className="flex items-center justify-end space-x-2 py-4">
         <div className="flex-1 text-sm text-muted-foreground">
           {table.getFilteredSelectedRowModel().rows.length} of{' '}

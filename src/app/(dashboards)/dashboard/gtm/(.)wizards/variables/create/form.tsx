@@ -36,7 +36,6 @@ import AccountContainerWorkspaceRow from '../../built-in-variables/components';
 
 const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
   tierLimits,
-  data,
   accounts,
   containers,
   workspaces,

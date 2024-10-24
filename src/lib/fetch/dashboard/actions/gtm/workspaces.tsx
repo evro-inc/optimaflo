@@ -373,8 +373,9 @@ export async function createWorkspaces(formData: {
       // Map successful creations to the appropriate structure for Redis
       const operations = successfulCreations.map((creation) => ({
         crudType: 'create' as const, // Explicitly set the type as "create"
-        ...creation,
+        data: { ...creation },
       }));
+
       const cacheFields = successfulCreations.map(
         (del) => `${del.accountId}/${del.containerId}/${del.workspaceId}`
       );
