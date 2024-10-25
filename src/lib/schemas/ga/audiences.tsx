@@ -119,7 +119,7 @@ const AudienceFilterClauseSchema = z.object({
   sequenceFilter: AudienceSequenceFilterSchema.optional(),
 });
 
-const SingleFormSchema = z.object({
+const AudienceSchema = z.object({
   account: z.string(),
   property: z.string(),
   name: z.string(),
@@ -137,7 +137,7 @@ export const FormCreateAmountSchema = z.object({
 });
 // If you need to validate an array of CustomConversion objects like in your original FormsSchema
 export const FormSchema = z.object({
-  forms: z.array(SingleFormSchema),
+  forms: z.array(AudienceSchema),
 });
 
 // Export the type inferred from CustomConversionsSchema for type safety

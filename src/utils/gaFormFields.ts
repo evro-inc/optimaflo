@@ -21,7 +21,8 @@ type entityType =
   | 'GA4Streams'
   | 'GA4CustomDimensions'
   | 'GA4CustomMetrics'
-  | 'GA4KeyEvents';
+  | 'GA4KeyEvents'
+  | 'GA4Audiences';
 type formType = 'create' | 'update' | 'switch';
 
 interface FieldConfig {
@@ -349,6 +350,93 @@ const getCommonKeyEventFields = (
   return fields;
 };
 
+
+
+
+
+
+
+
+const getCommonAudienceFields = (
+  accountsWithProperties: { displayName: string; name: string }[],
+  filteredProperties: { displayName: string; name: string }[],
+  includeDefaultValue?: string
+): Record<string, FieldConfig> => {
+  const fields: Record<string, FieldConfig> = {
+    account: {
+      label: 'Account',
+      description: 'This is the account you want to create the property in.',
+      placeholder: 'Select an account.',
+      type: 'select',
+      options: accountsWithProperties.map((account) => ({
+        label: account.displayName,
+        value: account.name,
+      })),
+    },
+    property: {
+      label: 'Property',
+      description: 'Select a property for this key event.',
+      placeholder: 'Select a property.',
+      type: 'select',
+      options: filteredProperties.map((property) => ({
+        label: property.displayName,
+        value: property.name,
+      })),
+    },
+    eventName: {
+      label: 'Key Event Name',
+      description: 'This is the key event name you want to create.',
+      placeholder: 'Enter the key event name.',
+      type: 'text',
+    },
+    countingMethod: {
+      label: 'Counting Method',
+      description: 'The method for counting key events within a session.',
+      placeholder: 'Select counting method.',
+      type: 'select',
+      options: Object.entries(CountMethodData).map(([label, value]) => ({
+        label,
+        value,
+      })),
+    },
+    includeDefaultValue: {
+      label: 'Default Conversion Value',
+      description: 'Set a default conversion value for the key event.',
+      placeholder: 'Select default value option.',
+      type: 'radio',
+      options: [
+        { label: 'No Default Value', value: 'false' },
+        { label: 'Set Default Value', value: 'true' },
+      ],
+    },
+  };
+
+  // Conditionally add numeric value and currency code fields
+  if (includeDefaultValue === 'true') {
+    fields['defaultValue.numericValue'] = {
+      label: 'Default Numeric Value',
+      description: 'Enter the default numeric value for this event.',
+      placeholder: 'Enter value',
+      type: 'text',
+    };
+    fields['defaultValue.currencyCode'] = {
+      label: 'Currency Code',
+      description: 'Select the currency for the default value.',
+      placeholder: 'Select currency',
+      type: 'select',
+      options: CurrencyCodes.map((code) => ({
+        label: code,
+        value: code,
+      })),
+    };
+  }
+
+  return fields;
+};
+
+
+
+
 export const gaFormFieldConfigs = (
   entityType: entityType, // Add more GA entity types as needed
   formType: formType,
@@ -503,6 +591,33 @@ export const gaFormFieldConfigs = (
       }
     }
 
+    case 'GA4Audiences': {
+      const accountsWithProperties = dataSource?.accountsWithProperties || [];
+      const filteredProperties = dataSource?.filteredProperties || [];
+      const commonFields = getCommonAudienceFields(
+        accountsWithProperties,
+        filteredProperties,
+        watched
+      );
+
+      if (isUpdate) {
+        return { ...commonFields };
+      } else {
+        return {
+          ...commonFields, // Return common fields and an additional 'amount' field for creation
+          amount: {
+            label: 'How many custom metrics do you want to add?',
+            description: 'This is the number of custom metrics you want to create.',
+            placeholder: 'Select the number of custom metrics.',
+            type: 'select',
+            options: Array.from({ length: maxOptions }, (_, i) => ({
+              label: `${i + 1}`,
+              value: `${i + 1}`,
+            })),
+          },
+        };
+      }
+    }
     default: {
       throw new Error(`Unsupported GA entity type: ${entityType}`);
     }
