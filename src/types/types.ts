@@ -988,10 +988,14 @@ interface ConsentSettings {
 
 export interface Tag {
   path: string;
-  accountId: string;
-  containerId: string;
-  workspaceId: string;
-  tagId: string;
+  accountContainerWorkspace: [
+    {
+      accountId: string;
+      containerId: string;
+      workspaceId: string;
+      tagId?: string;
+    }
+  ];
   name: string;
   type: string;
   firingRuleId: string[];

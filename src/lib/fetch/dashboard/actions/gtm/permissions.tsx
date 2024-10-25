@@ -58,8 +58,6 @@ export async function listGtmPermissions(skipCache = false): Promise<any[]> {
     )
   ).map((str: any) => JSON.parse(str));
 
-  console.log('uniqueItems', uniqueItems);
-
   const urls = uniqueItems.map(
     ({ accountId }) =>
       `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/user_permissions`

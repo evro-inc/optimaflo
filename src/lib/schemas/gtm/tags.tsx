@@ -63,12 +63,18 @@ const MonitoringMetadataSchema = z.object({
   isWeakReference: z.boolean().optional(),
 });
 
-const TagSchema = z.object({
+const EntitySchema = z.object({
+  accountId: z.string().min(1, 'Account ID is required'),
+  containerId: z.string().min(1, 'Container ID is required'),
+  workspaceId: z.string().min(1, 'Workspace ID is required'),
+  tagId: z.string().min(1, 'Tag ID is required').optional(),
+});
+
+export const TagSchema = z.object({
   path: z.string(),
-  accountId: z.string(),
-  containerId: z.string(),
-  workspaceId: z.string(),
-  tagId: z.string(),
+  accountContainerWorkspace: z
+    .array(EntitySchema)
+    .min(1, 'At least one Account-Container-Workspace entry is required'),
   name: z.string(),
   type: z.string(),
   firingRuleId: z.array(z.string()),
@@ -99,9 +105,9 @@ export const FormCreateAmountSchema = z.object({
   amount: z.number(),
 });
 
-export const FormsSchema = z.object({
+export const FormSchema = z.object({
   forms: z.array(TagSchema),
 });
 
 // Export the type inferred from TriggerSchema for type safety
-export type TagType = z.infer<typeof FormsSchema>;
+export type TagType = z.infer<typeof FormSchema>;

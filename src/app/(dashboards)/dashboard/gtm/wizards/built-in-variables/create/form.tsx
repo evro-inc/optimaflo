@@ -189,7 +189,7 @@ const FormCreateBuiltInVariable: React.FC<FormCreateGTMProps> = React.memo(
                             if (isValid) {
                               handleNext();
                             } else {
-                              console.log('Validation failed');
+                              throw new Error('Error with validation');
                             }
                           }}
                         >

@@ -71,8 +71,6 @@ const FormCreateFBLink: React.FC<FormCreateProps> = ({
   const notFoundError = useSelector(selectTable).notFoundError;
   const router = useRouter();
 
-  console.log('table', table);
-
   const foundTierLimit = tierLimits.find(
     (subscription) => subscription.Feature?.name === 'GA4FBLinks'
   );

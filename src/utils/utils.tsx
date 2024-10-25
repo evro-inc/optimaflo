@@ -161,7 +161,6 @@ export const processForm = <TFormValues extends FormWithParent>(
     const uniqueFeatures = new Set(forms.map((form) => form.parent));
 
     for (const form of forms) {
-      console.log('form', form);
       let identifier;
 
       identifier = `${form.parent ?? 'unknown-parent'} - ${form.name ?? 'unknown-name'} - ${

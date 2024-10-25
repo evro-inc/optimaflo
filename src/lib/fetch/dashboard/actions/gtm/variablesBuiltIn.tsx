@@ -142,8 +142,6 @@ export async function deleteBuiltInVariables(
     Array.from(selected).map(async (data: BuiltInVariable) => {
       const url = `https://www.googleapis.com/tagmanager/v2/accounts/${data.accountId}/containers/${data.containerId}/workspaces/${data.workspaceId}/built_in_variables?type=${data.type}`;
 
-      console.log('data type', data);
-
       const headers = {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
@@ -293,7 +291,6 @@ export async function createBuiltInVariables(formData: {
   await Promise.all(
     formData.forms.map(async (data) => {
       const validatedData = await validateFormData(FormSchema, { forms: [data] });
-      console.log('validate data', validatedData);
 
       // Loop through each accountContainerWorkspace combination
       for (const workspace of validatedData.forms[0].accountContainerWorkspace) {
@@ -322,8 +319,6 @@ export async function createBuiltInVariables(formData: {
 
           // Track total created variables
           totalCreatedVariables += res.builtInVariable.length;
-
-          console.log('successfulCreations', successfulCreations);
         } catch (error: any) {
           if (error.message === 'Feature limit reached') {
             featureLimitReached.push(validatedData.name ?? 'Unknown');

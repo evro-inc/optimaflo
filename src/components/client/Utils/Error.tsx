@@ -23,7 +23,6 @@ export const ErrorComponent: React.FC<ErrorComponentProps> = ({ platform, featur
       },
     });
     const keys = [`${platform}:${feature}:userId:${userId}`];
-    console.log('keys', keys);
 
     await hardRevalidateFeatureCache(keys, `${path}`, userId);
   };

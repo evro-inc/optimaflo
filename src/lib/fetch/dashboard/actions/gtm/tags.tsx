@@ -1,6 +1,6 @@
 'use server';
 import { revalidatePath } from 'next/cache';
-import { FormsSchema, TagType } from '@/src/lib/schemas/gtm/tags';
+import { FormSchema, FormsSchema, TagSchema, TagType } from '@/src/lib/schemas/gtm/tags';
 import { auth } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 import { limiter } from '../../../../bottleneck';
@@ -10,17 +10,115 @@ import { currentUserOauthAccessToken } from '../../../../clerk';
 import prisma from '@/src/lib/prisma';
 import { FeatureResponse, FeatureResult, Tag } from '@/src/types/types';
 import {
+  authenticateUser,
+  checkFeatureLimit,
+  ensureGARateLimit,
+  executeApiRequest,
+  getOauthToken,
   handleApiResponseError,
+  softRevalidateFeatureCache,
   tierCreateLimit,
   tierDeleteLimit,
   tierUpdateLimit,
+  validateFormData,
 } from '@/src/utils/server';
 import { fetchGtmSettings } from '../..';
+import { z } from 'zod';
+
+const featureType: string = 'GTMTags';
 
 /************************************************************************************
   Function to list or get one GTM tags
 ************************************************************************************/
-export async function listTags(skipCache = false) {
+export async function listTags(skipCache = false): Promise<any[]> {
+  const userId = await authenticateUser();
+  const token = await getOauthToken(userId);
+  const cacheKey = `gtm:tags:userId:${userId}`;
+
+  if (!skipCache) {
+    const cacheData = await redis.hgetall(cacheKey);
+
+    if (Object.keys(cacheData).length > 0) {
+      try {
+        const parsedData = Object.values(cacheData).map((data) => JSON.parse(data));
+
+        return parsedData;
+      } catch (error) {
+        console.error('Failed to parse cache data:', error);
+        await redis.del(cacheKey);
+      }
+    }
+  }
+
+  const data = await prisma.user.findFirst({
+    where: { id: userId },
+    include: { gtm: true },
+  });
+
+  if (!data) return [];
+
+  await ensureGARateLimit(userId);
+
+  const uniqueItems = Array.from(
+    new Set(
+      data.gtm.map((item) =>
+        JSON.stringify({
+          accountId: item.accountId,
+          containerId: item.containerId,
+          workspaceId: item.workspaceId,
+        })
+      )
+    )
+  ).map((str: any) => JSON.parse(str));
+
+  const urls = uniqueItems.map(
+    ({ accountId, containerId, workspaceId }) =>
+      `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/tags`
+  );
+
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+    'Accept-Encoding': 'gzip',
+  };
+
+  try {
+    const allData = await Promise.all(urls.map((url) => executeApiRequest(url, { headers })));
+    const flattenedData = allData.flat();
+    const cleanedData = flattenedData.filter((item) => Object.keys(item).length > 0);
+    const ws = cleanedData.flatMap((item) => item.tag || []); // Flatten to get all workspaces directly
+
+    try {
+      const pipeline = redis.pipeline();
+      const workspaceTagsMap = new Map();
+      ws.forEach((w) => {
+        const fieldKey = `${w.accountId}/${w.containerId}/${w.workspaceId}/${w.tagId}`;
+
+        if (!workspaceTagsMap.has(fieldKey)) {
+          workspaceTagsMap.set(fieldKey, []);
+        }
+
+        // Add the current tag to the corresponding workspace's list
+        workspaceTagsMap.get(fieldKey).push(w);
+      });
+
+      workspaceTagsMap.forEach((tags, fieldKey) => {
+        pipeline.hset(cacheKey, fieldKey, JSON.stringify(tags));
+      });
+
+      pipeline.expire(cacheKey, 2592000); // Set expiration for the entire hash
+      await pipeline.exec(); // Execute the pipeline commands
+    } catch (cacheError) {
+      console.error('Failed to set cache data with HSET:', cacheError);
+    }
+
+    return ws; // Return only the ws array
+  } catch (apiError) {
+    console.error('Error fetching ws from API:', apiError);
+    return []; // Return empty array or handle this more gracefully depending on your needs
+  }
+}
+/* export async function listTags(skipCache = false) {
   let retries = 0;
   const MAX_RETRIES = 20;
   let delay = 2000;
@@ -108,298 +206,328 @@ export async function listTags(skipCache = false) {
   }
   throw new Error('Maximum retries reached without a successful response.');
 }
-
+ */
 /************************************************************************************
   Delete a single or multiple tags
 ************************************************************************************/
-export async function DeleteTags(ga4TagToDelete: Tag[]): Promise<FeatureResponse> {
-  // Initialization of retry mechanism
-  let retries = 0;
-  const MAX_RETRIES = 3;
-  let delay = 1000;
-
-  // Arrays to track tagious outcomes
-  const errors: string[] = [];
-  const successfulDeletions: Array<{
-    combinedId: string;
-    name: string;
-  }> = [];
-  const featureLimitReached: {
-    combinedId: string;
-    name: string;
-  }[] = [];
-  const notFoundLimit: Array<{
-    combinedId: string;
-    name: string;
-  }> = [];
-
-  const toDeleteTags = new Set(
-    ga4TagToDelete.map(
-      (prop) => `${prop.accountId}-${prop.containerId}-${prop.workspaceId}-${prop.type}`
-    )
+export async function deleteTags(
+  selected: Set<z.infer<typeof TagSchema>>,
+  names: string[]
+): Promise<FeatureResponse> {
+  const userId = await authenticateUser();
+  const token = await getOauthToken(userId);
+  const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
+    userId,
+    featureType,
+    'delete'
   );
 
-  // Authenticating user and getting user ID
-  const { userId } = await auth();
-  // If user ID is not found, return a 'not found' error
-  if (!userId) return notFound();
-  const token = await currentUserOauthAccessToken(userId);
-
-  // Check for feature limit using Prisma ORM
-  const tierLimitResponse: any = await tierDeleteLimit(userId, 'GTMTags');
-  const limit = Number(tierLimitResponse.deleteLimit);
-  const deleteUsage = Number(tierLimitResponse.deleteUsage);
-  const availableDeleteUsage = limit - deleteUsage;
-  const tagIdsProcessed = new Set<string>();
-
-  // Handling feature limit
-  if (tierLimitResponse && tierLimitResponse.limitReached) {
+  if (tierLimitResponse.limitReached || selected.size > availableUsage) {
     return {
       success: false,
       limitReached: true,
-      errors: [],
-      message: 'Feature limit reached for Deleting Tags',
-      results: [],
-    };
-  }
-
-  if (toDeleteTags.size > availableDeleteUsage) {
-    // If the deletion request exceeds the available limit
-    return {
-      success: false,
-      features: [],
+      message: 'Feature limit reached or request exceeds available deletions.',
       errors: [
-        `Cannot delete ${toDeleteTags.size} tags as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
+        `Cannot delete more built-in tags than available. You have ${availableUsage} deletions left.`,
       ],
       results: [],
-      limitReached: true,
-      message: `Cannot delete ${toDeleteTags.size} tags as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
     };
   }
-  let permissionDenied = false;
 
-  if (toDeleteTags.size <= availableDeleteUsage) {
-    // Retry loop for deletion requests
-    while (retries < MAX_RETRIES && toDeleteTags.size > 0 && !permissionDenied) {
+  let errors: string[] = [];
+  let successfulDeletions: z.infer<typeof TagSchema>[] = [];
+  let featureLimitReached: string[] = [];
+  let notFoundLimit: string[] = [];
+
+  await ensureGARateLimit(userId);
+
+  await Promise.all(
+    Array.from(selected).map(async (data) => {
+      const url = `https://www.googleapis.com/tagmanager/v2/${data.path}`;
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept-Encoding': 'gzip',
+      };
+
       try {
-        // Enforcing rate limit
-        const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
+        await executeApiRequest(url, { method: 'DELETE', headers }, 'tags', names);
+        successfulDeletions.push(data);
 
-        if (remaining > 0) {
-          await limiter.schedule(async () => {
-            // Creating promises for each container deletion
-            const deletePromises = Array.from(ga4TagToDelete).map(async (prop) => {
-              const { accountId, containerId, workspaceId, tagId, type } = prop;
-
-              let url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/tags/${tagId}`;
-
-              const headers = {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json',
-                'Accept-Encoding': 'gzip',
-              };
-
-              try {
-                const response = await fetch(url, {
-                  method: 'DELETE',
-                  headers: headers,
-                });
-
-                const parsedResponse = await response.json();
-
-                if (response.ok) {
-                  tagIdsProcessed.add(containerId);
-                  successfulDeletions.push({
-                    combinedId: `${accountId}-${containerId}-${workspaceId}-${tagId}`,
-                    name: type,
-                  });
-
-                  await prisma.tierLimit.update({
-                    where: { id: tierLimitResponse.id },
-                    data: { deleteUsage: { increment: 1 } },
-                  });
-
-                  toDeleteTags.delete(
-                    `${accountId}-${containerId}-${workspaceId}-${tagId}-${type}`
-                  );
-                  fetchGtmSettings(userId);
-
-                  return {
-                    combinedId: `${accountId}-${containerId}-${workspaceId}-${tagId}-${type}`,
-                    success: true,
-                  };
-                } else {
-                  const errorResult = await handleApiResponseError(
-                    response,
-                    parsedResponse,
-                    'tag',
-                    [type]
-                  );
-
-                  if (errorResult) {
-                    errors.push(`${errorResult.message}`);
-                    if (
-                      errorResult.errorCode === 403 &&
-                      parsedResponse.message === 'Feature limit reached'
-                    ) {
-                      featureLimitReached.push({
-                        combinedId: `${accountId}-${containerId}-${workspaceId}-${tagId}`,
-                        name: type,
-                      });
-                    } else if (errorResult.errorCode === 404) {
-                      notFoundLimit.push({
-                        combinedId: `${accountId}-${containerId}-${workspaceId}-${tagId}`,
-                        name: type,
-                      });
-                    }
-                  } else {
-                    errors.push(`An unknown error occurred for  tag ${type}.`);
-                  }
-
-                  toDeleteTags.delete(`${accountId}-${containerId}-${workspaceId}-${tagId}`);
-                  permissionDenied = errorResult ? true : permissionDenied;
-                }
-              } catch (error: any) {
-                // Handling exceptions during fetch
-                errors.push(
-                  `Error deleting  tag ${accountId}-${containerId}-${workspaceId}-${tagId}: ${error.message}`
-                );
-              }
-              tagIdsProcessed.add(containerId);
-              toDeleteTags.delete(`${accountId}-${containerId}-${workspaceId}-${tagId}`);
-              return { containerId, success: false };
-            });
-
-            // Awaiting all deletion promises
-            await Promise.all(deletePromises);
-          });
-
-          if (notFoundLimit.length > 0) {
-            return {
-              success: false,
-              limitReached: false,
-              notFoundError: true, // Set the notFoundError flag
-              message: `Could not delete tag. Please check your permissions. Container Name: 
-              ${notFoundLimit
-                .map(({ name }) => name)
-                .join(', ')}. All other tags were successfully deleted.`,
-              results: notFoundLimit.map(({ combinedId, name }) => {
-                const [accountId, containerId, workspaceId] = combinedId.split('-');
-                return {
-                  id: [accountId, containerId, workspaceId], // Ensure id is an array
-                  name: [name], // Ensure name is an array, match by tagId or default to 'Unknown'
-                  success: false,
-                  notFound: true,
-                };
-              }),
-            };
-          }
-          if (featureLimitReached.length > 0) {
-            return {
-              success: false,
-              limitReached: true,
-              notFoundError: false,
-              message: `Feature limit reached for tags: ${featureLimitReached
-                .map(({ combinedId }) => combinedId)
-                .join(', ')}`,
-              results: featureLimitReached.map(({ combinedId, name }) => {
-                const [accountId, containerId, workspaceId] = combinedId.split('-');
-                return {
-                  id: [accountId, containerId, workspaceId], // Ensure id is an array
-                  name: [name], // Ensure name is an array, use the name from featureLimitReached
-                  success: false,
-                  featureLimitReached: true,
-                };
-              }),
-            };
-          }
-          // Update tier limit usage as before (not shown in code snippet)
-          if (successfulDeletions.length === ga4TagToDelete.length) {
-            break; // Exit loop if all containers are processed successfully
-          }
-          if (permissionDenied) {
-            break; // Exit the loop if a permission error was encountered
-          }
-        } else {
-          throw new Error('Rate limit exceeded');
-        }
+        await prisma.tierLimit.update({
+          where: { id: tierLimitResponse.id },
+          data: { deleteUsage: { increment: 1 } },
+        });
       } catch (error: any) {
-        // Handling rate limit exceeded error
-        if (error.code === 429 || error.status === 429) {
-          const jitter = Math.random() * 200;
-          await new Promise((resolve) => setTimeout(resolve, delay + jitter));
-          delay *= 2;
-          retries++;
+        if (error.message === 'Feature limit reached') {
+          featureLimitReached.push(data.name);
+        } else if (error.message.includes('404')) {
+          notFoundLimit.push(data.name);
         } else {
-          break;
+          errors.push(error.message);
         }
-      } finally {
-        const cacheKey = `gtm:tags:userId:${userId}`;
-        await redis.del(cacheKey);
-
-        await revalidatePath(`/dashboard/gtm/configurations`);
       }
+    })
+  );
+
+  // **Perform Selective Revalidation After All Deletions**:
+  if (successfulDeletions.length > 0) {
+    try {
+      // Explicitly type the operations array
+      const operations = successfulDeletions.map((deletion) => ({
+        crudType: 'delete' as const, // Explicitly set the type as "delete"
+        data: { ...deletion },
+      }));
+      const cacheFields = successfulDeletions.map(
+        (del) => `${del.accountId}/${del.containerId}/${del.workspaceId}/${del.tagId}`
+      );
+
+      await softRevalidateFeatureCache(
+        [`gtm:tags:userId:${userId}`],
+        `/dashboard/gtm/configurations`,
+        userId,
+        operations,
+        cacheFields
+      );
+    } catch (err) {
+      console.error('Error during revalidation:', err);
     }
   }
-  if (permissionDenied) {
+
+  // Handling responses for various scenarios like feature limit reached or not found errors
+  if (notFoundLimit.length > 0) {
     return {
       success: false,
-      errors: errors,
-      results: [],
-      message: errors.join(', '),
+      limitReached: false,
+      notFoundError: true,
+      message: `Could not delete tag. Please check your permissions. Tag : ${names.find((name) =>
+        name.includes(name)
+      )}. All other tags were successfully deleted.`,
+      results: notFoundLimit.map((data) => ({
+        id: [data],
+        name: [names.find((name) => name.includes(data)) || 'Unknown'],
+        success: false,
+        notFound: true,
+      })),
+    };
+  }
+
+  if (featureLimitReached.length > 0) {
+    return {
+      success: false,
+      limitReached: true,
+      notFoundError: false,
+      message: `Feature limit reached for tag: ${featureLimitReached.join(', ')}`,
+      results: featureLimitReached.map((data) => ({
+        id: [data],
+        name: [names.find((name) => name.includes(data)) || 'Unknown'],
+        success: false,
+        featureLimitReached: true,
+      })),
     };
   }
 
   if (errors.length > 0) {
     return {
       success: false,
-      features: successfulDeletions.map(({ combinedId }) => combinedId),
-      errors: errors,
-      results: successfulDeletions.map(({ combinedId, name }) => {
-        const [accountId, containerId, workspaceId] = combinedId.split('-');
-        return {
-          id: [accountId, containerId, workspaceId], // Ensure id is an array
-          name: [name], // Ensure name is an array and provide a default value
-          success: true,
-        };
-      }),
-      // Add a general message if needed
+      errors,
+      results: [],
       message: errors.join(', '),
+      notFoundError: notFoundLimit.length > 0,
     };
   }
-  // If there are successful deletions, update the deleteUsage
-  if (successfulDeletions.length > 0) {
-    const specificCacheKey = `gtm:tags:userId:${userId}`;
-    await redis.del(specificCacheKey);
 
-    // Revalidate paths if needed
-    revalidatePath(`/dashboard/gtm/configurations`);
-  }
-
-  const totalDeletedTags = successfulDeletions.length;
-
-  // Returning the result of the deletion process
   return {
-    success: errors.length === 0,
-    message: `Successfully deleted ${totalDeletedTags} tag(s)`,
-    features: successfulDeletions.map(({ combinedId }) => combinedId),
-    errors: errors,
+    success: true,
+    message: `Successfully deleted ${successfulDeletions.length} tag(s)`,
+    features: successfulDeletions.map<FeatureResult>((data) => ({
+      id: [data.name],
+      name: [names.find((name) => name.includes(data.name)) || 'Unknown'],
+      success: true,
+    })),
+    errors: [],
     notFoundError: notFoundLimit.length > 0,
-    results: successfulDeletions.map(({ combinedId, name }) => {
-      const [accountId, containerId, workspaceId] = combinedId.split('-');
-      return {
-        id: [accountId, containerId, workspaceId], // Ensure id is an array
-        name: [name], // Ensure name is an array
-        success: true,
-      };
-    }),
+    results: successfulDeletions.map<FeatureResult>((data) => ({
+      id: [data.name],
+      name: [names.find((name) => name.includes(data.name)) || 'Unknown'],
+      success: true,
+    })),
   };
 }
 
 /************************************************************************************
   Create a single container or multiple containers
 ************************************************************************************/
-export async function CreateTags(formData: TagType) {
+export async function createTags(formData: { forms: TagType['forms'] }): Promise<FeatureResponse> {
+  const userId = await authenticateUser();
+  const token = await getOauthToken(userId);
+  const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
+    userId,
+    featureType,
+    'create'
+  );
+
+  if (tierLimitResponse.limitReached || formData.forms.length > availableUsage) {
+    return {
+      success: false,
+      limitReached: true,
+      message: 'Feature limit reached or request exceeds available creations.',
+      errors: [
+        `Cannot create more tags than available. You have ${availableUsage} creations left.`,
+      ],
+      results: [],
+    };
+  }
+
+  let errors: string[] = [];
+  let successful: any[] = [];
+  let featureLimitReached: string[] = [];
+  let notFoundLimit: { id: string | undefined; name: string }[] = [];
+
+  await ensureGARateLimit(userId);
+
+  // Loop over each form and each accountContainerWorkspace combination
+  await Promise.all(
+    formData.forms.map(async (form) => {
+      for (const workspaceData of form.accountContainerWorkspace) {
+        try {
+          const validatedData = await validateFormData(FormSchema, { forms: [form] });
+          const url = `https://www.googleapis.com/tagmanager/v2/accounts/${workspaceData.accountId}/containers/${workspaceData.containerId}/workspaces/${workspaceData.workspaceId}/tags`;
+
+          const headers = {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept-Encoding': 'gzip',
+          };
+
+          // Prepare body to match the required structure
+          const requestBody = {
+            ...validatedData.forms[0],
+            accountId: workspaceData.accountId,
+            containerId: workspaceData.containerId,
+            workspaceId: workspaceData.workspaceId,
+          };
+
+          // Execute API request
+          const res = await executeApiRequest(url, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(requestBody),
+          });
+
+          // Add the created property to successful creations
+          successful.push(res);
+
+          // Update the usage limit
+          await prisma.tierLimit.update({
+            where: { id: tierLimitResponse.id },
+            data: { createUsage: { increment: 1 } },
+          });
+        } catch (error: any) {
+          if (error.message === 'Feature limit reached') {
+            featureLimitReached.push(form.name ?? 'Unknown');
+          } else if (error.message.includes('404')) {
+            notFoundLimit.push({
+              id: workspaceData.containerId ?? 'Unknown',
+              name: form.name ?? 'Unknown',
+            });
+          } else {
+            errors.push(error.message);
+          }
+        }
+      }
+    })
+  );
+
+  // **Perform Selective Revalidation After All Creations**:
+  if (successful.length > 0) {
+    try {
+      // Map successful creations to the appropriate structure for Redis
+      const operations = successful.map((creation) => ({
+        crudType: 'create' as const, // Explicitly set the type as "create"
+        data: { ...creation }, // Put all remaining fields into data
+      }));
+
+      const cacheFields = successful.map(
+        ({ accountId, containerId, workspaceId, tagId }) =>
+          `${accountId}/${containerId}/${workspaceId}/${tagId}`
+      );
+
+      await softRevalidateFeatureCache(
+        [`gtm:tags:userId:${userId}`],
+        `/dashboard/gtm/configurations`,
+        userId,
+        operations,
+        cacheFields
+      );
+    } catch (err) {
+      console.error('Error during revalidation:', err);
+    }
+  }
+
+  // Check for not found errors and return if any
+  if (notFoundLimit.length > 0) {
+    return {
+      success: false,
+      limitReached: false,
+      notFoundError: true,
+      features: [],
+      message: `Some tags could not be found: ${notFoundLimit.map((item) => item.name).join(', ')}`,
+      results: notFoundLimit.map((item) => ({
+        id: item.id ? [item.id] : [],
+        name: [item.name],
+        success: false,
+        notFound: true,
+      })),
+    };
+  }
+
+  // Check if feature limit is reached and return response if applicable
+  if (featureLimitReached.length > 0) {
+    return {
+      success: false,
+      limitReached: true,
+      notFoundError: false,
+      message: `Feature limit reached for tags: ${featureLimitReached.join(', ')}`,
+      results: featureLimitReached.map((propertyName) => ({
+        id: [],
+        name: [propertyName],
+        success: false,
+        featureLimitReached: true,
+      })),
+    };
+  }
+
+  // Proceed with general error handling if needed
+  if (errors.length > 0) {
+    return {
+      success: false,
+      errors,
+      results: [],
+      message: errors.join(', '),
+      notFoundError: notFoundLimit.length > 0,
+    };
+  }
+
+  return {
+    success: true,
+    message: `Successfully created ${successful.length} tag(s)`,
+    features: successful.map<FeatureResult>((property) => ({
+      id: [],
+      name: [property.name],
+      success: true,
+    })),
+    errors: [],
+    notFoundError: notFoundLimit.length > 0,
+    results: successful.map<FeatureResult>((property) => ({
+      id: [],
+      name: [property.name],
+      success: true,
+    })),
+  };
+}
+
+/* export async function CreateTags(formData: TagType) {
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
@@ -694,12 +822,181 @@ export async function CreateTags(formData: TagType) {
     results: results, // Use the correctly typed results
     notFoundError: false, // Set based on actual not found status
   };
-}
+} */
 
 /************************************************************************************
   Update a single or multiple tags
 ************************************************************************************/
-export async function UpdateTags(formData: TagType) {
+export async function updateTags(formData: { forms: TagType['forms'] }): Promise<FeatureResponse> {
+  const userId = await authenticateUser();
+  const token = await getOauthToken(userId);
+  const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
+    userId,
+    featureType,
+    'update'
+  );
+
+  if (tierLimitResponse.limitReached || formData.forms.length > availableUsage) {
+    return {
+      success: false,
+      limitReached: true,
+      message: 'Feature limit reached or request exceeds available creations.',
+      errors: [
+        `Cannot update more tags than available. You have ${availableUsage} creations left.`,
+      ],
+      results: [],
+    };
+  }
+
+  let errors: string[] = [];
+  let successful: any[] = [];
+  let featureLimitReached: string[] = [];
+  let notFoundLimit: { id: string | undefined; name: string }[] = [];
+
+  await ensureGARateLimit(userId);
+
+  // Loop over each form and each accountContainerWorkspace combination
+  await Promise.all(
+    formData.forms.map(async (form) => {
+      for (const workspaceData of form.accountContainerWorkspace) {
+        try {
+          const validatedData = await validateFormData(FormSchema, { forms: [form] });
+
+          const url = `https://www.googleapis.com/tagmanager/v2/accounts/${workspaceData.accountId}/containers/${workspaceData.containerId}/workspaces/${workspaceData.workspaceId}/tags/${workspaceData.tagId}`;
+
+          const headers = {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept-Encoding': 'gzip',
+          };
+
+          // Prepare body to match the required structure
+          const requestBody = {
+            ...validatedData.forms[0],
+            accountId: workspaceData.accountId,
+            containerId: workspaceData.containerId,
+            workspaceId: workspaceData.workspaceId,
+          };
+
+          // Execute API request
+          const res = await executeApiRequest(url, {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify(requestBody),
+          });
+
+          // Add the created property to successful creations
+          successful.push(res);
+
+          // Update the usage limit
+          await prisma.tierLimit.update({
+            where: { id: tierLimitResponse.id },
+            data: { updateUsage: { increment: 1 } },
+          });
+        } catch (error: any) {
+          if (error.message === 'Feature limit reached') {
+            featureLimitReached.push(form.name ?? 'Unknown');
+          } else if (error.message.includes('404')) {
+            notFoundLimit.push({
+              id: workspaceData.containerId ?? 'Unknown',
+              name: form.name ?? 'Unknown',
+            });
+          } else {
+            errors.push(error.message);
+          }
+        }
+      }
+    })
+  );
+
+  // **Perform Selective Revalidation After All Creations**:
+  if (successful.length > 0) {
+    try {
+      // Map successful creations to the appropriate structure for Redis
+      const operations = successful.map((update) => ({
+        crudType: 'update' as const, // Explicitly set the type as "create"
+        data: { ...update },
+      }));
+
+      const cacheFields = successful.map(
+        (c) => `${c.accountId}/${c.containerId}/${c.workspaceId}/${c.tagId}`
+      );
+
+      await softRevalidateFeatureCache(
+        [`gtm:tags:userId:${userId}`],
+        `/dashboard/gtm/configurations`,
+        userId,
+        operations,
+        cacheFields
+      );
+    } catch (err) {
+      console.error('Error during revalidation:', err);
+    }
+  }
+
+  // Check for not found errors and return if any
+  if (notFoundLimit.length > 0) {
+    return {
+      success: false,
+      limitReached: false,
+      notFoundError: true,
+      features: [],
+      message: `Some tags could not be found: ${notFoundLimit.map((item) => item.name).join(', ')}`,
+      results: notFoundLimit.map((item) => ({
+        id: item.id ? [item.id] : [],
+        name: [item.name],
+        success: false,
+        notFound: true,
+      })),
+    };
+  }
+
+  // Check if feature limit is reached and return response if applicable
+  if (featureLimitReached.length > 0) {
+    return {
+      success: false,
+      limitReached: true,
+      notFoundError: false,
+      message: `Feature limit reached for tags: ${featureLimitReached.join(', ')}`,
+      results: featureLimitReached.map((propertyName) => ({
+        id: [],
+        name: [propertyName],
+        success: false,
+        featureLimitReached: true,
+      })),
+    };
+  }
+
+  // Proceed with general error handling if needed
+  if (errors.length > 0) {
+    return {
+      success: false,
+      errors,
+      results: [],
+      message: errors.join(', '),
+      notFoundError: notFoundLimit.length > 0,
+    };
+  }
+
+  return {
+    success: true,
+    message: `Successfully updated ${successful.length} tag(s)`,
+    features: successful.map<FeatureResult>((property) => ({
+      id: [],
+      name: [property.name],
+      success: true,
+    })),
+    errors: [],
+    notFoundError: notFoundLimit.length > 0,
+    results: successful.map<FeatureResult>((property) => ({
+      id: [],
+      name: [property.name],
+      success: true,
+    })),
+  };
+}
+
+/* export async function UpdateTags(formData: TagType) {
   const { userId } = await auth();
   if (!userId) return notFound();
   const token = await currentUserOauthAccessToken(userId);
@@ -992,4 +1289,4 @@ export async function UpdateTags(formData: TagType) {
     results: results, // Use the correctly typed results
     notFoundError: false, // Set based on actual not found status
   };
-}
+} */

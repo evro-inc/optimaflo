@@ -1,6 +1,7 @@
 // GTM-specific field configurations
 
 import { groupBuiltInVariables } from '../app/(dashboards)/dashboard/gtm/configurations/@builtInVariables/items';
+import { tagTypeArray } from '../app/(dashboards)/dashboard/gtm/configurations/@tags/items';
 import { triggerTypeArray } from '../app/(dashboards)/dashboard/gtm/configurations/@triggers/items';
 import { variableTypeArray } from '../app/(dashboards)/dashboard/gtm/configurations/@variables/items';
 
@@ -13,7 +14,8 @@ type EntityType =
   | 'GTMPermissions'
   | 'GTMBuiltInVariables'
   | 'GTMVariables'
-  | 'GTMTriggers';
+  | 'GTMTriggers'
+  | 'GTMTags';
 type FormType = 'create' | 'update' | 'switch';
 
 // Define the structure of your field configuration
@@ -252,6 +254,61 @@ const getCommonTriggerFields = (
   },
 });
 
+const getCommonTagsFields = (
+  gtmAccountContainerWorkspacesPairs: {
+    accountId: string;
+    accountName: string;
+    containerId: string;
+    containerName: string;
+    workspaceId: string;
+    workspaceName: string;
+  }[]
+): Record<string, FieldConfig> => ({
+  name: {
+    label: 'Tag Name',
+    description: 'Name of Tag.',
+    placeholder: 'Name of Tag',
+    type: 'text',
+  },
+  type: {
+    label: 'Tag Type',
+    description: 'Select the type of tag to add.',
+    placeholder: 'Select a tag type.',
+    type: 'select',
+    options: tagTypeArray.map((item) => ({ label: item.name, value: item.type })),
+  },
+  accountId: {
+    label: 'Account',
+    description: 'Select the account associated with the tag.',
+    placeholder: 'Select an account.',
+    type: 'select',
+    options: gtmAccountContainerWorkspacesPairs.map((pair) => ({
+      label: pair.accountName,
+      value: pair.accountId,
+    })),
+  },
+  containerId: {
+    label: 'Container',
+    description: 'Select the container associated with the tag.',
+    placeholder: 'Select a container.',
+    type: 'select',
+    options: gtmAccountContainerWorkspacesPairs.map((pair) => ({
+      label: pair.containerName,
+      value: pair.containerId,
+    })),
+  },
+  workspaceId: {
+    label: 'Workspace',
+    description: 'Select the workspace associated with the tag.',
+    placeholder: 'Select a workspace.',
+    type: 'select',
+    options: gtmAccountContainerWorkspacesPairs.map((pair) => ({
+      label: pair.workspaceName,
+      value: pair.workspaceId,
+    })),
+  },
+});
+
 // Refactored GTM Form Field Configs Function
 export const gtmFormFieldConfigs = (
   entityType: EntityType,
@@ -451,8 +508,6 @@ export const gtmFormFieldConfigs = (
       };
     }
     case 'GTMVariables': {
-      console.log('dataSource', dataSource);
-
       const gtmAccountContainerWorkspacesPairs =
         dataSource?.gtmAccountContainerWorkspacesPairs || [];
       const commonFields = getCommonVariableFields(gtmAccountContainerWorkspacesPairs);
@@ -478,8 +533,6 @@ export const gtmFormFieldConfigs = (
       };
     }
     case 'GTMTriggers': {
-      console.log('dataSource', dataSource);
-
       const gtmAccountContainerWorkspacesPairs =
         dataSource?.gtmAccountContainerWorkspacesPairs || [];
       const commonFields = getCommonTriggerFields(gtmAccountContainerWorkspacesPairs);
@@ -504,6 +557,33 @@ export const gtmFormFieldConfigs = (
         },
       };
     }
+
+    case 'GTMTags': {
+      const gtmAccountContainerWorkspacesPairs =
+        dataSource?.gtmAccountContainerWorkspacesPairs || [];
+      const commonFields = getCommonTagsFields(gtmAccountContainerWorkspacesPairs);
+
+      if (isUpdate) {
+        return {
+          ...commonFields,
+        };
+      }
+
+      return {
+        ...commonFields,
+        amount: {
+          label: 'How many built-in variables do you want to add?',
+          description: 'Specify the number of built-in variables to create.',
+          placeholder: 'Select the number of variables to create.',
+          type: 'select',
+          options: Array.from({ length: maxOptions }, (_, i) => ({
+            label: `${i + 1}`,
+            value: `${i + 1}`,
+          })),
+        },
+      };
+    }
+
     default:
       throw new Error(`Unsupported GTM entity type: ${entityType}`);
   }

@@ -29,7 +29,6 @@ export default async function CreateCustomDimensionPage() {
   ]);
 
   const combinedData = fbLinks.flatMap((fb) => {
-    console.log('fb', fb);
     return {
       ...fb,
       account: accounts ? accounts[0].name : 'Unknown Account ID',

@@ -328,5 +328,6 @@ const FormCreateAccountAccess: React.FC<FormCreateProps> = React.memo(
     );
   }
 );
+FormCreateAccountAccess.displayName = 'FormCreateAccountAccess';
 
 export default FormCreateAccountAccess;

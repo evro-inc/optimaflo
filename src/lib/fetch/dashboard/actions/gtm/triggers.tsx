@@ -77,8 +77,6 @@ export async function listTriggers(skipCache = false): Promise<any[]> {
     const flattenedData = allData.flat();
     const cleanedData = flattenedData.filter((item) => Object.keys(item).length > 0);
 
-    console.log('cleanedData', cleanedData);
-
     const ws = cleanedData.flatMap((item) => item.trigger || []); // Flatten to get all workspaces directly
 
     try {
@@ -301,8 +299,6 @@ export async function createTriggers(formData: {
         try {
           const validatedData = await validateFormData(FormSchema, { forms: [form] });
 
-          console.log('validatedData', validatedData);
-
           const url = `https://www.googleapis.com/tagmanager/v2/accounts/${workspaceData.accountId}/containers/${workspaceData.containerId}/workspaces/${workspaceData.workspaceId}/triggers`;
 
           const headers = {
@@ -328,8 +324,6 @@ export async function createTriggers(formData: {
 
           // Add the created property to successful creations
           successful.push(res);
-
-          console.log('successful ff', successful);
 
           // Update the usage limit
           await prisma.tierLimit.update({
@@ -360,8 +354,6 @@ export async function createTriggers(formData: {
         crudType: 'create' as const, // Explicitly set the type as "create"
         data: { ...creation }, // Put all remaining fields into data
       }));
-
-      console.log('operations', operations);
 
       const cacheFields = successful.map(
         ({ accountId, containerId, workspaceId, triggerId }) =>
@@ -484,8 +476,6 @@ export async function updateTriggers(formData: {
         try {
           const validatedData = await validateFormData(FormSchema, { forms: [form] });
 
-          console.log('validatedData', validatedData);
-
           const url = `https://www.googleapis.com/tagmanager/v2/accounts/${workspaceData.accountId}/containers/${workspaceData.containerId}/workspaces/${workspaceData.workspaceId}/triggers/${workspaceData.triggerId}`;
 
           const headers = {
@@ -511,7 +501,6 @@ export async function updateTriggers(formData: {
 
           // Add the created property to successful creations
           successful.push(res);
-          console.log('successful f', successful);
 
           // Update the usage limit
           await prisma.tierLimit.update({

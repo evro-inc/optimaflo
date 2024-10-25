@@ -389,17 +389,12 @@ export async function softRevalidateFeatureCache(
         switch (crudType) {
           case 'delete':
             if (cacheData[cacheField]) {
-              console.log(`Deleting cache field ${cacheField} for key ${key}`);
               pipeline.hdel(key, cacheField);
             }
             break;
 
           case 'update':
           case 'create':
-            console.log(
-              `Updating or creating cache field ${cacheField} for key ${key} with data:`,
-              data
-            );
             pipeline.hset(key, cacheField, JSON.stringify(data));
             break;
 
@@ -580,8 +575,6 @@ export async function executeApiRequest(
       if (response.ok) {
         return responseData; // Use the parsed data here
       }
-
-      console.log('responseData', responseData);
 
       if (response.status === 429) {
         await handleRateLimitRetry(retries, delay);

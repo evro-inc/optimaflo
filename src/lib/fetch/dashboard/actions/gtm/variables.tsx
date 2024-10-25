@@ -78,8 +78,6 @@ export async function listVariables(skipCache = false): Promise<any[]> {
     const cleanedData = flattenedData.filter((item) => Object.keys(item).length > 0);
     const ws = cleanedData.flatMap((item) => item.variable || []); // Flatten to get all workspaces directly
 
-    console.log('var 1', ws);
-
     try {
       const pipeline = redis.pipeline();
       const workspaceVariablesMap = new Map();
@@ -299,8 +297,6 @@ export async function createVariables(formData: {
         try {
           const validatedData = await validateFormData(FormSchema, { forms: [form] });
 
-          console.log('validatedData', validatedData);
-
           const url = `https://www.googleapis.com/tagmanager/v2/accounts/${workspaceData.accountId}/containers/${workspaceData.containerId}/workspaces/${workspaceData.workspaceId}/variables`;
 
           const headers = {
@@ -326,8 +322,6 @@ export async function createVariables(formData: {
 
           // Add the created property to successful creations
           successful.push(res);
-
-          console.log('successful ff', successful);
 
           // Update the usage limit
           await prisma.tierLimit.update({
@@ -358,8 +352,6 @@ export async function createVariables(formData: {
         crudType: 'create' as const, // Explicitly set the type as "create"
         data: { ...creation }, // Put all remaining fields into data
       }));
-
-      console.log('operations', operations);
 
       const cacheFields = successful.map(
         ({ accountId, containerId, workspaceId, variableId }) =>
@@ -630,8 +622,6 @@ export async function updateVariables(formData: {
         try {
           const validatedData = await validateFormData(FormSchema, { forms: [form] });
 
-          console.log('validatedData', validatedData);
-
           const url = `https://www.googleapis.com/tagmanager/v2/accounts/${workspaceData.accountId}/containers/${workspaceData.containerId}/workspaces/${workspaceData.workspaceId}/variables/${workspaceData.variableId}`;
 
           const headers = {
@@ -657,7 +647,6 @@ export async function updateVariables(formData: {
 
           // Add the created property to successful creations
           successful.push(res);
-          console.log('successful f', successful);
 
           // Update the usage limit
           await prisma.tierLimit.update({

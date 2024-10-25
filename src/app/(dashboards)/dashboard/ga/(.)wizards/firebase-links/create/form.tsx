@@ -92,7 +92,7 @@ const FormCreateFBLink: React.FC<FormCreateProps> = ({
 
   const formDataDefaults: FirebaseLink = {
     account: accountsWithProperties[0].name,
-    property: table[0].parent,
+    property: '',
     project: '',
     name: '',
   };

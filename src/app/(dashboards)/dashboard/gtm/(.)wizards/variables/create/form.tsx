@@ -309,7 +309,7 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
                           if (isValid) {
                             handleNext();
                           } else {
-                            console.log('Validation failed');
+                            throw new Error('Error with validation');
                           }
                         }}
                       >
@@ -327,8 +327,6 @@ const FormCreateVariable: React.FC<FormCreateGTMProps> = ({
       </div>
     );
   };
-
-  console.log('errors', form.formState.errors);
 
   return (
     <div className="flex items-center justify-center h-screen">
