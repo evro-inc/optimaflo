@@ -1,6 +1,6 @@
 'use server';
 
-import { ContainerSchemaType, FormSchema } from '@/src/lib/schemas/gtm/containers';
+import { ContainerSchema, ContainerSchemaType, FormSchema } from '@/src/lib/schemas/gtm/containers';
 import { redis } from '@/src/lib/redis/cache';
 import prisma from '@/src/lib/prisma';
 import { FeatureResult, FeatureResponse, Container } from '@/src/types/types';
@@ -13,6 +13,7 @@ import {
   softRevalidateFeatureCache,
   validateFormData,
 } from '@/src/utils/server';
+import { z } from 'zod';
 
 const featureType: string = 'GTMContainer';
 
@@ -99,7 +100,7 @@ export async function listGtmContainers(skipCache = false): Promise<any[]> {
   Deletes GTM containers for the authenticated user 
 ************************************************************************************/
 export async function deleteContainers(
-  selected: Set<Container>,
+  selected: Set<z.infer<typeof ContainerSchema>>,
   names: string[]
 ): Promise<FeatureResponse> {
   const userId = await authenticateUser();
@@ -123,14 +124,14 @@ export async function deleteContainers(
   }
 
   let errors: string[] = [];
-  let successfulDeletions: any[] = [];
+  let successfulDeletions: z.infer<typeof ContainerSchema>[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: string[] = [];
 
   await ensureGARateLimit(userId);
 
   await Promise.all(
-    Array.from(selected).map(async (data: Container) => {
+    Array.from(selected).map(async (data) => {
       const url = `https://www.googleapis.com/tagmanager/v2/accounts/${data.accountId}/containers/${data.containerId}`;
 
       const headers = {

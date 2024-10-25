@@ -12,7 +12,8 @@ import {
   softRevalidateFeatureCache,
   validateFormData,
 } from '@/src/utils/server';
-import { CustomMetricSchemaType, FormSchema } from '@/src/lib/schemas/ga/metrics';
+import { CustomMetricSchemaType, FormSchema, MetricSchema } from '@/src/lib/schemas/ga/metrics';
+import { z } from 'zod';
 
 const featureType: string = 'GA4CustomMetrics';
 
@@ -99,7 +100,7 @@ export async function listGACustomMetrics(skipCache = false): Promise<any[]> {
   Delete a single property or multiple custom metrics
 ************************************************************************************/
 export async function deleteGACustomMetrics(
-  selected: Set<CustomMetric>,
+  selected: Set<z.infer<typeof MetricSchema>>,
   names: string[]
 ): Promise<FeatureResponse> {
   const userId = await authenticateUser();
@@ -123,14 +124,14 @@ export async function deleteGACustomMetrics(
   }
 
   let errors: string[] = [];
-  let successfulDeletions: any[] = [];
+  let successfulDeletions: z.infer<typeof MetricSchema>[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: string[] = [];
 
   await ensureGARateLimit(userId);
 
   await Promise.all(
-    Array.from(selected).map(async (data: CustomMetric) => {
+    Array.from(selected).map(async (data) => {
       const url = `https://analyticsadmin.googleapis.com/v1beta/${data.name}:archive`;
 
       const headers = {

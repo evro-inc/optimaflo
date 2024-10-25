@@ -3,7 +3,7 @@ import { z } from 'zod';
 // Enums as Zod enums
 export const CountingMethod = z.enum(['ONCE_PER_EVENT', 'ONCE_PER_SESSION']);
 
-const KeyEventSchema = z.object({
+export const KeyEventSchema = z.object({
   account: z.string(),
   property: z.string(),
   eventName: z.string().min(1),

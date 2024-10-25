@@ -12,7 +12,8 @@ import {
   softRevalidateFeatureCache,
   validateFormData,
 } from '@/src/utils/server';
-import { FormSchema, DataStreamType } from '@/src/lib/schemas/ga/streams';
+import { FormSchema, DataStreamType, StreamSchema } from '@/src/lib/schemas/ga/streams';
+import { z } from 'zod';
 
 const featureType: string = 'GA4Streams';
 
@@ -97,7 +98,7 @@ export async function listGAPropertyStreams(skipCache = false): Promise<any[]> {
   Delete a single property or multiple streams
 ************************************************************************************/
 export async function deleteGAPropertyStreams(
-  selected: Set<DataStreamType>,
+  selected: Set<z.infer<typeof StreamSchema>>,
   names: string[]
 ): Promise<FeatureResponse> {
   const userId = await authenticateUser();
@@ -123,12 +124,12 @@ export async function deleteGAPropertyStreams(
   let errors: string[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: string[] = [];
-  let successfulDeletions: any[] = [];
+  let successfulDeletions: z.infer<typeof StreamSchema>[] = [];
 
   await ensureGARateLimit(userId);
 
   await Promise.all(
-    Array.from(selected).map(async (data: DataStreamType) => {
+    Array.from(selected).map(async (data) => {
       const url = `https://analyticsadmin.googleapis.com/v1beta/${data.name}`;
 
       const headers = {
@@ -138,7 +139,7 @@ export async function deleteGAPropertyStreams(
       };
 
       try {
-        const res = await executeApiRequest(url, { method: 'DELETE', headers }, 'streams', names);
+        await executeApiRequest(url, { method: 'DELETE', headers }, 'streams', names);
         successfulDeletions.push(data);
 
         await prisma.tierLimit.update({
@@ -227,14 +228,14 @@ export async function deleteGAPropertyStreams(
     success: true,
     message: `Successfully deleted ${successfulDeletions.length} property(ies)`,
     features: successfulDeletions.map<FeatureResult>((data) => ({
-      id: [data.name], // Wrap propertyId in an array to match FeatureResult type
+      id: [data.displayName], // Wrap propertyId in an array to match FeatureResult type
       name: [names.find((name) => name.includes(data.displayName)) || 'Unknown'], // Wrap name in an array to match FeatureResult type
       success: true, // Indicates success of the operation
     })),
     errors: [],
     notFoundError: notFoundLimit.length > 0,
     results: successfulDeletions.map<FeatureResult>((data) => ({
-      id: [data.name], // FeatureResult.id is an array
+      id: [data.displayName], // FeatureResult.id is an array
       name: [names.find((name) => name.includes(data.displayName)) || 'Unknown'], // FeatureResult.name is an array
       success: true, // FeatureResult.success indicates if the operation was successful
     })),

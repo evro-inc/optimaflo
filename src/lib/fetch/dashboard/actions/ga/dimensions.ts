@@ -20,7 +20,12 @@ import {
   tierUpdateLimit,
   validateFormData,
 } from '@/src/utils/server';
-import { CustomDimensionSchemaType, FormSchema } from '@/src/lib/schemas/ga/dimensions';
+import {
+  CustomDimensionSchemaType,
+  DimensionSchema,
+  FormSchema,
+} from '@/src/lib/schemas/ga/dimensions';
+import { z } from 'zod';
 
 const featureType: string = 'GA4CustomDimensions';
 
@@ -106,7 +111,7 @@ export async function listGACustomDimensions(skipCache = false): Promise<any[]> 
   Delete a single or multiple properties - Done
 ************************************************************************************/
 export async function deleteGACustomDimensions(
-  selected: Set<CustomDimensionType>,
+  selected: Set<z.infer<typeof DimensionSchema>>,
   names: string[]
 ): Promise<FeatureResponse> {
   const userId = await authenticateUser();
@@ -130,14 +135,14 @@ export async function deleteGACustomDimensions(
   }
 
   let errors: string[] = [];
-  let successfulDeletions: any[] = [];
+  let successfulDeletions: z.infer<typeof DimensionSchema>[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: string[] = [];
 
   await ensureGARateLimit(userId);
 
   await Promise.all(
-    Array.from(selected).map(async (data: CustomDimensionType) => {
+    Array.from(selected).map(async (data) => {
       const url = `https://analyticsadmin.googleapis.com/v1beta/${data.name}:archive`;
       const headers = {
         Authorization: `Bearer ${token}`,

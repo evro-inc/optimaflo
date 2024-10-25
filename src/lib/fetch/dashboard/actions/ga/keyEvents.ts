@@ -12,7 +12,8 @@ import {
   softRevalidateFeatureCache,
   validateFormData,
 } from '@/src/utils/server';
-import { KeyEvents, FormSchema } from '@/src/lib/schemas/ga/keyEvents';
+import { KeyEvents, FormSchema, KeyEventSchema } from '@/src/lib/schemas/ga/keyEvents';
+import { z } from 'zod';
 
 const featureType: string = 'GA4KeyEvents';
 
@@ -98,7 +99,7 @@ export async function listGAKeyEvents(skipCache = false): Promise<any[]> {
   Delete a single property or multiple custom metrics
 ************************************************************************************/
 export async function deleteGAKeyEvents(
-  selected: Set<KeyEventType>,
+  selected: Set<z.infer<typeof KeyEventSchema>>,
   names: string[]
 ): Promise<FeatureResponse> {
   const userId = await authenticateUser();
@@ -122,14 +123,14 @@ export async function deleteGAKeyEvents(
   }
 
   let errors: string[] = [];
-  let successfulDeletions: any[] = [];
+  let successfulDeletions: z.infer<typeof KeyEventSchema>[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: string[] = [];
 
   await ensureGARateLimit(userId);
 
   await Promise.all(
-    Array.from(selected).map(async (data: KeyEventType) => {
+    Array.from(selected).map(async (data) => {
       const url = `https://analyticsadmin.googleapis.com/v1beta/${data.name}`;
 
       const headers = {
@@ -227,14 +228,14 @@ export async function deleteGAKeyEvents(
   return {
     success: true,
     message: `Successfully deleted ${successfulDeletions.length} key event(s)`,
-    features: successfulDeletions.map<FeatureResult>((data) => ({
+    features: successfulDeletions.map<FeatureResult>((data: any) => ({
       id: [data.name], // Wrap propertyId in an array to match FeatureResult type
       name: [names.find((name) => name.includes(data.name)) || 'Unknown'], // Wrap name in an array to match FeatureResult type
       success: true, // Indicates success of the operation
     })),
     errors: [],
     notFoundError: notFoundLimit.length > 0,
-    results: successfulDeletions.map<FeatureResult>((data) => ({
+    results: successfulDeletions.map<FeatureResult>((data: any) => ({
       id: [data.name], // FeatureResult.id is an array
       name: [names.find((name) => name.includes(data.name)) || 'Unknown'], // FeatureResult.name is an array
       success: true, // FeatureResult.success indicates if the operation was successful

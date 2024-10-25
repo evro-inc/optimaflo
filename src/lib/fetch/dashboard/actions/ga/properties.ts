@@ -13,7 +13,8 @@ import {
   validateFormData,
 } from '@/src/utils/server';
 import { fetchGASettings } from '../..';
-import { FormSchemaType, FormSchema } from '@/src/lib/schemas/ga/properties';
+import { FormSchemaType, FormSchema, PropertySchema } from '@/src/lib/schemas/ga/properties';
+import { z } from 'zod';
 
 const featureType: string = 'GA4Properties';
 
@@ -158,7 +159,7 @@ export async function getGAProperty(propertyId: string, skipCache = false): Prom
   Delete a single or multiple properties - Done
 ************************************************************************************/
 export async function deleteProperties(
-  selected: Set<GA4PropertyType>,
+  selected: Set<z.infer<typeof PropertySchema>>,
   names: string[]
 ): Promise<FeatureResponse> {
   const userId = await authenticateUser();
@@ -189,7 +190,7 @@ export async function deleteProperties(
   await ensureGARateLimit(userId);
 
   await Promise.all(
-    Array.from(selected).map(async (data: GA4PropertyType) => {
+    Array.from(selected).map(async (data: any) => {
       const url = `https://analyticsadmin.googleapis.com/v1beta/properties/${data.name}`;
 
       const headers = {

@@ -1,7 +1,8 @@
 import { z } from 'zod';
 
-const SingleFormSchema = z.object({
+export const StreamSchema = z.object({
   type: z.enum(['WEB_DATA_STREAM', 'ANDROID_APP_DATA_STREAM', 'IOS_APP_DATA_STREAM']),
+  name: z.string().optional(),
   property: z.string(),
   parentURL: z.string().optional(),
   account: z.string(),
@@ -28,7 +29,7 @@ export const FormCreateAmountSchema = z.object({
 });
 
 export const FormSchema = z.object({
-  forms: z.array(SingleFormSchema),
+  forms: z.array(StreamSchema),
 });
 
 // Export the type inferred from FormSchema for type safety in your form handling

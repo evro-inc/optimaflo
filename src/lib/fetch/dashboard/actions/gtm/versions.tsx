@@ -2,7 +2,7 @@
 
 import { redis } from '@/src/lib/redis/cache';
 import prisma from '@/src/lib/prisma';
-import { FeatureResult, FeatureResponse, GTMContainerVersion } from '@/src/types/types';
+import { FeatureResult, FeatureResponse } from '@/src/types/types';
 import {
   authenticateUser,
   checkFeatureLimit,
@@ -10,9 +10,9 @@ import {
   executeApiRequest,
   getOauthToken,
   softRevalidateFeatureCache,
-  validateFormData,
 } from '@/src/utils/server';
-import { ContainerVersionType } from '@/src/lib/schemas/gtm/versions';
+import { ContainerVersionType, VersionSchema } from '@/src/lib/schemas/gtm/versions';
+import { z } from 'zod';
 
 const featureType: string = 'GTMVersions';
 
@@ -284,7 +284,7 @@ export async function getGTMLiveVersion(skipCache = false): Promise<any> {
   Delete a single or multiple versions
 ************************************************************************************/
 export async function deleteVersions(
-  selected: Set<GTMContainerVersion>,
+  selected: Set<z.infer<typeof VersionSchema>>,
   names: string[]
 ): Promise<FeatureResponse> {
   const userId = await authenticateUser();
@@ -308,7 +308,7 @@ export async function deleteVersions(
   }
 
   let errors: string[] = [];
-  let successfulDeletions: GTMContainerVersion[] = [];
+  let successfulDeletions: z.infer<typeof VersionSchema>[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: string[] = [];
 
@@ -366,7 +366,7 @@ export async function deleteVersions(
   await ensureGARateLimit(userId);
 
   await Promise.all(
-    nonLiveAndNonLatest.map(async (data: GTMContainerVersion) => {
+    nonLiveAndNonLatest.map(async (data) => {
       const url = `https://www.googleapis.com/tagmanager/v2/${data.path}`;
       const headers = {
         Authorization: `Bearer ${token}`,

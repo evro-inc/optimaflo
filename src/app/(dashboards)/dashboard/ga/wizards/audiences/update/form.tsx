@@ -6,7 +6,7 @@ import { setLoading, incrementStep, decrementStep } from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { FormsSchema } from '@/src/lib/schemas/ga/conversion';
+import { FormSchema } from '@/src/lib/schemas/ga/audiences';
 import { Button } from '@/src/components/ui/button';
 import {
   Form,
@@ -21,7 +21,6 @@ import {
 import { Input } from '@/src/components/ui/input';
 import { FeatureResponse, ConversionEvent } from '@/src/types/types';
 import { toast } from 'sonner';
-import { updateGAConversionEvents } from '@/src/lib/fetch/dashboard/actions/ga/conversions';
 import {
   selectTable,
   setErrorDetails,
@@ -42,6 +41,7 @@ import {
 } from '@/src/components/ui/select';
 import { ConversionCountingItems, Currencies } from '../../../properties/@conversions/items';
 import { RadioGroup, RadioGroupItem } from '@/src/components/ui/radio-group';
+import { updateGAAudiences } from '@/src/lib/fetch/dashboard/actions/ga/audiences';
 
 const NotFoundErrorModal = dynamic(
   () =>
@@ -57,7 +57,7 @@ const ErrorModal = dynamic(
   { ssr: false }
 );
 
-type Forms = z.infer<typeof FormsSchema>;
+type Forms = z.infer<typeof FormSchema>;
 
 const FormUpdateConversionEvent = () => {
   const dispatch = useDispatch();
@@ -83,7 +83,7 @@ const FormUpdateConversionEvent = () => {
     defaultValues: {
       forms: formDataDefaults,
     },
-    resolver: zodResolver(FormsSchema),
+    resolver: zodResolver(FormSchema),
   });
 
   const { fields } = useFieldArray({
@@ -157,7 +157,7 @@ const FormUpdateConversionEvent = () => {
     }
 
     try {
-      const res = (await updateGAConversionEvents({ forms })) as FeatureResponse;
+      const res = (await updateGAAudiences({ forms })) as FeatureResponse;
 
       if (res.success) {
         res.results.forEach((result) => {

@@ -9,7 +9,7 @@ const RoleSchema = z.enum([
   'predefinedRoles/no-revenue-data',
 ]);
 
-const SingleFormSchema = z.object({
+export const AccountAccessSchema = z.object({
   account: z.string(),
   roles: z.array(RoleSchema),
   user: z.string().email(),
@@ -21,7 +21,7 @@ export const FormCreateAmountSchema = z.object({
 });
 // If you need to validate an array of CustomConversion objects like in your original FormsSchema
 export const FormsSchema = z.object({
-  forms: z.array(SingleFormSchema),
+  forms: z.array(AccountAccessSchema),
 });
 
 // Export the type inferred from CustomConversionsSchema for type safety

@@ -126,7 +126,7 @@ const AccountContainerWorkspaceSchema = z.object({
 });
 
 // Update the schema for Built-In Variable Form
-const BuiltInVariableSchema = z.object({
+export const BuiltInVariableSchema = z.object({
   type: BuiltInVariableType.array().nonempty('At least one type is required'),
   accountContainerWorkspace: z
     .array(AccountContainerWorkspaceSchema)

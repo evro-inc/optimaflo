@@ -22,7 +22,7 @@ export const FormCreateAmountSchema = z.object({
 
 // Schema for container create form data
 // Define the schema for a single form
-const SingleFormSchema = z.object({
+export const ContainerSchema = z.object({
   path: z.string().optional(),
   accountId: z.string().nonempty('Account Id is required'),
   containerId: z.string().optional(),
@@ -62,7 +62,7 @@ const SingleFormSchema = z.object({
 
 // Define the schema for the entire form with field array
 export const FormSchema = z.object({
-  forms: z.array(SingleFormSchema),
+  forms: z.array(ContainerSchema),
 });
 
 // Type for the entire form data

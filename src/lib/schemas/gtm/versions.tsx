@@ -231,7 +231,7 @@ const ContainerSchema = z.object({
   fingerprint: z.string(),
 });
 
-const SingleFormSchema = z.object({
+export const VersionSchema = z.object({
   path: z.string(),
   accountId: z.string(),
   containerId: z.string(),
@@ -265,7 +265,7 @@ const updateVersionSchema = z.object({
 });
 
 export const FormSchema = z.object({
-  forms: z.array(SingleFormSchema),
+  forms: z.array(VersionSchema),
 });
 
 export const UpdateVersionFormSchema = z.object({

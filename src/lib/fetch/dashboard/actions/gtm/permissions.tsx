@@ -1,6 +1,11 @@
 'use server';
 
-import { FormSchema, TransformedDataSchemaType } from '@/src/lib/schemas/gtm/userPermissions';
+import {
+  FormSchema,
+  FormSetSchema,
+  TransformedDataSchemaType,
+  UserPermissionSchema,
+} from '@/src/lib/schemas/gtm/userPermissions';
 import { redis } from '../../../../redis/cache';
 import prisma from '@/src/lib/prisma';
 import { FeatureResponse, FeatureResult, Permissions } from '@/src/types/types';
@@ -13,6 +18,7 @@ import {
   softRevalidateFeatureCache,
   validateFormData,
 } from '@/src/utils/server';
+import { z } from 'zod';
 
 const featureType: string = 'GTMPermissions';
 
@@ -454,7 +460,7 @@ export async function updatePermissions(formData: {
   Delete a single or multiple permissions
 ************************************************************************************/
 export async function deletePermissions(
-  selected: Set<Permissions>,
+  selected: Set<z.infer<typeof UserPermissionSchema>>,
   names: string[]
 ): Promise<FeatureResponse> {
   const userId = await authenticateUser();
@@ -478,14 +484,14 @@ export async function deletePermissions(
   }
 
   let errors: string[] = [];
-  let successfulDeletions: any[] = [];
+  let successfulDeletions: z.infer<typeof UserPermissionSchema>[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: string[] = [];
 
   await ensureGARateLimit(userId);
 
   await Promise.all(
-    Array.from(selected).map(async (data: Permissions) => {
+    Array.from(selected).map(async (data) => {
       const url = `https://www.googleapis.com/tagmanager/v2/${data.path}`;
 
       const headers = {
@@ -504,9 +510,9 @@ export async function deletePermissions(
         });
       } catch (error: any) {
         if (error.message === 'Feature limit reached') {
-          featureLimitReached.push(data.path);
+          featureLimitReached.push(data.path as string);
         } else if (error.message.includes('404')) {
-          notFoundLimit.push(data.path);
+          notFoundLimit.push(data.path as string);
         } else {
           errors.push(error.message);
         }
@@ -584,15 +590,15 @@ export async function deletePermissions(
     success: true,
     message: `Successfully deleted ${successfulDeletions.length} permission(s)`,
     features: successfulDeletions.map<FeatureResult>((data) => ({
-      id: [data.name], // Wrap propertyId in an array to match FeatureResult type
-      name: [names.find((name) => name.includes(data.name)) || 'Unknown'], // Wrap name in an array to match FeatureResult type
+      id: [data.accountId], // Wrap propertyId in an array to match FeatureResult type
+      name: [names.find((name) => name.includes(data.accountId)) || 'Unknown'], // Wrap name in an array to match FeatureResult type
       success: true, // Indicates success of the operation
     })),
     errors: [],
     notFoundError: notFoundLimit.length > 0,
     results: successfulDeletions.map<FeatureResult>((data) => ({
-      id: [data.name], // FeatureResult.id is an array
-      name: [names.find((name) => name.includes(data.name)) || 'Unknown'], // FeatureResult.name is an array
+      id: [data.accountId], // FeatureResult.id is an array
+      name: [names.find((name) => name.includes(data.accountId)) || 'Unknown'], // FeatureResult.name is an array
       success: true, // FeatureResult.success indicates if the operation was successful
     })),
   };

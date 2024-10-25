@@ -136,9 +136,9 @@ export const FormCreateAmountSchema = z.object({
   amount: z.number(),
 });
 // If you need to validate an array of CustomConversion objects like in your original FormsSchema
-export const FormsSchema = z.object({
+export const FormSchema = z.object({
   forms: z.array(SingleFormSchema),
 });
 
 // Export the type inferred from CustomConversionsSchema for type safety
-export type Audience = z.infer<typeof FormsSchema>;
+export type Audience = z.infer<typeof FormSchema>;

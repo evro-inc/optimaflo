@@ -1,12 +1,12 @@
 'use server';
 
-import { FormSchema, WorkspaceSchemaType } from '@/src/lib/schemas/gtm/workspaces';
+import { FormSchema, WorkspaceSchema, WorkspaceSchemaType } from '@/src/lib/schemas/gtm/workspaces';
 import { auth } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 import { redis } from '../../../../redis/cache';
 import { currentUserOauthAccessToken } from '../../../../clerk';
 import prisma from '@/src/lib/prisma';
-import { FeatureResponse, FeatureResult, Workspace } from '@/src/types/types';
+import { FeatureResponse, FeatureResult } from '@/src/types/types';
 import {
   authenticateUser,
   checkFeatureLimit,
@@ -17,6 +17,7 @@ import {
   softRevalidateFeatureCache,
   validateFormData,
 } from '@/src/utils/server';
+import { z } from 'zod';
 // Define the types for the form data
 
 const featureType: string = 'GTMWorkspaces';
@@ -115,7 +116,7 @@ export async function listGtmWorkspaces(skipCache = false): Promise<any[]> {
   Delete a single or multiple workspaces
 ************************************************************************************/
 export async function deleteWorkspaces(
-  selected: Set<Workspace>,
+  selected: Set<z.infer<typeof WorkspaceSchema>>,
   names: string[]
 ): Promise<FeatureResponse> {
   const userId = await authenticateUser();
@@ -139,14 +140,14 @@ export async function deleteWorkspaces(
   }
 
   let errors: string[] = [];
-  let successfulDeletions: any[] = [];
+  let successfulDeletions: z.infer<typeof WorkspaceSchema>[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: string[] = [];
 
   await ensureGARateLimit(userId);
 
   await Promise.all(
-    Array.from(selected).map(async (data: Workspace) => {
+    Array.from(selected).map(async (data) => {
       const url = `https://www.googleapis.com/tagmanager/v2/accounts/${data.accountId}/containers/${data.containerId}/workspaces/${data.workspaceId}`;
 
       const headers = {

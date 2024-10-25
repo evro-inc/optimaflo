@@ -1,6 +1,10 @@
 'use server';
 
-import { BuiltInVariableFormType, FormSchema } from '@/src/lib/schemas/gtm/builtInVariables';
+import {
+  BuiltInVariableFormType,
+  BuiltInVariableSchema,
+  FormSchema,
+} from '@/src/lib/schemas/gtm/builtInVariables';
 import { redis } from '../../../../redis/cache';
 import prisma from '@/src/lib/prisma';
 import { BuiltInVariable, FeatureResponse, FeatureResult } from '@/src/types/types';
@@ -13,6 +17,7 @@ import {
   softRevalidateFeatureCache,
   validateFormData,
 } from '@/src/utils/server';
+import { z } from 'zod';
 
 const featureType: string = 'GTMBuiltInVariables';
 
@@ -108,7 +113,7 @@ export async function listGtmBuiltInVariables(skipCache = false): Promise<any[]>
   Delete a single or multiple builtInVariables
 ************************************************************************************/
 export async function deleteBuiltInVariables(
-  selected: Set<BuiltInVariable>,
+  selected: Set<z.infer<typeof BuiltInVariableSchema>>,
   names: string[]
 ): Promise<FeatureResponse> {
   const userId = await authenticateUser();
@@ -132,14 +137,14 @@ export async function deleteBuiltInVariables(
   }
 
   let errors: string[] = [];
-  let successfulDeletions: BuiltInVariable[] = [];
+  let successfulDeletions: z.infer<typeof BuiltInVariableSchema>[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: string[] = [];
 
   await ensureGARateLimit(userId);
 
   await Promise.all(
-    Array.from(selected).map(async (data: BuiltInVariable) => {
+    Array.from(selected).map(async (data) => {
       const url = `https://www.googleapis.com/tagmanager/v2/accounts/${data.accountId}/containers/${data.containerId}/workspaces/${data.workspaceId}/built_in_variables?type=${data.type}`;
 
       const headers = {

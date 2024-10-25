@@ -22,7 +22,7 @@ const RestrictedMetricTypeSchema = z.enum([
   'REVENUE_DATA',
 ]);
 
-const SingleFormSchema = z.object({
+export const MetricSchema = z.object({
   name: z.string(),
   account: z.string(),
   property: z.string(),
@@ -51,7 +51,7 @@ export const FormCreateAmountSchema = z.object({
 });
 // If you need to validate an array of CustomMetric objects like in your original FormSchema
 export const FormSchema = z.object({
-  forms: z.array(SingleFormSchema),
+  forms: z.array(MetricSchema),
 });
 
 // Export the type inferred from CustomMetricsSchema for type safety
