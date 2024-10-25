@@ -1,7 +1,17 @@
 /* eslint-disable */
-
+import { PortableTextBlock } from 'sanity';
 import { tagmanager_v2 } from 'googleapis/build/src/apis/tagmanager';
 import Stripe from 'stripe';
+import { UserPermissionType } from '../lib/schemas/gtm/userPermissions';
+
+// Sanity CMS Type
+export type Page = {
+  _id: string;
+  _createdAt: string;
+  title: string;
+  slug: string;
+  content: PortableTextBlock[];
+};
 
 export interface PageMeta {
   title: string;
@@ -103,15 +113,42 @@ export type FormElement = {
 export type Form = {
   forms: FormElement[];
 };
-export type ContainerType = {
+
+export interface BaseForm {
+  parent?: string;
+  name?: string;
+  displayName?: string;
+  accountContainerWorkspace?: {
+    accountId: string;
+    containerId: string;
+    workspaceId: string;
+  }[];
+  type?: string[];
+}
+
+export type FormWithParent<T = {}> = BaseForm & T;
+
+export type UsageContextType =
+  | 'web'
+  | 'android'
+  | 'ios'
+  | 'iosSdk5'
+  | 'androidSdk5'
+  | 'server'
+  | 'amp';
+
+export type ContainerType = BaseForm & {
   accountId: string;
-  containerId: string;
-  name: string;
+  usageContext: UsageContextType | UsageContextType[];
   publicId: string;
-  accountName: string;
-  usageContext: [string, ...string[]];
+  name: string;
+  path?: string;
+  containerId?: string;
+  tagIds?: string[];
   domainName?: string;
   notes?: string;
+  tagManagerUrl?: string;
+  taggingServerUrls?: string[];
 };
 
 export type UpdateAccountResult = {
@@ -155,11 +192,12 @@ export type FormUpdateWorkspaceProps = {
   table: any;
 };
 export type FormUpdateProps = {
-  showOptions: boolean;
-  onClose: () => void;
-  selectedRows: Map<string, GA4PropertyType>;
-  workspaces?: any;
+  tierLimits?: TierLimit[];
   table?: any;
+  accounts?: any;
+  properties?: any;
+  containers?: any;
+  workspaces?: any;
 };
 
 export type ResultType = {
@@ -210,9 +248,11 @@ export type FormCreateProps = {
   accounts?: any;
   properties?: any;
   containers?: any;
-  tierLimits?: any;
+  tierLimits?: TierLimit[];
   dimensions?: any;
   metrics?: any;
+  type?: string;
+  data?: any;
 };
 
 export type WorkspaceType = {
@@ -245,7 +285,7 @@ export interface FeatureResult {
 
 export interface FeatureResponse {
   success: boolean;
-  features?: string[];
+  features?: FeatureResult[];
   errors?: string[];
   limitReached?: boolean;
   errorCode?: number;
@@ -295,7 +335,7 @@ export type GA4StreamType = {
   };
 };
 
-type TierLimit = {
+export type TierLimit = {
   id: string;
   subscriptionId: string;
   createLimit: number;
@@ -430,7 +470,6 @@ export enum MetricScope {
 }
 
 export enum RestrictedMetricType {
-  RESTRICTED_METRIC_TYPE_UNSPECIFIED = 'RESTRICTED_METRIC_TYPE_UNSPECIFIED',
   COST_DATA = 'COST_DATA',
   REVENUE_DATA = 'REVENUE_DATA',
 }
@@ -495,7 +534,7 @@ export enum Role {
 }
 
 export interface AccessBinding {
-  account: string;
+  accountName: string;
   name?: string; // Output only. Format: accounts/{account}/accessBindings/{accessBinding} or properties/{property}/accessBindings/{accessBinding}
   roles: Role[]; // A list of roles to grant to the parent resource.
   user: string;
@@ -654,7 +693,6 @@ interface AudienceEventFilter {
  Key Events
  *********************************************************/
 export enum CountingMethod {
-  UNSPECIFIED = 'COUNTING_METHOD_UNSPECIFIED',
   ONCE_PER_EVENT = 'ONCE_PER_EVENT',
   ONCE_PER_SESSION = 'ONCE_PER_SESSION',
 }
@@ -667,15 +705,15 @@ interface DefaultValue {
 
 // Key Event type
 export interface KeyEventType {
-  accountProperty: string[];
+  accountProperty?: string[];
   property?: string;
   eventName: string;
   custom?: boolean;
-  countingMethod: CountingMethod;
+  countingMethod?: CountingMethod;
   defaultValue?: DefaultValue;
   deletable?: boolean;
   name?: string;
-  includeDefaultValue: boolean;
+  includeDefaultValue?: string;
 }
 
 /*********************************************************
@@ -704,7 +742,7 @@ export type Workspace = {
 export type FormCreateGTMProps = {
   showOptions?: boolean;
   onClose?: () => void;
-  tierLimits?: any;
+  tierLimits?: TierLimit[];
   table: any;
   accounts?: any;
   properties?: any;
@@ -860,12 +898,16 @@ export interface QueryParameters {
 
 // Built-In Variable
 export interface BuiltInVariable {
-  path: string; // GTM BuiltInVariable's API relative path
-  accountId: string; // GTM Account ID
-  containerId: string; // GTM Container ID
-  workspaceId: string; // GTM Workspace ID
-  type: BuiltInVariableType; // Type of built-in variable
-  name: string; // Name of the built-in variable
+  path: string;
+  type: BuiltInVariableType;
+  name: string;
+  accountContainerWorkspace: [
+    {
+      accountId: string;
+      containerId: string;
+      workspaceId: string;
+    }
+  ];
 }
 
 /*********************************************************
@@ -946,10 +988,14 @@ interface ConsentSettings {
 
 export interface Tag {
   path: string;
-  accountId: string;
-  containerId: string;
-  workspaceId: string;
-  tagId: string;
+  accountContainerWorkspace: [
+    {
+      accountId: string;
+      containerId: string;
+      workspaceId: string;
+      tagId?: string;
+    }
+  ];
   name: string;
   type: string;
   firingRuleId: string[];
@@ -1029,10 +1075,14 @@ interface Selector {
 }
 
 export interface Trigger {
-  accountId: string;
-  containerId: string;
-  workspaceId: string;
-  triggerId: string;
+  accountContainerWorkspace: [
+    {
+      accountId: string;
+      containerId: string;
+      workspaceId: string;
+      triggerId?: string;
+    }
+  ];
   name: string;
   type: string;
   customEventFilter?: Filter[];
@@ -1100,10 +1150,14 @@ interface FormatValue {
 
 export interface Variable {
   path?: string;
-  accountId: string;
-  containerId: string;
-  workspaceId: string;
-  variableId: string;
+  accountContainerWorkspace: [
+    {
+      accountId: string;
+      containerId: string;
+      workspaceId: string;
+      variableId?: string;
+    }
+  ];
   name: string;
   type: VariableType;
   notes?: string;
@@ -1338,8 +1392,16 @@ export interface UserPermission {
   path?: string;
 }
 
+interface EmailAddress {
+  emailAddress: string;
+}
+
 export interface FormValues {
   permissions: UserPermission[];
+}
+
+export interface Permissions {
+  permissions: UserPermissionType[];
 }
 
 export type FeatureUnion = BuiltInVariable | Variable | WorkspaceType /* other types as needed */;

@@ -34,12 +34,15 @@ import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
 import { revalidate } from '@/src/utils/server';
 import { ButtonDelete } from '@/src/components/client/Button/Button';
-import { useDeleteHook } from './delete';
-import { useCreateHookForm, useUpdateHookForm } from '@/src/hooks/useCRUD';
+import { useCreateHookForm, useUpdateHookForm, useDeleteHook } from '@/src/hooks/useCRUD';
+
 import { setSelectedRows } from '@/src/redux/tableSlice';
 import { useDispatch } from 'react-redux';
 import { useTransition } from 'react';
 import { LimitReached } from '@/src/components/client/modals/limitReached';
+
+import { AudienceType } from '@/src/types/types';
+import { deleteGAAudiences } from '@/src/lib/fetch/dashboard/actions/ga/audiences';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -114,7 +117,14 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     });
   };
 
-  const handleDelete = useDeleteHook(selectedRowData, table);
+  const getDisplayNames = (items) => items.map((item: AudienceType) => item.name);
+  const handleDelete = useDeleteHook(
+    deleteGAAudiences,
+    selectedRowData,
+    table,
+    getDisplayNames,
+    'audiences'
+  );
 
   const refreshAllCache = async () => {
     toast.info('Updating our systems. This may take a minute or two to update on screen.', {
@@ -123,30 +133,24 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
         onClick: () => toast.dismiss(),
       },
     });
-    const keys = [
-      `ga:accounts:userId:${userId}`,
-      `ga:properties:userId:${userId}`,
-      `ga:audiences:userId:${userId}`,
-    ];
+    const keys = [`ga:audiences:userId:${userId}`];
     await revalidate(keys, '/dashboard/ga/properties', userId);
   };
 
   dispatch(setSelectedRows(selectedRowData)); // Update the selected rows in Redux
 
   return (
-    <div>
-      <h2 className="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0">
-        Audiences
-      </h2>
-      <div className="flex items-center py-4">
+    <div className="container mx-auto p-4">
+      <h2 className="text-2xl font-bold mb-4">Audiences</h2>
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-4 space-y-2 sm:space-y-0 sm:space-x-2">
         <Input
           placeholder="Filter conversion event names..."
           value={(table.getColumn('eventName')?.getFilterValue() as string) ?? ''}
           onChange={(event) => table.getColumn('eventName')?.setFilterValue(event.target.value)}
-          className="max-w-sm"
+          className="w-full sm:w-64"
         />
 
-        <div className="ml-auto space-x-4">
+        <div className="flex space-x-2">
           <Button onClick={refreshAllCache}>Refresh</Button>
 
           <Button disabled={isCreatePending} onClick={onCreateButtonClick}>
@@ -163,6 +167,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
           <ButtonDelete
             disabled={Object.keys(table.getState().rowSelection).length === 0}
             onDelete={handleDelete}
+            action={undefined}
           />
 
           <DropdownMenu>
@@ -189,7 +194,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
           </DropdownMenu>
         </div>
       </div>
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

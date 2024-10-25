@@ -16,7 +16,6 @@ export default async function PermissionsFormPage() {
   const subscriptionId = subscription.id;
 
   const tierLimits = await getTierLimit(subscriptionId);
-
   const accountData = await listGtmAccounts();
   const containerData = await listGtmContainers();
   const permissionData = await listGtmPermissions();
@@ -27,11 +26,10 @@ export default async function PermissionsFormPage() {
     permissionData,
   ]);
 
-  const flatPermissions = permissions.flatMap((item) => item);
   const flatAccounts = accounts.flat();
   const flatContainers = containers.flat();
 
-  const combinedData = flatPermissions.flatMap((prop) => {
+  const combinedData = permissions.flatMap((prop) => {
     const account = accounts.find((a) => a.accountId === prop.accountId);
 
     return prop.containerAccess.map((containerAccess) => {

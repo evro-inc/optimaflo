@@ -5,7 +5,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setLoading, incrementStep, decrementStep } from '@/redux/formSlice';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
-
 import { UpdateVersionFormSchema, UpdateVersionSchemaType } from '@/src/lib/schemas/gtm/versions';
 import { Button } from '@/src/components/ui/button';
 import {

@@ -1,4 +1,4 @@
-export const MeasurementUnitType = {
+export const measurementUnit = {
   Standard: 'STANDARD',
   Currency: 'CURRENCY',
   Feet: 'FEET',
@@ -9,27 +9,9 @@ export const MeasurementUnitType = {
   Seconds: 'SECONDS',
   Minutes: 'MINUTES',
   Hours: 'HOURS',
-};
+} as const;
 
-export const MeasurementUnitUpdateType = {
-  Standard: 'STANDARD',
-  Feet: 'FEET',
-  Meters: 'METERS',
-  Kilometers: 'KILOMETERS',
-  Miles: 'MILES',
-  Milliseconds: 'MILLISECONDS',
-  Seconds: 'SECONDS',
-  Minutes: 'MINUTES',
-  Hours: 'HOURS',
+export const RestrictedMetric = {
+  cost: 'COST_DATA',
+  revenue: 'REVENUE_DATA',
 };
-
-export const RestrictedMetric = [
-  {
-    id: 'COST_DATA',
-    label: 'Cost Data',
-  },
-  {
-    id: 'REVENUE_DATA',
-    label: 'Revenue Data',
-  },
-];

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const SingleFormSchema = z.object({
+export const DimensionSchema = z.object({
   name: z.string(),
   account: z.string(),
   property: z.string(),
@@ -19,9 +19,9 @@ export const FormCreateAmountSchema = z.object({
   amount: z.number(),
 });
 
-export const FormsSchema = z.object({
-  forms: z.array(SingleFormSchema),
+export const FormSchema = z.object({
+  forms: z.array(DimensionSchema),
 });
 
 // Export the type inferred from FormsSchema for type safety in your form handling
-export type CustomDimensionSchemaType = z.infer<typeof FormsSchema>;
+export type CustomDimensionSchemaType = z.infer<typeof FormSchema>;

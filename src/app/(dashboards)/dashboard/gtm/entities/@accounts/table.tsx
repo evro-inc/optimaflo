@@ -32,12 +32,14 @@ import {
 } from '@/src/components/ui/dropdown-menu';
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
-import { revalidate } from '@/src/utils/server';
+import { hardRevalidateFeatureCache } from '@/src/utils/server';
 import { useDispatch } from 'react-redux';
 import { useTransition } from 'react';
 import { useUpdateHookForm } from '@/src/hooks/useCRUD';
 import { setSelectedRows } from '@/src/redux/tableSlice';
 import { LimitReached } from '@/src/components/client/modals/limitReached';
+import { RefreshLoading } from '@/src/components/client/Utils/TableLoad';
+import { ButtonLoad } from '@/src/components/client/Button/Button';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -46,14 +48,14 @@ interface DataTableProps<TData, TValue> {
 
 export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData, TValue>) {
   const dispatch = useDispatch();
-  const [, startUpdateTransition] = useTransition();
   const { user } = useUser();
   const userId = user?.id as string;
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-
+  const [isRefreshPending, startRefreshTransition] = useTransition();
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
+  const [isUpdatePending, startUpdateTransition] = useTransition();
 
   const table = useReactTable({
     data,
@@ -97,44 +99,44 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     });
   };
 
-  const refreshAllCache = async () => {
-    toast.info('Updating our systems. This may take a minute or two to update on screen.', {
-      action: {
-        label: 'Close',
-        onClick: () => toast.dismiss(),
-      },
+  const refreshAllCache = () => {
+    startRefreshTransition(async () => {
+      try {
+        toast.info('Updating our systems. This may take a minute or two to update on screen.', {
+          action: {
+            label: 'Close',
+            onClick: () => toast.dismiss(),
+          },
+        });
+        const keys = [`gtm:accounts:userId:${userId}`];
+        await hardRevalidateFeatureCache(keys, '/dashboard/ga/properties', userId);
+      } catch (error) {
+        toast.error('Cache update failed. Try again or reload the page.');
+      }
     });
-    const keys = [
-      `gtm:accounts:userId:${userId}`,
-      `gtm:containers:userId:${userId}`,
-      `gtm:workspaces:userId:${userId}`,
-    ];
-    await revalidate(keys, '/dashboard/gtm/accounts', userId);
   };
 
   dispatch(setSelectedRows(selectedRowData));
 
   return (
-    <div>
-      <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">Accounts</h1>
-      <div className="flex items-center py-4">
+    <div className="container mx-auto p-4">
+      <h2 className="text-2xl font-bold mb-4">Accounts</h2>
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-4 space-y-2 sm:space-y-0 sm:space-x-2">
         <Input
           placeholder="Filter account names..."
           value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
           onChange={(event) => table.getColumn('name')?.setFilterValue(event.target.value)}
-          className="max-w-sm"
+          className="w-full sm:w-64"
         />
 
-        <div className="ml-auto space-x-4">
+        <div className="flex space-x-2">
           <Button onClick={refreshAllCache}>Refresh</Button>
-
-          {/* <ButtonUpdate selectedRows={table.getState().rowSelection} /> */}
-          <Button
-            disabled={Object.keys(table.getState().rowSelection).length === 0}
+          <ButtonLoad
             onClick={onUpdateButtonClick}
-          >
-            Update
-          </Button>
+            text="Update"
+            loading={isUpdatePending}
+            disabled={Object.keys(table.getState().rowSelection).length === 0 || isUpdatePending}
+          />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -160,44 +162,49 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
           </DropdownMenu>
         </div>
       </div>
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
+      {isRefreshPending ? (
+        <RefreshLoading /> // Loading indicator when transition is pending
+      ) : (
+        <div className="rounded-md border overflow-x-auto">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => {
+                    return (
+                      <TableHead key={header.id}>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(header.column.columnDef.header, header.getContext())}
+                      </TableHead>
+                    );
+                  })}
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={columns.length} className="h-24 text-center">
+                    No results.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
       <div className="flex items-center justify-end space-x-2 py-4">
         <div className="flex-1 text-sm text-muted-foreground">
           {table.getFilteredSelectedRowModel().rows.length} of{' '}

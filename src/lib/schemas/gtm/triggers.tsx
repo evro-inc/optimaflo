@@ -39,11 +39,17 @@ const ConditionSchema = z.object({
   parameter: z.array(ParameterSchema),
 });
 
-const TriggerSchema = z.object({
-  accountId: z.string(),
-  containerId: z.string(),
-  workspaceId: z.string(),
-  triggerId: z.string(),
+const EntitySchema = z.object({
+  accountId: z.string().min(1, 'Account ID is required'),
+  containerId: z.string().min(1, 'Container ID is required'),
+  workspaceId: z.string().min(1, 'Workspace ID is required'),
+  triggerId: z.string().min(1, 'Trigger ID is required').optional(),
+});
+
+export const TriggerSchema = z.object({
+  accountContainerWorkspace: z
+    .array(EntitySchema)
+    .min(1, 'At least one Account-Container-Workspace entry is required'),
   name: z.string(),
   type: z.enum([
     'always',
@@ -112,9 +118,9 @@ export const FormCreateAmountSchema = z.object({
   amount: z.number(),
 });
 
-export const FormsSchema = z.object({
+export const FormSchema = z.object({
   forms: z.array(TriggerSchema),
 });
 
 // Export the type inferred from TriggerSchema for type safety
-export type TriggerType = z.infer<typeof FormsSchema>;
+export type TriggerType = z.infer<typeof FormSchema>;

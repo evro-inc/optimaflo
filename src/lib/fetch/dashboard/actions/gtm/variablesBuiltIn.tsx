@@ -1,661 +1,448 @@
 'use server';
-import { revalidatePath } from 'next/cache';
-import { FormsSchema } from '@/src/lib/schemas/gtm/builtInVariables';
-import z from 'zod';
-import { auth } from '@clerk/nextjs/server';
-import { notFound } from 'next/navigation';
-import { limiter } from '../../../../bottleneck';
-import { gtmRateLimit } from '../../../../redis/rateLimits';
-import { redis } from '../../../../redis/cache';
-import { currentUserOauthAccessToken } from '../../../../clerk';
-import prisma from '@/src/lib/prisma';
-import { BuiltInVariable, FeatureResponse, FeatureResult } from '@/src/types/types';
-import { handleApiResponseError, tierCreateLimit, tierDeleteLimit } from '@/src/utils/server';
-import { fetchGtmSettings } from '../..';
 
-// Define the types for the form data
-type FormCreateSchema = z.infer<typeof FormsSchema>;
+import {
+  BuiltInVariableFormType,
+  BuiltInVariableSchema,
+  FormSchema,
+} from '@/src/lib/schemas/gtm/builtInVariables';
+import { redis } from '../../../../redis/cache';
+import prisma from '@/src/lib/prisma';
+import { FeatureResponse, FeatureResult } from '@/src/types/types';
+import {
+  authenticateUser,
+  checkFeatureLimit,
+  ensureGARateLimit,
+  executeApiRequest,
+  getOauthToken,
+  softRevalidateFeatureCache,
+  validateFormData,
+} from '@/src/utils/server';
+import { z } from 'zod';
+
+const featureType: string = 'GTMBuiltInVariables';
 
 /************************************************************************************
   Function to list or get one GTM builtInVariables
 ************************************************************************************/
-export async function listGtmBuiltInVariables(skipCache = false) {
-  let retries = 0;
-  const MAX_RETRIES = 3;
-  let delay = 1000;
-
-  const { userId } = await auth();
-  if (!userId) return notFound();
-
-  const token = await currentUserOauthAccessToken(userId);
-
+export async function listGtmBuiltInVariables(skipCache = false): Promise<any[]> {
+  const userId = await authenticateUser();
+  const token = await getOauthToken(userId);
   const cacheKey = `gtm:builtInVariables:userId:${userId}`;
+
   if (!skipCache) {
-    const cachedValue = await redis.get(cacheKey);
-    if (cachedValue) {
-      return JSON.parse(cachedValue);
+    const cacheData = await redis.hgetall(cacheKey);
+
+    if (Object.keys(cacheData).length > 0) {
+      try {
+        const parsedData = Object.values(cacheData).map((data) => JSON.parse(data));
+
+        return parsedData;
+      } catch (error) {
+        console.error('Failed to parse cache data:', error);
+        await redis.del(cacheKey);
+      }
     }
   }
 
-  await fetchGtmSettings(userId);
-
-  const gtmData = await prisma.user.findFirst({
-    where: {
-      id: userId,
-    },
-    include: {
-      gtm: true,
-    },
+  const data = await prisma.user.findFirst({
+    where: { id: userId },
+    include: { gtm: true },
   });
 
-  while (retries < MAX_RETRIES) {
+  if (!data) return [];
+
+  await ensureGARateLimit(userId);
+
+  const uniqueItems = Array.from(
+    new Set(
+      data.gtm.map((item) =>
+        JSON.stringify({
+          accountId: item.accountId,
+          containerId: item.containerId,
+          workspaceId: item.workspaceId,
+        })
+      )
+    )
+  ).map((str: any) => JSON.parse(str));
+
+  const urls = uniqueItems.map(
+    ({ accountId, containerId, workspaceId }) =>
+      `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/built_in_variables`
+  );
+
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+    'Accept-Encoding': 'gzip',
+  };
+
+  try {
+    const allData = await Promise.all(urls.map((url) => executeApiRequest(url, { headers })));
+    const flattenedData = allData.flat();
+    const cleanedData = flattenedData.filter((item) => Object.keys(item).length > 0);
+    const ws = cleanedData.flatMap((item) => item.builtInVariable || []); // Flatten to get all workspaces directly
+
     try {
-      const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
+      const pipeline = redis.pipeline();
 
-      if (remaining > 0) {
-        let allData: any[] = [];
+      ws.forEach((w: any) => {
+        const fieldKey = w.accountId + '/' + w.containerId + '/' + w.workspaceId + '/' + w.type;
 
-        await limiter.schedule(async () => {
-          const uniquePairs = new Set(
-            gtmData.gtm.map((data) => `${data.accountId}-${data.containerId}-${data.workspaceId}`)
-          );
+        if (fieldKey) {
+          // Ensure fieldKey is defined
+          pipeline.hset(cacheKey, fieldKey, JSON.stringify(w));
+        } else {
+          console.warn('Skipping property with undefined name:', w);
+        }
+      });
 
-          const urls = Array.from(uniquePairs).map((pair: any) => {
-            const [accountId, containerId, workspaceId] = pair.split('-');
-            return `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/built_in_variables`;
-          });
-
-          const headers = {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'Accept-Encoding': 'gzip',
-          };
-
-          for (const url of urls) {
-            try {
-              const response = await fetch(url, { headers });
-
-              if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
-              }
-              const responseBody = await response.json();
-
-              allData.push(responseBody.builtInVariable || []);
-            } catch (error: any) {
-              throw new Error(`Error fetching data: ${error.message}`);
-            }
-          }
-        });
-        redis.set(cacheKey, JSON.stringify(allData.flat()));
-
-        return allData;
-      }
-    } catch (error: any) {
-      if (error.code === 429 || error.status === 429) {
-        const jitter = Math.random() * 200;
-        await new Promise((resolve) => setTimeout(resolve, delay + jitter));
-        delay *= 2;
-        retries++;
-      } else {
-        throw error;
-      }
+      pipeline.expire(cacheKey, 2592000); // Set expiration for the entire hash
+      await pipeline.exec(); // Execute the pipeline commands
+    } catch (cacheError) {
+      console.error('Failed to set cache data with HSET:', cacheError);
     }
+
+    return ws; // Return only the ws array
+  } catch (apiError) {
+    console.error('Error fetching ws from API:', apiError);
+    return []; // Return empty array or handle this more gracefully depending on your needs
   }
-  throw new Error('Maximum retries reached without a successful response.');
 }
 
 /************************************************************************************
   Delete a single or multiple builtInVariables
 ************************************************************************************/
-export async function DeleteBuiltInVariables(
-  ga4BuiltInVarToDelete: BuiltInVariable[]
+export async function deleteBuiltInVariables(
+  selected: Set<z.infer<typeof BuiltInVariableSchema>>,
+  names: string[]
 ): Promise<FeatureResponse> {
-  // Constants for retry mechanism
-  const MAX_RETRIES = 3;
-  let retries = 0;
-  let delay = 1000;
+  const userId = await authenticateUser();
+  const token = await getOauthToken(userId);
+  const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
+    userId,
+    featureType,
+    'delete'
+  );
 
-  // Arrays to track various outcomes
-  const errors: string[] = [];
-  const successfulDeletions: Array<{ combinedId: string; name: string }> = [];
-  const featureLimitReached: Array<{ combinedId: string; name: string }> = [];
-  const notFoundLimit: Array<{ combinedId: string; name: string }> = [];
-
-  // Logging the variables to delete
-
-  // Grouping variables by their combinedId (accountId, containerId, workspaceId)
-  const groupedVars = new Map<string, BuiltInVariable[]>();
-  ga4BuiltInVarToDelete.forEach((prop) => {
-    const combinedId = `${prop.accountId}-${prop.containerId}-${prop.workspaceId}`;
-    if (!groupedVars.has(combinedId)) {
-      groupedVars.set(combinedId, []);
-    }
-    groupedVars.get(combinedId)?.push(prop);
-  });
-
-  // Authenticating user and getting user ID
-  const { userId } = await auth();
-  if (!userId) return notFound();
-
-  const token = await currentUserOauthAccessToken(userId);
-
-  // Check for feature limit using Prisma ORM
-  const tierLimitResponse: any = await tierDeleteLimit(userId, 'GTMBuiltInVariables');
-  const limit = Number(tierLimitResponse.deleteLimit);
-  const deleteUsage = Number(tierLimitResponse.deleteUsage);
-  const availableDeleteUsage = limit - deleteUsage;
-
-  if (tierLimitResponse && tierLimitResponse.limitReached) {
+  if (tierLimitResponse.limitReached || selected.size > availableUsage) {
     return {
       success: false,
       limitReached: true,
-      errors: [],
-      message: 'Feature limit reached for Deleting BuiltInVariables',
-      results: [],
-    };
-  }
-
-  if (groupedVars.size > availableDeleteUsage) {
-    return {
-      success: false,
-      features: [],
+      message: 'Feature limit reached or request exceeds available deletions.',
       errors: [
-        `Cannot delete ${groupedVars.size} builtInVariables as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
+        `Cannot delete more built-in variables than available. You have ${availableUsage} deletions left.`,
       ],
       results: [],
-      limitReached: true,
-      message: `Cannot delete ${groupedVars.size} builtInVariables as it exceeds the available limit. You have ${availableDeleteUsage} more deletion(s) available.`,
     };
   }
 
-  let permissionDenied = false;
+  let errors: string[] = [];
+  let successfulDeletions: z.infer<typeof BuiltInVariableSchema>[] = [];
+  let featureLimitReached: string[] = [];
+  let notFoundLimit: string[] = [];
 
-  // Retry loop for deletion requests
-  while (retries < MAX_RETRIES && groupedVars.size > 0 && !permissionDenied) {
-    try {
-      const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
+  await ensureGARateLimit(userId);
 
-      if (remaining > 0) {
-        await limiter.schedule(async () => {
-          const deletePromises = Array.from(groupedVars.entries()).map(async ([, props]) => {
-            const { accountId, containerId, workspaceId } = props[0];
-            const types = props.map((prop) => prop.type).join('&type=');
-            const url = `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/built_in_variables?type=${types}`;
+  await Promise.all(
+    Array.from(selected).map(async (data) => {
+      const url = `https://www.googleapis.com/tagmanager/v2/accounts/${data.accountId}/containers/${data.containerId}/workspaces/${data.workspaceId}/built_in_variables?type=${data.type}`;
 
-            const headers = {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-              'Accept-Encoding': 'gzip',
-            };
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept-Encoding': 'gzip',
+      };
 
-            try {
-              const response = await fetch(url, {
-                method: 'DELETE',
-                headers: headers,
-              });
-              const parsedResponse = await response.json();
+      try {
+        await executeApiRequest(url, { method: 'DELETE', headers }, 'builtInVariables', names);
+        successfulDeletions.push(data);
 
-              if (response.ok) {
-                successfulDeletions.push({
-                  combinedId: `${accountId}-${containerId}-${workspaceId}`,
-                  name: types,
-                });
-
-                await prisma.tierLimit.update({
-                  where: { id: tierLimitResponse.id },
-                  data: { deleteUsage: { increment: 1 } },
-                });
-
-                fetchGtmSettings(userId);
-
-                return {
-                  combinedId: `${accountId}-${containerId}-${workspaceId}`,
-                  success: true,
-                };
-              } else {
-                const errorResult = await handleApiResponseError(
-                  response,
-                  parsedResponse,
-                  'builtInVariable',
-                  types.split('&type=')
-                );
-
-                if (errorResult) {
-                  errors.push(`${errorResult.message}`);
-                  if (
-                    errorResult.errorCode === 403 &&
-                    parsedResponse.message === 'Feature limit reached'
-                  ) {
-                    featureLimitReached.push({
-                      combinedId: `${accountId}-${containerId}-${workspaceId}`,
-                      name: types,
-                    });
-                  } else if (errorResult.errorCode === 404) {
-                    notFoundLimit.push({
-                      combinedId: `${accountId}-${containerId}-${workspaceId}`,
-                      name: types,
-                    });
-                  }
-                } else {
-                  errors.push(`An unknown error occurred for built-in variable types ${types}.`);
-                }
-
-                permissionDenied = errorResult ? true : permissionDenied;
-              }
-            } catch (error: any) {
-              errors.push(
-                `Error deleting built-in variable ${accountId}-${containerId}-${workspaceId}: ${error.message}`
-              );
-            }
-
-            return { containerId, success: false };
-          });
-
-          await Promise.all(deletePromises);
+        await prisma.tierLimit.update({
+          where: { id: tierLimitResponse.id },
+          data: { deleteUsage: { increment: 1 } },
         });
-
-        if (notFoundLimit.length > 0) {
-          return createErrorResponse(notFoundLimit, true);
+      } catch (error: any) {
+        if (error.message === 'Feature limit reached') {
+          featureLimitReached.push(data.name);
+        } else if (error.message.includes('404')) {
+          notFoundLimit.push(data.name);
+        } else {
+          errors.push(error.message);
         }
-
-        if (featureLimitReached.length > 0) {
-          return createErrorResponse(featureLimitReached, false, true);
-        }
-
-        if (successfulDeletions.length === ga4BuiltInVarToDelete.length) {
-          break;
-        }
-
-        if (permissionDenied) {
-          break;
-        }
-      } else {
-        throw new Error('Rate limit exceeded');
       }
-    } catch (error: any) {
-      if (error.code === 429 || error.status === 429) {
-        const jitter = Math.random() * 200;
-        await new Promise((resolve) => setTimeout(resolve, delay + jitter));
-        delay *= 2;
-        retries++;
-      } else {
-        break;
-      }
-    } finally {
-      await redis.del(`gtm:builtInVariables:userId:${userId}`);
-      await revalidatePath('/dashboard/gtm/configurations');
+    })
+  );
+
+  // **Perform Selective Revalidation After All Deletions**:
+  if (successfulDeletions.length > 0) {
+    try {
+      // Explicitly type the operations array
+      const operations = successfulDeletions.map((deletion) => ({
+        crudType: 'delete' as const, // Explicitly set the type as "delete"
+        ...deletion,
+      }));
+      const cacheFields = successfulDeletions.map(
+        (del) => `${del.accountId}/${del.containerId}/${del.workspaceId}/${del.type}`
+      );
+
+      await softRevalidateFeatureCache(
+        [`gtm:builtInVariables:userId:${userId}`],
+        `/dashboard/gtm/configurations`,
+        userId,
+        operations,
+        cacheFields
+      );
+    } catch (err) {
+      console.error('Error during revalidation:', err);
     }
   }
 
-  if (permissionDenied) {
-    return createErrorResponse(errors);
+  // Handling responses for various scenarios like feature limit reached or not found errors
+  if (notFoundLimit.length > 0) {
+    return {
+      success: false,
+      limitReached: false,
+      notFoundError: true,
+      message: `Could not delete built-in variable. Please check your permissions. Built-in variable : ${names.find(
+        (name) => name.includes(name)
+      )}. All other built-in variables were successfully deleted.`,
+      results: notFoundLimit.map((data) => ({
+        id: [data],
+        name: [names.find((name) => name.includes(data)) || 'Unknown'],
+        success: false,
+        notFound: true,
+      })),
+    };
+  }
+
+  if (featureLimitReached.length > 0) {
+    return {
+      success: false,
+      limitReached: true,
+      notFoundError: false,
+      message: `Feature limit reached for built-in variable: ${featureLimitReached.join(', ')}`,
+      results: featureLimitReached.map((data) => ({
+        id: [data],
+        name: [names.find((name) => name.includes(data)) || 'Unknown'],
+        success: false,
+        featureLimitReached: true,
+      })),
+    };
   }
 
   if (errors.length > 0) {
-    return createErrorResponse(errors, false, false, successfulDeletions);
+    return {
+      success: false,
+      errors,
+      results: [],
+      message: errors.join(', '),
+      notFoundError: notFoundLimit.length > 0,
+    };
   }
 
-  if (successfulDeletions.length > 0) {
-    await redis.del(`gtm:builtInVariables:userId:${userId}`);
-    revalidatePath('/dashboard/gtm/configurations');
-  }
-
-  return createSuccessResponse(successfulDeletions);
-}
-
-function createErrorResponse(
-  errors: any,
-  notFoundError = false,
-  limitReached = false,
-  successfulDeletions = []
-) {
-  return {
-    success: false,
-    features: successfulDeletions.map(({ combinedId }) => combinedId),
-    errors: errors,
-    results: successfulDeletions.map(({ combinedId, name }) => {
-      const [accountId, containerId, workspaceId] = combinedId.split('-');
-      return {
-        id: [accountId, containerId, workspaceId],
-        name: [name],
-        success: true,
-      };
-    }),
-    message: errors.join(', '),
-    notFoundError,
-    limitReached,
-  };
-}
-
-function createSuccessResponse(successfulDeletions: Array<{ combinedId: string; name: string }>) {
   return {
     success: true,
     message: `Successfully deleted ${successfulDeletions.length} built-in variable(s)`,
-    features: successfulDeletions.map(({ combinedId }) => combinedId),
+    features: successfulDeletions.map<FeatureResult>((data) => ({
+      id: [data.name],
+      name: [names.find((name) => name.includes(data.name)) || 'Unknown'],
+      success: true,
+    })),
     errors: [],
-    notFoundError: false,
-    results: successfulDeletions.map(({ combinedId, name }) => {
-      const [accountId, containerId, workspaceId] = combinedId.split('-');
-      return {
-        id: [accountId, containerId, workspaceId],
-        name: [name],
-        success: true,
-      };
-    }),
+    notFoundError: notFoundLimit.length > 0,
+    results: successfulDeletions.map<FeatureResult>((data) => ({
+      id: [data.name],
+      name: [names.find((name) => name.includes(data.name)) || 'Unknown'],
+      success: true,
+    })),
   };
 }
 
 /************************************************************************************
   Create a single container or multiple containers
 ************************************************************************************/
-export async function CreateBuiltInVariables(formData: FormCreateSchema) {
-  const { userId } = await auth();
-  if (!userId) return notFound();
-  const token = await currentUserOauthAccessToken(userId);
-
-  const MAX_RETRIES = 3;
-  let delay = 1000;
-  const errors: string[] = [];
-  const successfulCreations: string[] = [];
-  const featureLimitReached: string[] = [];
-  const notFoundLimit: { id: string; name: string }[] = [];
-
-  // Refactor: Use string identifiers in the set
-  const toCreateBuiltInVariables = new Set(
-    formData.forms.flatMap((form) =>
-      Array.isArray(form.entity)
-        ? form.entity.map((entity) => ({
-            entity,
-            type: form.type,
-          }))
-        : [{ entity: form.entity, type: form.type }]
-    )
+export async function createBuiltInVariables(formData: {
+  forms: BuiltInVariableFormType['forms'];
+}): Promise<FeatureResponse> {
+  const userId = await authenticateUser();
+  const token = await getOauthToken(userId);
+  const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
+    userId,
+    featureType,
+    'create'
   );
 
-  const tierLimitResponse: any = await tierCreateLimit(userId, 'GTMBuiltInVariables');
-  const limit = Number(tierLimitResponse.createLimit);
-  const createUsage = Number(tierLimitResponse.createUsage);
-  const availableCreateUsage = limit - createUsage;
-
-  const creationResults: {
-    builtInVariableName: string;
-    success: boolean;
-    message?: string;
-  }[] = [];
-
-  // Handling feature limit
-  if (tierLimitResponse && tierLimitResponse.limitReached) {
+  if (tierLimitResponse.limitReached || formData.forms.length > availableUsage) {
     return {
       success: false,
       limitReached: true,
-      message: 'Feature limit reached for Creating BuiltInVariables',
+      message: 'Feature limit reached or request exceeds available creations.',
+      errors: [
+        `Cannot create more built-in variables than available. You have ${availableUsage} creations left.`,
+      ],
       results: [],
     };
   }
 
-  // refactor and verify
-  if (toCreateBuiltInVariables.size > availableCreateUsage) {
-    const attemptedCreations = Array.from(toCreateBuiltInVariables).map((identifier: any) => {
-      const { name: builtInVariableName } = identifier;
-      return {
-        id: [], // No builtInVariable ID since creation did not happen
-        name: builtInVariableName, // Include the builtInVariable name from the identifier
-        success: false,
-        message: `Creation limit reached. Cannot create builtInVariable "${builtInVariableName}".`,
-        // remaining creation limit
-        remaining: availableCreateUsage,
-        limitReached: true,
-      };
-    });
-    return {
-      success: false,
-      features: [],
-      message: `Cannot create ${toCreateBuiltInVariables.size} builtInVariables as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
-      errors: [
-        `Cannot create ${toCreateBuiltInVariables.size} builtInVariables as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
-      ],
-      results: attemptedCreations,
-      limitReached: true,
-    };
-  }
+  let errors: string[] = [];
+  let successfulCreations: any[] = [];
+  let featureLimitReached: string[] = [];
+  let notFoundLimit: { id: string | undefined; name: string }[] = [];
 
-  let permissionDenied = false;
-  // Corrected property name to 'name' based on the lint context provided
-  const builtInVariableNames = formData.forms.map((cd) => cd.type);
+  await ensureGARateLimit(userId);
 
-  if (toCreateBuiltInVariables.size <= availableCreateUsage) {
-    // Initialize retries variable to ensure proper loop execution
-    let retries = 0;
-    while (retries < MAX_RETRIES && toCreateBuiltInVariables.size > 0 && !permissionDenied) {
-      try {
-        const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
-        if (remaining > 0) {
-          await limiter.schedule(async () => {
-            const createPromises = Array.from(toCreateBuiltInVariables).map(
-              async (identifier: any) => {
-                const builtInVariableData = formData.forms.find(
-                  (prop) => prop.type === identifier.type && prop.entity.includes(identifier.entity)
-                );
+  let totalCreatedVariables = 0;
 
-                if (!builtInVariableData) {
-                  errors.push(`Built-in variable data not found for ${identifier}`);
-                  toCreateBuiltInVariables.delete(identifier);
-                  return;
-                }
+  await Promise.all(
+    formData.forms.map(async (data) => {
+      const validatedData = await validateFormData(FormSchema, { forms: [data] });
 
-                const [accountId, containerId, workspaceId] = identifier.entity.split('-');
+      // Loop through each accountContainerWorkspace combination
+      for (const workspace of validatedData.forms[0].accountContainerWorkspace) {
+        const url = `https://www.googleapis.com/tagmanager/v2/accounts/${workspace.accountId}/containers/${workspace.containerId}/workspaces/${workspace.workspaceId}/built_in_variables`;
 
-                const url = new URL(
-                  `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/workspaces/${workspaceId}/built_in_variables`
-                );
+        const params = new URLSearchParams();
+        validatedData.forms[0].type.forEach((type) => {
+          params.append('type', type);
+        });
 
-                const params = new URLSearchParams();
-                builtInVariableData.type.forEach((type) => {
-                  params.append('type', type);
-                });
+        const finalUrl = url + '?' + params.toString();
+        const headers = {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Accept-Encoding': 'gzip',
+        };
 
-                const finalUrl = url + '?' + params.toString();
-
-                const headers = {
-                  Authorization: `Bearer ${token}`,
-                  'Content-Type': 'application/json',
-                  'Accept-Encoding': 'gzip',
-                };
-
-                try {
-                  const response = await fetch(finalUrl, {
-                    method: 'POST',
-                    headers: headers,
-                  });
-
-                  const parsedResponse = await response.json();
-
-                  if (response.ok) {
-                    await prisma.tierLimit.update({
-                      where: { id: tierLimitResponse.id },
-                      data: { createUsage: { increment: 1 } }, // Increment by the number of created variables
-                    });
-
-                    successfulCreations.push(`${accountId}-${containerId}-${workspaceId}`); // Update with a proper identifier
-                    toCreateBuiltInVariables.delete(identifier);
-                    fetchGtmSettings(userId);
-
-                    creationResults.push({
-                      success: true,
-                      message: `Successfully created builtInVariable ${builtInVariableData}`,
-                      builtInVariableName: '',
-                    });
-                  } else {
-                    const errorResult = await handleApiResponseError(
-                      response,
-                      parsedResponse,
-                      'builtInVariable',
-                      [JSON.stringify(builtInVariableData)]
-                    );
-
-                    if (errorResult) {
-                      errors.push(`${errorResult.message}`);
-                      if (
-                        errorResult.errorCode === 403 &&
-                        parsedResponse.message === 'Feature limit reached'
-                      ) {
-                        featureLimitReached.push(identifier);
-                      } else if (errorResult.errorCode === 404) {
-                        const builtInVariableName =
-                          builtInVariableNames.find((name) => name.includes(identifier.name)) ||
-                          'Unknown';
-                        notFoundLimit.push({
-                          id: identifier.containerId,
-                          name: Array.isArray(builtInVariableName)
-                            ? builtInVariableName.join(', ')
-                            : builtInVariableName,
-                        });
-                      }
-                    } else {
-                      errors.push(`An unknown error occurred for builtInVariable.`);
-                    }
-
-                    toCreateBuiltInVariables.delete(identifier);
-                    permissionDenied = errorResult ? true : permissionDenied;
-                    creationResults.push({
-                      builtInVariableName: identifier.name,
-                      success: false,
-                      message: errorResult?.message,
-                    });
-                  }
-                } catch (error: any) {
-                  errors.push(`Exception creating builtInVariable: ${error.message}`);
-                  toCreateBuiltInVariables.delete(identifier);
-                  creationResults.push({
-                    builtInVariableName: identifier.name,
-                    success: false,
-                    message: error.message,
-                  });
-                }
-              }
-            );
-
-            await Promise.all(createPromises);
+        try {
+          const res = await executeApiRequest(finalUrl, {
+            method: 'POST',
+            headers,
           });
 
-          if (notFoundLimit.length > 0) {
-            return {
-              success: false,
-              limitReached: false,
-              notFoundError: true, // Set the notFoundError flag
-              features: [],
-              results: notFoundLimit.map((item) => ({
-                id: item.id,
-                name: item.name,
-                success: false,
-                notFound: true,
-              })),
-            };
-          }
+          // Add the created property to successful creations
+          successfulCreations.push(res.builtInVariable);
 
-          if (featureLimitReached.length > 0) {
-            return {
-              success: false,
-              limitReached: true,
-              notFoundError: false,
-              message: `Feature limit reached for builtInVariables: ${featureLimitReached.join(
-                ', '
-              )}`,
-              results: featureLimitReached.map((builtInVariableId) => {
-                // Find the name associated with the builtInVariableId
-                return {
-                  id: [builtInVariableId], // Ensure id is an array
-                  name: [builtInVariableNames], // Ensure name is an array, match by builtInVariableId or default to 'Unknown'
-                  success: false,
-                  featureLimitReached: true,
-                };
-              }),
-            };
+          // Track total created variables
+          totalCreatedVariables += res.builtInVariable.length;
+        } catch (error: any) {
+          if (error.message === 'Feature limit reached') {
+            featureLimitReached.push(validatedData.name ?? 'Unknown');
+          } else if (error.message.includes('404')) {
+            notFoundLimit.push({
+              id: workspace.containerId ?? 'Unknown',
+              name: validatedData.forms[0].name ?? 'Unknown',
+            });
+          } else {
+            errors.push(error.message);
           }
-
-          if (successfulCreations.length === formData.forms.length) {
-            break;
-          }
-
-          if (toCreateBuiltInVariables.size === 0) {
-            break;
-          }
-        } else {
-          throw new Error('Rate limit exceeded');
-        }
-      } catch (error: any) {
-        if (error.code === 429 || error.status === 429) {
-          await new Promise((resolve) => setTimeout(resolve, delay + Math.random() * 200));
-          delay *= 2;
-          retries++;
-        } else {
-          break;
-        }
-      } finally {
-        // This block will run regardless of the outcome of the try...catch
-        if (userId) {
-          const cacheKey = `gtm:builtInVariables:userId:${userId}`;
-          await redis.del(cacheKey);
-          await revalidatePath(`/dashboard/gtm/configurations`);
         }
       }
+    })
+  );
+
+  await prisma.tierLimit.update({
+    where: { id: tierLimitResponse.id },
+    data: { createUsage: { increment: totalCreatedVariables } },
+  });
+
+  // **Perform Selective Revalidation After All Creations**:
+  if (successfulCreations.length > 0) {
+    try {
+      // Map successful creations to the appropriate structure for Redis
+      const operations = successfulCreations.flatMap((creationArray) =>
+        creationArray.map((creation) => ({
+          crudType: 'create' as const,
+          data: { ...creation },
+        }))
+      );
+
+      const cacheFields = successfulCreations.flatMap((creationArray) =>
+        creationArray.map(
+          ({ accountId, containerId, workspaceId, type }) =>
+            `${accountId}/${containerId}/${workspaceId}/${type}`
+        )
+      );
+
+      await softRevalidateFeatureCache(
+        [`gtm:builtInVariables:userId:${userId}`],
+        `/dashboard/gtm/configurations`,
+        userId,
+        operations,
+        cacheFields
+      );
+    } catch (err) {
+      console.error('Error during revalidation:', err);
     }
   }
 
-  if (permissionDenied) {
+  // Check for not found errors and return if any
+  if (notFoundLimit.length > 0) {
     return {
       success: false,
-      errors: errors,
-      results: [],
-      message: errors.join(', '),
+      limitReached: false,
+      notFoundError: true,
+      features: [],
+      message: `Some built-in variables could not be found: ${notFoundLimit
+        .map((item) => item.name)
+        .join(', ')}`,
+      results: notFoundLimit.map((item) => ({
+        id: item.id ? [item.id] : [],
+        name: [item.name],
+        success: false,
+        notFound: true,
+      })),
     };
   }
 
+  // Check if feature limit is reached and return response if applicable
+  if (featureLimitReached.length > 0) {
+    return {
+      success: false,
+      limitReached: true,
+      notFoundError: false,
+      message: `Feature limit reached for built-in variables: ${featureLimitReached.join(', ')}`,
+      results: featureLimitReached.map((propertyName) => ({
+        id: [],
+        name: [propertyName],
+        success: false,
+        featureLimitReached: true,
+      })),
+    };
+  }
+
+  // Proceed with general error handling if needed
   if (errors.length > 0) {
     return {
       success: false,
-      features: successfulCreations,
-      errors: errors,
-      results: successfulCreations.map((builtInVariableName) => ({
-        builtInVariableName,
-        success: true,
-      })),
+      errors,
+      results: [],
       message: errors.join(', '),
+      notFoundError: notFoundLimit.length > 0,
     };
   }
 
-  if (successfulCreations.length > 0) {
-    const cacheKey = `gtm:builtInVariables:userId:${userId}`;
-    await redis.del(cacheKey);
-    revalidatePath(`/dashboard/gtm/configurations`);
-  }
-
-  // Map over formData.forms to create the results array
-  const results: FeatureResult[] = formData.forms.map((form) => {
-    return {
-      id: form.entity, // Ensure id is an array of strings
-      name: form.type.map((type) => type.toString()), // Ensure type is a string array and each type is converted to a string
-      success: true, // or false, depending on the actual result
-      notFound: false, // Set this to the appropriate value based on your logic
-    };
-  });
-
-  // Return the response with the correctly typed results
   return {
-    success: true, // or false, depending on the actual results
-    features: [], // Populate with actual builtInVariable IDs if applicable
-    errors: [], // Populate with actual error messages if applicable
-    limitReached: false, // Set based on actual limit status
-    message: 'Containers created successfully', // Customize the message as needed
-    results: results, // Use the correctly typed results
-    notFoundError: false, // Set based on actual not found status
+    success: true,
+    message: `Successfully created ${successfulCreations.length} built-in variable(s)`,
+    features: successfulCreations.map<FeatureResult>((property) => ({
+      id: [],
+      name: [property.name],
+      success: true,
+    })),
+    errors: [],
+    notFoundError: notFoundLimit.length > 0,
+    results: successfulCreations.map<FeatureResult>((property) => ({
+      id: [],
+      name: [property.name],
+      success: true,
+    })),
   };
 }
 
 /************************************************************************************
   Revert a single or multiple builtInVariables - Remove limits from revert. Users shouldn't be limited when reverting changes.
 ************************************************************************************/
-export async function RevertBuiltInVariables(
+/* export async function RevertBuiltInVariables(
   ga4BuiltInVarToRevert: Set<BuiltInVariable>
 ): Promise<FeatureResponse> {
   let retries = 0;
@@ -667,10 +454,10 @@ export async function RevertBuiltInVariables(
   const featureLimitReached: Array<{ combinedId: string; name: string }> = [];
   const notFoundLimit: Array<{ combinedId: string; name: string }> = [];
 
-  const toDeleteBuiltInVariables = new Set<BuiltInVariable>(ga4BuiltInVarToRevert);
+  const todeleteBuiltInVariables = new Set<BuiltInVariable>(ga4BuiltInVarToRevert);
 
   // Correctly group by path
-  const groupedByPath = Array.from(toDeleteBuiltInVariables).reduce((acc: any, variable: any) => {
+  const groupedByPath = Array.from(todeleteBuiltInVariables).reduce((acc: any, variable: any) => {
     const { path, accountId, containerId, workspaceId, type, name } = variable.builtInVariable;
 
     if (!acc[path]) {
@@ -705,7 +492,7 @@ export async function RevertBuiltInVariables(
   const containerIdsProcessed = new Set<string>();
   let permissionDenied = false;
 
-  while (retries < MAX_RETRIES && toDeleteBuiltInVariables.size > 0 && !permissionDenied) {
+  while (retries < MAX_RETRIES && todeleteBuiltInVariables.size > 0 && !permissionDenied) {
     try {
       const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
 
@@ -738,12 +525,12 @@ export async function RevertBuiltInVariables(
                     name: type,
                   });
 
-                  toDeleteBuiltInVariables.forEach((variable: any) => {
+                  todeleteBuiltInVariables.forEach((variable: any) => {
                     if (
                       variable.builtInVariable.path === data.path &&
                       variable.builtInVariable.type === type
                     ) {
-                      toDeleteBuiltInVariables.delete(variable);
+                      todeleteBuiltInVariables.delete(variable);
                     }
                   });
 
@@ -830,7 +617,7 @@ export async function RevertBuiltInVariables(
             }),
           };
         }
-        if (successfulDeletions.length === toDeleteBuiltInVariables.size) {
+        if (successfulDeletions.length === todeleteBuiltInVariables.size) {
           break;
         }
         if (permissionDenied) {
@@ -906,4 +693,4 @@ export async function RevertBuiltInVariables(
       };
     }),
   };
-}
+} */

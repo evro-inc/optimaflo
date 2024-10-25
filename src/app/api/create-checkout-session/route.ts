@@ -1,6 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { stripe } from '@/src/lib/stripe';
-import { getURL } from '@/src/utils/helpers';
 import prisma from '@/src/lib/prisma';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
@@ -52,6 +51,7 @@ export async function POST(request: NextRequest) {
         },
       });
     }
+    const baseUrl = `${request.nextUrl.protocol}//${request.nextUrl.host}`;
 
     const checkoutSession = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -68,8 +68,8 @@ export async function POST(request: NextRequest) {
       subscription_data: {
         metadata,
       },
-      success_url: `${getURL()}/profile`,
-      cancel_url: `${getURL()}/`,
+      success_url: `${baseUrl}/profile`,
+      cancel_url: `${baseUrl}/`,
     });
 
     return new NextResponse(JSON.stringify({ sessionId: checkoutSession.id }), {

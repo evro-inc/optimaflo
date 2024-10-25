@@ -109,8 +109,9 @@ export const ContactForm = () => {
                     type="text"
                     name="hs-name-contacts-1"
                     id="hs-name-contacts-1"
-                    className={`py-3 px-4 block w-full rounded-md text-sm focus:outline-none focus:border-blue-500 focus:ring focus:ring-blue-200 transition duration-300 ease-in-out hover:border-gray-400 ${nameValid ? 'border-2 border-gray-300' : 'border-2 border-red-500'
-                      }`}
+                    className={`py-3 px-4 block w-full rounded-md text-sm focus:outline-none focus:border-blue-500 focus:ring focus:ring-blue-200 transition duration-300 ease-in-out hover:border-gray-400 ${
+                      nameValid ? 'border-2 border-gray-300' : 'border-2 border-red-500'
+                    }`}
                     placeholder="Full Name"
                   />
                 </div>
@@ -126,8 +127,9 @@ export const ContactForm = () => {
                     name="hs-email-contacts-1"
                     id="hs-email-contacts-1"
                     autoComplete="email"
-                    className={`py-3 px-4 block w-full rounded-md text-sm focus:outline-none focus:border-blue-500 focus:ring focus:ring-blue-200 transition duration-300 ease-in-out hover:border-gray-400 ${emailValid ? 'border-2 border-gray-300' : 'border-2 border-red-500'
-                      }`}
+                    className={`py-3 px-4 block w-full rounded-md text-sm focus:outline-none focus:border-blue-500 focus:ring focus:ring-blue-200 transition duration-300 ease-in-out hover:border-gray-400 ${
+                      emailValid ? 'border-2 border-gray-300' : 'border-2 border-red-500'
+                    }`}
                     placeholder="Email"
                   />
                 </div>
@@ -141,8 +143,9 @@ export const ContactForm = () => {
                     onChange={(e) => setMessage(e.target.value)}
                     id="hs-about-contacts-1"
                     name="hs-about-contacts-1"
-                    className={`py-3 px-4 block w-full rounded-md text-sm focus:outline-none focus:border-blue-500 focus:ring focus:ring-blue-200 transition duration-300 ease-in-out hover:border-gray-400 ${messageValid ? 'border-2 border-gray-300' : 'border-2 border-red-500'
-                      }`}
+                    className={`py-3 px-4 block w-full rounded-md text-sm focus:outline-none focus:border-blue-500 focus:ring focus:ring-blue-200 transition duration-300 ease-in-out hover:border-gray-400 ${
+                      messageValid ? 'border-2 border-gray-300' : 'border-2 border-red-500'
+                    }`}
                     placeholder="Details"
                   ></textarea>
                 </div>

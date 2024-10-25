@@ -104,7 +104,7 @@ export const columns: ColumnDef<Versions>[] = [
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Container Name
+          Container Permission
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );

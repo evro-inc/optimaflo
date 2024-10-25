@@ -19,12 +19,7 @@ export const UserPermissionSchema = z.object({
   containerAccess: z
     .array(ContainerAccessSchema)
     .min(1, { message: 'At least one container access is required' }),
-  emailAddress: z
-    .string()
-    .email({ message: 'Invalid email address' })
-    .refine((value) => value.endsWith('@gmail.com'), {
-      message: 'Email address must be a Gmail address',
-    }),
+  path: z.string().optional(),
 });
 
 export const EmailAddressSchema = z.object({

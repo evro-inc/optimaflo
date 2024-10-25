@@ -56,19 +56,12 @@ export default async function PermissionsFormPage() {
     });
   });
 
-  const accountIdsWithContainers = new Set(combinedData.map((permission) => permission.accountId));
-
-  const accountsWithContainers = accounts.filter((account) =>
-    accountIdsWithContainers.has(account.accountId)
-  );
-
   return (
     <>
       <div className="container">
         <FormUpdatePermissions
           tierLimits={tierLimits}
           table={combinedData}
-          accounts={accountsWithContainers}
           containers={flatContainers}
         />
       </div>

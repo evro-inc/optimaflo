@@ -10,7 +10,6 @@ export default async function UpdateCustomDimensionPage() {
   if (!user) return notFound();
 
   const subscription = await getSubscription(user.id);
-
   const subscriptionId = subscription.id;
 
   const tierLimits = await getTierLimit(subscriptionId);

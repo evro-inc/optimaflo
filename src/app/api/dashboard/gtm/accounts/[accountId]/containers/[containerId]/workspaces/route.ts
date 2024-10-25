@@ -61,6 +61,7 @@ async function createGtmWorkspace(accessToken, accountId, containerId, name, des
   const headers = {
     Authorization: `Bearer ${accessToken}`,
     'Content-Type': 'application/json',
+    'Accept-Encoding': 'gzip',
   };
 
   const response = await fetch(url, {

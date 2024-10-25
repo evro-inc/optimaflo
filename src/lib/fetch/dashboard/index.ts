@@ -2,6 +2,8 @@ import prisma from '@/src/lib/prisma';
 import { fetchWithRetry } from '@/src/utils/server';
 import { currentUserOauthAccessToken } from '../../clerk';
 
+/* SHOULD fetchGA/GTM settings use the executeApiRequest function etc?  */
+
 export function isErrorWithStatus(error: unknown): error is { status: number } {
   return (error as { status: number }).status !== undefined;
 }
@@ -13,35 +15,6 @@ export function cleanWorkspaceFeatures(workspaces: any[] | undefined) {
   });
 }
 
-/* GTM UTILS */
-export async function grantProductAccess(customerId: string) {
-  // Fetch user ID using the Stripe Customer ID
-  const customerRecord = await prisma.customer.findFirst({
-    where: {
-      stripeCustomerId: customerId,
-    },
-  });
-
-  if (!customerRecord) {
-    throw new Error('Customer record not found');
-  }
-
-  const userId = customerRecord.userId;
-
-  // Get the product IDs for the GTM products - Needs to make IDs from Stripe webhook - see function grantAccessToContent
-  const productIds = ['prod_PUV4HNwx8EuHOi', 'prod_PUV5bXKCjMOpz8', 'prod_PUV6oomP5QRnkp'];
-
-  // Iterate over the product IDs
-  for (const productId of productIds) {
-    // Update the ProductAccess record for this user and product to grant access
-    await prisma.productAccess.upsert({
-      where: { userId_productId: { userId, productId } },
-      update: { granted: true },
-      create: { userId, productId, granted: true },
-    });
-  }
-}
-
 export async function fetchGtmSettings(userId: string) {
   const existingUser = await prisma.User.findFirst({ where: { id: userId } });
 
@@ -51,7 +24,11 @@ export async function fetchGtmSettings(userId: string) {
 
   const token = await currentUserOauthAccessToken(userId);
   const tokenValue = token;
-  const headers = { Authorization: `Bearer ${tokenValue}` };
+  const headers = {
+    Authorization: `Bearer ${tokenValue}`,
+    'Content-Type': 'application/json',
+    'Accept-Encoding': 'gzip',
+  };
 
   const existingRecords = await prisma.gtm.findMany({ where: { userId } });
   const existingCompositeKeySet = new Set(
@@ -147,8 +124,11 @@ export async function fetchGASettings(userId: string) {
 
   const token = await currentUserOauthAccessToken(userId);
   const tokenValue = token;
-  const headers = { Authorization: `Bearer ${tokenValue}` };
-
+  const headers = {
+    Authorization: `Bearer ${tokenValue}`,
+    'Content-Type': 'application/json',
+    'Accept-Encoding': 'gzip',
+  };
   const existingRecords = await prisma.gtm.findMany({ where: { userId } });
   const existingCompositeKeySet = new Set(
     existingRecords.map((rec) => `${rec.accountId}-${rec.containerId}-${rec.workspaceId}`)
@@ -180,21 +160,23 @@ export async function fetchGASettings(userId: string) {
 
         for (const propertyId of propertyIds) {
           if (!existingCompositeKeySet.has(`${accountId}-${propertyId}`)) {
+            const stripAccountId = accountId.split('/')[1];
+
             await prisma.ga.upsert({
               where: {
                 userId_accountId_propertyId: {
                   userId,
-                  accountId,
+                  accountId: stripAccountId,
                   propertyId,
                 },
               },
               update: {
-                accountId,
+                accountId: stripAccountId,
                 propertyId,
                 User: { connect: { id: userId } },
               },
               create: {
-                accountId,
+                accountId: stripAccountId,
                 propertyId,
                 User: { connect: { id: userId } },
               },

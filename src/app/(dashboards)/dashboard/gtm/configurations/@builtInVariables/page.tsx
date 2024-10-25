@@ -45,42 +45,41 @@ export default async function BuiltInVarPage({
   const flatBuiltInVars = builtInVar.flat();
   const flatStatus = status.flat();
 
-  const statusDataFlat = flatStatus.flatMap((changeSet, index) =>
-    (changeSet.workspaceChange || []).map((change, itemIndex) => ({
-      setId: index + 1,
-      changeId: itemIndex + 1,
-      ...change,
-    }))
-  );
+  const combinedData = flatBuiltInVars.flatMap((builtInVarEntry) => {
+    // Extract individual details
+    const { accountId, containerId, workspaceId, type, name } = builtInVarEntry;
 
-  const combinedData = flatBuiltInVars.map((vars) => {
-    const accountId = vars.accountId;
-    const containerId = vars.containerId;
-    const workspaceId = vars.workspaceId;
-    const accounts = flatAccounts.find((p) => p.accountId === accountId);
-    const containers = flatContainers.find((p) => p.containerId === containerId);
-    const workspaces = flatWorkspaces.find((p) => p.workspaceId === workspaceId);
-    const accountName = accounts ? accounts.name : 'Account Name Unknown';
-    const containerName = containers ? containers.name : 'Container Name Unknown';
-    const workspaceName = workspaces ? workspaces.name : 'Workspace Name Unknown';
+    // Find corresponding account, container, and workspace details
+    const accountDetails = flatAccounts.find((p) => p.accountId === accountId);
+    const containerDetails = flatContainers.find((p) => p.containerId === containerId);
+    const workspaceDetails = flatWorkspaces.find((p) => p.workspaceId === workspaceId);
 
-    const isPublished = statusDataFlat.find(
-      (p) =>
-        p.variable &&
-        p.variable.name === vars.name &&
-        p.variable.accountId === vars.accountId &&
-        p.variable.containerId === vars.containerId &&
-        p.variable.workspaceId === vars.workspaceId
+    const accountName = accountDetails ? accountDetails.name : 'Account Name Unknown';
+    const containerName = containerDetails ? containerDetails.name : 'Container Name Unknown';
+    const workspaceName = workspaceDetails ? workspaceDetails.name : 'Workspace Name Unknown';
+
+    const isPublished = flatStatus.find(
+      (status) =>
+        status.variable &&
+        status.variable.name === name &&
+        status.variable.accountId === accountId &&
+        status.variable.containerId === containerId &&
+        status.variable.workspaceId === workspaceId
     )
       ? 'Unpublished'
       : 'Published';
 
+    // Return the formatted data for DataTable
     return {
-      ...vars,
+      name: name || 'Unknown Variable',
+      type: type || 'Unknown Type',
+      isPublished,
       accountName,
       containerName,
       workspaceName,
-      isPublished,
+      accountId,
+      containerId,
+      workspaceId,
     };
   });
 
@@ -91,11 +90,9 @@ export default async function BuiltInVarPage({
         fallback={
           <div className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14 mx-auto">
             <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden dark:bg-slate-900 dark:border-gray-700">
-              {/* Skeleton for Table Header */}
               <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                 <Skeleton className="h-6 mb-4 w-1/4" />
               </div>
-              {/* Skeleton for Table Rows */}
               <div className="divide-y divide-gray-200 dark:divide-gray-700">
                 {Array.from({ length: 5 }).map((_, index) => (
                   <div key={index} className="px-6 py-4 grid grid-cols-3 gap-4">

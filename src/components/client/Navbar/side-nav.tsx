@@ -1,9 +1,7 @@
 'use client';
 import Link from 'next/link';
-
 import { usePathname } from 'next/navigation';
 import { buttonVariants } from '@/src/components/ui/button';
-
 import { AccordionContent, AccordionItem, AccordionTrigger } from './subnav-accordion';
 import { ChevronDownIcon } from '@radix-ui/react-icons';
 import { cn } from '@/src/utils/utils';
@@ -11,9 +9,12 @@ import { Accordion } from './subnav-accordion';
 import { selectIsSidebarOpen, toggleSidebar } from '@/src/redux/sidebarSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { selectAccordionOpenItems, toggleAccordionItem } from '@/src/redux/globalSlice';
+import { useState, useTransition } from 'react';
 
 export function SideNav({ items, setOpen, className }) {
   const path = usePathname();
+  const [isPending, startTransition] = useTransition();
+  const [loadingLink, setLoadingLink] = useState(null); // Track which link is loading
   const isOpen = useSelector(selectIsSidebarOpen);
   const openItems = useSelector(selectAccordionOpenItems);
   const dispatch = useDispatch();
@@ -24,6 +25,13 @@ export function SideNav({ items, setOpen, className }) {
 
   const openMinimizedSideBar = () => {
     dispatch(toggleSidebar());
+  };
+
+  const handleClick = (link) => {
+    setLoadingLink(link); // Set the loading link to the clicked one
+    startTransition(() => {
+      if (setOpen) setOpen(false);
+    });
   };
 
   return (
@@ -70,9 +78,7 @@ export function SideNav({ items, setOpen, className }) {
                     <Link
                       key={child.title}
                       href={child.href}
-                      onClick={() => {
-                        if (setOpen) setOpen(false);
-                      }}
+                      onClick={() => handleClick(child.href)}
                       className={cn(
                         buttonVariants({ variant: 'ghost' }),
                         'group flex h-12 justify-start gap-x-3',
@@ -81,7 +87,7 @@ export function SideNav({ items, setOpen, className }) {
                     >
                       <item.icon className={cn('h-5 w-5', child.color)} />
                       <div className={cn('text-base duration-200', !isOpen && className)}>
-                        {child.title}
+                        {isPending && loadingLink === child.href ? 'Loading...' : child.title}
                       </div>
                     </Link>
                   ))}
@@ -93,9 +99,7 @@ export function SideNav({ items, setOpen, className }) {
           <Link
             key={item.title}
             href={item.href}
-            onClick={() => {
-              if (setOpen) setOpen(false);
-            }}
+            onClick={() => handleClick(item.href)}
             className={cn(
               buttonVariants({ variant: 'ghost' }),
               'group relative flex h-12 justify-start',
@@ -104,7 +108,7 @@ export function SideNav({ items, setOpen, className }) {
           >
             <item.icon className={cn('h-5 w-5', item.color)} />
             <span className={cn('absolute left-12 text-base duration-200', !isOpen && className)}>
-              {item.title}
+              {isPending && loadingLink === item.href ? 'Loading...' : item.title}
             </span>
           </Link>
         )

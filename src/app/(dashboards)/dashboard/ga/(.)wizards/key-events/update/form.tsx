@@ -1,500 +1,201 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { setLoading, incrementStep, decrementStep } from '@/redux/formSlice';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { FormsSchema } from '@/src/lib/schemas/ga/keyEvents';
+import { SubmitHandler, useWatch } from 'react-hook-form';
 import { Button } from '@/src/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/src/components/ui/form';
-
-import { Input } from '@/src/components/ui/input';
-import { CountingMethod, FeatureResponse, KeyEventType } from '@/src/types/types';
-import { toast } from 'sonner';
+import { Form } from '@/src/components/ui/form';
+import { CountingMethod, FormUpdateProps, KeyEventType } from '@/src/types/types';
 import { updateGAKeyEvents } from '@/src/lib/fetch/dashboard/actions/ga/keyEvents';
-import {
-  selectTable,
-  setErrorDetails,
-  setIsLimitReached,
-  setNotFoundError,
-} from '@/src/redux/tableSlice';
+import { selectTable } from '@/src/redux/tableSlice';
 import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
-import dynamic from 'next/dynamic';
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/src/components/ui/select';
+  useErrorHandling,
+  useErrorRedirect,
+  useFormInitialization,
+  useStepNavigation,
+} from '@/src/hooks/wizard';
+import { setCurrentStep } from '@/src/redux/formSlice';
+import { calculateRemainingLimit, processForm } from '@/src/utils/utils';
+import { FormSchema, KeyEvents } from '@/src/lib/schemas/ga/keyEvents';
+import { gaFormFieldConfigs } from '@/src/utils/gaFormFields';
+import { FormFieldComponent } from '@/src/components/client/Utils/Form';
 
-import { CountMethodData, Currencies } from '../../../properties/@keyEvents/items';
-
-import { RadioGroup, RadioGroupItem } from '@/src/components/ui/radio-group';
-
-const NotFoundErrorModal = dynamic(
-  () =>
-    import('../../../../../../../components/client/modals/notFoundError').then(
-      (mod) => mod.NotFoundError
-    ),
-  { ssr: false }
-);
-
-const ErrorModal = dynamic(
-  () =>
-    import('../../../../../../../components/client/modals/Error').then((mod) => mod.ErrorMessage),
-  { ssr: false }
-);
-
-type Forms = z.infer<typeof FormsSchema>;
-
-const FormUpdateKeyEvents = () => {
+const FormUpdateKeyEvents: React.FC<FormUpdateProps> = React.memo(({ tierLimits }) => {
   const dispatch = useDispatch();
   const loading = useSelector((state: RootState) => state.form.loading);
   const error = useSelector((state: RootState) => state.form.error);
   const currentStep = useSelector((state: RootState) => state.form.currentStep);
   const notFoundError = useSelector(selectTable).notFoundError;
   const router = useRouter();
+  const errorModal = useErrorHandling(error, notFoundError);
+  const currentIndex = currentStep - 1;
+
+  useEffect(() => {
+    dispatch(setCurrentStep(1));
+  }, [dispatch]);
 
   const selectedRowData = useSelector((state: RootState) => state.table.selectedRows);
-  const currentFormIndex = currentStep - 1; // Adjust for 0-based index
+  const remainingUpdateData = calculateRemainingLimit(tierLimits || [], 'GA4KeyEvents', 'update');
+  const remainingUpdate = remainingUpdateData.remaining;
+  useErrorRedirect(selectedRowData, router, '/dashboard/ga/properties');
 
-  if (Object.keys(selectedRowData).length === 0) {
-    router.push('/dashboard/ga/properties');
-  }
+  const selectedRowDataTransformed: Record<string, KeyEventType> = Object.fromEntries(
+    Object.entries(selectedRowData).map(([key, row]) => [
+      key,
+      {
+        account: row.account,
+        property: row.property,
+        name: row.name,
+        eventName: row.eventName,
+        countingMethod: row.countingMethod ?? CountingMethod.ONCE_PER_EVENT,
+        defaultValue: row.defaultValue
+          ? {
+              numericValue: row.defaultValue.numericValue,
+              currencyCode: row.defaultValue.currencyCode,
+            }
+          : undefined,
+        includeDefaultValue: row.defaultValue ? 'true' : 'false',
+      } as KeyEventType,
+    ])
+  );
 
-  const formDataDefaults: KeyEventType[] = Object.values(selectedRowData).map((rowData) => ({
-    accountProperty: Array.isArray(rowData.name) ? rowData.name : [rowData.name], // Ensure accountProperty is an array
-    eventName: rowData.eventName ?? '',
-    countingMethod: rowData.countingMethod ?? CountingMethod.UNSPECIFIED,
-    defaultValue: rowData.defaultValue
+  const formDataDefaults: KeyEventType[] = Object.values(selectedRowData).map((row) => ({
+    account: row.account,
+    property: row.property,
+    name: row.name,
+    eventName: row.eventName,
+    countingMethod: row.countingMethod ?? CountingMethod.ONCE_PER_EVENT,
+    defaultValue: row.defaultValue
       ? {
-          numericValue: rowData.defaultValue.numericValue ?? undefined,
-          currencyCode: rowData.defaultValue.currencyCode ?? undefined,
+          numericValue: row.defaultValue.numericValue,
+          currencyCode: row.defaultValue.currencyCode,
         }
       : undefined,
-    includeDefaultValue:
-      rowData.defaultValue?.numericValue !== undefined ||
-      rowData.defaultValue?.currencyCode !== undefined,
+    includeDefaultValue: row.defaultValue ? 'true' : 'false',
   }));
 
-  const form = useForm<Forms>({
-    defaultValues: {
-      forms: formDataDefaults,
-    },
-    resolver: zodResolver(FormsSchema),
-  });
+  const { form, fields } = useFormInitialization<KeyEventType>(formDataDefaults, FormSchema);
 
-  const { fields } = useFieldArray({
+  const includeDefaultValue = useWatch({
     control: form.control,
-    name: 'forms',
+    name: `forms.${currentIndex}.includeDefaultValue`,
   });
 
-  if (notFoundError) {
-    return <NotFoundErrorModal onClose={undefined} />;
-  }
-  if (error) {
-    return <ErrorModal />;
-  }
-
-  const handleValueChange = (newValue, index) => {
-    if (newValue === 'false') {
-      form.setValue(`forms.${index}.defaultValue`, undefined, { shouldValidate: true });
-      form.setValue(`forms.${index}.includeDefaultValue`, false, { shouldValidate: true });
-    } else {
-      form.setValue(
-        `forms.${index}.defaultValue`,
-        {
-          numericValue: 0,
-          currencyCode: 'USD',
-        },
-        { shouldValidate: true }
-      );
-      form.setValue(`forms.${index}.includeDefaultValue`, true, { shouldValidate: true });
-    }
+  const handleNumericValueChange = (value: string, index: number) => {
+    const parsedValue = parseFloat(value);
+    form.setValue(
+      `forms.${index}.defaultValue.numericValue`,
+      isNaN(parsedValue) ? undefined : parsedValue
+    );
   };
 
-  const handleNumericValueChange = (value, index) => {
-    form.setValue(`forms.${index}.defaultValue.numericValue`, parseFloat(value));
-  };
-
-  const handleNext = async () => {
-    // Determine the names of the fields in the current form to validate
-    const currentFormFields = [
-      `forms.${currentFormIndex}.countingMethod`,
-      `forms.${currentFormIndex}.defaultValue.numericValue`,
-      `forms.${currentFormIndex}.defaultValue.currencyCode`,
-    ];
-
-    // Trigger validation for only the current form's fields
-    const isFormValid = await form.trigger(currentFormFields as any);
-
-    if (isFormValid) {
-      dispatch(incrementStep());
-    } else {
-      toast.error('A form is invalid. Check all fields in your forms.', {
-        action: {
-          label: 'Close',
-          onClick: () => toast.dismiss(),
-        },
-      });
-    }
-  };
-
-  const handlePrevious = () => {
-    dispatch(decrementStep());
-  };
-
-  const processForm: SubmitHandler<Forms> = async (data) => {
-    const { forms } = data;
-
-    dispatch(setLoading(true)); // Set loading to true using Redux action
-
-    toast('Updating key event...', {
-      action: {
-        label: 'Close',
-        onClick: () => toast.dismiss(),
-      },
-    });
-
-    const uniqueKeyEvents = new Set(forms.map((form) => form.name));
-    for (const form of forms) {
-      const identifier = `${form.accountProperty}-${form.eventName}`;
-
-      if (uniqueKeyEvents.has(identifier)) {
-        toast.error(`Duplicate key event found for ${form.accountProperty} - ${form.eventName}`, {
-          action: {
-            label: 'Close',
-            onClick: () => toast.dismiss(),
-          },
-        });
-        dispatch(setLoading(false));
-        return;
-      }
-      uniqueKeyEvents.add(identifier);
-    }
-
-    try {
-      const formsToSubmit = forms.map((form) => {
-        const { defaultValue, ...rest } = form;
-        if (form.includeDefaultValue) {
-          return { ...rest, defaultValue };
-        }
-
-        return rest;
-      });
-      const res = (await updateGAKeyEvents({ forms: formsToSubmit })) as FeatureResponse;
-
-      if (res.success) {
-        res.results.forEach((result) => {
-          if (result.success) {
-            toast.success(
-              `Key Event ${result.name} created successfully. The table will update shortly.`,
-              {
-                action: {
-                  label: 'Close',
-                  onClick: () => toast.dismiss(),
-                },
-              }
-            );
-          }
-        });
-
-        router.push('/dashboard/ga/properties');
-      } else {
-        if (res.notFoundError) {
-          res.results.forEach((result) => {
-            if (result.notFound) {
-              toast.error(
-                `Unable to create key event ${result.name}. Please check your access permissions. Any other key events created were successful.`,
-                {
-                  action: {
-                    label: 'Close',
-                    onClick: () => toast.dismiss(),
-                  },
-                }
-              );
-            }
-          });
-
-          dispatch(setErrorDetails(res.results)); // Assuming results contain the error details
-          dispatch(setNotFoundError(true)); // Dispatch the not found error action
-        }
-
-        if (res.limitReached) {
-          toast.error(
-            `Unable to create key event(s). You have hit your current limit for this feature.`,
-            {
-              action: {
-                label: 'Close',
-                onClick: () => toast.dismiss(),
-              },
-            }
-          );
-
-          dispatch(setIsLimitReached(true));
-        }
-        if (res.errors) {
-          res.errors.forEach((error) => {
-            toast.error(`Unable to create key event. ${error}`, {
-              action: {
-                label: 'Close',
-                onClick: () => toast.dismiss(),
-              },
-            });
-          });
-        }
-        form.reset({
-          forms: formDataDefaults,
-        });
-      }
-
-      // Reset the forms here, regardless of success or limit reached
-      form.reset({
-        forms: formDataDefaults,
-      });
-    } catch (error) {
-      toast.error('An unexpected error occurred.', {
-        action: {
-          label: 'Close',
-          onClick: () => toast.dismiss(),
-        },
-      });
-      return { success: false };
-    } finally {
-      dispatch(setLoading(false)); // Set loading to false
-    }
-  };
-
-  return (
-    <div className="flex items-center justify-center h-screen">
-      {/* Conditional rendering based on the currentStep */}
-
-      {fields.map(
-        (field, index) =>
-          currentStep === index + 1 && (
-            <div key={field.id} className="w-full">
-              {fields.length > 0 && fields.length >= currentStep && (
-                <div className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
-                  <div className="max-w-xl mx-auto">
-                    <h1>{fields[currentFormIndex]?.eventName}</h1>
-                    <div className="mt-12">
-                      {/* Form */}
-                      <Form {...form}>
-                        <form
-                          onSubmit={form.handleSubmit(processForm)}
-                          id={`createStream-${index}`}
-                          className="space-y-6"
-                        >
-                          {(() => {
-                            return (
-                              <>
-                                <div className="flex flex-col md:flex-row md:space-x-4">
-                                  <div className="w-full md:basis-1/2">
-                                    {/*  <FormField
-                                  control={form.control}
-                                  name={`forms.${index}.eventName`}
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>New Key Event Name</FormLabel>
-                                      <FormDescription className="h-16">
-                                        This is the key event name you want to create.
-                                      </FormDescription>
-                                      <FormControl>
-                                        <Input
-                                          placeholder="Name of the custom dismenion"
-                                          {...form.register(`forms.${index}.eventName`)}
-                                          {...field}
-                                        />
-                                      </FormControl>
-
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                /> */}
-                                    <p>{form.getValues(`forms.${index}.eventName`)}</p>
-                                  </div>
-
-                                  <div className="w-full md:basis-1/2">
-                                    <FormField
-                                      control={form.control}
-                                      name={`forms.${index}.countingMethod`}
-                                      render={({ field }) => (
-                                        <FormItem>
-                                          <FormLabel>Counting Method</FormLabel>
-                                          <FormDescription className="h-16">
-                                            The method by which Key Events will be counted across
-                                            multiple events within a session.
-                                          </FormDescription>
-                                          <FormControl>
-                                            <Select
-                                              {...form.register(`forms.${index}.countingMethod`)}
-                                              {...field}
-                                              onValueChange={field.onChange}
-                                            >
-                                              <SelectTrigger>
-                                                <SelectValue placeholder="Select a key event type." />
-                                              </SelectTrigger>
-                                              <SelectContent>
-                                                <SelectGroup>
-                                                  {Object.entries(CountMethodData).map(
-                                                    ([label, value]) => (
-                                                      <SelectItem key={value} value={value}>
-                                                        {label}
-                                                      </SelectItem>
-                                                    )
-                                                  )}
-                                                </SelectGroup>
-                                              </SelectContent>
-                                            </Select>
-                                          </FormControl>
-                                          <FormMessage />
-                                        </FormItem>
-                                      )}
-                                    />
-                                  </div>
-                                </div>
-
-                                <div className="flex flex-col md:flex-row md:space-x-4">
-                                  <FormField
-                                    control={form.control}
-                                    name={`forms.${index}.defaultValue`}
-                                    render={({ field }) => (
-                                      <FormItem className="space-y-3">
-                                        <FormLabel>Default Conversion Value</FormLabel>
-                                        <FormControl>
-                                          <RadioGroup
-                                            {...field} // Apply field props to the RadioGroup
-                                            onValueChange={(newValue) => {
-                                              field.onChange(newValue); // Ensure the field is updated
-                                              handleValueChange(newValue, index);
-                                            }}
-                                            value={
-                                              form.watch(`forms.${index}.includeDefaultValue`)
-                                                ? 'true'
-                                                : 'false'
-                                            }
-                                            className="flex flex-col space-y-1"
-                                          >
-                                            <FormItem className="flex items-center space-x-3 space-y-0">
-                                              <FormControl>
-                                                <RadioGroupItem value="false" />
-                                              </FormControl>
-                                              <FormLabel className="font-normal">
-                                                Do not set a default conversion value
-                                              </FormLabel>
-                                            </FormItem>
-                                            <FormItem className="flex items-center space-x-3 space-y-0">
-                                              <FormControl>
-                                                <RadioGroupItem value="true" />
-                                              </FormControl>
-                                              <FormLabel className="font-normal">
-                                                Set a default conversion value
-                                              </FormLabel>
-                                              {form.watch(`forms.${index}.includeDefaultValue`) && (
-                                                <div className="flex items-center space-x-3">
-                                                  <Input
-                                                    placeholder="Enter default conversion value"
-                                                    {...form.register(
-                                                      `forms.${index}.defaultValue.numericValue`,
-                                                      {
-                                                        valueAsNumber: true,
-                                                        setValueAs: (value) =>
-                                                          value === '' ? undefined : Number(value),
-                                                      }
-                                                    )}
-                                                    type="number"
-                                                    min={0}
-                                                    onChange={(e) =>
-                                                      handleNumericValueChange(
-                                                        e.target.value,
-                                                        index
-                                                      )
-                                                    }
-                                                  />
-
-                                                  <Select
-                                                    value={form.watch(
-                                                      `forms.${index}.defaultValue.currencyCode`
-                                                    )}
-                                                    onValueChange={(selectedCurrency) => {
-                                                      form.setValue(
-                                                        `forms.${index}.defaultValue.currencyCode`,
-                                                        selectedCurrency,
-                                                        {
-                                                          shouldValidate: true,
-                                                        }
-                                                      );
-                                                    }}
-                                                  >
-                                                    <SelectTrigger>
-                                                      <SelectValue placeholder="Select currency" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                      <SelectGroup>
-                                                        {Object.entries(Currencies).map(
-                                                          ([code, name]) => (
-                                                            <SelectItem key={code} value={code}>
-                                                              {code} - {name}
-                                                            </SelectItem>
-                                                          )
-                                                        )}
-                                                      </SelectGroup>
-                                                    </SelectContent>
-                                                  </Select>
-                                                </div>
-                                              )}
-                                            </FormItem>
-                                          </RadioGroup>
-                                        </FormControl>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
-                                </div>
-                              </>
-                            );
-                          })()}
-                          <div className="flex justify-between">
-                            {index >= 1 && (
-                              <Button type="button" onClick={handlePrevious}>
-                                Previous
-                              </Button>
-                            )}
-
-                            {currentStep < fields.length ? (
-                              <Button type="button" onClick={handleNext}>
-                                Next
-                              </Button>
-                            ) : (
-                              <Button type="submit">{loading ? 'Submitting...' : 'Submit'}</Button>
-                            )}
-                          </div>
-                        </form>
-                      </Form>
-
-                      {/* End Form */}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )
-      )}
-    </div>
+  const configs = gaFormFieldConfigs(
+    'GA4KeyEvents',
+    'update',
+    remainingUpdate,
+    selectedRowDataTransformed,
+    includeDefaultValue
   );
-};
+
+  const { handleNext, handlePrevious } = useStepNavigation({
+    form,
+    currentStep,
+    fieldsToValidate: [
+      'eventName',
+      'countingMethod',
+      'defaultValue.currencyCode',
+      'defaultValue.numericValue',
+    ],
+  });
+
+  const onSubmit: SubmitHandler<KeyEvents> = processForm(
+    updateGAKeyEvents,
+    form.getValues(),
+    () => form.reset({ forms: formDataDefaults }),
+    dispatch,
+    router,
+    '/dashboard/ga/properties'
+  );
+
+  if (errorModal) return errorModal;
+
+  const renderForms = () => {
+    // Check if the current form index is within the bounds of the fields array
+    if (currentIndex < 0 || currentIndex >= fields.length) {
+      return null; // Return null or some fallback UI if out of bounds
+    }
+
+    // Get the field for the current form step
+    const field = fields[currentIndex];
+
+    const keyEventName = formDataDefaults[currentIndex]?.eventName || `Key Event ${currentIndex}`;
+
+    return (
+      <div className="w-full">
+        <div
+          key={field.id} // Adjust key indexing to match current step
+          className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
+        >
+          <div className="max-w-xl mx-auto">
+            {/* Display the current property name */}
+            <h1>{keyEventName}</h1>
+            <div className="mt-12">
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  id="updateMetric"
+                  className="space-y-6"
+                >
+                  {Object.entries(configs)
+                    .filter(([key]) => key !== 'amount' && key !== 'parent')
+                    .map(([key, config]) => (
+                      <FormFieldComponent
+                        key={key}
+                        name={`forms.${currentIndex}.${key}`}
+                        label={config.label}
+                        description={config.description}
+                        placeholder={config.placeholder}
+                        type={config.type}
+                        options={config.options}
+                        onChange={(value) => {
+                          // If value is a string[], join it or handle it based on your requirements
+                          const stringValue = Array.isArray(value) ? value.join('') : value;
+
+                          if (key === 'defaultValue.numericValue') {
+                            handleNumericValueChange(stringValue, currentIndex); // Ensure it's a string
+                          }
+                        }}
+                      />
+                    ))}
+                  <div className="flex justify-between">
+                    <Button type="button" onClick={handlePrevious} disabled={currentStep === 1}>
+                      Previous
+                    </Button>
+
+                    {currentStep < fields.length ? (
+                      <Button disabled={!form.formState.isValid} type="button" onClick={handleNext}>
+                        Next
+                      </Button>
+                    ) : (
+                      <Button disabled={!form.formState.isValid} type="submit">
+                        {loading ? 'Submitting...' : 'Submit'}
+                      </Button>
+                    )}
+                  </div>
+                </form>
+              </Form>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return <div className="flex items-center justify-center h-screen">{renderForms()}</div>;
+});
+
+FormUpdateKeyEvents.displayName = 'FormUpdateKeyEvents';
 
 export default FormUpdateKeyEvents;

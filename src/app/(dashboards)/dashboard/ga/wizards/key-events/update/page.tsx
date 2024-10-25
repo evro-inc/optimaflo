@@ -5,31 +5,28 @@ import FormUpdateKeyEvents from './form';
 import { getSubscription } from '@/src/lib/fetch/subscriptions';
 import { getTierLimit } from '@/src/lib/fetch/tierLimit';
 
-export default async function UpdateCustomDimensionPage() {
+export default async function UpdateKeyEventPage() {
   const user = await currentUser();
   if (!user) return notFound();
 
   const subscription = await getSubscription(user.id);
-
   const subscriptionId = subscription.id;
 
   const tierLimits = await getTierLimit(subscriptionId);
+  const ga4Tier = tierLimits.find((tier) => tier.Feature.name === 'GA4KeyEvents');
 
-  const foundTierLimit = tierLimits.find(
-    (subscription) => subscription.Feature?.name === 'GA4KeyEvents'
-  );
-  const updateLimit = foundTierLimit?.updateLimit || 0;
-  const updateUsage = foundTierLimit?.updateUsage || 0;
-  const remainingCreate = updateLimit - updateUsage;
+  const updateLimit = ga4Tier.updateLimit;
+  const updateUsage = ga4Tier.updateUsage;
+  const remaining = updateLimit - updateUsage;
 
-  if (remainingCreate <= 0) {
-    redirect('/dashboard/ga/properties'); // Replace with the actual path you want to redirect to
+  if (remaining <= 0) {
+    redirect('/dashboard/ga/properties');
   }
 
   return (
     <>
       <div className="container mx-auto py-10">
-        <FormUpdateKeyEvents />
+        <FormUpdateKeyEvents tierLimits={tierLimits} />
       </div>
     </>
   );

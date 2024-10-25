@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import prisma from '@/src/lib/prisma';
 import { stripe } from '@/src/lib/stripe';
-import { fetchGASettings, fetchGtmSettings, grantProductAccess } from '@/src/lib/fetch/dashboard';
+import { fetchGASettings, fetchGtmSettings } from '@/src/lib/fetch/dashboard';
 
 // List of relevant Stripe webhook events
 const relevantEvents = new Set([
@@ -26,10 +26,8 @@ const relevantEvents = new Set([
   'invoice.paid',
 ]);
 
-// Product created or updated
 async function upsertProductRecord(product: Stripe.Product) {
   const currentTimestamp = Math.floor(Date.now() / 1000);
-
   await prisma.product.upsert({
     where: { id: product.id },
     update: {
@@ -51,23 +49,237 @@ async function upsertProductRecord(product: Stripe.Product) {
     },
   });
 }
-// Product deleted
-async function deleteProductRecord(product: Stripe.Product) {
-  // Fetch all prices associated with the product
-  const prices = await prisma.price.findMany({
-    where: { productId: product.id },
-  });
 
-  // Delete each price individually
-  for (const price of prices) {
-    await prisma.price.delete({
-      where: { id: price.id },
-    });
+// Product created or updated
+async function upsertFeatureLimitsRecord(product: Stripe.Product) {
+  const tier = product.metadata?.tier;
+  const productId = product.id;
+
+  let defaultFeatureLimits: {
+    featureName: string;
+    createLimit: number;
+    updateLimit: number;
+    deleteLimit: number;
+  }[] = [];
+
+  switch (tier) {
+    case 'analyst':
+      defaultFeatureLimits = [
+        { featureName: 'GTMContainer', createLimit: 3, updateLimit: 3, deleteLimit: 3 },
+        { featureName: 'GTMTags', createLimit: 30, updateLimit: 30, deleteLimit: 30 },
+        { featureName: 'GTMTriggers', createLimit: 40, updateLimit: 40, deleteLimit: 40 },
+        { featureName: 'GTMClients', createLimit: 40, updateLimit: 40, deleteLimit: 40 },
+        { featureName: 'GTMVariables', createLimit: 60, updateLimit: 60, deleteLimit: 60 },
+        { featureName: 'GTMWorkspaces', createLimit: 10, updateLimit: 10, deleteLimit: 10 },
+        {
+          featureName: 'GTMVariablesBuiltIn',
+          createLimit: 150,
+          updateLimit: 150,
+          deleteLimit: 150,
+        },
+        { featureName: 'GTMFolders', createLimit: 10, updateLimit: 10, deleteLimit: 10 },
+        { featureName: 'GTMTemplates', createLimit: 3, updateLimit: 3, deleteLimit: 3 },
+        { featureName: 'GTMTransformations', createLimit: 9, updateLimit: 9, deleteLimit: 9 },
+        { featureName: 'GTMZones', createLimit: 4, updateLimit: 4, deleteLimit: 5 },
+        { featureName: 'GTMVersions', createLimit: 50, updateLimit: 50, deleteLimit: 50 },
+        { featureName: 'GA4Accounts', createLimit: 3, updateLimit: 3, deleteLimit: 3 },
+        { featureName: 'GA4Properties', createLimit: 6, updateLimit: 6, deleteLimit: 6 },
+        { featureName: 'GA4ConversionEvents', createLimit: 20, updateLimit: 20, deleteLimit: 20 },
+        { featureName: 'GA4CustomDimensions', createLimit: 20, updateLimit: 20, deleteLimit: 20 },
+        { featureName: 'GA4CustomMetrics', createLimit: 20, updateLimit: 20, deleteLimit: 20 },
+        { featureName: 'GA4Streams', createLimit: 3, updateLimit: 3, deleteLimit: 3 },
+        { featureName: 'GA4FBLinks', createLimit: 2, updateLimit: 2, deleteLimit: 2 },
+        { featureName: 'GA4AdLinks', createLimit: 2, updateLimit: 2, deleteLimit: 2 },
+        { featureName: 'GA4AccountAccess', createLimit: 10, updateLimit: 10, deleteLimit: 5 },
+        { featureName: 'GA4PropertyAccess', createLimit: 10, updateLimit: 10, deleteLimit: 5 },
+        { featureName: 'GA4Audiences', createLimit: 10, updateLimit: 10, deleteLimit: 10 },
+        { featureName: 'GA4KeyEvents', createLimit: 10, updateLimit: 10, deleteLimit: 10 },
+      ];
+      break;
+    case 'consultant':
+      defaultFeatureLimits = [
+        { featureName: 'GTMContainer', createLimit: 10, updateLimit: 10, deleteLimit: 10 },
+        { featureName: 'GTMTags', createLimit: 60, updateLimit: 60, deleteLimit: 60 },
+        { featureName: 'GTMTriggers', createLimit: 120, updateLimit: 120, deleteLimit: 120 },
+        { featureName: 'GTMVariables', createLimit: 180, updateLimit: 180, deleteLimit: 180 },
+        { featureName: 'GTMWorkspaces', createLimit: 30, updateLimit: 30, deleteLimit: 30 },
+        {
+          featureName: 'GTMVariablesBuiltIn',
+          createLimit: 450,
+          updateLimit: 450,
+          deleteLimit: 450,
+        },
+        { featureName: 'GTMFolders', createLimit: 30, updateLimit: 30, deleteLimit: 30 },
+        { featureName: 'GTMTemplates', createLimit: 10, updateLimit: 10, deleteLimit: 10 },
+        { featureName: 'GTMTransformations', createLimit: 20, updateLimit: 20, deleteLimit: 20 },
+        { featureName: 'GTMZones', createLimit: 15, updateLimit: 15, deleteLimit: 15 },
+        { featureName: 'GTMVersions', createLimit: 150, updateLimit: 150, deleteLimit: 150 },
+        { featureName: 'GA4Accounts', createLimit: 6, updateLimit: 6, deleteLimit: 6 },
+        { featureName: 'GA4Properties', createLimit: 12, updateLimit: 12, deleteLimit: 12 },
+        { featureName: 'GA4ConversionEvents', createLimit: 40, updateLimit: 40, deleteLimit: 40 },
+        { featureName: 'GA4CustomDimensions', createLimit: 40, updateLimit: 40, deleteLimit: 40 },
+        { featureName: 'GA4CustomMetrics', createLimit: 40, updateLimit: 40, deleteLimit: 40 },
+        { featureName: 'GA4Streams', createLimit: 12, updateLimit: 12, deleteLimit: 12 },
+        { featureName: 'GA4FBLinks', createLimit: 6, updateLimit: 6, deleteLimit: 6 },
+        { featureName: 'GA4AdLinks', createLimit: 6, updateLimit: 6, deleteLimit: 6 },
+        { featureName: 'GA4AccountAccess', createLimit: 10, updateLimit: 10, deleteLimit: 10 },
+        { featureName: 'GA4PropertyAccess', createLimit: 10, updateLimit: 10, deleteLimit: 10 },
+        { featureName: 'GA4Audiences', createLimit: 20, updateLimit: 20, deleteLimit: 20 },
+        { featureName: 'GA4KeyEvents', createLimit: 20, updateLimit: 20, deleteLimit: 20 },
+      ];
+      break;
+    case 'enterprise':
+      defaultFeatureLimits = [
+        { featureName: 'GTMContainer', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
+        { featureName: 'GTMTags', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
+        { featureName: 'GTMTriggers', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
+        { featureName: 'GTMVariables', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
+        {
+          featureName: 'GTMWorkspaces',
+          createLimit: 10000,
+          updateLimit: 10000,
+          deleteLimit: 10000,
+        },
+        {
+          featureName: 'GTMVariablesBuiltIn',
+          createLimit: 10000,
+          updateLimit: 10000,
+          deleteLimit: 10000,
+        },
+        { featureName: 'GTMClients', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
+        { featureName: 'GTMFolders', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
+        { featureName: 'GTMTemplates', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
+        {
+          featureName: 'GTMTransformations',
+          createLimit: 10000,
+          updateLimit: 10000,
+          deleteLimit: 10000,
+        },
+        { featureName: 'GTMZones', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
+        { featureName: 'GTMVersions', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
+        { featureName: 'GA4Accounts', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
+        {
+          featureName: 'GA4Properties',
+          createLimit: 10000,
+          updateLimit: 10000,
+          deleteLimit: 10000,
+        },
+        {
+          featureName: 'GA4ConversionEvents',
+          createLimit: 10000,
+          updateLimit: 10000,
+          deleteLimit: 10000,
+        },
+        {
+          featureName: 'GA4CustomDimensions',
+          createLimit: 10000,
+          updateLimit: 10000,
+          deleteLimit: 10000,
+        },
+        {
+          featureName: 'GA4CustomMetrics',
+          createLimit: 10000,
+          updateLimit: 10000,
+          deleteLimit: 10000,
+        },
+        { featureName: 'GA4Streams', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
+        { featureName: 'GA4FBLinks', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
+        { featureName: 'GA4AdLinks', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
+        {
+          featureName: 'GA4AccountAccess',
+          createLimit: 10000,
+          updateLimit: 10000,
+          deleteLimit: 10000,
+        },
+        {
+          featureName: 'GA4PropertyAccess',
+          createLimit: 10000,
+          updateLimit: 10000,
+          deleteLimit: 10000,
+        },
+        { featureName: 'GA4Audiences', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
+        { featureName: 'GA4KeyEvents', createLimit: 10000, updateLimit: 10000, deleteLimit: 10000 },
+      ];
+      break;
+    default:
+      break;
   }
 
-  // Delete the product
-  await prisma.Product.delete({
-    where: { id: product.id },
+  const operations = defaultFeatureLimits.map((limit) => {
+    return prisma.feature
+      .findUnique({
+        where: { name: limit.featureName },
+      })
+      .then((feature) => {
+        if (feature) {
+          return prisma.tierFeatureLimit
+            .findFirst({
+              where: {
+                productId: productId,
+                featureId: feature.id,
+              },
+            })
+            .then((existingLimit) => {
+              if (existingLimit) {
+                return prisma.tierFeatureLimit.update({
+                  where: { id: existingLimit.id },
+                  data: {
+                    createLimit: limit.createLimit,
+                    updateLimit: limit.updateLimit,
+                    deleteLimit: limit.deleteLimit,
+                  },
+                });
+              } else {
+                return prisma.tierFeatureLimit.create({
+                  data: {
+                    productId: productId,
+                    featureId: feature.id,
+                    createLimit: limit.createLimit,
+                    updateLimit: limit.updateLimit,
+                    deleteLimit: limit.deleteLimit,
+                  },
+                });
+              }
+            });
+        }
+        return null; // Ensures that the map always returns a promise
+      });
+  });
+
+  // Ensure to filter out any null operations (if `feature` was not found)
+  await prisma.$transaction(operations.filter(Boolean));
+}
+
+// Product deleted
+async function deleteProductRecord(product: Stripe.Product) {
+  // Start a transaction to ensure atomic operations
+  await prisma.$transaction(async (prisma) => {
+    // Delete all related records in TierFeatureLimit
+    await prisma.tierFeatureLimit.deleteMany({
+      where: { productId: product.id },
+    });
+
+    // Delete all related records in TierLimit
+    await prisma.tierLimit.deleteMany({
+      where: { productId: product.id },
+    });
+
+    // Fetch all prices associated with the product
+    const prices = await prisma.price.findMany({
+      where: { productId: product.id },
+    });
+
+    // Delete each price individually
+    for (const price of prices) {
+      await prisma.price.delete({
+        where: { id: price.id },
+      });
+    }
+
+    // Delete the product
+    await prisma.product.delete({
+      where: { id: product.id },
+    });
   });
 }
 
@@ -153,252 +365,6 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
       },
     };
 
-    const createFeatureLimitsByTier = {
-      /* Basic Tier */
-      prod_PUV4HNwx8EuHOi: {
-        create: {
-          GTMContainer: 3,
-          GTMTags: 30,
-          GTMTriggers: 40,
-          GTMVariables: 60,
-          GTMWorkspaces: 10,
-          GTMVaraiblesBuiltIn: 150,
-          //GTMClients: 1,
-          GTMFolders: 10,
-          GTMTemplates: 3,
-          GTMTransformations: 9,
-          GTMZones: 4,
-          GTMVersions: 50,
-          GA4Accounts: 3,
-          GA4Properties: 6,
-          GA4ConversionEvents: 20,
-          GA4CustomDimensions: 20,
-          GA4CustomMetrics: 20,
-          GA4Streams: 3,
-          GA4FBLinks: 2,
-          GA4AdLinks: 2,
-          GA4AccountAccess: 10,
-          GA4PropertyAccess: 10,
-          GA4Audiences: 10,
-          GA4KeyEvents: 10,
-        },
-        update: {
-          GTMContainer: 3,
-          GTMTags: 30,
-          GTMTriggers: 40,
-          GTMVariables: 60,
-          GTMWorkspaces: 10,
-          GTMVaraiblesBuiltIn: 150,
-          //GTMClients: 1,
-          GTMFolders: 10,
-          GTMTemplates: 3,
-          GTMTransformations: 9,
-          GTMZones: 4,
-          GTMVersions: 50,
-          GA4Accounts: 3,
-          GA4Properties: 6,
-          GA4ConversionEvents: 20,
-          GA4CustomDimensions: 20,
-          GA4CustomMetrics: 20,
-          GA4Streams: 3,
-          GA4FBLinks: 2,
-          GA4AdLinks: 2,
-          GA4AccountAccess: 10,
-          GA4PropertyAccess: 10,
-          GA4Audiences: 10,
-          GA4KeyEvents: 10,
-        },
-        delete: {
-          GTMContainer: 3,
-          GTMTags: 30,
-          GTMTriggers: 40,
-          GTMVariables: 60,
-          GTMWorkspaces: 10,
-          GTMVaraiblesBuiltIn: 150,
-          //GTMClients: 1,
-          GTMFolders: 10,
-          GTMTemplates: 3,
-          GTMTransformations: 9,
-          GTMZones: 5,
-          GTMVersions: 50,
-          GA4Accounts: 3,
-          GA4Properties: 6,
-          GA4ConversionEvents: 20,
-          GA4CustomDimensions: 20,
-          GA4CustomMetrics: 20,
-          GA4Streams: 3,
-          GA4FBLinks: 2,
-          GA4AdLinks: 2,
-          GA4AccountAccess: 5,
-          GA4PropertyAccess: 5,
-          GA4Audiences: 10,
-          GA4KeyEvents: 10,
-        },
-      },
-      /* Pro Tier */
-      prod_PUV5bXKCjMOpz8: {
-        create: {
-          GTMContainer: 10,
-          GTMTags: 60,
-          GTMTriggers: 120,
-          GTMVariables: 180,
-          GTMWorkspaces: 30,
-          GTMVaraiblesBuiltIn: 450,
-          //GTMClients: 3,
-          GTMFolders: 30,
-          GTMTemplates: 10,
-          GTMTransformations: 20,
-          GTMZones: 15,
-          GTMVersions: 150,
-          GA4Accounts: 6,
-          GA4Properties: 12,
-          GA4ConversionEvents: 40,
-          GA4CustomDimensions: 40,
-          GA4CustomMetrics: 40,
-          GA4Streams: 12,
-          GA4FBLinks: 6,
-          GA4AdLinks: 6,
-          GA4AccountAccess: 10,
-          GA4PropertyAccess: 10,
-          GA4Audiences: 20,
-          GA4KeyEvents: 20,
-        },
-        update: {
-          GTMContainer: 10,
-          GTMTags: 60,
-          GTMTriggers: 120,
-          GTMVariables: 180,
-          GTMWorkspaces: 30,
-          GTMVaraiblesBuiltIn: 450,
-          //GTMClients: 3,
-          GTMFolders: 30,
-          GTMTemplates: 10,
-          GTMTransformations: 20,
-          GTMZones: 15,
-          GTMVersions: 150,
-          GA4Accounts: 6,
-          GA4Properties: 12,
-          GA4ConversionEvents: 40,
-          GA4CustomDimensions: 40,
-          GA4CustomMetrics: 40,
-          GA4Streams: 12,
-          GA4FBLinks: 6,
-          GA4AdLinks: 6,
-          GA4AccountAccess: 10,
-          GA4PropertyAccess: 10,
-          GA4Audiences: 20,
-          GA4KeyEvents: 20,
-        },
-        delete: {
-          GTMContainer: 10,
-          GTMTags: 60,
-          GTMTriggers: 120,
-          GTMVariables: 180,
-          GTMWorkspaces: 30,
-          GTMVaraiblesBuiltIn: 450,
-          //GTMClients: 3,
-          GTMFolders: 30,
-          GTMTemplates: 10,
-          GTMTransformations: 20,
-          GTMZones: 15,
-          GTMVersions: 150,
-          GA4Accounts: 6,
-          GA4Properties: 12,
-          GA4ConversionEvents: 40,
-          GA4CustomDimensions: 40,
-          GA4CustomMetrics: 40,
-          GA4Streams: 12,
-          GA4FBLinks: 6,
-          GA4AdLinks: 6,
-          GA4AccountAccess: 10,
-          GA4PropertyAccess: 10,
-          GA4Audiences: 20,
-          GA4KeyEvents: 20,
-        },
-      },
-      /* Enterprise Tier */
-      prod_PUV6oomP5QRnkp: {
-        create: {
-          GTMContainer: 10000,
-          GTMTags: 10000,
-          GTMTriggers: 10000,
-          GTMVariables: 10000,
-          GTMWorkspaces: 10000,
-          GTMVaraiblesBuiltIn: 10000,
-          GTMClients: 10000,
-          GTMFolders: 10000,
-          GTMTemplates: 10000,
-          GTMTransformations: 10000,
-          GTMZones: 10000,
-          GTMVersions: 10000,
-          GA4Accounts: 10000,
-          GA4Properties: 10000,
-          GA4ConversionEvents: 10000,
-          GA4CustomDimensions: 10000,
-          GA4CustomMetrics: 10000,
-          GA4Streams: 10000,
-          GA4FBLinks: 10000,
-          GA4AdLinks: 10000,
-          GA4AccountAccess: 10000,
-          GA4PropertyAccess: 10000,
-          GA4Audiences: 10000,
-          GA4KeyEvents: 10000,
-        },
-        update: {
-          GTMContainer: 10000,
-          GTMTags: 10000,
-          GTMTriggers: 10000,
-          GTMVariables: 10000,
-          GTMWorkspaces: 10000,
-          GTMVaraiblesBuiltIn: 10000,
-          GTMClients: 10000,
-          GTMFolders: 10000,
-          GTMTemplates: 10000,
-          GTMTransformations: 10000,
-          GTMZones: 10000,
-          GTMVersions: 10000,
-          GA4Accounts: 10000,
-          GA4Properties: 10000,
-          GA4ConversionEvents: 10000,
-          GA4CustomDimensions: 10000,
-          GA4CustomMetrics: 10000,
-          GA4Streams: 10000,
-          GA4FBLinks: 10000,
-          GA4AdLinks: 10000,
-          GA4AccountAccess: 10000,
-          GA4PropertyAccess: 10000,
-          GA4Audiences: 10000,
-          GA4KeyEvents: 10000,
-        },
-        delete: {
-          GTMContainer: 10000,
-          GTMTags: 10000,
-          GTMTriggers: 10000,
-          GTMVariables: 10000,
-          GTMWorkspaces: 10000,
-          GTMVaraiblesBuiltIn: 10000,
-          GTMClients: 10000,
-          GTMFolders: 10000,
-          GTMTemplates: 10000,
-          GTMTransformations: 10000,
-          GTMZones: 10000,
-          GTMVersions: 10000,
-          GA4Accounts: 10000,
-          GA4Properties: 10000,
-          GA4ConversionEvents: 10000,
-          GA4CustomDimensions: 10000,
-          GA4CustomMetrics: 10000,
-          GA4Streams: 10000,
-          GA4FBLinks: 10000,
-          GA4AdLinks: 10000,
-          GA4AccountAccess: 10000,
-          GA4PropertyAccess: 10000,
-          GA4Audiences: 10000,
-          GA4KeyEvents: 10000,
-        },
-      },
-    };
-
     const createdOrUpdatedSubscription = await prisma.subscription.upsert({
       where: {
         userId_productId: {
@@ -410,51 +376,43 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
       create: subscriptionData,
     });
 
-    // Confirm that the subscription was created or updated
     if (!createdOrUpdatedSubscription) {
       throw new Error('Failed to create or update subscription');
     }
 
-    // Step 2: Upsert tier limits
-    const featureLimits = createFeatureLimitsByTier[productId];
+    // Step 2: Fetch and Upsert tier limits
+    const tierFeatureLimits = await prisma.tierFeatureLimit.findMany({
+      where: {
+        productId: productId,
+      },
+    });
 
-    if (!featureLimits) {
+    if (!tierFeatureLimits || tierFeatureLimits.length === 0) {
+      console.warn(`No tier limits found for product ID: ${productId}`);
       return;
     }
 
     const operations: Promise<any>[] = [];
 
-    for (const [featureName, limits] of Object.entries(featureLimits.create)) {
-      const feature = await prisma.feature.findUnique({
-        where: { name: featureName },
-      });
-
-      if (!feature) {
-        continue;
-      }
-
-      const createLimit = limits;
-      const updateLimit = featureLimits.update[featureName]; // Assuming the same feature exists in 'update'
-      const deleteLimit = featureLimits.delete[featureName]; // Extract delete limit
-
+    for (const limit of tierFeatureLimits) {
       operations.push(
         prisma.tierLimit.upsert({
           where: {
             subscriptionId_featureId: {
               subscriptionId: createdOrUpdatedSubscription.id,
-              featureId: feature.id,
+              featureId: limit.featureId,
             },
           },
           update: {
-            createLimit,
-            updateLimit,
-            deleteLimit,
+            createLimit: limit.createLimit,
+            updateLimit: limit.updateLimit,
+            deleteLimit: limit.deleteLimit,
           },
           create: {
-            createLimit,
-            updateLimit,
-            deleteLimit,
-            featureId: feature.id,
+            createLimit: limit.createLimit,
+            updateLimit: limit.updateLimit,
+            deleteLimit: limit.deleteLimit,
+            featureId: limit.featureId,
             subscriptionId: createdOrUpdatedSubscription.id,
             productId,
           },
@@ -463,24 +421,8 @@ async function upsertSubscriptionRecord(subscription: Stripe.Subscription) {
     }
 
     await prisma.$transaction(operations);
-
-    if (createdOrUpdatedSubscription.status) {
-      await prisma.subscription.upsert({
-        where: {
-          userId_productId: {
-            userId,
-            productId,
-          },
-        },
-        update: {
-          status: createdOrUpdatedSubscription.status,
-        },
-        create: {
-          status: createdOrUpdatedSubscription.status,
-        },
-      });
-    }
   } catch (error: any) {
+    console.error(`Error upserting subscription: ${error.message}`);
     throw new Error(error);
   }
 }
@@ -644,105 +586,90 @@ async function upsertInvoiceRecord(invoice: Stripe.Invoice) {
     throw new Error('Stripe subscription not found');
   }
 
-  // Check if the subscription exists in your database
-  let subscription = await prisma.subscription.findUnique({
-    where: { subId: stripeSubscription.id },
-  });
+  // Upsert the subscription record in your database
   const productId = stripeSubscription.items.data[0].plan.product as string;
 
-  // If the subscription doesn't exist, create it
-  if (!subscription) {
-    subscription = await prisma.subscription.upsert({
-      where: {
-        userId_productId: {
-          userId: userId,
-          productId: productId,
+  await prisma.subscription.upsert({
+    where: {
+      userId_productId: {
+        userId,
+        productId,
+      },
+    },
+    update: {
+      subId: stripeSubscription.id,
+      status: stripeSubscription.status,
+      cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
+      created: new Date(stripeSubscription.created * 1000),
+      Price: {
+        connect: {
+          id: stripeSubscription.items.data[0].price.id,
         },
       },
-
-      update: {
-        subId: stripeSubscription.id,
-        status: stripeSubscription.status, // <-- Use stripeSubscription.status instead of subscription.status
-        cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end, // <-- Use stripeSubscription.cancel_at_period_end instead of subscription.cancel_at_period_end
-        created: new Date(stripeSubscription.created * 1000), // <-- Use stripeSubscription.created instead of subscription.created
-        Price: {
-          connect: {
-            id: stripeSubscription.items.data[0].price.id,
-          },
-        },
-        Product: {
-          connect: {
-            id: stripeSubscription.items.data[0].price.product as string,
-          },
-        },
-        currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000), // <-- Use stripeSubscription.current_period_start instead of subscription.current_period_start
-        currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000), // <-- Use stripeSubscription.current_period_end instead of subscription.current_period_end
-        endedAt: stripeSubscription.ended_at ? new Date(stripeSubscription.ended_at * 1000) : null, // <-- Use stripeSubscription.ended_at instead of subscription.ended_at
-        cancelAt: stripeSubscription.cancel_at
-          ? new Date(stripeSubscription.cancel_at * 1000)
-          : null, // <-- Use stripeSubscription.cancel_at instead of subscription.cancel_at
-        canceledAt: stripeSubscription.canceled_at
-          ? new Date(stripeSubscription.canceled_at * 1000)
-          : null, // <-- Use stripeSubscription.canceled_at instead of subscription.canceled_at
-        trialStart: stripeSubscription.trial_start
-          ? new Date(stripeSubscription.trial_start * 1000)
-          : null, // <-- Use stripeSubscription.trial_start instead of subscription.trial_start
-        trialEnd: stripeSubscription.trial_end
-          ? new Date(stripeSubscription.trial_end * 1000)
-          : null, // <-- Use stripeSubscription.trial_end instead of subscription.trial_end
-        quantity: stripeSubscription.items.data[0]?.quantity || 1, // <-- Use stripeSubscription.items.data[0]?.quantity instead of subscription.items.data[0]?.quantity
-        User: {
-          connect: {
-            id: userId,
-          },
+      Product: {
+        connect: {
+          id: productId,
         },
       },
-      create: {
-        subId: stripeSubscription.id,
-        status: stripeSubscription.status, // <-- Use stripeSubscription.status instead of subscription.status
-        cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end, // <-- Use stripeSubscription.cancel_at_period_end instead of subscription.cancel_at_period_end
-        created: new Date(stripeSubscription.created * 1000), // <-- Use stripeSubscription.created instead of subscription.created
-        Price: {
-          connect: {
-            id: stripeSubscription.items.data[0].price.id,
-          },
-        },
-        Product: {
-          connect: {
-            id: stripeSubscription.items.data[0].price.product as string,
-          },
-        },
-        currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000), // <-- Use stripeSubscription.current_period_start instead of subscription.current_period_start
-        currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000), // <-- Use stripeSubscription.current_period_end instead of subscription.current_period_end
-        endedAt: stripeSubscription.ended_at ? new Date(stripeSubscription.ended_at * 1000) : null, // <-- Use stripeSubscription.ended_at instead of subscription.ended_at
-        cancelAt: stripeSubscription.cancel_at
-          ? new Date(stripeSubscription.cancel_at * 1000)
-          : null, // <-- Use stripeSubscription.cancel_at instead of subscription.cancel_at
-        canceledAt: stripeSubscription.canceled_at
-          ? new Date(stripeSubscription.canceled_at * 1000)
-          : null, // <-- Use stripeSubscription.canceled_at instead of subscription.canceled_at
-        trialStart: stripeSubscription.trial_start
-          ? new Date(stripeSubscription.trial_start * 1000)
-          : null, // <-- Use stripeSubscription.trial_start instead of subscription.trial_start
-        trialEnd: stripeSubscription.trial_end
-          ? new Date(stripeSubscription.trial_end * 1000)
-          : null, // <-- Use stripeSubscription.trial_end instead of subscription.trial_end
-        quantity: stripeSubscription.items.data[0]?.quantity || 1, // <-- Use stripeSubscription.items.data[0]?.quantity instead of subscription.items.data[0]?.quantity
-        User: {
-          connect: {
-            id: userId,
-          },
+      currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
+      currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
+      endedAt: stripeSubscription.ended_at ? new Date(stripeSubscription.ended_at * 1000) : null,
+      cancelAt: stripeSubscription.cancel_at ? new Date(stripeSubscription.cancel_at * 1000) : null,
+      canceledAt: stripeSubscription.canceled_at
+        ? new Date(stripeSubscription.canceled_at * 1000)
+        : null,
+      trialStart: stripeSubscription.trial_start
+        ? new Date(stripeSubscription.trial_start * 1000)
+        : null,
+      trialEnd: stripeSubscription.trial_end ? new Date(stripeSubscription.trial_end * 1000) : null,
+      quantity: stripeSubscription.items.data[0]?.quantity || 1,
+      User: {
+        connect: {
+          id: userId,
         },
       },
-    });
-  }
+    },
+    create: {
+      subId: stripeSubscription.id,
+      status: stripeSubscription.status,
+      cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
+      created: new Date(stripeSubscription.created * 1000),
+      Price: {
+        connect: {
+          id: stripeSubscription.items.data[0].price.id,
+        },
+      },
+      Product: {
+        connect: {
+          id: productId,
+        },
+      },
+      currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
+      currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
+      endedAt: stripeSubscription.ended_at ? new Date(stripeSubscription.ended_at * 1000) : null,
+      cancelAt: stripeSubscription.cancel_at ? new Date(stripeSubscription.cancel_at * 1000) : null,
+      canceledAt: stripeSubscription.canceled_at
+        ? new Date(stripeSubscription.canceled_at * 1000)
+        : null,
+      trialStart: stripeSubscription.trial_start
+        ? new Date(stripeSubscription.trial_start * 1000)
+        : null,
+      trialEnd: stripeSubscription.trial_end ? new Date(stripeSubscription.trial_end * 1000) : null,
+      quantity: stripeSubscription.items.data[0]?.quantity || 1,
+      User: {
+        connect: {
+          id: userId,
+        },
+      },
+    },
+  });
 
   // Upsert the invoice
   await prisma.invoice.upsert({
     where: { id: invoice.id },
     update: {
       customerId: invoice.customer as string,
-      subscriptionId: subscription.id,
+      subscriptionId: stripeSubscription.id,
       amountPaid: invoice.amount_paid,
       amountDue: invoice.amount_due,
       currency: invoice.currency,
@@ -757,7 +684,7 @@ async function upsertInvoiceRecord(invoice: Stripe.Invoice) {
     create: {
       id: invoice.id,
       customerId: invoice.customer as string,
-      subscriptionId: subscription.id,
+      subscriptionId: stripeSubscription.id,
       amountPaid: invoice.amount_paid,
       amountDue: invoice.amount_due,
       currency: invoice.currency,
@@ -770,30 +697,38 @@ async function upsertInvoiceRecord(invoice: Stripe.Invoice) {
       userId: userId,
     },
   });
+
+  // Grant access to the content associated with the invoice
+  await grantAccessToContent(invoice);
 }
 
-async function grantAccessToContent(invoice: Stripe.Invoice) {
-  // needs to match ids for grantAccess function
-  const productAccessGranters = {
-    prod_PUV4HNwx8EuHOi: grantProductAccess,
-    prod_PUV5bXKCjMOpz8: grantProductAccess,
-    prod_PUV6oomP5QRnkp: grantProductAccess,
-  };
+export async function grantAccessToContent(invoice: Stripe.Invoice) {
+  // Fetch the customer record to get the user ID
+  const customerRecord = await prisma.customer.findFirst({
+    where: {
+      stripeCustomerId: invoice.customer as string,
+    },
+  });
+
+  if (!customerRecord) {
+    throw new Error('Customer record not found');
+  }
+
+  const userId = customerRecord.userId;
 
   // Get the product IDs associated with the invoice
   const productIds = invoice.lines.data
     .filter((line) => line.price !== null)
     .map((line) => line.price!.product as string);
 
-  // Iterate over the product IDs
+  // Iterate over the product IDs and grant access for each one
   for (const productId of productIds) {
-    // Get the function that grants access for this product
-    const grantAccess = productAccessGranters[productId];
-
-    // If a function was found, call it to grant access
-    if (grantAccess) {
-      await grantAccess(invoice.customer);
-    }
+    // Update the ProductAccess record for this user and product to grant access
+    await prisma.productAccess.upsert({
+      where: { userId_productId: { userId, productId } },
+      update: { granted: true },
+      create: { userId, productId, granted: true },
+    });
   }
 }
 
@@ -900,6 +835,7 @@ export async function POST(req: NextRequest) {
         case 'product.created':
         case 'product.updated':
           await upsertProductRecord(event.data.object as Stripe.Product);
+          await upsertFeatureLimitsRecord(event.data.object as Stripe.Product);
           break;
         case 'product.deleted':
           await deleteProductRecord(event.data.object as Stripe.Product);

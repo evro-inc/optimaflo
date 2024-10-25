@@ -1,5 +1,5 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
-import { getSubscriptions } from './lib/fetch/subscriptions';
+import { getSubscriptionsAPI } from './lib/fetch/subscriptions';
 import { NextResponse } from 'next/server';
 import {
   checkoutSessionRateLimit,
@@ -16,70 +16,55 @@ import {
 
 const isPublicRoute = createRouteMatcher([
   '/',
+  '/blocked',
   '/about',
   '/features',
   '/pricing',
   '/contact',
   '/tos',
   '/privacy',
+  '/api/contact',
   '/api/webhooks(.*)',
   '/api/resend',
 ]);
 
-/* const isProtectedRoute = createRouteMatcher([
-  '/api/dashboard/(.*)',
-  '/api/users/(.*)',
-  '/api/customers/(.*)',
-  '/api/subscriptions/(.*)',
-  '/api/products/(.*)',
-  '/api/prices/(.*)',
-  '/api/create-checkout-session',
-  '/api/create-portal-link',
-]); */
+const nonSubscriptionRoutes = createRouteMatcher([
+  '/api/users(.*)',
+  '/api/subscriptions(.*)',
+  '/api/customers(.*)',
+  '/profile',
+]);
 
 export default clerkMiddleware(async (auth, req) => {
-  const { userId, redirectToSignIn } = auth();
+  const { userId } = auth();
 
   if (!isPublicRoute(req) && !userId) {
-    return redirectToSignIn();
+    return NextResponse.redirect(new URL('/', req.url));
   }
 
-  if (!isPublicRoute(req)) {
+  if (!isPublicRoute(req) && !nonSubscriptionRoutes(req)) {
     auth().protect();
     const ip = req.ip ?? '127.0.0.1';
 
     // Your subscription and rate limit checks here
     try {
       if (userId) {
-        // Define a mapping between paths and product IDs
-        const regexToProductIds = {
-          '^/dashboard/gtm.*': [
-            'prod_PUV6oomP5QRnkp',
-            'prod_PUV5bXKCjMOpz8',
-            'prod_PUV4HNwx8EuHOi',
-          ],
-          '^/dashboard/ga.*': ['prod_PUV4HNwx8EuHOi', 'prod_PUV5bXKCjMOpz8', 'prod_PUV6oomP5QRnkp'],
-        };
+        const [subscriptions, generalRateLimitResult] = await Promise.all([
+          getSubscriptionsAPI(userId),
+          generalApiRateLimit.limit(ip),
+        ]);
 
-        // Subscription check
-        for (const [regexString, productIds] of Object.entries(regexToProductIds)) {
-          const regex = new RegExp(regexString);
-          if (regex.test(req.nextUrl.pathname)) {
-            const subscriptions = await getSubscriptions(userId);
+        const hasActiveSubscription = subscriptions
+          .filter((subscription) => subscription.status === 'active')
+          .map((subscription) => subscription.productId);
 
-            const activeProductIds = subscriptions
-              .filter((subscription) => subscription.status === 'active')
-              .map((subscription) => subscription.productId);
-
-            if (!activeProductIds.some((productId) => productIds.includes(productId))) {
-              return NextResponse.redirect(new URL('/blocked', req.url));
-            }
-          }
+        // If the user doesn't have any active subscription, redirect to /blocked
+        if (!hasActiveSubscription) {
+          return NextResponse.redirect(new URL('/blocked', req.url));
         }
 
         // Rate limit check
         // Check the general API rate limit
-        const generalRateLimitResult = await generalApiRateLimit.limit(ip);
         if (!generalRateLimitResult.success) {
           return NextResponse.redirect(new URL('/blocked', req.url));
         }
@@ -125,17 +110,20 @@ export default clerkMiddleware(async (auth, req) => {
         ];
 
         // Check the rate limit for each rule - Comment out while testing
-        for (const rule of rateLimitRules) {
+        const rateLimitPromises = rateLimitRules.map(async (rule) => {
           if (rule.urlPattern.test(req.nextUrl.pathname)) {
             const rateLimitResult = await rule.rateLimit.limit(ip);
-
             if (!rateLimitResult.success) {
               return NextResponse.redirect(new URL('/blocked', req.url));
             }
           }
-        }
+        });
+
+        await Promise.all(rateLimitPromises);
       }
     } catch (error) {
+      console.error('Error while checking subscriptions:', error);
+
       return NextResponse.error();
     }
   }

@@ -22,23 +22,17 @@ export default async function CreateCustomDimensionPage() {
   const propertyData = await listGAProperties();
   const firebaseLinkData = await listGAFirebaseLinks();
 
-  const [accounts, properties] = await Promise.all([accountData, propertyData, firebaseLinkData]);
+  const [accounts, properties, fbLinks] = await Promise.all([
+    accountData,
+    propertyData,
+    firebaseLinkData,
+  ]);
 
-  const flatAccounts = accounts.flat();
-  const flatProperties = properties.flat();
-  const flatFirebaseLinks = firebaseLinkData.flatMap((item) => item.firebaseLinks || []);
-
-  const combinedData = flatFirebaseLinks.map((fb) => {
-    const propertyId = fb.name.split('/')[1];
-
-    const property = flatProperties.find((p) => p.name.includes(propertyId));
-    const accounts = flatAccounts.filter((a) => a.name === property?.parent);
-
+  const combinedData = fbLinks.flatMap((fb) => {
     return {
       ...fb,
       account: accounts ? accounts[0].name : 'Unknown Account ID',
       accountName: accounts ? accounts[0].displayName : 'Unknown Account Name',
-      property: property.displayName,
       name: fb.name,
       project: fb.project,
     };

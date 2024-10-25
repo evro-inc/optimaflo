@@ -41,11 +41,15 @@ export default async function Features() {
                 <div className="container space-y-12 px-4 md:px-6">
                   <div className="flex flex-col items-center justify-center space-y-4 text-center">
                     <div className="space-y-2">
-                      <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">Key Features</div>
-                      <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Why You Will Love OptimaFlo</h2>
+                      <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">
+                        Key Features
+                      </div>
+                      <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
+                        Why You Will Love OptimaFlo
+                      </h2>
                       <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                        OptimaFlo is designed to streamline your Google data workflows and boost your productivity. Check out some of the
-                        key features that set us apart.
+                        OptimaFlo is designed to streamline your Google data workflows and boost
+                        your productivity. Check out some of the key features that set us apart.
                       </p>
                     </div>
                   </div>
@@ -54,9 +58,7 @@ export default async function Features() {
                       return (
                         <div key={index} className="grid gap-1">
                           <h3 className="text-lg font-bold">{feature.featureTitle}</h3>
-                          <p className="text-muted-foreground">
-                            {feature.featureDescription}
-                          </p>
+                          <p className="text-muted-foreground">{feature.featureDescription}</p>
                         </div>
                       );
                     })}

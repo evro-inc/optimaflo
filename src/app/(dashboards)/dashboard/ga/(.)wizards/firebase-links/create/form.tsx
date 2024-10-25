@@ -60,7 +60,6 @@ type Forms = z.infer<typeof FormsSchema>;
 const FormCreateFBLink: React.FC<FormCreateProps> = ({
   tierLimits,
   properties = [],
-  table = [],
   accounts = [],
 }) => {
   const dispatch = useDispatch();
@@ -92,7 +91,7 @@ const FormCreateFBLink: React.FC<FormCreateProps> = ({
 
   const formDataDefaults: FirebaseLink = {
     account: accountsWithProperties[0].name,
-    property: table[0].parent,
+    property: '',
     project: '',
     name: '',
   };
@@ -115,13 +114,17 @@ const FormCreateFBLink: React.FC<FormCreateProps> = ({
     control: form.control,
     name: 'forms',
   });
+  const addForm = () => {
+    append(formDataDefaults);
+  };
+  const currentFormIndex = currentStep - 2;
 
+  const formCreateAmountAmount = formCreateAmount.watch('amount');
   // Effect to update count when amount changes
   useEffect(() => {
-    const amountValue = formCreateAmount.watch('amount'); // Extract the watched value
-    const amount = parseInt(amountValue?.toString() || '0'); // Handle cases where amountValue might be undefined or null
+    const amount = parseInt(formCreateAmount.getValues('amount').toString());
     dispatch(setCount(amount));
-  }, [formCreateAmount, dispatch]); // Include formCreateAmount and dispatch as dependencies
+  }, [formCreateAmount, formCreateAmountAmount, dispatch]);
 
   if (notFoundError) {
     return <NotFoundErrorModal onClose={undefined} />;
@@ -129,11 +132,6 @@ const FormCreateFBLink: React.FC<FormCreateProps> = ({
   if (error) {
     return <ErrorModal />;
   }
-
-  const addForm = () => {
-    append(formDataDefaults);
-  };
-  const currentFormIndex = currentStep - 2;
 
   // Adjust handleAmountSubmit or create a new function to handle selection change
   const handleAmountChange = (selectedAmount) => {
@@ -303,18 +301,19 @@ const FormCreateFBLink: React.FC<FormCreateProps> = ({
               name="amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>How many properties do you want to create?</FormLabel>
+                  <FormLabel>How many conversion events do you want to create?</FormLabel>
                   <Select
+                    {...field}
+                    value={field.value.toString()} // Convert value to string
                     onValueChange={(value) => {
-                      field.onChange(value); // Use field.onChange to update the form value
+                      field.onChange(value); // Update form state
                       handleAmountChange(value); // Call the modified handler
                     }}
-                    value={field.value.toString()} // Ensure the Select reflects the form state
                     defaultValue={count.toString()}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select the amount of properties you want to create." />
+                        <SelectValue placeholder="Select the amount of conversion events you want to create." />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -325,6 +324,7 @@ const FormCreateFBLink: React.FC<FormCreateProps> = ({
                       ))}
                     </SelectContent>
                   </Select>
+                  <FormMessage />
                 </FormItem>
               )}
             />

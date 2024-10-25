@@ -26,7 +26,6 @@ export default async function PropertyAccessPage({
   const access = await listGAAccessBindings();
 
   const [accounts, properties] = await Promise.all([accountData, propertyData]);
-
   const flatAccounts = accounts.flat();
   const flatProperties = properties.flat();
   const flatAccess = access.map((item) => item.accessBindings);
@@ -37,16 +36,16 @@ export default async function PropertyAccessPage({
       const parts = access.name.split('/');
       const accessBindingId = parts[3];
 
-      const account = flatAccounts.find(
-        (acc) =>
-          acc.name ===
-          flatProperties.find((property) => property.name.split('/')[1] === propertyId)?.parent
+      // Find the property and make sure to check if it exists before accessing its name
+      const property = flatProperties.find(
+        (property) => property?.name?.split('/')[1] === propertyId
       );
 
+      // Find the account using the property parent, ensuring property is defined
+      const account = flatAccounts.find((acc) => acc.name === property?.parent);
+
       const accountName = account ? account.displayName : 'Account Name Unknown';
-      const propertyName = flatProperties.find(
-        (property) => property.name.split('/')[1] === propertyId
-      );
+      const propertyName = property ? property.displayName : 'Property Name Unknown';
 
       return {
         name: access.name,
@@ -54,7 +53,7 @@ export default async function PropertyAccessPage({
         accessBindingId,
         user: access.user,
         roles: access.roles,
-        property: propertyName?.displayName || 'Property Name Unknown',
+        property: propertyName,
       };
     })
   );

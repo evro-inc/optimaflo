@@ -1,5 +1,7 @@
 'use client';
 
-export default function ErrorStreams() {
-  return <h2>Error CDs...</h2>;
+import { ErrorComponent } from '@/src/components/client/Utils/Error';
+
+export default function Error() {
+  return <ErrorComponent platform="gtm" feature="versions" path="dashboard/gtm/entities" />;
 }

@@ -37,6 +37,7 @@ async function PatchGtmAccount(accessToken, accountId, name, userId) {
   const headers = {
     Authorization: `Bearer ${accessToken}`,
     'Content-Type': 'application/json',
+    'Accept-Encoding': 'gzip',
   };
 
   let retries = 0;

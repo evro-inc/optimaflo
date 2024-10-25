@@ -1,10 +1,10 @@
 import React from 'react';
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { currentUser } from '@clerk/nextjs/server';
 import FormUpdateVariables from './form';
 import { getSubscription } from '@/src/lib/fetch/subscriptions';
 import { getTierLimit } from '@/src/lib/fetch/tierLimit';
-import { fetchGtmData, processEntityData } from '../components/utils';
+import { fetchGtmData, processGtmTriggerData } from '../components/utils';
 
 export default async function UpdateVariablePage() {
   const user = await currentUser();
@@ -14,26 +14,19 @@ export default async function UpdateVariablePage() {
   const subscriptionId = subscription.id;
 
   const tierLimits = await getTierLimit(subscriptionId);
+  const { accountData, containerData, workspaceData, triggerData } = await fetchGtmData();
 
-  const foundTierLimit = tierLimits.find(
-    (subscription) => subscription.Feature?.name === 'GTMTriggers'
+  const combinedData = processGtmTriggerData(
+    accountData,
+    containerData,
+    workspaceData,
+    triggerData
   );
-
-  const updateLimit = foundTierLimit?.updateLimit || 0;
-  const updateUsage = foundTierLimit?.updateUsage || 0;
-  const remainingCreate = updateLimit - updateUsage;
-
-  if (remainingCreate <= 0) {
-    redirect('/dashboard/gtm/configurations'); // Replace with the actual path you want to redirect to
-  }
-
-  const { accountData, containerData, workspaceData } = await fetchGtmData();
-  const entityData = processEntityData(accountData, containerData, workspaceData);
 
   return (
     <>
       <div className="container mx-auto py-10">
-        <FormUpdateVariables data={entityData} />
+        <FormUpdateVariables tierLimits={tierLimits} table={combinedData} />
       </div>
     </>
   );

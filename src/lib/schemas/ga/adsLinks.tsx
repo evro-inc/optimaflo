@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const SingleFormSchema = z.object({
+export const AdSchema = z.object({
   account: z.string(),
   property: z.string(),
   customerId: z.string(), // Assuming customer ID follows a specific pattern, apply regex as needed
@@ -13,7 +13,7 @@ export const FormCreateAmountSchema = z.object({
 });
 // If you need to validate an array of CustomConversion objects like in your original FormsSchema
 export const FormsSchema = z.object({
-  forms: z.array(SingleFormSchema),
+  forms: z.array(AdSchema),
 });
 
 // Export the type inferred from CustomConversionsSchema for type safety

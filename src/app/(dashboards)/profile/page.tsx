@@ -6,16 +6,6 @@ import { currentUser } from '@clerk/nextjs/server';
 import { notFound } from 'next/navigation';
 import { getSubscription } from '@/src/lib/fetch/subscriptions';
 import { ButtonCustomerPortal } from '@/src/components/client/Button/Button';
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/src/components/ui/table';
-import { getTierLimit } from '@/src/lib/fetch/tierLimit';
 import { Button } from '@/src/components/ui/button';
 import Link from 'next/link';
 
@@ -47,8 +37,6 @@ export default async function Profile() {
     );
   }
 
-  const subscriptionId = subscription.id || '';
-  const tierLimits = await getTierLimit(subscriptionId);
 
   const invoices = subscription.Invoice;
 
@@ -122,7 +110,7 @@ export default async function Profile() {
           </CardFooter>
         </Card>
 
-        <Card className="md:col-span-12">
+        {/* <Card className="md:col-span-12">
           <CardHeader>
             <CardTitle>Tier Limits</CardTitle>
           </CardHeader>
@@ -155,7 +143,7 @@ export default async function Profile() {
               </TableBody>
             </Table>
           </CardContent>
-        </Card>
+        </Card> */}
       </div>
     </div>
   );

@@ -1,6 +1,14 @@
 import { z } from 'zod';
 
-const UsageContextType = z.enum(['web', 'android', 'ios']);
+const UsageContextType = z.enum([
+  'web',
+  'android',
+  'ios',
+  'iosSdk5',
+  'androidSdk5',
+  'server',
+  'amp',
+]);
 
 // Helper function to validate domain name (simplified example)
 const isValidDomainName = (domain: string) => {
@@ -8,37 +16,19 @@ const isValidDomainName = (domain: string) => {
   return domainRegex.test(domain);
 };
 
-const FeaturesSchema = z.object({
-  supportUserPermissions: z.boolean(),
-  supportEnvironments: z.boolean(),
-  supportWorkspaces: z.boolean(),
-  supportGtagConfigs: z.boolean(),
-  supportBuiltInVariables: z.boolean(),
-  supportClients: z.boolean(),
-  supportFolders: z.boolean(),
-  supportTags: z.boolean(),
-  supportTemplates: z.boolean(),
-  supportTriggers: z.boolean(),
-  supportVariables: z.boolean(),
-  supportVersions: z.boolean(),
-  supportZones: z.boolean(),
-  supportTransformations: z.boolean(),
-});
-
 export const FormCreateAmountSchema = z.object({
   amount: z.number(),
 });
 
 // Schema for container create form data
 // Define the schema for a single form
-const SingleFormSchema = z.object({
-  path: z.string(),
+export const ContainerSchema = z.object({
+  path: z.string().optional(),
   accountId: z.string().nonempty('Account Id is required'),
   containerId: z.string().optional(),
   publicId: z.string(),
   tagIds: z.array(z.string()).optional(),
-  features: FeaturesSchema,
-  usageContext: z.array(UsageContextType),
+  usageContext: z.union([UsageContextType, z.array(UsageContextType)]),
   name: z.string().nonempty('Container Name is required'),
   domainName: z
     .string()
@@ -66,13 +56,13 @@ const SingleFormSchema = z.object({
         message: 'Notes must be between 1 and 500 characters',
       }
     ),
-  tagManagerUrl: z.string(),
+  tagManagerUrl: z.string().optional(),
   taggingServerUrls: z.array(z.string()).optional(),
 });
 
 // Define the schema for the entire form with field array
 export const FormSchema = z.object({
-  forms: z.array(SingleFormSchema),
+  forms: z.array(ContainerSchema),
 });
 
 // Type for the entire form data

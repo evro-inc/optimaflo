@@ -1,10 +1,16 @@
+/* global RequestInit */
+
 'use server';
+
 import { notFound } from 'next/navigation';
 import prisma from '../lib/prisma';
 import { auth } from '@clerk/nextjs/server';
 import { revalidatePath } from 'next/cache';
 import { redis } from '../lib/redis/cache';
 import { fetchGASettings, fetchGtmSettings } from '../lib/fetch/dashboard';
+import { currentUserOauthAccessToken } from '@/src/lib/clerk';
+import { gtmRateLimit } from '../lib/redis/rateLimits';
+import { limiter } from '../lib/bottleneck';
 
 // Define the type for the pagination and filtering result
 type PaginatedFilteredResult<T> = {
@@ -135,18 +141,26 @@ export const tierUpdateLimit = async (userId: string, featureName: string) => {
 };
 
 // Function to Handle API Errors
-export async function handleApiResponseError(
-  response: Response,
-  parsedResponse: any,
-  feature: string,
-  names: string[]
-) {
+export async function handleApiResponseError(response: Response, feature: string, names: string[]) {
+  // Parse the response body if not already parsed
+  const parsedResponse = await response.json().catch(() => null);
+
   switch (response.status) {
     case 400:
+      if (feature == 'versions') {
+        return {
+          success: false,
+          errorCode: 400,
+          message: `${feature} ${names} was unsuccessful. Make sure you're not deleting the latest or live version of your container.`,
+        };
+      }
+
       return {
         success: false,
         errorCode: 400,
-        message: `${feature} ${names} was not created. ${parsedResponse.error.message}`,
+        message: `${feature} ${names} was unsuccessful. ${
+          parsedResponse?.error?.message ?? 'Unknown error'
+        }`,
       };
 
     case 404:
@@ -158,7 +172,7 @@ export async function handleApiResponseError(
       };
 
     case 403:
-      if (parsedResponse.message === 'Feature limit reached') {
+      if (parsedResponse?.message === 'Feature limit reached') {
         return {
           success: false,
           errorCode: 403,
@@ -168,7 +182,7 @@ export async function handleApiResponseError(
         return {
           success: false,
           errorCode: response.status,
-          message: parsedResponse.error.message,
+          message: parsedResponse?.error?.message ?? 'Unknown error',
         };
       }
 
@@ -190,7 +204,7 @@ export async function handleApiResponseError(
       return {
         success: false,
         errorCode: response.status,
-        message: `Error deleting container: ${response.status}`,
+        message: `Error with status: ${response.status}`,
       };
   }
 }
@@ -274,7 +288,10 @@ export async function fetchPages<T>(
   return totalPages;
 }
 
-export async function revalidate(keys: string[], path: string, userId: string) {
+/*************************************************************************
+ * Global Hard Refresh Cache
+ *************************************************************************/
+export async function revalidateHardCacheGlobal(keys: string[], path: string, userId: string) {
   try {
     const pipeline = redis.pipeline();
 
@@ -293,6 +310,158 @@ export async function revalidate(keys: string[], path: string, userId: string) {
 
     await pipeline.exec(); // Execute all queued commands in a batch
     await revalidatePath(path);
+  } catch (error) {
+    console.error('Error during revalidation:', error);
+    throw new Error('Revalidation failed');
+  }
+}
+
+/*************************************************************************
+ * Local Hard Refresh Cache
+ *************************************************************************/
+export async function hardRevalidateFeatureCache(
+  keys: string[], // Redis keys for cache entries
+  path: string, // The path to revalidate
+  userId: string // User ID
+) {
+  try {
+    const pipeline = redis.pipeline();
+
+    // Fetch the user (ensure user exists)
+    const user = await prisma.user.findFirst({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      notFound();
+    }
+
+    // Iterate over each key and delete the entire key (set, hash, etc.)
+    keys.forEach((key) => {
+      pipeline.del(key); // Delete the entire Redis key
+    });
+
+    // Execute the pipeline commands
+    await pipeline.exec(); // Delete all keys in one batch
+
+    // Trigger Incremental Static Regeneration (ISR) to revalidate the path
+    await revalidatePath(path);
+  } catch (error) {
+    console.error('Error during hard revalidation:', error);
+    throw new Error('Revalidation failed');
+  }
+}
+
+/*************************************************************************
+ * Local Soft Refresh Cache
+ *************************************************************************/
+export async function softRevalidateFeatureCache(
+  keys: string[], // Redis keys for cache entries
+  path: string, // The path to revalidate
+  userId: string, // User ID
+  operations: {
+    crudType: 'update' | 'create' | 'delete';
+    data: any;
+  }[], // Array of operations with dynamic URL paths
+  cacheFields
+) {
+  try {
+    const pipeline = redis.pipeline();
+
+    const user = await prisma.user.findFirst({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      notFound();
+    }
+
+    // Fetch current cache data for each key (using HGETALL for hash data)
+    const cacheDataArray = await Promise.all(keys.map((key) => redis.hgetall(key)));
+
+    keys.forEach((key, index) => {
+      const cacheData = cacheDataArray[index];
+
+      operations.forEach((operation, opIndex) => {
+        const { crudType, data } = operation;
+        const cacheField = cacheFields[opIndex]; // Ensure each operation has a distinct cache field
+
+        switch (crudType) {
+          case 'delete':
+            if (cacheData[cacheField]) {
+              pipeline.hdel(key, cacheField);
+            }
+            break;
+
+          case 'update':
+          case 'create':
+            pipeline.hset(key, cacheField, JSON.stringify(data));
+            break;
+
+          default:
+            console.warn(`Unknown operation type: ${crudType}`);
+        }
+      });
+    });
+
+    // Execute the Redis pipeline
+    await pipeline.exec();
+
+    // Trigger ISR to revalidate the path
+    await revalidatePath(path);
+  } catch (error) {
+    console.error('Error during revalidation:', error);
+    throw new Error('Revalidation failed');
+  }
+}
+
+export async function revalidate(
+  currentData: string[], // List of property names to delete from Redis
+  keys: string[] | string, // Redis keys for cache entries (handle both string and array)
+  path: string, // The path to revalidate
+  userId: string, // User ID
+  global: boolean = false // Global flag
+) {
+  try {
+    // Ensure 'keys' is an array
+    const keysArray = Array.isArray(keys) ? keys : [keys];
+
+    const pipeline = redis.pipeline();
+
+    const user = await prisma.user.findFirst({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      notFound();
+    }
+
+    if (global) {
+      await fetchGtmSettings(userId);
+      await fetchGASettings(userId);
+    }
+
+    // Fetch all necessary cache data in one go
+    const cacheDataArray = await Promise.all(keysArray.map((key) => redis.get(key)));
+
+    keysArray.forEach((key, index) => {
+      const cacheData = cacheDataArray[index];
+      if (cacheData) {
+        const parsedData = JSON.parse(cacheData);
+
+        // Filter out deleted properties from the parsed cache data
+        const updatedData = parsedData.filter((item: any) => !currentData.includes(item.name));
+
+        // Update the cache with the new data that no longer includes the deleted properties
+        pipeline.set(key, JSON.stringify(updatedData), 'EX', 2592000); // Cache for 24 hours
+      } else if (global) {
+        // Clear the cache if global flag is true and no cache data found
+        pipeline.del(key);
+      }
+    });
+
+    await pipeline.exec(); // Execute all queued commands in a batch
+    await revalidatePath(path); // Trigger ISR to revalidate the path
   } catch (error) {
     console.error('Error during revalidation:', error);
     throw new Error('Revalidation failed');
@@ -326,3 +495,146 @@ export const fetchWithRetry = async (url: string, headers: any, retries = 0): Pr
     }
   }
 };
+
+/************************************************************************************
+  API Helper Functions for Modularity and Reusability
+************************************************************************************/
+
+/** Authenticates the user and returns userId or throws a notFound error */
+export async function authenticateUser(): Promise<string> {
+  const { userId } = await auth();
+  if (!userId) throw notFound();
+  return userId;
+}
+
+/** Retrieves the OAuth access token for the user */
+export async function getOauthToken(userId: string): Promise<string> {
+  return await currentUserOauthAccessToken(userId);
+}
+
+/** Ensures rate limit is respected with retries */
+export async function ensureGARateLimit(userId: string): Promise<void> {
+  const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
+  if (remaining <= 0) throw new Error('Rate limit exceeded');
+}
+
+/** Checks if a feature limit is reached and returns available usage */
+export async function checkFeatureLimit(
+  userId: string,
+  feature: string,
+  limitType: 'create' | 'delete' | 'update' | 'publish'
+): Promise<{ tierLimitResponse: any; availableUsage: number }> {
+  let tierLimitResponse;
+
+  switch (limitType) {
+    case 'create':
+      tierLimitResponse = await tierCreateLimit(userId, feature);
+      break;
+    case 'delete':
+      tierLimitResponse = await tierDeleteLimit(userId, feature);
+      break;
+    case 'update':
+      tierLimitResponse = await tierUpdateLimit(userId, feature);
+      break;
+    case 'publish':
+      // Handle publish case if necessary
+      tierLimitResponse = null;
+      break;
+    default:
+      throw new Error(`Unknown limitType: ${limitType}`);
+  }
+
+  if (!tierLimitResponse) {
+    return { tierLimitResponse: null, availableUsage: 0 }; // Handle the case where tierLimitResponse is null
+  }
+
+  const limit = Number(tierLimitResponse[`${limitType}Limit`]);
+  const usage = Number(tierLimitResponse[`${limitType}Usage`]);
+  const availableUsage = limit - usage;
+
+  return { tierLimitResponse, availableUsage };
+}
+
+/** Executes an API request with retry logic */
+export async function executeApiRequest(
+  url: string,
+  options: RequestInit,
+  feature: string = '',
+  names: string[] = [],
+  maxRetries = 5
+): Promise<any> {
+  let retries = 0;
+  let delay = 5000;
+
+  while (retries < maxRetries) {
+    try {
+      const response = await limiter.schedule(() => fetch(url, options));
+
+      // Parse the response once and store it
+      const responseData = await response.json();
+      if (response.ok) {
+        return responseData; // Use the parsed data here
+      }
+
+      if (response.status === 429) {
+        await handleRateLimitRetry(retries, delay);
+        delay *= 3.5;
+      } else {
+        const error = await handleApiResponseError(response, feature, names); // Pass all required arguments
+        throw error;
+      }
+    } catch (error: any) {
+      if (retries >= maxRetries - 1) throw error;
+      retries++;
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      delay *= 2;
+    }
+  }
+
+  throw new Error('Maximum retries reached without a successful response.');
+}
+
+/** Handles rate limit retry logic */
+export async function handleRateLimitRetry(retries: number, delay: number): Promise<void> {
+  if (retries < 3) {
+    const jitter = Math.random() * 1000; // Add randomness to the delay
+    await new Promise((resolve) => setTimeout(resolve, delay + jitter));
+  } else {
+    throw new Error('Rate limit exceeded');
+  }
+}
+
+/** Validates form data using a schema */
+export async function validateFormData(schema: any, formData: any): Promise<any> {
+  const validationResult = schema.safeParse(formData);
+  if (!validationResult.success) {
+    const errorMessage = validationResult.error.issues
+      .map((issue) => `${issue.path[0]}: ${issue.message}`)
+      .join('. ');
+    throw new Error(errorMessage);
+  }
+  return validationResult.data;
+}
+
+/* MISC */
+
+// src/utils/server/server-utils.ts
+
+/**
+ * Server-side function to map accounts to their corresponding properties.
+ * This function does not rely on React hooks and can be used in server-side logic.
+ */
+export async function getAccountsWithProperties(accounts: any[], properties: any[]) {
+  // Flatten all properties arrays into a single array of properties
+  const allProperties = properties.flatMap((propertyGroup) => propertyGroup.properties || []);
+
+  // Map accounts and attach properties that belong to each account
+  const mappedAccounts = accounts
+    .map((account) => ({
+      ...account,
+      properties: allProperties.filter((property) => property.parent === account.name),
+    }))
+    .filter((account) => account.properties.length > 0); // Filter out accounts with no properties
+
+  return mappedAccounts;
+}

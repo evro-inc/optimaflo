@@ -371,16 +371,14 @@ const FormUpdateKeyEvents = () => {
                                   <FormField
                                     control={form.control}
                                     name={`forms.${index}.defaultValue`}
-                                    render={({ field }) => (
+                                    render={() => (
                                       <FormItem className="space-y-3">
                                         <FormLabel>Default Conversion Value</FormLabel>
                                         <FormControl>
                                           <RadioGroup
-                                            {...field} // Use field properties directly here
-                                            onValueChange={(newValue) => {
-                                              handleValueChange(newValue, index);
-                                              field.onChange(newValue); // Update field's onChange handler
-                                            }}
+                                            onValueChange={(newValue) =>
+                                              handleValueChange(newValue, index)
+                                            }
                                             value={
                                               form.watch(`forms.${index}.includeDefaultValue`)
                                                 ? 'true'
@@ -417,13 +415,12 @@ const FormUpdateKeyEvents = () => {
                                                     )}
                                                     type="number"
                                                     min={0}
-                                                    onChange={(e) => {
+                                                    onChange={(e) =>
                                                       handleNumericValueChange(
                                                         e.target.value,
                                                         index
-                                                      );
-                                                      field.onChange(e); // Update field's onChange handler
-                                                    }}
+                                                      )
+                                                    }
                                                   />
 
                                                   <Select
@@ -436,7 +433,6 @@ const FormUpdateKeyEvents = () => {
                                                         selectedCurrency,
                                                         { shouldValidate: true }
                                                       );
-                                                      field.onChange(selectedCurrency); // Update field's onChange handler
                                                     }}
                                                   >
                                                     <SelectTrigger>

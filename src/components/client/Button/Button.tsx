@@ -18,6 +18,8 @@ import {
 import { setLoading } from '@/src/redux/globalSlice';
 import { useDispatch } from 'react-redux';
 import { SignInButton } from '@clerk/nextjs';
+import { LoadingButton } from '../../ui/button-load';
+import React from 'react';
 
 const getModeClasses = (variant, billingInterval?) => {
   let baseClasses = '';
@@ -248,7 +250,7 @@ export const Icon = ({ variant = 'primary', icon, ...props }) => {
 export const ButtonSignIn = ({ ...props }) => {
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <SignInButton mode="modal" redirectUrl="/profile" afterSignUpUrl="/pricing">
+      <SignInButton mode="modal">
         <Button {...props} aria-label="Log in with Google Sign In">
           Log In
         </Button>
@@ -291,11 +293,15 @@ export const ButtonCustomerPortal = ({ variant = 'primary', text, ...props }) =>
 
 /* SHADUI */
 
-export const ButtonDelete = ({ onDelete, disabled, action }) => {
+export const ButtonDelete = ({ onDelete, disabled, action, type = '', loading }) => {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button
+        <LoadingButton variant="destructive" disabled={disabled} loading={loading}>
+          {action}
+        </LoadingButton>
+
+        {/*         <Button
           variant="destructive"
           disabled={disabled}
           className="px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm"
@@ -315,13 +321,17 @@ export const ButtonDelete = ({ onDelete, disabled, action }) => {
             />
           </svg>
           {action}
-        </Button>
+        </Button> */}
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. This will permanently be deleted.
+            {type === 'GTMVersion'
+              ? 'This action cannot be undone. Deleting this version will affect your current GTM settings. Live or latest containers can not be deleted.'
+              : type === 'GTMPermission'
+              ? 'This action cannot be undone. Deleting this permission will remove a user from the account, revoking access to it and all of its containers.'
+              : 'This action cannot be undone. This will permanently delete the selected item.'}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -359,5 +369,13 @@ export const ButtonSubmitAlert = ({ text, form }: { text: string; form: string }
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  );
+};
+
+export const ButtonLoad = ({ text, onClick, loading, ...props }) => {
+  return (
+    <LoadingButton loading={loading} onClick={onClick} {...props}>
+      {text}
+    </LoadingButton>
   );
 };

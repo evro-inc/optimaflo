@@ -9,6 +9,10 @@ import { currentUserOauthAccessToken } from '@/src/lib/clerk';
 import prisma from '@/src/lib/prisma';
 import { FeatureResult, FeatureResponse, AccessBinding } from '@/src/types/types';
 import {
+  authenticateUser,
+  ensureGARateLimit,
+  executeApiRequest,
+  getOauthToken,
   handleApiResponseError,
   tierCreateLimit,
   tierDeleteLimit,
@@ -20,89 +24,79 @@ import { AccountPermissionsSchema, FormsSchema } from '@/src/lib/schemas/ga/acco
 /************************************************************************************
   Function to list GA accountAccess
 ************************************************************************************/
-export async function listGAAccessBindings() {
-  let retries = 0;
-  const MAX_RETRIES = 3;
-  let delay = 1000;
-
-  // Authenticating the user and getting the user ID
-  const { userId } = await auth();
-  if (!userId) return notFound();
-
-  const token = await currentUserOauthAccessToken(userId);
-
+export async function listGAAccessBindings(skipCache = false): Promise<any[]> {
+  const userId = await authenticateUser();
+  const token = await getOauthToken(userId);
   const cacheKey = `ga:accountAccess:userId:${userId}`;
-  const cachedValue = await redis.get(cacheKey);
 
-  if (cachedValue) {
-    return JSON.parse(cachedValue);
-  }
-
-  await fetchGASettings(userId);
-
-  const gaData = await prisma.user.findFirst({
-    where: {
-      id: userId,
-    },
-    include: {
-      ga: true,
-    },
-  });
-
-  while (retries < MAX_RETRIES) {
-    try {
-      const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
-      if (remaining > 0) {
-        let allData: any[] = [];
-
-        await limiter.schedule(async () => {
-          const uniqueAccountIds = Array.from(new Set(gaData.ga.map((item) => item.accountId)));
-
-          const urls = uniqueAccountIds.map(
-            (accountId) =>
-              `https://analyticsadmin.googleapis.com/v1alpha/${accountId}/accessBindings`
-          );
-
-          const headers = {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'Accept-Encoding': 'gzip',
-          };
-
-          for (const url of urls) {
-            try {
-              const response = await fetch(url, { headers });
-              if (!response.ok) {
-                if (response.status === 403) {
-                  continue; // Skip the current iteration and proceed with the next account
-                }
-                throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
-              }
-
-              const responseBody = await response.json();
-              allData.push(responseBody);
-            } catch (error: any) {
-              // For errors other than 403, you might still want to throw or handle them differently
-              throw new Error(`Error fetching data: ${error.message}`);
-            }
-          }
-        });
-        redis.set(cacheKey, JSON.stringify(allData), 'EX', 3600);
-
-        return allData;
-      }
-    } catch (error: any) {
-      if (error.code === 429 || error.status === 429) {
-        const jitter = Math.random() * 200;
-        await new Promise((resolve) => setTimeout(resolve, delay + jitter));
-        delay *= 2;
-        retries++;
-      } else {
-        throw error;
+  if (!skipCache) {
+    const cacheData = await redis.hgetall(cacheKey);
+    if (Object.keys(cacheData).length > 0) {
+      try {
+        const parsedData = Object.values(cacheData).map((data) => JSON.parse(data));
+        return parsedData;
+      } catch (error) {
+        console.error('Failed to parse cache data:', error);
+        await redis.del(cacheKey);
       }
     }
   }
-  throw new Error('Maximum retries reached without a successful response.');
+
+  const data = await prisma.user.findFirst({
+    where: { id: userId },
+    include: { ga: true },
+  });
+
+  if (!data) return [];
+
+  await ensureGARateLimit(userId);
+
+  const uniqueAccountIds = Array.from(new Set(data.ga.map((item) => item.accountId)));
+  const urls = uniqueAccountIds.map(
+    (accountId) =>
+      `https://analyticsadmin.googleapis.com/v1alpha/accounts/${accountId}/accessBindings`
+  );
+
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+    'Accept-Encoding': 'gzip',
+  };
+
+  try {
+    const allData = await Promise.all(urls.map((url) => executeApiRequest(url, { headers })));
+    const flattenedAccessBindings = allData.flatMap((item) => item.accessBindings || []);
+
+    const cleanedData = flattenedAccessBindings.filter((item) => Object.keys(item).length > 0);
+
+    const groupedAccessBindings = cleanedData.reduce((acc, accessBinding) => {
+      const accountId = accessBinding.name.split('/')[1]; // Extract accountId from the name
+      if (!acc[accountId]) {
+        acc[accountId] = { accessBindings: [] };
+      }
+      acc[accountId].accessBindings.push(accessBinding);
+      return acc;
+    }, {});
+
+    try {
+      // Use HSET to store each account's access bindings under a single field
+      const pipeline = redis.pipeline();
+      Object.entries(groupedAccessBindings).forEach(([accountId, accountData]) => {
+        const fieldKey = `accounts/${accountId}`;
+        pipeline.hset(cacheKey, fieldKey, JSON.stringify(accountData));
+      });
+
+      pipeline.expire(cacheKey, 7776000); // Set expiration for the entire hash - set to 3 months since this data doesn't change too often.
+      await pipeline.exec(); // Execute the pipeline commands
+    } catch (cacheError) {
+      console.error('Failed to set cache data with HSET:', cacheError);
+    }
+
+    return Object.values(groupedAccessBindings);
+  } catch (apiError) {
+    console.error('Error fetching accounts from API:', apiError);
+    return []; // Return empty array or handle this more gracefully depending on your needs
+  }
 }
 
 /************************************************************************************

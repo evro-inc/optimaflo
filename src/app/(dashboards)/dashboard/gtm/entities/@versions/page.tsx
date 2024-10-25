@@ -6,7 +6,11 @@ import { listGtmContainers } from '@/src/lib/fetch/dashboard/actions/gtm/contain
 import { listGtmAccounts } from '@/src/lib/fetch/dashboard/actions/gtm/accounts';
 import { Skeleton } from '@/src/components/ui/skeleton';
 import { columns } from './columns';
-import { listGTMVersionHeaders } from '@/src/lib/fetch/dashboard/actions/gtm/versions';
+import {
+  getGTMLatestVersion,
+  getGTMLiveVersion,
+  listGTMVersionHeaders,
+} from '@/src/lib/fetch/dashboard/actions/gtm/versions';
 
 export default async function VersionsPage({
   searchParams,
@@ -24,32 +28,65 @@ export default async function VersionsPage({
   const accountData = await listGtmAccounts();
   const containerData = await listGtmContainers();
   const versionData = await listGTMVersionHeaders();
+  const latestVersionData = await getGTMLatestVersion();
+  const liveVersionData = await getGTMLiveVersion();
 
-  const [accounts, containers, versions] = await Promise.all([
+  const [accounts, containers, versions, latest, live] = await Promise.all([
     accountData,
     containerData,
     versionData,
+    latestVersionData,
+    liveVersionData,
   ]);
 
   const flatContainers = containers.flat();
-  const flatVersions = versions.flatMap((item) => item.containerVersionHeader);
+  const flatVersions = versions.flat();
+  const flatLatest = latest.flat();
+  const flatLive = live.flat();
+
+  const latestVersionIds = new Set(
+    flatLatest.map(
+      (v) => `${String(v.accountId)}-${String(v.containerId)}-${String(v.containerVersionId)}`
+    )
+  );
+
+  const liveVersionIds = new Set(
+    flatLive.map(
+      (v) => `${String(v.accountId)}-${String(v.containerId)}-${String(v.containerVersionId)}`
+    )
+  );
 
   const combinedData = flatVersions.map((vs) => {
     const account = accounts.find((a) => a.accountId === vs.accountId);
     const container = flatContainers.find((c) => c.containerId === vs.containerId);
-    if (account && container) {
-      return {
-        ...vs,
-        accountName: account.name,
-        containerName: container.name,
-      };
-    } else {
-      return {
-        ...vs,
-        accountName: 'Unknown Account',
-        containerName: 'Unknown Container',
-      };
+
+    // Check for missing IDs
+    if (!vs.accountId || !vs.containerId || !vs.containerVersionId) {
+      console.warn('Missing IDs in version:', vs);
+      return vs; // Skip this version
     }
+
+    // Create the version identifier
+    const versionId = `${String(vs.accountId)}-${String(vs.containerId)}-${String(
+      vs.containerVersionId
+    )}`;
+
+    // Check if this version is among the latest versions
+    const isLatest = latestVersionIds.has(versionId);
+    const isLive = liveVersionIds.has(versionId);
+
+    // Collect applicable statuses
+    const statuses: any = [];
+    if (isLatest) statuses.push('latest');
+    if (isLive) statuses.push('live');
+    if (!isLive && !isLatest) statuses.push('standard');
+
+    return {
+      ...vs,
+      accountName: account ? account.name : 'Unknown Account',
+      containerName: container ? container.name : 'Unknown Container',
+      status: statuses.length > 0 ? statuses : undefined,
+    };
   });
 
   return (

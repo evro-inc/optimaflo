@@ -174,7 +174,7 @@ export default function PricingCards({ products = [] }: Props) {
                           <Button
                             variant="default"
                             className="w-full"
-                            onClick={() => handleCheckout(price, product)}
+                            onClick={() => handleCheckout(price)}
                           >
                             {isLoading ? 'Loading...' : buttonText}
                           </Button>

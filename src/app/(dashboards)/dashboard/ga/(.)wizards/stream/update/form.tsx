@@ -1,73 +1,80 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { setLoading, incrementStep, decrementStep } from '@/redux/formSlice';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { SubmitHandler, useFieldArray, useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { FormsSchema } from '@/src/lib/schemas/ga/streams';
+import { setCurrentStep } from '@/redux/formSlice';
+import { SubmitHandler, useWatch } from 'react-hook-form';
 import { Button } from '@/src/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/src/components/ui/form';
-
-import { Input } from '@/src/components/ui/input';
-import { FeatureResponse, GA4StreamType } from '@/src/types/types';
-import { toast } from 'sonner';
+import { Form } from '@/src/components/ui/form';
+import { FormUpdateProps, GA4StreamType } from '@/src/types/types';
 import { updateGAPropertyStreams } from '@/src/lib/fetch/dashboard/actions/ga/streams';
-import {
-  selectTable,
-  setErrorDetails,
-  setIsLimitReached,
-  setNotFoundError,
-} from '@/src/redux/tableSlice';
+import { selectTable } from '@/src/redux/tableSlice';
 import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
-import dynamic from 'next/dynamic';
+import {
+  useErrorHandling,
+  useErrorRedirect,
+  useFormInitialization,
+  useStepNavigation,
+} from '@/src/hooks/wizard';
+import { calculateRemainingLimit, processForm } from '@/src/utils/utils';
+import { DataStreamType, FormSchema } from '@/src/lib/schemas/ga/streams';
+import { gaFormFieldConfigs } from '@/src/utils/gaFormFields';
+import { FormFieldComponent } from '@/src/components/client/Utils/Form';
 
-const NotFoundErrorModal = dynamic(
-  () =>
-    import('../../../../../../../components/client/modals/notFoundError').then(
-      (mod) => mod.NotFoundError
-    ),
-  { ssr: false }
-);
-
-const ErrorModal = dynamic(
-  () =>
-    import('../../../../../../../components/client/modals/Error').then((mod) => mod.ErrorMessage),
-  { ssr: false }
-);
-
-type Forms = z.infer<typeof FormsSchema>;
-
-const FormUpdateStream = () => {
+const FormUpdateStream: React.FC<FormUpdateProps> = React.memo(({ tierLimits }) => {
   const dispatch = useDispatch();
   const loading = useSelector((state: RootState) => state.form.loading);
   const error = useSelector((state: RootState) => state.form.error);
   const currentStep = useSelector((state: RootState) => state.form.currentStep);
   const notFoundError = useSelector(selectTable).notFoundError;
   const router = useRouter();
+  const errorModal = useErrorHandling(error, notFoundError);
+
+  useEffect(() => {
+    // Ensure that we reset to the first step when the component mounts
+    dispatch(setCurrentStep(1));
+  }, [dispatch]);
 
   const selectedRowData = useSelector((state: RootState) => state.table.selectedRows);
-  const currentFormIndex = currentStep - 1; // Adjust for 0-based index
-  const currentFormData = selectedRowData[currentFormIndex]; // Get data for the current step
+  const remainingUpdateData = calculateRemainingLimit(tierLimits || [], 'GA4Streams', 'update');
+  const remainingUpdate = remainingUpdateData.remaining;
 
-  const formDataDefaults: GA4StreamType[] = Object.values(selectedRowData).map((rowData) => ({
-    account: rowData.accountName,
-    property: rowData.parent,
-    displayName: rowData.displayName,
-    parentURL: rowData.name,
-    type: rowData.type,
+  useErrorRedirect(selectedRowData, router, '/dashboard/ga/properties');
+
+  const selectedRowDataTransformed: Record<string, GA4StreamType> = Object.fromEntries(
+    Object.entries(selectedRowData).map(([key, row]) => [
+      key,
+      {
+        account: row.accountName,
+        property: row.parent,
+        displayName: row.displayName,
+        parentURL: row.name,
+        type: row.type,
+        webStreamData: {
+          defaultUri: row.webStreamData.defaultUri,
+        },
+        androidAppStreamData: {
+          packageName: '',
+        },
+        iosAppStreamData: {
+          bundleId: '',
+        },
+        name: row.name,
+        accountId: row.accountId,
+        parent: row.parent,
+      } as GA4StreamType,
+    ])
+  );
+
+  const formDataDefaults: GA4StreamType[] = Object.values(selectedRowData).map((row) => ({
+    account: row.accountName,
+    property: row.parent,
+    displayName: row.displayName,
+    parentURL: row.name,
+    type: row.type,
     webStreamData: {
-      defaultUri: rowData.webStreamData.defaultUri,
+      defaultUri: row.webStreamData.defaultUri,
     },
     androidAppStreamData: {
       packageName: '',
@@ -75,337 +82,118 @@ const FormUpdateStream = () => {
     iosAppStreamData: {
       bundleId: '',
     },
-    name: rowData.name,
-    accountId: rowData.accountId,
-    parent: rowData.parent,
+    name: row.name,
+    accountId: row.accountId,
+    parent: row.parent,
   }));
 
-  const form = useForm<Forms>({
-    defaultValues: {
-      forms: formDataDefaults,
-    },
-    resolver: zodResolver(FormsSchema),
-  });
+  const { form, fields } = useFormInitialization<GA4StreamType>(formDataDefaults, FormSchema);
 
-  const { fields } = useFieldArray({
+  const currentIndex = Math.max(0, currentStep - 2);
+  const selectedStreamType = useWatch({
     control: form.control,
-    name: 'forms',
+    name: `forms.${currentIndex}.type`,
   });
 
-  if (notFoundError) {
-    return <NotFoundErrorModal onClose={undefined} />;
-  }
-  if (error) {
-    return <ErrorModal />;
-  }
-
-  const handleNext = async () => {
-    // Determine the names of the fields in the current form to validate
-    const currentFormFields = [`forms.${currentFormIndex}.displayName`];
-
-    // Add additional fields based on the stream type of the current form
-    const currentFormData = selectedRowData[currentFormIndex];
-    if (currentFormData?.type === 'WEB_DATA_STREAM') {
-      currentFormFields.push(`forms.${currentFormIndex}.webStreamData.defaultUri`);
-    } else if (currentFormData?.type === 'ANDROID_APP_DATA_STREAM') {
-      currentFormFields.push(`forms.${currentFormIndex}.androidAppStreamData.packageName`);
-    } else if (currentFormData?.type === 'IOS_APP_DATA_STREAM') {
-      currentFormFields.push(`forms.${currentFormIndex}.iosAppStreamData.bundleId`);
-    }
-
-    // Trigger validation for only the current form's fields
-    const isFormValid = await form.trigger(currentFormFields as any);
-
-    if (isFormValid) {
-      dispatch(incrementStep());
-    } else {
-      toast.error('A form is invalid. Check all fields in your forms.', {
-        action: {
-          label: 'Close',
-          onClick: () => toast.dismiss(),
-        },
-      });
-    }
-  };
-
-  const handlePrevious = () => {
-    dispatch(decrementStep());
-  };
-
-  const processForm: SubmitHandler<Forms> = async (data) => {
-    const { forms } = data;
-
-    dispatch(setLoading(true)); // Set loading to true using Redux action
-
-    toast('Creating streams...', {
-      action: {
-        label: 'Close',
-        onClick: () => toast.dismiss(),
-      },
-    });
-
-    const uniqueStreams = new Set(forms.map((form) => form.property));
-    for (const form of forms) {
-      const identifier = `${form.property}-${form.displayName}`;
-      if (uniqueStreams.has(identifier)) {
-        toast.error(`Duplicate stream found for ${form.property} - ${form.displayName}`, {
-          action: {
-            label: 'Close',
-            onClick: () => toast.dismiss(),
-          },
-        });
-        dispatch(setLoading(false));
-        return;
-      }
-      uniqueStreams.add(identifier);
-    }
-
-    try {
-      const res = (await updateGAPropertyStreams({ forms })) as FeatureResponse;
-
-      if (res.success) {
-        res.results.forEach((result) => {
-          if (result.success) {
-            toast.success(
-              `Stream ${result.name} created successfully. The table will update shortly.`,
-              {
-                action: {
-                  label: 'Close',
-                  onClick: () => toast.dismiss(),
-                },
-              }
-            );
-          }
-        });
-
-        router.push('/dashboard/ga/properties');
-      } else {
-        if (res.notFoundError) {
-          res.results.forEach((result) => {
-            if (result.notFound) {
-              toast.error(
-                `Unable to create stream ${result.name}. Please check your access permissions. Any other streams created were successful.`,
-                {
-                  action: {
-                    label: 'Close',
-                    onClick: () => toast.dismiss(),
-                  },
-                }
-              );
-            }
-          });
-
-          dispatch(setErrorDetails(res.results)); // Assuming results contain the error details
-          dispatch(setNotFoundError(true)); // Dispatch the not found error action
-        }
-
-        if (res.limitReached) {
-          res.results.forEach((result) => {
-            if (result.limitReached) {
-              toast.error(
-                `Unable to create stream ${result.name}. You have ${result.remaining} more stream(s) you can create.`,
-                {
-                  action: {
-                    label: 'Close',
-                    onClick: () => toast.dismiss(),
-                  },
-                }
-              );
-            }
-          });
-          dispatch(setIsLimitReached(true));
-        }
-
-        if (res.errors) {
-          res.errors.forEach((error) => {
-            toast.error(`Unable to create stream. ${error}`, {
-              action: {
-                label: 'Close',
-                onClick: () => toast.dismiss(),
-              },
-            });
-          });
-          router.push('/dashboard/ga/properties');
-        }
-
-        form.reset({
-          forms: formDataDefaults,
-        });
-      }
-
-      // Reset the forms here, regardless of success or limit reached
-      form.reset({
-        forms: formDataDefaults,
-      });
-    } catch (error) {
-      toast.error('An unexpected error occurred.', {
-        action: {
-          label: 'Close',
-          onClick: () => toast.dismiss(),
-        },
-      });
-      return { success: false };
-    } finally {
-      dispatch(setLoading(false)); // Set loading to false
-    }
-  };
-
-  return (
-    <div className="flex items-center justify-center h-screen">
-      {/* Conditional rendering based on the currentStep */}
-
-      {currentStep && (
-        <div className="w-full">
-          {/* Render only the form corresponding to the current step - 1 
-              (since step 1 is for selecting the number of forms) */}
-          {fields.length > 0 && fields.length >= currentStep && (
-            <div
-              key={fields[currentStep - 1].id}
-              className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-            >
-              <div className="max-w-xl mx-auto">
-                <h1>{fields[currentFormIndex]?.displayName}</h1>
-                <div className="mt-12">
-                  {/* Form */}
-
-                  <Form {...form}>
-                    <form
-                      onSubmit={form.handleSubmit(processForm)}
-                      id={`updateStream-${currentFormIndex}`}
-                      className="space-y-6"
-                    >
-                      {fields.length > 0 &&
-                        fields.map((field, index) => {
-                          if (index === currentStep - 1) {
-                            return (
-                              <>
-                                <FormField
-                                  control={form.control}
-                                  name={`forms.${currentFormIndex}.displayName`}
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>New Stream Name</FormLabel>
-                                      <FormDescription>
-                                        This is the stream name you want to create.
-                                      </FormDescription>
-                                      <FormControl>
-                                        <Input
-                                          placeholder="Name of the stream"
-                                          {...form.register(
-                                            `forms.${currentFormIndex}.displayName`
-                                          )}
-                                          {...field}
-                                        />
-                                      </FormControl>
-
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-
-                                {currentFormData?.type === 'WEB_DATA_STREAM' && (
-                                  <FormField
-                                    control={form.control}
-                                    name={`forms.${currentFormIndex}.webStreamData.defaultUri`}
-                                    render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel>Default URI</FormLabel>
-                                        <FormDescription>
-                                          This is the default URI for the web stream.
-                                        </FormDescription>
-                                        <FormControl>
-                                          <Input
-                                            placeholder="Enter default URI"
-                                            {...form.register(
-                                              `forms.${currentFormIndex}.webStreamData.defaultUri`
-                                            )}
-                                            {...field}
-                                          />
-                                        </FormControl>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
-                                )}
-                                {currentFormData?.type === 'ANDROID_APP_DATA_STREAM' && (
-                                  <FormField
-                                    control={form.control}
-                                    name={`forms.${currentFormIndex}.androidAppStreamData.packageName`}
-                                    render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel>Package Name</FormLabel>
-                                        <FormDescription>
-                                          This is the package name for the Android app stream.
-                                        </FormDescription>
-                                        <FormControl>
-                                          <Input
-                                            placeholder="Enter Package Name"
-                                            {...form.register(
-                                              `forms.${currentFormIndex}.androidAppStreamData.packageName`
-                                            )}
-                                            {...field}
-                                          />
-                                        </FormControl>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
-                                )}
-
-                                {currentFormData?.type === 'IOS_APP_DATA_STREAM' && (
-                                  <FormField
-                                    control={form.control}
-                                    name={`forms.${currentFormIndex}.iosAppStreamData.bundleId`}
-                                    render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel>Bundle ID</FormLabel>
-                                        <FormDescription>
-                                          This is the bundle ID for the iOS app stream.
-                                        </FormDescription>
-                                        <FormControl>
-                                          <Input
-                                            placeholder="Enter Bundle ID"
-                                            {...form.register(
-                                              `forms.${currentFormIndex}.iosAppStreamData.bundleId`
-                                            )}
-                                            {...field}
-                                          />
-                                        </FormControl>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
-                                )}
-                              </>
-                            );
-                          }
-                          return null;
-                        })}
-                      <div className="flex justify-between">
-                        <Button type="button" onClick={handlePrevious} disabled={currentStep === 1}>
-                          Previous
-                        </Button>
-
-                        {currentStep < fields.length ? (
-                          <Button type="button" onClick={handleNext}>
-                            Next
-                          </Button>
-                        ) : (
-                          <Button type="submit">{loading ? 'Submitting...' : 'Submit'}</Button>
-                        )}
-                      </div>
-                    </form>
-                  </Form>
-
-                  {/* End Form */}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+  const configs = gaFormFieldConfigs(
+    'GA4Streams',
+    'update',
+    remainingUpdate,
+    selectedRowDataTransformed,
+    selectedStreamType
   );
-};
+
+  const { handleNext, handlePrevious } = useStepNavigation({
+    form,
+    currentStep,
+    fieldsToValidate: [
+      'displayName',
+      'webStreamData.defaultUri',
+      'androidAppStreamData.packageName',
+      'iosAppStreamData.bundleId',
+    ],
+  });
+
+  const onSubmit: SubmitHandler<DataStreamType> = processForm(
+    updateGAPropertyStreams,
+    form.getValues(),
+    () => form.reset({ forms: formDataDefaults }),
+    dispatch,
+    router,
+    '/dashboard/ga/properties'
+  );
+
+  if (errorModal) return errorModal;
+
+  const renderForms = () => {
+    const currentFormIndex = currentStep - 1; // Adjust for zero-based indexing
+
+    // Check if the current form index is within the bounds of the fields array
+    if (currentFormIndex < 0 || currentFormIndex >= fields.length) {
+      return null; // Return null or some fallback UI if out of bounds
+    }
+
+    // Get the field for the current form step
+    const field = fields[currentFormIndex];
+    const currentPropertyName =
+      formDataDefaults[currentFormIndex]?.displayName || `Property ${currentFormIndex}`;
+
+    return (
+      <div className="w-full">
+        <div
+          key={field.id} // Adjust key indexing to match current step
+          className="max-w-[85rem] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
+        >
+          <div className="max-w-xl mx-auto">
+            {/* Display the current property name */}
+            <h1>{currentPropertyName}</h1>
+            <div className="mt-12">
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  id="updateProperty"
+                  className="space-y-6"
+                >
+                  {Object.entries(configs)
+                    .filter(([key]) => key !== 'amount' && key !== 'parent')
+                    .map(([key, config]) => (
+                      <FormFieldComponent
+                        key={key}
+                        name={`forms.${currentStep - 1}.${key}`} // Ensure correct form name mapping
+                        label={config.label}
+                        description={config.description}
+                        placeholder={config.placeholder}
+                        type={config.type}
+                        options={config.options}
+                      />
+                    ))}
+                  <div className="flex justify-between">
+                    <Button type="button" onClick={handlePrevious} disabled={currentStep === 1}>
+                      Previous
+                    </Button>
+
+                    {currentStep < fields.length ? (
+                      <Button disabled={!form.formState.isValid} type="button" onClick={handleNext}>
+                        Next
+                      </Button>
+                    ) : (
+                      <Button disabled={!form.formState.isValid} type="submit">
+                        {loading ? 'Submitting...' : 'Submit'}
+                      </Button>
+                    )}
+                  </div>
+                </form>
+              </Form>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return <div className="flex items-center justify-center h-screen">{renderForms()}</div>;
+});
+
+FormUpdateStream.displayName = 'FormUpdateStream';
 
 export default FormUpdateStream;

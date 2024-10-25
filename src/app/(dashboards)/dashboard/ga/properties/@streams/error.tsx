@@ -1,5 +1,7 @@
 'use client';
 
-export default function ErrorStreams() {
-  return <h2>Error Streams...</h2>;
+import { ErrorComponent } from '@/src/components/client/Utils/Error';
+
+export default function Error() {
+  return <ErrorComponent platform="ga" feature="streams" path="dashboard/ga/properties" />;
 }

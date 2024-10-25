@@ -41,7 +41,6 @@ export const columns: ColumnDef<Property>[] = [
     enableSorting: false,
     enableHiding: false,
   },
-
   {
     accessorKey: 'user',
     header: ({ column }) => {

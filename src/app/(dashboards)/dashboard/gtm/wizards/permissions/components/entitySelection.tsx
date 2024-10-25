@@ -1,4 +1,5 @@
 'use client';
+
 import { Button } from '@/src/components/ui/button';
 import {
   FormControl,
@@ -26,6 +27,7 @@ import { ContainerPermissions } from './containerPermissions';
 import { useDispatch, useSelector } from 'react-redux';
 import { addForm, updatePermissions } from '@/src/redux/gtm/userPermissionSlice';
 import { RootState } from '@/src/redux/store';
+import { FormFieldComponent } from '@/src/components/client/Utils/Form';
 
 type FieldItem = {
   id: string;
@@ -44,7 +46,7 @@ export default function EntitySelect({
   containers: any;
   formIndex: number;
   table?: any;
-  type?: string;
+  type?: any;
 }) {
   const dispatch = useDispatch();
   const { setValue, getValues, control, register } = useFormContext();
@@ -124,46 +126,62 @@ export default function EntitySelect({
           return (
             <div className="space-y-2" key={item.id}>
               <div className="flex items-center space-x-4 pb-5">
-                <FormField
-                  control={control}
-                  name={`forms.${formIndex}.permissions.${permissionIndex}.accountId`}
-                  render={() => (
-                    <FormItem>
-                      <FormLabel>Account ID</FormLabel>
-                      <FormControl>
-                        <Select
-                          {...register(
-                            `forms.${formIndex}.permissions.${permissionIndex}.accountId`
-                          )}
-                          value={currentAccountId}
-                          onValueChange={(value) => {
-                            const newPermissions = [...getValues(`forms.${formIndex}.permissions`)];
-                            newPermissions[permissionIndex] = {
-                              ...newPermissions[permissionIndex],
-                              accountId: value,
-                            };
-                            setValue(`forms.${formIndex}.permissions`, newPermissions);
-                          }}
-                        >
-                          <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Select an account." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectGroup>
-                              <SelectLabel>Account</SelectLabel>
-                              {availableAccounts.map((account) => (
-                                <SelectItem key={account.accountId} value={account.accountId}>
-                                  {account.accountName || account.name}
-                                </SelectItem>
-                              ))}
-                            </SelectGroup>
-                          </SelectContent>
-                        </Select>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {type === 'update' ? (
+                  <FormFieldComponent
+                    name={`forms.${formIndex}.permissions.${permissionIndex}.accountId`}
+                    label={'Account ID'}
+                    description={'Account ID'}
+                    placeholder={'Account ID'}
+                    type={'text'}
+                    disabled={true}
+                  />
+                ) : (
+                  // Render the Account ID as a read-only field when type is 'update'
+
+                  // Render the Account ID as a Select component for non-update mode
+                  <FormField
+                    control={control}
+                    name={`forms.${formIndex}.permissions.${permissionIndex}.accountId`}
+                    render={() => (
+                      <FormItem>
+                        <FormLabel>Account ID</FormLabel>
+                        <FormControl>
+                          <Select
+                            {...register(
+                              `forms.${formIndex}.permissions.${permissionIndex}.accountId`
+                            )}
+                            value={currentAccountId}
+                            onValueChange={(value) => {
+                              const newPermissions = [
+                                ...getValues(`forms.${formIndex}.permissions`),
+                              ];
+                              newPermissions[permissionIndex] = {
+                                ...newPermissions[permissionIndex],
+                                accountId: value,
+                              };
+                              setValue(`forms.${formIndex}.permissions`, newPermissions);
+                            }}
+                          >
+                            <SelectTrigger className="w-[180px]">
+                              <SelectValue placeholder="Select an account." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectGroup>
+                                <SelectLabel>Account</SelectLabel>
+                                {availableAccounts.map((account) => (
+                                  <SelectItem key={account.accountId} value={account.accountId}>
+                                    {account.accountName || account.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectGroup>
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
 
                 <FormField
                   control={control}
@@ -218,6 +236,7 @@ export default function EntitySelect({
                 formIndex={formIndex}
                 permissionIndex={permissionIndex}
                 table={containers}
+                type={type}
               />
             </div>
           );

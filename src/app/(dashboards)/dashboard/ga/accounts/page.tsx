@@ -5,6 +5,7 @@ import { Skeleton } from '@/src/components/ui/skeleton';
 import { DataTable } from './table';
 import { columns } from './columns';
 import { listGaAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
+import RefreshGA from '@/src/components/client/GA/refresh';
 
 export default async function AccountPage({
   searchParams,
@@ -22,6 +23,10 @@ export default async function AccountPage({
 
   return (
     <>
+      <div className="container mx-auto py-10 flex items-center justify-between">
+        <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">Accounts</h1>
+        <RefreshGA path="accounts" />
+      </div>
       <Suspense
         key={query + currentPage}
         fallback={

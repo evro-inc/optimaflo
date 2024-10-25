@@ -2,12 +2,12 @@ import { z } from 'zod';
 
 // Schema for container create form data
 // Define the schema for a single form
-const SingleFormSchema = z.object({
+export const PropertySchema = z.object({
   displayName: z.string().min(1, 'Display Name is required'),
   timeZone: z.string().min(1, 'Timezone is required'),
   currencyCode: z.string().min(1, 'Currency is required'),
   industryCategory: z.string().min(1, 'Industry Category is required'),
-  name: z.string().min(1, 'Name is required'),
+  name: z.string().min(1, 'Name is required').optional(),
   parent: z.string().min(1, 'Parent is required'),
   propertyType: z.string().min(1, 'Property Type is required'),
   retention: z.string().min(1, 'Retention is required'),
@@ -20,9 +20,9 @@ export const FormCreateAmountSchema = z.object({
 });
 
 // Define the schema for the entire update form with field array
-export const FormsSchema = z.object({
-  forms: z.array(SingleFormSchema),
+export const FormSchema = z.object({
+  forms: z.array(PropertySchema),
 });
 
 // Type for the entire update form data
-export type UpdatePropertySchemaType = z.infer<typeof FormsSchema>;
+export type FormSchemaType = z.infer<typeof FormSchema>;
