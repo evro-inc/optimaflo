@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useCallback } from 'react';
 import {
   FormControl,
@@ -49,11 +50,22 @@ export const FormFieldComponent: React.FC<FieldProps> = ({
   const { control, register, setValue } = useFormContext();
 
   // Use useWatch to track dependency if provided
-  const dependsOnValue = conditionalFields?.dependsOn
-    ? useWatch({ control, name: conditionalFields.dependsOn })
-    : undefined;
+  const dependsOnValue = useWatch({
+    control,
+    name: conditionalFields?.dependsOn ?? '',
+  });
 
+  // Compute disabled state based on the watched value or other conditions
   const computedDisabled = disabled || (conditionalFields?.dependsOn && !dependsOnValue);
+
+  const Row = useCallback(
+    ({ index, style }) => (
+      <div style={style}>
+        <SelectItem value={options[index].value}>{options[index].label}</SelectItem>
+      </div>
+    ),
+    [options]
+  );
 
   if (type === 'text') {
     return (
@@ -71,7 +83,7 @@ export const FormFieldComponent: React.FC<FieldProps> = ({
                 {...field}
                 disabled={computedDisabled}
                 onChange={(e) => {
-                  const value = e.target.value;
+                  const value: any = e.target.value;
 
                   // If this is a numeric field, apply specific parsing logic
                   if (name.includes('defaultValue.numericValue')) {
@@ -95,14 +107,7 @@ export const FormFieldComponent: React.FC<FieldProps> = ({
   }
 
   if (type === 'select') {
-    const Row = useCallback(
-      ({ index, style }) => (
-        <div style={style}>
-          <SelectItem value={options[index].value}>{options[index].label}</SelectItem>
-        </div>
-      ),
-      [options]
-    );
+
     const listHeight = Math.min(options.length * 35); // Adjust as needed
 
     return (

@@ -43,7 +43,6 @@ import { LimitReached } from '@/src/components/client/modals/limitReached';
 
 import { deleteAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';
 import { GA4AccountType } from '@/src/types/types';
-import RefreshGA from '@/src/components/client/GA/refresh';
 import { RefreshLoading } from '@/src/components/client/Utils/TableLoad';
 
 interface DataTableProps<TData, TValue> {

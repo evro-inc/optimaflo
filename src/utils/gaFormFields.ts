@@ -242,7 +242,7 @@ const getGA4CustomMetricsFields = (
       placeholder: 'Select a measurement type.',
       type: 'select',
       options: Object.entries(measurementUnit)
-        .filter(([label, value]) => formType !== 'update' || value !== 'CURRENCY') // Only filter 'CURRENCY' during updates
+        .filter(([value]) => formType !== 'update' || value !== 'CURRENCY') // Only filter 'CURRENCY' during updates
         .map(([label, value]) => ({
           label,
           value,

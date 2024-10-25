@@ -2,7 +2,7 @@
 
 import { redis } from '@/src/lib/redis/cache';
 import prisma from '@/src/lib/prisma';
-import { FeatureResult, FeatureResponse, KeyEventType } from '@/src/types/types';
+import { FeatureResult, FeatureResponse } from '@/src/types/types';
 import {
   authenticateUser,
   checkFeatureLimit,

@@ -31,7 +31,7 @@ const defaultUserPermission: UserPermissionType = {
 };
 
 const FormCreatePermission: React.FC<FormCreateProps> = React.memo(
-  ({ tierLimits, containers = [], table = [], type }) => {
+  ({ tierLimits, containers = [], table = [] }) => {
     const dispatch = useDispatch();
     const loading = useSelector((state: RootState) => state.form.loading);
     const error = useSelector((state: RootState) => state.form.error);

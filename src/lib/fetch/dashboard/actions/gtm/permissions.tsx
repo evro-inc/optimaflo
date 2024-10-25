@@ -2,13 +2,12 @@
 
 import {
   FormSchema,
-  FormSetSchema,
   TransformedDataSchemaType,
   UserPermissionSchema,
 } from '@/src/lib/schemas/gtm/userPermissions';
 import { redis } from '../../../../redis/cache';
 import prisma from '@/src/lib/prisma';
-import { FeatureResponse, FeatureResult, Permissions } from '@/src/types/types';
+import { FeatureResponse, FeatureResult } from '@/src/types/types';
 import {
   authenticateUser,
   checkFeatureLimit,

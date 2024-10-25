@@ -42,8 +42,7 @@ import { LimitReached } from '@/src/components/client/modals/limitReached';
 
 import { BuiltInVariable } from '@/src/types/types';
 import { deleteBuiltInVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variablesBuiltIn';
-import Loading from './loading';
-import TableLoading, { RefreshLoading } from '@/src/components/client/Utils/TableLoad';
+import { RefreshLoading } from '@/src/components/client/Utils/TableLoad';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];

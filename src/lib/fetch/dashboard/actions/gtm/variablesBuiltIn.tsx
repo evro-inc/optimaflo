@@ -7,7 +7,7 @@ import {
 } from '@/src/lib/schemas/gtm/builtInVariables';
 import { redis } from '../../../../redis/cache';
 import prisma from '@/src/lib/prisma';
-import { BuiltInVariable, FeatureResponse, FeatureResult } from '@/src/types/types';
+import { FeatureResponse, FeatureResult } from '@/src/types/types';
 import {
   authenticateUser,
   checkFeatureLimit,

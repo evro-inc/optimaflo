@@ -60,7 +60,6 @@ type Forms = z.infer<typeof FormsSchema>;
 const FormCreateFBLink: React.FC<FormCreateProps> = ({
   tierLimits,
   properties = [],
-  table = [],
   accounts = [],
 }) => {
   const dispatch = useDispatch();

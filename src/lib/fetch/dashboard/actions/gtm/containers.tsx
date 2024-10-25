@@ -3,7 +3,7 @@
 import { ContainerSchema, ContainerSchemaType, FormSchema } from '@/src/lib/schemas/gtm/containers';
 import { redis } from '@/src/lib/redis/cache';
 import prisma from '@/src/lib/prisma';
-import { FeatureResult, FeatureResponse, Container } from '@/src/types/types';
+import { FeatureResult, FeatureResponse } from '@/src/types/types';
 import {
   authenticateUser,
   checkFeatureLimit,

@@ -140,7 +140,7 @@ export const handleAmountChange = (
  */
 
 export const processForm = <TFormValues extends FormWithParent>(
-  apiCall: (data: { forms: TFormValues[] }) => Promise<FeatureResponse>,
+  apiCall: () => Promise<FeatureResponse>,
   formDataDefaults: TFormValues[], // Accepting an array of defaults
   resetForm: () => void,
   dispatch: Dispatch,
@@ -163,18 +163,16 @@ export const processForm = <TFormValues extends FormWithParent>(
     for (const form of forms) {
       let identifier;
 
-      identifier = `${form.parent ?? 'unknown-parent'} - ${form.name ?? 'unknown-name'} - ${
-        form.displayName ?? 'unknown-displayName'
-      } - ${
-        Array.isArray(form.accountContainerWorkspace)
+      identifier = `${form.parent ?? 'unknown-parent'} - ${form.name ?? 'unknown-name'} - ${form.displayName ?? 'unknown-displayName'
+        } - ${Array.isArray(form.accountContainerWorkspace)
           ? form.accountContainerWorkspace
-              .map(
-                (workspace) =>
-                  `Account: ${workspace.accountId}, Container: ${workspace.containerId}, Workspace: ${workspace.workspaceId}`
-              )
-              .join(' | ')
+            .map(
+              (workspace) =>
+                `Account: ${workspace.accountId}, Container: ${workspace.containerId}, Workspace: ${workspace.workspaceId}`
+            )
+            .join(' | ')
           : 'unknown-account-container-workspace'
-      } - Types: ${Array.isArray(form.type) ? form.type.join(', ') : 'unknown-type'}`;
+        } - Types: ${Array.isArray(form.type) ? form.type.join(', ') : 'unknown-type'}`;
 
       if (uniqueFeatures.has(identifier)) {
         toast.error(`Duplicate feature found for ${form.name} - ${form.displayName}`, {

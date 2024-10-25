@@ -32,7 +32,7 @@ import {
 } from '@/src/components/ui/dropdown-menu';
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
-import { hardRevalidateFeatureCache, revalidate } from '@/src/utils/server';
+import { hardRevalidateFeatureCache } from '@/src/utils/server';
 import { useDispatch } from 'react-redux';
 import { ButtonDelete, ButtonLoad } from '@/src/components/client/Button/Button';
 import { setSelectedRows } from '@/src/redux/tableSlice';

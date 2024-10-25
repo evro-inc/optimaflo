@@ -1,5 +1,5 @@
 import React from 'react';
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { currentUser } from '@clerk/nextjs/server';
 import { listGAProperties } from '@/src/lib/fetch/dashboard/actions/ga/properties';
 import { listGaAccounts } from '@/src/lib/fetch/dashboard/actions/ga/accounts';

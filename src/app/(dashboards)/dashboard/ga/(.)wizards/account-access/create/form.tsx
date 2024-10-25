@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from '@/src/components/ui/select';
 import { Input } from '@/src/components/ui/input';
-import { AccessBinding, FeatureResponse, FormCreateProps, Role } from '@/src/types/types';
+import { AccessBinding, FormCreateProps, Role } from '@/src/types/types';
 import { selectTable } from '@/src/redux/tableSlice';
 import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
@@ -69,7 +69,7 @@ const FormCreateAccountAccess: React.FC<FormCreateProps> = React.memo(
       },
     ];
 
-    const { formAmount, form, fields, addForm, propertyCount } =
+    const { formAmount, form, fields, addForm } =
       useFormInitialization<AccessBinding>(formDataDefaults, FormsSchema);
 
     // Use the custom hook
@@ -273,14 +273,14 @@ const FormCreateAccountAccess: React.FC<FormCreateProps> = React.memo(
                                                       onCheckedChange={(checked) => {
                                                         return checked
                                                           ? field.onChange([
-                                                              ...(field.value ?? []),
-                                                              item.id as Role,
-                                                            ])
+                                                            ...(field.value ?? []),
+                                                            item.id as Role,
+                                                          ])
                                                           : field.onChange(
-                                                              (field.value ?? []).filter(
-                                                                (value) => value !== item.id
-                                                              )
-                                                            );
+                                                            (field.value ?? []).filter(
+                                                              (value) => value !== item.id
+                                                            )
+                                                          );
                                                       }}
                                                     />
                                                   </FormControl>
