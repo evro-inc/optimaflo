@@ -17,7 +17,7 @@ export default async function AccountPage({
 }) {
   const query = searchParams?.query || '';
   const currentPage = Number(searchParams?.page) || 1;
-  const { userId } = auth();
+  const { userId } = await auth();
   if (!userId) return notFound();
   const accounts = await listGaAccounts();
 

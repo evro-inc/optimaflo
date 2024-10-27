@@ -1,6 +1,6 @@
 import { Webhook } from 'svix';
 import { headers } from 'next/headers';
-import { clerkClient, WebhookEvent } from '@clerk/nextjs/server';
+import { createClerkClient, WebhookEvent } from '@clerk/nextjs/server';
 import prisma from '@/src/lib/prisma';
 import { fetchGASettings, fetchGtmSettings } from '@/src/lib/fetch/dashboard';
 
@@ -51,7 +51,8 @@ export async function POST(req: Request) {
   // Helper function to fetch or create user from Clerk
   async function fetchOrCreateUser(clerkUserId: string) {
     try {
-      const clerkUserData = await clerkClient().users.getUser(clerkUserId);
+      const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY })
+      const clerkUserData = await clerkClient.users.getUser(clerkUserId);
 
       // Check if user already exists by email
       const existingUserByEmail = await prisma.User.findUnique({

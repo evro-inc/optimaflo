@@ -223,7 +223,7 @@ export async function GET(
   }
 ) {
   try {
-    const { userId } = auth();
+    const { userId } = await auth();
     if (!userId) return notFound();
     const accountId = params.accountId;
 
@@ -269,7 +269,7 @@ export async function POST(
     };
   }
 ) {
-  const { userId } = auth();
+  const { userId } = await auth();
   if (!userId) return notFound();
 
   try {

@@ -6,7 +6,7 @@ import { notFound } from 'next/navigation';
 
 export async function POST(request: NextRequest) {
   const user = await currentUser();
-  const { userId } = auth();
+  const { userId } = await auth();
 
   if (!user) return notFound();
 

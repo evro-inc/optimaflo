@@ -58,8 +58,6 @@ export const handleAmountChange = (
     dispatch(setLoading(true));
     const res = await apiCall({ forms: data });  // Pass the actual form data
 
-    console.log('api call', res);
-
 
     if (res.success) {
       toast.success('Request successful!');
@@ -117,8 +115,6 @@ export const handleAmountChange = (
 
     try {
       const res = await apiCall({ forms });
-
-      console.log('res 56', res);
 
 
       if (res.success) {

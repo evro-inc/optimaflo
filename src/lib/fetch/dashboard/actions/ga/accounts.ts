@@ -34,7 +34,7 @@ export async function listGaAccounts() {
   let delay = 1000;
 
   // Authenticating the user and getting the user ID
-  const { userId }: { userId: string | null } = auth();
+  const { userId }: { userId: string | null } = await auth();
   // If user ID is not found, return a 'not found' error
   if (!userId) return notFound();
 

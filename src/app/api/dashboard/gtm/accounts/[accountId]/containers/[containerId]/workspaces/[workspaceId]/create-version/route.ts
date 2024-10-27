@@ -23,7 +23,7 @@ export async function POST(
     };
   }
 ) {
-  const { userId } = auth();
+  const { userId } = await auth();
 
   try {
     const limit = Number(request.nextUrl.searchParams.get('limit')) || 10;

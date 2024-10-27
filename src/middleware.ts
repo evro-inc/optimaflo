@@ -36,14 +36,14 @@ const nonSubscriptionRoutes = createRouteMatcher([
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
-  const { userId } = auth();
+  const { userId } = await auth();
 
   if (!isPublicRoute(req) && !userId) {
     return NextResponse.redirect(new URL('/', req.url));
   }
 
   if (!isPublicRoute(req) && !nonSubscriptionRoutes(req)) {
-    auth().protect();
+    await auth.protect();
     const ip = req.ip ?? '127.0.0.1';
 
     // Your subscription and rate limit checks here

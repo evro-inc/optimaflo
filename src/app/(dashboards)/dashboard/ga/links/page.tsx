@@ -4,7 +4,7 @@ import { auth } from '@clerk/nextjs/server';
 import RefreshGA from '@/src/components/client/GA/refresh';
 
 export default async function Page() {
-  const { userId } = auth();
+  const { userId } = await auth();
   if (!userId) return notFound();
 
   return (

@@ -24,7 +24,7 @@ export async function GET(
     };
   }
 ) {
-  const { userId } = auth();
+  const { userId } = await auth();
   try {
     const accountId = params.accountId;
     const containerId = params.containerId;
@@ -151,7 +151,7 @@ export async function POST(
     };
   }
 ) {
-  const { userId } = auth();
+  const { userId } = await auth();
   try {
     const limit = Number(request.nextUrl.searchParams.get('limit')) || 10;
     const body = JSON.parse(await request.text());
@@ -343,7 +343,7 @@ export async function DELETE(
     };
   }
 ) {
-  const { userId } = auth();
+  const { userId } = await auth();
   try {
     const limit = Number(request.nextUrl.searchParams.get('limit')) || 10;
     const body = JSON.parse(await request.text());

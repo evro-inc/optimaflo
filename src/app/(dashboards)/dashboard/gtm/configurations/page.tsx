@@ -15,7 +15,7 @@ import { getTierLimit } from '@/src/lib/fetch/tierLimit';
 export const revalidate = 10;
 
 export default async function Page() {
-  const { userId } = auth();
+  const { userId } = await auth();
   if (!userId) return notFound();
 
   const subscription = await getSubscription(userId);

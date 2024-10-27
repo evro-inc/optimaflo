@@ -19,7 +19,7 @@ export async function GET(
     };
   }
 ) {
-  const { userId } = auth();
+  const { userId } = await auth();
   try {
     // Create a JavaScript object with the extracted parameters
     const paramsJOI = {

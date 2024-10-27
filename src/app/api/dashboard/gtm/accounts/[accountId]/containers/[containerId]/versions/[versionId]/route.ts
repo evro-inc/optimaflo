@@ -21,7 +21,7 @@ export async function GET(
     };
   }
 ) {
-  const { userId } = auth();
+  const { userId } = await auth();
   try {
     const accountId = params.accountId;
     const containerId = params.containerId;

@@ -215,7 +215,7 @@ export async function fetchFilteredRows<T>(
   currentPage: number,
   pageSize: number = 10
 ): Promise<PaginatedFilteredResult<T>> {
-  const { userId } = auth();
+  const { userId } = await auth();
   if (!userId) return notFound();
 
   let filteredItems;
@@ -249,7 +249,7 @@ export async function fetchFilteredRows<T>(
 }
 
 export async function fetchAllFilteredRows<T>(allItems: T[], query: string): Promise<T[]> {
-  const { userId } = auth();
+  const { userId } = await auth();
   if (!userId) return notFound();
 
   let filteredItems;
@@ -272,7 +272,7 @@ export async function fetchPages<T>(
   query: string,
   pageSize: number
 ): Promise<number> {
-  const { userId } = auth();
+  const { userId } = await auth();
   if (!userId) return notFound();
 
   let filtered;

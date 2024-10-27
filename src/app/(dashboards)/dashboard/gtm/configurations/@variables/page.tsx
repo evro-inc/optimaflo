@@ -23,7 +23,7 @@ export default async function varPage({
 }) {
   const query = searchParams?.query || '';
   const currentPage = Number(searchParams?.page) || 1;
-  const { userId } = auth();
+  const { userId } = await auth();
   if (!userId) return notFound();
 
   const accountData = await listGtmAccounts();

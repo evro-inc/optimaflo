@@ -13,7 +13,7 @@ import {
 import { listGtmEnvs } from '@/src/lib/fetch/dashboard/actions/gtm/envs';
 
 export default async function Page() {
-  const { userId } = auth();
+  const { userId } = await auth();
   if (!userId) return notFound();
 
   const subscription = await getSubscription(userId);

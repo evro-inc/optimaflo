@@ -96,7 +96,7 @@ export async function GET(
     };
   }
 ) {
-  const { userId } = auth();
+  const { userId } = await auth();
   if (!userId) return notFound();
 
   try {
@@ -145,7 +145,7 @@ export async function GET(
   POST request handler
 ************************************************************************************/
 export async function POST(request: NextRequest) {
-  const { userId } = auth();
+  const { userId } = await auth();
   if (!userId) return notFound();
   const accessToken = await currentUserOauthAccessToken(userId);
 

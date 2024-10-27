@@ -25,7 +25,7 @@ export async function POST(
     };
   }
 ) {
-  const { userId } = auth();
+  const { userId } = await auth();
   try {
     const body = JSON.parse(await request.text());
 
