@@ -6,15 +6,15 @@ export default {
   component: Image,
   tags: ['autodocs'],
   parameters: {
-    layout: 'centered',
+    layout: 'centered'
   },
   argTypes: {
-    onClick: { action: 'clicked' },
-  },
+    onClick: { action: 'clicked' }
+  }
 } satisfies Meta<typeof Image>;
 
 export const ImageGeneral = {
   args: {
-    onClick: () => {},
-  },
+    onClick: () => {}
+  }
 };

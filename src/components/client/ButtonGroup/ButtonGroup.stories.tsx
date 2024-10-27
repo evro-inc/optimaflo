@@ -1,9 +1,10 @@
 /* eslint-disable import/no-anonymous-default-export */
-import { Meta } from '@storybook/react';
+import { Meta, StoryObj } from '@storybook/react';
 import { ButtonGroup } from './ButtonGroup';
+import { fn } from '@storybook/test';
 
 export default {
-  title: 'OptimaFlo/Button',
+  title: 'OptimaFlo/ButtonGroup',
   component: ButtonGroup,
   tags: ['autodocs'],
   parameters: {
@@ -11,7 +12,6 @@ export default {
   },
   argTypes: {
     onClick: { action: 'clicked' },
-
     variant: {
       options: [
         'primary',
@@ -27,15 +27,15 @@ export default {
       ],
       control: { type: 'select' },
     },
-
-    text: { control: 'text' },
+    text: { control: 'text' }, // Ensure the `text` prop is properly defined in the component's props
   },
 } satisfies Meta<typeof ButtonGroup>;
 
-export const ButtonGroupGeneral = {
+// General story for ButtonGroup with default args
+export const ButtonGroupGeneral: StoryObj<typeof ButtonGroup> = {
   args: {
     variant: 'primary',
-    text: 'Button',
-    onClick: () => {},
+    text: 'Button', // Text is properly defined in the ButtonGroup props
+    onClick: fn(), // Using fn() for testing
   },
 };

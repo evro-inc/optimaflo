@@ -1,42 +1,35 @@
-/* eslint-disable import/no-anonymous-default-export */
-import { Meta } from '@storybook/react';
-import { Button } from './Button';
+import { Meta, StoryObj } from '@storybook/react';
+import { ButtonPrim } from './Button';
+import { fn } from '@storybook/test';
+
 
 export default {
   title: 'OptimaFlo/Button',
-  component: Button,
+  component: ButtonPrim,
   tags: ['autodocs'],
   parameters: {
     layout: 'centered',
   },
   argTypes: {
-    onClick: { action: 'clicked' },
-
+    onClick: { action: 'clicked' }, // For logging clicks in the Actions panel
     variant: {
       options: [
-        'primary',
-        'secondary',
-        'tertiary',
-        'success',
-        'info',
-        'warning',
-        'error',
-        'disable',
-        'loading',
-        'toggle',
+        'primary', 'secondary', 'tertiary',
+        'success', 'info', 'warning',
+        'error', 'disable', 'loading', 'toggle',
       ],
       control: { type: 'select' },
     },
-
     text: { control: 'text' },
   },
-} satisfies Meta<typeof Button>;
+} satisfies Meta<typeof ButtonPrim>;
 
-export const ButtonGeneral = {
+// General story for Button with default args
+export const ButtonGeneral: StoryObj<typeof ButtonPrim> = {
   args: {
     variant: 'primary',
     text: 'Button',
-    onClick: () => {},
+    onClick: fn(), // Explicit mock function for testing
   },
 };
 

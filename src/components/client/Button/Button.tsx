@@ -1,4 +1,5 @@
 'use client';
+
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useTheme } from 'next-themes';
 import { MoonIcon, SunIcon, Bars3BottomRightIcon, XMarkIcon } from '@heroicons/react/24/solid';
@@ -330,8 +331,8 @@ export const ButtonDelete = ({ onDelete, disabled, action, type = '', loading })
             {type === 'GTMVersion'
               ? 'This action cannot be undone. Deleting this version will affect your current GTM settings. Live or latest containers can not be deleted.'
               : type === 'GTMPermission'
-              ? 'This action cannot be undone. Deleting this permission will remove a user from the account, revoking access to it and all of its containers.'
-              : 'This action cannot be undone. This will permanently delete the selected item.'}
+                ? 'This action cannot be undone. Deleting this permission will remove a user from the account, revoking access to it and all of its containers.'
+                : 'This action cannot be undone. This will permanently delete the selected item.'}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
