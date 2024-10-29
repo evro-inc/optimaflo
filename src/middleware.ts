@@ -36,99 +36,124 @@ const nonSubscriptionRoutes = createRouteMatcher([
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
-  const { userId } = await auth();
+  const { userId, getToken } = await auth();
 
-  if (!isPublicRoute(req) && !userId) {
+  // Step 1: Handle Public Routes
+  if (isPublicRoute(req)) {
+    return NextResponse.next();
+  }
+
+  // Step 2: Ensure User Authentication
+  if (!userId) {
+    console.log('Unauthenticated user; redirecting...');
     return NextResponse.redirect(new URL('/', req.url));
   }
 
-  if (!isPublicRoute(req) && !nonSubscriptionRoutes(req)) {
+  // Step 3: Protect Non-Subscription Routes
+  if (!nonSubscriptionRoutes(req)) {
+    console.log('Protecting non-subscription route:', req.nextUrl.pathname);
     await auth.protect();
-    const ip = req.ip ?? '127.0.0.1';
-
-    // Your subscription and rate limit checks here
-    try {
-      if (userId) {
-        const [subscriptions, generalRateLimitResult] = await Promise.all([
-          getSubscriptionsAPI(userId),
-          generalApiRateLimit.limit(ip),
-        ]);
-
-        const hasActiveSubscription = subscriptions
-          .filter((subscription) => subscription.status === 'active')
-          .map((subscription) => subscription.productId);
-
-        // If the user doesn't have any active subscription, redirect to /blocked
-        if (!hasActiveSubscription) {
-          return NextResponse.redirect(new URL('/blocked', req.url));
-        }
-
-        // Rate limit check
-        // Check the general API rate limit
-        if (!generalRateLimitResult.success) {
-          return NextResponse.redirect(new URL('/blocked', req.url));
-        }
-
-        // rate limit check
-        const rateLimitRules = [
-          {
-            urlPattern: new RegExp('/dashboard($|/.*)'),
-            rateLimit: dashboardRateLimit,
-          },
-          {
-            urlPattern: new RegExp('/api/dashboard($|/.*)'),
-            rateLimit: gtmRateLimit,
-          },
-          {
-            urlPattern: new RegExp('/api/users($|/.*)'),
-            rateLimit: userRateLimit,
-          },
-          {
-            urlPattern: new RegExp('/api/customers($|/.*)'),
-            rateLimit: customerRateLimit,
-          },
-          {
-            urlPattern: new RegExp('/api/subscriptions($|/.*)'),
-            rateLimit: subscriptionRateLimit,
-          },
-          {
-            urlPattern: new RegExp('/api/products($|/.*)'),
-            rateLimit: productRateLimit,
-          },
-          {
-            urlPattern: new RegExp('/api/prices($|/.*)'),
-            rateLimit: priceRateLimit,
-          },
-          {
-            urlPattern: new RegExp('/api/create-checkout-session($|/.*)'),
-            rateLimit: checkoutSessionRateLimit,
-          },
-          {
-            urlPattern: new RegExp('/api/create-portal-link($|/.*)'),
-            rateLimit: portalSessionRateLimit,
-          },
-        ];
-
-        // Check the rate limit for each rule - Comment out while testing
-        const rateLimitPromises = rateLimitRules.map(async (rule) => {
-          if (rule.urlPattern.test(req.nextUrl.pathname)) {
-            const rateLimitResult = await rule.rateLimit.limit(ip);
-            if (!rateLimitResult.success) {
-              return NextResponse.redirect(new URL('/blocked', req.url));
-            }
-          }
-        });
-
-        await Promise.all(rateLimitPromises);
-      }
-    } catch (error) {
-      console.error('Error while checking subscriptions:', error);
-
-      return NextResponse.error();
-    }
   }
 
-  // Continue with the request if user is authorized and passes all checks
+  const ip = req.ip ?? '127.0.0.1';
+
+  // Step 4: Subscription and Rate Limit Checks
+  try {
+    // Check the user's subscriptions only if authenticated
+    if (userId) {
+      console.log('Fetching subscriptions for user:', userId);
+
+      // Make sure to use the Clerk session token to authenticate the API request
+      const authToken = await getToken();
+
+      if (!authToken) {
+        console.error('No auth token available for subscription check');
+        return NextResponse.redirect(new URL('/blocked', req.url));
+      }
+
+      let subscriptions;
+      try {
+        subscriptions = await getSubscriptionsAPI(userId, authToken);
+        console.log('subscriptions', subscriptions);
+
+      } catch (subError) {
+        console.log('sub serror', subError);
+
+        return NextResponse.redirect(new URL('/pricing', req.url));
+      }
+
+      const hasActiveSubscription = subscriptions.some(
+        (subscription) => subscription.status === 'active'
+      );
+
+      if (!hasActiveSubscription) {
+        console.log('No active subscription found; redirecting...');
+        return NextResponse.redirect(new URL('/pricing', req.url));
+      }
+
+      // Rate Limit Check - General API
+      const generalRateLimitResult = await generalApiRateLimit.limit(ip);
+      if (!generalRateLimitResult.success) {
+        console.log('General rate limit exceeded; redirecting...');
+        return NextResponse.redirect(new URL('/blocked', req.url));
+      }
+
+      // Specific Rate Limit Checks
+      const rateLimitRules = [
+        {
+          urlPattern: new RegExp('/dashboard($|/.*)'),
+          rateLimit: dashboardRateLimit,
+        },
+        {
+          urlPattern: new RegExp('/api/dashboard($|/.*)'),
+          rateLimit: gtmRateLimit,
+        },
+        {
+          urlPattern: new RegExp('/api/users($|/.*)'),
+          rateLimit: userRateLimit,
+        },
+        {
+          urlPattern: new RegExp('/api/customers($|/.*)'),
+          rateLimit: customerRateLimit,
+        },
+        {
+          urlPattern: new RegExp('/api/subscriptions($|/.*)'),
+          rateLimit: subscriptionRateLimit,
+        },
+        {
+          urlPattern: new RegExp('/api/products($|/.*)'),
+          rateLimit: productRateLimit,
+        },
+        {
+          urlPattern: new RegExp('/api/prices($|/.*)'),
+          rateLimit: priceRateLimit,
+        },
+        {
+          urlPattern: new RegExp('/api/create-checkout-session($|/.*)'),
+          rateLimit: checkoutSessionRateLimit,
+        },
+        {
+          urlPattern: new RegExp('/api/create-portal-link($|/.*)'),
+          rateLimit: portalSessionRateLimit,
+        },
+      ];
+
+      for (const rule of rateLimitRules) {
+        if (rule.urlPattern.test(req.nextUrl.pathname)) {
+          const rateLimitResult = await rule.rateLimit.limit(ip);
+          if (!rateLimitResult.success) {
+            console.log('Rate limit exceeded for path:', req.nextUrl.pathname);
+            return NextResponse.redirect(new URL('/blocked', req.url));
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error while checking subscriptions or rate limits:', error);
+    return NextResponse.error();
+  }
+
+  // Continue with the request if all checks are passed
   return NextResponse.next();
 });
 

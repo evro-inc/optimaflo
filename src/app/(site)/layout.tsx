@@ -20,7 +20,7 @@ export default function RootLayout({
   return (
     <>
       <html lang="en" suppressHydrationWarning className={`${openSans.className}`}>
-        <ClerkProvider>
+        <ClerkProvider dynamic>
           <body>
             <ReduxProvider>
               <Navbar />

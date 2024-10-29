@@ -5,8 +5,5 @@ import { Provider } from 'react-redux';
 import { store } from '../redux/store';
 
 export const ReduxProvider = ({ children }) => {
-  useEffect(() => {
-    import('preline');
-  }, []);
   return <Provider store={store}>{children}</Provider>;
 };

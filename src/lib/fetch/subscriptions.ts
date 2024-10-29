@@ -3,25 +3,36 @@
 import prisma from '../prisma';
 
 // Get subscriptions. This function is used in the middleware file and calls the API because Prisma functions can not be run in the middleware file.
-export async function getSubscriptionsAPI(userId: string) {
+export async function getSubscriptionsAPI(userId: string, authToken: string) {
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
   const userApi = `${baseUrl}/api/users/${userId}`;
 
   const options = {
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authToken}`, // Use 'Bearer ' prefix for the token
     },
   };
 
   try {
-    const user = await fetch(userApi, options);
+    const userResponse = await fetch(userApi, options);
 
-    if (!user.ok) {
-      const responseText = await user.text();
-      throw new Error(`Error: ${user.status} ${user.statusText}. Response: ${responseText}`);
+    if (!userResponse.ok) {
+      const responseText = await userResponse.text();
+      console.error(`Error fetching user: ${userResponse.status} ${userResponse.statusText}. Response: ${responseText}`);
+
+      if (userResponse.status === 401 || userResponse.status === 403) {
+        throw new Error('Unauthorized: Token may be invalid or expired');
+      }
+
+      if (userResponse.status === 404) {
+        throw new Error('User not found. Make sure the userId is correct.');
+      }
+
+      throw new Error(`Error: ${userResponse.status} ${userResponse.statusText}`);
     }
 
-    const userText = await user.json();
+    const userText = await userResponse.json();
     const userSubscriptions = userText.data.Subscription;
 
     if (!userSubscriptions) {
@@ -34,6 +45,7 @@ export async function getSubscriptionsAPI(userId: string) {
     throw error;
   }
 }
+
 
 // This function is used in the profile page to get the subscription details.
 export async function getSubscription(userId: string) {

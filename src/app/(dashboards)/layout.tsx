@@ -22,7 +22,7 @@ export default async function DashboardLayout({
   return (
     <ReduxProvider>
       <html lang="en">
-        <ClerkProvider>
+        <ClerkProvider dynamic>
           <body className="flex h-screen border-collapse overflow-hidden">
             {/* ========== HEADER ========== */}
 
