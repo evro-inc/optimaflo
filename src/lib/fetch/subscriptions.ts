@@ -10,7 +10,7 @@ export async function getSubscriptionsAPI(userId: string, authToken: string) {
   const options = {
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${authToken}`, // Use 'Bearer ' prefix for the token
+      Authorization: `Bearer ${authToken}`, // Use 'Bearer ' prefix for the token
     },
   };
 
@@ -19,7 +19,9 @@ export async function getSubscriptionsAPI(userId: string, authToken: string) {
 
     if (!userResponse.ok) {
       const responseText = await userResponse.text();
-      console.error(`Error fetching user: ${userResponse.status} ${userResponse.statusText}. Response: ${responseText}`);
+      console.error(
+        `Error fetching user: ${userResponse.status} ${userResponse.statusText}. Response: ${responseText}`
+      );
 
       if (userResponse.status === 401 || userResponse.status === 403) {
         throw new Error('Unauthorized: Token may be invalid or expired');
@@ -45,7 +47,6 @@ export async function getSubscriptionsAPI(userId: string, authToken: string) {
     throw error;
   }
 }
-
 
 // This function is used in the profile page to get the subscription details.
 export async function getSubscription(userId: string) {

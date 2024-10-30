@@ -2,7 +2,7 @@
 
 import { Button } from '@/src/components/ui/button';
 import { toast } from 'sonner';
-import { revalidate } from '@/src/utils/server';
+import { hardRevalidateFeatureCache } from '@/src/utils/server';
 import { useUser } from '@clerk/nextjs';
 
 function RefreshGTM({ path }) {
@@ -32,7 +32,7 @@ function RefreshGTM({ path }) {
 
     // Ensure `path` is correctly formatted
     if (typeof path === 'string') {
-      await revalidate(keys, `/dashboard/gtm/${path}`, userId, true);
+      await hardRevalidateFeatureCache(keys, `/dashboard/gtm/${path}`, userId);
     } else {
       console.error('Invalid path:', path);
     }

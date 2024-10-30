@@ -1,4 +1,5 @@
 'use client';
+
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Price } from '@prisma/client';
@@ -24,17 +25,18 @@ import { selectSubscriptionState } from '@/src/redux/subscriberSlice';
 
 interface Props {
   products: ProductWithPrice[];
+  user: any;
+  token: any;
 }
 
-export default function PricingCards({ products = [] }: Props) {
+export default function PricingCards({ products = [], user, token }: Props) {
   const router = useRouter();
 
   const [, setPriceIdLoading] = useState<string>();
 
   const [showAlert, setShowAlert] = useState(false);
-  const { userId } = useAuth();
 
-  useSubscription(userId);
+  useSubscription(user, token);
   const { subscription, isLoading } = useSelector(selectSubscriptionState);
 
   const currentSubscriptionProduct =
@@ -51,7 +53,7 @@ export default function PricingCards({ products = [] }: Props) {
   const handleCheckout = async (price: Price) => {
     try {
       setPriceIdLoading(price.id);
-      if (!userId) {
+      if (!user) {
         setShowAlert(true); // Show the alert if there's no session
         return;
       } else {

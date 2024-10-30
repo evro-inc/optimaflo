@@ -45,13 +45,11 @@ export default clerkMiddleware(async (auth, req) => {
 
   // Step 2: Ensure User Authentication
   if (!userId) {
-    console.log('Unauthenticated user; redirecting...');
     return NextResponse.redirect(new URL('/', req.url));
   }
 
   // Step 3: Protect Non-Subscription Routes
   if (!nonSubscriptionRoutes(req)) {
-    console.log('Protecting non-subscription route:', req.nextUrl.pathname);
     await auth.protect();
   }
 
@@ -61,8 +59,6 @@ export default clerkMiddleware(async (auth, req) => {
   try {
     // Check the user's subscriptions only if authenticated
     if (userId) {
-      console.log('Fetching subscriptions for user:', userId);
-
       // Make sure to use the Clerk session token to authenticate the API request
       const authToken = await getToken();
 
@@ -74,11 +70,7 @@ export default clerkMiddleware(async (auth, req) => {
       let subscriptions;
       try {
         subscriptions = await getSubscriptionsAPI(userId, authToken);
-        console.log('subscriptions', subscriptions);
-
       } catch (subError) {
-        console.log('sub serror', subError);
-
         return NextResponse.redirect(new URL('/pricing', req.url));
       }
 
@@ -87,14 +79,12 @@ export default clerkMiddleware(async (auth, req) => {
       );
 
       if (!hasActiveSubscription) {
-        console.log('No active subscription found; redirecting...');
         return NextResponse.redirect(new URL('/pricing', req.url));
       }
 
       // Rate Limit Check - General API
       const generalRateLimitResult = await generalApiRateLimit.limit(ip);
       if (!generalRateLimitResult.success) {
-        console.log('General rate limit exceeded; redirecting...');
         return NextResponse.redirect(new URL('/blocked', req.url));
       }
 
@@ -142,7 +132,6 @@ export default clerkMiddleware(async (auth, req) => {
         if (rule.urlPattern.test(req.nextUrl.pathname)) {
           const rateLimitResult = await rule.rateLimit.limit(ip);
           if (!rateLimitResult.success) {
-            console.log('Rate limit exceeded for path:', req.nextUrl.pathname);
             return NextResponse.redirect(new URL('/blocked', req.url));
           }
         }

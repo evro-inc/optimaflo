@@ -6,6 +6,21 @@ import { FeatureUnion } from '@/src/types/types';
 import { ColumnDef } from '@tanstack/react-table';
 import { ArrowUpDown } from 'lucide-react';
 
+function getVariableName(row: any) {
+  switch (true) {
+    case 'builtInVariable' in row:
+      return row.builtInVariable.name;
+    case 'variable' in row:
+      return row.variable.name;
+    case 'tag' in row:
+      return row.tag.name;
+    case 'trigger' in row:
+      return row.trigger.name;
+    default:
+      return undefined;
+  }
+}
+
 export const columns: ColumnDef<FeatureUnion>[] = [
   {
     id: 'select',
@@ -31,14 +46,7 @@ export const columns: ColumnDef<FeatureUnion>[] = [
   {
     id: 'name',
     accessorFn: (row: any) => {
-      // You would need to implement logic to handle different types within FeatureUnion
-      if ('builtInVariable' in row) {
-        return row.builtInVariable.name;
-      } else if ('variable' in row) {
-        // Assuming 'variable' type has a 'name' property
-        return row.variable.name;
-      }
-      // Handle other types as needed
+      return getVariableName(row);
     },
     header: ({ column }) => {
       return (
@@ -52,6 +60,22 @@ export const columns: ColumnDef<FeatureUnion>[] = [
       );
     },
   },
+
+  {
+    accessorKey: 'type',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Type
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+  },
+
   {
     accessorKey: 'changeStatus',
     header: ({ column }) => {

@@ -40,7 +40,7 @@ import { RootState } from '@/src/redux/store';
 import { createGTMVersion } from '@/src/lib/fetch/dashboard/actions/gtm/workspaces';
 import { UpdateEnvs } from '@/src/lib/fetch/dashboard/actions/gtm/envs';
 import { Checkbox } from '@/src/components/ui/checkbox';
-import { revalidate } from '@/src/utils/server';
+import { hardRevalidateFeatureCache } from '@/src/utils/server';
 import { useUser } from '@clerk/nextjs';
 import RefreshGTM from './refresh';
 
@@ -336,7 +336,7 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
       `gtm:builtInVariables:userId:${userId}`,
       `gtm:variables:userId:${userId}`,
     ];
-    await revalidate(keys, '/dashboard/gtm/configurations', userId);
+    await hardRevalidateFeatureCache(keys, '/dashboard/gtm/configurations', userId);
 
     router.push('/dashboard/gtm/configurations');
     setIsDrawerOpen(false);
@@ -481,7 +481,7 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
 
         form.reset({ forms: [formDataDefaults] });
       } catch (error) {
-        toast.error('An unexpected error occurred.', {
+        toast.error('An unexpected error occurred 2.', {
           action: {
             label: 'Close',
             onClick: () => toast.dismiss(),
@@ -517,7 +517,7 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
 
         form.reset({ forms: [formDataDefaults] });
       } catch (error) {
-        toast.error('An unexpected error occurred.', {
+        toast.error('An unexpected error occurred 1.', {
           action: {
             label: 'Close',
             onClick: () => toast.dismiss(),

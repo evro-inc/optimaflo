@@ -1,4 +1,5 @@
 'use server';
+
 import React from 'react';
 import { ProductWithPrice } from '@/src/types/types';
 import {
@@ -11,12 +12,16 @@ import {
   TableRow,
 } from '../../ui/table';
 import PricingCards from './Cards';
+import { auth } from '@clerk/nextjs/server';
 
 interface Props {
   products: ProductWithPrice[];
 }
 
 export default async function PricingTable({ products = [] }: Props) {
+  const { userId, getToken } = await auth();
+  const authToken = getToken();
+
   const GTMtierLimits = [
     {
       id: '1',
@@ -170,7 +175,7 @@ export default async function PricingTable({ products = [] }: Props) {
 
         {/* End Grid */}
 
-        <PricingCards products={sortedProducts} />
+        <PricingCards products={sortedProducts} user={userId} token={authToken} />
 
         {/* End Hero */}
       </section>

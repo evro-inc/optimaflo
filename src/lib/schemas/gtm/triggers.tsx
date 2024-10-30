@@ -114,6 +114,34 @@ export const TriggerSchema = z.object({
   parameter: z.array(ParameterSchema).optional(),
 });
 
+const revertBaseSchema = z.object({
+  path: z.string().min(1, 'Path is required'),
+  accountId: z.string().min(1, 'Account ID is required'),
+  containerId: z.string().min(1, 'Container ID is required'),
+  workspaceId: z.string().min(1, 'Workspace ID is required'),
+  triggerId: z.string().min(1, 'Trigger ID is required'),
+  name: z.string().min(1, 'Name is required'),
+  type: z.string().min(1, 'Type is required'),
+  tagManagerUrl: z.string().optional(),
+  fingerprint: z.string().optional(),
+});
+
+// Revert schema for Triggers
+export const revertTriggerSchema = z.object({
+  setId: z.number(),
+  changeId: z.number(),
+  changeStatus: z.enum(['deleted', 'created', 'updated']),
+  trigger: revertBaseSchema, // Includes all trigger details
+  accountName: z.string().min(1, 'Account Name is required'),
+  accountId: z.string().min(1, 'Account ID is required'),
+  containerName: z.string().min(1, 'Container Name is required'),
+  containerId: z.string().min(1, 'Container ID is required'),
+  workspaceName: z.string().min(1, 'Workspace Name is required'),
+  workspaceId: z.string().min(1, 'Workspace ID is required'),
+  name: z.string().min(1, 'Name is required'),
+  type: z.string().min(1, 'Type is required'),
+});
+
 export const FormCreateAmountSchema = z.object({
   amount: z.number(),
 });

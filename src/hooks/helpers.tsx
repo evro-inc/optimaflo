@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { setLoading } from '@/src/redux/globalSlice';
 import { setError } from '@/src/redux/tableSlice';
 import { useDispatch, useSelector } from 'react-redux';
+import { getSubscriptionsAPI } from '../lib/fetch/subscriptions';
 
 // hooks/useUserDetails.js
 export const useUserDetails = (userId) => {
@@ -27,27 +28,28 @@ export const useUserDetails = (userId) => {
 };
 
 // hooks/useSubscription.js
-export const useSubscription = (userId) => {
+export const useSubscription = async (userId, authToken) => {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || !authToken) return;
 
     const fetchSubscription = async () => {
       dispatch(setLoading(true));
       try {
-        const response = await fetch(`/api/subscriptions/${userId}`);
-        const data = await response.json();
-        dispatch(setSubscription(data));
+        // Use the centralized API function
+        const subscriptions = await getSubscriptionsAPI(userId, authToken);
+        dispatch(setSubscription(subscriptions));
       } catch (error) {
-        throw new Error('Failed to fetch subscription:', error);
+        console.error('Failed to fetch subscription:', error);
+        // Optionally set an error state in your Redux store
       } finally {
         dispatch(setLoading(false));
       }
     };
 
     fetchSubscription();
-  }, [userId, dispatch]);
+  }, [userId, authToken, dispatch]);
 };
 
 export const useError = () => {

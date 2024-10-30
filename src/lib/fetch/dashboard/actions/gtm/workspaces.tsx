@@ -745,7 +745,13 @@ export async function createGTMVersion(formData: {
       });
 
       await softRevalidateFeatureCache(
-        [`gtm:workspaces:userId:${userId}`],
+        [
+          `gtm:workspaces:userId:${userId}`,
+          `gtm:tags:userId:${userId}`,
+          `gtm:triggers:userId:${userId}`,
+          `gtm:variables:userId:${userId}`,
+          `gtm:builtInVariables:userId:${userId}`,
+        ],
         `/dashboard/gtm/entities`,
         userId,
         operations,

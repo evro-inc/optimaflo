@@ -350,13 +350,6 @@ const getCommonKeyEventFields = (
   return fields;
 };
 
-
-
-
-
-
-
-
 const getCommonAudienceFields = (
   accountsWithProperties: { displayName: string; name: string }[],
   filteredProperties: { displayName: string; name: string }[],
@@ -433,9 +426,6 @@ const getCommonAudienceFields = (
 
   return fields;
 };
-
-
-
 
 export const gaFormFieldConfigs = (
   entityType: entityType, // Add more GA entity types as needed

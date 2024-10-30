@@ -51,7 +51,7 @@ export async function POST(req: Request) {
   // Helper function to fetch or create user from Clerk
   async function fetchOrCreateUser(clerkUserId: string) {
     try {
-      const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY })
+      const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
       const clerkUserData = await clerkClient.users.getUser(clerkUserId);
 
       // Check if user already exists by email

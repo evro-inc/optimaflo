@@ -52,33 +52,35 @@ export default async function Page() {
     }))
   );
 
+  // Helper function to extract common metadata from any GTM entity
+  const extractMetadata = (item) => {
+    const entity = item.variable || item.builtInVariable || item.tag || item.trigger || item;
+
+    return {
+      accountId: entity.accountId,
+      containerId: entity.containerId,
+      workspaceId: entity.workspaceId,
+      name: entity.name,
+      type: entity.type || entity.tag ? 'tag' : entity.trigger ? 'trigger' : 'unknown',
+    };
+  };
+
+  // Simplify combinedData by using the extractMetadata function
   const combinedData = transformedData.map((vars) => {
-    let accountId, containerId, workspaceId, name, type;
+    // Extract metadata from the current item
+    const { accountId, containerId, workspaceId, name, type } = extractMetadata(vars);
 
-    if (vars.variable) {
-      accountId = vars.variable.accountId;
-      containerId = vars.variable.containerId;
-      workspaceId = vars.variable.workspaceId;
-      name = vars.variable.name;
-      type = vars.variable.type;
-    } else if (vars.builtInVariable) {
-      accountId = vars.builtInVariable.accountId;
-      containerId = vars.builtInVariable.containerId;
-      workspaceId = vars.builtInVariable.workspaceId;
-      name = vars.builtInVariable.name;
-      type = vars.builtInVariable.type;
-    } else {
-      return vars; // No variable or builtInVariable
-    }
-
+    // Find the corresponding account, container, and workspace
     const account = flatAccounts.find((p) => p.accountId === accountId);
     const container = flatContainers.find((p) => p.containerId === containerId);
     const workspace = flatWorkspaces.find((p) => p.workspaceId === workspaceId);
 
+    // Assign account, container, and workspace names
     const accountName = account ? account.name : 'Account Name Unknown';
     const containerName = container ? container.name : 'Container Name Unknown';
     const workspaceName = workspace ? workspace.name : 'Workspace Name Unknown';
 
+    // Return the enriched vars object
     return {
       ...vars,
       accountName,

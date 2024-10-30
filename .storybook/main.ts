@@ -19,7 +19,7 @@ const config: StorybookConfig = {
       name: '@storybook/addon-styling',
       options: {},
     },
-    '@chromatic-com/storybook'
+    '@chromatic-com/storybook',
   ],
 
   framework: {
@@ -30,7 +30,7 @@ const config: StorybookConfig = {
   docs: {},
 
   typescript: {
-    reactDocgen: 'react-docgen-typescript'
-  }
+    reactDocgen: 'react-docgen-typescript',
+  },
 };
 export default config;

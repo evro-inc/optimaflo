@@ -7,7 +7,7 @@ export default {
   component: LinkBody,
   tags: ['autodocs'],
   parameters: {
-    layout: 'centered'
+    layout: 'centered',
   },
   argTypes: {
     onClick: { action: 'clicked' },
@@ -23,19 +23,19 @@ export default {
         'error',
         'disable',
         'loading',
-        'toggle'
+        'toggle',
       ],
-      control: { type: 'select' }
+      control: { type: 'select' },
     },
 
-    text: { control: 'text' }
-  }
+    text: { control: 'text' },
+  },
 } satisfies Meta<typeof LinkBody>;
 
 export const LinkGeneral = {
   args: {
     variant: 'primary',
     text: 'Link',
-    href: '#'
-  }
+    href: '#',
+  },
 };

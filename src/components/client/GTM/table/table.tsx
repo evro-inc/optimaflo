@@ -34,6 +34,9 @@ import { LimitReached } from '@/src/components/client/modals/limitReached';
 import { revertVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variables';
 import { useRevertHook } from '@/src/hooks/useCRUD';
 import { ButtonDelete } from '../../Button/Button';
+import { revertBuiltInVariables } from '@/src/lib/fetch/dashboard/actions/gtm/variablesBuiltIn';
+import { revertTags } from '@/src/lib/fetch/dashboard/actions/gtm/tags';
+import { revertTrigger } from '@/src/lib/fetch/dashboard/actions/gtm/triggers';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -45,6 +48,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
+  const [isRevertPending, startRevertTransition] = React.useTransition();
 
   const table = useReactTable({
     data,
@@ -75,22 +79,45 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
 
   const builtInVariables = selectedRowArray.filter((row: any) => row.builtInVariable);
   const variables = selectedRowArray.filter((row: any) => row.variable);
+  const tags = selectedRowArray.filter((row: any) => row.tag);
+  const triggers = selectedRowArray.filter((row: any) => row.trigger);
 
-  const handleRevertVar = useRevertHook(
-    revertVariables, // Pass the specific revert function
-    selectedRowData, // Pass selected rows
-    table, // Pass the table instance
-    'version' // Optionally pass a custom name for the type being reverted
+  const revertBuiltInVariablesHandler = useRevertHook(
+    revertBuiltInVariables,
+    selectedRowData,
+    table,
+    'built-in variable'
   );
 
-  const handleRevert = () => {
-    if (builtInVariables.length > 0) {
-      handleRevertVar();
-    }
+  const revertVariablesHandler = useRevertHook(revertVariables, selectedRowData, table, 'version');
 
-    if (variables.length > 0) {
-      handleRevertVar();
-    }
+  const revertTagsHandler = useRevertHook(revertTags, selectedRowData, table, 'tag');
+  const revertTriggerHandler = useRevertHook(revertTrigger, selectedRowData, table, 'trigger');
+
+  // The click handler to revert changes
+  // Create a map that links the type to its corresponding data and handler
+  const revertHandlers = [
+    { data: builtInVariables, handler: revertBuiltInVariablesHandler },
+    { data: variables, handler: revertVariablesHandler },
+    { data: tags, handler: revertTagsHandler },
+    { data: triggers, handler: revertTriggerHandler },
+  ];
+
+  // The click handler to revert changes
+  const handleRevert = () => {
+    revertHandlers.forEach(({ data, handler }) => {
+      if (data.length > 0) {
+        handler().catch((error) => {
+          console.error('Revert operation failed:', error);
+        });
+      }
+    });
+  };
+
+  const onRevertButtonClick = () => {
+    startRevertTransition(async () => {
+      await handleRevert();
+    });
   };
 
   return (
@@ -108,8 +135,10 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
 
           <ButtonDelete
             disabled={Object.keys(table.getState().rowSelection).length === 0}
-            onDelete={handleRevert}
+            onDelete={onRevertButtonClick}
             action={'Revert'}
+            type="GTMVariables"
+            loading={isRevertPending}
           />
 
           <DropdownMenu>

@@ -54,7 +54,9 @@ async function validatePostParams(params: any): Promise<PostParams> {
   const schema = Joi.object({
     accountId: Joi.string().required(),
     name: Joi.string().required(),
-    usageContext: Joi.array().items(Joi.string().valid('web', 'iosSdk5', 'androidSdk5')).required(),
+    usageContext: Joi.array()
+      .items(Joi.string().valid('web', 'iosSdk5', 'androidSdk5'))
+      .required(),
     domainName: Joi.array().items(Joi.string().required()).optional(),
     notes: Joi.string().allow('').optional(),
   });

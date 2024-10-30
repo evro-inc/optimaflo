@@ -107,7 +107,6 @@ export const FormFieldComponent: React.FC<FieldProps> = ({
   }
 
   if (type === 'select') {
-
     const listHeight = Math.min(options.length * 35); // Adjust as needed
 
     return (

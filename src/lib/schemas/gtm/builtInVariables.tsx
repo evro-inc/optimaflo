@@ -133,6 +133,30 @@ export const BuiltInVariableSchema = z.object({
     .min(1, 'At least one Account-Container-Workspace entry is required'),
 });
 
+const revertSchema = z.object({
+  path: z.string(),
+  accountId: z.string(),
+  containerId: z.string(),
+  workspaceId: z.string(),
+  type: z.string(),
+  name: z.string(),
+});
+
+export const revertBuiltInVariableSchema = z.object({
+  setId: z.number(),
+  changeId: z.number(),
+  changeStatus: z.enum(['deleted', 'created', 'updated']),
+  builtInVariable: revertSchema,
+  accountName: z.string(),
+  accountId: z.string(),
+  containerName: z.string(),
+  containerId: z.string(),
+  workspaceName: z.string(),
+  workspaceId: z.string(),
+  name: z.string(),
+  type: z.string(),
+});
+
 export const FormCreateAmountSchema = z.object({
   amount: z.number().min(1, 'At least one built-in variable is required'),
 });

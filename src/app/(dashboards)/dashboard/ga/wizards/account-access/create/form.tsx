@@ -69,8 +69,10 @@ const FormCreateAccountAccess: React.FC<FormCreateProps> = React.memo(
       },
     ];
 
-    const { formAmount, form, fields, addForm } =
-      useFormInitialization<AccessBinding>(formDataDefaults, FormsSchema);
+    const { formAmount, form, fields, addForm } = useFormInitialization<AccessBinding>(
+      formDataDefaults,
+      FormsSchema
+    );
 
     // Use the custom hook
     const { handleNext, handlePrevious } = useStepNavigation({
@@ -273,14 +275,14 @@ const FormCreateAccountAccess: React.FC<FormCreateProps> = React.memo(
                                                       onCheckedChange={(checked) => {
                                                         return checked
                                                           ? field.onChange([
-                                                            ...(field.value ?? []),
-                                                            item.id as Role,
-                                                          ])
+                                                              ...(field.value ?? []),
+                                                              item.id as Role,
+                                                            ])
                                                           : field.onChange(
-                                                            (field.value ?? []).filter(
-                                                              (value) => value !== item.id
-                                                            )
-                                                          );
+                                                              (field.value ?? []).filter(
+                                                                (value) => value !== item.id
+                                                              )
+                                                            );
                                                       }}
                                                     />
                                                   </FormControl>

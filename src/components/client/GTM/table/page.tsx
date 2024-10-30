@@ -51,7 +51,8 @@ export default async function ChangesPage({
   const flatTags = tag.flat();
   const flatTriggers = trigger.flat();
 
-  const mapCombinedData = (varsArray: any[]) => {
+  // Modified mapCombinedData function to accept featureName parameter
+  const mapCombinedData = (varsArray: any[], featureName: string) => {
     return varsArray.map((vars) => {
       const accountId = vars.accountId;
       const containerId = vars.containerId;
@@ -68,15 +69,17 @@ export default async function ChangesPage({
         accountName,
         containerName,
         workspaceName,
+        featureName, // Add featureName property to each object
       };
     });
   };
 
+  // Use mapCombinedData with appropriate feature names
   const combinedData = [
-    ...mapCombinedData(flatBuiltInVars),
-    ...mapCombinedData(flatVars),
-    ...mapCombinedData(flatTags),
-    ...mapCombinedData(flatTriggers),
+    ...mapCombinedData(flatBuiltInVars, 'Built-In Variable'),
+    ...mapCombinedData(flatVars, 'Variable'),
+    ...mapCombinedData(flatTags, 'Tag'),
+    ...mapCombinedData(flatTriggers, 'Trigger'),
   ];
 
   return (

@@ -57,6 +57,37 @@ export const VariableSchema = z.object({
   path: z.string().optional(),
 });
 
+// Base schema for the revert common properties related to the variable
+const revertVariableBaseSchema = z.object({
+  path: z.string().min(1, 'Path is required'),
+  accountId: z.string().min(1, 'Account ID is required'),
+  containerId: z.string().min(1, 'Container ID is required'),
+  workspaceId: z.string().min(1, 'Workspace ID is required'),
+  variableId: z.string().min(1, 'Variable ID is required'),
+  name: z.string().min(1, 'Name is required'),
+  type: z.string().min(1, 'Type is required'),
+  parameter: z.array(ParameterSchema).optional(),
+  fingerprint: z.string().optional(),
+  tagManagerUrl: z.string().optional(),
+  formatValue: FormatValueSchema.optional(),
+});
+
+// Revert schema for Variables
+export const revertVariableSchema = z.object({
+  setId: z.number(),
+  changeId: z.number(),
+  changeStatus: z.enum(['deleted', 'created', 'updated']),
+  variable: revertVariableBaseSchema, // Includes all variable details
+  accountName: z.string().min(1, 'Account Name is required'),
+  accountId: z.string().min(1, 'Account ID is required'),
+  containerName: z.string().min(1, 'Container Name is required'),
+  containerId: z.string().min(1, 'Container ID is required'),
+  workspaceName: z.string().min(1, 'Workspace Name is required'),
+  workspaceId: z.string().min(1, 'Workspace ID is required'),
+  name: z.string().min(1, 'Name is required'),
+  type: z.string().min(1, 'Type is required'),
+});
+
 export const FormCreateAmountSchema = z.object({
   amount: z.number(),
 });

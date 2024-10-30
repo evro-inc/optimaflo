@@ -1,5 +1,5 @@
 'use server';
-import { FormSchema, TagSchema, TagType } from '@/src/lib/schemas/gtm/tags';
+import { FormSchema, revertTagSchema, TagSchema, TagType } from '@/src/lib/schemas/gtm/tags';
 import { redis } from '../../../../redis/cache';
 import prisma from '@/src/lib/prisma';
 import { FeatureResponse, FeatureResult } from '@/src/types/types';
@@ -595,6 +595,159 @@ export async function updateTags(formData: { forms: TagType['forms'] }): Promise
     results: successful.map<FeatureResult>((property) => ({
       id: [],
       name: [property.name],
+      success: true,
+    })),
+  };
+}
+
+/************************************************************************************
+  Revert a single or multiple builtInVariables - Remove limits from revert. Users shouldn't be limited when reverting changes.
+************************************************************************************/
+export async function revertTags(
+  selected: Set<z.infer<typeof revertTagSchema>>,
+  names: string[]
+): Promise<FeatureResponse> {
+  const userId = await authenticateUser();
+  const token = await getOauthToken(userId);
+  const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
+    userId,
+    featureType,
+    'delete'
+  );
+
+  if (tierLimitResponse.limitReached || selected.size > availableUsage) {
+    return {
+      success: false,
+      limitReached: true,
+      message: 'Feature limit reached or request exceeds available deletions.',
+      errors: [
+        `Cannot delete more built-in variables than available. You have ${availableUsage} deletions left.`,
+      ],
+      results: [],
+    };
+  }
+
+  let errors: string[] = [];
+  let successfulDeletions: z.infer<typeof revertTagSchema>[] = [];
+  let featureLimitReached: string[] = [];
+  let notFoundLimit: string[] = [];
+
+  await ensureGARateLimit(userId);
+
+  // **Filter Selected Items to Only Include Valid Tags**:
+  const filteredSelected = Array.from(selected).filter((data) => data.tag && data.tag.path);
+
+  await Promise.all(
+    filteredSelected.map(async (data) => {
+      // Now `data.tag` and `data.tag.path` are guaranteed to exist
+      const url = `https://www.googleapis.com/tagmanager/v2/${data.tag.path}:revert`;
+
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept-Encoding': 'gzip',
+      };
+
+      try {
+        await executeApiRequest(url, { method: 'POST', headers }, 'tags', names);
+        successfulDeletions.push(data);
+
+        // Update Tier Limit Usage
+        await prisma.tierLimit.update({
+          where: { id: tierLimitResponse.id },
+          data: { deleteUsage: { increment: 1 } },
+        });
+      } catch (error: any) {
+        if (error.message === 'Feature limit reached') {
+          featureLimitReached.push(data.name);
+        } else if (error.message.includes('404')) {
+          notFoundLimit.push(data.name);
+        } else {
+          errors.push(error.message);
+        }
+      }
+    })
+  );
+
+  // **Perform Selective Revalidation After All Deletions**:
+  if (successfulDeletions.length > 0) {
+    try {
+      const operations = successfulDeletions.map((deletion) => ({
+        crudType: 'delete' as const,
+        ...deletion,
+      }));
+      const cacheFields = successfulDeletions.map(
+        (del) => `${del.accountId}/${del.containerId}/${del.workspaceId}/${del.type}`
+      );
+
+      await softRevalidateFeatureCache(
+        [`gtm:tags:userId:${userId}`],
+        `/dashboard/gtm/configurations`,
+        userId,
+        operations,
+        cacheFields
+      );
+    } catch (err) {
+      console.error('Error during revalidation:', err);
+    }
+  }
+
+  // Handling responses for various scenarios like feature limit reached or not found errors
+  if (notFoundLimit.length > 0) {
+    return {
+      success: false,
+      limitReached: false,
+      notFoundError: true,
+      message: `Could not delete the tag. Please check your permissions. Tag: ${names.find((name) =>
+        name.includes(name)
+      )}. All other tags were successfully deleted.`,
+      results: notFoundLimit.map((data) => ({
+        id: [data],
+        name: [names.find((name) => name.includes(data)) || 'Unknown'],
+        success: false,
+        notFound: true,
+      })),
+    };
+  }
+
+  if (featureLimitReached.length > 0) {
+    return {
+      success: false,
+      limitReached: true,
+      notFoundError: false,
+      message: `Feature limit reached for tag: ${featureLimitReached.join(', ')}`,
+      results: featureLimitReached.map((data) => ({
+        id: [data],
+        name: [names.find((name) => name.includes(data)) || 'Unknown'],
+        success: false,
+        featureLimitReached: true,
+      })),
+    };
+  }
+
+  if (errors.length > 0) {
+    return {
+      success: false,
+      errors,
+      results: [],
+      message: errors.join(', '),
+      notFoundError: notFoundLimit.length > 0,
+    };
+  }
+
+  return {
+    success: true,
+    message: `Successfully deleted ${successfulDeletions.length} tag(s)`,
+    features: successfulDeletions.map<FeatureResult>((data) => ({
+      id: [data.name],
+      name: [data.name || 'Unknown'],
+      success: true,
+    })),
+    errors: [],
+    notFoundError: notFoundLimit.length > 0,
+    results: successfulDeletions.map<FeatureResult>((data) => ({
+      id: [data.name],
+      name: [data.name || 'Unknown'],
       success: true,
     })),
   };

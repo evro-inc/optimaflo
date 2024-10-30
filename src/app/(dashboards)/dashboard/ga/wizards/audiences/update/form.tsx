@@ -12,7 +12,12 @@ import { selectTable } from '@/src/redux/tableSlice';
 import { RootState } from '@/src/redux/store';
 import { useRouter } from 'next/navigation';
 import { updateGAAudiences } from '@/src/lib/fetch/dashboard/actions/ga/audiences';
-import { useErrorHandling, useErrorRedirect, useFormInitialization, useStepNavigation } from '@/src/hooks/wizard';
+import {
+  useErrorHandling,
+  useErrorRedirect,
+  useFormInitialization,
+  useStepNavigation,
+} from '@/src/hooks/wizard';
 import { calculateRemainingLimit, processForm } from '@/src/utils/utils';
 import { gaFormFieldConfigs } from '@/src/utils/gaFormFields';
 import { FormFieldComponent } from '@/src/components/client/Utils/Form';
@@ -33,11 +38,7 @@ const FormUpdateConversionEvent: React.FC<FormUpdateProps> = React.memo(({ tierL
 
   const selectedRowData = useSelector((state: RootState) => state.table.selectedRows);
 
-  const remainingUpdateData = calculateRemainingLimit(
-    tierLimits || [],
-    'GA4Audiences',
-    'update'
-  );
+  const remainingUpdateData = calculateRemainingLimit(tierLimits || [], 'GA4Audiences', 'update');
   const remainingUpdate = remainingUpdateData.remaining;
   useErrorRedirect(selectedRowData, router, '/dashboard/ga/properties');
 
@@ -62,7 +63,12 @@ const FormUpdateConversionEvent: React.FC<FormUpdateProps> = React.memo(({ tierL
   const { handleNext, handlePrevious } = useStepNavigation({
     form,
     currentStep,
-    fieldsToValidate: ['countingMethod', 'defaultConversionValue', 'defaultConversionValue.value', 'restrictedMetricType'],
+    fieldsToValidate: [
+      'countingMethod',
+      'defaultConversionValue',
+      'defaultConversionValue.value',
+      'restrictedMetricType',
+    ],
   });
 
   const onSubmit: SubmitHandler<Audience> = processForm(
@@ -75,10 +81,6 @@ const FormUpdateConversionEvent: React.FC<FormUpdateProps> = React.memo(({ tierL
   );
 
   if (errorModal) return errorModal;
-
-
-
-
 
   const renderForms = () => {
     // Check if the current form index is within the bounds of the fields array
@@ -150,10 +152,6 @@ const FormUpdateConversionEvent: React.FC<FormUpdateProps> = React.memo(({ tierL
   };
 
   return <div className="flex items-center justify-center h-screen">{renderForms()}</div>;
-
-
-
-
 
   /*   return (
       <div className="flex items-center justify-center h-screen">

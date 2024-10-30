@@ -1,6 +1,11 @@
 'use server';
 
-import { FormSchema, VariableSchema, VariableSchemaType } from '@/src/lib/schemas/gtm/variables';
+import {
+  FormSchema,
+  revertVariableSchema,
+  VariableSchema,
+  VariableSchemaType,
+} from '@/src/lib/schemas/gtm/variables';
 import { redis } from '../../../../redis/cache';
 import prisma from '@/src/lib/prisma';
 import { FeatureResponse, FeatureResult } from '@/src/types/types';
@@ -438,7 +443,7 @@ export async function createVariables(formData: {
   Revert a single or multiple variables - Remove limits from revert. Users shouldn't be limited when reverting changes.
 ************************************************************************************/
 export async function revertVariables(
-  selected: Set<z.infer<typeof VariableSchema>>,
+  selected: Set<z.infer<typeof revertVariableSchema>>,
   names: string[]
 ): Promise<FeatureResponse> {
   const userId = await authenticateUser();
@@ -454,23 +459,28 @@ export async function revertVariables(
       success: false,
       limitReached: true,
       message: 'Feature limit reached or request exceeds available deletions.',
-      errors: [
-        `Cannot delete more built-in variables than available. You have ${availableUsage} deletions left.`,
-      ],
+      errors: [`Cannot revert more triggers than available. You have ${availableUsage} left.`],
       results: [],
     };
   }
 
   let errors: string[] = [];
-  let successful: z.infer<typeof VariableSchema>[] = [];
+  let successfulDeletions: z.infer<typeof revertVariableSchema>[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: string[] = [];
 
   await ensureGARateLimit(userId);
 
+  // **Filter Selected Items to Only Include Valid Tags**:
+  const filteredSelected = Array.from(selected).filter(
+    (data) => data.variable && data.variable.path
+  );
+
   await Promise.all(
-    Array.from(selected).map(async (data) => {
-      const url = `https://www.googleapis.com/tagmanager/v2/${data.path}:revert`;
+    filteredSelected.map(async (data) => {
+      // Now `data.tag` and `data.tag.path` are guaranteed to exist
+      const url = `https://www.googleapis.com/tagmanager/v2/${data.variable.path}:revert`;
+
       const headers = {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
@@ -478,9 +488,10 @@ export async function revertVariables(
       };
 
       try {
-        await executeApiRequest(url, { method: 'POST', headers }, 'variables', names);
-        successful.push(data);
+        await executeApiRequest(url, { method: 'POST', headers }, 'tags', names);
+        successfulDeletions.push(data);
 
+        // Update Tier Limit Usage
         await prisma.tierLimit.update({
           where: { id: tierLimitResponse.id },
           data: { deleteUsage: { increment: 1 } },
@@ -498,14 +509,13 @@ export async function revertVariables(
   );
 
   // **Perform Selective Revalidation After All Deletions**:
-  if (successful.length > 0) {
+  if (successfulDeletions.length > 0) {
     try {
-      // Explicitly type the operations array
-      const operations = successful.map((deletion) => ({
-        crudType: 'revert' as const, // Explicitly set the type as "delete"
+      const operations = successfulDeletions.map((deletion) => ({
+        crudType: 'delete' as const,
         ...deletion,
       }));
-      const cacheFields = successful.map(
+      const cacheFields = successfulDeletions.map(
         (del) => `${del.accountId}/${del.containerId}/${del.workspaceId}/${del.variableId}`
       );
 
@@ -527,9 +537,9 @@ export async function revertVariables(
       success: false,
       limitReached: false,
       notFoundError: true,
-      message: `Could not delete variable. Please check your permissions. Variable : ${names.find(
-        (name) => name.includes(name)
-      )}. All other variables were successfully deleted.`,
+      message: `Could not revert the tag. Please check your permissions. Tag: ${names.find((name) =>
+        name.includes(name)
+      )}. All other tags were successfully deleted.`,
       results: notFoundLimit.map((data) => ({
         id: [data],
         name: [names.find((name) => name.includes(data)) || 'Unknown'],
@@ -544,7 +554,7 @@ export async function revertVariables(
       success: false,
       limitReached: true,
       notFoundError: false,
-      message: `Feature limit reached for variable: ${featureLimitReached.join(', ')}`,
+      message: `Feature limit reached for tag: ${featureLimitReached.join(', ')}`,
       results: featureLimitReached.map((data) => ({
         id: [data],
         name: [names.find((name) => name.includes(data)) || 'Unknown'],
@@ -566,17 +576,17 @@ export async function revertVariables(
 
   return {
     success: true,
-    message: `Successfully deleted ${successful.length} variable(s)`,
-    features: successful.map<FeatureResult>((data) => ({
+    message: `Successfully reverted ${successfulDeletions.length} tag(s)`,
+    features: successfulDeletions.map<FeatureResult>((data) => ({
       id: [data.name],
-      name: [names.find((name) => name.includes(data.name)) || 'Unknown'],
+      name: [data.name || 'Unknown'],
       success: true,
     })),
     errors: [],
     notFoundError: notFoundLimit.length > 0,
-    results: successful.map<FeatureResult>((data) => ({
+    results: successfulDeletions.map<FeatureResult>((data) => ({
       id: [data.name],
-      name: [names.find((name) => name.includes(data.name)) || 'Unknown'],
+      name: [data.name || 'Unknown'],
       success: true,
     })),
   };

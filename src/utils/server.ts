@@ -415,59 +415,6 @@ export async function softRevalidateFeatureCache(
   }
 }
 
-export async function revalidate(
-  currentData: string[], // List of property names to delete from Redis
-  keys: string[] | string, // Redis keys for cache entries (handle both string and array)
-  path: string, // The path to revalidate
-  userId: string, // User ID
-  global: boolean = false // Global flag
-) {
-  try {
-    // Ensure 'keys' is an array
-    const keysArray = Array.isArray(keys) ? keys : [keys];
-
-    const pipeline = redis.pipeline();
-
-    const user = await prisma.user.findFirst({
-      where: { id: userId },
-    });
-
-    if (!user) {
-      notFound();
-    }
-
-    if (global) {
-      await fetchGtmSettings(userId);
-      await fetchGASettings(userId);
-    }
-
-    // Fetch all necessary cache data in one go
-    const cacheDataArray = await Promise.all(keysArray.map((key) => redis.get(key)));
-
-    keysArray.forEach((key, index) => {
-      const cacheData = cacheDataArray[index];
-      if (cacheData) {
-        const parsedData = JSON.parse(cacheData);
-
-        // Filter out deleted properties from the parsed cache data
-        const updatedData = parsedData.filter((item: any) => !currentData.includes(item.name));
-
-        // Update the cache with the new data that no longer includes the deleted properties
-        pipeline.set(key, JSON.stringify(updatedData), 'EX', 2592000); // Cache for 24 hours
-      } else if (global) {
-        // Clear the cache if global flag is true and no cache data found
-        pipeline.del(key);
-      }
-    });
-
-    await pipeline.exec(); // Execute all queued commands in a batch
-    await revalidatePath(path); // Trigger ISR to revalidate the path
-  } catch (error) {
-    console.error('Error during revalidation:', error);
-    throw new Error('Revalidation failed');
-  }
-}
-
 export const fetchWithRetry = async (url: string, headers: any, retries = 0): Promise<any> => {
   const MAX_RETRIES = 20;
   const INITIAL_DELAY = 1500;

@@ -2,7 +2,6 @@ import { Meta, StoryObj } from '@storybook/react';
 import { ButtonPrim } from './Button';
 import { fn } from '@storybook/test';
 
-
 export default {
   title: 'OptimaFlo/Button',
   component: ButtonPrim,
@@ -14,9 +13,16 @@ export default {
     onClick: { action: 'clicked' }, // For logging clicks in the Actions panel
     variant: {
       options: [
-        'primary', 'secondary', 'tertiary',
-        'success', 'info', 'warning',
-        'error', 'disable', 'loading', 'toggle',
+        'primary',
+        'secondary',
+        'tertiary',
+        'success',
+        'info',
+        'warning',
+        'error',
+        'disable',
+        'loading',
+        'toggle',
       ],
       control: { type: 'select' },
     },

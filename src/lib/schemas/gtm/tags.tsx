@@ -101,6 +101,31 @@ export const TagSchema = z.object({
   consentSettings: ConsentSettingsSchema.optional(),
 });
 
+const revertBaseSchema = z.object({
+  path: z.string().min(1, 'Path is required'),
+  accountId: z.string().min(1, 'Account ID is required'),
+  containerId: z.string().min(1, 'Container ID is required'),
+  workspaceId: z.string().min(1, 'Workspace ID is required'),
+  type: z.string().min(1, 'Type is required'),
+  name: z.string().min(1, 'Name is required'),
+});
+
+// Revert schema for Tags
+export const revertTagSchema = z.object({
+  setId: z.number(),
+  changeId: z.number(),
+  changeStatus: z.enum(['deleted', 'created', 'updated']),
+  tag: revertBaseSchema,
+  accountName: z.string().min(1, 'Account Name is required'),
+  accountId: z.string().min(1, 'Account ID is required'),
+  containerName: z.string().min(1, 'Container Name is required'),
+  containerId: z.string().min(1, 'Container ID is required'),
+  workspaceName: z.string().min(1, 'Workspace Name is required'),
+  workspaceId: z.string().min(1, 'Workspace ID is required'),
+  name: z.string().min(1, 'Name is required'),
+  type: z.string().min(1, 'Type is required'),
+});
+
 export const FormCreateAmountSchema = z.object({
   amount: z.number(),
 });

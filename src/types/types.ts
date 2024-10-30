@@ -906,7 +906,7 @@ export interface BuiltInVariable {
       accountId: string;
       containerId: string;
       workspaceId: string;
-    }
+    },
   ];
 }
 
@@ -994,7 +994,7 @@ export interface Tag {
       containerId: string;
       workspaceId: string;
       tagId?: string;
-    }
+    },
   ];
   name: string;
   type: string;
@@ -1081,7 +1081,7 @@ export interface Trigger {
       containerId: string;
       workspaceId: string;
       triggerId?: string;
-    }
+    },
   ];
   name: string;
   type: string;
@@ -1156,7 +1156,7 @@ export interface Variable {
       containerId: string;
       workspaceId: string;
       variableId?: string;
-    }
+    },
   ];
   name: string;
   type: VariableType;

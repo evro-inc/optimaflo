@@ -37,7 +37,6 @@ export default async function Profile() {
     );
   }
 
-
   const invoices = subscription.Invoice;
 
   const mostRecentInvoice = invoices.reduce((latest, invoice) => {
