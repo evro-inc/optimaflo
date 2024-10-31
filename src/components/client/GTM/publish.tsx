@@ -71,15 +71,38 @@ function getUniqueAccountAndContainerInfo(dataChanges) {
   return Array.from(accountContainerSet).map((info: any) => JSON.parse(info));
 }
 
+function createEnvLookup(envs) {
+  const envLookup = new Map();
+
+  envs.forEach((env) => {
+    // Use a composite key of accountId + containerId
+    const key = `${env.accountId}-${env.containerId}`;
+
+    if (!envLookup.has(key)) {
+      envLookup.set(key, []);
+    }
+
+    envLookup.get(key).push({
+      type: env.type,
+      name: env.name,
+      environmentId: env.environmentId,
+    });
+  });
+
+  return envLookup;
+}
+
 function mergeUniqueInfo(accountContainerInfo, envs) {
+  const envLookup = createEnvLookup(envs);
+
   return accountContainerInfo.map((info) => {
-    const relatedEnvs = envs
-      .filter((env) => env.accountId === info.accountId && env.containerId === info.containerId)
-      .map((env) => ({
-        type: env.type,
-        name: env.name,
-        environmentId: env.environmentId,
-      }));
+    const key = `${info.accountId}-${info.containerId}`;
+    const relatedEnvs = envLookup.get(key) || [];
+
+    console.log("Processing info:", info);
+    if (relatedEnvs.length === 0) {
+      console.warn("No environments found for key:", key);
+    }
 
     return {
       ...info,
@@ -88,11 +111,14 @@ function mergeUniqueInfo(accountContainerInfo, envs) {
   });
 }
 
+
+
 function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; tierLimits: any }) {
   const dispatch = useDispatch();
   const router = useRouter();
   const { user } = useUser();
   const userId = user?.id as string;
+  console.log("envs data:", envs);
 
   const loading = useSelector((state: RootState) => state.form.loading);
   const [snap, setSnap] = useState<number | string | null>('250px');
@@ -122,32 +148,8 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
   const createUsageGTMEnvs = tierLimitGTMEnvs?.updateUsage;
   const remainingCreateGTMEnvs = createLimitGTMEnvs - createUsageGTMEnvs;
 
-  const uniqueEnvs: {
-    type: string;
-    name: string;
-    accountId: string;
-    containerId: string;
-    environmentId: string;
-  }[] = [];
-  const seenTypes = new Set<string>();
-
-  envs.forEach((env) => {
-    const typeNameKey = `${env.environmentId}-${env.type}-${env.name}-${env.accountId}-${env.containerId}`;
-    if (env.type !== 'latest') {
-      seenTypes.add(typeNameKey);
-      uniqueEnvs.push({
-        type: env.type,
-        name: env.name,
-        accountId: env.accountId,
-        containerId: env.containerId,
-        environmentId: env.environmentId,
-      });
-    }
-  });
-
   const uniqueAccountContainerInfo = getUniqueAccountAndContainerInfo(changes);
-
-  const combinedInfo = mergeUniqueInfo(uniqueAccountContainerInfo, uniqueEnvs);
+  const combinedInfo = mergeUniqueInfo(uniqueAccountContainerInfo, envs);
   const formDataDefaults = {
     path: '',
     accountId: '',
@@ -393,6 +395,9 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
   const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
 
+    console.log("forms", forms);
+
+
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
     const uniqueCreateVersions = new Set(forms.flatMap((form) => form?.environmentId?.split(',')))
@@ -427,9 +432,15 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
 
         const createVersionData = extractCreateVersionData(forms);
 
+        console.log("createVersionData", createVersionData);
+
+
         const resCreateVersion = (await createGTMVersion({
           forms: createVersionData,
         })) as FeatureResponse;
+
+        console.log("createGTMVersion", createGTMVersion);
+
 
         if (!resCreateVersion.success) {
           toast.error(`${resCreateVersion.message}`, {
@@ -481,7 +492,7 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
 
         form.reset({ forms: [formDataDefaults] });
       } catch (error) {
-        toast.error('An unexpected error occurred 2.', {
+        toast.error(`An unexpected error occurred. ${error}`, {
           action: {
             label: 'Close',
             onClick: () => toast.dismiss(),
@@ -600,21 +611,19 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
                           <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger
                               value="publish"
-                              className={`relative p-2 transition-colors ${
-                                activeTab === 'publish'
-                                  ? 'bg-blue-100 shadow-md'
-                                  : 'hover:bg-blue-50'
-                              }`}
+                              className={`relative p-2 transition-colors ${activeTab === 'publish'
+                                ? 'bg-blue-100 shadow-md'
+                                : 'hover:bg-blue-50'
+                                }`}
                             >
                               Publish and Create Version
                             </TabsTrigger>
                             <TabsTrigger
                               value="version"
-                              className={`relative p-2 transition-colors ${
-                                activeTab === 'version'
-                                  ? 'bg-blue-100 shadow-md'
-                                  : 'hover:bg-blue-50'
-                              }`}
+                              className={`relative p-2 transition-colors ${activeTab === 'version'
+                                ? 'bg-blue-100 shadow-md'
+                                : 'hover:bg-blue-50'
+                                }`}
                             >
                               Create Version
                             </TabsTrigger>

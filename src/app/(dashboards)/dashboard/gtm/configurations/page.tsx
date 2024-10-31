@@ -26,7 +26,7 @@ export default async function Page() {
   const containerData = await listGtmContainers();
   const workspaceData = await listGtmWorkspaces();
   const wsChangeData = await getStatusGtmWorkspaces();
-  const gtmEnvsData = await listGtmEnvs();
+  const gtmEnvsData = await listGtmEnvs(true);
 
   const [accounts, containers, workspaces, wsChanges, gtmEnvs] = await Promise.all([
     accountData,

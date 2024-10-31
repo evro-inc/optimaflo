@@ -8,9 +8,11 @@ import { gtmRateLimit } from '../../../../redis/rateLimits';
 import { redis } from '../../../../redis/cache';
 import { currentUserOauthAccessToken } from '../../../../clerk';
 import prisma from '@/src/lib/prisma';
-import { FeatureResult } from '@/src/types/types';
-import { handleApiResponseError, tierUpdateLimit } from '@/src/utils/server';
+import { FeatureResponse, FeatureResult } from '@/src/types/types';
+import { authenticateUser, checkFeatureLimit, ensureGARateLimit, executeApiRequest, getOauthToken, handleApiResponseError, softRevalidateFeatureCache, tierUpdateLimit, validateFormData } from '@/src/utils/server';
 import { GoogleTagEnvironmentType } from '@/src/lib/schemas/gtm/envs';
+
+const featureType: string = 'GTMEnvs';
 
 const MAX_RETRIES = 3;
 const INITIAL_DELAY = 1000;
@@ -18,83 +20,90 @@ const INITIAL_DELAY = 1000;
 /************************************************************************************
   Function to list GTM envs
 ************************************************************************************/
-export async function listGtmEnvs() {
-  let retries = 0;
-  let delay = INITIAL_DELAY;
-
-  const { userId } = await auth();
-  if (!userId) return notFound();
-
-  const token = await currentUserOauthAccessToken(userId);
-
+export async function listGtmEnvs(skipCache = false): Promise<any[]> {
+  const userId = await authenticateUser();
+  const token = await getOauthToken(userId);
   const cacheKey = `gtm:environments:userId:${userId}`;
-  const cachedValue = await redis.get(cacheKey);
-  if (cachedValue) {
-    return JSON.parse(cachedValue);
-  }
 
-  const gtmData = await prisma.user.findFirst({
-    where: {
-      id: userId,
-    },
-    include: {
-      gtm: true,
-    },
-  });
+  if (!skipCache) {
+    const cacheData = await redis.hgetall(cacheKey);
 
-  while (retries < MAX_RETRIES) {
-    try {
-      const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
+    if (Object.keys(cacheData).length > 0) {
+      try {
+        const parsedData = Object.values(cacheData).map((data) => JSON.parse(data));
 
-      if (remaining > 0) {
-        let allData: any[] = [];
-
-        await limiter.schedule(async () => {
-          const uniquePairs = new Set(
-            gtmData.gtm.map((data) => `${data.accountId}-${data.containerId}`)
-          );
-
-          const urls = Array.from(uniquePairs).map((pair: any) => {
-            const [accountId, containerId] = pair.split('-');
-            return `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/environments`;
-          });
-
-          const headers = {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'Accept-Encoding': 'gzip',
-          };
-
-          for (const url of urls) {
-            try {
-              const response = await fetch(url, { headers });
-
-              if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}. ${response.statusText}`);
-              }
-              const responseBody = await response.json();
-              allData.push(responseBody.environment || []);
-            } catch (error: any) {
-              throw new Error(`Error fetching data: ${error.message}`);
-            }
-          }
-        });
-        redis.set(cacheKey, JSON.stringify(allData.flat()));
-
-        return allData;
-      }
-    } catch (error: any) {
-      if (error.code === 429 || error.status === 429) {
-        const jitter = Math.random() * 200;
-        await new Promise((resolve) => setTimeout(resolve, delay + jitter));
-        delay *= 2;
-        retries++;
-      } else {
-        throw error;
+        return parsedData;
+      } catch (error) {
+        console.error('Failed to parse cache data:', error);
+        await redis.del(cacheKey);
       }
     }
   }
-  throw new Error('Maximum retries reached without a successful response.');
+
+  const data = await prisma.user.findFirst({
+    where: { id: userId },
+    include: { gtm: true },
+  });
+
+  if (!data) return [];
+
+  const uniqueItems = Array.from(
+    new Set(
+      data.gtm.map((item) =>
+        JSON.stringify({
+          accountId: item.accountId,
+          containerId: item.containerId
+        })
+      )
+    )
+  ).map((str: any) => JSON.parse(str));
+
+  const urls = uniqueItems.map(
+    ({ accountId, containerId }) =>
+      `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/environments`
+  );
+
+  console.log('urls', urls);
+
+
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+    'Accept-Encoding': 'gzip',
+  };
+
+  try {
+    const allData = await Promise.all(urls.map((url) => executeApiRequest(url, { headers })));
+    const flattenedData = allData.flat();
+    const cleanedData = flattenedData.filter((item) => Object.keys(item).length > 0);
+    const ws = cleanedData.flatMap((item) => item.environment || []); // Flatten to get all workspaces directly
+
+    try {
+      // Use HSET to store each property under a unique field
+      const pipeline = redis.pipeline();
+
+      ws.forEach((ws: any) => {
+        const fieldKey = `${ws.accountId}/${ws.containerId}/${ws.environmentId}`; // Access 'name' directly from the property object
+
+        if (fieldKey) {
+          // Ensure fieldKey is defined
+          pipeline.hset(cacheKey, fieldKey, JSON.stringify(ws));
+        } else {
+          console.warn('Skipping workspace with undefined name:', ws);
+        }
+      });
+
+      pipeline.expire(cacheKey, 2592000); // Set expiration for the entire hash
+      await pipeline.exec(); // Execute the pipeline commands
+    } catch (cacheError) {
+      console.error('Failed to set cache data with HSET:', cacheError);
+    }
+
+    return ws; // Return only the ws array
+  } catch (apiError) {
+    console.error('Error fetching ws from API:', apiError);
+    return []; // Return empty array or handle this more gracefully depending on your needs
+  }
 }
 
 /************************************************************************************
@@ -265,356 +274,170 @@ export async function getGtmEnv(formData: GoogleTagEnvironmentType) {
 /************************************************************************************
   Udpate GTM Environments
 ************************************************************************************/
-export async function UpdateEnvs(formData: GoogleTagEnvironmentType) {
-  const { userId } = await auth();
-  if (!userId) return notFound();
-  const token = await currentUserOauthAccessToken(userId);
-
-  let retries = 0;
-  let delay = INITIAL_DELAY;
-  const errors: string[] = [];
-  const successfulUpdates: string[] = [];
-  const featureLimitReached: string[] = [];
-  const notFoundLimit: { id: string; name: string }[] = [];
-
-  let accountIdForCache: string | undefined;
-  let containerIdForCache: string | undefined;
-
-  // Refactor: Use string identifiers in the set
-  const toUpdateEnvs = new Set(
-    formData.forms.map((env) => ({
-      accountId: env.accountId,
-      containerId: env.containerId,
-      name: env.name,
-      envId: env.environmentId,
-      containerVersionId: env.containerVersionId,
-    }))
+export async function UpdateEnvs(formData: {
+  forms: GoogleTagEnvironmentType['forms'];
+}): Promise<FeatureResponse> {
+  const userId = await authenticateUser();
+  const token = await getOauthToken(userId);
+  const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
+    userId,
+    featureType,
+    'update'
   );
 
-  const tierLimitResponse: any = await tierUpdateLimit(userId, 'GTMEnvs');
-  const limit = Number(tierLimitResponse.updateLimit);
-  const updateUsage = Number(tierLimitResponse.updateUsage);
-  const availableUpdateUsage = limit - updateUsage;
-
-  const UpdateResults: {
-    envName: string;
-    success: boolean;
-    message?: string;
-  }[] = [];
-
-  // Handling feature limit
-  if (tierLimitResponse && tierLimitResponse.limitReached) {
+  if (tierLimitResponse.limitReached || formData.forms.length > availableUsage) {
     return {
       success: false,
       limitReached: true,
-      message: 'Feature limit reached for updating Envs',
+      message: 'Feature limit reached or request exceeds available updates.',
+      errors: [
+        `Cannot update more permissions than available. You have ${availableUsage} updates left.`,
+      ],
       results: [],
     };
   }
 
-  if (toUpdateEnvs.size > availableUpdateUsage) {
-    const attemptedUpdates = Array.from(toUpdateEnvs).map((identifier) => {
-      const { name: envName } = identifier;
-      return {
-        id: [], // No env ID since update did not happen
-        name: envName, // Include the env name from the identifier
-        success: false,
-        message: `Update limit reached. Cannot update env "${envName}".`,
-        // remaining update limit
-        remaining: availableUpdateUsage,
-        limitReached: true,
+  let errors: string[] = [];
+  let successfulUpdates: any[] = [];
+  let featureLimitReached: string[] = [];
+  let notFoundLimit: { id: string | undefined; name: string }[] = [];
+
+  await ensureGARateLimit(userId);
+
+  await Promise.all(
+    formData.forms.map(async (data) => {
+      const validatedData = await validateFormData(FormSchema, { forms: [data] });
+      const url = `https://www.googleapis.com/tagmanager/v2/accounts/${validatedData.accountId}/containers/${validatedData.containerId}/environments/${validatedData.envNumber}`;
+
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept-Encoding': 'gzip',
       };
-    });
-    return {
-      success: false,
-      features: [],
-      message: `Cannot update ${toUpdateEnvs.size} envs as it exceeds the available limit. You have ${availableUpdateUsage} more update(s) available.`,
-      errors: [
-        `Cannot update ${toUpdateEnvs.size} envs as it exceeds the available limit. You have ${availableUpdateUsage} more update(s) available.`,
-      ],
-      results: attemptedUpdates,
-      limitReached: true,
-    };
-  }
 
-  let permissionDenied = false;
-  const envNames = formData.forms.map((cd) => cd.name);
+      const body = JSON.stringify({
+        accountId: validatedData.forms[0].environment.accountId,
+        name: validatedData.forms[0].environment.name,
+        containerId: validatedData.forms[0].environment.containerId,
+        envId: validatedData.forms[0].environment.environmentId.split('-')[0],
+        containerVersionId: validatedData.forms[0].environment.containerVersionId,
 
-  if (toUpdateEnvs.size <= availableUpdateUsage) {
-    while (retries < MAX_RETRIES && toUpdateEnvs.size > 0 && !permissionDenied) {
+      });
+
       try {
-        const { remaining } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
-        if (remaining > 0) {
-          await limiter.schedule(async () => {
-            const updatePromises = Array.from(toUpdateEnvs).map(async (identifier) => {
-              accountIdForCache = identifier.accountId;
-              containerIdForCache = identifier.containerId;
+        const res = await executeApiRequest(url, {
+          method: 'PUT',
+          headers,
+          body: body,
+        });
 
-              const envData = formData.forms.find(
-                (env) =>
-                  env.accountId === identifier.accountId &&
-                  env.containerId === identifier.containerId &&
-                  env.name === identifier.name &&
-                  env.environmentId.split('-')[0] === identifier.envId &&
-                  env.containerVersionId === identifier.containerVersionId
-              );
+        successfulUpdates.push(res);
 
-              if (!envData) {
-                errors.push(`Container data not found for ${identifier}`);
-                toUpdateEnvs.delete(identifier);
-                return;
-              }
+        await prisma.tierLimit.update({
+          where: { id: tierLimitResponse.id },
+          data: { updateUsage: { increment: 1 } },
+        });
 
-              const envNumber = envData.environmentId.split('-')[0];
-
-              const url = `https://www.googleapis.com/tagmanager/v2/accounts/${envData.accountId}/containers/${envData.containerId}/environments/${envNumber}`;
-
-              const headers = {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json',
-                'Accept-Encoding': 'gzip',
-              };
-
-              try {
-                const formDataToValidate = { forms: [envData] };
-
-                const validationResult = FormSchema.safeParse(formDataToValidate);
-
-                if (!validationResult.success) {
-                  let errorMessage = validationResult.error.issues
-                    .map((issue) => `${issue.path[0]}: ${issue.message}`)
-                    .join('. ');
-                  errors.push(errorMessage);
-                  toUpdateEnvs.delete(identifier);
-                  return {
-                    envData,
-                    success: false,
-                    error: errorMessage,
-                  };
-                }
-
-                // Accessing the validated env data
-                const validatedenvData = validationResult.data.forms[0];
-
-                const payload = JSON.stringify({
-                  accountId: validatedenvData.accountId,
-                  name: validatedenvData.name,
-                  containerId: validatedenvData.containerId,
-                  envId: validatedenvData.environmentId.split('-')[0],
-                  containerVersionId: validatedenvData.containerVersionId,
-                });
-
-                const response = await fetch(url, {
-                  method: 'PUT',
-                  headers: headers,
-                  body: payload,
-                });
-
-                const parsedResponse = await response.json();
-
-                const envName = envData.name;
-
-                if (response.ok) {
-                  if (response.ok) {
-                    // Push a string into the array, for example, a concatenation of envId and containerId
-                    successfulUpdates.push(
-                      `${validatedenvData.environmentId}-${validatedenvData.containerId}`
-                    );
-                    // ... rest of your code
-                  }
-                  toUpdateEnvs.delete(identifier);
-
-                  await prisma.tierLimit.update({
-                    where: { id: tierLimitResponse.id },
-                    data: { updateUsage: { increment: 1 } },
-                  });
-
-                  UpdateResults.push({
-                    envName: envName,
-                    success: true,
-                    message: `Successfully updated env ${envName}`,
-                  });
-                } else {
-                  const errorResult = await handleApiResponseError(
-                    response,
-                    parsedResponse,
-                    'env',
-                    [envName]
-                  );
-
-                  if (errorResult) {
-                    errors.push(`${errorResult.message}`);
-                    if (
-                      errorResult.errorCode === 403 &&
-                      parsedResponse.message === 'Feature limit reached'
-                    ) {
-                      featureLimitReached.push(envName);
-                    } else if (errorResult.errorCode === 404) {
-                      const envName =
-                        envNames.find((name) => name.includes(identifier.name)) || 'Unknown';
-                      notFoundLimit.push({
-                        id: identifier.containerId,
-                        name: envName,
-                      });
-                    }
-                  } else {
-                    errors.push(`An unknown error occurred for env ${envName}.`);
-                  }
-
-                  toUpdateEnvs.delete(identifier);
-                  permissionDenied = errorResult ? true : permissionDenied;
-                  UpdateResults.push({
-                    envName: envName,
-                    success: false,
-                    message: errorResult?.message,
-                  });
-                }
-              } catch (error: any) {
-                errors.push(`Exception updating env ${envData.environmentId}: ${error.message}`);
-                toUpdateEnvs.delete(identifier);
-                UpdateResults.push({
-                  envName: envData.name,
-                  success: false,
-                  message: error.message,
-                });
-              }
-            });
-
-            await Promise.all(updatePromises);
-          });
-
-          if (notFoundLimit.length > 0) {
-            return {
-              success: false,
-              limitReached: false,
-              notFoundError: true, // Set the notFoundError flag
-              features: [],
-
-              results: notFoundLimit.map((item) => ({
-                id: item.id,
-                name: item.name,
-                success: false,
-                notFound: true,
-              })),
-            };
-          }
-
-          if (featureLimitReached.length > 0) {
-            return {
-              success: false,
-              limitReached: true,
-              notFoundError: false,
-              message: `Feature limit reached for envs: ${featureLimitReached.join(', ')}`,
-              results: featureLimitReached.map((envId) => {
-                // Find the name associated with the envId
-                const envName = envNames.find((name) => name.includes(envId)) || 'Unknown';
-                return {
-                  id: [envId], // Ensure id is an array
-                  name: [envName], // Ensure name is an array, match by envId or default to 'Unknown'
-                  success: false,
-                  featureLimitReached: true,
-                };
-              }),
-            };
-          }
-
-          if (featureLimitReached.length > 0) {
-            return {
-              success: false,
-              limitReached: true,
-              notFoundError: false,
-              message: `Feature limit reached for envs: ${featureLimitReached.join(', ')}`,
-              results: featureLimitReached.map((envId) => {
-                // Find the name associated with the envId
-                const envName = envNames.find((name) => name.includes(envId)) || 'Unknown';
-                return {
-                  id: [envId], // Ensure id is an array
-                  name: [envName], // Ensure name is an array, match by envId or default to 'Unknown'
-                  success: false,
-                  featureLimitReached: true,
-                };
-              }),
-            };
-          }
-
-          if (successfulUpdates.length === formData.forms.length) {
-            break;
-          }
-
-          if (toUpdateEnvs.size === 0) {
-            break;
-          }
-        } else {
-          throw new Error('Rate limit exceeded');
-        }
+        // Immediate revalidation per each update is not needed, aggregate revalidation is better
       } catch (error: any) {
-        if (error.code === 429 || error.status === 429) {
-          await new Promise((resolve) => setTimeout(resolve, delay + Math.random() * 200));
-          delay *= 2;
-          retries++;
+        if (error.message === 'Feature limit reached') {
+          featureLimitReached.push(validatedData.forms[0].name);
+        } else if (error.message.includes('404')) {
+          notFoundLimit.push({
+            id: validatedData.forms[0].parent,
+            name: validatedData.forms[0].name,
+          });
         } else {
-          break;
-        }
-      } finally {
-        // This block will run regardless of the outcome of the try...catch
-        if (accountIdForCache && containerIdForCache && userId) {
-          const cacheKey = `gtm:envs:userId:${userId}`;
-          await redis.del(cacheKey);
-          await revalidatePath(`/dashboard/gtm/configurations`);
+          errors.push(error.message);
         }
       }
+    })
+  );
+
+  // **Perform Selective Revalidation After All Updates**:
+  if (successfulUpdates.length > 0) {
+    try {
+      // Only revalidate the affected properties
+      const operations = successfulUpdates.map((update) => ({
+        crudType: 'update' as const, // Explicitly set the type as "update"
+        data: { ...update },
+      }));
+
+      const cacheFields = successfulUpdates.map((update) => `${update.name}`);
+
+      // Call softRevalidateFeatureCache for updates
+      await softRevalidateFeatureCache(
+        [`gtm:environments:userId:${userId}`],
+        `/dashboard/gtm/entities`,
+        userId,
+        operations,
+        cacheFields
+      );
+    } catch (err) {
+      console.error('Error during revalidation:', err);
     }
   }
 
-  if (permissionDenied) {
+  // Check for not found errors and return if any
+  if (notFoundLimit.length > 0) {
     return {
       success: false,
-      errors: errors,
-      results: [],
-      message: errors.join(', '),
+      limitReached: false,
+      notFoundError: true,
+      features: [],
+      message: `Some environments could not be found: ${notFoundLimit
+        .map((item) => item.name)
+        .join(', ')}`,
+      results: notFoundLimit.map((item) => ({
+        id: item.id ? [item.id] : [], // Ensure id is an array and filter out undefined
+        name: [item.name], // Ensure name is an array to match FeatureResult type
+        success: false,
+        notFound: true,
+      })),
     };
   }
 
+  // Check if feature limit is reached and return response if applicable
+  if (featureLimitReached.length > 0) {
+    return {
+      success: false,
+      limitReached: true,
+      notFoundError: false,
+      message: `Feature limit reached for environments: ${featureLimitReached.join(', ')}`,
+      results: featureLimitReached.map((propertyName) => ({
+        id: [], // Populate with actual property IDs if available
+        name: [propertyName], // Wrap the string in an array
+        success: false,
+        featureLimitReached: true,
+      })),
+    };
+  }
+
+  // Handle general errors
   if (errors.length > 0) {
     return {
       success: false,
-      features: successfulUpdates,
-      errors: errors,
-      results: successfulUpdates.map((envName) => ({
-        envName,
-        success: true,
-      })),
+      errors,
+      results: [],
       message: errors.join(', '),
+      notFoundError: notFoundLimit.length > 0,
     };
   }
 
-  if (successfulUpdates.length > 0 && accountIdForCache && containerIdForCache) {
-    const cacheKey = `gtm:envs:userId:${userId}`;
-    await redis.del(cacheKey);
-    revalidatePath(`/dashboard/gtm/configurations`);
-  }
-
-  // Map over formData.forms to update the results array
-  const results: FeatureResult[] = formData.forms.map((form) => {
-    // Ensure that form.envId is defined before adding it to the array
-    const envId = form.environmentId ? [form.environmentId] : []; // Provide an empty array as a fallback
-    return {
-      id: envId, // Ensure id is an array of strings
-      name: [form.name], // Wrap the string in an array
-      success: true, // or false, depending on the actual result
-      // Include `notFound` if applicable
-      notFound: false, // Set this to the appropriate value based on your logic
-    };
-  });
-
-  // Return the response with the correctly typed results
   return {
-    success: true, // or false, depending on the actual results
-    features: [], // Populate with actual env IDs if applicable
-    errors: [], // Populate with actual error messages if applicable
-    limitReached: false, // Set based on actual limit status
-    message: 'Containers updated successfully', // Customize the message as needed
-    results: results, // Use the correctly typed results
-    notFoundError: false, // Set based on actual not found status
+    success: true,
+    message: `Successfully updated ${successfulUpdates.length} environment(s)`,
+    features: successfulUpdates.map<FeatureResult>((property) => ({
+      id: [property.name], // Populate with actual property IDs if available
+      name: [property.name], // Wrap the string in an array
+      success: true, // Indicates success of the operation
+    })),
+    errors: [],
+    notFoundError: notFoundLimit.length > 0,
+    results: successfulUpdates.map<FeatureResult>((property) => ({
+      id: [property.name], // Populate this with actual property IDs if available
+      name: [property.name], // Wrap the string in an array
+      success: true, // Indicates success of the operation
+    })),
   };
 }
