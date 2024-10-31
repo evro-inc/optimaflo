@@ -1,7 +1,7 @@
 'use server';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@clerk/nextjs/server';
-import { gaRateLimit } from '../../../../redis/rateLimits';
+import { gaRateLimit, writeRateLimit, writeRateLimitPerUser } from '../../../../redis/rateLimits';
 import { limiter } from '../../../../bottleneck';
 import { redis } from '@/src/lib/redis/cache';
 import { notFound } from 'next/navigation';
@@ -10,7 +10,7 @@ import prisma from '@/src/lib/prisma';
 import { FeatureResult, FeatureResponse, AccessBinding } from '@/src/types/types';
 import {
   authenticateUser,
-  ensureGARateLimit,
+  ensureRateLimits,
   executeApiRequest,
   getOauthToken,
   handleApiResponseError,
@@ -49,7 +49,7 @@ export async function listGAAccessBindings(skipCache = false): Promise<any[]> {
 
   if (!data) return [];
 
-  await ensureGARateLimit(userId);
+  await ensureRateLimits(userId);
 
   const uniqueAccountIds = Array.from(new Set(data.ga.map((item) => item.accountId)));
   const urls = uniqueAccountIds.map(
@@ -86,7 +86,7 @@ export async function listGAAccessBindings(skipCache = false): Promise<any[]> {
         pipeline.hset(cacheKey, fieldKey, JSON.stringify(accountData));
       });
 
-      pipeline.expire(cacheKey, 7776000); // Set expiration for the entire hash - set to 3 months since this data doesn't change too often.
+      pipeline.expire(cacheKey, 2592000); // Set expiration for the entire hash - set to 3 months since this data doesn't change too often.
       await pipeline.exec(); // Execute the pipeline commands
     } catch (cacheError) {
       console.error('Failed to set cache data with HSET:', cacheError);
@@ -170,6 +170,18 @@ export async function createGAAccessBindings(formData: AccountPermissionsSchema)
 
   if (toCreateAccessBindings.size <= availableCreateUsage) {
     while (retries < MAX_RETRIES && toCreateAccessBindings.size > 0 && !permissionDenied) {
+      // Check the write rate limit for the entire application
+      const { remaining: remainingWrites } = await writeRateLimit.blockUntilReady(`user:${userId}`, 1000);
+      if (remainingWrites <= 0) {
+        throw new Error('Global write rate limit exceeded');
+      }
+
+      // Check the user-specific rate limit for the user making the request
+      const { remaining: remainingWritesPerUser } = await writeRateLimitPerUser.blockUntilReady(`user:${userId}`, 1000);
+      if (remainingWritesPerUser <= 0) {
+        throw new Error('User-specific write rate limit exceeded');
+      }
+
       try {
         const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
         if (remaining > 0) {
@@ -240,7 +252,6 @@ export async function createGAAccessBindings(formData: AccountPermissionsSchema)
                 } else {
                   const errorResult = await handleApiResponseError(
                     response,
-                    parsedResponse,
                     'conversionEvent',
                     [validatedContainerData.user]
                   );
@@ -475,6 +486,17 @@ export async function updateGAAccessBindings(formData: AccountPermissionsSchema)
 
   if (toUpdateAccessBindings.size <= availableUpdateUsage) {
     while (retries < MAX_RETRIES && toUpdateAccessBindings.size > 0 && !permissionDenied) {
+      // Check the write rate limit for the entire application
+      const { remaining: remainingWrites } = await writeRateLimit.blockUntilReady(`user:${userId}`, 1000);
+      if (remainingWrites <= 0) {
+        throw new Error('Global write rate limit exceeded');
+      }
+
+      // Check the user-specific rate limit for the user making the request
+      const { remaining: remainingWritesPerUser } = await writeRateLimitPerUser.blockUntilReady(`user:${userId}`, 1000);
+      if (remainingWritesPerUser <= 0) {
+        throw new Error('User-specific write rate limit exceeded');
+      }
       try {
         const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
         if (remaining > 0) {
@@ -545,7 +567,6 @@ export async function updateGAAccessBindings(formData: AccountPermissionsSchema)
                 } else {
                   const errorResult = await handleApiResponseError(
                     response,
-                    parsedResponse,
                     'accountAccess',
                     [validatedContainerData.user]
                   );
@@ -738,7 +759,6 @@ export async function deleteGAAccessBindings(
   const limit = Number(tierLimitResponse.deleteLimit);
   const deleteUsage = Number(tierLimitResponse.deleteUsage);
   const availableDeleteUsage = limit - deleteUsage;
-  const IdsProcessed = new Set<string>();
 
   // Handling feature limit
   if (tierLimitResponse && tierLimitResponse.limitReached) {
@@ -769,6 +789,18 @@ export async function deleteGAAccessBindings(
   if (toDeleteAccessBindings.size <= availableDeleteUsage) {
     // Retry loop for deletion requests
     while (retries < MAX_RETRIES && toDeleteAccessBindings.size > 0 && !permissionDenied) {
+      // Check the write rate limit for the entire application
+      const { remaining: remainingWrites } = await writeRateLimit.blockUntilReady(`user:${userId}`, 1000);
+      if (remainingWrites <= 0) {
+        throw new Error('Global write rate limit exceeded');
+      }
+
+      // Check the user-specific rate limit for the user making the request
+      const { remaining: remainingWritesPerUser } = await writeRateLimitPerUser.blockUntilReady(`user:${userId}`, 1000);
+      if (remainingWritesPerUser <= 0) {
+        throw new Error('User-specific write rate limit exceeded');
+      }
+
       try {
         // Enforcing rate limit
         const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
@@ -794,7 +826,6 @@ export async function deleteGAAccessBindings(
                 const parsedResponse = await response.json();
 
                 if (response.ok) {
-                  IdsProcessed.add(identifier?.name);
                   successfulDeletions.push({
                     name: identifier.name,
                   });
@@ -807,13 +838,12 @@ export async function deleteGAAccessBindings(
 
                   return {
                     name: identifier.name,
-                    eventName: identifier.eventName,
+                    eventName: identifier.user,
                     success: true,
                   };
                 } else {
                   const errorResult = await handleApiResponseError(
                     response,
-                    parsedResponse,
                     'GA4AccountAccess',
                     conversionEventNames
                   );
@@ -845,7 +875,6 @@ export async function deleteGAAccessBindings(
                 // Handling exceptions during fetch
                 errors.push(`Error deleting property ${identifier.name}: ${error.message}`);
               }
-              IdsProcessed.add(identifier.name);
               toDeleteAccessBindings.delete(identifier);
               return { name: identifier.name, success: false };
             });

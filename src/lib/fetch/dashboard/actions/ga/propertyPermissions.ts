@@ -11,19 +11,21 @@ import { FeatureResult, FeatureResponse } from '@/src/types/types';
 import {
   authenticateUser,
   checkFeatureLimit,
-  ensureGARateLimit,
+  ensureRateLimits,
   executeApiRequest,
   getOauthToken,
   handleApiResponseError,
   softRevalidateFeatureCache,
   tierCreateLimit,
   tierUpdateLimit,
+  validateFormData,
 } from '@/src/utils/server';
 import { fetchGASettings } from '../..';
 import {
   PropertyPermissionsSchema,
   FormsSchema,
   PropertyAccessSchema,
+  FormSchema,
 } from '@/src/lib/schemas/ga/propertyAccess';
 import { z } from 'zod';
 
@@ -58,7 +60,13 @@ export async function listGAAccessBindings(skipCache = false): Promise<any[]> {
 
   if (!data) return [];
 
-  await ensureGARateLimit(userId);
+  try {
+    await ensureRateLimits(userId);
+  } catch (error: any) {
+    // Log the error and return an empty array or handle it gracefully
+    console.error('Rate limit exceeded:', error.message);
+    return []; // Return an empty array to match the expected type
+  }
 
   // Get unique propertyIds and form the API URLs
   const uniquePropertyIds = Array.from(new Set(data.ga.map((item) => item.propertyId)));
@@ -124,609 +132,349 @@ export async function listGAAccessBindings(skipCache = false): Promise<any[]> {
 /************************************************************************************
   Create a single property or multiple accountAccess
 ************************************************************************************/
-export async function createGAAccessBindings(formData: PropertyPermissionsSchema) {
-  const { userId } = await auth();
-  if (!userId) return notFound();
-  const token = await currentUserOauthAccessToken(userId);
+export async function createGAAccessBindings(formData: {
+  forms: PropertyPermissionsSchema['forms'];
+}): Promise<FeatureResponse> {
+  const userId = await authenticateUser();
+  const token = await getOauthToken(userId);
 
-  let retries = 0;
-  const MAX_RETRIES = 3;
-  let delay = 1000;
-  const errors: string[] = [];
-  const successfulCreations: string[] = [];
-  const featureLimitReached: string[] = [];
-  const notFoundLimit: { id: string; name: string }[] = [];
-  const cacheKey = `ga:propertyAccess:userId:${userId}`;
+  // Centralized rate limit enforcement
+  const rateLimitResult = await ensureRateLimits(userId);
+  if (rateLimitResult) {
+    // If rate limit exceeded, return the error response immediately
+    return rateLimitResult;
+  }
 
-  // Refactor: Use string identifiers in the set
-  const toCreateAccessBindings = new Set(formData.forms.map((access) => access));
 
-  const tierLimitResponse: any = await tierCreateLimit(userId, 'GA4PropertyAccess');
-  const limit = Number(tierLimitResponse.createLimit);
-  const createUsage = Number(tierLimitResponse.createUsage);
-  const availableCreateUsage = limit - createUsage;
+  const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
+    userId,
+    featureType,
+    'create'
+  );
 
-  const creationResults: {
-    conversionEventName: string;
-    success: boolean;
-    message?: string;
-  }[] = [];
-
-  // Handling feature limit
-  if (tierLimitResponse && tierLimitResponse.limitReached) {
+  if (tierLimitResponse.limitReached || formData.forms.length > availableUsage) {
     return {
       success: false,
       limitReached: true,
-      message: 'Feature limit reached for creating user access at the account level.',
+      message: 'Feature limit reached or request exceeds available creations.',
+      errors: [
+        `Cannot create more permissions than available. You have ${availableUsage} creations left.`,
+      ],
       results: [],
     };
   }
 
-  if (toCreateAccessBindings.size > availableCreateUsage) {
-    const attemptedCreations = Array.from(toCreateAccessBindings).map((identifier) => {
-      const user = identifier.user;
-      return {
-        id: [], // No property ID since creation did not happen
-        name: user, // Include the property name from the identifier
-        success: false,
-        message: `Creation limit reached. Cannot create access at account level "${user}".`,
-        // remaining creation limit
-        remaining: availableCreateUsage,
-        limitReached: true,
+  let errors: string[] = [];
+  let successfulCreations: any[] = [];
+  let featureLimitReached: string[] = [];
+  let notFoundLimit: { id: string | undefined; name: string }[] = [];
+
+  await Promise.all(
+    formData.forms.map(async (data) => {
+      const validatedData = await validateFormData(FormSchema, { forms: [data] });
+      const cleanedData = validatedData.forms[0];
+
+      const url = `https://analyticsadmin.googleapis.com/v1alpha/${cleanedData.property}/accessBindings`;
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept-Encoding': 'gzip',
       };
-    });
-    return {
-      success: false,
-      features: [],
-      message: `Cannot create ${toCreateAccessBindings.size} custom metrics as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
-      errors: [
-        `Cannot create ${toCreateAccessBindings.size} custom metrics as it exceeds the available limit. You have ${availableCreateUsage} more creation(s) available.`,
-      ],
-      results: attemptedCreations,
-      limitReached: true,
-    };
-  }
 
-  let permissionDenied = false;
-  const conversionEventNames = formData.forms.map((access) => access.user);
+      // Accessing the validated property data
+      let requestBody: any = {
+        user: cleanedData.user,
+        roles: cleanedData.roles,
+      };
 
-  if (toCreateAccessBindings.size <= availableCreateUsage) {
-    while (retries < MAX_RETRIES && toCreateAccessBindings.size > 0 && !permissionDenied) {
+
       try {
-        const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
-        if (remaining > 0) {
-          await limiter.schedule(async () => {
-            const createPromises = Array.from(toCreateAccessBindings).map(async (identifier) => {
-              if (!identifier) {
-                errors.push(`Account access data not found for ${identifier}`);
-                toCreateAccessBindings.delete(identifier);
-                return;
-              }
-              const url = `https://analyticsadmin.googleapis.com/v1alpha/${identifier.property}/accessBindings`;
+        const res = await executeApiRequest(url, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(requestBody),
+        });
 
-              const headers = {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json',
-                'Accept-Encoding': 'gzip',
-              };
+        successfulCreations.push(res);
 
-              try {
-                const formDataToValidate = { forms: [identifier] };
-
-                const validationResult = FormsSchema.safeParse(formDataToValidate);
-
-                if (!validationResult.success) {
-                  let errorMessage = validationResult.error.issues
-                    .map((issue) => `${issue.path[0]}: ${issue.message}`)
-                    .join('. ');
-                  errors.push(errorMessage);
-                  toCreateAccessBindings.delete(identifier);
-                  return {
-                    identifier,
-                    success: false,
-                    error: errorMessage,
-                  };
-                }
-
-                // Accessing the validated property data
-                const validatedContainerData = validationResult.data.forms[0];
-
-                let requestBody: any = {
-                  user: validatedContainerData.user,
-                  roles: validatedContainerData.roles,
-                };
-
-                // Now, requestBody is prepared with the right structure based on the type
-                const response = await fetch(url, {
-                  method: 'POST',
-                  headers: headers,
-                  body: JSON.stringify(requestBody),
-                });
-
-                const parsedResponse = await response.json();
-
-                if (response.ok) {
-                  successfulCreations.push(validatedContainerData.user);
-                  toCreateAccessBindings.delete(identifier);
-                  fetchGASettings(userId);
-
-                  await prisma.tierLimit.update({
-                    where: { id: tierLimitResponse.id },
-                    data: { createUsage: { increment: 1 } },
-                  });
-                  creationResults.push({
-                    conversionEventName: validatedContainerData.user,
-                    success: true,
-                    message: `Successfully created property ${validatedContainerData.user}`,
-                  });
-                } else {
-                  const errorResult = await handleApiResponseError(
-                    response,
-                    parsedResponse,
-                    'conversionEvent',
-                    [validatedContainerData.user]
-                  );
-
-                  if (errorResult) {
-                    errors.push(`${errorResult.message}`);
-                    if (
-                      errorResult.errorCode === 403 &&
-                      parsedResponse.message === 'Feature limit reached'
-                    ) {
-                      featureLimitReached.push(validatedContainerData.user);
-                    } else if (errorResult.errorCode === 404) {
-                      notFoundLimit.push({
-                        id: identifier.account,
-                        name: validatedContainerData.user,
-                      });
-                    }
-                  } else {
-                    errors.push(
-                      `An unknown error occurred for property ${validatedContainerData.user}.`
-                    );
-                  }
-
-                  toCreateAccessBindings.delete(identifier);
-                  permissionDenied = errorResult ? true : permissionDenied;
-                  creationResults.push({
-                    conversionEventName: validatedContainerData.user,
-                    success: false,
-                    message: errorResult?.message,
-                  });
-                }
-              } catch (error: any) {
-                errors.push(`Exception creating property ${identifier.user}: ${error.message}`);
-                toCreateAccessBindings.delete(identifier);
-                creationResults.push({
-                  conversionEventName: identifier.user,
-                  success: false,
-                  message: error.message,
-                });
-              }
-            });
-
-            await Promise.all(createPromises);
-          });
-
-          if (notFoundLimit.length > 0) {
-            return {
-              success: false,
-              limitReached: false,
-              notFoundError: true, // Set the notFoundError flag
-              features: [],
-
-              results: notFoundLimit.map((item) => ({
-                id: item.id,
-                name: item.name,
-                success: false,
-                notFound: true,
-              })),
-            };
-          }
-
-          if (featureLimitReached.length > 0) {
-            return {
-              success: false,
-              limitReached: true,
-              notFoundError: false,
-              message: `Feature limit reached for custom metrics: ${featureLimitReached.join(
-                ', '
-              )}`,
-              results: featureLimitReached.map(() => {
-                // Find the name associated with the propertyId
-                const conversionEventName =
-                  conversionEventNames.find((eventName) => eventName.includes(eventName)) ||
-                  'Unknown';
-                return {
-                  id: [conversionEventName], // Ensure id is an array
-                  name: [conversionEventName], // Ensure name is an array, match by propertyId or default to 'Unknown'
-                  success: false,
-                  featureLimitReached: true,
-                };
-              }),
-            };
-          }
-
-          if (successfulCreations.length === formData.forms.length) {
-            break;
-          }
-
-          if (toCreateAccessBindings.size === 0) {
-            break;
-          }
-        } else {
-          throw new Error('Rate limit exceeded');
-        }
+        await prisma.tierLimit.update({
+          where: { id: tierLimitResponse.id },
+          data: { createUsage: { increment: 1 } },
+        });
       } catch (error: any) {
-        if (error.code === 429 || error.status === 429) {
-          await new Promise((resolve) => setTimeout(resolve, delay + Math.random() * 200));
-          delay *= 2;
-          retries++;
+        if (error.message === 'Feature limit reached') {
+          featureLimitReached.push(data.name ?? 'Unknown');
+        } else if (error.message.includes('404')) {
+          notFoundLimit.push({ id: data.property ?? 'Unknown', name: data.name ?? 'Unknown' });
         } else {
-          break;
-        }
-      } finally {
-        // This block will run regardless of the outcome of the try...catch
-        if (userId) {
-          await redis.del(cacheKey);
-          await revalidatePath(`dashboard/ga/access-permissions`);
+          errors.push(error.message);
         }
       }
+    })
+  );
+
+  // **Perform Selective Revalidation After All Creations**:
+  if (successfulCreations.length > 0) {
+    try {
+      // Map successful creations to the appropriate structure for Redis
+      const operations = successfulCreations.map((creation) => ({
+        crudType: 'create' as const, // Explicitly set the type as "create"
+        data: { ...creation },
+      }));
+      const cacheFields = successfulCreations.map((update) => `${update.name}`);
+
+      await softRevalidateFeatureCache(
+        [`ga:propertyAccess:userId:${userId}`],
+        `/dashboard/ga/access-permissions`,
+        userId,
+        operations,
+        cacheFields
+      );
+    } catch (err) {
+      console.error('Error during revalidation:', err);
     }
   }
 
-  if (permissionDenied) {
+  // Check for not found errors and return if any
+  if (notFoundLimit.length > 0) {
     return {
       success: false,
-      errors: errors,
-      results: [],
-      message: errors.join(', '),
+      limitReached: false,
+      notFoundError: true,
+      features: [],
+      message: `Some permissions could not be found: ${notFoundLimit
+        .map((item) => item.name)
+        .join(', ')}`,
+      results: notFoundLimit.map((item) => ({
+        id: item.id ? [item.id] : [],
+        name: [item.name],
+        success: false,
+        notFound: true,
+      })),
     };
   }
 
+  // Check if feature limit is reached and return response if applicable
+  if (featureLimitReached.length > 0) {
+    return {
+      success: false,
+      limitReached: true,
+      notFoundError: false,
+      message: `Feature limit reached for permissions: ${featureLimitReached.join(', ')}`,
+      results: featureLimitReached.map((propertyName) => ({
+        id: [],
+        name: [propertyName],
+        success: false,
+        featureLimitReached: true,
+      })),
+    };
+  }
+
+  // Proceed with general error handling if needed
   if (errors.length > 0) {
     return {
       success: false,
-      features: successfulCreations,
-      errors: errors,
-      results: successfulCreations.map((conversionEventName) => ({
-        conversionEventName,
-        success: true,
-      })),
+      errors,
+      results: [],
       message: errors.join(', '),
+      notFoundError: notFoundLimit.length > 0,
     };
   }
 
-  if (successfulCreations.length > 0) {
-    await redis.del(cacheKey);
-    revalidatePath(`dashboard/ga/access-permissions`);
-  }
-
-  // Map over formData.forms to create the results array
-  const results: FeatureResult[] = formData.forms.map((form) => {
-    // Ensure that form.propertyId is defined before adding it to the array
-    const conversionEventId = form.user ? [form.user] : []; // Provide an empty array as a fallback
-    return {
-      id: conversionEventId, // Ensure id is an array of strings
-      name: [form.user], // Wrap the string in an array
-      success: true, // or false, depending on the actual result
-      // Include `notFound` if applicable
-      notFound: false, // Set this to the appropriate value based on your logic
-    };
-  });
-
-  // Return the response with the correctly typed results
   return {
-    success: true, // or false, depending on the actual results
-    features: [], // Populate with actual property IDs if applicable
-    errors: [], // Populate with actual error messages if applicable
-    limitReached: false, // Set based on actual limit status
-    message: 'User access created successfully', // Customize the message as needed
-    results: results, // Use the correctly typed results
-    notFoundError: false, // Set based on actual not found status
+    success: true,
+    message: `Successfully created ${successfulCreations.length} permission(s)`,
+    features: successfulCreations.map<FeatureResult>((cd) => ({
+      id: [],
+      name: [cd.name],
+      success: true,
+    })),
+    errors: [],
+    notFoundError: notFoundLimit.length > 0,
+    results: successfulCreations.map<FeatureResult>((cd) => ({
+      id: [],
+      name: [cd.name],
+      success: true,
+    })),
   };
 }
 
 /************************************************************************************
   Update a single property or multiple custom metrics
 ************************************************************************************/
-export async function updateGAAccessBindings(formData: PropertyPermissionsSchema) {
-  const { userId } = await auth();
-  if (!userId) return notFound();
-  const token = await currentUserOauthAccessToken(userId);
+export async function updateGAAccessBindings(formData: {
+  forms: PropertyPermissionsSchema['forms'];
+}): Promise<FeatureResponse> {
+  const userId = await authenticateUser();
+  const token = await getOauthToken(userId);
 
-  let retries = 0;
-  const MAX_RETRIES = 3;
-  let delay = 1000;
-  const errors: string[] = [];
-  const successfulCreations: string[] = [];
-  const featureLimitReached: string[] = [];
-  const notFoundLimit: { id: string; name: string }[] = [];
+  // Centralized rate limit enforcement
+  const rateLimitResult = await ensureRateLimits(userId);
+  if (rateLimitResult) {
+    // If rate limit exceeded, return the error response immediately
+    return rateLimitResult;
+  }
 
-  // Refactor: Use string identifiers in the set
-  const toUpdateAccessBindings = new Set(formData.forms.map((access) => access));
 
-  const tierLimitResponse: any = await tierUpdateLimit(userId, 'GA4PropertyAccess');
-  const limit = Number(tierLimitResponse.updateLimit);
-  const updateUsage = Number(tierLimitResponse.updateUsage);
-  const availableUpdateUsage = limit - updateUsage;
+  const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
+    userId,
+    featureType,
+    'update'
+  );
 
-  const creationResults: {
-    conversionEventName: string;
-    success: boolean;
-    message?: string;
-  }[] = [];
-
-  // Handling feature limit
-  if (tierLimitResponse && tierLimitResponse.limitReached) {
+  if (tierLimitResponse.limitReached || formData.forms.length > availableUsage) {
     return {
       success: false,
       limitReached: true,
-      message: 'Feature limit reached for udpating user access at the property level.',
+      message: 'Feature limit reached or request exceeds available updates.',
+      errors: [
+        `Cannot update more permissions than available. You have ${availableUsage} updates left.`,
+      ],
       results: [],
     };
   }
 
-  if (toUpdateAccessBindings.size > availableUpdateUsage) {
-    const attemptedCreations = Array.from(toUpdateAccessBindings).map((identifier) => {
-      const user = identifier.user;
-      return {
-        id: [], // No property ID since creation did not happen
-        name: user, // Include the property name from the identifier
-        success: false,
-        message: `Creation limit reached. Cannot update property access "${user}".`,
-        // remaining creation limit
-        remaining: availableUpdateUsage,
-        limitReached: true,
+  let errors: string[] = [];
+  let featureLimitReached: string[] = [];
+  let notFoundLimit: { id: string | undefined; name: string }[] = [];
+  let successfulUpdates: any[] = [];
+
+  await Promise.all(
+    formData.forms.map(async (data) => {
+      const validatedData = await validateFormData(FormSchema, { forms: [data] });
+
+      const cleanedData = validatedData.forms[0];
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept-Encoding': 'gzip',
       };
-    });
-    return {
-      success: false,
-      features: [],
-      message: `Cannot update ${toUpdateAccessBindings.size} property access as it exceeds the available limit. You have ${availableUpdateUsage} more creation(s) available.`,
-      errors: [
-        `Cannot update ${toUpdateAccessBindings.size} property access as it exceeds the available limit. You have ${availableUpdateUsage} more creation(s) available.`,
-      ],
-      results: attemptedCreations,
-      limitReached: true,
-    };
-  }
 
-  let permissionDenied = false;
-  const conversionEventNames = formData.forms.map((access) => access.user);
+      const url = `https://analyticsadmin.googleapis.com/v1alpha/${cleanedData.name}`;
 
-  if (toUpdateAccessBindings.size <= availableUpdateUsage) {
-    while (retries < MAX_RETRIES && toUpdateAccessBindings.size > 0 && !permissionDenied) {
+      let requestBody: any = {
+        user: cleanedData.user,
+        roles: cleanedData.roles,
+      };
+
       try {
-        const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
-        if (remaining > 0) {
-          await limiter.schedule(async () => {
-            const updatePromises = Array.from(toUpdateAccessBindings).map(async (identifier) => {
-              if (!identifier) {
-                errors.push(`Custom metrics data not found for ${identifier}`);
-                toUpdateAccessBindings.delete(identifier);
-                return;
-              }
+        const res = await executeApiRequest(url, {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify(requestBody),
+        });
 
-              const url = `https://analyticsadmin.googleapis.com/v1alpha/${identifier.name}`;
+        successfulUpdates.push(res);
 
-              const headers = {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json',
-                'Accept-Encoding': 'gzip',
-              };
+        await prisma.tierLimit.update({
+          where: { id: tierLimitResponse.id },
+          data: { updateUsage: { increment: 1 } },
+        });
 
-              try {
-                const formDataToValidate = { forms: [identifier] };
-
-                const validationResult = FormsSchema.safeParse(formDataToValidate);
-
-                if (!validationResult.success) {
-                  let errorMessage = validationResult.error.issues
-                    .map((issue) => `${issue.path[0]}: ${issue.message}`)
-                    .join('. ');
-                  errors.push(errorMessage);
-                  toUpdateAccessBindings.delete(identifier);
-                  return {
-                    identifier,
-                    success: false,
-                    error: errorMessage,
-                  };
-                }
-
-                // Accessing the validated property data
-                const validatedContainerData = validationResult.data.forms[0];
-
-                let requestBody: any = {
-                  user: validatedContainerData.user,
-                  roles: validatedContainerData.roles,
-                };
-
-                // Now, requestBody is prepared with the right structure based on the type
-                const response = await fetch(url, {
-                  method: 'PATCH',
-                  headers: headers,
-                  body: JSON.stringify(requestBody),
-                });
-
-                const parsedResponse = await response.json();
-
-                if (response.ok) {
-                  successfulCreations.push(validatedContainerData.user);
-                  toUpdateAccessBindings.delete(identifier);
-
-                  await prisma.tierLimit.update({
-                    where: { id: tierLimitResponse.id },
-                    data: { updateUsage: { increment: 1 } },
-                  });
-                  creationResults.push({
-                    conversionEventName: validatedContainerData.user,
-                    success: true,
-                    message: `Successfully updated property ${validatedContainerData.user}`,
-                  });
-                } else {
-                  const errorResult = await handleApiResponseError(
-                    response,
-                    parsedResponse,
-                    'accountAccess',
-                    [validatedContainerData.user]
-                  );
-
-                  if (errorResult) {
-                    errors.push(`${errorResult.message}`);
-                    if (
-                      errorResult.errorCode === 403 &&
-                      parsedResponse.message === 'Feature limit reached'
-                    ) {
-                      featureLimitReached.push(validatedContainerData.user);
-                    } else if (errorResult.errorCode === 404) {
-                      notFoundLimit.push({
-                        id: identifier.account,
-                        name: validatedContainerData.user,
-                      });
-                    }
-                  } else {
-                    errors.push(
-                      `An unknown error occurred for property ${validatedContainerData.user}.`
-                    );
-                  }
-
-                  toUpdateAccessBindings.delete(identifier);
-                  permissionDenied = errorResult ? true : permissionDenied;
-                  creationResults.push({
-                    conversionEventName: validatedContainerData.user,
-                    success: false,
-                    message: errorResult?.message,
-                  });
-                }
-              } catch (error: any) {
-                errors.push(`Exception creating property ${identifier.user}: ${error.message}`);
-                toUpdateAccessBindings.delete(identifier);
-                creationResults.push({
-                  conversionEventName: identifier.user,
-                  success: false,
-                  message: error.message,
-                });
-              }
-            });
-
-            await Promise.all(updatePromises);
-          });
-
-          if (notFoundLimit.length > 0) {
-            return {
-              success: false,
-              limitReached: false,
-              notFoundError: true, // Set the notFoundError flag
-              features: [],
-
-              results: notFoundLimit.map((item) => ({
-                id: item.id,
-                name: item.name,
-                success: false,
-                notFound: true,
-              })),
-            };
-          }
-
-          if (featureLimitReached.length > 0) {
-            return {
-              success: false,
-              limitReached: true,
-              notFoundError: false,
-              message: `Feature limit reached for custom metrics: ${featureLimitReached.join(
-                ', '
-              )}`,
-              results: featureLimitReached.map(() => {
-                // Find the name associated with the propertyId
-                const conversionEventName =
-                  conversionEventNames.find((eventName) => eventName.includes(eventName)) ||
-                  'Unknown';
-                return {
-                  id: [conversionEventName], // Ensure id is an array
-                  name: [conversionEventName], // Ensure name is an array, match by propertyId or default to 'Unknown'
-                  success: false,
-                  featureLimitReached: true,
-                };
-              }),
-            };
-          }
-
-          if (successfulCreations.length === formData.forms.length) {
-            break;
-          }
-
-          if (toUpdateAccessBindings.size === 0) {
-            break;
-          }
-        } else {
-          throw new Error('Rate limit exceeded');
-        }
+        // Immediate revalidation per each update is not needed, aggregate revalidation is better
       } catch (error: any) {
-        if (error.code === 429 || error.status === 429) {
-          await new Promise((resolve) => setTimeout(resolve, delay + Math.random() * 200));
-          delay *= 2;
-          retries++;
+        if (error.message === 'Feature limit reached') {
+          featureLimitReached.push(validatedData.forms[0].name);
+        } else if (error.message.includes('404')) {
+          notFoundLimit.push({
+            id: validatedData.forms[0].parent,
+            name: validatedData.forms[0].name,
+          });
         } else {
-          break;
+          errors.push(error.message);
         }
       }
+    })
+  );
+
+  // **Perform Selective Revalidation After All Updates**:
+  if (successfulUpdates.length > 0) {
+    try {
+      // Only revalidate the affected properties
+      const operations = successfulUpdates.map((update) => ({
+        crudType: 'update' as const, // Explicitly set the type as "update"
+        data: { ...update },
+      }));
+
+      const cacheFields = successfulUpdates.map((update) => `${update.name}`);
+
+      // Call softRevalidateFeatureCache for updates
+      await softRevalidateFeatureCache(
+        [`ga:propertyAccess:userId:${userId}`],
+        `/dashboard/ga/access-permissions`,
+        userId,
+        operations,
+        cacheFields
+      );
+    } catch (err) {
+      console.error('Error during revalidation:', err);
     }
   }
 
-  if (permissionDenied) {
+  // Check for not found errors and return if any
+  if (notFoundLimit.length > 0) {
     return {
       success: false,
-      errors: errors,
-      results: [],
-      message: errors.join(', '),
+      limitReached: false,
+      notFoundError: true,
+      features: [],
+      message: `Some dimensions could not be found: ${notFoundLimit
+        .map((item) => item.name)
+        .join(', ')}`,
+      results: notFoundLimit.map((item) => ({
+        id: item.id ? [item.id] : [], // Ensure id is an array and filter out undefined
+        name: [item.name], // Ensure name is an array to match FeatureResult type
+        success: false,
+        notFound: true,
+      })),
     };
   }
 
+  // Check if feature limit is reached and return response if applicable
+  if (featureLimitReached.length > 0) {
+    return {
+      success: false,
+      limitReached: true,
+      notFoundError: false,
+      message: `Feature limit reached for permissions: ${featureLimitReached.join(', ')}`,
+      results: featureLimitReached.map((propertyName) => ({
+        id: [], // Populate with actual property IDs if available
+        name: [propertyName], // Wrap the string in an array
+        success: false,
+        featureLimitReached: true,
+      })),
+    };
+  }
+
+  // Handle general errors
   if (errors.length > 0) {
     return {
       success: false,
-      features: successfulCreations,
-      errors: errors,
-      results: successfulCreations.map((conversionEventName) => ({
-        conversionEventName,
-        success: true,
-      })),
+      errors,
+      results: [],
       message: errors.join(', '),
+      notFoundError: notFoundLimit.length > 0,
     };
   }
 
-  if (successfulCreations.length > 0) {
-    const cacheKey = `ga:propertyAccess:userId:${userId}`;
-
-    await redis.del(cacheKey);
-    revalidatePath(`dashboard/ga/access-permissions`);
-  }
-
-  // Map over formData.forms to update the results array
-  const results: FeatureResult[] = formData.forms.map((form) => {
-    // Ensure that form.propertyId is defined before adding it to the array
-    const conversionEventId = form.user ? [form.user] : []; // Provide an empty array as a fallback
-    return {
-      id: conversionEventId, // Ensure id is an array of strings
-      name: [form.user], // Wrap the string in an array
-      success: true, // or false, depending on the actual result
-      // Include `notFound` if applicable
-      notFound: false, // Set this to the appropriate value based on your logic
-    };
-  });
-
-  // Return the response with the correctly typed results
   return {
-    success: true, // or false, depending on the actual results
-    features: [], // Populate with actual property IDs if applicable
-    errors: [], // Populate with actual error messages if applicable
-    limitReached: false, // Set based on actual limit status
-    message: 'Custom Metric updated successfully', // Customize the message as needed
-    results: results, // Use the correctly typed results
-    notFoundError: false, // Set based on actual not found status
+    success: true,
+    message: `Successfully updated ${successfulUpdates.length} permission(s)`,
+    features: successfulUpdates.map<FeatureResult>((d) => ({
+      id: [d.name], // Populate with actual property IDs if available
+      name: [d.name], // Wrap the string in an array
+      success: true, // Indicates success of the operation
+    })),
+    errors: [],
+    notFoundError: notFoundLimit.length > 0,
+    results: successfulUpdates.map<FeatureResult>((d) => ({
+      id: [d.name], // Populate this with actual property IDs if available
+      name: [d.name], // Wrap the string in an array
+      success: true, // Indicates success of the operation
+    })),
   };
 }
+
 
 /************************************************************************************
   Delete a single property or multiple custom metrics
@@ -737,6 +485,15 @@ export async function deleteGAAccessBindings(
 ): Promise<FeatureResponse> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
+
+  // Centralized rate limit enforcement
+  const rateLimitResult = await ensureRateLimits(userId);
+  if (rateLimitResult) {
+    // If rate limit exceeded, return the error response immediately
+    return rateLimitResult;
+  }
+
+
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -760,7 +517,7 @@ export async function deleteGAAccessBindings(
   let featureLimitReached: string[] = [];
   let notFoundLimit: string[] = [];
 
-  await ensureGARateLimit(userId);
+  await ensureRateLimits(userId);
 
   await Promise.all(
     Array.from(selected).map(async (data) => {
@@ -826,7 +583,7 @@ export async function deleteGAAccessBindings(
       // Call softRevalidateFeatureCache for deletions
       await softRevalidateFeatureCache(
         [`ga:properties:userId:${userId}`],
-        `/dashboard/ga/properties`,
+        `/dashboard/ga/access-permissions`,
         userId,
         operations,
         cacheFields
@@ -842,7 +599,7 @@ export async function deleteGAAccessBindings(
       success: false,
       limitReached: false,
       notFoundError: true,
-      message: `Could not delete property. Please check your permissions. Property Name: ${names.find(
+      message: `Could not delete permission. Please check your permissions. Property Name: ${names.find(
         (name) => name.includes(name)
       )}. All other properties were successfully deleted.`,
       results: notFoundLimit.map((data) => ({
@@ -860,7 +617,7 @@ export async function deleteGAAccessBindings(
       success: false,
       limitReached: true,
       notFoundError: false,
-      message: `Feature limit reached for properties: ${featureLimitReached.join(', ')}`,
+      message: `Feature limit reached: ${featureLimitReached.join(', ')}`,
       results: featureLimitReached.map((data) => ({
         id: [data], // Ensure id is an array
         name: [names.find((name) => name.includes(data)) || 'Unknown'], // Ensure name is an array
@@ -882,7 +639,7 @@ export async function deleteGAAccessBindings(
 
   return {
     success: true,
-    message: `Successfully deleted ${successfulDeletions.length} property(ies)`,
+    message: `Successfully deleted ${successfulDeletions.length}`,
     features: successfulDeletions.map<FeatureResult>((data: any) => ({
       id: [data.name], // Wrap propertyId in an array to match FeatureResult type
       name: [names.find((name) => name.includes(data.name)) || 'Unknown'], // Wrap name in an array to match FeatureResult type

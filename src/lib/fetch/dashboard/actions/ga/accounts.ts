@@ -3,7 +3,7 @@
 // Importing necessary modules and functions
 import { auth } from '@clerk/nextjs/server'; // Importing authentication function from Clerk
 import { limiter } from '../../../../bottleneck'; // Importing rate limiter configuration
-import { gaRateLimit } from '../../../../redis/rateLimits'; // Importing rate limiting utility for Google Tag Manager
+import { gaRateLimit, writeRateLimit, writeRateLimitPerUser } from '../../../../redis/rateLimits'; // Importing rate limiting utility for Google Tag Manager
 import { FormsSchema } from '../../../../schemas/ga/accounts'; // Importing schema for account updates
 import { z } from 'zod'; // Importing Zod for schema validation
 import { revalidatePath } from 'next/cache'; // Importing function to revalidate cached paths in Next.js
@@ -181,6 +181,18 @@ export async function UpdateGaAccounts(formData: FormUpdateSchema) {
 
   if (toUpdateAccounts.size <= availableUpdateUsage) {
     while (retries < MAX_RETRIES && toUpdateAccounts.size > 0 && !permissionDenied) {
+      // Check the write rate limit for the entire application
+      const { remaining: remainingWrites } = await writeRateLimit.blockUntilReady(`user:${userId}`, 1000);
+      if (remainingWrites <= 0) {
+        throw new Error('Global write rate limit exceeded');
+      }
+
+      // Check the user-specific rate limit for the user making the request
+      const { remaining: remainingWritesPerUser } = await writeRateLimitPerUser.blockUntilReady(`user:${userId}`, 1000);
+      if (remainingWritesPerUser <= 0) {
+        throw new Error('User-specific write rate limit exceeded');
+      }
+
       try {
         const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
         if (remaining > 0) {
@@ -261,7 +273,6 @@ export async function UpdateGaAccounts(formData: FormUpdateSchema) {
 
                   const errorResult = await handleApiResponseError(
                     response,
-                    parsedResponse,
                     'account',
                     [accountName]
                   );
@@ -506,6 +517,18 @@ export async function deleteAccounts(
   if (toDeleteAccounts.size <= availableDeleteUsage) {
     // Retry loop for deletion requests
     while (retries < MAX_RETRIES && toDeleteAccounts.size > 0 && !permissionDenied) {
+      // Check the write rate limit for the entire application
+      const { remaining: remainingWrites } = await writeRateLimit.blockUntilReady(`user:${userId}`, 1000);
+      if (remainingWrites <= 0) {
+        throw new Error('Global write rate limit exceeded');
+      }
+
+      // Check the user-specific rate limit for the user making the request
+      const { remaining: remainingWritesPerUser } = await writeRateLimitPerUser.blockUntilReady(`user:${userId}`, 1000);
+      if (remainingWritesPerUser <= 0) {
+        throw new Error('User-specific write rate limit exceeded');
+      }
+
       try {
         // Enforcing rate limit
         const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
@@ -553,7 +576,6 @@ export async function deleteAccounts(
                   parsedResponse = await response.json();
                   const errorResult = await handleApiResponseError(
                     response,
-                    parsedResponse,
                     'gaAccount',
                     accountNames
                   );
@@ -769,6 +791,18 @@ export async function createAccounts(formData: FormCreateSchema) {
 
   if (toCreateAccounts.size <= availableCreateUsage) {
     while (retries < MAX_RETRIES && toCreateAccounts.size > 0 && !permissionDenied) {
+      // Check the write rate limit for the entire application
+      const { remaining: remainingWrites } = await writeRateLimit.blockUntilReady(`user:${userId}`, 1000);
+      if (remainingWrites <= 0) {
+        throw new Error('Global write rate limit exceeded');
+      }
+
+      // Check the user-specific rate limit for the user making the request
+      const { remaining: remainingWritesPerUser } = await writeRateLimitPerUser.blockUntilReady(`user:${userId}`, 1000);
+      if (remainingWritesPerUser <= 0) {
+        throw new Error('User-specific write rate limit exceeded');
+      }
+
       try {
         const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
         if (remaining > 0) {
@@ -848,7 +882,6 @@ export async function createAccounts(formData: FormCreateSchema) {
 
                   const errorResult = await handleApiResponseError(
                     response,
-                    parsedResponse,
                     'GA4Account',
                     [accountData.displayName]
                   );

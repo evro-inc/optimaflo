@@ -12,7 +12,7 @@ import { FeatureResponse, FeatureResult } from '@/src/types/types';
 import {
   authenticateUser,
   checkFeatureLimit,
-  ensureGARateLimit,
+  ensureRateLimits,
   executeApiRequest,
   getOauthToken,
   softRevalidateFeatureCache,
@@ -52,8 +52,13 @@ export async function listGtmBuiltInVariables(skipCache = false): Promise<any[]>
 
   if (!data) return [];
 
-  await ensureGARateLimit(userId);
-
+  try {
+    await ensureRateLimits(userId);
+  } catch (error: any) {
+    // Log the error and return an empty array or handle it gracefully
+    console.error('Rate limit exceeded:', error.message);
+    return []; // Return an empty array to match the expected type
+  }
   const uniqueItems = Array.from(
     new Set(
       data.gtm.map((item) =>
@@ -119,6 +124,15 @@ export async function deleteBuiltInVariables(
 ): Promise<FeatureResponse> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
+
+  // Centralized rate limit enforcement
+  const rateLimitResult = await ensureRateLimits(userId);
+  if (rateLimitResult) {
+    // If rate limit exceeded, return the error response immediately
+    return rateLimitResult;
+  }
+
+
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -141,8 +155,6 @@ export async function deleteBuiltInVariables(
   let successfulDeletions: z.infer<typeof BuiltInVariableSchema>[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: string[] = [];
-
-  await ensureGARateLimit(userId);
 
   await Promise.all(
     Array.from(selected).map(async (data) => {
@@ -180,7 +192,7 @@ export async function deleteBuiltInVariables(
       // Explicitly type the operations array
       const operations = successfulDeletions.map((deletion) => ({
         crudType: 'delete' as const, // Explicitly set the type as "delete"
-        ...deletion,
+        data: { ...deletion },
       }));
       const cacheFields = successfulDeletions.map(
         (del) => `${del.accountId}/${del.containerId}/${del.workspaceId}/${del.type}`
@@ -267,6 +279,15 @@ export async function createBuiltInVariables(formData: {
 }): Promise<FeatureResponse> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
+
+  // Centralized rate limit enforcement
+  const rateLimitResult = await ensureRateLimits(userId);
+  if (rateLimitResult) {
+    // If rate limit exceeded, return the error response immediately
+    return rateLimitResult;
+  }
+
+
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -289,8 +310,6 @@ export async function createBuiltInVariables(formData: {
   let successfulCreations: any[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: { id: string | undefined; name: string }[] = [];
-
-  await ensureGARateLimit(userId);
 
   let totalCreatedVariables = 0;
 
@@ -449,6 +468,14 @@ export async function revertBuiltInVariables(
 ): Promise<FeatureResponse> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
+
+  // Centralized rate limit enforcement
+  const rateLimitResult = await ensureRateLimits(userId);
+  if (rateLimitResult) {
+    // If rate limit exceeded, return the error response immediately
+    return rateLimitResult;
+  }
+
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -476,8 +503,6 @@ export async function revertBuiltInVariables(
   const filteredSelected = Array.from(selected).filter(
     (data) => data.builtInVariable && data.builtInVariable.path
   );
-
-  await ensureGARateLimit(userId);
 
   await Promise.all(
     filteredSelected.map(async (data) => {
@@ -519,7 +544,7 @@ export async function revertBuiltInVariables(
     try {
       const operations = successfulDeletions.map((deletion) => ({
         crudType: 'delete' as const, // Explicitly set the type as "delete"
-        ...deletion,
+        data: { ...deletion },
       }));
       const cacheFields = successfulDeletions.map(
         (del) => `${del.accountId}/${del.containerId}/${del.workspaceId}/${del.type}`

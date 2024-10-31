@@ -10,7 +10,7 @@ import { FeatureResponse, FeatureResult } from '@/src/types/types';
 import {
   authenticateUser,
   checkFeatureLimit,
-  ensureGARateLimit,
+  ensureRateLimits,
   executeApiRequest,
   fetchWithRetry,
   getOauthToken,
@@ -52,7 +52,13 @@ export async function listGtmWorkspaces(skipCache = false): Promise<any[]> {
 
   if (!data) return [];
 
-  await ensureGARateLimit(userId);
+  try {
+    await ensureRateLimits(userId);
+  } catch (error: any) {
+    // Log the error and return an empty array or handle it gracefully
+    console.error('Rate limit exceeded:', error.message);
+    return []; // Return an empty array to match the expected type
+  }
 
   const uniqueItems = Array.from(
     new Set(
@@ -121,6 +127,15 @@ export async function deleteWorkspaces(
 ): Promise<FeatureResponse> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
+
+  // Centralized rate limit enforcement
+  const rateLimitResult = await ensureRateLimits(userId);
+  if (rateLimitResult) {
+    // If rate limit exceeded, return the error response immediately
+    return rateLimitResult;
+  }
+
+
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -143,8 +158,6 @@ export async function deleteWorkspaces(
   let successfulDeletions: z.infer<typeof WorkspaceSchema>[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: string[] = [];
-
-  await ensureGARateLimit(userId);
 
   await Promise.all(
     Array.from(selected).map(async (data) => {
@@ -190,7 +203,7 @@ export async function deleteWorkspaces(
       // Explicitly type the operations array
       const operations = successfulDeletions.map((deletion) => ({
         crudType: 'delete' as const, // Explicitly set the type as "delete"
-        ...deletion,
+        data: { ...deletion },
       }));
       const cacheFields = successfulDeletions.map(
         (del) => `${del.accountId}/${del.containerId}/${del.workspaceId}`
@@ -278,6 +291,15 @@ export async function createWorkspaces(formData: {
 }): Promise<FeatureResponse> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
+
+  // Centralized rate limit enforcement
+  const rateLimitResult = await ensureRateLimits(userId);
+  if (rateLimitResult) {
+    // If rate limit exceeded, return the error response immediately
+    return rateLimitResult;
+  }
+
+
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -301,7 +323,6 @@ export async function createWorkspaces(formData: {
   let featureLimitReached: string[] = [];
   let notFoundLimit: { id: string | undefined; name: string }[] = [];
 
-  await ensureGARateLimit(userId);
 
   await Promise.all(
     formData.forms.map(async (data) => {
@@ -465,6 +486,15 @@ export async function updateWorkspaces(formData: {
 }): Promise<FeatureResponse> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
+
+  // Centralized rate limit enforcement
+  const rateLimitResult = await ensureRateLimits(userId);
+  if (rateLimitResult) {
+    // If rate limit exceeded, return the error response immediately
+    return rateLimitResult;
+  }
+
+
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -487,8 +517,6 @@ export async function updateWorkspaces(formData: {
   let successfulUpdates: any[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: { id: string | undefined; name: string }[] = [];
-
-  await ensureGARateLimit(userId);
 
   await Promise.all(
     formData.forms.map(async (data) => {
@@ -544,7 +572,7 @@ export async function updateWorkspaces(formData: {
       // Only revalidate the affected properties
       const operations = successfulUpdates.map((update) => ({
         crudType: 'update' as const, // Explicitly set the type as "update"
-        ...update,
+        data: { ...update },
       }));
 
       const cacheFields = successfulUpdates.map((update) => `${update.name}`);
@@ -635,6 +663,14 @@ export async function createGTMVersion(formData: {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
 
+  // Centralized rate limit enforcement
+  const rateLimitResult = await ensureRateLimits(userId);
+  if (rateLimitResult) {
+    // If rate limit exceeded, return the error response immediately
+    return rateLimitResult;
+  }
+
+
   // Create uniqueForms to remove duplicates
   const uniqueForms = formData.forms.filter(
     (value, index, self) =>
@@ -670,7 +706,6 @@ export async function createGTMVersion(formData: {
   let featureLimitReached: string[] = [];
   let notFoundLimit: { id: string | undefined; name: string }[] = [];
 
-  await ensureGARateLimit(userId);
 
   await Promise.all(
     uniqueForms.map(async (data) => {
@@ -734,7 +769,7 @@ export async function createGTMVersion(formData: {
     try {
       const operations = successfulCreations.map((creation) => ({
         crudType: 'delete' as const,
-        data: creation,
+        data: { ...creation },
       }));
       const cacheFields = successfulCreations.map((del) => {
         const accountId = del.containerVersion.accountId;
@@ -832,6 +867,15 @@ export async function getStatusGtmWorkspaces() {
   if (!userId) return notFound();
 
   const token = await currentUserOauthAccessToken(userId);
+
+  // Centralized rate limit enforcement
+  const rateLimitResult = await ensureRateLimits(userId);
+  if (rateLimitResult) {
+    // If rate limit exceeded, return the error response immediately
+    return rateLimitResult;
+  }
+
+
 
   const gtmData = await prisma.user.findFirst({
     where: { id: userId },

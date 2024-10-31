@@ -6,7 +6,7 @@ import { FeatureResult, FeatureResponse } from '@/src/types/types';
 import {
   authenticateUser,
   checkFeatureLimit,
-  ensureGARateLimit,
+  ensureRateLimits,
   executeApiRequest,
   getOauthToken,
   softRevalidateFeatureCache,
@@ -46,7 +46,13 @@ export async function listGTMVersionHeaders(skipCache = false): Promise<any[]> {
 
   if (!data) return [];
 
-  await ensureGARateLimit(userId);
+  try {
+    await ensureRateLimits(userId);
+  } catch (error: any) {
+    // Log the error and return an empty array or handle it gracefully
+    console.error('Rate limit exceeded:', error.message);
+    return []; // Return an empty array to match the expected type
+  }
 
   const uniqueItems = Array.from(
     new Set(
@@ -110,6 +116,15 @@ export async function listGTMVersionHeaders(skipCache = false): Promise<any[]> {
 export async function getGTMLatestVersion(skipCache = false): Promise<any> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
+
+  // Centralized rate limit enforcement
+  const rateLimitResult = await ensureRateLimits(userId);
+  if (rateLimitResult) {
+    // If rate limit exceeded, return the error response immediately
+    return rateLimitResult;
+  }
+
+
   const cacheKey = `gtm:latestVersions:userId:${userId}`;
   const pipeline = redis.pipeline();
 
@@ -136,8 +151,6 @@ export async function getGTMLatestVersion(skipCache = false): Promise<any> {
   });
 
   if (!data) return null; // Return null if no user data found
-
-  await ensureGARateLimit(userId);
 
   // Step 3: Fetch property data from the API
 
@@ -198,6 +211,15 @@ export async function getGTMLatestVersion(skipCache = false): Promise<any> {
 export async function getGTMLiveVersion(skipCache = false): Promise<any> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
+
+  // Centralized rate limit enforcement
+  const rateLimitResult = await ensureRateLimits(userId);
+  if (rateLimitResult) {
+    // If rate limit exceeded, return the error response immediately
+    return rateLimitResult;
+  }
+
+
   const cacheKey = `gtm:liveVersions:userId:${userId}`;
   const pipeline = redis.pipeline();
 
@@ -224,8 +246,6 @@ export async function getGTMLiveVersion(skipCache = false): Promise<any> {
   });
 
   if (!data) return null; // Return null if no user data found
-
-  await ensureGARateLimit(userId);
 
   // Step 3: Fetch property data from the API
 
@@ -289,6 +309,15 @@ export async function deleteVersions(
 ): Promise<FeatureResponse> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
+
+  // Centralized rate limit enforcement
+  const rateLimitResult = await ensureRateLimits(userId);
+  if (rateLimitResult) {
+    // If rate limit exceeded, return the error response immediately
+    return rateLimitResult;
+  }
+
+
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -362,8 +391,6 @@ export async function deleteVersions(
     };
   }
 
-  // Step 3: Proceed with deleting the filtered non-live, non-latest versions
-  await ensureGARateLimit(userId);
 
   await Promise.all(
     nonLiveAndNonLatest.map(async (data) => {
@@ -400,7 +427,7 @@ export async function deleteVersions(
       // Explicitly type the operations array
       const operations = successfulDeletions.map((deletion) => ({
         crudType: 'delete' as const, // Explicitly set the type as "delete"
-        data: deletion, // Include the full version data as `data`
+        data: { ...deletion }, // Include the full version data as `data`
       }));
 
       const cacheFields = successfulDeletions.map(
@@ -490,6 +517,13 @@ export async function publishGTM(formData: {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
 
+  // Centralized rate limit enforcement
+  const rateLimitResult = await ensureRateLimits(userId);
+  if (rateLimitResult) {
+    // If rate limit exceeded, return the error response immediately
+    return rateLimitResult;
+  }
+
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     'GTMVersions',
@@ -513,7 +547,6 @@ export async function publishGTM(formData: {
   let featureLimitReached: string[] = [];
   let notFoundLimit: { id: string | undefined; name: string }[] = [];
 
-  await ensureGARateLimit(userId);
 
   await Promise.all(
     formData.forms.map(async (data) => {
@@ -562,7 +595,7 @@ export async function publishGTM(formData: {
     try {
       const operations = successfulCreations.map((creation) => ({
         crudType: 'delete' as const,
-        data: creation,
+        data: { ...creation },
       }));
       const cacheFields = successfulCreations.map((del) => {
         const accountId = del.containerVersion.accountId;

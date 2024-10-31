@@ -5,7 +5,7 @@ import { redis } from '@/src/lib/redis/cache';
 import {
   authenticateUser,
   checkFeatureLimit,
-  ensureGARateLimit,
+  ensureRateLimits,
   executeApiRequest,
   getOauthToken,
   softRevalidateFeatureCache,
@@ -46,7 +46,13 @@ export async function listGtmAccounts(skipCache = false): Promise<any[]> {
 
   if (!data) return [];
 
-  await ensureGARateLimit(userId);
+  try {
+    await ensureRateLimits(userId);
+  } catch (error: any) {
+    // Log the error and return an empty array or handle it gracefully
+    console.error('Rate limit exceeded:', error.message);
+    return []; // Return an empty array to match the expected type
+  }
 
   const url = `https://www.googleapis.com/tagmanager/v2/accounts?fields=account(accountId,name)`;
 
@@ -96,6 +102,16 @@ export async function updateAccounts(formData: {
 }): Promise<FeatureResponse> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
+
+  // Centralized rate limit enforcement
+  const rateLimitResult = await ensureRateLimits(userId);
+  if (rateLimitResult) {
+    // If rate limit exceeded, return the error response immediately
+    return rateLimitResult;
+  }
+
+
+
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -118,8 +134,6 @@ export async function updateAccounts(formData: {
   let featureLimitReached: string[] = [];
   let notFoundLimit: { id: string | undefined; name: string }[] = [];
   let successfulUpdates: any[] = [];
-
-  await ensureGARateLimit(userId);
 
   await Promise.all(
     formData.forms.map(async (data) => {
@@ -174,7 +188,7 @@ export async function updateAccounts(formData: {
       // Only revalidate the affected properties
       const operations = successfulUpdates.map((update) => ({
         crudType: 'update' as const, // Explicitly set the type as "update"
-        ...update,
+        data: { ...update },
       }));
 
       const cacheFields = successfulUpdates.map((update) => update);

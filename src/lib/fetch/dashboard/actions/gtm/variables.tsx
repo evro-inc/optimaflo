@@ -12,7 +12,7 @@ import { FeatureResponse, FeatureResult } from '@/src/types/types';
 import {
   authenticateUser,
   checkFeatureLimit,
-  ensureGARateLimit,
+  ensureRateLimits,
   executeApiRequest,
   getOauthToken,
   softRevalidateFeatureCache,
@@ -52,7 +52,13 @@ export async function listVariables(skipCache = false): Promise<any[]> {
 
   if (!data) return [];
 
-  await ensureGARateLimit(userId);
+  try {
+    await ensureRateLimits(userId);
+  } catch (error: any) {
+    // Log the error and return an empty array or handle it gracefully
+    console.error('Rate limit exceeded:', error.message);
+    return []; // Return an empty array to match the expected type
+  }
 
   const uniqueItems = Array.from(
     new Set(
@@ -123,6 +129,15 @@ export async function deleteVariables(
 ): Promise<FeatureResponse> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
+
+  // Centralized rate limit enforcement
+  const rateLimitResult = await ensureRateLimits(userId);
+  if (rateLimitResult) {
+    // If rate limit exceeded, return the error response immediately
+    return rateLimitResult;
+  }
+
+
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -146,7 +161,6 @@ export async function deleteVariables(
   let featureLimitReached: string[] = [];
   let notFoundLimit: string[] = [];
 
-  await ensureGARateLimit(userId);
 
   await Promise.all(
     Array.from(selected).map(async (data) => {
@@ -183,7 +197,7 @@ export async function deleteVariables(
       // Explicitly type the operations array
       const operations = successfulDeletions.map((deletion) => ({
         crudType: 'delete' as const, // Explicitly set the type as "delete"
-        ...deletion,
+        data: { ...deletion },
       }));
       const cacheFields = successfulDeletions.map(
         (del) => `${del.accountId}/${del.containerId}/${del.workspaceId}/${del.variableId}`
@@ -270,6 +284,15 @@ export async function createVariables(formData: {
 }): Promise<FeatureResponse> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
+
+  // Centralized rate limit enforcement
+  const rateLimitResult = await ensureRateLimits(userId);
+  if (rateLimitResult) {
+    // If rate limit exceeded, return the error response immediately
+    return rateLimitResult;
+  }
+
+
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -293,7 +316,6 @@ export async function createVariables(formData: {
   let featureLimitReached: string[] = [];
   let notFoundLimit: { id: string | undefined; name: string }[] = [];
 
-  await ensureGARateLimit(userId);
 
   // Loop over each form and each accountContainerWorkspace combination
   await Promise.all(
@@ -448,6 +470,16 @@ export async function revertVariables(
 ): Promise<FeatureResponse> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
+
+  // Centralized rate limit enforcement
+  const rateLimitResult = await ensureRateLimits(userId);
+  if (rateLimitResult) {
+    // If rate limit exceeded, return the error response immediately
+    return rateLimitResult;
+  }
+
+
+
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -468,8 +500,6 @@ export async function revertVariables(
   let successfulDeletions: z.infer<typeof revertVariableSchema>[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: string[] = [];
-
-  await ensureGARateLimit(userId);
 
   // **Filter Selected Items to Only Include Valid Tags**:
   const filteredSelected = Array.from(selected).filter(
@@ -513,7 +543,7 @@ export async function revertVariables(
     try {
       const operations = successfulDeletions.map((deletion) => ({
         crudType: 'delete' as const,
-        ...deletion,
+        data: { ...deletion },
       }));
       const cacheFields = successfulDeletions.map(
         (del) => `${del.accountId}/${del.containerId}/${del.workspaceId}/${del.variableId}`
@@ -600,6 +630,15 @@ export async function updateVariables(formData: {
 }): Promise<FeatureResponse> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
+
+  // Centralized rate limit enforcement
+  const rateLimitResult = await ensureRateLimits(userId);
+  if (rateLimitResult) {
+    // If rate limit exceeded, return the error response immediately
+    return rateLimitResult;
+  }
+
+
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -622,8 +661,6 @@ export async function updateVariables(formData: {
   let successful: any[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: { id: string | undefined; name: string }[] = [];
-
-  await ensureGARateLimit(userId);
 
   // Loop over each form and each accountContainerWorkspace combination
   await Promise.all(

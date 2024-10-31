@@ -10,7 +10,7 @@ import prisma from '@/src/lib/prisma';
 import { FeatureResult, FeatureResponse, AudienceType } from '@/src/types/types';
 import {
   authenticateUser,
-  ensureGARateLimit,
+  ensureRateLimits,
   executeApiRequest,
   getOauthToken,
   handleApiResponseError,
@@ -19,7 +19,7 @@ import {
   tierUpdateLimit,
 } from '@/src/utils/server';
 import { fetchGASettings } from '../..';
-import { Audience, FormsSchema } from '@/src/lib/schemas/ga/audiences';
+import { Audience, FormSchema } from '@/src/lib/schemas/ga/audiences';
 
 /************************************************************************************
   Function to list GA conversionEvents
@@ -49,7 +49,7 @@ export async function listGAAudiences(skipCache = false): Promise<any[]> {
 
   if (!data) return [];
 
-  await ensureGARateLimit(userId);
+  await ensureRateLimits(userId);
 
   const uniquePropertyIds = Array.from(new Set(data.ga.map((item) => item.propertyId)));
 
@@ -171,7 +171,7 @@ export async function createGAAudiences(formData: Audience) {
               try {
                 const formDataToValidate = { forms: [identifier] };
 
-                const validationResult = FormsSchema.safeParse(formDataToValidate);
+                const validationResult = FormSchema.safeParse(formDataToValidate);
 
                 if (!validationResult.success) {
                   let errorMessage = validationResult.error.issues
@@ -253,9 +253,9 @@ export async function createGAAudiences(formData: Audience) {
                   adsPersonalizationEnabled: validatedData.adsPersonalizationEnabled,
                   eventTrigger: validatedData.eventTrigger
                     ? {
-                        eventName: validatedData.eventTrigger.eventName,
-                        logCondition: validatedData.eventTrigger.logCondition,
-                      }
+                      eventName: validatedData.eventTrigger.eventName,
+                      logCondition: validatedData.eventTrigger.logCondition,
+                    }
                     : undefined, // Include eventTrigger only if present
                   exclusionDurationMode: validatedData.exclusionDurationMode,
                   filterClauses: buildFilterClauses(validatedData.filterClauses),
@@ -545,7 +545,7 @@ export async function updateGAAudiences(formData: Audience) {
               try {
                 const formDataToValidate = { forms: [identifier] };
 
-                const validationResult = FormsSchema.safeParse(formDataToValidate);
+                const validationResult = FormSchema.safeParse(formDataToValidate);
 
                 if (!validationResult.success) {
                   let errorMessage = validationResult.error.issues

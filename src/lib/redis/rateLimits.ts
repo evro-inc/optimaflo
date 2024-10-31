@@ -79,3 +79,14 @@ export const gaRateLimit = new Ratelimit({
   // Optionally, if tracking per user
   //userLimiter: Ratelimit.slidingWindow(600, '1 m') // 600 requests per minute per user
 });
+
+
+export const writeRateLimit = new Ratelimit({
+  redis: redis,
+  limiter: Ratelimit.slidingWindow(600, '1 m'), // 600 writes per minute
+});
+
+export const writeRateLimitPerUser = new Ratelimit({
+  redis: redis,
+  limiter: Ratelimit.slidingWindow(180, '1 m'), // 180 writes per minute per user
+});

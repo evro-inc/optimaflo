@@ -1,23 +1,15 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
-import { auth } from '@clerk/nextjs/server';
-import { gaRateLimit } from '../../../../redis/rateLimits';
-import { limiter } from '../../../../bottleneck';
 import { redis } from '@/src/lib/redis/cache';
-import { notFound } from 'next/navigation';
-import { currentUserOauthAccessToken } from '@/src/lib/clerk';
 import prisma from '@/src/lib/prisma';
 import { FeatureResult, FeatureResponse } from '@/src/types/types';
 import {
   authenticateUser,
   checkFeatureLimit,
-  ensureGARateLimit,
+  ensureRateLimits,
   executeApiRequest,
   getOauthToken,
-  handleApiResponseError,
   softRevalidateFeatureCache,
-  tierUpdateLimit,
   validateFormData,
 } from '@/src/utils/server';
 import {
@@ -59,7 +51,13 @@ export async function listGACustomDimensions(skipCache = false): Promise<any[]> 
 
   if (!data) return [];
 
-  await ensureGARateLimit(userId);
+  try {
+    await ensureRateLimits(userId);
+  } catch (error: any) {
+    // Log the error and return an empty array or handle it gracefully
+    console.error('Rate limit exceeded:', error.message);
+    return []; // Return an empty array to match the expected type
+  }
 
   const uniquePropertyIds = Array.from(new Set(data.ga.map((item) => item.propertyId)));
   const urls = uniquePropertyIds.map(
@@ -116,6 +114,14 @@ export async function deleteGACustomDimensions(
 ): Promise<FeatureResponse> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
+
+  // Centralized rate limit enforcement
+  const rateLimitResult = await ensureRateLimits(userId);
+  if (rateLimitResult) {
+    // If rate limit exceeded, return the error response immediately
+    return rateLimitResult;
+  }
+
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -138,8 +144,6 @@ export async function deleteGACustomDimensions(
   let successfulDeletions: z.infer<typeof DimensionSchema>[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: string[] = [];
-
-  await ensureGARateLimit(userId);
 
   await Promise.all(
     Array.from(selected).map(async (data) => {
@@ -176,7 +180,7 @@ export async function deleteGACustomDimensions(
       // Explicitly type the operations array
       const operations = successfulDeletions.map((deletion) => ({
         crudType: 'delete' as const, // Explicitly set the type as "delete"
-        ...deletion,
+        data: { ...deletion },
       }));
       const cacheFields = successfulDeletions.map((del) => `${del.name}`);
 
@@ -262,6 +266,15 @@ export async function createGACustomDimensions(formData: {
 }): Promise<FeatureResponse> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
+
+  // Centralized rate limit enforcement
+  const rateLimitResult = await ensureRateLimits(userId);
+  if (rateLimitResult) {
+    // If rate limit exceeded, return the error response immediately
+    return rateLimitResult;
+  }
+
+
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -284,8 +297,6 @@ export async function createGACustomDimensions(formData: {
   let successfulCreations: any[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: { id: string | undefined; name: string }[] = [];
-
-  await ensureGARateLimit(userId);
 
   await Promise.all(
     formData.forms.map(async (data) => {
@@ -337,7 +348,7 @@ export async function createGACustomDimensions(formData: {
       // Map successful creations to the appropriate structure for Redis
       const operations = successfulCreations.map((creation) => ({
         crudType: 'create' as const, // Explicitly set the type as "create"
-        ...creation,
+        data: { ...creation },
       }));
       const cacheFields = successfulCreations.map((update) => `${update.name}`);
 
@@ -420,310 +431,182 @@ export async function createGACustomDimensions(formData: {
 /************************************************************************************
   Update a single property or multiple custom dimensions
 ************************************************************************************/
-export async function updateGACustomDimensions(formData: CustomDimensionSchemaType) {
-  const { userId } = await auth();
-  if (!userId) return notFound();
-  const token = await currentUserOauthAccessToken(userId);
+export async function updateGACustomDimensions(formData: {
+  forms: CustomDimensionSchemaType['forms'];
+}): Promise<FeatureResponse> {
+  const userId = await authenticateUser();
+  const token = await getOauthToken(userId);
 
-  let retries = 0;
-  const MAX_RETRIES = 3;
-  let delay = 1000;
-  const errors: string[] = [];
-  const successfulCreations: string[] = [];
-  const featureLimitReached: string[] = [];
-  const notFoundLimit: { id: string; name: string }[] = [];
+  // Centralized rate limit enforcement
+  const rateLimitResult = await ensureRateLimits(userId);
+  if (rateLimitResult) {
+    // If rate limit exceeded, return the error response immediately
+    return rateLimitResult;
+  }
 
-  // Refactor: Use string identifiers in the set
-  const toUpdateCustomDimensions = new Set(formData.forms.map((cd) => cd));
 
-  const tierLimitResponse: any = await tierUpdateLimit(userId, featureType);
-  const limit = Number(tierLimitResponse.updateLimit);
-  const updateUsage = Number(tierLimitResponse.updateUsage);
-  const availableUpdateUsage = limit - updateUsage;
+  const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
+    userId,
+    featureType,
+    'update'
+  );
 
-  const creationResults: {
-    customDimensionName: string;
-    success: boolean;
-    message?: string;
-  }[] = [];
-
-  // Handling feature limit
-  if (tierLimitResponse && tierLimitResponse.limitReached) {
+  if (tierLimitResponse.limitReached || formData.forms.length > availableUsage) {
     return {
       success: false,
       limitReached: true,
-      message: 'Feature limit reached for creating Custom Dimensions',
+      message: 'Feature limit reached or request exceeds available updates.',
+      errors: [
+        `Cannot update more dimensions than available. You have ${availableUsage} updates left.`,
+      ],
       results: [],
     };
   }
 
-  if (toUpdateCustomDimensions.size > availableUpdateUsage) {
-    const attemptedCreations = Array.from(toUpdateCustomDimensions).map((identifier) => {
-      const displayName = identifier.displayName;
-      return {
-        id: [displayName], // No property ID since creation did not happen
-        name: displayName, // Include the property name from the identifier
-        success: false,
-        message: `Creation limit reached. Cannot update custom dimension "${displayName}".`,
-        // remaining creation limit
-        remaining: availableUpdateUsage,
-        limitReached: true,
+  let errors: string[] = [];
+  let featureLimitReached: string[] = [];
+  let notFoundLimit: { id: string | undefined; name: string }[] = [];
+  let successfulUpdates: any[] = [];
+
+  await Promise.all(
+    formData.forms.map(async (data) => {
+      const validatedData = await validateFormData(FormSchema, { forms: [data] });
+
+      const cleanedData = validatedData.forms[0];
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept-Encoding': 'gzip',
       };
-    });
-    return {
-      success: false,
-      features: [],
-      message: `Cannot update ${toUpdateCustomDimensions.size} custom dimensions as it exceeds the available limit. You have ${availableUpdateUsage} more creation(s) available.`,
-      errors: [
-        `Cannot update ${toUpdateCustomDimensions.size} custom dimensions as it exceeds the available limit. You have ${availableUpdateUsage} more creation(s) available.`,
-      ],
-      results: attemptedCreations,
-      limitReached: true,
-    };
-  }
 
-  let permissionDenied = false;
-  const customDimensionNames = formData.forms.map((cd) => cd.displayName);
+      const updateFields = ['description', 'displayName'];
 
-  if (toUpdateCustomDimensions.size <= availableUpdateUsage) {
-    while (retries < MAX_RETRIES && toUpdateCustomDimensions.size > 0 && !permissionDenied) {
+      const updateMask = updateFields.join(',');
+      const url = `https://analyticsadmin.googleapis.com/v1beta/${cleanedData.name}?updateMask=${updateMask}`;
+
+      let requestBody: any = {
+        name: cleanedData.name,
+        parameterName: cleanedData.parameterName,
+        displayName: cleanedData.displayName,
+        description: cleanedData.description,
+        scope: cleanedData.scope,
+        disallowAdsPersonalization: cleanedData.disallowAdsPersonalization,
+      };
+
       try {
-        const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
-        if (remaining > 0) {
-          await limiter.schedule(async () => {
-            const updatePromises = Array.from(toUpdateCustomDimensions).map(async (identifier) => {
-              if (!identifier) {
-                errors.push(`Custom dimensions data not found for ${identifier}`);
-                toUpdateCustomDimensions.delete(identifier);
-                return;
-              }
+        const res = await executeApiRequest(url, {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify(requestBody),
+        });
 
-              const updateFields = ['description', 'displayName'];
+        successfulUpdates.push(res);
 
-              const updateMask = updateFields.join(',');
-              const url = `https://analyticsadmin.googleapis.com/v1beta/${identifier.name}?updateMask=${updateMask}`;
+        await prisma.tierLimit.update({
+          where: { id: tierLimitResponse.id },
+          data: { updateUsage: { increment: 1 } },
+        });
 
-              const headers = {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json',
-                'Accept-Encoding': 'gzip',
-              };
-
-              try {
-                const formDataToValidate = { forms: [identifier] };
-
-                const validationResult = FormSchema.safeParse(formDataToValidate);
-
-                if (!validationResult.success) {
-                  let errorMessage = validationResult.error.issues
-                    .map((issue) => `${issue.path[0]}: ${issue.message}`)
-                    .join('. ');
-                  errors.push(errorMessage);
-                  toUpdateCustomDimensions.delete(identifier);
-                  return {
-                    identifier,
-                    success: false,
-                    error: errorMessage,
-                  };
-                }
-
-                // Accessing the validated property data
-                const validatedContainerData = validationResult.data.forms[0];
-
-                let requestBody: any = {
-                  name: validatedContainerData.name,
-                  parameterName: validatedContainerData.parameterName,
-                  displayName: validatedContainerData.displayName,
-                  description: validatedContainerData.description,
-                  scope: validatedContainerData.scope,
-                  disallowAdsPersonalization: validatedContainerData.disallowAdsPersonalization,
-                };
-
-                // Now, requestBody is prepared with the right structure based on the type
-                const response = await fetch(url, {
-                  method: 'PATCH',
-                  headers: headers,
-                  body: JSON.stringify(requestBody),
-                });
-
-                const parsedResponse = await response.json();
-
-                if (response.ok) {
-                  successfulCreations.push(validatedContainerData.displayName);
-                  toUpdateCustomDimensions.delete(identifier);
-
-                  await prisma.tierLimit.update({
-                    where: { id: tierLimitResponse.id },
-                    data: { updateUsage: { increment: 1 } },
-                  });
-                  creationResults.push({
-                    customDimensionName: validatedContainerData.displayName,
-                    success: true,
-                    message: `Successfully updated property ${validatedContainerData.displayName}`,
-                  });
-                } else {
-                  const errorResult = await handleApiResponseError(
-                    response,
-                    parsedResponse,
-                    'property',
-                    [validatedContainerData.displayName]
-                  );
-
-                  if (errorResult) {
-                    errors.push(`${errorResult.message}`);
-                    if (
-                      errorResult.errorCode === 403 &&
-                      parsedResponse.message === 'Feature limit reached'
-                    ) {
-                      featureLimitReached.push(validatedContainerData.displayName);
-                    } else if (errorResult.errorCode === 404) {
-                      notFoundLimit.push({
-                        id: identifier.property,
-                        name: validatedContainerData.displayName,
-                      });
-                    }
-                  } else {
-                    errors.push(
-                      `An unknown error occurred for property ${validatedContainerData.displayName}.`
-                    );
-                  }
-
-                  toUpdateCustomDimensions.delete(identifier);
-                  permissionDenied = errorResult ? true : permissionDenied;
-                  creationResults.push({
-                    customDimensionName: validatedContainerData.displayName,
-                    success: false,
-                    message: errorResult?.message,
-                  });
-                }
-              } catch (error: any) {
-                errors.push(
-                  `Exception creating property ${identifier.displayName}: ${error.message}`
-                );
-                toUpdateCustomDimensions.delete(identifier);
-                creationResults.push({
-                  customDimensionName: identifier.displayName,
-                  success: false,
-                  message: error.message,
-                });
-              }
-            });
-
-            await Promise.all(updatePromises);
-          });
-
-          if (notFoundLimit.length > 0) {
-            return {
-              success: false,
-              limitReached: false,
-              notFoundError: true, // Set the notFoundError flag
-              features: [],
-
-              results: notFoundLimit.map((item) => ({
-                id: [item.id],
-                name: [item.name],
-                success: false,
-                notFound: true,
-              })),
-            };
-          }
-
-          if (featureLimitReached.length > 0) {
-            return {
-              success: false,
-              limitReached: true,
-              notFoundError: false,
-              message: `Feature limit reached for custom dimensions: ${featureLimitReached.join(
-                ', '
-              )}`,
-              results: featureLimitReached.map(() => {
-                // Find the name associated with the propertyId
-                const customDimensionName =
-                  customDimensionNames.find((displayName) => displayName.includes(displayName)) ||
-                  'Unknown';
-                return {
-                  id: [customDimensionName], // Ensure id is an array
-                  name: [customDimensionName], // Ensure name is an array, match by propertyId or default to 'Unknown'
-                  success: false,
-                  featureLimitReached: true,
-                };
-              }),
-            };
-          }
-
-          if (successfulCreations.length === formData.forms.length) {
-            break;
-          }
-
-          if (toUpdateCustomDimensions.size === 0) {
-            break;
-          }
-        } else {
-          throw new Error('Rate limit exceeded');
-        }
+        // Immediate revalidation per each update is not needed, aggregate revalidation is better
       } catch (error: any) {
-        if (error.code === 429 || error.status === 429) {
-          await new Promise((resolve) => setTimeout(resolve, delay + Math.random() * 200));
-          delay *= 2;
-          retries++;
+        if (error.message === 'Feature limit reached') {
+          featureLimitReached.push(validatedData.forms[0].name);
+        } else if (error.message.includes('404')) {
+          notFoundLimit.push({
+            id: validatedData.forms[0].parent,
+            name: validatedData.forms[0].name,
+          });
         } else {
-          break;
+          errors.push(error.message);
         }
       }
+    })
+  );
+
+  // **Perform Selective Revalidation After All Updates**:
+  if (successfulUpdates.length > 0) {
+    try {
+      // Only revalidate the affected properties
+      const operations = successfulUpdates.map((update) => ({
+        crudType: 'update' as const, // Explicitly set the type as "update"
+        data: { ...update },
+      }));
+
+      const cacheFields = successfulUpdates.map((update) => `${update.name}`);
+
+      // Call softRevalidateFeatureCache for updates
+      await softRevalidateFeatureCache(
+        [`ga:customDimensions:userId:${userId}`],
+        `/dashboard/ga/properties`,
+        userId,
+        operations,
+        cacheFields
+      );
+    } catch (err) {
+      console.error('Error during revalidation:', err);
     }
   }
 
-  if (permissionDenied) {
+  // Check for not found errors and return if any
+  if (notFoundLimit.length > 0) {
     return {
       success: false,
-      errors: errors,
-      results: [],
-      message: errors.join(', '),
+      limitReached: false,
+      notFoundError: true,
+      features: [],
+      message: `Some dimensions could not be found: ${notFoundLimit
+        .map((item) => item.name)
+        .join(', ')}`,
+      results: notFoundLimit.map((item) => ({
+        id: item.id ? [item.id] : [], // Ensure id is an array and filter out undefined
+        name: [item.name], // Ensure name is an array to match FeatureResult type
+        success: false,
+        notFound: true,
+      })),
     };
   }
 
+  // Check if feature limit is reached and return response if applicable
+  if (featureLimitReached.length > 0) {
+    return {
+      success: false,
+      limitReached: true,
+      notFoundError: false,
+      message: `Feature limit reached for dimensions: ${featureLimitReached.join(', ')}`,
+      results: featureLimitReached.map((propertyName) => ({
+        id: [], // Populate with actual property IDs if available
+        name: [propertyName], // Wrap the string in an array
+        success: false,
+        featureLimitReached: true,
+      })),
+    };
+  }
+
+  // Handle general errors
   if (errors.length > 0) {
     return {
       success: false,
-      features: successfulCreations,
-      errors: errors,
-      results: successfulCreations.map((customDimensionName) => ({
-        id: [customDimensionName], // Wrap in an array
-        name: [customDimensionName], // Wrap in an array
-        success: true,
-      })),
+      errors,
+      results: [],
       message: errors.join(', '),
+      notFoundError: notFoundLimit.length > 0,
     };
   }
 
-  if (successfulCreations.length > 0) {
-    const cacheKey = `ga:customDimensions:userId:${userId}`;
-
-    await redis.del(cacheKey);
-    revalidatePath(`/dashboard/ga/properties`);
-  }
-
-  // Map over formData.forms to update the results array
-  const results: FeatureResult[] = formData.forms.map((form) => {
-    // Ensure that form.propertyId is defined before adding it to the array
-    return {
-      id: [form.displayName], // Ensure id is an array of strings
-      name: [form.displayName], // Wrap the string in an array
-      success: true, // or false, depending on the actual result
-      // Include `notFound` if applicable
-      notFound: false, // Set this to the appropriate value based on your
-      message: 'Update successful',
-    };
-  });
-
-  // Return the response with the correctly typed results
   return {
-    success: true, // or false, depending on the actual results
-    features: [], // Populate with actual property IDs if applicable
-    errors: [], // Populate with actual error messages if applicable
-    limitReached: false, // Set based on actual limit status
-    message: 'Custom Dimension updated successfully', // Customize the message as needed
-    results: results, // Use the correctly typed results
-    notFoundError: false, // Set based on actual not found status
+    success: true,
+    message: `Successfully updated ${successfulUpdates.length} dimension(s)`,
+    features: successfulUpdates.map<FeatureResult>((d) => ({
+      id: [d.name], // Populate with actual property IDs if available
+      name: [d.name], // Wrap the string in an array
+      success: true, // Indicates success of the operation
+    })),
+    errors: [],
+    notFoundError: notFoundLimit.length > 0,
+    results: successfulUpdates.map<FeatureResult>((d) => ({
+      id: [d.name], // Populate this with actual property IDs if available
+      name: [d.name], // Wrap the string in an array
+      success: true, // Indicates success of the operation
+    })),
   };
 }

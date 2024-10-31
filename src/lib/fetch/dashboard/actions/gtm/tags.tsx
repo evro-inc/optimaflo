@@ -6,7 +6,7 @@ import { FeatureResponse, FeatureResult } from '@/src/types/types';
 import {
   authenticateUser,
   checkFeatureLimit,
-  ensureGARateLimit,
+  ensureRateLimits,
   executeApiRequest,
   getOauthToken,
   softRevalidateFeatureCache,
@@ -46,7 +46,13 @@ export async function listTags(skipCache = false): Promise<any[]> {
 
   if (!data) return [];
 
-  await ensureGARateLimit(userId);
+  try {
+    await ensureRateLimits(userId);
+  } catch (error: any) {
+    // Log the error and return an empty array or handle it gracefully
+    console.error('Rate limit exceeded:', error.message);
+    return []; // Return an empty array to match the expected type
+  }
 
   const uniqueItems = Array.from(
     new Set(
@@ -117,6 +123,16 @@ export async function deleteTags(
 ): Promise<FeatureResponse> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
+
+  // Centralized rate limit enforcement
+  const rateLimitResult = await ensureRateLimits(userId);
+  if (rateLimitResult) {
+    // If rate limit exceeded, return the error response immediately
+    return rateLimitResult;
+  }
+
+
+
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -139,8 +155,6 @@ export async function deleteTags(
   let successfulDeletions: z.infer<typeof TagSchema>[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: string[] = [];
-
-  await ensureGARateLimit(userId);
 
   await Promise.all(
     Array.from(selected).map(async (data) => {
@@ -262,6 +276,15 @@ export async function deleteTags(
 export async function createTags(formData: { forms: TagType['forms'] }): Promise<FeatureResponse> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
+
+  // Centralized rate limit enforcement
+  const rateLimitResult = await ensureRateLimits(userId);
+  if (rateLimitResult) {
+    // If rate limit exceeded, return the error response immediately
+    return rateLimitResult;
+  }
+
+
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -285,7 +308,6 @@ export async function createTags(formData: { forms: TagType['forms'] }): Promise
   let featureLimitReached: string[] = [];
   let notFoundLimit: { id: string | undefined; name: string }[] = [];
 
-  await ensureGARateLimit(userId);
 
   // Loop over each form and each accountContainerWorkspace combination
   await Promise.all(
@@ -434,6 +456,15 @@ export async function createTags(formData: { forms: TagType['forms'] }): Promise
 export async function updateTags(formData: { forms: TagType['forms'] }): Promise<FeatureResponse> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
+
+  // Centralized rate limit enforcement
+  const rateLimitResult = await ensureRateLimits(userId);
+  if (rateLimitResult) {
+    // If rate limit exceeded, return the error response immediately
+    return rateLimitResult;
+  }
+
+
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -457,7 +488,6 @@ export async function updateTags(formData: { forms: TagType['forms'] }): Promise
   let featureLimitReached: string[] = [];
   let notFoundLimit: { id: string | undefined; name: string }[] = [];
 
-  await ensureGARateLimit(userId);
 
   // Loop over each form and each accountContainerWorkspace combination
   await Promise.all(
@@ -609,6 +639,15 @@ export async function revertTags(
 ): Promise<FeatureResponse> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
+
+  // Centralized rate limit enforcement
+  const rateLimitResult = await ensureRateLimits(userId);
+  if (rateLimitResult) {
+    // If rate limit exceeded, return the error response immediately
+    return rateLimitResult;
+  }
+
+
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -631,8 +670,6 @@ export async function revertTags(
   let successfulDeletions: z.infer<typeof revertTagSchema>[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: string[] = [];
-
-  await ensureGARateLimit(userId);
 
   // **Filter Selected Items to Only Include Valid Tags**:
   const filteredSelected = Array.from(selected).filter((data) => data.tag && data.tag.path);
@@ -674,7 +711,7 @@ export async function revertTags(
     try {
       const operations = successfulDeletions.map((deletion) => ({
         crudType: 'delete' as const,
-        ...deletion,
+        data: { ...deletion },
       }));
       const cacheFields = successfulDeletions.map(
         (del) => `${del.accountId}/${del.containerId}/${del.workspaceId}/${del.type}`

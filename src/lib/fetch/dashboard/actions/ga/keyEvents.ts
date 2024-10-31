@@ -6,7 +6,7 @@ import { FeatureResult, FeatureResponse } from '@/src/types/types';
 import {
   authenticateUser,
   checkFeatureLimit,
-  ensureGARateLimit,
+  ensureRateLimits,
   executeApiRequest,
   getOauthToken,
   softRevalidateFeatureCache,
@@ -47,7 +47,13 @@ export async function listGAKeyEvents(skipCache = false): Promise<any[]> {
 
   if (!data) return [];
 
-  await ensureGARateLimit(userId);
+  try {
+    await ensureRateLimits(userId);
+  } catch (error: any) {
+    // Log the error and return an empty array or handle it gracefully
+    console.error('Rate limit exceeded:', error.message);
+    return []; // Return an empty array to match the expected type
+  }
 
   const uniquePropertyIds = Array.from(new Set(data.ga.map((item) => item.propertyId)));
   const urls = uniquePropertyIds.map(
@@ -104,6 +110,15 @@ export async function deleteGAKeyEvents(
 ): Promise<FeatureResponse> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
+
+  // Centralized rate limit enforcement
+  const rateLimitResult = await ensureRateLimits(userId);
+  if (rateLimitResult) {
+    // If rate limit exceeded, return the error response immediately
+    return rateLimitResult;
+  }
+
+
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -126,8 +141,6 @@ export async function deleteGAKeyEvents(
   let successfulDeletions: z.infer<typeof KeyEventSchema>[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: string[] = [];
-
-  await ensureGARateLimit(userId);
 
   await Promise.all(
     Array.from(selected).map(async (data) => {
@@ -165,7 +178,7 @@ export async function deleteGAKeyEvents(
       // Explicitly type the operations array
       const operations = successfulDeletions.map((deletion) => ({
         crudType: 'delete' as const, // Explicitly set the type as "delete"
-        ...deletion,
+        data: { ...deletion },
       }));
       const cacheFields = successfulDeletions.map((del) => `${del.name}`);
 
@@ -251,6 +264,16 @@ export async function createGAKeyEvents(formData: {
 }): Promise<FeatureResponse> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
+
+  // Centralized rate limit enforcement
+  const rateLimitResult = await ensureRateLimits(userId);
+  if (rateLimitResult) {
+    // If rate limit exceeded, return the error response immediately
+    return rateLimitResult;
+  }
+
+
+
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -273,8 +296,6 @@ export async function createGAKeyEvents(formData: {
   let successful: any[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: { id: string | undefined; name: string }[] = [];
-
-  await ensureGARateLimit(userId);
 
   await Promise.all(
     formData.forms.map(async (data) => {
@@ -331,7 +352,7 @@ export async function createGAKeyEvents(formData: {
       // Map successful creations to the appropriate structure for Redis
       const operations = successful.map((creation) => ({
         crudType: 'create' as const, // Explicitly set the type as "create"
-        ...creation,
+        data: { ...creation },
       }));
       const cacheFields = successful.map((c) => `${c.name}`);
 
@@ -419,6 +440,15 @@ export async function updateGAKeyEvents(formData: {
 }): Promise<FeatureResponse> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
+
+  // Centralized rate limit enforcement
+  const rateLimitResult = await ensureRateLimits(userId);
+  if (rateLimitResult) {
+    // If rate limit exceeded, return the error response immediately
+    return rateLimitResult;
+  }
+
+
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -441,8 +471,6 @@ export async function updateGAKeyEvents(formData: {
   let featureLimitReached: string[] = [];
   let notFoundLimit: { id: string | undefined; name: string }[] = [];
   let successfulUpdates: any[] = [];
-
-  await ensureGARateLimit(userId);
 
   await Promise.all(
     formData.forms.map(async (data) => {
@@ -508,7 +536,7 @@ export async function updateGAKeyEvents(formData: {
       // Only revalidate the affected properties
       const operations = successfulUpdates.map((update) => ({
         crudType: 'update' as const, // Explicitly set the type as "update"
-        ...update,
+        data: { ...update },
       }));
 
       const cacheFields = successfulUpdates.map((update) => `${update.name}`);

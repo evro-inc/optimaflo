@@ -9,7 +9,7 @@ import { redis } from '../../../../redis/cache';
 import { currentUserOauthAccessToken } from '../../../../clerk';
 import prisma from '@/src/lib/prisma';
 import { FeatureResponse, FeatureResult } from '@/src/types/types';
-import { authenticateUser, checkFeatureLimit, ensureGARateLimit, executeApiRequest, getOauthToken, handleApiResponseError, softRevalidateFeatureCache, tierUpdateLimit, validateFormData } from '@/src/utils/server';
+import { authenticateUser, checkFeatureLimit, ensureRateLimits, executeApiRequest, getOauthToken, handleApiResponseError, softRevalidateFeatureCache, tierUpdateLimit, validateFormData } from '@/src/utils/server';
 import { GoogleTagEnvironmentType } from '@/src/lib/schemas/gtm/envs';
 
 const featureType: string = 'GTMEnvs';
@@ -47,6 +47,14 @@ export async function listGtmEnvs(skipCache = false): Promise<any[]> {
 
   if (!data) return [];
 
+  try {
+    await ensureRateLimits(userId);
+  } catch (error: any) {
+    // Log the error and return an empty array or handle it gracefully
+    console.error('Rate limit exceeded:', error.message);
+    return []; // Return an empty array to match the expected type
+  }
+
   const uniqueItems = Array.from(
     new Set(
       data.gtm.map((item) =>
@@ -62,9 +70,6 @@ export async function listGtmEnvs(skipCache = false): Promise<any[]> {
     ({ accountId, containerId }) =>
       `https://www.googleapis.com/tagmanager/v2/accounts/${accountId}/containers/${containerId}/environments`
   );
-
-  console.log('urls', urls);
-
 
   const headers = {
     Authorization: `Bearer ${token}`,
@@ -279,6 +284,16 @@ export async function UpdateEnvs(formData: {
 }): Promise<FeatureResponse> {
   const userId = await authenticateUser();
   const token = await getOauthToken(userId);
+
+  // Centralized rate limit enforcement
+  const rateLimitResult = await ensureRateLimits(userId);
+  if (rateLimitResult) {
+    // If rate limit exceeded, return the error response immediately
+    return rateLimitResult;
+  }
+
+
+
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -301,8 +316,6 @@ export async function UpdateEnvs(formData: {
   let successfulUpdates: any[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: { id: string | undefined; name: string }[] = [];
-
-  await ensureGARateLimit(userId);
 
   await Promise.all(
     formData.forms.map(async (data) => {
