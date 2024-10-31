@@ -137,7 +137,6 @@ export async function deleteVariables(
     return rateLimitResult;
   }
 
-
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -160,7 +159,6 @@ export async function deleteVariables(
   let successfulDeletions: z.infer<typeof VariableSchema>[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: string[] = [];
-
 
   await Promise.all(
     Array.from(selected).map(async (data) => {
@@ -292,7 +290,6 @@ export async function createVariables(formData: {
     return rateLimitResult;
   }
 
-
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -315,7 +312,6 @@ export async function createVariables(formData: {
   let successful: any[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: { id: string | undefined; name: string }[] = [];
-
 
   // Loop over each form and each accountContainerWorkspace combination
   await Promise.all(
@@ -478,8 +474,6 @@ export async function revertVariables(
     return rateLimitResult;
   }
 
-
-
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -637,7 +631,6 @@ export async function updateVariables(formData: {
     // If rate limit exceeded, return the error response immediately
     return rateLimitResult;
   }
-
 
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,

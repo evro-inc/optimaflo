@@ -132,7 +132,6 @@ export async function deleteBuiltInVariables(
     return rateLimitResult;
   }
 
-
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -286,7 +285,6 @@ export async function createBuiltInVariables(formData: {
     // If rate limit exceeded, return the error response immediately
     return rateLimitResult;
   }
-
 
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,

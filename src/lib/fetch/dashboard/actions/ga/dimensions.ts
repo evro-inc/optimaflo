@@ -274,7 +274,6 @@ export async function createGACustomDimensions(formData: {
     return rateLimitResult;
   }
 
-
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -443,7 +442,6 @@ export async function updateGACustomDimensions(formData: {
     // If rate limit exceeded, return the error response immediately
     return rateLimitResult;
   }
-
 
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,

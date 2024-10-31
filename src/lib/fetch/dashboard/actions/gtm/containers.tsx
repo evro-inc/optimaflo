@@ -119,7 +119,6 @@ export async function deleteContainers(
     return rateLimitResult;
   }
 
-
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -142,7 +141,6 @@ export async function deleteContainers(
   let successfulDeletions: z.infer<typeof ContainerSchema>[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: string[] = [];
-
 
   await Promise.all(
     Array.from(selected).map(async (data) => {
@@ -281,7 +279,6 @@ export async function createContainers(formData: {
     // If rate limit exceeded, return the error response immediately
     return rateLimitResult;
   }
-
 
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,

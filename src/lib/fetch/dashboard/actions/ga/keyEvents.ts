@@ -118,7 +118,6 @@ export async function deleteGAKeyEvents(
     return rateLimitResult;
   }
 
-
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -271,8 +270,6 @@ export async function createGAKeyEvents(formData: {
     // If rate limit exceeded, return the error response immediately
     return rateLimitResult;
   }
-
-
 
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
@@ -447,7 +444,6 @@ export async function updateGAKeyEvents(formData: {
     // If rate limit exceeded, return the error response immediately
     return rateLimitResult;
   }
-
 
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,

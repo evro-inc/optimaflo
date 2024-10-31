@@ -130,8 +130,6 @@ export async function createPermissions(formData: {
     return rateLimitResult;
   }
 
-
-
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -316,7 +314,6 @@ export async function updatePermissions(formData: {
     return rateLimitResult;
   }
 
-
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -493,7 +490,6 @@ export async function deletePermissions(
     return rateLimitResult;
   }
 
-
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -516,7 +512,6 @@ export async function deletePermissions(
   let successfulDeletions: z.infer<typeof UserPermissionSchema>[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: string[] = [];
-
 
   await Promise.all(
     Array.from(selected).map(async (data) => {

@@ -138,7 +138,6 @@ export async function deleteTriggers(
     return rateLimitResult;
   }
 
-
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -292,7 +291,6 @@ export async function createTriggers(formData: {
     return rateLimitResult;
   }
 
-
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -315,7 +313,6 @@ export async function createTriggers(formData: {
   let successful: any[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: { id: string | undefined; name: string }[] = [];
-
 
   // Loop over each form and each accountContainerWorkspace combination
   await Promise.all(
@@ -476,7 +473,6 @@ export async function updateTriggers(formData: {
     // If rate limit exceeded, return the error response immediately
     return rateLimitResult;
   }
-
 
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
@@ -661,7 +657,6 @@ export async function revertTrigger(
     return rateLimitResult;
   }
 
-
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -682,7 +677,6 @@ export async function revertTrigger(
   let successfulDeletions: z.infer<typeof revertTriggerSchema>[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: string[] = [];
-
 
   // **Filter Selected Items to Only Include Valid Tags**:
   const filteredSelected = Array.from(selected).filter((data) => data.trigger && data.trigger.path);

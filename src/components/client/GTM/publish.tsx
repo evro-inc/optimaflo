@@ -99,9 +99,9 @@ function mergeUniqueInfo(accountContainerInfo, envs) {
     const key = `${info.accountId}-${info.containerId}`;
     const relatedEnvs = envLookup.get(key) || [];
 
-    console.log("Processing info:", info);
+    console.log('Processing info:', info);
     if (relatedEnvs.length === 0) {
-      console.warn("No environments found for key:", key);
+      console.warn('No environments found for key:', key);
     }
 
     return {
@@ -111,14 +111,12 @@ function mergeUniqueInfo(accountContainerInfo, envs) {
   });
 }
 
-
-
 function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; tierLimits: any }) {
   const dispatch = useDispatch();
   const router = useRouter();
   const { user } = useUser();
   const userId = user?.id as string;
-  console.log("envs data:", envs);
+  console.log('envs data:', envs);
 
   const loading = useSelector((state: RootState) => state.form.loading);
   const [snap, setSnap] = useState<number | string | null>('250px');
@@ -395,8 +393,7 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
   const processForm: SubmitHandler<Forms> = async (data) => {
     const { forms } = data;
 
-    console.log("forms", forms);
-
+    console.log('forms', forms);
 
     dispatch(setLoading(true)); // Set loading to true using Redux action
 
@@ -432,15 +429,13 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
 
         const createVersionData = extractCreateVersionData(forms);
 
-        console.log("createVersionData", createVersionData);
-
+        console.log('createVersionData', createVersionData);
 
         const resCreateVersion = (await createGTMVersion({
           forms: createVersionData,
         })) as FeatureResponse;
 
-        console.log("createGTMVersion", createGTMVersion);
-
+        console.log('createGTMVersion', createGTMVersion);
 
         if (!resCreateVersion.success) {
           toast.error(`${resCreateVersion.message}`, {
@@ -611,19 +606,21 @@ function PublishGTM({ changes, envs, tierLimits }: { changes: any; envs: any; ti
                           <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger
                               value="publish"
-                              className={`relative p-2 transition-colors ${activeTab === 'publish'
-                                ? 'bg-blue-100 shadow-md'
-                                : 'hover:bg-blue-50'
-                                }`}
+                              className={`relative p-2 transition-colors ${
+                                activeTab === 'publish'
+                                  ? 'bg-blue-100 shadow-md'
+                                  : 'hover:bg-blue-50'
+                              }`}
                             >
                               Publish and Create Version
                             </TabsTrigger>
                             <TabsTrigger
                               value="version"
-                              className={`relative p-2 transition-colors ${activeTab === 'version'
-                                ? 'bg-blue-100 shadow-md'
-                                : 'hover:bg-blue-50'
-                                }`}
+                              className={`relative p-2 transition-colors ${
+                                activeTab === 'version'
+                                  ? 'bg-blue-100 shadow-md'
+                                  : 'hover:bg-blue-50'
+                              }`}
                             >
                               Create Version
                             </TabsTrigger>

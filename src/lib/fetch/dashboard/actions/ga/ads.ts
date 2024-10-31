@@ -174,20 +174,23 @@ export async function createGAGoogleAdsLinks(formData: GoogleAdsLinkSchemaType) 
 
   if (toCreateGoogleAdsLinks.size <= availableCreateUsage) {
     while (retries < MAX_RETRIES && toCreateGoogleAdsLinks.size > 0 && !permissionDenied) {
-
       // Check the write rate limit for the entire application
-      const { remaining: remainingWrites } = await writeRateLimit.blockUntilReady(`user:${userId}`, 1000);
+      const { remaining: remainingWrites } = await writeRateLimit.blockUntilReady(
+        `user:${userId}`,
+        1000
+      );
       if (remainingWrites <= 0) {
         throw new Error('Global write rate limit exceeded');
       }
 
       // Check the user-specific rate limit for the user making the request
-      const { remaining: remainingWritesPerUser } = await writeRateLimitPerUser.blockUntilReady(`user:${userId}`, 1000);
+      const { remaining: remainingWritesPerUser } = await writeRateLimitPerUser.blockUntilReady(
+        `user:${userId}`,
+        1000
+      );
       if (remainingWritesPerUser <= 0) {
         throw new Error('User-specific write rate limit exceeded');
       }
-
-
 
       try {
         const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
@@ -496,20 +499,23 @@ export async function updateGAGoogleAdsLinks(formData: GoogleAdsLinkSchemaType) 
 
   if (toUpdateGoogleAdsLinks.size <= availableUpdateUsage) {
     while (retries < MAX_RETRIES && toUpdateGoogleAdsLinks.size > 0 && !permissionDenied) {
-
       // Check the write rate limit for the entire application
-      const { remaining: remainingWrites } = await writeRateLimit.blockUntilReady(`user:${userId}`, 1000);
+      const { remaining: remainingWrites } = await writeRateLimit.blockUntilReady(
+        `user:${userId}`,
+        1000
+      );
       if (remainingWrites <= 0) {
         throw new Error('Global write rate limit exceeded');
       }
 
       // Check the user-specific rate limit for the user making the request
-      const { remaining: remainingWritesPerUser } = await writeRateLimitPerUser.blockUntilReady(`user:${userId}`, 1000);
+      const { remaining: remainingWritesPerUser } = await writeRateLimitPerUser.blockUntilReady(
+        `user:${userId}`,
+        1000
+      );
       if (remainingWritesPerUser <= 0) {
         throw new Error('User-specific write rate limit exceeded');
       }
-
-
 
       try {
         const { remaining } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
@@ -808,21 +814,23 @@ export async function deleteGAGoogleAdsLinks(
   if (toDeleteGoogleAdsLinks.size <= availableDeleteUsage) {
     // Retry loop for deletion requests
     while (retries < MAX_RETRIES && toDeleteGoogleAdsLinks.size > 0 && !permissionDenied) {
-
-
       // Check the write rate limit for the entire application
-      const { remaining: remainingWrites } = await writeRateLimit.blockUntilReady(`user:${userId}`, 1000);
+      const { remaining: remainingWrites } = await writeRateLimit.blockUntilReady(
+        `user:${userId}`,
+        1000
+      );
       if (remainingWrites <= 0) {
         throw new Error('Global write rate limit exceeded');
       }
 
       // Check the user-specific rate limit for the user making the request
-      const { remaining: remainingWritesPerUser } = await writeRateLimitPerUser.blockUntilReady(`user:${userId}`, 1000);
+      const { remaining: remainingWritesPerUser } = await writeRateLimitPerUser.blockUntilReady(
+        `user:${userId}`,
+        1000
+      );
       if (remainingWritesPerUser <= 0) {
         throw new Error('User-specific write rate limit exceeded');
       }
-
-
 
       try {
         // Enforcing rate limit

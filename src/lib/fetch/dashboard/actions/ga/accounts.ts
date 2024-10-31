@@ -182,13 +182,19 @@ export async function UpdateGaAccounts(formData: FormUpdateSchema) {
   if (toUpdateAccounts.size <= availableUpdateUsage) {
     while (retries < MAX_RETRIES && toUpdateAccounts.size > 0 && !permissionDenied) {
       // Check the write rate limit for the entire application
-      const { remaining: remainingWrites } = await writeRateLimit.blockUntilReady(`user:${userId}`, 1000);
+      const { remaining: remainingWrites } = await writeRateLimit.blockUntilReady(
+        `user:${userId}`,
+        1000
+      );
       if (remainingWrites <= 0) {
         throw new Error('Global write rate limit exceeded');
       }
 
       // Check the user-specific rate limit for the user making the request
-      const { remaining: remainingWritesPerUser } = await writeRateLimitPerUser.blockUntilReady(`user:${userId}`, 1000);
+      const { remaining: remainingWritesPerUser } = await writeRateLimitPerUser.blockUntilReady(
+        `user:${userId}`,
+        1000
+      );
       if (remainingWritesPerUser <= 0) {
         throw new Error('User-specific write rate limit exceeded');
       }
@@ -271,11 +277,9 @@ export async function UpdateGaAccounts(formData: FormUpdateSchema) {
                 } else {
                   parsedResponse = await response.json();
 
-                  const errorResult = await handleApiResponseError(
-                    response,
-                    'account',
-                    [accountName]
-                  );
+                  const errorResult = await handleApiResponseError(response, 'account', [
+                    accountName,
+                  ]);
 
                   if (errorResult) {
                     errors.push(`${errorResult.message}`);
@@ -518,13 +522,19 @@ export async function deleteAccounts(
     // Retry loop for deletion requests
     while (retries < MAX_RETRIES && toDeleteAccounts.size > 0 && !permissionDenied) {
       // Check the write rate limit for the entire application
-      const { remaining: remainingWrites } = await writeRateLimit.blockUntilReady(`user:${userId}`, 1000);
+      const { remaining: remainingWrites } = await writeRateLimit.blockUntilReady(
+        `user:${userId}`,
+        1000
+      );
       if (remainingWrites <= 0) {
         throw new Error('Global write rate limit exceeded');
       }
 
       // Check the user-specific rate limit for the user making the request
-      const { remaining: remainingWritesPerUser } = await writeRateLimitPerUser.blockUntilReady(`user:${userId}`, 1000);
+      const { remaining: remainingWritesPerUser } = await writeRateLimitPerUser.blockUntilReady(
+        `user:${userId}`,
+        1000
+      );
       if (remainingWritesPerUser <= 0) {
         throw new Error('User-specific write rate limit exceeded');
       }
@@ -792,13 +802,19 @@ export async function createAccounts(formData: FormCreateSchema) {
   if (toCreateAccounts.size <= availableCreateUsage) {
     while (retries < MAX_RETRIES && toCreateAccounts.size > 0 && !permissionDenied) {
       // Check the write rate limit for the entire application
-      const { remaining: remainingWrites } = await writeRateLimit.blockUntilReady(`user:${userId}`, 1000);
+      const { remaining: remainingWrites } = await writeRateLimit.blockUntilReady(
+        `user:${userId}`,
+        1000
+      );
       if (remainingWrites <= 0) {
         throw new Error('Global write rate limit exceeded');
       }
 
       // Check the user-specific rate limit for the user making the request
-      const { remaining: remainingWritesPerUser } = await writeRateLimitPerUser.blockUntilReady(`user:${userId}`, 1000);
+      const { remaining: remainingWritesPerUser } = await writeRateLimitPerUser.blockUntilReady(
+        `user:${userId}`,
+        1000
+      );
       if (remainingWritesPerUser <= 0) {
         throw new Error('User-specific write rate limit exceeded');
       }
@@ -880,11 +896,9 @@ export async function createAccounts(formData: FormCreateSchema) {
                 } else {
                   parsedResponse = await response.json();
 
-                  const errorResult = await handleApiResponseError(
-                    response,
-                    'GA4Account',
-                    [accountData.displayName]
-                  );
+                  const errorResult = await handleApiResponseError(response, 'GA4Account', [
+                    accountData.displayName,
+                  ]);
 
                   if (errorResult) {
                     errors.push(`${errorResult.message}`);

@@ -117,7 +117,6 @@ export async function getGAProperty(propertyId: string, skipCache = false): Prom
     return rateLimitResult;
   }
 
-
   // Step 1: Check Redis cache for the specific propertyId
   if (!skipCache) {
     const cachedProperty = await redis.hget(cacheKey, propertyId);
@@ -183,7 +182,6 @@ export async function deleteProperties(
     // If rate limit exceeded, return the error response immediately
     return rateLimitResult;
   }
-
 
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
@@ -345,8 +343,6 @@ export async function createProperties(formData: {
     // If rate limit exceeded, return the error response immediately
     return rateLimitResult;
   }
-
-
 
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
@@ -530,8 +526,6 @@ export async function updateProperties(formData: {
     return rateLimitResult;
   }
 
-
-
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -707,7 +701,6 @@ export async function updateDataRetentionSettings(formData: {
     // If rate limit exceeded, return the error response immediately
     return rateLimitResult;
   }
-
 
   let errors: string[] = [];
   let successfulUpdates: { name: string; parent: string; data?: any }[] = [];
@@ -888,7 +881,6 @@ export async function getDataRetentionSettings(skipCache = false): Promise<any[]
     return []; // Return an empty array to match the expected type
   }
 
-
   if (!skipCache) {
     const cacheData = await redis.hgetall(cacheKey);
 
@@ -910,7 +902,6 @@ export async function getDataRetentionSettings(skipCache = false): Promise<any[]
   });
 
   if (!data) return [];
-
 
   const uniquePropertyIds = Array.from(new Set(data.ga.map((item) => item.propertyId)));
   const urls = uniquePropertyIds.map(

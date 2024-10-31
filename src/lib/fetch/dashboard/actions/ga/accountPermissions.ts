@@ -171,13 +171,19 @@ export async function createGAAccessBindings(formData: AccountPermissionsSchema)
   if (toCreateAccessBindings.size <= availableCreateUsage) {
     while (retries < MAX_RETRIES && toCreateAccessBindings.size > 0 && !permissionDenied) {
       // Check the write rate limit for the entire application
-      const { remaining: remainingWrites } = await writeRateLimit.blockUntilReady(`user:${userId}`, 1000);
+      const { remaining: remainingWrites } = await writeRateLimit.blockUntilReady(
+        `user:${userId}`,
+        1000
+      );
       if (remainingWrites <= 0) {
         throw new Error('Global write rate limit exceeded');
       }
 
       // Check the user-specific rate limit for the user making the request
-      const { remaining: remainingWritesPerUser } = await writeRateLimitPerUser.blockUntilReady(`user:${userId}`, 1000);
+      const { remaining: remainingWritesPerUser } = await writeRateLimitPerUser.blockUntilReady(
+        `user:${userId}`,
+        1000
+      );
       if (remainingWritesPerUser <= 0) {
         throw new Error('User-specific write rate limit exceeded');
       }
@@ -250,11 +256,9 @@ export async function createGAAccessBindings(formData: AccountPermissionsSchema)
                     message: `Successfully created property ${validatedContainerData.user}`,
                   });
                 } else {
-                  const errorResult = await handleApiResponseError(
-                    response,
-                    'conversionEvent',
-                    [validatedContainerData.user]
-                  );
+                  const errorResult = await handleApiResponseError(response, 'conversionEvent', [
+                    validatedContainerData.user,
+                  ]);
 
                   if (errorResult) {
                     errors.push(`${errorResult.message}`);
@@ -487,13 +491,19 @@ export async function updateGAAccessBindings(formData: AccountPermissionsSchema)
   if (toUpdateAccessBindings.size <= availableUpdateUsage) {
     while (retries < MAX_RETRIES && toUpdateAccessBindings.size > 0 && !permissionDenied) {
       // Check the write rate limit for the entire application
-      const { remaining: remainingWrites } = await writeRateLimit.blockUntilReady(`user:${userId}`, 1000);
+      const { remaining: remainingWrites } = await writeRateLimit.blockUntilReady(
+        `user:${userId}`,
+        1000
+      );
       if (remainingWrites <= 0) {
         throw new Error('Global write rate limit exceeded');
       }
 
       // Check the user-specific rate limit for the user making the request
-      const { remaining: remainingWritesPerUser } = await writeRateLimitPerUser.blockUntilReady(`user:${userId}`, 1000);
+      const { remaining: remainingWritesPerUser } = await writeRateLimitPerUser.blockUntilReady(
+        `user:${userId}`,
+        1000
+      );
       if (remainingWritesPerUser <= 0) {
         throw new Error('User-specific write rate limit exceeded');
       }
@@ -565,11 +575,9 @@ export async function updateGAAccessBindings(formData: AccountPermissionsSchema)
                     message: `Successfully updated property ${validatedContainerData.user}`,
                   });
                 } else {
-                  const errorResult = await handleApiResponseError(
-                    response,
-                    'accountAccess',
-                    [validatedContainerData.user]
-                  );
+                  const errorResult = await handleApiResponseError(response, 'accountAccess', [
+                    validatedContainerData.user,
+                  ]);
 
                   if (errorResult) {
                     errors.push(`${errorResult.message}`);
@@ -790,13 +798,19 @@ export async function deleteGAAccessBindings(
     // Retry loop for deletion requests
     while (retries < MAX_RETRIES && toDeleteAccessBindings.size > 0 && !permissionDenied) {
       // Check the write rate limit for the entire application
-      const { remaining: remainingWrites } = await writeRateLimit.blockUntilReady(`user:${userId}`, 1000);
+      const { remaining: remainingWrites } = await writeRateLimit.blockUntilReady(
+        `user:${userId}`,
+        1000
+      );
       if (remainingWrites <= 0) {
         throw new Error('Global write rate limit exceeded');
       }
 
       // Check the user-specific rate limit for the user making the request
-      const { remaining: remainingWritesPerUser } = await writeRateLimitPerUser.blockUntilReady(`user:${userId}`, 1000);
+      const { remaining: remainingWritesPerUser } = await writeRateLimitPerUser.blockUntilReady(
+        `user:${userId}`,
+        1000
+      );
       if (remainingWritesPerUser <= 0) {
         throw new Error('User-specific write rate limit exceeded');
       }

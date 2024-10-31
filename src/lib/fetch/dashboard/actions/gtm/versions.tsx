@@ -124,7 +124,6 @@ export async function getGTMLatestVersion(skipCache = false): Promise<any> {
     return rateLimitResult;
   }
 
-
   const cacheKey = `gtm:latestVersions:userId:${userId}`;
   const pipeline = redis.pipeline();
 
@@ -218,7 +217,6 @@ export async function getGTMLiveVersion(skipCache = false): Promise<any> {
     // If rate limit exceeded, return the error response immediately
     return rateLimitResult;
   }
-
 
   const cacheKey = `gtm:liveVersions:userId:${userId}`;
   const pipeline = redis.pipeline();
@@ -317,7 +315,6 @@ export async function deleteVersions(
     return rateLimitResult;
   }
 
-
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -390,7 +387,6 @@ export async function deleteVersions(
       results: [],
     };
   }
-
 
   await Promise.all(
     nonLiveAndNonLatest.map(async (data) => {
@@ -546,7 +542,6 @@ export async function publishGTM(formData: {
   let successfulCreations: any[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: { id: string | undefined; name: string }[] = [];
-
 
   await Promise.all(
     formData.forms.map(async (data) => {

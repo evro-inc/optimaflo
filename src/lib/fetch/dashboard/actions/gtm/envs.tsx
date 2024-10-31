@@ -9,7 +9,17 @@ import { redis } from '../../../../redis/cache';
 import { currentUserOauthAccessToken } from '../../../../clerk';
 import prisma from '@/src/lib/prisma';
 import { FeatureResponse, FeatureResult } from '@/src/types/types';
-import { authenticateUser, checkFeatureLimit, ensureRateLimits, executeApiRequest, getOauthToken, handleApiResponseError, softRevalidateFeatureCache, tierUpdateLimit, validateFormData } from '@/src/utils/server';
+import {
+  authenticateUser,
+  checkFeatureLimit,
+  ensureRateLimits,
+  executeApiRequest,
+  getOauthToken,
+  handleApiResponseError,
+  softRevalidateFeatureCache,
+  tierUpdateLimit,
+  validateFormData,
+} from '@/src/utils/server';
 import { GoogleTagEnvironmentType } from '@/src/lib/schemas/gtm/envs';
 
 const featureType: string = 'GTMEnvs';
@@ -60,7 +70,7 @@ export async function listGtmEnvs(skipCache = false): Promise<any[]> {
       data.gtm.map((item) =>
         JSON.stringify({
           accountId: item.accountId,
-          containerId: item.containerId
+          containerId: item.containerId,
         })
       )
     )
@@ -292,8 +302,6 @@ export async function UpdateEnvs(formData: {
     return rateLimitResult;
   }
 
-
-
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -334,7 +342,6 @@ export async function UpdateEnvs(formData: {
         containerId: validatedData.forms[0].environment.containerId,
         envId: validatedData.forms[0].environment.environmentId.split('-')[0],
         containerVersionId: validatedData.forms[0].environment.containerVersionId,
-
       });
 
       try {

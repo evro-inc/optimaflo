@@ -110,8 +110,6 @@ export async function updateAccounts(formData: {
     return rateLimitResult;
   }
 
-
-
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,

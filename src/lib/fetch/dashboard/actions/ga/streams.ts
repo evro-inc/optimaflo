@@ -117,7 +117,6 @@ export async function deleteGAPropertyStreams(
     return rateLimitResult;
   }
 
-
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -293,8 +292,6 @@ export async function createGAPropertyStreams(formData: {
   let successfulCreations: any[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: { id: string | undefined; name: string }[] = [];
-
-
 
   await Promise.all(
     formData.forms.map(async (data) => {

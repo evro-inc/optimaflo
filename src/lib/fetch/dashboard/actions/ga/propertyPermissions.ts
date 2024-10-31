@@ -145,7 +145,6 @@ export async function createGAAccessBindings(formData: {
     return rateLimitResult;
   }
 
-
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -186,7 +185,6 @@ export async function createGAAccessBindings(formData: {
         user: cleanedData.user,
         roles: cleanedData.roles,
       };
-
 
       try {
         const res = await executeApiRequest(url, {
@@ -314,7 +312,6 @@ export async function updateGAAccessBindings(formData: {
     // If rate limit exceeded, return the error response immediately
     return rateLimitResult;
   }
-
 
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
@@ -475,7 +472,6 @@ export async function updateGAAccessBindings(formData: {
   };
 }
 
-
 /************************************************************************************
   Delete a single property or multiple custom metrics
 ************************************************************************************/
@@ -492,7 +488,6 @@ export async function deleteGAAccessBindings(
     // If rate limit exceeded, return the error response immediately
     return rateLimitResult;
   }
-
 
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,

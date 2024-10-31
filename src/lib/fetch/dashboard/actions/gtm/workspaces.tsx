@@ -135,7 +135,6 @@ export async function deleteWorkspaces(
     return rateLimitResult;
   }
 
-
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -299,7 +298,6 @@ export async function createWorkspaces(formData: {
     return rateLimitResult;
   }
 
-
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
     featureType,
@@ -322,7 +320,6 @@ export async function createWorkspaces(formData: {
   let successfulCreations: any[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: { id: string | undefined; name: string }[] = [];
-
 
   await Promise.all(
     formData.forms.map(async (data) => {
@@ -493,7 +490,6 @@ export async function updateWorkspaces(formData: {
     // If rate limit exceeded, return the error response immediately
     return rateLimitResult;
   }
-
 
   const { tierLimitResponse, availableUsage } = await checkFeatureLimit(
     userId,
@@ -670,7 +666,6 @@ export async function createGTMVersion(formData: {
     return rateLimitResult;
   }
 
-
   // Create uniqueForms to remove duplicates
   const uniqueForms = formData.forms.filter(
     (value, index, self) =>
@@ -705,7 +700,6 @@ export async function createGTMVersion(formData: {
   let successfulCreations: any[] = [];
   let featureLimitReached: string[] = [];
   let notFoundLimit: { id: string | undefined; name: string }[] = [];
-
 
   await Promise.all(
     uniqueForms.map(async (data) => {
@@ -874,8 +868,6 @@ export async function getStatusGtmWorkspaces() {
     // If rate limit exceeded, return the error response immediately
     return rateLimitResult;
   }
-
-
 
   const gtmData = await prisma.user.findFirst({
     where: { id: userId },

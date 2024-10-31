@@ -40,7 +40,9 @@ function RefreshGTM({ path }) {
 
   return (
     <div className="flex flex-row gap-4">
-      <Button type="button" onClick={refreshAllCache}>Refresh GTM Cache</Button>
+      <Button type="button" onClick={refreshAllCache}>
+        Refresh GTM Cache
+      </Button>
     </div>
   );
 }

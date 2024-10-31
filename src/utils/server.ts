@@ -9,7 +9,12 @@ import { revalidatePath } from 'next/cache';
 import { redis } from '../lib/redis/cache';
 import { fetchGASettings, fetchGtmSettings } from '../lib/fetch/dashboard';
 import { currentUserOauthAccessToken } from '@/src/lib/clerk';
-import { gaRateLimit, gtmRateLimit, writeRateLimit, writeRateLimitPerUser } from '../lib/redis/rateLimits';
+import {
+  gaRateLimit,
+  gtmRateLimit,
+  writeRateLimit,
+  writeRateLimitPerUser,
+} from '../lib/redis/rateLimits';
 import { limiter } from '../lib/bottleneck';
 import { FeatureResponse } from '../types/types';
 
@@ -159,8 +164,9 @@ export async function handleApiResponseError(response: Response, feature: string
       return {
         success: false,
         errorCode: 400,
-        message: `${feature} ${names} was unsuccessful. ${parsedResponse?.error?.message ?? 'Unknown error'
-          }`,
+        message: `${feature} ${names} was unsuccessful. ${
+          parsedResponse?.error?.message ?? 'Unknown error'
+        }`,
       };
 
     case 404:
@@ -462,25 +468,37 @@ export async function getOauthToken(userId: string): Promise<string> {
 export async function ensureRateLimits(userId: string): Promise<FeatureResponse | void> {
   try {
     // Ensure GA rate limit is not exceeded
-    const { remaining: remainingGARequests } = await gaRateLimit.blockUntilReady(`user:${userId}`, 1000);
+    const { remaining: remainingGARequests } = await gaRateLimit.blockUntilReady(
+      `user:${userId}`,
+      1000
+    );
     if (remainingGARequests <= 0) {
       throw new Error('GA rate limit exceeded');
     }
 
     // Ensure GTM rate limit is not exceeded
-    const { remaining: remainingGTMRequests } = await gtmRateLimit.blockUntilReady(`user:${userId}`, 1000);
+    const { remaining: remainingGTMRequests } = await gtmRateLimit.blockUntilReady(
+      `user:${userId}`,
+      1000
+    );
     if (remainingGTMRequests <= 0) {
       throw new Error('GTM rate limit exceeded');
     }
 
     // Check the global write rate limit
-    const { remaining: remainingWrites } = await writeRateLimit.blockUntilReady(`user:${userId}`, 1000);
+    const { remaining: remainingWrites } = await writeRateLimit.blockUntilReady(
+      `user:${userId}`,
+      1000
+    );
     if (remainingWrites <= 0) {
       throw new Error('Global write rate limit exceeded');
     }
 
     // Check the user-specific write rate limit
-    const { remaining: remainingWritesPerUser } = await writeRateLimitPerUser.blockUntilReady(`user:${userId}`, 1000);
+    const { remaining: remainingWritesPerUser } = await writeRateLimitPerUser.blockUntilReady(
+      `user:${userId}`,
+      1000
+    );
     if (remainingWritesPerUser <= 0) {
       throw new Error('User-specific write rate limit exceeded');
     }
@@ -494,10 +512,6 @@ export async function ensureRateLimits(userId: string): Promise<FeatureResponse 
     };
   }
 }
-
-
-
-
 
 /** Checks if a feature limit is reached and returns available usage */
 export async function checkFeatureLimit(
