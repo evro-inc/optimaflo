@@ -65,10 +65,10 @@ export default function Navbar() {
 
             <SignedOut>
               <SheetClose>
-                <ButtonSignIn className="w-full" />
+                <ButtonSignIn data-cy-id="login" className="w-full" />
               </SheetClose>
               <SheetClose>
-                <LinkSignUp variant="default" className="w-full" />
+                <LinkSignUp data-cy-id="signup" variant="default" className="w-full" />
               </SheetClose>
             </SignedOut>
           </nav>
@@ -97,8 +97,8 @@ export default function Navbar() {
         </SignedIn>
         <SignedOut>
           <div className="flex lg:flex-row items-center font-medium  p-0 sm:p-[10px]  w-full lg:w-auto">
-            <ButtonSignIn className="mr-4" /> {/* Adds margin to the right */}
-            <LinkSignUp variant="default" />
+            <ButtonSignIn data-cy-id="login" className="mr-4" /> {/* Adds margin to the right */}
+            <LinkSignUp data-cy-id="signup" variant="default" />
           </div>
         </SignedOut>
       </nav>
